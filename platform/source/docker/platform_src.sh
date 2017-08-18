@@ -71,7 +71,7 @@ for script in $PLATFORM_SRC/source/tools/* ; do
     elif [[ " $BUNDLED_APPS " =~ " ${filename} " ]]; then
         cp $script $ROOT/ax/bin/${filename%.*}
     else
-        cp $script $ROOT/ax/bin/
+        cp -r $script $ROOT/ax/bin/
     fi
 done
 cp $SRCROOT/bash-helpers.sh $PLATFORM_SRC/source/tools/common.sh $ROOT/ax/bin

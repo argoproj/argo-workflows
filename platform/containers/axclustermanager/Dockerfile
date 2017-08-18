@@ -29,4 +29,10 @@ COPY motd /etc/motd
 RUN echo '[ ! -z "$TERM" -a -r /etc/motd ] && cat /etc/motd' >> /etc/bash.bashrc
 RUN echo 'PS1="argo cluster ops> "' >> /root/.bashrc
 
+# some pip installs
+# TODO: Need to move pip installs here so that it does not have dependency with kubernetes-distro container
+RUN pip install anytree==2.2.1 prompt-toolkit==1.0.15
 
+WORKDIR /ax/bin
+
+CMD ["/bin/bash","-c","cat /etc/motd && python -m clustercli.main_cli"]

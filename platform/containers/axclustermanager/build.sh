@@ -14,6 +14,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cp $DOCKER_SRC_DIR/platform_src.sh $BUILD_DIR
 cp -Rf $SRCROOT/platform/requirements $BUILD_DIR
+
 $BUILD_DIR/platform_src.sh
 cp -pr $SRCROOT/platform/cluster $BUILD_DIR/cluster
 

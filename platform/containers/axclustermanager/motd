@@ -44,7 +44,6 @@
                            --=MWWWW4^      `YWWWWM>=-
 
 Welcome to Argo.
-Type 'argocluster install' to start interactive install of a kubernetes cluster
-that argo runs on.
+Press 'tab' or type 'help' to see a list of options. You can start with 'install'.
 
 If you like us, show us your support #argoproj
