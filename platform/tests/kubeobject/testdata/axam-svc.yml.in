@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axam
+    labels:
+        app: axam
+        tier: devops
+        role: axcritical
+spec:
+    selector:
+        app: axam-deployment
+    ports:
+      - port: 8968
+        targetPort: 8968
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axam-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axam-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axmon.axsys:8901/v1/axmon/ping http://axdb.axsys:8083/v1/axdb/version"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axam
+                image: ${REGISTRY}/${NAMESPACE}/axamm:${VERSION}
+                command: [ "sh", "-c", "/axamm/bin/axam_server $AXDB $AMM $AXMON $ADC $FIXMANAGER $AXOPS"]
+                env:
+                  - name: AXDB
+                    value: "http://axdb.axsys:8083/v1"
+                  - name: AMM
+                    value: "http://axamm.axsys:8966/v1"
+                  - name: ADC
+                    value: "http://axworkflowadc.axsys:8911/v1"
+                  - name: AXMON
+                    value: "http://axmon.axsys:8901/v1"
+                  - name: FIXMANAGER
+                    value: "http://fixturemanager.axsys:8912/v1"
+                  - name: AXOPS
+                    value: "http://axops-internal.axsys:8085/v1"
+                  - name: AX_CLUSTER
+                    value: "${AX_CLUSTER_NAME_ID}"
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                  - name: AX_REGION
+                    value: "${AX_AWS_REGION}"
+                  - name: AX_NAMESPACE
+                    value: "${NAMESPACE}"
+                  - name: AX_VERSION
+                    value: "${VERSION}"
+                  - name: REGISTRY
+                    value: "${REGISTRY}"
+                  - name: APPLICATION_NAME
+                    value: "${APPLICATION_NAME}"
+                resources:
+                    requests:
+                        cpu: 100m
+                        memory: 100Mi
+                    limits:
+                        cpu: 500m
+                        memory: 200Mi
+                livenessProbe:
+                  httpGet:
+                    path: /v1/ping
+                    port: 8968
+                  initialDelaySeconds: 60
+                  timeoutSeconds: 20
+                  periodSeconds: 60
+                # readinessProbe:
+                #   httpGet:
+                #     path: /v1/ping
+                #     port: 8080
+                #   initialDelaySeconds: 10
+                #   timeoutSeconds: 5
+                #   periodSeconds: 60
+            nodeSelector:
+                ax.tier: user
+            imagePullSecrets:
+              - name: applatix-registry

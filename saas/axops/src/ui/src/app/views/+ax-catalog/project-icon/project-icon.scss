@@ -1,0 +1,50 @@
+@import '../../../../assets/styles/config';
+$icon-size: 10em;
+
+.ax-project-icon {
+    position: relative;
+    background-color: #FFFFFF;
+    width: $icon-size;
+    height: $icon-size;
+    border-radius: 4px;
+    box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1);
+    margin-bottom: 5px;
+
+    img.ax-project-icon__publisher-img {
+        position: absolute;
+        width: 1em;
+        height: 1em;
+        object-fit: contain;
+        left: 1em;
+        top: 1em;
+    }
+
+    &__img {
+        display: block;
+        width: 4em;
+        height: 4em;
+        position: relative;
+        top: 1.5em;
+        margin-left: auto;
+        margin-right: auto;
+
+        img {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            top: 50%;
+            transform: translateY(-50%);
+            object-fit: contain;
+        }
+    }
+
+    &__title {
+        position: absolute;
+        bottom: 1em;
+        left: 0;
+        right: 0;
+        line-height: 1em;
+        height: 2em;
+        text-align: center;
+    }
+}

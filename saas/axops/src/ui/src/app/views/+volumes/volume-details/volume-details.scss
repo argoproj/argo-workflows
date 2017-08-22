@@ -1,0 +1,138 @@
+@import '../../../../assets/styles/config';
+
+.volume-details {
+
+    &__box {
+        padding-bottom: 0;
+    }
+
+    &__usage {
+
+        padding: 2em 1em 1em 1em;
+        background-color: $ax-color-gray-2;
+        margin: -30px -30px 0 -30px;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+
+        & > strong {
+            top: 0.5em;
+            position: absolute;
+        }
+
+        .columns {
+            margin-top: -2em;
+            margin-bottom: -1em;
+            padding-bottom: 1em;
+
+            & > span {
+                margin-top: 2rem;
+                color: $ax-color-teal-5;
+                font-size: 3em;
+                display: block;
+                text-align: center;
+                border-left: 1px solid $ax-color-gray-3;
+                margin-left: -15px;
+            }
+
+            & label {
+                text-transform: uppercase;
+                color: $ax-color-gray-5;
+                display: block;
+                text-align: center;
+            }
+
+            &:last-of-type {
+                position: relative;
+                background: linear-gradient(135deg, $ax-color-teal-8 0%, $ax-color-teal-4 100%);
+                border-top-right-radius: 4px;
+
+                &:after {
+                    content: '';
+                    width: 0;
+                    height: 0;
+                    border-left: 1.3em solid transparent;
+                    border-right: 1.3em solid transparent;
+                    border-bottom: 1.5em solid $ax-color-white;
+                    position: absolute;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    bottom: -12px;
+                }
+
+                & span, & label {
+                    color: $ax-color-white;
+                    border-left: none;
+                }
+            }
+        }
+    }
+
+    &__usage-size {
+        & > span {
+            font-size: 0.5em;
+        }
+    }
+
+    &__space.row {
+        padding: 3em 1em 3em 1em;
+        border-bottom: 2px solid $ax-color-gray-3;
+        margin: 0 -30px;
+    }
+
+    &__parameter.row {
+        padding-bottom: 1.5em;
+        padding-top: 1.5em;
+        margin: 0 -15px;
+        border-bottom: 1px solid $ax-color-gray-3;
+
+        .columns {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            &:first-of-type {
+                text-transform: uppercase;
+            }
+        }
+
+        &:last-of-type {
+            border-bottom: none;
+        }
+    }
+
+    &__users-title {
+        padding-left: 1.25em;
+        padding-top: 2em;
+    }
+
+    &__chart {
+        padding: 20px;
+
+        & > h6 {
+            position: absolute;
+        }
+
+        .nvd3 text, .nvd3 .title, .nvtooltip {
+            font-family: $body-font-family !important;
+        }
+
+        &--loader {
+            margin-top: -30px;
+        }
+    }
+
+    .progress-bar {
+        height: 1em;
+        border-radius: 4px;
+
+        & > div {
+            border-top-left-radius: 4px;
+            border-bottom-left-radius: 4px;
+        }
+
+        &--full {
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+    }
+}

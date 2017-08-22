@@ -1,0 +1,37 @@
+<div class="deployment-history-cell" *ngIf="deployment">
+    <div class="deployment-history-cell__menu">
+        <ax-dropdown-menu [settings]="menuSettings">
+            <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+            </button>
+        </ax-dropdown-menu>
+    </div>
+    <div class="row">
+        <div class="columns small-4">
+            <div class="deployment-history-cell__time-part" *ngIf="deployment">
+                <i class="ax-icon-clock"></i>
+                <h4>{{ runDuration }}</h4>
+                <span>{{ deployment.create_time | timestamp }} -
+                    <span *ngIf="deployment.end_time > 0" >{{ deployment.end_time | timestamp }}</span>
+                    <span *ngIf="deployment.end_time === 0" >now</span>
+                </span>
+            </div>
+        </div>
+        <div class="columns small-8">
+            <div class="deployment-history-cell__revision-details-part">
+                <div class="row deployment-history-cell__row">
+                    <div class="columns small-3 deployment-history-cell__revision-details-part--label">{{ 'Template' | translate | uppercase }}</div>
+                    <div class="columns small-9">
+                        <a [routerLink]="['/app/service-catalog/history', deployment.template.id || '']">{{ deployment.template.name }}</a>
+                    </div>
+                </div>
+                <div class="row deployment-history-cell__row">
+                    <div class="columns small-3 deployment-history-cell__revision-details-part--label">{{ 'Job ID' | translate | uppercase }}</div>
+                    <div class="columns small-9">
+                        <a [routerLink]="['/app/timeline/jobs', deployment.task_id]" (click)="$event.stopPropagation();">{{ deployment.task_id }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

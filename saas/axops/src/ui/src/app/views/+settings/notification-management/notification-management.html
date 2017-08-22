@@ -1,0 +1,66 @@
+<div class="content content--with-padding-top">
+    <div class="ax-container">
+        <div class="configured-notification">
+            <div class="ax-table-list">
+                <template ngFor let-notification [ngForOf]="configuredRules | axFilterByValuesInList: toolbarFilters.model: 'channels'">
+                    <div class="ax-table-list__row">
+                        <div class="row configured-notification__row">
+                            <div class="columns small-3">
+                                <span class="configured-notification__icon"><i class="ax-icon-edit"></i></span>
+                                <span class="configured-notification__name" ax-tooltip="{{ notification.name }}"><a (click)="openEditNotificationPanel(notification.rule_id)">{{ notification.name }}</a></span>
+                            </div>
+                            <div class="columns small-6">
+                                <span class="configured-notification__grumpy" ax-tooltip="Default Notification Rule for: {{ notification.channels }}">Default Notification Rule for: <template ngFor let-channel let-isLast="last" [ngForOf]="notification.channels">{{ channel }}{{ isLast ? '.' : ', ' }}</template></span>
+                            </div>
+                            <div class="columns small-2">
+                                <span ax-tooltip="{{ notification.enabled ? 'Enabled' : 'Disabled' }}"><ax-access-mark [isEnabled]="notification.enabled"></ax-access-mark></span>
+                            </div>
+                            <div class="columns small-1">
+                                <span class="configured-notification__icon configured-notification__edit-icon"><a><i class="ax-icon-pencil" (click)="openEditNotificationPanel(notification.rule_id)"></i></a></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div class="ax-table-list__row" *ngIf="!configuredRules.length && !loadNotification">
+                    <div class="row">
+                        <div class="columns small-12">{{ 'There are no configured notification.' | translate }}</div>
+                    </div>
+                </div>
+            </div>
+            <ax-loader-list-mockup [itemsLength]="2" *ngIf="loadNotification"></ax-loader-list-mockup>
+        </div>
+        <div class="configured-notification">
+            <div class="configured-notification__top">
+                <div class="configured-notification__title">
+                    {{ 'JOB NOTIFICATION RULES FROM POLICIES' | translate }}:
+                </div>
+            </div>
+            <div class="ax-table-list">
+                <template ngFor let-policy [ngForOf]="enabledPolicies">
+                    <div class="ax-table-list__row">
+                        <div class="row">
+                            <div class="columns small-4">
+                                <span class="configured-notification__icon"><i class="ax-icon-policy"></i></span>
+                                <span class="configured-notification__name" ax-tooltip="{{ policy.name }}"><a (click)="moveToPolicyDetails(policy.id)">{{ policy.name }}</a></span>
+                            </div>
+                            <div class="columns small-4">
+                                <span class="configured-notification__grumpy">Criteria:</span> <span class="configured-notification__dark-grumpy" ax-tooltip="{{ policy.criteria }}">{{ policy.criteria }}</span>
+                            </div>
+                            <div class="columns small-4">
+                                <span class="configured-notification__grumpy">Recipients:</span> <span class="configured-notification__dark-grumpy" ax-tooltip="{{ policy.recipients }}">{{ policy.recipients }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div class="ax-table-list__row" *ngIf="!enabledPolicies.length && !loadPolicy">
+                    <div class="row">
+                        <div class="columns small-12">{{ 'There are no configured notification.' | translate }}</div>
+                    </div>
+                </div>
+            </div>
+            <ax-loader-list-mockup [itemsLength]="2" *ngIf="loadPolicy"></ax-loader-list-mockup>
+        </div>
+    </div>
+</div>
+
+<ax-notification-creation-panel [isVisible]="isNotificationCriteriaPanelVisible" (onClose)="closeNotificationCreationPanel()" (onUpdate)="reloadRules()"></ax-notification-creation-panel>

@@ -1,0 +1,35 @@
+<div class="integrations-overview">
+    <div class="integrations-overview__top">
+        <div class="ax-container">
+            <!--<div class="pull-right"><a href="#">Learn more</a></div>-->
+            <i class="ax-icon-integrations"></i> Integrate your current stack with Argo
+        </div>
+    </div>
+    <div class="ax-container">
+        <div class="integrations-overview__redirect-panel">
+            <ax-redirect-panel title="Source Control Management Systems"
+                               description="Connect Bitbucket, GitHub, Git, CodeCommit or GitLab to Argo"
+                               [route]="['/app/integrations', { type: 'scm' }]"></ax-redirect-panel>
+        </div>
+        <div class="integrations-overview__redirect-panel">
+            <ax-redirect-panel title="Docker Registries"
+                               description="Connect Docker Hub or your Private Docker Registry to Argo"
+                               [route]="['/app/integrations', { type: 'registry' }]"></ax-redirect-panel>
+        </div>
+        <div class="integrations-overview__redirect-panel">
+            <ax-redirect-panel title="Artifact Repositories"
+                               description="Connect Nexus to Argo"
+                               [route]="['/app/integrations', { type: 'artifact_management' }]"></ax-redirect-panel>
+        </div>
+        <div class="integrations-overview__redirect-panel">
+            <ax-redirect-panel title="Issue Tracking Systems"
+                               description="Connect JIRA to Argo"
+                               [route]="['/app/integrations', { type: 'issue_management' }]"></ax-redirect-panel>
+        </div>
+        <div class="integrations-overview__redirect-panel">
+            <ax-redirect-panel title="Notifications"
+                               description="Connect Slack or configure SMTP"
+                               [route]="['/app/integrations', { type: 'notification' }]"></ax-redirect-panel>
+        </div>
+    </div>
+</div>

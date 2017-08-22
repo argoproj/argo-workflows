@@ -1,0 +1,60 @@
+@import '../../../../../assets/styles/config';
+
+.ax-notification-details {
+    color: $ax-color-gray-6;
+
+    &__header {
+        height: $toolbar-height;
+        padding: 0 80px 0 60px;
+        line-height: $toolbar-height;
+        border-bottom: 1px solid $ax-color-gray-3;
+    }
+
+    &__header-link {
+        margin-right: 60px;
+        font-weight: 500;
+        font-size: .8em;
+        text-transform: uppercase;
+        & > i.fa {
+            font-size: 18px;
+        }
+
+        &[disabled=true] {
+            cursor: default;
+            color: $ax-color-gray-4;
+        }
+    }
+
+    &__content {
+        padding: 50px 60px;
+    }
+
+    &__title {
+        font-size: 1.6em;
+    }
+
+    &__des {
+        margin-bottom: 50px;
+        font-weight: 500;
+        font-size: .8em;
+        color: $ax-color-gray-5;
+    }
+
+    &__subtitle {
+        padding: 10px 0;
+        text-transform: uppercase;
+        border-bottom: 1px solid $ax-color-gray-4;
+    }
+
+    &__row {
+        padding: 10px 0;
+        font-weight: 500;
+        font-size: .9em;
+        color: $ax-color-gray-7;
+        border-bottom: 1px solid $ax-color-gray-4;
+    }
+
+    .highlight {
+        color: $ax-color-teal-6;
+    }
+}

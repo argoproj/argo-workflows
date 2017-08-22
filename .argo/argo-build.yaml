@@ -1,0 +1,64 @@
+---
+type: workflow
+version: 1
+name: Argo Simple Build
+description: Argo build in a single step
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: testing
+    REGISTRY:
+      default: docker.applatix.net
+    REG_USER:
+      default: "%%config.admin@internal.docker.user%%"
+    REG_PASSWORD:
+      default: "%%config.admin@internal.docker.password%%"
+    VERSION_OPTION:
+      default: latest
+    PY_BUILD_OPTIONS:
+      default: ""
+    GO_BUILD_OPTIONS:
+      default: ""
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO-BUILD:
+    template: argo-build-all
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+---
+type: container
+version: 1
+name: argo-build-all
+description: Base container for building platform and devops containers
+image: argoproj/argobuild2:latest
+command: ["bash", "-c"]
+args: ["
+  REGISTRY=`echo %%inputs.parameters.REGISTRY%% | sed \"s/^docker.io$//g\"` &&
+  docker login -u %%inputs.parameters.REG_USER%% -p %%inputs.parameters.REG_PASSWORD%% $REGISTRY &&
+  /src/build/build_platform.py -r %%inputs.parameters.REGISTRY%% -n %%inputs.parameters.NAMESPACE%% -v %%inputs.parameters.VERSION_OPTION%% %%inputs.parameters.PY_BUILD_OPTIONS%% &&
+  /src/build/build_devops.py -r %%inputs.parameters.REGISTRY%% -n %%inputs.parameters.NAMESPACE%% -v %%inputs.parameters.VERSION_OPTION%% %%inputs.parameters.PY_BUILD_OPTIONS%% &&
+  /src/build/build_saas.py -bl -r %%inputs.parameters.REGISTRY%% -n %%inputs.parameters.NAMESPACE%% -v %%inputs.parameters.VERSION_OPTION%% %%inputs.parameters.GO_BUILD_OPTIONS%%
+"]
+resources:
+  mem_mib: 600
+  cpu_cores: 0.2
+inputs:
+  parameters:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+    PY_BUILD_OPTIONS:
+    GO_BUILD_OPTIONS:
+  artifacts:
+    CODE:
+      path: /src
+annotations:
+  ax_ea_docker_enable: '{ "graph-storage-name": "axbuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.9, "mem_mib":1000}'
+

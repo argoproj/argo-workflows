@@ -1,0 +1,101 @@
+type: workflow
+version: 2
+name: wokflow-passing-fixtures-volumes
+description: Example of workflow using fixture and volume and passing to deployment
+inputs:
+  parameters:
+    commit:
+      description: "The commit"
+      default: "%%session.commit%%"
+      regex: "[0-9abcdef]{12}"
+    repo:
+      description: "The repository"
+      default: "%%session.repo%%"
+      regex: "^https://.*\\.git$"
+    char:
+      default: "a"
+      options: ["a", "b", "c"]
+  volumes:
+    mydata:
+fixtures:
+- myec2:
+    class: ec2-instance
+    attributes:
+      instance_type: m3.large
+volumes:
+  scratch:
+    name: my-scratch-vol
+steps:
+- checkout-step:
+    image: get.applatix.io/applatix/axscm:v2.0
+    command: ["sh", "-c"]
+    args: ["axscm clone %%inputs.parameters.repo%% /mnt/data --commit %%inputs.parameters.commit%%"]
+    inputs:
+      volumes:
+        mydata:
+          from: "%%volumes.scratch%%"
+          mount_path: /mnt/data
+    outputs:
+      artifacts:
+        logs:
+          path: /var/log
+- ping-step:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["ping %%fixtures.myec2.hostname%%"]
+- deploy-step:
+    template: deployment-with-passed-fixture-volume
+    arguments:
+      parameters.echo: "hello world"
+      volumes.scratch: "%%volumes.scratch%%"
+      fixtures.ec2_instance: "%%fixtures.myec2%%"
+      artifacts.logs: "%%steps.checkout-step.outputs.artifacts.logs%%"
+
+---
+type: deployment
+version: 2
+name: deployment-with-passed-fixture-volume
+application_name: myapp
+deployment_name: mydeployment
+scale:
+  min: 1
+internal_routes:
+- name: mydeployment
+  ports:
+  - port: 80
+    target_port: 80
+  - port: 443
+    target_port: 443
+inputs:
+  parameters:
+    echo:
+  volumes:
+    scratch:
+  fixtures:
+    ec2_instance:
+  artifacts:
+    logs:
+fixtures:
+- db:
+    class: database
+volumes:
+  scratch:
+    storage_class: ssd
+    size_gb: 1
+containers:
+  userdb:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo %%inputs.parameters.echo%%; ping %%inputs.fixtures.ec2_instance.hostname%%; ping %%fixtures.db.hostname%%"]
+    inputs:
+      volumes:
+        scratch:
+          from: "%%inputs.volumes.scratch%%"
+          mount_path: /mnt/scratch
+        scratch2:
+          from: "%%volumes.scratch%%"
+          mount_path: /mnt/scratch2
+      artifacts:
+        logs:
+          from: "%%inputs.artifacts.logs%%"
+          path: /var/logs

@@ -1,0 +1,27 @@
+<ax-sliding-panel [show]="show" (closePanel)="hidePanel()">
+     <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" type="button" (click)="form.valid && submitAction()">Submit</button>
+        <button axButtonWave class="ax-button ax-button--base-o" type="button" (click)="hidePanel()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="fixture-action-launch-panel">
+            <div class="fixture-action-launch-panel__title">
+                Review action parameters
+            </div>
+            <div class="fixture-action-launch-panel__subtitle">
+                Submit an action with parameters or modify the parameters and submit.
+            </div>
+            <form role="form" *ngIf="form" [formGroup]="form" class="white-box">
+                <h3>
+                    <i aria-hidden="true" class="fa fa-window-maximize"></i>{{actionName | capitalize}}
+                </h3>
+                <div class="ax-form-row" *ngFor="let parameter of parameters">
+                    <label>{{ parameter.name | uppercase }}</label>
+                    <input type="text" class="ax-field" [formControlName]="parameter.name" placeholder="" value="{{parameter.value}}">
+                    <div class="ax-form-row__error-msg" *ngIf="!form.controls[parameter.name].valid && (form.controls[parameter.name].touched || isSubmitClicked)">
+                        {{parameter.name}} is required.<i class="fa fa-warning"></i></div>
+                </div>
+            </form>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

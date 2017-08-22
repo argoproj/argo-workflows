@@ -1,0 +1,107 @@
+---
+type: "workflow"
+version: 1
+name: "AX Workflow Stress Test"
+description: "AX Workflow Stress Test"
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+steps:
+- STRESS_TEST_1:
+    template: "ax-workflow-stress-test-step-1"
+- STRESS_TEST_2:
+    template: "ax-workflow-stress-test-step-2"
+- STRESS_TEST_3:
+    template: "ax-workflow-stress-test-step-3"
+- STRESS_TEST_4:
+    template: "ax-workflow-stress-test-step-4"
+
+---
+type: "container"
+version: 1
+name: "ax-workflow-stress-test-step-1"
+description: "ax workflow stess test step"
+resources:
+  mem_mib: 400
+  cpu_cores: 0.4
+image: "ubuntu:latest"
+command: ["sh"]
+args: ["-c", "sleep 300"]
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+---
+type: "container"
+version: 1
+name: "ax-workflow-stress-test-step-2"
+description: "ax workflow stess test step"
+resources:
+  mem_mib: 300
+  cpu_cores: 0.3
+image: "ubuntu:latest"
+command: ["sh"] 
+args: ["-c", "sleep 300"]
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+---
+type: "container"
+version: 1
+name: "ax-workflow-stress-test-step-3"
+description: "ax workflow stess test step"
+resources:
+  mem_mib: 200
+  cpu_cores: 0.2
+image: "ubuntu:latest"
+command: ["sh"]
+args: ["-c", "sleep 300"]
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+---
+type: "container"
+version: 1
+name: "ax-workflow-stress-test-step-4"
+description: "ax workflow stess test step"
+resources:
+  mem_mib: 100
+  cpu_cores: 0.1
+image: "ubuntu:latest"
+command: ["sh"]
+args: ["-c", "sleep 300"]
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+
+---
+type: policy
+version: 1
+name: AX Workflow Stress Test Policy
+description: Policy to test stress workflows to overload kubenetes
+template: AX Workflow Stress Test
+
+when:
+  -
+    event: on_cron
+    schedule: "* * * * *"
+    timezone: "US/Pacific"

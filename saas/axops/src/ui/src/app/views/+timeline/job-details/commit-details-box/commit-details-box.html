@@ -1,0 +1,57 @@
+<div class="white-box">
+    <div class="row">
+        <div class="columns large-12">
+            <h6>Commit: {{ commit?.revision }}</h6>
+        </div>
+    </div>
+    <div class="white-box__details">
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Description:
+            </div>
+            <div class="large-9 columns columns--narrower-height">
+                {{ commit.description }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Author:
+            </div>
+            <div class="large-9 columns">
+                {{ commit?.author }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Repo:
+            </div>
+            <div class="large-9 columns">
+                {{ commit?.repo }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Branch:
+            </div>
+            <div class="large-9 columns">
+                {{ commit?.branch }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Date:
+            </div>
+            <div class="large-9 columns">
+                {{ commit?.date | timestamp }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Revision:
+            </div>
+            <div class="large-9 columns">
+                {{ commit?.revision }}
+            </div>
+        </div>
+    </div>
+</div>

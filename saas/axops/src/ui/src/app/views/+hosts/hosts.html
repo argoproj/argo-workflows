@@ -1,0 +1,43 @@
+<div class="content commits-view">
+    <div class="ax-container">
+        <div class="row">
+            <div class="columns small-12">
+                <div class="infrastructure">
+                    <div class="row">
+                        <div class="columns small-12">
+
+                            <div class="hosts">
+                                <div class="host" *ngFor="let host of hosts">
+                                    <div class="host__name">
+                                        {{ host.name }}
+                                    </div>
+                                    <div class="host__usage" *ngIf="host.usage">
+                                        <div class="metric">
+                                            <span class="title">{{ 'Memory' | translate }}:</span> {{ host.mem | mbToGb }}  ({{ host.usage.mem_percent | floatToPercents}})
+                                        </div>
+                                        <div class="metric">
+                                            <span class="title">{{ 'CPUs' | translate }}:</span> {{ host.cpu }}  ({{ host.usage.cpu_percent | floatToPercents}})
+                                        </div>
+                                    </div>
+
+                                    <div class="host__service-cont" *ngIf="host.services">
+                                        <span class="title">
+                                            {{ 'Services' | translate }}:
+                                            <span *ngIf="host.services && host.services.length > 1">({{host.services.length}})</span>
+                                        </span>
+                                        <div class="services">
+                                            <ul class="list">
+                                                <li *ngFor="let service of host.services">{{service.name}}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

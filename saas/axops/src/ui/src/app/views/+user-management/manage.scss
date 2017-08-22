@@ -1,0 +1,16 @@
+.groups-list {
+    list-style-type: none;
+    margin: 0;
+
+    &__item {
+        display: inline;
+
+        &:after {
+            content: ','
+        }
+
+        &:last-child:after {
+            content: ''
+        }
+    }
+}

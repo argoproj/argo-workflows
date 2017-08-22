@@ -1,0 +1,17 @@
+<div class="workflow-tree clearfix">
+    <div>
+        <div class="dib" *ngFor="let nodes of nodeGroups; let isLast = last; trackBy:trackByIndex">
+   			<div class="workflow-tree__table-headline">
+                <span *ngIf="nodes[0]?.value?.launch_time > 0">{{nodes[0]?.value?.launch_time | shortTime}}</span>
+                <span *ngIf="!nodes[0]?.value?.launch_time">&nbsp;</span>
+			</div>
+
+            <ax-workflow-subtree [expandedTaskIds]="expandedTaskIds" [rootTask]="rootTask" [nodes]="nodes"
+                                 [hasRightConnector]="!isLast" (onSelectTask)="selectTask($event)"
+                                 [workflowNodeActionsTemplate]="workflowNodeActionsTemplate"
+                                 [workflowNodeInfoTemplate]="workflowNodeInfoTemplate" [activeStep]="activeStep"
+                                 [nodeClickable]="nodeClickable"
+                                 (onGetYaml)="clickShowYaml($event)"></ax-workflow-subtree>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+---
+type: container
+version: 1
+name: junit-reporting-test
+description: This is the base template for junit reporting test
+image: argobase/axdevopsbuilder:v7
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1
+command: ["%%inputs.parameters.CMD%%"]
+inputs:
+  parameters:
+    CMD:
+    PATH:
+  artifacts:
+    CODE:
+      path: /src
+outputs:
+  artifacts:
+    REPORT:
+      path: "%%path%%"
+
+---
+type: workflow
+version: 1
+name: Junit Reporting Example
+description: This is the workflow step for Junit reporting example
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- REPORT:
+    template: junit-reporting-test
+    arguments:
+      parameters.CMD: "pytest -vv /src/devops/test/junit/ --junitxml=/tmp/junit_report.xml"
+      parameters.PATH: "/tmp/junit_report.xml"
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"

@@ -1,0 +1,35 @@
+<ax-sliding-panel [hasNoPadding]="true" [show]="isPanelVisible" (closePanel)="closeSlackChannelsSlidingPanel()" [isMiddle]="true">
+    <sliding-panel-header>
+        <button  axButtonWave class="ax-button ax-button--base" type="button" (click)="add()" [disabled]="false">Add</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="users-selector-panel">
+            <div class="users-selector-panel__title">
+                Select Slack Channels
+            </div>
+            <div class="users-selector-panel__search">
+                <input type="text" [ngModel]="searchedUser" (ngModelChange)='changed($event)'>
+                <i class="ax-icon-search"></i>
+            </div>
+            <div class="users-selector-panel__content">
+                <div class="users-selector-panel__group">
+                    <div class="users-selector-panel__loader" *ngIf="getChannelsLoader">
+                        <ax-loader-custom [size]="20"></ax-loader-custom>
+                    </div>
+                </div>
+                <template ngFor let-channel [ngForOf]="channelsToDisplay">
+                    <div class="users-selector-panel__group" *ngIf="!getChannelsLoader">
+                        <div class="users-selector-panel__group-header" [hidden]="!channel.display">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" name="options" value="{{ channel.name }}" [(ngModel)]="channel.checked"><span><i class="fa fa-check"></i></span>
+                            </div>
+                            <div class="users-selector-panel__user">
+                                <span>{{ channel.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

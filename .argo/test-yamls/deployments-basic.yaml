@@ -1,0 +1,46 @@
+---
+type: deployment
+version: 1
+name: test-deployment-basic
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+application_name: test-app
+deployment_name: dep-basic
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  WEB:
+    template: nginx-server
+
+---
+type: container
+version: 1
+name: nginx-server
+image: nginx:latest
+
+---
+type: deployment
+version: 1
+name: test-deployment-basic-inlined
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+application_name: test-app
+deployment_name: dep-basic-inlined
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  WEB:
+    image: nginx:latest
+

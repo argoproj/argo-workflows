@@ -1,0 +1,28 @@
+@import '../../../../assets/styles/config';
+
+.fixture-usage-chart {
+    &__title {
+        color: $ax-color-teal-1;
+        text-align: center;
+        margin-bottom: 0.1em;
+
+        &::before {
+            content: ' ';
+            display: inline-block;
+            width: 0.5em;
+            height: 0.5em;
+            border-radius: 1em;
+            background-color: white;
+            margin-bottom: 2px;
+            margin-right: 2px;
+        }
+
+        &--deployments::before {
+            background-color: $ax-color-teal-5;
+        }
+
+        &--workflows::before {
+            background-color: $ax-success-color-light;
+        }
+    }
+}

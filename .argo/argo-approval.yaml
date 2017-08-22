@@ -1,0 +1,21 @@
+---
+type: container
+version: 1
+name: argo-approval
+description: Base step for Argo Approval container
+image: argoproj/argoapproval:v2.1
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1
+command: ["sh", "-c"]
+args: [
+ /ax/bin/axapproval.py --required_list "%%inputs.parameters.REQUIRED_APPROVALS%%"
+  --optional_list "%%inputs.parameters.OPTIONAL_APPROVALS%%"
+  --number_optional "%%inputs.parameters.NUMBER_OF_OPTIONAL_APPROVALS_NEEDED%%"
+  --timeout "%%inputs.parameters.TIMEOUT_IN_MINUTES%%"]
+inputs:
+  parameters:
+    REQUIRED_APPROVALS:
+    OPTIONAL_APPROVALS:
+    NUMBER_OF_OPTIONAL_APPROVALS_NEEDED:
+    TIMEOUT_IN_MINUTES:

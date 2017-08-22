@@ -1,0 +1,49 @@
+---
+version: 1
+type: workflow
+name: Create Private ELB
+description: Create a Private ELB for your cluster
+steps:
+  - CreateElb:
+      image: ${REGISTRY}/${NAMESPACE}/managedlb:${VERSION}
+      command: ['/ax/bin/managed_elb_creator', '--private']
+      resources:
+        cpu_cores: 0.2
+        mem_mib: 512
+---
+version: 1
+type: workflow
+name: Delete Private ELB
+description: Delete the Private ELB for your cluster
+steps:
+  - DeleteElb:
+      image: ${REGISTRY}/${NAMESPACE}/managedlb:${VERSION}
+      command: ['/ax/bin/managed_elb_creator', '--private', '--delete']
+      resources:
+        cpu_cores: 0.2
+        mem_mib: 512
+---
+version: 1
+type: workflow
+name: Create Public ELB
+description: Create a Public ELB for your cluster
+steps:
+  - CreateElb:
+      image: ${REGISTRY}/${NAMESPACE}/managedlb:${VERSION}
+      command: ['/ax/bin/managed_elb_creator']
+      resources:
+        cpu_cores: 0.2
+        mem_mib: 512
+
+---
+version: 1
+type: workflow
+name: Delete Public ELB
+description: Delete the Public ELB for your cluster
+steps:
+  - DeleteElb:
+      image: ${REGISTRY}/${NAMESPACE}/managedlb:${VERSION}
+      command: ['/ax/bin/managed_elb_creator', '--delete']
+      resources:
+        cpu_cores: 0.2
+        mem_mib: 512

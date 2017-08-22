@@ -1,0 +1,23 @@
+<div class="content content--without-padding-bottom ax-inifnite-scroll--without-filter-bar"
+     ax-infinite-scroll
+     [ax-infinite-scroll-distance]="1"
+     [ax-scroll-window]="false"
+     [ax-immediate-check]="true"
+     (scrolled)="onScroll()">
+    <div class="ax-container">
+        <div class="revision-overview">
+            <ax-commit-panel [isExpanded]="true" [isStatic]="true"
+                             [commit]="commit" (onPlusAction)="openServiceTemplatePanel($event)"
+                             *ngIf="!commitLoading">
+            </ax-commit-panel>
+            <ax-loader-list-mockup [itemsLength]=1 [itemHeight]="200" *ngIf="commitLoading"></ax-loader-list-mockup>
+            <div class="stream revision-overview__stream" *ngIf="!taskLoading">
+                <div class="job" *ngFor="let task of tasks">
+                    <ax-job [task]="task" [extendedCommiterInfo]="false"></ax-job>
+                </div>
+                <ax-loader-custom [size]="20" *ngIf="onScrollLoading"></ax-loader-custom>
+            </div>
+            <ax-loader-list-mockup [itemHeight]="150" *ngIf="taskLoading"></ax-loader-list-mockup>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,102 @@
+---
+type: deployment
+version: 1
+name: test-deployment-with-named-volume
+description: Deployment which requests a named volume
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    VOLUME_NAME:
+      default: my-test-vol
+application_name: test-app
+deployment_name: dep-with-named-vol
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+volumes:
+  data:
+    name: "%%inputs.parameters.VOLUME_NAME%%"
+containers:
+  WEB:
+    template: test-container-with-volume
+    arguments:
+      volumes.DATA: "%%volumes.data%%"
+
+---
+type: container
+version: 1
+name: test-container-with-volume
+image: nginx:latest
+resources:
+  cpu_cores: 0.05
+  mem_mib: 32
+inputs:
+  volumes:
+    DATA:
+      mount_path: /data
+
+---
+type: deployment
+version: 1
+name: test-deployment-with-named-volume-inlined
+description: Deployment which requests a named volume (inlined)
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    VOLUME_NAME:
+      default: my-test-vol
+application_name: test-app
+deployment_name: dep-with-named-vol-inlined
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+volumes:
+  data:
+    name: "%%inputs.parameters.VOLUME_NAME%%"
+containers:
+  WEB:
+    image: nginx:latest
+    inputs:
+      volumes:
+        DATA:
+          from: "%%volumes.data%%"
+          mount_path: /data
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 32
+
+
+---
+type: deployment
+version: 1
+name: test-deployment-with-anon-volume
+description: Deployment which requests an anonymous volume
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+application_name: test-app
+deployment_name: dep-with-anon-vol
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+volumes:
+  data:
+    storage_class: ssd
+    size_gb: 1
+containers:
+  WEB:
+    template: test-container-with-volume
+    arguments:
+      volumes.DATA: "%%volumes.data%%"

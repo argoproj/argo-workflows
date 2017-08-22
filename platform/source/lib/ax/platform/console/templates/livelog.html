@@ -1,0 +1,86 @@
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Live log viewer</title>
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.2/css/font-awesome.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-1.12.3.min.js" integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ=" crossorigin="anonymous"></script>
+<script type="text/javascript">
+ 
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+$(function() {
+  var text = $('#messages');
+  var keepScrolling = true;
+  var pathnameParts = window.location.pathname.split('/');
+  var container_id = pathnameParts[pathnameParts.length-2];
+  var parser = document.createElement('a');
+  parser.href = window.location.href;
+  var scheme = parser.protocol;
+  var urlParts = window.location.href.split("/");
+  var appurl = urlParts.slice(0, urlParts.length-3).join("/");
+  var url = appurl + "/v1/" + pathnameParts.slice(pathnameParts.length-3, pathnameParts.length).join("/") + window.location.search
+
+  // non websocket implementation. less performant
+  //var xhr = new XMLHttpRequest();
+  //xhr.open('GET', url);
+  //xhr.send();
+  //setInterval(function() {
+  //    setTimeout(function() {
+  //        text.append(escapeHtml(xhr.responseText));
+  //        if (keepScrolling)
+  //            window.scrollTo(0,document.body.scrollHeight);
+  //        },0);
+  //}, 1000);
+  
+  if (scheme === "https:") {
+      var url = url.replace('https://', 'wss://');
+  } else {
+      var url = url.replace('http://', 'ws://');
+  }
+  var websocket = new WebSocket(url);
+  websocket.onmessage = function(event) {
+    setTimeout(function() {
+        text.append(escapeHtml(event.data));
+        if (keepScrolling)
+          window.scrollTo(0,document.body.scrollHeight);
+      },0);
+  }
+  websocket.onopen = function(evt) {
+      var spinner = document.getElementById('spinner');
+      spinner.style.display = 'block';
+      websocket.onclose = function(evt) {
+          spinner.style.display = 'none';
+      }
+  };
+  $(document).bind("keydown", function(event) {
+	var KEYCODE_SPACE = 32;
+	var KEYCODE_PGUP = 33;
+	var KEYCODE_END = 35;
+	var KEYCODE_HOME = 36;
+	var KEYCODE_UPARROW = 38;
+    if (event.keyCode == KEYCODE_SPACE) {
+    	keepScrolling = !keepScrolling;
+    } else if (event.keyCode == KEYCODE_PGUP || event.keyCode == KEYCODE_UPARROW || event.keyCode == KEYCODE_HOME) {
+    	keepScrolling = false;
+    } else if (event.keyCode == KEYCODE_END) {
+    	keepScrolling = true;
+    }
+  });
+  window.onbeforeunload = function() {
+	  // Tried to use window.onunload but found it was not invoked reliably
+	  websocket.close();
+  };
+});
+</script>
+</head>
+<body>
+  <div id="spinner" style="font-size:18px; position:fixed; right:15px; display:none;" ><i class="fa fa-refresh fa-spin" ></i></div>
+  <pre id="messages" style="white-space:pre-wrap"></pre>
+</body>
+</html>

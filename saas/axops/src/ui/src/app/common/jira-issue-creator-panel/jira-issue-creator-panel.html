@@ -1,0 +1,56 @@
+<ax-sliding-panel [show]="isVisibleJiraProjectSelectorPanel" [isMiddle]="true" [hasCloseButton]="false" [hasNoPadding]="true" (closePanel)="closeJiraProjectSelectorPanel()">
+    <sliding-panel-header>
+        Create issue
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="jira-issue-creator-panel" [formGroup]="jiraIssueForm">
+            <div class="jira-issue-creator-panel__content jira-issue-creator-panel__form">
+                <div class="row">
+                    <div class="columns medium-3">
+                        <div class="jira-issue-creator-panel__form--label">Project<span>*</span></div>
+                    </div>
+                    <div class="columns medium-9">
+                        <ax-select [options]="jiraProjectSettings" [placeholder]="'Select project'" formControlName="project"></ax-select>
+                        <div class="ax-form-row__error-msg" *ngIf="jiraIssueForm.controls['project'].invalid && isSubmitClicked">You must specify a project.</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="columns medium-3">
+                        <div class=" jira-issue-creator-panel__form--label">Issue Type<span>*</span></div>
+                    </div>
+                    <div class="columns medium-9">
+                        <ax-select [options]="jiraIssueTypeSettings" [placeholder]="'Select issue type'" formControlName="issuetype"></ax-select>
+                        <div class="ax-form-row__error-msg" *ngIf="jiraIssueForm.controls['issuetype'].invalid && isSubmitClicked">You must specify a issue type.</div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="columns medium-3">
+                        <div class="jira-issue-creator-panel__form--label">Summary<span>*</span></div>
+                    </div>
+                    <div class="columns medium-9">
+                        <input class="jira-issue-creator-panel__form--input" type="text" formControlName="summary">
+                        <div class="ax-form-row__error-msg" *ngIf="jiraIssueForm.controls['summary'].invalid && isSubmitClicked">You must specify a summary of the issue.</div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="columns medium-3"><div class="jira-issue-creator-panel__form--label">Description</div></div>
+                    <div class="columns medium-9"><textarea class="jira-issue-creator-panel__form--textarea" rows="6" cols="50" formControlName="description"></textarea></div>
+                </div>
+            </div>
+            <div class="jira-issue-creator-panel__footer">
+                <div class="jira-issue-creator-panel__footer-item">
+                    <div class="ax-checkbox">
+                        <input type="checkbox" formControlName="createAnother"><span><i class="fa fa-check"></i></span>  Create another
+                    </div>
+                </div>
+                <div class="jira-issue-creator-panel__footer-item">
+                    <button type="submit" class="ax-button ax-button--base" (click)="createJiraIssue()">Create</button>
+                </div>
+                <div class="jira-issue-creator-panel__footer-item">
+                    <button type="button" (click)="closeJiraProjectSelectorPanel()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

@@ -1,0 +1,23 @@
+<div class="job-step-summary">
+    <div *ngIf="task?.status_detail?.message" class="job-step-summary__error" [ngClass]="{'job-step-summary__error--expanded': !errorDetailsCollapsed}">
+        <span class="job-step-summary__error-icon">!</span>
+        <p>{{task.status_detail.code}}</p>
+        <p class="job-step-summary__error-details">{{task.status_detail.message}}</p>
+        <i class="fa clickable job-step-summary__error-expand-collapse"
+            [ngClass]="{'fa-angle-down': !errorDetailsCollapsed, 'fa-angle-up': errorDetailsCollapsed}" (click)="errorDetailsCollapsed = !errorDetailsCollapsed"></i>
+    </div>
+    <div class="white-box">
+        <div class="white-box__details">
+            <template ngFor let-attribute [ngForOf]="attributes">
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ attribute.name }}
+                    </div>
+                    <div class="large-9 columns">
+                        {{ attribute.value }}
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,44 @@
+@import '../../../../assets/styles/config';
+
+.ax-catalog-wrapper {
+    padding-bottom: 6.85em;
+
+    &__get-started {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding-left: 14em;
+        padding-top: 1em;
+        padding-bottom: 1em;
+        background-color: white;
+        
+        span.start-text{
+            font-size: 1.5rem;
+            position: absolute;
+            left: 25px;
+            top: 25px;            
+        }
+
+        .ax-button[axButtonWave] {
+            overflow: hidden;
+            float: right;
+            margin-right: 20px;
+            padding: 1rem 3rem;
+        }
+
+        button {
+            background-color: $ax-color-tree-poppy;
+            color: white;
+            padding: 1rem 7rem;
+            font-size: 1rem;
+            border-radius: 2.0rem;
+
+            &:hover {
+                background-color: white;
+                color: $ax-color-tree-poppy;
+            }
+        }
+    }
+
+}

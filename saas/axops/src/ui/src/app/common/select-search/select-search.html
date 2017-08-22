@@ -1,0 +1,23 @@
+<div class="select-search" [class.active]="isActive">
+    <div class="select-search__title" (click)="toggle()">
+        <span class="select-search__placeholder" *ngIf="!selected || !selected.name">{{ placeholder }}</span>
+        {{ selected.name }}
+        <i class="fa fa-angle-down"></i>
+    </div>
+    <div class="select-search__content">
+        <div class="select-search__input">
+            <input #inputElement type="text" [ngModel]="searchQueryValue" (ngModelChange)="searchQuery($event)">
+        </div>
+        <div class="select-search__choices" *ngIf="!showLoader">
+            <div class="select-search__choice" *ngFor="let item of itemsSrc" (click)="select(item)">
+                {{ item.name }}
+            </div>
+            <div class="select-search__choice" *ngIf="itemsSrc.length === 0">
+                No results
+            </div>
+        </div>
+        <div class="select-search__loader" *ngIf="showLoader">
+            <ax-loader-custom [size]="15"></ax-loader-custom>
+        </div>
+    </div>
+</div>

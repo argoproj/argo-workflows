@@ -1,0 +1,18 @@
+<div class="tutorial">
+    <div class="tutorial__pointer" [style.top]="pointerPosition + 'px'">
+        <i class="fa fa-caret-left" aria-hidden="true"></i>
+    </div>
+    <div class="tutorial__content-wrapper">
+        <div class="tutorial__header">
+            <button *ngIf="!isFirstStep" axButtonWave class="ax-button ax-button--base" (click)="prevStep()">BACK</button>
+            <button *ngIf="!isLastStep" axButtonWave class="ax-button ax-button--base" (click)="nextStep()">NEXT</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="close()">GOT IT</button>
+        </div>
+        <h2 class="tutorial__title">
+            <i [class]="currentStepIcon"></i>{{currentStepTitle}}
+        </h2>
+        <div class="tutorial__content">
+            <ax-markdown [markdown]="currentStepContent"></ax-markdown>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,48 @@
+@import '../../../../assets/styles/config';
+
+.invite-box {
+    width: 80%;
+    padding: 14px 50px 30px;
+    color: $ax-color-gray-6;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+
+    &__wrapper {
+        width: 80%;
+    }
+
+    .ui-select-container input {
+        background-color: inherit;
+    }
+
+    &__header {
+        overflow: hidden;
+        margin-bottom: 10px;
+    }
+
+    &__name {
+        margin-top: 10px;
+        display: inline-block;
+        font-size: 17px;
+        font-weight: bold;
+    }
+
+    &__subtitle {
+        font-size: 13px;
+    }
+
+    &__btns {
+        overflow: hidden;
+        margin-top: 30px;
+    }
+
+    &__btn {
+        float: left;
+        margin-left: 10px;
+
+        &:first-child {
+            margin-left: 0;
+        }
+    }
+}

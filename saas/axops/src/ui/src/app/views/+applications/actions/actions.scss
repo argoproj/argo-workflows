@@ -1,0 +1,19 @@
+.action-with-icon {
+    line-height: 56px;
+    font-size: 14px;
+
+    &--start > i {
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    &--stop > i {
+        font-size: 17px;
+        vertical-align: middle;
+    }
+
+    &--terminate > i {
+        font-size: 15px;
+        vertical-align: sub;
+    }
+}

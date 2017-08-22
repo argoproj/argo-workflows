@@ -1,0 +1,104 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: test-job-pi-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(5000)"]
+        resources:
+          requests:
+            cpu: 20m
+            memory: 40Mi
+      restartPolicy: Never
+      nodeSelector:
+        ax.tier: user
+---
+apiVersion: batch/v1
+kind: Job 
+metadata:
+  generateName: test-job-pi-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(5000)"]
+        resources:
+          requests:
+            cpu: 20m 
+            memory: 40Mi
+      restartPolicy: Never
+      nodeSelector:
+        ax.tier: user
+---
+apiVersion: batch/v1
+kind: Job 
+metadata:
+  generateName: test-job-pi-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(5000)"]
+        resources:
+          requests:
+            cpu: 20m 
+            memory: 40Mi
+      restartPolicy: Never
+      nodeSelector:
+        ax.tier: user
+---
+apiVersion: batch/v1
+kind: Job 
+metadata:
+  generateName: test-job-pi-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(5000)"]
+        resources:
+          requests:
+            cpu: 20m 
+            memory: 40Mi
+      restartPolicy: Never
+      nodeSelector:
+        ax.tier: user
+---
+apiVersion: batch/v1
+kind: Job 
+metadata:
+  generateName: test-job-pi-
+spec:
+  template:
+    metadata:
+      name: pi
+    spec:
+      containers:
+      - name: pi
+        image: perl
+        command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(5000)"]
+        resources:
+          requests:
+            cpu: 20m 
+            memory: 40Mi
+      restartPolicy: Never
+      nodeSelector:
+        ax.tier: user

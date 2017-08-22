@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: gateway
+    labels:
+        app: gateway
+        tier: devops
+        role: axcritical
+spec:
+    selector:
+        app: gateway-deployment
+    ports:
+      - port: 8889
+        targetPort: 8889
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: gateway-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: gateway-deployment
+                tier: devops
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-gateway-svc"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "gateway-persistent-storage",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: gateway
+                image: ${REGISTRY}/${NAMESPACE}/gateway:${VERSION}
+                env:
+                  - name: AX_CLUSTER
+                    value: "${AX_CLUSTER_NAME_ID}"
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                ports:
+                  - containerPort: 8889
+                resources:
+                    requests:
+                        cpu: 200m
+                        memory: 300Mi
+                    limits:
+                        cpu: 400m
+                        memory: 600Mi
+                volumeMounts:
+                  - mountPath: /ax/data
+                    name: gateway-persistent-storage
+                livenessProbe:
+                    httpGet:
+                        path: /
+                        port: 8889
+                    initialDelaySeconds: 600
+                    periodSeconds: 120
+              - name: repomanager
+                image: ${REGISTRY}/${NAMESPACE}/repomanager:${VERSION}
+                resources:
+                    requests:
+                        cpu: 150m
+                        memory: 400Mi
+                    limits:
+                        cpu: 200m
+                        memory: 600Mi
+                volumeMounts:
+                  - mountPath: /ax/data
+                    name: gateway-persistent-storage
+              - name: axeventtrigger
+                image: ${REGISTRY}/${NAMESPACE}/axeventtrigger:${VERSION}
+                resources:
+                    requests:
+                        cpu: 75m
+                        memory: 200Mi
+                    limits:
+                        cpu: 200m
+                        memory: 400Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry
+            volumes:
+              - name: gateway-persistent-storage
+                persistentVolumeClaim:
+                    claimName: gateway-persistent-storage
+

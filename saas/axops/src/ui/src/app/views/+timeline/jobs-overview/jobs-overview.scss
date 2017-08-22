@@ -1,0 +1,14 @@
+@import '../../../../assets/styles/config';
+
+.jobs-overview {
+    padding-top: 1em;
+    padding-bottom: 0;
+    height: calc(100% - #{$top-bar-height}) !important;
+    overflow-y: auto;
+
+    &__loader {
+        .custom-loader-circle {
+            margin-top: 20px;
+        }
+    }
+}

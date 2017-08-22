@@ -1,0 +1,101 @@
+<div class="content">
+    <ax-application-panel *ngIf="application" [application]="application"></ax-application-panel>
+    <div class="ax-container">
+        <div class="row">
+            <div class="columns small-12">
+                <div class="application-details__graph">
+                    <ax-app-graph
+                            [application]="application"
+                            [selectedDeploymentName]="selectedDeploymentName"
+                            [applicationMenuCreator]="applicationMenuCreator"
+                            [deploymentMenuCreator]="deploymentMenuCreator"
+                            [podMenuCreator]="podMenuCreator"
+                            [statusFilters]="toolbarFilters?.model"
+                            (deploymentSelected)="onDeploymentSelected($event)"
+                            (podSelected)="showPodLogs($event.deployment, $event.pod)"
+                    ></ax-app-graph>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ax-sliding-panel [show]="selectedDeploymentName" [hasCloseButton]="false" [hasNoPadding]="true" (closePanel)="onDeploymentSelected(null)">
+    <sliding-panel-body>
+        <ax-deployment-details *ngIf="selectedDeploymentName"
+            [deployment]="selectedDeployment"
+            (onClose)="onDeploymentSelected(null)" (onShowHistory)="openSelectedDeploymentHistory()"
+            (onShowHistoryDetails)="openHistoryDetails($event.id)"></ax-deployment-details>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="deploymentAdditionalInfoPanel && selectedDeploymentName" [hasCloseButton]="false" [hasNoPadding]="true" (closePanel)="onCloseAdditionalInfo()">
+    <sliding-panel-body>
+        <div class="application-details__deployment-info__header">
+            <div class="application-details__deployment-info__header--title">
+                <a (click)="onCloseAdditionalInfo()"><i class="ax-icon-back"></i></a> {{ 'Revision History' | translate | uppercase }}
+            </div>
+
+            <div class="application-details__deployment-info__close-btn">
+                <i class="ax-icon-close" (click)="onCloseAdditionalInfo()"></i>
+            </div>
+        </div>
+        <div *ngIf="deploymentAdditionalInfoPanel?.type === 'history'" class="application-details__deployment-info__breadcrumb">
+            <a (click)="onCloseAdditionalInfo()"><i class="ax-icon-hosts"></i> {{ selectedDeploymentName }}</a> / {{ 'Revision History' | translate }}
+        </div>
+        <ax-deployment-history
+                *ngIf="deploymentAdditionalInfoPanel?.type === 'history'"
+                [deployment]="selectedDeployment"
+                (onClose)="onCloseAdditionalInfo()"
+                (onShowHistoryDetails)="openHistoryDetails($event.id)"></ax-deployment-history>
+        <div *ngIf="deploymentAdditionalInfoPanel?.type === 'history_details' && deploymentAdditionalInfoPanel?.id" class="application-details__deployment-info__breadcrumb">
+            <a (click)="onCloseAdditionalInfo()"><i class="ax-icon-hosts"></i> {{ selectedDeploymentName }}</a> /
+            <a (click)="openSelectedDeploymentHistory()"> Revision History</a> /
+            {{ deploymentAdditionalInfoPanel?.id }}
+        </div>
+        <ax-deployment-history-details [id]="deploymentAdditionalInfoPanel?.id" *ngIf="deploymentAdditionalInfoPanel?.type === 'history_details' && deploymentAdditionalInfoPanel?.id">
+        </ax-deployment-history-details>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="logsInfo" (closePanel)="closeLogPanel()">
+    <sliding-panel-header>
+        Logs for <strong>{{logsInfo?.pod.name}}</strong>
+    </sliding-panel-header>
+    <sliding-panel-body *ngIf="logsInfo">
+        <div class="application-details__logs-content">
+            <ax-logs #logs [source]="getLogsSource(logsInfo.deployment, logsInfo.pod)"></ax-logs>
+        </div>
+        <div class="row application-details__logs-footer">
+            <div class="columns small-6">
+                <a class="workflow-tree__back-to-top" (click)="logs.scrollToTop()">
+                    <span class="workflow-tree__back-to-top__ico"><i class="fa fa-chevron-up"></i></span> BACK TO TOP
+                </a>
+            </div>
+            <div class="columns small-6 text-right ">
+                <a axButtonWave class="ax-button ax-button--base-o follow-btn" (click)="toggleTailLogs()">
+                    {{ tailLogs ? 'Stop' : 'Start' }} following logs</a>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="consoleInfo" (closePanel)="closeConsolePanel()">
+    <sliding-panel-header>
+        Pod: <strong>{{consoleInfo?.pod?.name}}</strong>
+    </sliding-panel-header>
+    <sliding-panel-body *ngIf="consoleInfo">
+        <ax-sys-console [consoleAccessSettings]="consoleInfo"></ax-sys-console>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="showSpendingsPanel" (closePanel)="closeSpendingsPanel()">
+    <sliding-panel-header>
+        Spendings: <strong>{{application?.name}}</strong>
+    </sliding-panel-header>
+    <sliding-panel-body *ngIf="application">
+        <div class="application-details__spendings">
+            <ax-app-spendings-chart [appName]="application.name"></ax-app-spendings-chart>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

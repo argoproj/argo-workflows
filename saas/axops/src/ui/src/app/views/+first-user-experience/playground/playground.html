@@ -1,0 +1,111 @@
+<div class="playground">
+    <div class="playground-topbar">
+        <div class="ax-container">
+            <div class="row">
+                <div class="columns small-6"><a [routerLink]="'/'" class="playground-topbar__logo"></a></div>
+                <div class="columns small-6 text-right"><button class="clickable" (click)="logout()"><i class="ax-icon-logout"></i></button></div>
+            </div>
+        </div>
+    </div>
+    <div class="playground__intro">
+        <video autoplay loop>
+            <source src="assets/video/playground-bg.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+        </video>
+        <div class="ax-container">
+            <h1>Welcome to Argo Playground</h1>
+            <button class="playground__play-btn" (click)="showVideoPopup = true">
+                <i class="ax-icon-play-2"></i><span>What is Argo?</span>
+            </button>
+        </div>
+    </div>
+    <div class="playground__content">
+        <div class="ax-container">
+            <div class="playground__row">
+                <div class="row">
+                    <div class="columns small-7">
+                        <div class="playground__row-ico"><i class="playground__icon ax-icon-workflow"></i></div>
+                        <h3>Run CI/CD Workflows</h3>
+                        <p>You can run a sample CI Workflow or Selenium Test and check the workflow progress in Timeline view.</p>
+                    </div>
+                    <div class="columns small-5">
+                        <div class="playground__row-btn">
+                            <button axButtonWave class="ax-button ax-button--base-o ax-button--full-width"
+                                    (click)="selectProject(projects.ciWorkflowProject)">CI WORKFLOW</button>
+                        </div><div class="playground__row-btn">
+                            <button axButtonWave class="ax-button ax-button--base-o ax-button--full-width"
+                                    (click)="selectProject(projects.seleniumTestProject)">SELENIUM TEST</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="playground__row">
+                <div class="row">
+                    <div class="columns small-7">
+                        <div class="playground__row-ico"><i class="playground__icon ax-icon-applications"></i></div>
+                        <h3>Deploy Containerized Apps with Automated Infrastructure</h3>
+                        <p>You can deploy a sample Web App or Kubernetes Ops View app and check the status in Applications view.</p>
+                    </div>
+                    <div class="columns small-5">
+                        <div class="playground__row-btn">
+                            <button axButtonWave class="ax-button ax-button--base-o ax-button--full-width"
+                                    (click)="selectProject(projects.webAppProject)">WEB APP</button>
+                        </div><div class="playground__row-btn">
+                            <button axButtonWave class="ax-button ax-button--base-o ax-button--full-width"
+                                    (click)="selectProject(projects.kubernetesProject)">KUBERNETES OPS VIEW</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="playground__row">
+                <div class="row">
+                    <div class="columns small-7">
+                        <div class="playground__row-ico"><i class="playground__icon ax-icon-dashboards"></i></div>
+                        <h3>Monitor Usage and Spend</h3>
+                        <p>Monitor resource usage and spending in Cashboard view.</p>
+                    </div>
+                    <div class="columns small-5 text-right">
+                        <div class="playground__row-btn">
+                            <button axButtonWave class="ax-button ax-button--base-o ax-button--full-width" (click)="viewCashboard()">VIEW CASHBOARD</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p>Argo has already been integrated with public <a href="https://github.com/Applatix/playground-appstore" target="_blank">Github repo</a> which has the YAML declaratives
+            of sample apps and workflows and public Docker hub registry for container images.</p>
+        <div class="playground__des">
+            <p>I'm ready to explore the live product environment.</p>
+            <a (click)="completePlayground()"><strong>GETTING STARTED WITH ARGO</strong></a>
+        </div>
+    </div>
+    <div class="playground-footer">
+        <div class="ax-container">
+            <div class="row">
+                <div class="columns small-6">
+                    <a [routerLink]="'/'" class="playground-footer__logo"></a>
+                    <div class="playground-footer__ver">Version: {{version}}</div>
+                </div>
+                <div class="columns small-6 text-right">
+                    Argo Inc @ 2017
+                    <a class="playground-footer__link" href="#">User Agreement</a>
+                    <a class="playground-footer__link" href="#">Copyright Policy</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <ax-sliding-panel [show]="showLaunchProjectPanel" (closePanel)="selectProject(null)">
+        <sliding-panel-body>
+            <ax-project-details-panel [project]="selectedProject"></ax-project-details-panel>
+        </sliding-panel-body>
+    </ax-sliding-panel>
+    <ax-multiple-service-launch-panel></ax-multiple-service-launch-panel>
+    <ax-loader></ax-loader>
+
+    <ax-popup [show]="showVideoPopup" [width]="700">
+        <div class="playground-info__video-container">
+            <iframe src="https://player.vimeo.com/video/211706195?title=0&byline=0&portrait=0" width="640" height="480" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+            <i class="fa fa-times" aria-hidden="true" (click)="showVideoPopup=false"></i>
+        </div>
+    </ax-popup>
+</div>

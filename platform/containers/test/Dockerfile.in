@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright 2015-2016 Applatix, Inc. All rights reserved.
+#
+# Dockerfile for platform test container
+
+FROM %%BUILDER_IMAGE_ID%%
+
+COPY ax-test-vpc.pem /ax/tests/.ssh/ax-test-vpc.pem
+
+RUN apk add --no-cache tzdata sudo \
+    && ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime \
+    && echo "America/Los_Angeles" > /etc/timezone \
+    && adduser -D -h /ax/tests axtest\
+    && chmod 600 /ax/tests/.ssh \
+    && chmod 0400 /ax/tests/.ssh/ax-test-vpc.pem \
+    && touch /ax/tests/.ssh/known_hosts \
+    && chown -R axtest:axtest /ax/tests \
+    && echo "axtest ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+ENV PYTHONPATH /ax/python
+WORKDIR /ax/tests
+USER axtest
+
+# Add root file system.
+COPY test.sh /ax/tests
+COPY docker_build/root /
+
+CMD /ax/tests/test.sh

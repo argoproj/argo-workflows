@@ -1,0 +1,39 @@
+<div class="content content--with-padding-top">
+    <div class="ax-container">
+        <div *ngIf="branches && branches.length > 0" class="ax-table-list ax-table-list--clickable">
+            <div class="branches-overview__timeline-now-wrapper">
+                <div class="branches-overview__timeline-now" *ngIf="branches && branches.length && nowLine.inRange"
+                     [style.left]="nowLine.left">{{nowLine.now / 1000 | axShortDateTime}}
+                </div>
+            </div>
+            <div *ngFor="let branch of branches | axBranchesSearch:searchString"
+                 class="ax-table-list__row ax-table-list__row--lg branches-overview__row" [routerLink]="getBranchRoute(branch)">
+                <div class="branches-overview__container">
+                    <div class="branches-overview__branch-name">
+                        <span class="branches-overview__branch-ico"><i class="ax-icon-branch" aria-hidden="true"></i></span>
+                        {{branch.shortcutRepoBranch}}
+                    </div>
+                    <div class="branches-overview__statuses">
+                        <ax-job-statuses [successful]="branch.successfulJobsCount"
+                                         [failed]="branch.failedJobsCount + branch.canceledJobsCount"
+                                         [inProgress]="branch.runningJobsCount"
+                                         [queued]="branch.scheduledJobsCount"></ax-job-statuses>
+                    </div>
+                </div>
+                <div class="branches-overview__branch-timeline-row branches-overview__timeline">
+                    <ax-jobs-timeline
+                            [jobFilter]="jobFilter" [runningJobsCount]="branch.runningJobsCount" [nowLine]="nowLine"
+                            [scheduledJobsCount]="branch.scheduledJobsCount" [input]="branch.timelineInput">
+                    </ax-jobs-timeline>
+                </div>
+                <div class="branches-overview__container">
+                    <div class="branches-overview__repo">{{branch.repo}}</div>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="branches && branches.length === 0" class="no-data-panel">
+            <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' }}</strong>
+        </div>
+        <ax-loader-list-mockup *ngIf="!branches" [itemHeight]="190" [itemGap]="20"></ax-loader-list-mockup>
+    </div>
+</div>

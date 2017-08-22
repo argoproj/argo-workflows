@@ -1,0 +1,221 @@
+<ax-sliding-panel [show]="isVisibleSelectServiceTemplatesPanel" [hasCloseButton]="false" [hasNoPadding]="true" (closePanel)="closePanel()">
+    <sliding-panel-header>
+        <button  *ngIf="selectingScreen" class="ax-button ax-button--base" [ngClass]="{'disabled': !isAnyTemplateSelected()}"
+                 type="button" (click)="next()" [disabled]="!isAnyTemplateSelected()" axButtonWave>Next</button>
+        <button *ngIf="!selectingScreen" class="ax-button ax-button--base" [ngClass]="{'disabled': summaryErrorMessage}"
+                type="button" (click)="submit()" [disabled]="summaryErrorMessage || templateLoader"
+                axButtonWave>SUBMIT<span *ngIf="templatesToSubmit?.length > 1"> ALL</span></button>
+        <button class="ax-button" type="button" (click)="closePanel()" axButtonWave>Cancel</button>
+        <ul class="panel-box__tabs" *ngIf="projectInfo">
+            <ax-switch
+                [options]="[{value: 'overview', title: 'Overview'}, {value: 'template', title: 'Template'}, {value: 'parameters', title: 'Parameters'}]"
+                [selectedValue]="selectedTab"
+                (onOptionChanged)="selectTab($event)"></ax-switch>
+        </ul>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="panel-box" *ngIf="selectingScreen">
+            <div class="panel-box__content">
+                <div class="panel-box__title">
+                    Select templates to create jobs
+                </div>
+                <div class="panel-box__subtitle">
+                    Select templates and click Next to review the parameters.
+                </div>
+                <div class="panel-box__description">
+                    <div class="row">
+                        <div class="columns small-3"><h5>Commit:</h5></div>
+                        <div class="columns small-9"><p>{{ commit.revision }}</p></div>
+                    </div>
+                    <div class="row">
+                        <div class="columns small-3"><h5>Repo/Branch:</h5></div>
+                        <div class="columns small-9">
+                            <p>
+                                <span>{{ selcetedRepo + '/'}}</span>
+                                <span *ngIf="isBranchEditable">{{selectedBranch}}</span>
+                                <span *ngIf="!isBranchEditable">
+                                    <ax-dropdown [isMenu]="true" #branchDropdown>
+                                        <ax-dropdown-anchor>
+                                            <a>{{selectedBranch}} <i class="fa fa-pencil" aria-hidden="true"></i></a>
+                                        </ax-dropdown-anchor>
+                                        <ax-dropdown-content>
+                                            <ul>
+                                                <li *ngFor="let branch of commit.branches" (click)="selectBranch(branch);branchDropdown.close()">
+                                                    <i class="ax-icon-branch"></i> {{branch}}
+                                                </li>
+                                            </ul>
+                                        </ax-dropdown-content>
+                                    </ax-dropdown>
+                                </span>
+                                <span class="panel-box__inline-action" (click)="editRepoBranch()" *ngIf="isBranchEditable">
+                                    <a><i class="fa fa-pencil" aria-hidden="true"></i></a>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <h3>Templates</h3>
+                <div class="panel-box__service-templates">
+                    <div class="panel-box__search-input-bg">
+                        <div class="panel-box__search-input">
+                            <i class="fa fa-search"></i> <input type="text" [(ngModel)]="search" placeholder="Search">
+                        </div>
+                    </div>
+                    <table class="ax-table ax-table--light" *ngIf="templates">
+                        <thead>
+                        <tr class="header">
+                            <th width="60px">
+                                <div class="ax-checkbox">
+                                    <input type="checkbox" (change)="selectAllTemplates()" [checked]="allSelected" [disabled]="templateLoader">
+                                    <span><i class="fa fa-check"></i></span>
+                                </div>
+                            </th>
+                            <th width="30%">{{'Name' | translate | uppercase}}</th>
+                            <th width="55%">{{'Description' | translate | uppercase}}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <template ngFor let-template [ngForOf]="(templates | axFilterBy: search:'name')" let-i="index">
+                            <tr [ngClass]="{'selected': template.selected}">
+                                <td>
+                                    <div class="ax-checkbox">
+                                        <input type="checkbox" id="isSelected" (change)="selectTemplate(template)"
+                                               [checked]="template.selected"><span><i class="fa fa-check"></i></span>
+                                    </div>
+                                </td>
+                                <td [ax-highlight-substring]="searchString">
+                                    <strong>
+                                        <span ax-tooltip="{{template.name}}">{{template.name}}</span>
+                                    </strong>
+                                </td>
+                                <td [ax-highlight-substring]="searchString">
+                                    <span ax-tooltip="{{template.description}}">{{ template.description | truncateTo: 50}}</span>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr *ngIf="!templates.length">
+                            <td colspan="3" class="ax-table--center">
+                                <ax-loader-custom [size]="20" *ngIf="templateLoader"></ax-loader-custom>
+                                <span *ngIf="!templateLoader">{{ 'There are no templates to display for selected commit.' | translate }}</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-box" *ngIf="!selectingScreen">
+            <div class="panel-box__summary-error" *ngIf="summaryErrorMessage">
+                Please enter the required parameters and submit again.
+            </div>
+            <div class="row collapse">
+                <div *ngIf="!projectInfo && templatesToSubmit.length > 1" class="panel-box__side-list columns small-2">
+                    <ul>
+                        <template ngFor let-template [ngForOf]="templatesToSubmit" let-i="index">
+                            <li class="clickable" [ngClass]="{'active': activeElementId === i }" (click)="selectElement(i)">
+                                <i class="fa fa-window-maximize" aria-hidden="true"></i> <span>{{ template.name }}</span>
+                                <div class="panel-box__error-sign">
+                                    <i class="fa fa-circle" aria-hidden="true" *ngIf="allForms.controls[i] && allForms.controls[i].invalid && isSubmitClicked"></i>
+                                </div>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+                <div class="panel-box__content-second-step columns" [ngClass]="{'small-10': !projectInfo, 'small-12': projectInfo || (!projectInfo && templatesToSubmit.length <= 1)}">
+
+                    <div class="panel-box__content" *ngIf="selectedTab === 'template'">
+                        <div class="panel-box__project-info">
+                            <ax-template-viewer [template]="projectTemplate"></ax-template-viewer>
+                        </div>
+                    </div>
+
+                    <div class="panel-box__content" *ngIf="selectedTab === 'overview'">
+                        <div class="panel-box__title">
+                            {{projectInfo.project?.name}}
+                        </div>
+                        <div class="panel-box__subtitle">
+                            {{projectInfo.project?.description}}
+                        </div>
+                        <div>
+                            <ax-markdown *ngIf="projectInfo.project?.assets?.detail" [markdown]="projectInfo.project?.assets?.detail"></ax-markdown>
+                        </div>
+                    </div>
+
+                    <div class="panel-box__content" *ngIf="selectedTab === 'parameters'">
+                        <div class="panel-box__title">
+                            Review workflow parameters
+                        </div>
+                        <div class="panel-box__subtitle" *ngIf="templatesToSubmit?.length > 1">
+                            Submit all jobs with parameters or modify the parameters for any of the selected templates and submit.
+                        </div>
+                        <div class="panel-box__subtitle" *ngIf="templatesToSubmit?.length == 1">
+                            Submit a jobs with parameters or modify the parameters and submit.
+                        </div>
+                        <div class="panel-box__description" *ngIf="!projectInfo && commit?.revision">
+                            <div class="row">
+                                <div class="columns small-3"><h5>Commit:</h5></div>
+                                <div class="columns small-9"><p>{{ commit.revision }}</p></div>
+                            </div>
+                            <div class="row">
+                                <div class="columns small-3"><h5>Repo/Branch:</h5></div>
+                                <div class="columns small-9"><p>{{ selcetedRepo + '/' + selectedBranch }}</p></div>
+                            </div>
+                        </div>
+
+                        <div class="panel-box__service-templates">
+                            <h3 *ngIf="!templateLoader && allFormsHtml.length > 0">
+                                <i class="fa fa-window-maximize" aria-hidden="true"></i>{{ templatesToSubmit[activeElementId]?.name }}
+                            </h3>
+                            <h4 *ngIf="!templateLoader && allFormsHtml.length === 0">
+                                There is no parameters.
+                            </h4>
+                            <ax-loader-custom [size]="20" *ngIf="templateLoader"></ax-loader-custom>
+
+                            <div class="forms">
+                                <template ngFor let-singleForm [ngForOf]="allFormsHtml" let-i="index">
+                                    <div class="form" [hidden]="i !== activeElementId">
+                                        <form role="form" [formGroup]="allForms.controls[i]">
+                                            <template ngFor let-parameter [ngForOf]="singleForm?.parameters">
+                                                <div class="ax-form-row">
+                                                    <input ax-label-placeholder type="text" class="ax-field" [formControlName]="parameter?.name" placeholder="" value="{{parameter?.value}}">
+                                                    <label class="ax-label-placeholder">{{ parameter?.name | uppercase }}</label>
+                                                    <div class="ax-form-row__error-msg"
+                                                         *ngIf="!allForms.controls[i].controls[parameter?.name].valid && (allForms.controls[i].controls[parameter?.name].touched || isSubmitClicked)">
+                                                        {{parameter?.name}} is required.<i class="fa fa-warning"></i></div>
+                                                </div>
+                                            </template>
+                                        </form>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="showChangeCommitPanel" [hasNoPadding]="true"
+                  (closePanel)="showChangeCommitPanel = false" [isMiddle]="true">
+    <sliding-panel-body class="customize-navigation-branches">
+        <ax-commit-selector-panel [isShown]="showChangeCommitPanel" [loading]="loading"
+                                  (selectedCommitChanged)="selectedCommitChanged($event)" [selectedCommit]="commit">
+            <div class="customize-navigation-branches__title">Select Commit</div>
+            <div class="customize-navigation-branches__des">Select the commit.</div>
+        </ax-commit-selector-panel>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="showChangeRepoBranchPanel" [hasNoPadding]="true"
+                  (closePanel)="showChangeRepoBranchPanel = false" [isMiddle]="true">
+    <sliding-panel-body class="customize-navigation-branches">
+        <ax-commit-selector-panel [isShown]="showChangeRepoBranchPanel" [loading]="loading" [onlyBranch]="true"
+                                  (onBranchChange)="selectedBranchChanged($event)" (onClose)="showChangeRepoBranchPanel = false" [selectedCommit]="commit">
+            <div class="customize-navigation-branches__title">Select Branch</div>
+            <div class="customize-navigation-branches__des">Select the branch.</div>
+        </ax-commit-selector-panel>
+    </sliding-panel-body>
+</ax-sliding-panel>

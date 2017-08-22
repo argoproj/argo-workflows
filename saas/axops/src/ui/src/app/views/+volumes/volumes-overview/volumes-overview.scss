@@ -1,0 +1,19 @@
+@import '../../../../assets/styles/config';
+
+.volumes-overview {
+    &__provider-title {
+        padding-bottom: 2em;
+        color: $ax-color-gray-5;
+
+        & > span {
+            color: $ax-color-teal-5;
+        }
+    }
+
+    &__storage-class {
+        background: $ax-color-gray-2;
+        border-radius: 4px;
+        padding: 1em 20px;
+        margin: 8px 0;
+    }
+}

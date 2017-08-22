@@ -1,0 +1,45 @@
+{% set resched_cpu_req = "20m" -%}
+{% set resched_mem_req = "120Mi" -%}
+{% if pillar['ax_compute_unit_max'] is defined -%}
+  {% if pillar['resched_cpu_req'] is defined -%}
+    {% set tmp_cpu = pillar['resched_cpu_req']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set resched_cpu_req = tmp_cpu|string + "m" -%}
+  {% endif -%}
+  {% if pillar['resched_mem_req'] is defined -%}
+    {% set tmp_mem = pillar['resched_mem_req']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set resched_mem_req = tmp_mem|string + "Mi" -%}
+  {% endif -%}
+{% endif -%}
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rescheduler-v0.2.1
+  namespace: kube-system
+  labels:
+    k8s-app: rescheduler
+    version: v0.2.1
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/name: "Rescheduler"
+spec:
+  hostNetwork: true
+  containers:
+  - image: gcr.io/google_containers/rescheduler:v0.2.1
+    name: rescheduler
+    volumeMounts:
+    - mountPath: /var/log/rescheduler.log
+      name: logfile
+      readOnly: false
+    resources:
+      requests:
+        cpu: {{resched_cpu_req}}
+        memory: {{resched_mem_req}}
+    command:
+    # TODO: split this out into args when we no longer need to pipe stdout to a file #6428
+    - sh
+    - -c
+    - '/rescheduler --running-in-cluster=false 1>>/var/log/rescheduler.log 2>&1'
+  volumes:
+  - hostPath:
+      path: /var/log/rescheduler.log
+    name: logfile

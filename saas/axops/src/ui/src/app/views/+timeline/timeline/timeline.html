@@ -1,0 +1,31 @@
+<ax-tabs [selectedTabKey]="currentView" (selected)="changeView($event.selectedTab.tabKey)" [fixedWidth]="true">
+    <ax-tab tabKey="overview" tabTitle="Overview" [noPadding]="true" [isOnlyContentScrollable]="true"
+            [extraVerticalScrollPadding]="156">
+        <ax-branches-overview *ngIf="currentView === 'overview'"
+                              [dateRange]="layoutDateRange.data"
+                              [selectedRepo]="selectedRepo"
+                              [selectedBranch]="selectedBranch"
+                              [jobFilter]="jobFilter"
+                              [branchesContext]="branchesContext">
+        </ax-branches-overview>
+    </ax-tab>
+    <ax-tab tabKey="commit" tabTitle="Commits" [noPadding]="true">
+        <ax-commits-overview *ngIf="currentView === 'commit'"
+                             [dateRange]="layoutDateRange.data"
+                             [selectedRepo]="selectedRepo"
+                             [selectedBranch]="selectedBranch"
+                             [selectedUsername]="usernameFilter"
+                             [branchesContext]="branchesContext">
+        </ax-commits-overview>
+    </ax-tab>
+    <ax-tab tabKey="job" tabTitle="Jobs" [noPadding]="true">
+        <ax-jobs-overview *ngIf="currentView === 'job'"
+                          [dateRange]="layoutDateRange.data"
+                          [selectedRepo]="selectedRepo"
+                          [selectedBranch]="selectedBranch"
+                          [selectedUsername]="usernameFilter"
+                          [jobFilter]="jobFilter"
+                          [branchesContext]="branchesContext">
+        </ax-jobs-overview>
+    </ax-tab>
+</ax-tabs>

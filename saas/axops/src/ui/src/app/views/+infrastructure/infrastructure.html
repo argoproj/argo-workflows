@@ -1,0 +1,33 @@
+<div class="content">
+    <div class="row">
+        <div class="columns small-12">
+            <div class="infrastructure margin-top-medium">
+                <div class="row">
+                    <div class="columns small-12">
+                        <h4 class="title ta-center" role="heading">{{ 'Total Charges for the Past 30 Days' | translate }}</h4>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="columns small-6">
+                        <div class="chart">
+                            <h3  class="title">{{ 'Spending trends' | translate | uppercase }}</h3>
+                            <div class="area">
+                                <ax-spending-line-chart [data]="lineChartData"></ax-spending-line-chart>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns small-6">
+                        <div class="chart">
+                            <h3 class="title">
+                               {{ 'Spending by app' | translate | uppercase }}
+                            </h3>
+                            <div class="area">
+                                <ax-spending-square-chart [data]="details"></ax-spending-square-chart>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

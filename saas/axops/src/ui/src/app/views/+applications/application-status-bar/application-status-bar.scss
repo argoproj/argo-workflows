@@ -1,0 +1,17 @@
+@import '../../../../assets/styles/config';
+
+.application-status-bar {
+    height: 4px;
+    background-color: $ax-color-gray-4;
+    border-radius: 2px;
+
+    .bar {
+        height: 100%;
+        background-color: $ax-color-green;
+        float: left;
+
+        &--error {
+            background-color: $ax-status-failed-color;
+        }
+    }
+}

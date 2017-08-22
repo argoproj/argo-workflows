@@ -1,0 +1,19 @@
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+    name: prometheus-pvc
+    annotations:
+        # Current 1.2 alpha feature. Key is needed but value doesn't matter.
+        volume.alpha.kubernetes.io/storage-class: foo
+    labels:
+        app: prometheus
+spec:
+    accessModes:
+        ["ReadWriteOnce"]
+    resources:
+        requests:
+            storage: 48Gi

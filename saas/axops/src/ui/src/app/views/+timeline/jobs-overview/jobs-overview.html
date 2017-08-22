@@ -1,0 +1,25 @@
+<div class="content content--without-padding-bottom content--with-padding-top" [ngClass]="{'disable-scroll': !tasks}"
+     ax-infinite-scroll
+     [ax-infinite-scroll-distance]="1"
+     [ax-scroll-window]="false"
+     [ax-immediate-check]="true"
+     (scrolled)="onScroll()">
+    <div class="ax-container" *ngIf="tasks">
+        <div class="stream">
+            <div class="job" *ngFor="let task of tasks">
+                <ax-job [task]="task" [hideLabels]="hideLabels" [extendedCommiterInfo]="!!task.commit.author"></ax-job>
+            </div>
+
+            <ax-loader-custom [size]="20" *ngIf="!dataLoaded" class="jobs-overview__loader"></ax-loader-custom>
+            <div *ngIf="dataLoaded && !tasks.length" class="no-data-panel">
+                <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container" *ngIf="!tasks">
+        <div class="stream">
+            <ax-loader-list-mockup [itemHeight]="150"></ax-loader-list-mockup>
+        </div>
+    </div>
+</div>

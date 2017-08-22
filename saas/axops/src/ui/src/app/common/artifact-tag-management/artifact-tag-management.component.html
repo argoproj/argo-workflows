@@ -1,0 +1,62 @@
+<ax-sliding-panel [show]="showSidePanel" [isNarrow]="true" [hasCloseButton]="false" (closePanel)="close()">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" (click)="apply()">Apply</button>
+        <button axButtonWave class="ax-button" (click)="close()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="artifact-tag-management">
+            <h3>Artifact tags</h3>
+            <div class="artifact-tag-management__top">
+                <form role="form" [formGroup]="addArtifactTagForm" (ngSubmit)="addNewArtifactTag()">
+                    <input class="artifact-tag-management__search" type="text" formControlName="artifact_tag" placeholder="">
+                    <button type="submit" class="artifact-tag-management__add-btn">+</button>
+                </form>
+                <div class="ax-form-row__error-msg" *ngIf="!addArtifactTagForm.controls['artifact_tag'].valid && (addArtifactTagForm.controls['artifact_tag'].touched || submitted)">Invalid tag string. Special characters not supported.</div>
+            </div>
+            <div class="artifact-tag-management__list" *ngIf="!addArtifactTagForm.controls['artifact_tag'].value">
+                <span class="artifact-tag-management__list-title">{{ 'Existing artifact tags' | uppercase }}</span>
+                <div class="ax-label ax-label--toggle" *ngFor="let tag of newListOfUsedTags"
+                     [class.active]="tagIsUsed(tag)" (click)="toggleTag(tag)">
+                    {{ tag }} <i class="fa fa-times" aria-hidden="true"></i>
+                </div>
+                <span class="artifact-tag-management__empty-state" *ngIf="dataLoaded && newListOfUsedTags.length === 0">
+                    There is no artifact tag assigned to this workflow.
+                </span>
+                <span *ngIf="!dataLoaded">
+                    <ax-loader-custom [size]="20"></ax-loader-custom>
+                </span>
+            </div>
+            <div class="artifact-tag-management__list" *ngIf="addArtifactTagForm.controls['artifact_tag'].value">
+                <div class="ax-label ax-label--toggle" *ngFor="let tag of ( artifactTags | axTagsSearch: addArtifactTagForm.controls['artifact_tag'].value)"
+                     [class.active]="tagIsUsed(tag)" (click)="toggleTag(tag)">
+                    {{ tag }}
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+    <sliding-panel-footer>
+        <div class="artifact-tag-management__footer text-center">
+            <a (click)="openManageArtifactsTags()"><i class="fa fa-pencil-square-o"></i>Show artifact tags</a>
+        </div>
+    </sliding-panel-footer>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="isVisibleManageArtifactTags" [isNarrow]="true" [hasCloseButton]="false" (closePanel)="cancelManage()">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" (click)="cancelManage()">Back</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="artifact-tag-management">
+            <h3>List of Artifact tags</h3>
+            <div class="artifact-tag-management__update-list" *ngIf="isVisibleManageArtifactTags">
+                <form role="form">
+                    <template ngFor let-tag [ngForOf]="artifactTags" let-i="index">
+                        <div class="ax-form-row ax-form-row__tightened">
+                            <input type="text" class="ax-field__with-action-btn" placeholder="" value="{{tag}}" disabled>
+                        </div>
+                    </template>
+                </form>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

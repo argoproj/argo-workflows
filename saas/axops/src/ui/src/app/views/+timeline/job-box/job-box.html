@@ -1,0 +1,49 @@
+<div class="job-box job-row__box clickable" [ngClass]="{'job-box--success': task.status === 0,
+                                              'job-box--failed': task.status === -1,
+                                              'job-box--canceled': task.status === -2,
+                                              'job-box--waiting': task.status === 1,
+                                              'job-box--running': task.status === 2,
+                                              'job-box--init': task.status === 255}"
+     [routerLink]="[commitHistoryLink]">
+    <div class="job-box__header">
+        <i class="fa" [ngClass]="{'fa-smile-o': task.status === 0,
+                                  'fa-frown-o' : task.status === -1,
+                                  'fa-meh-o': task.status === -2 || task.status === 1 || task.status === 2 ||
+                                              task.status === 255}" aria-hidden="true"></i>
+        <div class="job-box__header-status">
+            <a [routerLink]="['/app/timeline/jobs/', task.id]">{{task.name}}</a>
+        </div>
+    </div>
+    <div class="job-box__content">
+        <div class="job-box__btn" *ngIf="contextMenu && mostRecentStep">
+            <ax-job-actions [rootTask]="task" [task]="mostRecentStep.value">
+                <a axButtonWave class="ax-button ax-button--radius">+</a>
+            </ax-job-actions>
+        </div>
+        <div class="clearfix">
+            <div class="job-box__left">
+                <div class="job-box__author-avatar">{{ task.commit && task.commit.committer && task.commit.committer[0] }}</div>
+            </div>
+            <div class="job-box__right">
+                <div class="job-box__author-name">{{ task.commit && task.commit.committer }}</div>
+                <div>
+                    <small class="job-box__light">{{ task.commit && task.commit.date | axShortDateTime }}</small>
+                </div>
+                <br>
+                <span class="job-box__light">
+                    Commit Description:
+                    <div class="job-box__description--arrows clickable" (click)="isDetailsExpanded = !isDetailsExpanded"
+                        *ngIf="task?.commit?.description?.length > 120">
+                        <i class="fa fa-angle-down" aria-hidden="true" *ngIf="!isDetailsExpanded"></i>
+                        <i class="fa fa-angle-up" aria-hidden="true" *ngIf="isDetailsExpanded"></i>
+                    </div>
+                </span><br>
+                <span [ngClass]="{'job-box__description--expanded': isDetailsExpanded, 'job-box__description--collapsed': !isDetailsExpanded}">
+                    {{ task?.commit?.description }}
+                </span><br><br>
+                <span class="job-box__light">Revision:</span><br>
+                <span>{{ task.commit.revision | shortRevision }}</span>
+            </div>
+        </div>
+    </div>
+</div>

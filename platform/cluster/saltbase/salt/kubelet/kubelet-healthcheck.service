@@ -1,0 +1,9 @@
+[Unit]
+Description=Run kubelet-healthcheck once
+
+[Service]
+Type=oneshot
+ExecStart=/opt/kubernetes/helpers/kubelet-healthcheck
+
+[Install]
+WantedBy=multi-user.target

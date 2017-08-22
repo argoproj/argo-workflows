@@ -1,0 +1,35 @@
+<form role="form" [formGroup]="slackForm">
+    <div class="tool-box">
+        <div class="tool-box__form row">
+            <div class="columns small-8">
+                <div class="ax-form-row">
+                    <input id="oauth_token" type="text" class="ax-field" formControlName="oauth_token" ax-label-placeholder>
+                    <label for="oauth_token" class="ax-label-placeholder">Enter OAuth Token</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!slackForm.controls['oauth_token'].valid && (slackForm.controls['oauth_token'].touched || submitted)">Nickname is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="tool-box__loader" *ngIf="showLoader">
+            <ax-loader-custom [size]="20"></ax-loader-custom>
+        </div>
+        <div class="tool-box__info">
+            <div class="credentials-loader-center" *ngIf="isCredentialsLoaderVissible"><ax-loader-custom [size]="20"></ax-loader-custom></div>
+            <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVisible">{{ 'Connection error' | translate }}!</span>
+            <span class="tool-box__info--success-msg" *ngIf="isCredentialsConfirmed && !showLoader"><i class="fa fa-check" aria-hidden="true"></i></span>
+        </div>
+        <div class="tool-box__btns row">
+            <div class="columns small-8">
+                <button *ngIf="isAccountConnected" class="ax-button ax-button--base-o tool-box__connected-btn" disabled>
+                    <i class="fa fa-check" aria-hidden="true"></i> Connected
+                </button>
+                <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base-o" (click)="connectAccount(slackForm)">{{ 'Connect' | translate }}</button>
+                <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button" (click)="testCredentials(slackForm)">{{ 'Test' | translate }}</button>
+
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="testCredentials(slackForm, true)">{{ 'Test' | translate }}</button>
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="disconnectAccount()">{{ 'Disconnect' | translate }}</button>
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button ax-button--base pull-right"
+                        (click)="saveChanges(slackForm)">{{ 'Done' | translate }}</button>
+            </div>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,119 @@
+@import '../../../../../assets/styles/config';
+
+.notifications-panel-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: $notifications-panel-z-index;
+}
+
+.notifications-panel {
+    position: fixed;
+    top: $top-bar-height;
+    right: 0;
+    left: $nav-width;
+    bottom: 0;
+    z-index: $notifications-panel-z-index;
+    transition: transform .3s, top .3s;
+    text-align: right;
+
+    @media screen and (max-width: $ax-breakpoint-md) {
+        top: $top-bar-height - 8;
+    }
+
+    &:not(.show) {
+        transform: translateX(100%);
+    }
+
+    &.show-details {
+        top: 0;
+        transition: transform .3s, top .3s .3s;
+    }
+
+    &__overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: -1;
+    }
+
+    &__main {
+        display: inline-block;
+        overflow: hidden;
+        width: $notifications-panel-width;
+        height: 100%;
+        text-align: initial;
+        background-color: $ax-color-white;
+        box-shadow: -2px 3px 3px rgba(#000, .1);
+        border-right: 1px solid $ax-color-gray-3;
+    }
+
+    &__details-wrapper {
+        display: inline-block;
+        vertical-align: top;
+        width: 0;
+        height: 100%;
+        overflow: auto;
+        overflow-x: hidden;
+        text-align: initial;
+        background-color: $ax-color-gray-2;
+        transition: width .3s .3s;
+
+        .show-details & {
+            width: calc(100% - #{$notifications-panel-width});
+            transition: width .3s;
+        }
+    }
+
+    &__details {
+        overflow: auto;
+        width: calc(100vw - #{$notifications-panel-width} - #{$nav-width});
+        height: 100%;
+        position: relative;
+
+        &__close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            font-size: 1em;
+        }
+    }
+
+    &__header {
+        height: $toolbar-height;
+        padding: 0 24px;
+        line-height: $toolbar-height;
+        font-weight: 300;
+        text-transform: uppercase;
+        color: $ax-color-teal-7;
+        background-color: $ax-color-gray-2;
+        border-bottom: 1px solid $ax-color-gray-3;
+
+        button {
+            color: $ax-color-gray-6;
+
+            i {
+                line-height: $toolbar-height;
+            }
+        }
+    }
+
+    &__categories {
+        padding: 12px 24px 13px;
+        background-color: $ax-color-gray-2;
+        border-bottom: 1px solid $ax-color-gray-3;
+    }
+
+    &__list {
+        overflow: auto;
+        height: calc(100% - 135px);
+    }
+
+    &__loader {
+        padding: 20px 0;
+    }
+}

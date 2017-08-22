@@ -1,0 +1,12 @@
+<div class="details-box">
+    <div class="details-box__repo-branch" *ngIf="showBranchAndRepo">
+        <h5>Branch:</h5>
+        <p><a [routerLink]="['/app/timeline', { view: 'commit', repo: commit.repo, branch: commit.branch}]">{{ commit.branch }}</a></p>
+        <h5>Repo:</h5>
+        <p><a [attr.href]="commit.repo">{{ commit.repo }}</a></p>
+    </div>
+    <div *ngIf="showCommitId">
+        <h5>Commit Id:</h5>
+        <p><a [routerLink]="['/app/commits/revision/' + commit.revision]">{{ commit.revision }}</a></p>
+    </div>
+</div>

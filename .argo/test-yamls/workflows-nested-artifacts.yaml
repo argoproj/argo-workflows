@@ -1,0 +1,43 @@
+---
+type: workflow
+version: 1
+name: test-workflow-with-output-artifact
+description: Workflow with an output artifact
+steps:
+- STEP1:
+    template: test-container-with-output-artifact
+outputs:
+  artifacts:
+    BIN-OUTPUT:
+      from: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+
+---
+type: workflow
+version: 1
+name: test-workflow-with-input-artifact
+description: Container which accepts an input artifact
+steps:
+- STEP1:
+    template: test-container-with-input-artifact
+inputs:
+  artifacts:
+    BIN-INPUT:
+
+---
+type: workflow
+version: 1
+name: test-workflow-nested-artifacts
+description: Workflow which passes output from a workflow as an input to another workflow
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    template: test-workflow-with-output-artifact
+- STEP2:
+    template: test-workflow-with-input-artifact
+    arguments:
+      artifacts.BIN-INPUT: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"

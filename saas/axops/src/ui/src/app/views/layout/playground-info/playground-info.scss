@@ -1,0 +1,58 @@
+@import '../../../../assets/styles/config';
+
+.playground-info {
+    position: relative;
+    padding: 1em;
+    background-color: $white-color;
+
+    button {
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    &__description {
+        position: absolute;
+        overflow: auto;
+        right: 0;
+        top: 1em;
+        bottom: 1em;
+        left: 15em;
+        padding: 1em;
+        color: $ax-color-gray-6;
+    }
+
+    &__description--right-offset {
+        left: 30em;
+    }
+
+    &__description-text {
+        position: absolute;
+        left: 0;
+        right: 20%;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    &__description-tutorial {
+        text-align: right;
+        padding-right: 1em;
+        position: absolute;
+        left: 80%;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    &__video-container {
+        position: relative;
+        padding: 1em;
+        text-align: center;
+
+        i {
+            cursor: pointer;
+            position: absolute;
+            right: 1em;
+            top: 1em;
+        }
+    }
+}

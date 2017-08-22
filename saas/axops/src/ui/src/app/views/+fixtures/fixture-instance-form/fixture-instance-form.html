@@ -1,0 +1,50 @@
+<form class="fixture-instance-form" *ngIf="form" [formGroup]="form">
+    <div class="ax-form-row">
+        <label for="name">Name</label>
+        <input formControlName="name" id="name" type="text" class="ax-field" autocomplete="off">
+        <div class="ax-form-row__error-msg" *ngIf="!form.controls['name'].valid && (form.controls['name'].touched || validated)">
+            Name is required.<i class="fa fa-warning"></i>
+        </div>
+    </div>
+    <div class="ax-form-row">
+        <label for="description">Description</label>
+        <input formControlName="description" id="description" type="text" class="ax-field" autocomplete="off">
+        <div class="ax-form-row__error-msg" *ngIf="!form.controls['description'].valid && (form.controls['description'].touched || validated)">
+            Description is required.<i class="fa fa-warning"></i>
+        </div>
+    </div>
+    <div class="ax-form-row">
+        <label for="concurrency">Concurrency</label>
+        <input formControlName="concurrency" id="concurrency" type="number" class="ax-field" autocomplete="off">
+        <div class="ax-form-row__error-msg" *ngIf="!form.controls['concurrency'].valid && (form.controls['concurrency'].touched || validated)">
+            Concurrency might be zero or positive integer.<i class="fa fa-warning"></i>
+        </div>
+    </div>
+    <div class="ax-form-row" *ngFor="let attribute of attributes">
+        <label [attr.for]="attribute.name">{{attribute.name}}</label>
+        <div *ngIf="!attribute.definition.options">
+            <input *ngIf="attribute.definition.type == 'string' && !attribute.array" [formControlName]="attribute.name" [attr.id]="attribute.name" type="text" class="ax-field" autocomplete="off">
+            <input *ngIf="attribute.definition.type == 'bool' && !attribute.array" [formControlName]="attribute.name" [attr.id]="attribute.name" type="checkbox" class="ax-field" autocomplete="off">
+            <input *ngIf="attribute.definition.type == 'int' && !attribute.array" [formControlName]="attribute.name" [attr.id]="attribute.name" type="number" class="ax-field" autocomplete="off">
+            <input *ngIf="attribute.definition.type == 'float' && !attribute.array" [formControlName]="attribute.name" [attr.id]="attribute.name" type="number" step="any" class="ax-field" autocomplete="off">
+            <div *ngIf="attribute.array" [formArrayName]="attribute.name">
+                <div class="fixture-instance-form__array-input" *ngFor="let item of form.controls[attribute.name].controls; let i = index">
+                    <input *ngIf="attribute.definition.type == 'string'" type="text" autocomplete="off" [formControlName]="i">
+                    <input *ngIf="attribute.definition.type == 'bool'" type="checkbox" autocomplete="off" [formControlName]="i">
+                    <input *ngIf="attribute.definition.type == 'int'" type="number" autocomplete="off" [formControlName]="i">
+                    <input *ngIf="attribute.definition.type == 'float'" type="number" step="any" autocomplete="off" [formControlName]="i">
+                    <i class="fa fa-times fixture-instance-form__array-input-remove clickable" (click)="removeArrayAttributeValue(attribute.name, i)" aria-hidden="true"></i>
+                </div>
+                <i class="fa fa-plus-circle clickable" aria-hidden="true" (click)="addArrayAttributeValue(attribute.name)"></i>
+            </div>
+        </div>
+        <select [formControlName]="attribute.name" *ngIf="attribute.definition.options" [attr.id]="attribute.name" class="ax-select">
+            <option *ngFor="let option of attribute.definition.options" [value]="option">
+                {{option}}
+            </option>
+        </select>
+        <div class="ax-form-row__error-msg" *ngIf="!form.controls[attribute.name].valid && (form.controls[attribute.name].touched || validated)">
+            {{attribute.name}} is required.<i class="fa fa-warning"></i>
+        </div>
+    </div>
+</form>

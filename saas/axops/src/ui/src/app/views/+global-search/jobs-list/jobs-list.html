@@ -1,0 +1,60 @@
+<div class="ax-table-list">
+    <div class="ax-table-list__head">
+        <div class="row">
+            <div class="columns small-2">
+                <div class="ax-checkbox">
+                    <input type="checkbox" (change)="bulkUpdater.toggleAllSelection()" [checked]="bulkUpdater.isAllSelected" [disabled]="!dataLoaded">
+                    <span><i class="fa fa-check"></i></span>
+                </div>
+                Job Name
+            </div>
+            <div class="columns small-2">Status</div>
+            <div class="columns small-2">Author</div>
+            <div class="columns small-2">Artifact tags</div>
+            <div class="columns small-2">Branch</div>
+            <div class="columns small-2">Repo</div>
+        </div>
+    </div>
+
+    <div class="ax-table-list__row jobs-list__item" *ngFor="let task of tasks;">
+        <div class="row" *ngIf="dataLoaded">
+            <div class="columns small-2" ax-tooltip="{{ task.name }}">
+                <div class="ax-checkbox">
+                    <input type="checkbox" id="isSelected" (change)="bulkUpdater.toggleItemSelection(task); $event.stopPropagation();" [checked]="bulkUpdater.isSelected(task)" [disabled]="task.disabled"><span><i class="fa fa-check"></i></span>
+                </div>
+                <i class="ax-icon-job" aria-hidden="true"></i> <span [ax-highlight-substring]="searchString" (click)="navigateToDetails(task.id)"> {{ task.name }} </span>
+            </div>
+            <div class="columns small-2" ax-tooltip="{{ task.status | status }} on {{ (task.launch_time || task.create_time) | axShortDateTime }}" (click)="navigateToDetails(task.id)">
+                <i class="fa" aria-hidden="true" ax-status-icon [status]="task.status"></i>
+                <span [ax-highlight-substring]="searchString">{{ task.status | status }} on {{ (task.launch_time || task.create_time) | axShortDateTime }} </span>
+            </div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ task.user }}" (click)="navigateToDetails(task.id)">{{ task.user }}</div>
+            <div class="columns small-2 jobs-list__item--horizontal-scroll" ax-tooltip="{{ task.artifact_tags }}" (click)="navigateToDetails(task.id)"><span class="ax-label" *ngFor="let artifactTag of task.artifact_tags;" [ax-highlight-substring]="searchString">{{ artifactTag }}</span></div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ task?.commit?.branch }}" (click)="navigateToDetails(task.id)">{{ task?.commit?.branch }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ task?.commit?.repo }}" (click)="navigateToDetails(task.id)">{{ task?.commit?.repo }}</div>
+        </div>
+    </div>
+
+    <div *ngIf="dataLoaded && !tasks.length" class="ax-table__empty-row">
+        <strong><i class="fa fa-info-circle"></i> {{ 'No data to display' | translate }}</strong>
+    </div>
+
+    <div *ngIf="!dataLoaded">
+        <ax-loader-list-mockup [itemHeight]="60" [itemsLength]="limit"></ax-loader-list-mockup>
+    </div>
+
+</div>
+
+<div class="bottom-toolbox bottom-toolbox--small">
+    <div class="bottom-toolbox__wrapper">
+        <div class="ax-container ax-container--additional-padding">
+            <h3><em>{{ bulkUpdater.selectedCount }}</em> Job{{selectedTasksCount > 1 ? 's' : ''}} selected</h3>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('cancel')" [disabled]="bulkUpdater.noApplicableSelected('cancel')">Cancel</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('resubmit')" [disabled]="bulkUpdater.noApplicableSelected('resubmit')">Resubmit</button>
+
+            <div class="jobs-list__pagination-position">
+                <ax-pagination [pagination]="pagination" [preventActions]="dataLoaded" (onPaginationChange)="onPaginationChange($event)"></ax-pagination>
+            </div>
+        </div>
+    </div>
+</div>

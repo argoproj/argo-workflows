@@ -1,0 +1,61 @@
+<form role="form" [formGroup]="nexusForm" class="tool-box" (ngSubmit)="nexusForm.valid && saveChanges(nexusForm)">
+    <div class="row">
+        <div class="columns small-4">
+            <div class="tool-box__title">
+                <span>1</span> Enter nexus credentials
+            </div>
+            <div class="tool-box" [ngClass]="{'tool-box--disconnected': !isAccountConnected}">
+                <div class="tool-box__form">
+                    <div class="ax-form-row">
+                        <input id="username" type="text" class="ax-field" formControlName="username"
+                               ax-label-placeholder>
+                        <label for="username" class="ax-label-placeholder">{{ 'Username' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!nexusForm.controls['username'].valid && (nexusForm.controls['username'].touched || submitted)">Username is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input id="password" type="password" class="ax-field" formControlName="password"
+                               ax-label-placeholder ax-autocomplete-off>
+                        <label for="password" class="ax-label-placeholder">{{ 'Password' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!nexusForm.controls['password'].valid && (nexusForm.controls['password'].touched || submitted)">Password is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="tool-box__btns">
+                        <button  *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base" (click)="connectAccount(nexusForm)">
+                            Connect
+                        </button>
+                        <button *ngIf="isAccountConnected" class="ax-button ax-button--base-o tool-box__connected-btn" disabled>
+                            <i class="fa fa-check" aria-hidden="true"></i> Connected
+                        </button>
+                        <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button" (click)="testCredentials(nexusForm)">{{ 'Test' | translate }}</button>
+                        <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="disconnectAccount()">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns small-8">
+            <div class="tool-box__title">
+                <span>2</span> Specify nexus repository
+            </div>
+            <div class="ax-form-row">
+                <input id="hostname" type="text"  class="ax-field" formControlName="hostname" ax-label-placeholder>
+                <label for="hostname" class="ax-label-placeholder">{{ 'Hostname' | translate }}</label>
+                <div class="ax-form-row__error-msg" *ngIf="!nexusForm.controls['hostname'].valid && (nexusForm.controls['hostname'].touched || submitted)">Hostnane is incorrect<i class="fa fa-warning"></i></div>
+            </div>
+            <div class="ax-form-row">
+                <input id="port" type="text"  class="ax-field" formControlName="port" ax-label-placeholder>
+                <label for="port" class="ax-label-placeholder">{{ 'Port' | translate }}</label>
+                <div class="ax-form-row__error-msg" *ngIf="!nexusForm.controls['port'].valid && (nexusForm.controls['port'].touched || submitted)">Port is incorrect<i class="fa fa-warning"></i></div>
+            </div>
+            <div class="tool-box__loader" *ngIf="showLoader">
+                <ax-loader-custom [size]="20"></ax-loader-custom>
+            </div>
+            <div class="tool-box__info">
+                <div class="credentials-loader-center" *ngIf="isCredentialsLoaderVissible"><ax-loader-custom [size]="20"></ax-loader-custom></div>
+                <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVissible">{{ 'Connection error' | translate }}!</span>
+                <span class="tool-box__info--success-msg" *ngIf="isCredentialsConfirmed && !showLoader"><i class="fa fa-check" aria-hidden="true"></i></span>
+            </div>
+            <div class="tool-box__btns tool-box__btns--footer">
+                <button type="submit" *ngIf="isAccountConnected" axButtonWave class="ax-button">Done</button>
+            </div>
+        </div>
+    </div>
+</form>

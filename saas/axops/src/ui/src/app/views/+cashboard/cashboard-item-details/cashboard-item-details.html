@@ -1,0 +1,53 @@
+<div class="ax-toolbar">
+    <div class="ax-container">
+        <div class="ax-toolbar__item">
+            <ax-date-range-dropdown [range]="currentInterval" (rangeChanged)="onDateRangeChange($event)"></ax-date-range-dropdown>
+        </div>
+    </div>
+</div>
+
+<div class="content cashboard">
+    <div class="cashboard__chart-bg">
+        <div class="ax-container cashboard__chart">
+            <ax-cashboard-summaries [input]="cashboardSummariesInput"></ax-cashboard-summaries>
+
+            <div class="row">
+                <div class="small-12 spendings-box" [ngStyle]="{'height': '300px' }">
+                    <ax-spendings-chart
+                            [data]="spendingsChartInput"
+                            [hightlightedStep]="hightlightedStep"
+                            [dateFormatter]="currentInterval.step.dateFormatter"
+                            (onStepClicked)="spendingsLoader.selectIntervalStep($event)"></ax-spendings-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container">
+        <div class="cashboard__items">
+            <div class="cashboard__items-group">
+                <h2 class="cashboard__items-group-title">Spending by {{oppositeType + 's' | capitalize}}</h2>
+                <div *ngFor="let spending of oppositeTypeSpendings; trackBy:trackByName;">
+                    <div class="row align-middle cashboard__box cashboard__box--main">
+                        <div class="small-2 columns text-center">
+                            <a class="cashboard__items-name"
+                                [routerLink]="['/app/cashboard/details/' + oppositeType + '/' + spending.name, currentInterval.toRouteParams()]">
+                                {{spending.name}}
+                            </a>
+                        </div>
+                        <div class="columns small-8">
+                            <div class="cashboard__progressbar cashboard__progressbar--vertical-center">
+                                <div class="cashboard__progressbar-bar"
+                                        [ngStyle]="{'width': spending.percentage + '%'}"></div>
+                                <div class="cashboard__progressbar-value">{{spending.percentage}}%</div>
+                            </div>
+                        </div>
+                        <div class="small-2 columns text-center">
+                            <p class="centered-text">${{spending.cost}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

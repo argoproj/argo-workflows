@@ -1,0 +1,39 @@
+<div class="row retention-policy-row">
+    <div class="columns" [ngClass]="{'small-10 large-10': !editMode, 'small-8 large-8 retention-policy-row--on-shadow': editMode, 'retention-policy-row--no-border': noBorderBottom}">
+        <div class="retention-policy-row__icon">
+            <i class="fa fa-lg fa-file-archive-o" aria-hidden="true"></i>
+        </div>
+        <div class="retention-policy-row__des">
+            <div><strong>{{name}}</strong></div>
+            <div>{{policy.description}}</div>
+            <div class="retention-policy-row__total">
+                <div>
+                    <span>total artifacts: </span>
+                    <strong>{{this.policy.total_number}}</strong>
+                </div>
+                <div class="retention-policy-row__total-divider"></div>
+                <div>
+                    <span>total size: </span>
+                    <strong>{{this.policy.total_size | bytesToGb}}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div  class="columns" [ngClass]="{'small-2 large-2': !editMode, 'small-4 large-4': editMode, 'retention-policy-row--no-border': noBorderBottom}">
+        <div [hidden]="editMode">
+            <div><strong>{{this.policy.days}}</strong></div>
+            <div>{{this.policy.unit | translate}}</div>
+        </div>
+        <div [hidden]="!editMode">
+            <div [formGroup]="formGroup" class="retention-policy-row__policy-value" [ngClass]="{'retention-policy-row__policy-value--invalid': !formGroup.controls.policy.valid}">
+                <input class="ax-field" type="number"
+                       [placeholder]="'Value'"
+                       formControlName="policy"
+                >
+            </div>
+            <div class="retention-policy-row__policy-unit">
+                <div>{{this.policy.unit | translate}}</div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,85 @@
+---
+type: container
+version: 1
+name: undeclared-variable
+description: use of a undeclared parameter
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.repo%%", "/src", "--commit", "%%inputs.parameters.commit%%"]
+inputs:
+  parameters:
+    repo:
+
+---
+type: container
+version: 1
+name: mismatch-usage
+description: 
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.commit%%", "/src", "--commit", "%%inputs.artifacts.repo%%"]
+inputs:
+  parameters:
+    commit:
+  artifacts:
+    repo:
+
+---
+type: container
+version: 1
+name: outputs-artifacts-from
+description: containers should not use 'from' in output artifacts
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", repo", "/src", "--commit", "commit"]
+outputs:
+  artifacts:
+    code:
+      from: foo
+      path: /src
+
+---
+type: container
+version: 1
+name: outputs-artifacts-path
+description: containers using output artifacts should specify path
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", repo", "/src", "--commit", "commit"]
+outputs:
+  artifacts:
+    code:
+
+---
+type: container
+version: 1
+name: bad-input name
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%echo%%'"]
+inputs:
+  parameters:
+    should not have space:
+
+---
+type: container
+version: 1
+name: param.name.with.dots
+description: inputs.should.not.have.dots
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%echo%%'"]
+inputs:
+  parameters:
+    should.not.have.dot:
+
+---
+type: container
+version: 1
+name: invalid-resources
+description: resource with non numeric value
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%echo%%'"]
+resources:
+  cpu_cores: abc

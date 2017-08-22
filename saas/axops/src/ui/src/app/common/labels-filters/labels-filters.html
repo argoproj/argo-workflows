@@ -1,0 +1,13 @@
+<div class="labels-filters__content">
+	<h4>Select labels</h4>
+	<div class="labels-filters__group" *ngFor="let labelGroup of labelGroups">
+		<h6>{{labelGroup.labelKey}}</h6>
+		<label class="labels-filters__group__row"  *ngFor="let label of labelGroup.labels">
+             <div class="ax-checkbox">
+                    <input type="checkbox" id="isSelected" (change)="selectLabel(label)" [checked]="label.selected">
+                    <span><i class="fa fa-check"></i></span>
+                </div>
+                <span class="labels-filters__label-name">{{label.value}}</span>
+        </label>
+	</div>
+</div>

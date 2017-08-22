@@ -1,0 +1,151 @@
+@import '../../../../assets/styles/config';
+
+.job-box {
+    &--failed {
+        border-left: 2px solid $ax-failed-color;
+    }
+
+    &--success {
+        border-left: 2px solid $ax-success-color;
+    }
+
+    &--init {
+        border-left: 2px solid $ax-init-color;
+    }
+
+    &--cancelled {
+        border-left: 2px solid $ax-cancelled-color;
+    }
+
+    &--waiting {
+        border-left: 2px solid $ax-waiting-color;
+    }
+
+    &--running {
+        border-left: 2px solid $ax-running-color;
+    }
+
+    &__header {
+        padding: 16px;
+        font-size: 13px;
+        background-color: #fff;
+
+        i {
+            font-size: 28px;
+            color: #aaa;
+        }
+
+        &-status {
+            margin: 6px 0 50px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+    }
+
+    &__content {
+        position: relative;
+        padding: 30px 16px 16px;
+        font-size: 11px;
+        line-height: 1.5;
+
+        small {
+            font-size: 90%;
+        }
+    }
+
+    &__left {
+        float: left;
+        width: 56px;
+    }
+
+    &__right {
+        overflow: hidden;
+    }
+
+    &__light {
+        color: #999;
+    }
+
+    &__btn {
+        position: absolute;
+        top: -22px;
+        right: 16px;
+    }
+
+    hr {
+        margin: 12px 0;
+        border-color: #eee;
+    }
+
+    &__author {
+        &-avatar {
+            margin-right: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            text-transform: capitalize;
+            text-align: center;
+            font-size: 20px;
+            line-height: 40px;
+            background-color: #CCCCCC;
+        }
+
+        &-name {
+            padding-top: 3px;
+            font-weight: bold;
+            font-size: 15px;
+            line-height: 1.3;
+        }
+    }
+
+    &__action-list {
+        margin: 0;
+        list-style-type: none;
+        white-space: nowrap;
+        text-align: left;
+
+        & > li {
+            padding: 5px 0;
+            border-bottom: 1px solid #cacaca;
+
+            & > a, & > span {
+                color: #3E3E3E;
+                cursor: pointer;
+
+                &:hover {
+                    color: #999;
+                }
+            }
+
+            &:first-child {
+                padding-top: 0;
+            }
+
+            &:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+        }
+    }
+
+    &__description {
+        &--arrows {
+            display: inline-block;
+        }
+        
+        &--collapsed {
+            display: block;
+            height: 49px;
+            transition: height .5s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &--expanded {
+            display: block;
+            height: auto;
+            transition: height .5s;
+            overflow: hidden;
+        }
+    }
+}

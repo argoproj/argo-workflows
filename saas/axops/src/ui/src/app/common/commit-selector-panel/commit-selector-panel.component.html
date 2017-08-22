@@ -1,0 +1,65 @@
+<div class="commit-selector-panel">
+    <div class="commit-selector-panel__body-top">
+        <ng-content *ngIf="!selectedRepository"></ng-content>
+        <div *ngIf="selectedRepository && !selectedBranch">
+            <button (click)="selectRepository(null)" class="commit-selector-panel__btn-back">
+                <i class="fa fa-angle-left" aria-hidden="true"></i>
+            </button>
+            <div class="commit-selector-panel__selected-repo">
+                <div class="commit-selector-panel__selected-repo-title">{{ selectedRepository.name }}</div>
+                <div class="commit-selector-panel__selected-repo-des">{{ selectedRepository.url }}</div>
+            </div>
+        </div>
+        <div *ngIf="selectedBranch">
+            <button (click)="selectBranch(null)" class="commit-selector-panel__btn-back">
+                <i class="fa fa-angle-left" aria-hidden="true"></i>
+            </button>
+            <div class="commit-selector-panel__selected-repo">
+                <div class="commit-selector-panel__selected-repo-title">{{ selectedBranch.name }}</div>
+                <div class="commit-selector-panel__selected-repo-des">{{ selectedRepository.url }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="commit-selector-panel__search" *ngIf="!onlyBranch">
+        <ax-commit-author [commit]="selectedCommit"></ax-commit-author>
+        <div class="ax-job-stream__content-details-row">
+            <span>COMMIT ID:</span>
+            <span><a
+                    [routerLink]="['/app/timeline/commits/', selectedCommit.revision]">{{ selectedCommit.revision }}</a></span>
+        </div>
+    </div>
+    <div *ngIf="repositories && !selectedRepository && !search">
+        <div class="commit-selector-panel__list-item branches-panel__list-item--link clearfix"
+             *ngFor="let repository of (repositories); trackBy:trackByRepo"
+             (click)="selectRepository(repository)">
+            {{ repository.name }}
+            <div class="pull-right">
+                <div class="commit-selector-panel__list-next"><i class="fa fa-angle-right" aria-hidden="true"></i></div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="branches && !selectedBranch">
+        <div *ngFor="let branch of branches; trackBy:trackByBranch;">
+            <div class="commit-selector-panel__list-item branches-panel__list-item--link clearfix" *ngIf="shouldShowBranch(branch)" (click)="selectBranch(branch)">
+                {{ branch.name }}
+                <div class="pull-right" *ngIf="!onlyBranch">
+                    <div class="commit-selector-panel__list-next"><i class="fa fa-angle-right" aria-hidden="true"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="commits && selectedBranch">
+        <div *ngFor="let commit of commits; trackBy:trackByCommit;" (click)="selectCommit(commit)">
+            <div class="commit-selector-panel__list-item branches-panel__list-item--link clearfix">
+                <div>
+                    <div class="commit-selector-panel__list-item_author pull-left text-truncate"><strong><i class="fa fa-user-o"></i> {{ commit.author }}</strong></div>
+                    <div class="commit-selector-panel__list-item_des pull-right text-truncate"><strong>{{ commit.description }}</strong></div>
+                </div>
+                <div class="commit-selector-panel__list-repo pull-left"><span>ID: {{ commit.revision.substring(0, 8) }}</span></div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="loading && !repositories" class="commit-selector-panel__list-item">
+        <ax-loader-custom></ax-loader-custom>
+    </div>
+</div>

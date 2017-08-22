@@ -1,0 +1,10 @@
+<div class="first-user-experience__wrapper">
+    <div class="integrations-wrapper">
+        <div class="ax-top-bar integrations-wrapper__top-bar">
+            <button axButtonWave class="ax-button ax-button--base" [ngClass]="{'disabled': !isScmConfigured}" (click)="completeIntroduction(false)">Next</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="completeIntroduction(true)">Skip</button>
+        </div>
+
+        <router-outlet></router-outlet>
+    </div>
+</div>

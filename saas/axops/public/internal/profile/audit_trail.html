@@ -1,0 +1,70 @@
+<html>
+<head>
+    <style>
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+    </style>
+</head>
+<body>
+<table>
+    <tr>
+    <th>Interval</th>
+    <th>Week</th>
+    <th>Time</th>
+    <th>Session ID</th>
+    <th>User</th>
+    <th>API Name</th>
+    <th>API Return Code</th>
+    <th>API Method</th>
+    <th>Exec Time 10%</th>
+    <th>Exec Time 20%</th>
+    <th>Exec Time 30%</th>
+    <th>Exec Time 40%</th>
+    <th>Exec Time 50%</th>
+    <th>Exec Time 60%</th>
+    <th>Exec Time 70%</th>
+    <th>Exec Time 80%</th>
+    <th>Exec Time 90%</th>
+    <th>Exec Time Count</th>
+    </tr>
+
+    {{ $rows := .dataArray }}
+
+    {{ range $row := $rows }}
+    <tr>
+        <td>{{$row.ax_interval}}</td>
+        <td>{{$row.ax_week}}</td>
+        <td>{{$row.ax_time}}</td>
+        <td>{{$row.api_session_id}}</td>
+        <td>{{$row.api_user_login}}</td>
+        <td>{{$row.api_name}}</td>
+        <td> {{$row.api_return_code}}</td>
+        <td> {{$row.api_method}}</td>
+        <td> {{$row.api_exec_time_10}}</td>
+        <td> {{$row.api_exec_time_20}}</td>
+        <td> {{$row.api_exec_time_30}}</td>
+        <td> {{$row.api_exec_time_40}}</td>
+        <td> {{$row.api_exec_time_50}}</td>
+        <td> {{$row.api_exec_time_60}}</td>
+        <td> {{$row.api_exec_time_70}}</td>
+        <td> {{$row.api_exec_time_80}}</td>
+        <td> {{$row.api_exec_time_90}}</td>
+        <td> {{$row.api_exec_time_count}}</td>
+    </tr>
+    {{ end }}
+</table>
+</body>
+</html>

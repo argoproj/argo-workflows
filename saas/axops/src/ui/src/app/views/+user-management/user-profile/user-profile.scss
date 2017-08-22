@@ -1,0 +1,129 @@
+$avatar-size: 60px;
+$box-width: 600px;
+$profile-list-item-height: 80px;
+
+.profile-box {
+    width: $box-width;
+    margin: 10px auto 30px auto;
+    background-color: #fff;
+    box-shadow: 0 0 3px 1px rgba(0, 0, 0, .1);
+
+    &__name {
+        width: $box-width;
+        margin: 30px auto 0 auto;
+        color: #BBB;
+    }
+
+    &__avatar {
+        margin: auto;
+        width: $avatar-size;
+        height: $avatar-size;
+        border-radius: 50%;
+        border: 1px solid #e5e5e5;
+        text-transform: capitalize;
+        text-align: center;
+        font-size: $avatar-size / 2;
+        font-weight: lighter;
+        line-height: $avatar-size;
+        background-color: #F5F5F5;
+    }
+
+    &__upload {
+        font-size: 15px;
+        margin: 10px auto;
+        text-align: center;
+    }
+
+    &__header {
+        padding: 30px 0;
+    }
+
+    &__content {
+        padding: 14px 50px 30px;
+    }
+
+    &__input-group {
+        position: relative;
+        width: 100%;
+        padding: 0 40px;
+
+        & > button {
+            position: relative;
+            padding: 10px;
+            height: 47px;
+            width: 28%;
+            display: inline-block;
+            vertical-align: middle;
+            right: 8px;
+            background-color: #41B2D2;
+            font-size: 14px;
+            color: white;
+            border-radius: 2px;
+        }
+    }
+
+    &__input-box {
+        width: 70%;
+        display: inline-block;
+    }
+
+    &__input-select {
+        line-height: 33px;
+    }
+
+    &__form {
+        padding: 30px 40px;
+    }
+}
+
+.profile-list {
+    position: relative;
+
+    &__item {
+        width: 100%;
+        height: $profile-list-item-height;
+        line-height: $profile-list-item-height;
+        display: block;
+        border-top: 1px solid #e5e5e5;
+    }
+
+    &__label {
+        width: 150px;
+        display: inline-block;
+        color: #8b8b8b;
+        font-size: 13px;
+        padding: 0 20px;
+    }
+
+    &__value {
+        width: 370px;
+        display: inline-block;
+        font-size: 17px;
+        padding-left: 50px;
+    }
+
+    &__tag {
+        color: #E7E7E7;
+        font-size: 25px;
+        display: inline-block;
+        padding-right: 10px;
+    }
+
+    &__btn {
+        &--right {
+            height: $profile-list-item-height;
+            position: absolute;
+            display: inline-block;;
+            right: 0;
+            width: 80px;
+            font-size: 30px;
+            text-align: center;
+            line-height: $profile-list-item-height;
+            cursor: pointer;
+
+            &:hover {
+                background-color: #e7e7e7;
+            }
+        }
+    }
+}

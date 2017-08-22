@@ -1,0 +1,15 @@
+FROM %%BUILDER_IMAGE_ID%%
+
+# Base alpine 3.5 started including nsenter as part of its distribution, which has a different CLI usage
+# than the python nsenter, which is the one volume-mount-fixter is currently expecting. Additionally, 
+# performing a `pip install nsenter` will cause the OS to become wonky (where basic commands like `ls`
+# invoke nsenter instead of the desired command). Our workaround, is to rename the busybox version of
+# nsenter before installing the python version.
+RUN mv /usr/bin/nsenter /usr/bin/nsenter-orig && \
+    pip install nsenter==0.2
+
+COPY docker_build/root /
+ENV PYTHONPATH /ax/python
+ENV PATH /kubernetes/platforms/linux/amd64:/ax/bin:${PATH}
+
+CMD ["/ax/bin/volume_mounts_fixer"]

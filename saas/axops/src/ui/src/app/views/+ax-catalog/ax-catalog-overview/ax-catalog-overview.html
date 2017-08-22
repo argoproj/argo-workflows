@@ -1,0 +1,66 @@
+<div class="ax-catalog-overview">
+    <div class="ax-toolbar">
+        <div class="ax-catalog-overview__header">
+            <h4>Explore, launch and manage your workflows and applications in just a few clicks!</h4>
+            <h6>Try out-of-the-box solutions to get started</h6>
+        </div>
+    </div>
+
+    <div class="content" *ngIf="!searchString">
+        <div class="ax-container">
+
+            <div class="ax-catalog-overview__row" *ngIf="promotedProjects?.length > 0">
+                <a class="ax-catalog-overview__nav ax-catalog-overview__nav--left" (click)="carousel.prev()"><i class="fa fa-angle-left" aria-hidden="true"></i></a>
+                <ax-carousel #carousel [items]="promotedProjects" [options]="{items: 5, loop: false}" (onChange)="onCarouselChange($event)">
+                    <template let-item>
+                        <div class="ax-catalog-overview__project">
+                            <ax-project-icon [project]="item" (click)="selectProject(item)"></ax-project-icon>
+                        </div>
+                    </template>
+                </ax-carousel>
+                <a class="ax-catalog-overview__nav ax-catalog-overview__nav--right" (click)="carousel.next()"><i class="fa fa-angle-right" aria-hidden="true"></i></a>
+            </div>
+        </div>
+
+        <div *ngIf="selectedProject" class="ax-catalog-overview__project-info">
+            <div class="ax-container">
+                <div class="ax-catalog-overview__project-pointer" [style.left]="pointerLeft"></div>
+                <div class="row">
+                    <div class="columns small-8">
+                        <h4>{{selectedProject?.name}}</h4>
+                        <p>{{selectedProject?.description}}</p>
+                    </div>
+                    <div class="columns small-4">
+                        <div class="ax-catalog-overview__project-actions">
+                            <div>
+                                <ax-project-launch-button [project]="selectedProject"></ax-project-launch-button>
+                            </div>
+                            <div>
+                                <a [routerLink]="[selectedProject.id]">Learn More</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ax-container">
+            <ax-tabs [selectedTabKey]="selectedCategory">
+                <ax-tab *ngFor="let category of categories" [tabKey]="category.name" [tabTitle]="category.name">
+                    <div class="ax-catalog-overview__row row" *ngFor="let row of category.projectRows; let i = index;">
+                        <div *ngFor="let item of row" class="ax-catalog-overview__project columns small-12 large-expand">
+                            <ax-project-icon *ngIf="item" [project]="item" [routerLink]="[item.id]"></ax-project-icon>
+                        </div>
+                    </div>
+                </ax-tab>
+            </ax-tabs>
+        </div>
+    </div>
+
+    <div class="content" *ngIf="searchString">
+        <div class="ax-container">
+            <ax-projects-list [projects]="allProjects" [searchString]="searchString"></ax-projects-list>
+        </div>
+    </div>
+
+</div>

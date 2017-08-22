@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+
+    <title>Workflow Tree {{ workflow_id }} v{{ v }} </title>
+
+    <style>
+
+	.node {
+		cursor: pointer;
+	}
+
+	.node circle {
+	  fill: #fff;
+	  stroke: steelblue;
+	  stroke-width: 1.5px;
+	}
+
+	.node text {
+	  font: 7.2px sans-serif;
+	}
+
+	.link {
+	  fill: none;
+	  stroke: #ccc;
+	  stroke-width: 1.5px;
+	}
+
+    </style>
+
+  </head>
+  <body>
+
+	<div id="footer">
+		<font color="#e5e5e5">FRESH</font>
+		<font color="#d3d3d3">EXPECTING</font>
+		<font color="#b0c4de">LAUNCHED</font>
+		<font color="#bcee68">SUCCEED</font>
+		<font color="#ffb90f">INTERRUPTED</font>
+		<font color="#cd3333">FAILED</font>
+		<br>
+		Sequential: Cross
+		<br>
+		Parallel: Diamond
+		<br>
+		Dynamic Fixture: Square
+		<br>
+		Static Fixture: Triangle Down
+		<br>
+		Deployment: Triangle Up
+		<br>
+		User Container: Circle
+	</div>
+<!-- load the d3.js library -->
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
+<script>
+
+// sample tree data
+ var treeData = [
+  {
+    "name": "Top Level",
+    "parent": "null",
+    "children": [
+      {
+        "name": "Level 2: A",
+        "parent": "Top Level",
+        "children": [
+          {
+            "name": "Son of A",
+            "parent": "Level 2: A"
+          },
+          {
+            "name": "Daughter of A",
+            "parent": "Level 2: A"
+          }
+        ]
+      },
+      {
+        "name": "Level 2: B",
+        "parent": "Top Level"
+      }
+    ]
+  }
+];
+
+
+var url_old = "{{ adc_url_root }}d3_{{ v }}/{{ workflow_id }}";
+var url = "../d3_{{ v }}/{{ workflow_id }}";
+d3.json(url, function(err, tree_data){
+
+// ************** Generate the tree diagram	 *****************
+var margin = {top: 20, right: 120, bottom: 20, left: 120},
+	width = 2000 - margin.right - margin.left,
+	height = 900 - margin.top - margin.bottom;
+
+var i = 0,
+	duration = 750,
+	root;
+
+var tree = d3.layout.tree()
+	.size([height, width]);
+
+var diagonal = d3.svg.diagonal()
+	.projection(function(d) { return [d.y, d.x]; });
+
+var svg = d3.select("body").append("svg")
+	.attr("width", width + margin.right + margin.left)
+	.attr("height", height + margin.top + margin.bottom)
+  	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+root = tree_data;
+root.x0 = height / 2;
+root.y0 = 0;
+
+var element = document.getElementById("footer");
+element.innerHTML = root["source_type"] + element.innerHTML;
+
+update(root);
+
+d3.select(self.frameElement).style("height", "500px");
+
+function update(source) {
+
+  // Compute the new tree layout.
+  var nodes = tree.nodes(root).reverse(),
+	  links = tree.links(nodes);
+
+  // Normalize for fixed-depth.
+  nodes.forEach(function(d) { d.y = d.depth * 180; });
+
+  // Update the nodes…
+  var node = svg.selectAll("g.node")
+	  .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+  // Enter any new nodes at the parent's previous position.
+  var nodeEnter = node.enter().append("g")
+	  .attr("class", "node")
+	  .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+	  .on("click", click)
+	  .on("mouseover", function(d) {
+      var g = d3.select(this); // The node
+      // The class is used to remove the additional text later
+      var info = g.append('text')
+         .classed('info', true)
+         .attr('x', 20)
+         .attr('y', 10)
+         .text(d["service_template"])
+	     .style("fill", "steelblue");
+	  })
+	  .on("mouseout", function() {
+		  // Remove the info text on mouse out.
+		  d3.select(this).select('text.info').remove();
+	  });
+  nodeEnter.append("path")
+	  .style("stroke", "black")
+	  .attr("d", d3.svg.symbol()
+		 .size(100)
+		 .type(function(d) {
+			 if (d["type"] === "sequential"){
+				 return "cross";
+			 } else if (d["type"] === "parallel"){
+				 return "diamond";
+			 } else if (d["type"] === "dynamic"){
+				 return "square"
+			 } else if (d["type"] === "static"){
+				 return "triangle-down"
+			 } else if (d['type'] === 'deployment') {
+                 return "triangle-up"
+             } else {
+				 return "circle"
+			 }
+		  }))
+	  .style("fill", function(d) {
+		  if (d["state_code"] === "FRESH_STATE"){
+			  return "#ffffff";  //white
+		  } else if (d["state_code"] === "EXPECTING_STATE"){
+			  return "#d3d3d3";  //grey
+		  } else if (d["state_code"] === "LAUNCHED_STATE"){
+			  return "#b0c4de";  //light blue
+		  } else if (d["state_code"] === "INTERRUPTED_STATE"){
+			  return "#ffb90f";  //yellow
+		  } else if (d["state_code"] === "SUCCEED_STATE"){
+			  return "#bcee68";  //green
+		  } else {
+			  return "#cd3333";  //red
+		  }
+	  });
+  nodeEnter.append("text")
+	  .attr("x", function(d) { return d.children || d._children ? -13 : 13; })
+	  .attr("dy", ".35em")
+	  .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
+	  .text(function(d) { return d.name; })
+	  .style("fill-opacity", 1e-6);
+
+  // Transition nodes to their new position.
+  var nodeUpdate = node.transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+  nodeUpdate.select("path")
+  .style("stroke", "black")
+  .attr("d", d3.svg.symbol()
+	 .size(100)
+	 .type(function(d) {
+		 if (d["type"] === "sequential"){
+			 return "cross";
+		 } else if (d["type"] === "parallel"){
+			 return "diamond";
+		 } else if (d["type"] === "dynamic"){
+			 return "square"
+		 } else if (d["type"] === "static"){
+			 return "triangle-down"
+		 } else if (d['type'] === 'deployment'){
+			 return "triangle-up"
+		 } else {
+			 return "circle"
+		 }
+	  }))
+  .style("fill", function(d) {
+	  if (d["state_code"] === "FRESH_STATE"){
+		  return "#ffffff";  //white
+	  } else if (d["state_code"] === "EXPECTING_STATE"){
+		  return "#d3d3d3";  //grey
+	  } else if (d["state_code"] === "LAUNCHED_STATE"){
+		  return "#b0c4de";  //light blue
+	  } else if (d["state_code"] === "INTERRUPTED_STATE"){
+		  return "#ffb90f";  //yellow
+	  } else if (d["state_code"] === "SUCCEED_STATE"){
+		  return "#bcee68";  //green
+	  } else {
+		  return "#cd3333";  //red
+	  }
+  });
+
+
+  nodeUpdate.select("text")
+	  .style("fill-opacity", 1);
+
+  // Transition exiting nodes to the parent's new position.
+  var nodeExit = node.exit().transition()
+	  .duration(duration)
+	  .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+	  .remove();
+
+  nodeExit.select("path")
+	  .attr("r", 1e-6);
+
+  nodeExit.select("text")
+	  .style("fill-opacity", 1e-6);
+
+  // Update the links…
+  var link = svg.selectAll("path.link")
+	  .data(links, function(d) { return d.target.id; });
+
+  // Enter any new links at the parent's previous position.
+  link.enter().insert("path", "g")
+	  .attr("class", "link")
+	  .attr("d", function(d) {
+		var o = {x: source.x0, y: source.y0};
+		return diagonal({source: o, target: o});
+	  });
+
+  // Transition links to their new position.
+  link.transition()
+	  .duration(duration)
+	  .attr("d", diagonal);
+
+  // Transition exiting nodes to the parent's new position.
+  link.exit().transition()
+	  .duration(duration)
+	  .attr("d", function(d) {
+		var o = {x: source.x, y: source.y};
+		return diagonal({source: o, target: o});
+	  })
+	  .remove();
+
+  // Stash the old positions for transition.
+  nodes.forEach(function(d) {
+	d.x0 = d.x;
+	d.y0 = d.y;
+  });
+}
+
+// Toggle children on click.
+function click(d) {
+  if (d.children) {
+	d._children = d.children;
+	d.children = null;
+  } else {
+	d.children = d._children;
+	d._children = null;
+  }
+  update(d);
+}
+
+})
+</script>
+
+  </body>
+</html>

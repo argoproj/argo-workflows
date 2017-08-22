@@ -1,0 +1,223 @@
+type: container
+version: 1
+name: quick-exit
+description: does nothing and exits quickly
+resources:
+  mem_mib: 32
+  cpu_cores: 0.1
+image: alpine:latest
+command: ["sh",  "-c", "exit 0"]
+
+---
+
+type: workflow
+version: 1
+name: pod-throughput-test
+description: Test for checking pod creation and deletion overhead which can be used for getting pod througput
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- step0:
+    template: quick-exit
+  step1:
+    template: quick-exit
+  step2:
+    template: quick-exit
+  step3:
+    template: quick-exit
+  step4:
+    template: quick-exit
+  step5:
+    template: quick-exit
+  step6:
+    template: quick-exit
+  step7:
+    template: quick-exit
+  step8:
+    template: quick-exit
+  step9:
+    template: quick-exit
+  step10:
+    template: quick-exit
+  step11:
+    template: quick-exit
+  step12:
+    template: quick-exit
+  step13:
+    template: quick-exit
+  step14:
+    template: quick-exit
+  step15:
+    template: quick-exit
+  step16:
+    template: quick-exit
+  step17:
+    template: quick-exit
+  step18:
+    template: quick-exit
+  step19:
+    template: quick-exit
+  step20:
+    template: quick-exit
+  step21:
+    template: quick-exit
+  step22:
+    template: quick-exit
+  step23:
+    template: quick-exit
+  step24:
+    template: quick-exit
+  step25:
+    template: quick-exit
+  step26:
+    template: quick-exit
+  step27:
+    template: quick-exit
+  step28:
+    template: quick-exit
+  step29:
+    template: quick-exit
+  step30:
+    template: quick-exit
+  step31:
+    template: quick-exit
+  step32:
+    template: quick-exit
+  step33:
+    template: quick-exit
+  step34:
+    template: quick-exit
+  step35:
+    template: quick-exit
+  step36:
+    template: quick-exit
+  step37:
+    template: quick-exit
+  step38:
+    template: quick-exit
+  step39:
+    template: quick-exit
+  step40:
+    template: quick-exit
+  step41:
+    template: quick-exit
+  step42:
+    template: quick-exit
+  step43:
+    template: quick-exit
+  step44:
+    template: quick-exit
+  step45:
+    template: quick-exit
+  step46:
+    template: quick-exit
+  step47:
+    template: quick-exit
+  step48:
+    template: quick-exit
+  step49:
+    template: quick-exit
+  step50:
+    template: quick-exit
+  step51:
+    template: quick-exit
+  step52:
+    template: quick-exit
+  step53:
+    template: quick-exit
+  step54:
+    template: quick-exit
+  step55:
+    template: quick-exit
+  step56:
+    template: quick-exit
+  step57:
+    template: quick-exit
+  step58:
+    template: quick-exit
+  step59:
+    template: quick-exit
+  step60:
+    template: quick-exit
+  step61:
+    template: quick-exit
+  step62:
+    template: quick-exit
+  step63:
+    template: quick-exit
+  step64:
+    template: quick-exit
+  step65:
+    template: quick-exit
+  step66:
+    template: quick-exit
+  step67:
+    template: quick-exit
+  step68:
+    template: quick-exit
+  step69:
+    template: quick-exit
+  step70:
+    template: quick-exit
+  step71:
+    template: quick-exit
+  step72:
+    template: quick-exit
+  step73:
+    template: quick-exit
+  step74:
+    template: quick-exit
+  step75:
+    template: quick-exit
+  step76:
+    template: quick-exit
+  step77:
+    template: quick-exit
+  step78:
+    template: quick-exit
+  step79:
+    template: quick-exit
+  step80:
+    template: quick-exit
+  step81:
+    template: quick-exit
+  step82:
+    template: quick-exit
+  step83:
+    template: quick-exit
+  step84:
+    template: quick-exit
+  step85:
+    template: quick-exit
+  step86:
+    template: quick-exit
+  step87:
+    template: quick-exit
+  step88:
+    template: quick-exit
+  step89:
+    template: quick-exit
+  step90:
+    template: quick-exit
+  step91:
+    template: quick-exit
+  step92:
+    template: quick-exit
+  step93:
+    template: quick-exit
+  step94:
+    template: quick-exit
+  step95:
+    template: quick-exit
+  step96:
+    template: quick-exit
+  step97:
+    template: quick-exit
+  step98:
+    template: quick-exit
+  step99:
+    template: quick-exit

@@ -1,0 +1,67 @@
+---
+type: container
+version: 1
+name: test-container-with-output-artifact-a
+description: Container which produces an output artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo 'sleeping for 20 seconds' ; sleep 20; echo 'done'"]
+outputs:
+  artifacts:
+    BIN-OUTPUT:
+      path: /bin
+
+---
+type: container
+version: 1
+name: test-container-with-input-artifact-a
+description: Container which accepts an input artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["find /root/bin; echo 'sleeping for 20 seconds'; sleep 20; echo 'done'"]
+inputs:
+  artifacts:
+    BIN-INPUT:
+      path: /root/bin
+
+---
+type: workflow
+version: 1
+name: test-workflow-passing-artifacts-a
+description: Basic workflow with artifacts between steps
+steps:
+- STEP1:
+    template: test-container-with-output-artifact-a
+- STEP2:
+    template: test-container-with-input-artifact-a
+    arguments:
+      artifacts.BIN-INPUT: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+outputs:
+  artifacts:
+    BIN-OUTPUT:
+      from: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+
+---
+type: workflow
+version: 1
+name: test-workflow-passing-artifacts-outer-a
+description: Basic workflow using artifact from a workflow
+steps:
+- STEP1:
+    template: test-container-with-output-artifact-a
+- STEP2:
+    template: test-container-with-input-artifact-a
+    arguments:
+      artifacts.BIN-INPUT: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+- STEP3:
+    template: test-workflow-passing-artifacts-a
+- STEP4:
+    template: test-container-with-input-artifact
+    arguments:
+      artifacts.BIN-INPUT: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+outputs:
+  artifacts:
+    BIN-OUTPUT1:
+      from: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+    BIN-OUTPUT2:
+      from: "%%steps.STEP3.outputs.artifacts.BIN-OUTPUT%%"

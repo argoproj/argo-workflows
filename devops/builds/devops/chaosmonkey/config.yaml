@@ -1,0 +1,97 @@
+---
+
+## GLOBAL SETTINGS
+# Time duration (have to be float number)
+duration_in_hour: 24.0
+
+# Minimum separation time between two jobs
+min_separation_second: 300
+
+# Notification emails (separated by commas, need to configure smtp in axops)
+notification_email: ""
+
+# Enable / Disable notification
+enable_notification: True
+
+# Report successful jobs
+report_successful: False
+
+
+
+## KUBE PODS KILLING
+pod:
+
+  # Total number of jobs planed to schedule
+  total_kills: 200
+
+  # If simultaneous killing of multiple pods is allowed
+  simultaneously_kill: True
+
+  # Maximum number of pods that can be simultaneously killed
+  max_simultaneously_kill: 5
+
+  # Run health check for the system before each job
+  health_check_before_kill: True
+
+  # Number of seconds to wait for the killed pod to recover
+  wait_for_recovery_second: 600
+
+  # Separation time for checking pod health
+  retry_separation_second: 20
+
+  # Whether to exit if pod not recovered
+  terminate_if_not_recovery: True
+
+  # Short names for target pods (under axssys)
+  target_pods:
+    - axconsole
+    - axdb-0
+    - axdb-1
+    - axdb-2
+    - axmon
+    - axnotification
+    - axops-deployment
+    - axscheduler
+    - axstats
+    - axworkflowadc
+    - commitdata
+    - cron
+    - fixturemanager
+    - fluentd
+    - gateway
+    - kafka-zk-1
+    - kafka-zk-2
+    - kafka-zk-3
+    - redis
+
+
+
+## AWS INSTANCE KILLING
+instance:
+
+  # aws profile used
+  aws_profile: dev
+
+  # Total number of jobs planed to schedule
+  total_kills: 0
+
+  # reboot or terminate
+  action: reboot
+
+  # If simultaneous killing of multiple instances is allowed
+  simultaneously_kill: True
+
+  # Maximum number of instances that can be simultaneously killed
+  max_simultaneously_kill: 3
+
+  # Run health check for the system before each job
+  health_check_before_kill: True
+
+  # Number of seconds to wait for the killed instances to recover
+  wait_for_recovery_second: 600
+
+  # Separation time for checking instance health
+  retry_separation_second: 10
+
+  # Whether to exit if instance not recovered
+  terminate_if_not_recovery: True

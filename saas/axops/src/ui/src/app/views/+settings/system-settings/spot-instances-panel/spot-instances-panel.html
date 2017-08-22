@@ -1,0 +1,10 @@
+<div class="row white-box">
+    <div class="columns small-12 large-7">
+        <h6>{{ 'Instance Configuration' | translate }}</h6>
+        <div class="ax-checkbox-slide">
+            <input type="checkbox" id="checkbox-spot-instances" [ngModel]="spotInstancesEnabled" [disabled]="!dataLoaded" (change)="onChangeStatus($event)">
+            <span></span>
+        </div>
+        <label for="checkbox-spot-instances">Spot Instances</label>
+    </div>
+</div>

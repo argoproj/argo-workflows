@@ -1,0 +1,54 @@
+@import '../../../assets/styles/config';
+
+.artifact-tag-management {
+    h3 {
+        font-weight: 300;
+        color: $ax-color-teal-7;
+    }
+
+    &__top {
+        padding: 16px 0;
+    }
+
+    &__search {
+        width: 70%;
+        height: 30px;
+        padding: 0 12px;
+        line-height: 30px;
+        font-size: 14px;
+        border-radius: 20px;
+        border: 1px solid $ax-color-teal-6;
+    }
+
+    &__add-btn {
+        width: 30px;
+        height: 30px;
+        margin-left: 4px;
+        color: $ax-color-teal-6;
+        border-radius: 50%;
+        border: 1px solid $ax-color-teal-6;
+    }
+
+    &__list {
+        margin-top: 20px;
+    }
+
+    &__list-title {
+        display: block;
+        font-size: 0.8em;
+        margin: 7px 0;
+    }
+
+    &__footer {
+        & > a {
+            color: $ax-color-teal-6;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+    }
+
+    &__empty-state {
+        font-size: 0.8em;
+        color: $ax-color-gray-5;
+    }
+}

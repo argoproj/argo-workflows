@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axstats-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axstats-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_tcp kafka-zk:9092"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axstats
+                image: ${REGISTRY}/${NAMESPACE}/axstats:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 250Mi
+                    limits:
+                        cpu: 100m
+                        memory: 450Mi
+              - name: kubectl-proxy
+                image: argoproj/kubectl:v1.6.7
+                args: ["proxy", "-p", "8001"]
+                resources:
+                    requests:
+                        cpu: 25m
+                        memory: 20Mi
+                    limits:
+                        cpu: 25m
+                        memory: 40Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry

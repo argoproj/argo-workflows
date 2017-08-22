@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: commitdata-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: commitdata-deployment
+                tier: devops
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axops-internal:8085/v1/ping ; wait_tcp kafka-zk:9092"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axcommitctl
+                image: ${REGISTRY}/${NAMESPACE}/axcommitctl:${VERSION}
+                resources:
+                    requests:
+                        cpu: 75m
+                        memory: 100Mi
+              - name: commitdata
+                image: ${REGISTRY}/${NAMESPACE}/axagent:${VERSION}
+                env:
+                  - name: CELERY_CONCURRENCY
+                    value: "1"
+                  - name: "AGENTTYPE"
+                    value: commitdata
+                resources:
+                    requests:
+                        cpu: 75m
+                        memory: 200Mi
+                    limits:
+                        cpu: 200m
+                        memory: 400Mi
+            restartPolicy: Always
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry

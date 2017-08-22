@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: test-pod-invalid-command
+    labels:
+        app: pi
+spec:
+    containers:
+    - name: pi-container
+      image: perl
+      command: ["xxx",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      resources:
+        requests:
+          cpu: 40m
+          memory: 12Mi
+        limits:
+          cpu: 100m
+          memory: 30Mi
+    restartPolicy: Never

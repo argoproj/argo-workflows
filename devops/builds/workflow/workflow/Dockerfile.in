@@ -1,0 +1,12 @@
+FROM %%BUILDER_IMAGE_ID%%
+
+# Directory in container for all project files
+ENV AXHOME=/ax
+
+# Set python path
+ENV PYTHONPATH=$AXHOME/src
+
+# Port to expose
+EXPOSE 8911
+
+COPY docker_build/src $AXHOME/src

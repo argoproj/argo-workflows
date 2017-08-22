@@ -1,0 +1,8 @@
+<div ng-repeat="(address, portInfo) in addressPortForwards">
+  <a ng-if="portInfo.link" href="{{portInfo.link}}">{{portInfo.port}}</a> 
+  <span ng-if="!portInfo.link">{{portInfo.port}}</span>
+  <span ng-if="portInfo.privateHost">
+    <span ng-if="!portInfo.forwarded" class="glyphicon glyphicon-plus-sign pointer" ng-click="createPortForward({{address}})" aria-hidden="true"></span>
+    <span ng-if="portInfo.forwarded" class="glyphicon glyphicon-minus-sign pointer" ng-click="deletePortForward({{address}})" aria-hidden="true"></span>
+  </span>
+</div>

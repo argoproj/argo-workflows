@@ -1,0 +1,24 @@
+<div class="panel panel-default" ng-repeat="volumePool in volumePools" style="margin-bottom:0px">
+  <div class="panel-heading">
+    <span>[[volumePool.name]]</span> <span>([[volumePool.size]])</span>
+    <span ng-click="deleteVolumePool([[volumePool.name]])" style="float:right"  class="glyphicon glyphicon-remove pointer" aria-hidden="true"></span>
+  </div>
+  <div class="panel-body">
+    <div class="panel" style="cell-padding:0px; margin:0px;">
+      <table class="table-condensed table-bordered table-hover" style="width:100%">
+        <tr>
+          <th class="col-sm-3">Name</th>
+          <th>Used</th>
+          <th>Refs</th>
+          <th></th>
+        </tr>
+        <tr ng-repeat="volume in volumePool.volumes">
+          <td>[[volume.name]]</td>
+          <td>[[volume.Used]]</td>
+          <td>[[volume.Refs]]</td>
+          <td><span ng-if="!volume.Used" ng-click="deleteVolume([[volumePool.name]], [[volume.name]])" class="glyphicon glyphicon-remove pointer" aria-hidden="true"></span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>

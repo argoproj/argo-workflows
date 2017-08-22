@@ -1,0 +1,100 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure(2) do |config|
+
+  config.vm.define "devzfs" do |dev|
+    dev.vm.box = "ubuntu/trusty64"
+    dev.vm.network "private_network", ip: "192.168.7.105"
+    dev.vm.hostname = "axdevzfs"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '2048']
+      unless File.exist?("external_disks/hdb_zfs.vdi")
+        vb.customize ['createhd', '--filename', 'external_disks/hdb_zfs', '--size', 40 * 1024, '--variant', 'Standard']
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'external_disks/hdb_zfs.vdi']
+ 
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/zfs.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+  end
+
+  config.vm.define "devaufs" do |dev|
+    dev.vm.box = "ubuntu/trusty64"
+    dev.vm.network "private_network", ip: "192.168.7.106"
+    dev.vm.hostname = "axdevaufs"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '1024']
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/aufs.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+
+  end
+
+  config.vm.define "devdmloop" do |dev|
+    dev.vm.box = "ubuntu/trusty64"
+    dev.vm.network "private_network", ip: "192.168.7.107"
+    dev.vm.hostname = "axdevdmloop"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '1024']
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/dmloop.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+  end
+
+  config.vm.define "devdmdirect" do |dev|
+    dev.vm.box = "ubuntu/trusty64"
+    dev.vm.network "private_network", ip: "192.168.7.108"
+    dev.vm.hostname = "axdevdmdirect"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '1024']
+      unless File.exist?("external_disks/hdb_dmdirect.vdi")
+        vb.customize ['createhd', '--filename', 'external_disks/hdb_dmdirect', '--size', 40 * 1024, '--variant', 'Standard']
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'external_disks/hdb_dmdirect.vdi']
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/dmdirect.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+  end
+
+  config.vm.define "devbtrfs" do |dev|
+    dev.vm.box = "ubuntu/trusty64"
+    dev.vm.network "private_network", ip: "192.168.7.109"
+    dev.vm.hostname = "axdevbtrfs"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '1024']
+      unless File.exist?("external_disks/hdb_btrfs.vdi")
+        vb.customize ['createhd', '--filename', 'external_disks/hdb_btrfs', '--size', 40 * 1024, '--variant', 'Standard']
+      end
+      vb.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'external_disks/hdb_btrfs.vdi']
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/btrfs.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+  end
+
+  config.vm.define "devoverlay" do |dev|
+    dev.vm.box = "ubuntu/vivid64"
+    dev.vm.network "private_network", ip: "192.168.7.110"
+    dev.vm.hostname = "axdevoverlay"
+    dev.vm.provider :virtualbox do |vb|
+      vb.customize ['modifyvm', :id,'--memory', '1024']
+      #unless File.exist?("external_disks/hdb_overlay.vdi")
+      #  vb.customize ['createhd', '--filename', 'external_disks/hdb_overlay', '--size', 40 * 1024, '--variant', 'Standard']
+      #end
+      #vb.customize ['storageattach', :id, '--storagectl', 'SATAController', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', 'external_disks/hdb_overlay.vdi']
+    end
+    dev.vm.provision :shell, path: "init_scripts/first_steps.sh"
+    dev.vm.provision :shell, path: "init_scripts/overlay.sh"
+    dev.vm.provision :shell, path: "init_scripts/last_steps.sh"
+  end
+  
+end

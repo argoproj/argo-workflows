@@ -1,0 +1,12 @@
+@import '../../../../assets/styles/config';
+
+.global-search-filters {
+    margin: 0;
+    display: block;
+    padding: 20px 0 10px 0;
+
+    &__item {
+        display: inline-block;
+        vertical-align: top
+    }
+}

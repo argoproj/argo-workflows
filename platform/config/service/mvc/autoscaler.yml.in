@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: autoscaler-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: autoscaler
+                tier: platform
+                role: axcritical
+            annotations:
+                scheduler.alpha.kubernetes.io/critical-pod: ''
+                scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        spec:
+            containers:
+              - image: argoproj/cluster-autoscaler:v1
+                name: cluster-autoscaler
+                resources:
+                    limits:
+                        cpu: 50m
+                        memory: 100Mi
+                    requests:
+                        cpu: 25m
+                        memory: 50Mi
+                command:
+                  - ./cluster-autoscaler
+                  - --v=4
+                  - --cloud-provider=aws
+                  - --skip-nodes-with-local-storage=false
+                  - --scan-interval=${AUTOSCALER_SCAN_INTERVAL}
+                  - --nodes=${ASG_MIN}:${ASG_MAX}:${ASG_NAME}
+                  - --scale-down-delay=50m
+                  - --scale-down-unneeded-time=10m
+                  - --scale-down-utilization-threshold=${SCALE_DOWN_UTIL_THRESH}
+                env:
+                  - name: AWS_REGION
+                    value: ${AX_AWS_REGION}
+                volumeMounts:
+                  - name: ssl-certs
+                    mountPath: /etc/ssl/certs/ca-certificates.crt
+                    readOnly: true
+                imagePullPolicy: "Always"
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: ssl-certs
+                hostPath:
+                    path: "/etc/ssl/certs/ca-certificates.crt"

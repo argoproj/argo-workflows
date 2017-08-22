@@ -1,0 +1,25 @@
+//div#builds-boxplot > svg > g.nvd3 > g > g.nv-x > g.nv-axis > g > g.tick {
+//  display: none;
+//
+//  &:nth-child(7n){
+//    display: inline;
+//  }
+//}
+
+div#builds-boxplot > svg > g.nvd3 > g > g.nv-x {
+  transform: translateY(330px);
+}
+
+div.builds-boxplot-chart {
+  & > svg{
+    height: 400px;
+  }
+
+  .y-axis-title-builds-boxplot-chart {
+    color: #3E3E3E;
+    position: absolute;
+    font-size: 12px;
+    left: 50px;
+    font-weight: bold;
+  }
+}

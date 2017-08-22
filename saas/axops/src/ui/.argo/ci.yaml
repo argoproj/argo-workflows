@@ -1,0 +1,60 @@
+---
+type: workflow
+version: 1
+name: ci
+
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+
+steps:
+- checkout:
+    template: argo-checkout
+- build:
+    template: build
+    arguments:
+      artifacts.code: "%%steps.checkout.outputs.artifacts.code%%"
+
+---
+type: container
+version: 1
+name: build
+
+inputs:
+  artifacts:
+    code:
+      path: /src
+outputs:
+  artifacts:
+    code:
+      path: /src
+
+image: node:6.3.1
+command: ["bash", "-c"]
+args: ["cd /src && npm set progress=false && npm install --unsafe-perm && npm run build:prod"]
+resources:
+  mem_mib: 1536
+  cpu_cores: 0.4
+
+---
+type: policy
+version: 1
+name: ci-policy
+
+template: ci
+notifications:
+  -
+    when:
+      - on_change
+    whom:
+      - committer
+      - submitter
+      - author
+when:
+  -
+    event: on_push
+  -
+    event: on_pull_request

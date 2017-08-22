@@ -1,0 +1,50 @@
+@import '../../../assets/styles/config';
+
+.notification {
+  bottom: 20px;
+  right: 10px;
+  width: 300px;
+  position: fixed;
+  z-index: 10;
+  margin-left: 20px;
+  margin-top: 80px;
+
+  .confirmation-box {
+    width:100%;
+    border-radius: 5px;
+    border:1px solid $ax-color-gray-4;
+    background-color: $ax-color-teal-2;
+    color: $ax-color-teal-7;
+    font-size: 15px;
+    padding: 20px;
+
+    h1 {
+      margin: 0;
+      font-size: 14px;
+
+      a {
+        float: none;
+        margin: 0;
+        color: white;
+        text-decoration: underline;
+      }
+    }
+
+    a{
+      color:black;
+      float:right;
+      cursor:pointer;
+      margin-right:15px;
+      &:hover{
+        text-decoration: none;
+      }
+    }
+
+    .boxclose:before{
+      content: "x";
+      color: black;
+      float: right;
+      margin-right: 15px;
+    }
+  }
+}

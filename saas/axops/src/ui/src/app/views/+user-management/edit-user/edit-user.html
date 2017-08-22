@@ -1,0 +1,33 @@
+<form [formGroup]="userForm" class="edit-user" (ngSubmit)="update()">
+    <ax-sliding-panel [show]="show" (closePanel)="close()">
+        <sliding-panel-header>
+            <button axButtonWave class="ax-button ax-button--base" type="submit">{{ 'Save' | translate }}</button>
+            <button type="button" (click)="close()" axButtonWave class="ax-button">{{ 'Cancel' | translate }}</button>
+        </sliding-panel-header>
+        <sliding-panel-body>
+                <div class="panel-box__title">Edit Profile</div>
+                <div class="white-box">
+                    <div class="edit-user__form">
+                        <ax-avatar [user]="_user"></ax-avatar>
+                        <div class="ax-form-row">
+                            <input id="firstName" type="text" class="ax-field" autocomplete="off" ax-label-placeholder
+                                   formControlName="first_name">
+                            <label for="firstName" class="ax-label-placeholder">{{ 'First Name' | translate }}</label>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="lastName" type="text" class="ax-field" autocomplete="off" ax-label-placeholder
+                                   formControlName="last_name">
+                            <label for="lastName" class="ax-label-placeholder">{{ 'Last Name' | translate }}</label>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="email" type="text" class="ax-field" autocomplete="off" ax-label-placeholder
+                                   formControlName="email">
+                            <label for="email" class="ax-label-placeholder">{{ 'Email' | translate }}</label>
+                        </div>
+                    </div>
+                    <button type="button" class="ax-button ax-button--base-o" *ngIf="canChangePassword"
+                            (click)="changePassword()">Change password</button>
+                </div>
+        </sliding-panel-body>
+    </ax-sliding-panel>
+</form>

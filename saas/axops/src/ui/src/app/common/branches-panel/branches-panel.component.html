@@ -1,0 +1,55 @@
+<div class="branches-panel">
+    <div class="branches-panel__body-top" [hidden]="selectedRepository || currentTab !== branchesTabs.Favourites || !showHeader"
+        #panelHeader>
+        <ng-content></ng-content>
+    </div>
+    <div class="branches-panel__body-top" *ngIf="selectedRepository && currentTab === branchesTabs.Repositories">
+        <button (click)="selectRepository(null)" class="branches-panel__btn-back">
+            <i class="fa fa-angle-left" aria-hidden="true"></i>
+        </button>
+        <div class="branches-panel__selected-repo">
+            <div class="branches-panel__selected-repo-title">{{ selectedRepository.name }}</div>
+            <div class="branches-panel__selected-repo-des">{{ selectedRepository.url }}</div>
+        </div>
+    </div>
+    <div class="branches-panel__search">
+        <div class="branches-panel__search-input">
+            <i class="fa fa-search"></i> <input [formControl]="searchControl" type="text" placeholder="Search">
+        </div>
+    </div>
+    <div class="branches-panel__tabs" *ngIf="!selectedRepository && !hideFavourites && !searchControl.value">
+        <a (click)="selectTab(branchesTabs.Repositories)" [class.active]="currentTab === branchesTabs.Repositories">Repositories</a>
+        <a (click)="selectTab(branchesTabs.Favourites)" [class.active]="currentTab === branchesTabs.Favourites">Favorites</a>
+    </div>
+    <div *ngIf="repositories && currentTab === branchesTabs.Repositories && !selectedRepository && !branchesToShow">
+        <div class="branches-panel__list-item branches-panel__list-item--link clearfix" *ngFor="let repository of (repositories); trackBy:trackByRepo"
+            (click)="selectRepository(repository)">
+            <div class="pull-left repo-info text-truncate">
+                <label>{{ repository.name }}</label><br>
+                <label class="repo-url">{{ repository.url }}</label>
+            </div>
+            <div class="branches-panel__list-next pull-right">
+                <i class="fa fa-angle-right" aria-hidden="true"></i>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="branchesToShow">
+        <div *ngFor="let branch of branchesToShow; trackBy: trackByBranch;">
+            <div class="branches-panel__list-item">
+                <a class="branches-panel__list-star pull-right" *ngIf="isFavourite(branch)" (click)="removeBranchFromFavourite(branch)" ax-tooltip="Remove branch from Favorite">
+                    <i class="fa fa-star" aria-hidden="true"></i>
+                </a>
+                <a class="branches-panel__list-star pull-right" *ngIf="!isFavourite(branch)" (click)="addBranchToFavourite(branch)" ax-tooltip="Add branch to Favorite">
+                    <i class="fa fa-star-o" aria-hidden="true"></i>
+                </a>
+                <a [routerLink]="[linkSegments, { repo: branch.repo, branch: branch.name}]">{{ branch.name }}</a>
+                <div class="branches-panel__list-repo" *ngIf="!selectedRepository">{{ branch.repo }}</div>
+            </div>
+        </div>
+        <div *ngIf="currentTab === branchesTabs.Repositories && !loading && !term" class="branches-panel__info">Use search to find your branch.</div>
+        <div *ngIf="currentTab === branchesTabs.Repositories && !loading && term && branchesToShow.length === 0" class="branches-panel__info">No branches found.</div>
+    </div>
+    <div *ngIf="loading && (currentTab === branchesTabs.Repositories || searchControl.value)" class="branches-panel__list-item">
+        <ax-loader-custom></ax-loader-custom>
+    </div>
+</div>

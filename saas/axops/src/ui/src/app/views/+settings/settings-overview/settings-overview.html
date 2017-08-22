@@ -1,0 +1,30 @@
+<div class="settings-overview">
+    <div class="settings-overview__top">
+        <div class="ax-container">
+            <!--<div class="pull-right"><a href="#">Learn more</a></div>-->
+            <i class="ax-icon-settings"></i> Configure Argo
+        </div>
+    </div>
+    <div class="ax-container">
+        <div class="settings-overview__redirect-panel">
+            <ax-redirect-panel title="System Settings"
+                               description="Configure Argo system settings"
+                               [route]="['/app/settings/system']"></ax-redirect-panel>
+        </div>
+        <div class="settings-overview__redirect-panel">
+            <ax-redirect-panel title="Artifact Retention Policies"
+                               description="Manage artifact retention policies"
+                               [route]="['/app/settings/artifact-retention-policy']"></ax-redirect-panel>
+        </div>
+        <div class="settings-overview__redirect-panel">
+            <ax-redirect-panel title="Domain Management"
+                               description="Manage domains for applications access"
+                               [route]="['/app/settings/domain-management']"></ax-redirect-panel>
+        </div>
+        <div class="settings-overview__redirect-panel">
+            <ax-redirect-panel title="Notification Rules"
+                               description="Configure notification rules to receive notifications"
+                               [route]="['/app/settings/notification-management']"></ax-redirect-panel>
+        </div>
+    </div>
+</div>

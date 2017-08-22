@@ -1,0 +1,16 @@
+.projects-list {
+    &__icon-container {
+        text-align: center;
+    }
+
+    &__icon {
+        max-width: 4em;
+        max-height: 4em;
+        padding: 0.5em;
+        width: auto;
+        height: auto;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}

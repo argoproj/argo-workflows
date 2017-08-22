@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+    server-name-hash-bucket-size: "512"
+    server-name-hash-max-size: "512"
+metadata:
+    name: ingress-controller-config
+    labels:
+        app: ingress-controller-config
+        tier: platform
+        role: axcritical
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: ingress-controller-deployment
+spec:
+    selector:
+        matchLabels:
+            app: ingress-controller-deployment
+            tier: platform
+            role: axcritical
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: ingress-controller-deployment
+                tier: platform
+                role: axcritical
+        spec:
+            terminationGracePeriodSeconds: 60
+            containers:
+              - image: argoproj/nginx-ingress-controller:0.8.3-ax-1.11.9-nginx
+                name: nginx-ingress-lb
+                imagePullPolicy: Always
+                env:
+                  - name: POD_NAME
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                  - name: POD_NAMESPACE
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                args:
+                  - /nginx-ingress-controller
+                  - --default-backend-service=axsys/default-http-backend
+                  - --logtostderr
+                  - --v=2
+                  - --ingress-class=all-deployments
+                  - --nginx-configmap=$(POD_NAMESPACE)/ingress-controller-config
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 150Mi
+                    limits:
+                        cpu: 100m
+                        memory: 300Mi
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+                - name: applatix-registry

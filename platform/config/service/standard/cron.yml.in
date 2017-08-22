@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: cron-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: cron-deployment
+                tier: platform
+                role: axcritical
+        spec:
+            containers:
+              - name: cron
+                image: ${REGISTRY}/${NAMESPACE}/axmon:${VERSION}
+                command: ["/ax/bin/axtool", "cron"]
+                env:
+                  - name: AX_AWS_ACCOUNT
+                    value: "${AX_AWS_ACCOUNT}"
+                  - name: ARGO_LOG_BUCKET_NAME
+                    value: "${ARGO_LOG_BUCKET_NAME}"
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 80Mi
+                    limits:
+                        cpu: 50m
+                        memory: 160Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry

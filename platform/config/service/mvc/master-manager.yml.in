@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: master-manager-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: master-manager-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                scheduler.alpha.kubernetes.io/critical-pod: ''
+                scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        spec:
+            containers:
+              - name: master-manager
+                image: ${REGISTRY}/${NAMESPACE}/master-manager:${VERSION}
+                command: ["/ax/bin/master_manager", "${AX_CLUSTER_NAME_ID}", "server"]
+                env:
+                  - name: SALT_TAR_HASH
+                    value: ${NEW_KUBE_SALT_SHA1}
+                  - name: SERVER_BINARY_TAR_HASH
+                    value: ${NEW_KUBE_SERVER_SHA1}
+                  - name: KUBE_VERSION
+                    value: ${AX_KUBE_VERSION}
+                  - name: AX_CLUSTER_INSTALL_VERSION
+                    value: ${AX_CLUSTER_INSTALL_VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 80Mi
+                    limits:
+                        cpu: 50m
+                        memory: 160Mi
+                volumeMounts:
+                  - mountPath: /tmp
+                    name: tmp-for-user-data
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+                - name: applatix-registry
+            volumes:
+                - name: tmp-for-user-data
+                  hostPath:
+                      path: /tmp

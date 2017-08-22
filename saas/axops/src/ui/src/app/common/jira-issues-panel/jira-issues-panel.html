@@ -1,0 +1,23 @@
+<ax-sliding-panel [show]="isVisibleJiraIssuesPanel" [hasCloseButton]="true" [hasNoPadding]="true" (closePanel)="closeJiraIssuesPanel()">
+    <sliding-panel-header>
+        JIRA Issues
+        <div class="jira-issue-panel__header-btn">
+            <button  axButtonWave class="ax-button ax-button--base-o" type="button" (click)="openJiraCreationPanel()" [disabled]="false">Create new</button>
+        </div>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="panel-box__content panel-box__content--light">
+            <div class="ax-jira-issues__item" *ngIf="jiraIssueLoader && !jiraIssues.length">
+                <ax-loader-custom [size]="21"></ax-loader-custom>
+            </div>
+            <ax-jira-issues-list [source]="jiraIssues"></ax-jira-issues-list>
+            <div class="ax-jira-issues__item" *ngIf="!jiraIssueLoader && !jiraIssues.length">
+                <div class="row">
+                    <div class="columns small-12">
+                        There are no JIRA tickets for this job.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

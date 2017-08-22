@@ -1,0 +1,30 @@
+<div *ngIf="deployment" class="deployment-history-details">
+    <ax-tabs (selected)="selectedTabKey = $event.selectedTab.tabKey" [selectedTabKey]="selectedTabKey">
+            <ax-tab [tabKey]="'summary'" [tabTitle]="'Summary'">
+                <div class="white-box">
+                    <div class="row white-box__details-row">
+                        <div class="columns small-3 white-box__details-label">{{ 'Commit' | translate | uppercase }}</div>
+                        <div class="columns small-9">{{ deployment?.template.revision }}</div>
+                    </div>
+                    <div class="row white-box__details-row">
+                        <div class="columns small-3 white-box__details-label">{{ 'Repo' | translate | uppercase }}</div>
+                        <div class="columns small-9">{{ deployment?.template.repo }}</div>
+                    </div>
+                    <template ngFor let-parameter [ngForOf]="deployment?.parameters | keys">
+                        <div class="row white-box__details-row">
+                            <div class="columns small-3 white-box__details-label">{{ parameter.key | translate | uppercase }}</div>
+                            <div class="columns small-9">{{ parameter.value }}</div>
+                        </div>
+                    </template>
+                </div>
+            </ax-tab>
+            <ax-tab [tabKey]="'artifacts'" [tabTitle]="'Artifacts'">
+                <ax-artifacts [deployment]="deployment"></ax-artifacts>
+            </ax-tab>
+            <ax-tab [tabKey]="'spending'" [tabTitle]="'Spending'">
+                <div class="white-box" *ngIf="selectedTabKey === 'spending'">
+                    <ax-app-spendings-chart [showTitle]="false" [showTimeRange]="false" [appName]="deployment.app_name" [deploymentName]="deployment.name"></ax-app-spendings-chart>
+                </div>
+            </ax-tab>
+    </ax-tabs>
+</div>

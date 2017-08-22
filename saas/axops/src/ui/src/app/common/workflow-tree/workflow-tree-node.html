@@ -1,0 +1,38 @@
+<div *ngIf="cell" class="workflow-tree__node" [ngClass]="{active: activeStep === cell?.workflow?.value?.id}">
+    <div *ngIf="hasDownConnectorArrow" class="workflow-tree__node-down-connector-arrow"></div>
+    <div class="workflow-tree__node-info" (click)="getYaml(cell)" [ngClass]="{ clickable: clickable }">
+        <div class="workflow-tree__node-fixtures">
+            <span *ngIf="cell.workflow.fixturesUsed.length > 0">
+                <div class="fixture-status"
+                     [class.fixture-status--failed]="cell.workflow.fixturesStatus === statuses.Cancelled
+                                                    || cell.workflow.fixturesStatus === statuses.Failed"
+                     [class.fixture-status--success]="cell.workflow.fixturesStatus === statuses.Success"
+                     [class.fixture-status--in-progress]="cell.workflow.fixturesStatus === statuses.Running"
+                     [class.fixture-status--waiting]="cell.workflow.fixturesStatus === statuses.Waiting
+                                                    || cell.workflow.fixturesStatus === statuses.Init
+                                                    || cell.workflow.fixturesStatus === statuses.Skipped">
+                    <i class="fa fa-link" [ax-tooltip]="myTooltip"></i></div>
+                <ax-tooltip-content #myTooltip [animation]="true" placement="bottom">
+                    Used Fixtures:
+                    <ul>
+                        <li *ngFor="let fixture of cell.workflow.fixturesUsed">{{fixture.name}}</li>
+                    </ul>
+                </ax-tooltip-content>
+            </span>
+        </div>
+
+        <div *ngIf="workflowNodeInfoTemplate">
+            <template [ngTemplateOutlet]="workflowNodeInfoTemplate" [ngOutletContext]="{ cell: cell }"></template>
+        </div>
+    </div>
+    <div class="workflow-tree__node-footer">
+        <div class="workflow-tree__node-title" [attr.title]="cell.name" (click)="selectTask(cell)">
+            {{cell.name}}
+        </div>
+        <div class="workflow-tree__node-actions">
+            <div *ngIf="workflowNodeActionsTemplate">
+                <template [ngTemplateOutlet]="workflowNodeActionsTemplate" [ngOutletContext]="{ cell: cell }"></template>
+            </div>
+        </div>
+    </div>
+</div>

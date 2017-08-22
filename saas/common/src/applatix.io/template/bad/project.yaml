@@ -1,0 +1,39 @@
+---
+type: project
+version: 1
+name: CI Workflow 
+description: Run a CI workflow with approval step.
+actions:
+  run:
+    template: example-build-ok
+categories: ["devops", "promoted"]
+publish:
+  branches:
+  - master
+labels:
+  tags: "[\"demo\"]"
+  publisher: Applatix
+assets:
+  icon: /approval.png
+  publisher_icon: /AX_Pub.png
+  detail: /README.md
+
+---
+type: container
+version: 1
+name: example-build-ok
+description: Build the code
+inputs:
+  artifacts:
+    CODE:
+      path: /src
+outputs:
+  artifacts:
+    BINARY:
+      path: /src/main
+image: golang:1.6
+resources:
+  mem_mib: 256
+  cpu_cores: 0.1
+command: [sh, -c]
+args: ['cd /src && ls -ltr && go build main.go']

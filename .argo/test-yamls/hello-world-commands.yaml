@@ -1,0 +1,9 @@
+---
+type: container
+version: 1
+name: hello-world-commands
+description: hello world by commands
+ 
+image: ubuntu
+command: ["/bin/echo", "hello"]
+args: ["world", "!"]

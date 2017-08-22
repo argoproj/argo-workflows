@@ -1,0 +1,67 @@
+<div class="ax-table-list">
+    <div>
+        <div class="ax-table-list__head">
+            <div class="row">
+                <div class="columns small-2">
+                    <div class="ax-checkbox">
+                        <input type="checkbox" (change)="bulkUpdater.toggleAllSelection()" [checked]="bulkUpdater.isAllSelected" [disabled]="!dataLoaded">
+                        <span><i class="fa fa-check"></i></span>
+                    </div>
+                    Name
+                </div>
+                <div class="columns small-2">Status</div>
+                <div class="columns small-3">Endpoints</div>
+                <div class="columns small-2">Created</div>
+                <div class="columns small-3">
+                    Last Deployed
+                </div>
+            </div>
+        </div>
+
+        <div class="ax-table-list__row jobs-list__item" *ngFor="let application of items;">
+            <div class="row" *ngIf="dataLoaded">
+                <div class="columns small-2" ax-tooltip="{{ application.name }}">
+                    <div class="row">
+                        <div class="small-2 column">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" (change)="bulkUpdater.toggleItemSelection(application); $event.stopPropagation();" [checked]="bulkUpdater.isSelected(application)" [disabled]="application.disabled"><span><i class="fa fa-check"></i></span>
+                            </div>
+                        </div>
+                        <div class="small-10 column" (click)="navigateToDetails(application)">
+                            <i class="ax-icon-deployment"></i> <span [ax-highlight-substring]="searchString">{{ application.name }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ application.status }}" (click)="navigateToDetails(application)">
+                    <ax-application-status [status]="application.status"></ax-application-status>
+                </div>
+                <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ application.endpoints }}" (click)="navigateToDetails(application)">{{ application.endpoints }}</div>
+                <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ application.ctime | timestamp }}" (click)="navigateToDetails(application)">{{ application.ctime | timestamp }}</div>
+                <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ application.mtime | timestamp }}" (click)="navigateToDetails(application)">{{ application.mtime | timestamp }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="dataLoaded && !items.length" class="ax-table__empty-row">
+        <strong><i class="fa fa-info-circle"></i> {{ 'No data to display' | translate }}</strong>
+    </div>
+
+    <div *ngIf="!dataLoaded">
+        <ax-loader-list-mockup [itemHeight]="60" [itemsLength]="limit"></ax-loader-list-mockup>
+    </div>
+</div>
+
+<div class="bottom-toolbox bottom-toolbox--small">
+    <div class="bottom-toolbox__wrapper">
+        <div class="ax-container ax-container--additional-padding">
+            <h3><em>{{ bulkUpdater.selectedCount }}</em> Application{{bulkUpdater.selectedCount != 1 ? 's' : ''}} selected</h3>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('start')" [disabled]="bulkUpdater.noApplicableSelected('start')">Start</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('stop')" [disabled]="bulkUpdater.noApplicableSelected('stop')">Stop</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('terminate')" [disabled]="bulkUpdater.noApplicableSelected('terminate')">Terminate</button>
+
+            <div class="jobs-list__pagination-position">
+                <ax-pagination [pagination]="pagination" [preventActions]="dataLoaded" (onPaginationChange)="onPaginationChange($event)"></ax-pagination>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,42 @@
+<div class="pagination" [ngClass]="{'pagination--right': position === 'right'}">
+    <div class="pagination__btns">
+        <div class="pagination__btn pagination__btn--before" (click)="before()">
+            <i class="ax-icon-collapse-arrow"></i>
+        </div>
+    </div>
+    <div class="pagination__position">
+        <span *ngIf="pagination">Showing {{ getState(pagination).start }}-<span>{{ getState(pagination).end }}</span> </span>
+        <span *ngIf="pagination?.hasMore">of many</span>
+    </div>
+    <div class="pagination__btns">
+        <div class="pagination__btn pagination__btn--next" (click)="next()">
+            <i class="ax-icon-collapse-arrow pagination-next"></i>
+        </div>
+    </div>
+    <div class="pagination__items-per-page">
+        <ax-dropdown #itemsPerPageDropdown class="pagination__limit" [isMenu]="true" *ngIf="isChangeableLimit">
+            <ax-dropdown-anchor>
+                <button class="ax-toolbar__button">
+                    {{ 'Items Per Page' | translate }}: {{ pagination?.limit }}
+                    <i class="fa fa-caret-down" aria-hidden="true"></i>
+                </button>
+            </ax-dropdown-anchor>
+            <ax-dropdown-content>
+                <ul>
+                    <li (click)="paginationUpdate(10)">
+                        {{ '10' | translate }}
+                    </li>
+                    <li (click)="paginationUpdate(25)">
+                        {{ '25' | translate }}
+                    </li>
+                    <li (click)="paginationUpdate(50)">
+                        {{ '50' | translate }}
+                    </li>
+                    <li (click)="paginationUpdate(100)">
+                        {{ '100' | translate }}
+                    </li>
+                </ul>
+            </ax-dropdown-content>
+        </ax-dropdown>
+    </div>
+</div>

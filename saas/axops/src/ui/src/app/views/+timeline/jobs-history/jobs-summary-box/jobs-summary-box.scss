@@ -1,0 +1,19 @@
+@import '../../../../../assets/styles/config';
+
+.markup {
+    &--success {
+        color: $ax-success-color;
+    }
+
+    &--failed {
+        color: $ax-failed-color;
+    }
+
+    &--running {
+        color: $ax-running-color;
+    }
+
+    &--queued {
+        color: $ax-waiting-color;
+    }
+}

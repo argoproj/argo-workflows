@@ -1,0 +1,19 @@
+@import '../../../../assets/styles/config';
+
+.commits-overview {
+    height: calc(100% - #{$top-bar-height}) !important;
+    margin-top: -$toolbar-height;
+    overflow-y: auto;
+    padding-bottom: 0;
+    padding-top: 1em;
+
+    &__loader {
+        .custom-loader-circle {
+            margin-top: 20px;
+        }
+    }
+
+    &__list {
+        margin-top: 48px;
+    }
+}

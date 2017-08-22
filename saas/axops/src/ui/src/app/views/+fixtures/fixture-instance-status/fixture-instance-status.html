@@ -1,0 +1,8 @@
+<i *ngIf="fixtureStatusCode === 'operating'" class="fixture-instance-status--operating fa fa-cogs" aria-hidden="true"></i>
+<i *ngIf="fixtureStatusCode === 'active'" class="fixture-instance-status--active fa fa-check-square-o" aria-hidden="true"></i>
+<i *ngIf="fixtureStatusCode === 'disabled'" class="fixture-instance-status--disabled fa fa-ban" aria-hidden="true"></i>
+<i *ngIf="fixtureStatusCode === 'error'" class="fixture-instance-status--error fa fa-exclamation-triangle" aria-hidden="true"></i>
+<span *ngIf="!operationInProgress">{{status}}</span>
+<span *ngIf="operationInProgress">
+    <a [routerLink]="['/app/timeline/jobs/', operationInProgress.id]">{{operationInProgress.name}}</a> In Progress
+</span>

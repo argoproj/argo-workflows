@@ -1,0 +1,36 @@
+@import '../../../assets/styles/config';
+
+.performance {
+    .chart {
+        background-color: $ax-color-white;
+        border: 1px solid #eee;
+        margin-bottom: 20px;
+
+        .title {
+            margin: 0;
+            padding: 16px 20px;
+            font-size: 18px;
+        }
+    }
+
+    .area {
+        &:last-child {
+            margin-bottom: 20px;
+        }
+    }
+}
+
+//div.time-status {
+//    height: $performance-status-height;
+//    line-height: $performance-status-height;
+//    margin: 5px 0 15px 0;
+//    background-color: $fog-color;
+//
+//    .label {
+//        @include font-kanban-table-header;
+//    }
+//
+//    .time {
+//        @include font-performance-wait-time;
+//    }
+//}

@@ -1,0 +1,44 @@
+---
+type: workflow
+version: 1
+name: test-basic-workflow-inline
+description: Basic workflow with inlined containers
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]
+- STEP2:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]
+---
+type: workflow
+version: 1
+name: test-basic-workflow-inline-strange-names
+description: Basic workflow with inlined containers with strange step names
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- with-CAPITAL-LETTERS:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]
+  12345:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]
+  letters-endingwith-:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]

@@ -1,0 +1,23 @@
+@import '../../../assets/styles/config';
+
+.loader-in-background {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background-color: $ax-color-gray-7;
+  margin: 20px;
+  padding: 0 20px;
+  opacity: 0.6;
+  border-radius: $border-radius;
+
+  &__title {
+    display: block;
+    position: relative;
+    color: white;
+    font-size: 15px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    margin-top: 6px;
+  }
+}

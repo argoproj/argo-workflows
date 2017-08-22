@@ -1,0 +1,101 @@
+{
+  "template": {
+    "type": "service_template",
+    "cost": 0,
+    "description": "",
+    "dns_name": "",
+    "id": "49a21920-202d-4851-997c-19f3d71f50f5",
+    "steps": [
+      {
+        "root-0-0": {
+          "template": {
+            "type": "service_template",
+            "cost": 0,
+            "description": "",
+            "dns_name": "",
+            "id": "c332a266-2e5d-4f8d-ac14-d61e09e058da",
+            "steps": [
+              {}
+            ],
+            "name": "root-0-0",
+            "version": "1.0",
+            "subtype": "workflow"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "32f3c0c1-54fd-41fc-a713-9b4b4b88dbfb"
+        },
+        "root-0-1": {
+          "template": {
+            "type": "service_template",
+            "cost": 0,
+            "description": "",
+            "dns_name": "",
+            "id": "ab4e1604-720d-4824-a4b4-50602543d065",
+            "steps": [
+              {}
+            ],
+            "name": "root-0-1",
+            "version": "1.0",
+            "subtype": "workflow"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "75d70c24-3b79-4956-8ae6-d9b723ab33e2"
+        }
+      },
+      {
+        "root-1-1": {
+          "template": {
+            "type": "service_template",
+            "cost": 0,
+            "description": "",
+            "dns_name": "",
+            "id": "ad52b97e-5cd9-4ab7-ae74-820a27dc9b95",
+            "steps": [
+              {}
+            ],
+            "name": "root-1-1",
+            "version": "1.0",
+            "subtype": "workflow"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "af2c1a93-4223-46cc-a068-49e707a2bf93"
+        },
+        "root-1-0": {
+          "template": {
+            "type": "service_template",
+            "cost": 0,
+            "description": "",
+            "dns_name": "",
+            "id": "dd711358-b115-4201-8513-c2c0d8feda30",
+            "steps": [],
+            "name": "root-1-0",
+            "version": "1.0",
+            "subtype": "workflow"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "77f1af9f-6cbc-40ff-92be-9b88125bf75a"
+        }
+      }
+    ],
+    "name": "root",
+    "version": "1.0",
+    "subtype": "workflow"
+  },
+  "costid": {
+    "app": "workflow",
+    "project": "prod"
+  },
+  "id": "asd"
+}

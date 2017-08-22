@@ -1,0 +1,67 @@
+<div class="login">
+
+    <div class="login__content">
+        <div class="login__text">
+            Let's get stuff done!
+        </div>
+        <div class="argo__logo">
+
+        </div>
+    </div>
+    <!-- <div class="outter"> -->
+
+
+        <div class="login__box">
+                    
+            <div class="login__logo width-control">
+                <img class="logo-image" src="assets/styles/icons/argo_o.svg" alt="argo">
+
+            </div>
+
+            <div *ngIf="samlLogin" class="login__box_saml width-control">
+                <button axButtonWave class="ax-button ax-button--base ax-button--full-width ax-button--xlg"
+                        (click)="loginWithSaml()">{{samlButtonLabel}}
+                </button>
+                <div class="login__saml-separator"><span>or</span></div>
+            </div>
+            <form role="form" [formGroup]="loginForm" (ngSubmit)="login(loginForm)" class="width-control">
+                <div class="ax-form-row" [ngClass]="{'error': isVissibleWrongCredentialsMsg}">
+                    <input class="ax-field" id="username" type="text" ax-label-placeholder
+                            formControlName="username" autocomplete="off">
+                    <label class="ax-label-placeholder" for="username">{{ 'Username' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="isVissibleWrongCredentialsMsg">Wrong credentials
+                    </div>
+                    <div class="ax-form-row__error-msg"
+                            *ngIf="loginForm.controls['username'].errors?.required && (loginForm.controls['username'].touched || submitted)">
+                        Username is required
+                    </div>
+                </div>
+                <div class="ax-form-row" [ngClass]="{'error': isVissibleWrongCredentialsMsg}">
+                    <input class="ax-field" id="password" type="password" ax-label-placeholder
+                            formControlName="password" autocomplete="off">
+                    <label class="ax-label-placeholder" for="password">{{ 'Password' | translate }}</label>
+                    <div class="ax-form-row__error-msg"
+                            *ngIf="loginForm.controls['password'].errors?.required && (loginForm.controls['password'].touched || submitted)">
+                        Password is required
+                    </div>
+                </div>
+                <div class="login__form-row">
+                    <button axButtonWave class="ax-button ax-button--full-width ax-button--xlg" type="submit"
+                            [ngClass]="{'disabled': showLoader, 'ax-button--base': !samlLogin, 'ax-button--base-o': samlLogin}">
+                        Sign In
+                    </button>
+                </div>
+                <ax-loader-custom [size]="50" *ngIf="showLoader"></ax-loader-custom>
+                <div class="login__more-row">
+                    <a [routerLink]="['/forgot-password']">Forgot password</a>
+                </div>
+            </form>
+            <div class="login__footer">
+                <a href="https://argoproj.io" target="_blank">
+                    <img class="logo-image" src="assets/styles/icons/argologo.svg" alt="argo">
+                </a>
+                <span class="ver">  |  Version: {{version}}</span>
+            </div>
+        </div>
+    <!-- </div> -->
+</div>

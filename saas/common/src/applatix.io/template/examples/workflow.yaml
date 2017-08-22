@@ -1,0 +1,153 @@
+---
+type: workflow
+version: 1
+name: example-workflow
+description: Generate and consume an artifact
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout-step:
+    template: example-checkout
+- build-step:
+    template: example-build
+    arguments:
+      artifacts.code: "%%steps.checkout-step.outputs.artifacts.code%%"
+
+---
+type: workflow
+version: 1
+name: example-workflow-inline
+description: Generate and consume an artifact using inlined containers
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout-step:
+    image: get.applatix.io/applatix/axscm:v2.0
+    command: ["axscm"]
+    args: ["clone", "%%inputs.parameters.repo%%", "/src", "--commit", "%%inputs.parameters.commit%%"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+- build-step:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["ls -la /src && sleep 5 && mkdir /build && echo 1234 > /build/app_binary"]
+    inputs:
+      artifacts:
+        code:
+          from: "%%steps.checkout-step.outputs.artifacts.code%%"
+          path: /src
+    outputs:
+      artifacts:
+        build:
+          path: /build
+- notify:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["send_email 'workflow completed'"]
+    flags: always_run
+
+---
+type: workflow
+version: 1
+name: export_artifact
+description: Workflow passing artifact from step 1 -> 2 and exporting and tagging artifacts. Has labels, termination policy
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout-step:
+    image: get.applatix.io/applatix/axscm:v2.0
+    command: ["axscm"]
+    args: ["clone", "%%inputs.parameters.repo%%", "/src", "--commit", "%%inputs.parameters.commit%%"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+- build-step:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["ls -la /src && sleep 5 && mkdir /binaries && echo 1234 > /binaries/app_binary"]
+    inputs:
+      artifacts:
+        code:
+          from: "%%steps.checkout-step.outputs.artifacts.code%%"
+          path: /src
+    outputs:
+      artifacts:
+        binaries:
+          path: /binaries
+outputs:
+  artifacts:
+    code:
+      from: "%%steps.checkout-step.outputs.artifacts.code%%"
+    build:
+      from: "%%steps.build-step.outputs.artifacts.binaries%%"
+artifact_tags:
+  - my_export_artifact
+termination_policy:
+  time_seconds: 2700
+  spending_cents: 20
+
+
+---
+type: workflow
+version: 1
+name: workflow-with-fixtures
+fixtures:
+- dyn-fixture:
+    template: mongodb
+    arguments:
+      parameters.version: 3.2.9
+  managed-fixture:
+    class: test-fixture
+steps:
+- sleep:
+    template: sleep-container
+    arguments:
+      parameters.sleep: "10"
+
+---
+type: container
+version: 1
+name: mongodb
+description: MongoDB container
+inputs:
+  parameters:
+    version:
+image: mongo:%%inputs.parameters.version%%
+
+# ---
+# type: workflow
+# version: 1
+# name: inlined-container-and-fixture-name-collision
+# inputs:
+#   parameters:
+#     myfix:
+#   fixtures:
+#     myfix:
+# fixtures:
+# - myfix:
+#     class: test-fixture
+#   myfix_1:
+#     class: test-fixture
+# steps:
+# - ping:
+#     image: alpine:latest
+#     command: ["sh", "-c"]
+#     args: ["ping %%inputs.parameters.myfix%% &&
+#             ping %%fixtures.myfix.hostname%% &&
+#             ping %%fixtures.myfix_1.hostname%% &&
+#             ping %%inputs.fixtures.myfix.hostname%%"]

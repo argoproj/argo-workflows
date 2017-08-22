@@ -1,0 +1,47 @@
+<form role="form" [formGroup]="form" class="tool-box">
+    <div class="row">
+        <div class="columns small-12">
+            <div class="tool-box__title">
+                <span>1</span> Enter credentials
+            </div>
+            <div class="tool-box" [ngClass]="{'tool-box--disconnected': !isAccountConnected}">
+                <div class="tool-box__form">
+                    <div class="ax-form-row">
+                        <input id="username" type="text" class="ax-field" formControlName="username"
+                               ax-label-placeholder>
+                        <label class="ax-label-placeholder" for="username">{{ 'Username' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!form.controls['username'].valid && (form.controls['username'].touched || submitted)">
+                            Username is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input id="password" type="password" class="ax-field" formControlName="password"
+                               ax-label-placeholder ax-autocomplete-off>
+                        <label class="ax-label-placeholder" for="password">
+                            {{ 'Password/ Personal Access Token' | translate }}
+                        </label>
+                        <div class="ax-form-row__error-msg" *ngIf="!form.controls['password'].valid && (form.controls['password'].touched || submitted)">
+                            Password is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row" *ngIf="type === registerTypes.privateRegistry">
+                        <input id="hostname" type="text" class="ax-field" formControlName="hostname"
+                               ax-label-placeholder>
+                        <label class="ax-label-placeholder" for="hostname">{{ 'Hostname' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!form.controls['hostname'].valid && (form.controls['hostname'].touched || submitted)">
+                            Hostname is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row tool-box__info--error-msg" *ngIf="wrongCredentialVisible">{{ 'Connection error' | translate }}!</div>
+                    <div class="ax-form-row tool-box__info--success-msg" *ngIf="isCredentialsConfirmed">{{ 'Connection success' | translate }}</div>
+                    <div class="ax-form-row">
+                        <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base"
+                                (click)="connect()">Connect</button>
+                        <button *ngIf="isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base"
+                                (click)="update()">Save</button>
+                        <button *ngIf="!isAccountConnected" axButtonWave class="ax-button" (click)="testCredentials(containerRegistryEditForm)">
+                            {{ 'Test' | translate }}</button>
+                        <button [disabled]="!isAccountConnected" axButtonWave class="ax-button" (click)="disconnect()">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

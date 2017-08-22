@@ -1,0 +1,82 @@
+<div class="ax-toolbar volume-details">
+    <div class="ax-container">
+        <div class="ax-toolbar__item">
+            <button class="ax-toolbar__button">
+                <ax-date-range-dropdown [range]="dateRange" (rangeChanged)="onDateRangeChanged($event)"></ax-date-range-dropdown>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="content volume-details">
+    <div class="ax-container">
+        <div class="row">
+            <div class="columns small-4">
+                <div class="white-box volume-details__box">
+                    <div class="volume-details__usage">
+                        <strong>VOLUME USAGE:</strong>
+                        <div class="row">
+                            <div class="columns small-4">
+                                <span>{{volume?.applicationsCount}}</span>
+                                <label>applications</label>
+                            </div>
+                            <div class="columns small-4">
+                                <span>{{volume?.deploymentsCount}}</span>
+                                <label>deployments</label>
+                            </div>
+                            <div class="columns small-4">
+                                <span class="volume-details__usage-size">{{volume?.attributes?.size_gb}}
+                                    <span>GiB</span>
+                                </span>
+                                <label>volume size</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row volume-details__space">
+                        <div class="columns small-12">
+                            <label>Used Space: <strong>{{volume?.attributes?.usage_gb}} GiB</strong> </label>
+                            <label class="pull-right">Free Space: <strong>{{(volume?.attributes?.size_gb - volume?.attributes?.usage_gb).toFixed(2)}} GiB</strong></label>
+                            <ax-progress-bar [progress]="volume?.usagePercentage"></ax-progress-bar>
+                        </div>
+                    </div>
+                    <div class="row volume-details__parameter" *ngFor="let parameter of volume?.parameters">
+                        <div class="columns small-6" ax-tooltip="{{parameter.title}}">{{parameter.title}}</div>
+                        <div class="columns small-6">
+                            <strong ax-tooltip="{{parameter.value}}">{{parameter.value}}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="columns small-8">
+                <div *ngFor="let chart of charts" class="white-box white-box--no-padding volume-details__chart" [hidden]="showChartLoader">
+                    <h6>{{chart.title}}</h6>
+                    <nvd3 [options]="chart.options" [data]="chart.data"></nvd3>
+                </div>
+
+                <div class="volume-details__chart--loader">
+                    <ax-loader-list-mockup *ngIf="showChartLoader" [itemHeight]="156" [itemGap]="30" [itemsLength]="3" [marginLeft]="0" [marginRight]="0"></ax-loader-list-mockup>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="volume-details__users-title">VOLUME USERS:</h6>
+        <div class="ax-table-list ax-table-list--clickable">
+            <div class="ax-table-list__row" *ngFor="let deployment of deployments"
+                [routerLink]="['/app/applications/details', deployment.app_generation, 'deployment', deployment.id]">
+                <div class="row">
+                    <div class="columns small-4"><i class="ax-icon-deployment"></i> <strong>{{ deployment.name }}</strong></div>
+                    <div class="columns small-4">{{ deployment.status }}</div>
+                    <div class="columns small-4">{{ deployment.app_name }}</div>
+                </div>
+            </div>
+            <div *ngIf="!deployments.length" class="no-data-panel">
+                <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<ax-volume-edit-panel *ngIf="editedVolume" [show]="showEditPanel" [volume]="editedVolume" (closePanel)="cancelEdit()" (saveVolume)="save()"></ax-volume-edit-panel>

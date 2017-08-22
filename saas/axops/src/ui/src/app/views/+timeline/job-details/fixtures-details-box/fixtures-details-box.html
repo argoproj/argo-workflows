@@ -1,0 +1,17 @@
+<div class="white-box">
+    <div class="row">
+        <div class="columns large-12">
+            <h6>Fixtures</h6>
+        </div>
+    </div>
+    <div class="white-box__details">
+        <div class="row white-box__details-row" *ngFor="let fixture of fixtures">
+            <div class="large-3 columns white-box__details-label">
+                {{ fixture.name }}
+            </div>
+            <div class="large-9 columns columns--narrower-height">
+                {{ fixture.value?.status | status }}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,16 @@
+---
+type: workflow
+version: 1
+name: test-nested-workflow-basic
+description: Workflow which nests two other workflows
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    template: test-basic-sequential-workflow
+- STEP2:
+    template: test-basic-parallel-workflow

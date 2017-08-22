@@ -1,0 +1,20 @@
+<div class="jobs-timeline">
+    <div class="jobs-timeline__wrapper">
+        <div class="jobs-timeline__job" *ngFor="let job of jobs; let i = index"
+             [style.left]="job.left"
+             [ngClass]="getTaskClasses(job.task)"
+             (click)="onTaskClicked(job.task)">
+        </div>
+        <div *ngIf="nowLine.inRange">
+            <div class="jobs-timeline__now"
+                 [style.left]="nowLine.left">
+            </div>
+            <div class="jobs-timeline__job jobs-timeline__running" [style.left]="nowLine.left">
+                <span>{{runningJobsCount}}</span>
+            </div>
+            <div class="jobs-timeline__job jobs-timeline__scheduled" [style.left]="nowLine.left">
+                <span>{{scheduledJobsCount}}</span>
+            </div>
+        </div>
+    </div>
+</div>

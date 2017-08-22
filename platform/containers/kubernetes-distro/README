@@ -1,0 +1,5 @@
+1. Run build.sh to create the kubernetes-distro container.
+    1.1. build.sh creates the docker container using Dockerfile
+2. Manually push the container to the docker registry
+3. Update axclustermanager with the name of the new container.
+

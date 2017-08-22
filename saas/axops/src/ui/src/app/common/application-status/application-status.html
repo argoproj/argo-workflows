@@ -1,0 +1,10 @@
+<label class="application-status" [ngClass]="{
+        'application-status--active': status === 'Active',
+        'application-status--waiting': status === 'Waiting',
+        'application-status--stopped': status === 'Stopped',
+        'application-status--terminating': status === 'Terminating',
+        'application-status--terminated': status === 'Terminated',
+        'application-status--error': status ==='Error'
+        }">
+    <i class="fa" [ngClass]="{'fa-circle-o': status !== 'Stopped', 'fa-ban': status === 'Stopped'}"></i>{{ status }}
+</label>

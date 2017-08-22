@@ -1,0 +1,28 @@
+<div class="content commits-view">
+    <div class="ax-container">
+        <div class="performance margin-top-medium">
+            <div class="row">
+                <div class="columns small-12">
+                    <div class="chart">
+                        <h4 class="title">
+                            {{ 'Activities' | translate | uppercase }}
+                        </h4>
+                        <div class="area">
+                            <ax-builds-line-chart [data]="buildsLineChartSeries"></ax-builds-line-chart>
+                        </div>
+                    </div>
+                </div>
+                <div class="columns small-12">
+                    <div class="chart">
+                        <h4 class="title">
+                            {{ 'Wait Time Trend' | translate | uppercase }}
+                        </h4>
+                        <div class="area">
+                            <ax-builds-boxplot-chart [data]="buildsBoxPlotChartSeries"></ax-builds-boxplot-chart>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

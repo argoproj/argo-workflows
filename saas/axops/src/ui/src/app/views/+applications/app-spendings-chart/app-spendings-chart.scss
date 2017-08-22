@@ -1,0 +1,123 @@
+$chart-height: 200px;
+
+.app-spendings-chart {
+    &__chart-panel {
+        &--loading {
+            visibility: hidden;
+            height: 0;
+        }
+    }
+
+    &__title {
+        font-size: 1.2em;
+    }
+
+    .row {
+        line-height: 2em!important;
+    }
+
+    &__calc {
+        max-width: 300px;
+        margin: 60px auto 80px;
+        padding-left: 18px;
+        color: #fff;
+        border-left: 1px solid rgba(255,255,255,.3);
+
+        &-range {
+            font-size: 16px;
+        }
+
+        &-cost {
+            font-size: 24px;
+            font-weight: 100;
+        }
+
+        &-des {
+            font-size: 12px;
+            opacity: .6;
+        }
+
+        &-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    }
+
+    &__chart {
+        position: relative;
+        height: $chart-height;
+
+        &__selected-step {
+            position: absolute;
+            z-index: 4;
+            padding-top: 4px;
+            font-size: 14px;
+            white-space: nowrap;
+            color: #bbb;
+            border-top: 8px solid black;
+
+            .fa-times {
+                padding: 4px 6px;
+                margin-left: 2px;
+                font-size: 12px;
+                background-color: #eee;
+                border-radius: 50%;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: #eaeaea;
+                }
+            }
+        }
+
+        & .nv-axis.nv-y {
+            & path.domain {
+                display: none;
+            }
+
+            & .tick line {
+                display: none;
+
+                &.short-y-tick {
+                    display: block;
+                    stroke-width: 1;
+                }
+            }
+        }
+
+        & .nv-axis.nv-x .tick line {
+            display: none;
+            left: 10px;
+
+            &.short-x-tick {
+                display: block;
+                margin-left: 20px;
+                stroke-width: 2;
+            }
+        }
+
+        & .nv-point.hover, & .nv-point {
+            display: none;
+        }
+
+        &-tooltip {
+            position: absolute;
+            top: 0px;
+            transform: translateX(-50%);
+            min-width: 80px;
+            font-size: 16px;
+            line-height: 2.1;
+            color: #fff;
+            text-align: center;
+            background-color: rgba(0,0,0,.34);
+            border-radius: 4px;
+        }
+    }
+
+    &__loader {
+        height: 256px;
+        display: flex;
+        align-items: center;
+        margin: auto;
+    }
+}

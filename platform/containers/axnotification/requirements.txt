@@ -1,0 +1,7 @@
+Flask==0.11.1
+Flask-RESTful==0.3.5
+Flask-SQLAlchemy==2.1
+voluptuous==0.8.11
+gevent==1.1.1
+retrying==1.3.3
+requests==2.10.0

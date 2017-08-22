@@ -1,0 +1,41 @@
+{
+  "costid": {
+    "app": "axdevops",
+    "service": "workflowexecutor",
+    "user": "axsys"
+  },
+  "name": "axworkflowexecutor",
+  "template": {
+    "type": "container",
+    "version": "2",
+    "name": "axworkflowexecutor",
+    "dns_name": "axworkflowexecutor",
+    "description": "axworkflowexecutor",
+    "cost": 0,
+    "tags": {
+      "app": [
+        "ax_workflow"
+      ],
+      "test": [
+        "notuse"
+      ]
+    },
+    "id": "axworkflowexecutor",
+    "image": "%%registry%%/%%name_space%%/workflow:%%version%%",
+    "instances": 1,
+    "once": false,
+    "expand": false,
+    "resources": {
+      "cpu_cores": 0.1,
+      "mem_mib": 100.0
+    },
+    "tags": {
+      "app": [
+        "ax_workflow"
+      ],
+      "test": [
+        "notuse"
+      ]
+    }
+  }
+}

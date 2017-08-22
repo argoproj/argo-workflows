@@ -1,0 +1,42 @@
+@import '../../../../assets/styles/config';
+//div#spending-line > svg > g.nvd3 > g > g.nv-focus > g.nv-x > g.nv-axis > g > g.tick {
+//  display: none;
+//}
+
+div.spending-line-chart {
+  position: relative;
+  padding-top: 20px;
+
+  svg {
+    height: 500px;
+  }
+
+.y-axis-title-stacked-area {
+    color: #3E3E3E;
+    position: absolute;
+    font-size: 12px;
+    left: 50px;
+    font-weight: bold;
+  }
+  .spending-line-bar {
+    top: 18%;
+    position: absolute;
+    margin-left: 8%;
+    height: 20px;
+    width: 84%;
+    background-color: #0AA754;
+    opacity: 0.7;
+    border-radius: $border-radius;
+    border: 1px solid $ax-color-gray-7;
+    background: linear-gradient(#F2F3F0, #D0FF08);
+
+    p {
+      text-align: center;
+      color: black;
+      font-size: 12px;
+      line-height: 18px;
+      margin-bottom: 0;
+      cursor: row-resize;
+    }
+  }
+}

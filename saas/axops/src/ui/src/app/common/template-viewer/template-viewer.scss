@@ -1,0 +1,49 @@
+@import '../../../assets/styles/config';
+
+.template-viewer {
+
+    &__workflow, &__yaml {
+        overflow: auto;
+        height: 100%;
+    }
+
+    &__node-icon {
+        font-size: 5em;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateY(-50%) translateX(-50%);
+    }
+
+    &__btn {
+        position: absolute;
+        right: 0;
+        top: 219px;
+        background-color: $ax-color-teal-7;
+        color: #fff;
+        font-size: 13px;
+        padding: 14px 6px;
+        border-top-left-radius: $border-radius;
+        border-bottom-left-radius: $border-radius;
+        cursor: pointer;
+        box-shadow: 0 2px 3px rgba(0,0,0,.3);
+    }
+
+    &__yaml {
+        .sliding-panel__header {
+            height: $top-bar-height;
+            line-height: $top-bar-height;
+
+            i {
+                position: relative;
+                top: -1px;
+                margin-right: 6px;
+            }
+        }
+    }
+
+    &__yaml-header-cancel {
+        float: right;
+        cursor: pointer;
+    }
+}

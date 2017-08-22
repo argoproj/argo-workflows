@@ -1,0 +1,27 @@
+#!/bin/bash
+# -*- coding: utf-8 -*-
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+# Kubectl dispatcher
+# Find out which kubectl version should be used inside axclustermanager container.
+#
+# There are several options.
+# 1. Use a universal kubectl to test server version and then switch to that version.
+#    This would work best in terms of compatibility. But it'll introduce an extra API
+#    call every time.
+# 2. We have two versions right now, 1.4.3 for AWS and 1.5.7 for GKE. Cloud provider
+#    can be used to select kubectl version.
+# Use option 2 for now.
+
+# Path is always /opt/google-cloud-sdk/bin inside axclustermanager
+KUBECTL_DIR=/opt/google-cloud-sdk/bin
+
+if [ "${AX_TARGET_CLOUD}" = "gcp" ] ; then
+    cmd=${KUBECTL_DIR}/kubectl-1.5.7
+else
+    cmd=${KUBECTL_DIR}/kubectl-1.6.7
+fi
+
+exec $cmd $@

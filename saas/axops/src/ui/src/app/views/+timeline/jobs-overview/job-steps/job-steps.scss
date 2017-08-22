@@ -1,0 +1,162 @@
+@import '../../../../../assets/styles/config';
+
+.job-steps {
+    float: left;
+    width: 100%;
+    margin: 0;
+
+    &__icon {
+        display: inline-block;
+        color: $ax-color-gray-5;
+        vertical-align: top;
+        padding-top: 16px;
+
+        & > i {
+            font-size: 32px;
+            padding: 0 16px;
+        }
+    }
+
+    &__description {
+        display: inline-block;
+        color: $ax-color-gray-6;
+        padding: 12px 0;
+
+        &-title {
+            font-weight: bolder;
+            font-size: 15px;
+            color: $ax-color-gray-6;
+            display: block;
+        }
+
+        &-des {
+            font-size: 12px;
+        }
+    }
+
+    &__title {
+        height: 65px;
+        &-stepname {
+            color : $ax-color-gray-7;
+        }
+    }
+
+    &__timeline {
+        min-width: 645px;
+        overflow: hidden;
+        padding: 20px 58px;
+        white-space: nowrap;
+    }
+
+    &__step-dots {
+        margin-left: 10px;
+        display: inline-block;
+        position: relative;
+        width: 40px;
+
+        &::before {
+            position: absolute;
+            z-index: 1;
+            top: 12px;
+            height: 100%;
+            padding-left: 6px;
+            border-top: 1px dashed $ax-color-gray-3;
+            content: '';
+            width: 100%;
+        }
+    }
+
+    &__step {
+        display: inline-block;
+        position: relative;
+        width: 30%;
+
+        &-circle {
+            position: relative;
+            z-index: 2;
+            top: -2px;
+            width: 20px;
+            height: 20px;
+            margin: 0 auto;
+            border: 3px solid;
+            border-radius: 50%;
+            text-align: center;
+            background-color: white;
+            border-color: $ax-color-teal-6;
+
+            &--succeeded {
+                border-color: $ax-success-color;
+            }
+
+            &--failed {
+                border-color: $ax-failed-color;
+            }
+
+            &--running {
+                border-color: $ax-running-color;
+            }
+
+            &-small {
+                top: -1px;
+                width: 8px;
+                height: 8px;
+                display: inline-block;
+                border-width: 2px;
+                border-color: $ax-color-teal-6;
+            }
+        }
+
+        &-name {
+            text-align: center;
+            font-size: 13px;
+            color: $ax-color-gray-7;
+            height: 14px;
+        }
+
+        &::before {
+            position: absolute;
+            z-index: 1;
+            top: 8px;
+            height: 100%;
+
+            border-top: 1px dashed $ax-color-gray-3;
+            content: '';
+            width: 100%;
+        }
+
+        &:first-child::before {
+            width: 100%;
+            right: 0;
+        }
+
+        &:last-child::before {
+            width: 50%;
+            right: 0;
+            margin-right: 50%;
+        }
+    }
+
+    &__issues {
+        padding: 0 20px 15px 57px;
+        font-size: 14px;
+        color: $ax-color-gray-6;
+        font-weight: bolder;
+
+        & > .active {
+            color: $ax-color-gray-5;
+
+            & > a {
+                color: $ax-color-gray-3;
+            }
+        }
+
+        & > span {
+            padding: 3px 10px;
+
+            &:hover {
+                background-color: $ax-color-gray-2;
+                border-radius: $border-radius;
+            }
+        }
+    }
+}

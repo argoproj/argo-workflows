@@ -1,0 +1,58 @@
+@import '../../../assets/styles/config';
+
+div.search {
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    padding-top: 14px;
+    font-family: $body-font-family;
+    font-weight: normal;
+    font-size: 13.5px;
+    font-style: italic;
+    color: $ax-color-gray-6;
+
+    input {
+        padding-right: 30px;
+        background: url('#{$icon-path}/Edition-25.png') no-repeat;
+        background-size: 15px;
+        background-position: right 9px top 7px;
+        width: 100%;
+        padding-left: 10px;
+        border-top: 0;
+        border-left: 0;
+        border-right: 0;
+        border-bottom: 1px solid #D9D9D9;
+        height: $search-input-height;
+
+        &:focus {
+            outline: none;
+        }
+
+        &[type="text"] {
+            background-color: #FAFAFA;
+        }
+    }
+}
+
+div.search {
+    .ui-select-container {
+        width:500px;
+
+        .ui-select-match {
+            .ui-select-toggle {
+                background: url('#{$icon-path}/icons/Edition-25.png') no-repeat;
+                background-position: right 9px top 7px;
+                background-size: 15px;
+
+                i.dropdown-toggle, i.caret {
+                    display: none;
+                }
+            }
+
+            i.glyphicon-remove {
+                display: none;
+            }
+        }
+    }
+}

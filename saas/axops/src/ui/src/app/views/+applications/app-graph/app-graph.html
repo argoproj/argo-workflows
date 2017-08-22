@@ -1,0 +1,61 @@
+<div class="app-graph">
+    <div *ngIf="application">
+        <div class="row" *ngFor="let deployment of deployments; let isFirstDeployment=first; let isLastDeployment=last; trackBy: trackByDeploymentName">
+            <div class="columns small-4 app-graph__nodes-column">
+                <div *ngIf="isFirstDeployment" class="app-graph__node app-graph__node--app">
+                    <div class="app-graph__connector-right"></div>
+                    <div class="app-graph__app-icon">
+                        <i class="ax-icon-applications"></i>
+                    </div>
+                    <ax-app-graph-status-icon [status]="application.status" [statusMessage]="application.status_detail?.message"></ax-app-graph-status-icon>
+                    <label>{{application.name}}</label>
+                    <div class="app-graph__node-menu">
+                        <ax-dropdown-menu *ngIf="applicationMenuCreator" [settings]="applicationMenuCreator(application)">
+                            <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                            </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+            </div>
+            <div class="columns small-4 app-graph__nodes-column">
+                <div *ngIf="!deployment.noDeployments" class="app-graph__node clickable" (click)="deploymentSelected.emit(deployment.name)"
+                        [ngClass]="{'app-graph__node--selected': deployment.name === selectedDeploymentName}">
+                    <div *ngIf="deployment.instances?.length" class="app-graph__connector-right"></div>
+
+                    <div *ngIf="!isLastDeployment" class="app-graph__connector-down app-graph__connector-down--scaled"></div>
+                    <i class="ax-icon-deployment app-graph__node-icon"></i>
+                    <ax-app-graph-status-icon [status]="deployment.status" [statusMessage]="deployment.status_detail?.message"></ax-app-graph-status-icon>
+                    <label class="clickable">{{deployment.name}}</label>
+                    <span *ngIf="deployment.status === statuses.UPGRADING" class="app-graph__upgrade-message">Upgrade in progress...</span>
+                    <div class="app-graph__node-menu">
+                        <ax-dropdown-menu *ngIf="deploymentMenuCreator" [settings]="deploymentMenuCreator(deployment)">
+                            <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                            </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+                <div *ngIf="deployment.noDeployments" class="app-graph__node">
+                    No deployments available
+                </div>
+            </div>
+            <div class="columns small-4 app-graph__nodes-column">
+                <div *ngFor="let instance of deployment.instances; let isLastInstance=last; trackBy: trackByPodName" class="app-graph__node clickable"
+                    (click)="podSelected.emit({deployment: deployment.name, pod: instance.name})">
+                    <i class="ax-icon-pod app-graph__node-icon"></i>
+                    <div *ngIf="!isLastInstance"  class="app-graph__connector-down"></div>
+                    <ax-app-graph-status-icon *ngIf="instance.failure" [status]="statuses.ERROR" [statusMessage]="instance.failure.message || instance.failure.reason"></ax-app-graph-status-icon>
+                    <label class="clickable">{{instance.name}}</label>
+                    <div class="app-graph__node-menu">
+                        <ax-dropdown-menu *ngIf="podMenuCreator" [settings]="podMenuCreator(deployment, instance)">
+                            <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                            </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

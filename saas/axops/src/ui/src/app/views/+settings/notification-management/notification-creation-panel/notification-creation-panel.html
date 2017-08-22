@@ -1,0 +1,163 @@
+<ax-sliding-panel [hasNoPadding]="true" [show]="isNotificationCriteriaPanelVisible" [hasCloseButton]="false" (closePanel)="closePanel()">
+    <sliding-panel-header>
+        <button *ngIf="isFirstStep" axButtonWave class="ax-button ax-button--base" type="button" (click)="next()">Next</button>
+        <button *ngIf="!isFirstStep" axButtonWave class="ax-button ax-button--base"type="button" (click)="submit()">SUBMIT</button>
+        <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="panel-box" [hidden]="!isFirstStep">
+            <div class="panel-box__content">
+                <div class="panel-box__title">
+                    Select Notification Criteria
+                </div>
+
+                <div class="panel-box__subtitle">
+                    Create custom notification rules to notify your team about the events, which meet your specified criteria.
+                </div>
+
+                <div class="panel-box__framed">
+                    <form role="form" [formGroup]="notificationCreationForm">
+                        <div class="row">
+                            <div class="large-6">
+                                <input class="ax-field ax-field__clear" formControlName="name" placeholder="Default Notification Rule">
+                                <span class="error-msg" *ngIf="validationMessages.ruleName.show">{{validationMessages.ruleName.text}}</span>
+                            </div>
+                            <div class="large-6">
+                                <div class="rule-settings">
+                                    <div class="rule-settings__control">
+                                        <ax-swipe-checkbox formControlName="enabled" [title]="'My Switch'" [labels]="{enable: 'Enable Rule', disable: 'Disable Rule'}" [width]="144"></ax-swipe-checkbox>
+                                    </div>
+                                    <div class="rule-settings__message">Once saved, your rule will be enabled.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel-box__space">
+                    <div class="shaded-box">
+                        <div class="shaded-box__top">
+                            <span>Criteria:</span>
+                        </div>
+                        <div class="shaded-box__content">
+                            <div class="criteria-row" *ngIf="!isVisibleCriteriaLoader && criteriaEvent">
+                                <div class="criteria-row__49">
+                                    <ax-filter-multi-select
+                                            [brightStyle]="true"
+                                            [texts]="criteriaEvent.eventTypes.messages"
+                                            [items]="criteriaEvent.eventTypes.items"
+                                            [isStaticList]="criteriaEvent.eventTypes.isStaticList"
+                                            [isDisplayedInline]="criteriaEvent.eventTypes.isDisplayedInline"
+                                            [selectedItems]="criteriaEvent.selectedEventTypes"
+                                            (onChange)="onEventTypeChange($event)">
+                                    </ax-filter-multi-select>
+                                    <span class="error-msg" *ngIf="validationMessages.eventType.show">{{ validationMessages.eventType.text }}</span>
+                                </div>
+                                <div class="criteria-row__49">
+                                    <ax-filter-multi-select
+                                            [brightStyle]="true"
+                                            [texts]="criteriaEvent.eventSeverity.messages"
+                                            [items]="criteriaEvent.eventSeverity.items"
+                                            [isStaticList]="criteriaEvent.eventSeverity.isStaticList"
+                                            [isDisplayedInline]="criteriaEvent.eventSeverity.isDisplayedInline"
+                                            [selectedItems]="criteriaEvent.selectedEventSeverity"
+                                            (onChange)="onEventSeverityChange($event)">
+                                    </ax-filter-multi-select>
+                                    <span class="error-msg" *ngIf="validationMessages.eventSeverity.show">{{ validationMessages.eventSeverity.text }}</span>
+                                </div>
+                            </div>
+                            <div class="criteria-row" *ngIf="isVisibleCriteriaLoader">
+                                <ax-loader-custom [size]="20"></ax-loader-custom>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-box" [hidden]="isFirstStep">
+            <div class="panel-box__content">
+                <div class="panel-box__title">
+                    Select Recipients and Channels
+                </div>
+
+                <div class="panel-box__subtitle">
+                    Select recipients and channels
+                </div>
+                <span class="error-msg" *ngIf="validationMessages.missingRecipients.show">{{ validationMessages.missingRecipients.text }}</span>
+
+                <div class="panel-box__space">
+                    <div class="shaded-box">
+                        <div class="shaded-box__top">
+                            <span>Argo Users and Groups:</span>
+                        </div>
+                        <div class="shaded-box__content">
+                            <div class="labels-horizontal-list">
+                                <div class="labels-horizontal-list__top">
+                                    <div class="labels-horizontal-list__title">Specify Who Receives the Notification</div>
+                                    <div class="labels-horizontal-list__add">
+                                        <a (click)="openUserSelectorPanel()"><span>+</span> add users</a>
+                                    </div>
+                                </div>
+                                <div class="labels-horizontal-list__content">
+                                    <div class="labels-horizontal-list__white-panel clickable" (click)="openUserSelectorPanel()">
+                                        <template ngFor let-user [ngForOf]="axUsersAndGroupsList">
+                                            <span>{{ user }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-box__space">
+                    <div class="shaded-box">
+                        <div class="shaded-box__top">
+                            <span>Email Users:</span>
+                        </div>
+                        <div class="shaded-box__content">
+                            <div class="labels-horizontal-list">
+                                <div class="labels-horizontal-list__top">
+                                    <div class="labels-horizontal-list__title">Specify Who Receives the Email Notifications</div>
+                                </div>
+                                <div class="labels-horizontal-list__content">
+                                    <textarea [ngModel]="outsideUsers" (ngModelChange)='updateOutsideUsers($event)' placeholder="jondoe@mail.com, johnsmith@mail.com"></textarea>
+                                    <span class="error-msg" *ngIf="validationMessages.wrongFormatRecipients.show">{{ validationMessages.wrongFormatRecipients.text }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-box__space" *ngIf="isSlackIntegrationConfigured">
+                    <div class="shaded-box">
+                        <div class="shaded-box__top">
+                            <span>Slack Channels:</span>
+                        </div>
+                        <div class="shaded-box__content">
+                            <div class="labels-horizontal-list">
+                                <div class="labels-horizontal-list__top">
+                                    <div class="labels-horizontal-list__title">Add channels to Receive the Slack Notifications</div>
+                                    <div class="labels-horizontal-list__add">
+                                        <a (click)="openSlackChannelPanel()"><span>+</span> add channels</a>
+                                    </div>
+                                </div>
+                                <div class="labels-horizontal-list__content">
+                                    <div class="labels-horizontal-list__white-panel clickable" (click)="openSlackChannelPanel()">
+                                        <template ngFor let-channel [ngForOf]="axSlackChannelsList">
+                                            <span>{{ channel }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="axUsersAndGroupsList" (onChange)="updateUsersList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
+<ax-slack-channels-panel [show]="isVisibleSlackPanel" [selectedChannels]="axSlackChannelsList" (onChange)="updateSlackChannelsList($event)" (onClose)="closeSlackChannelPalen()"></ax-slack-channels-panel>

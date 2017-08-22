@@ -1,0 +1,143 @@
+@import '../../../../../assets/styles/config';
+
+$ax-job-height: 150px;
+$ax-job-status-width: 220px;
+
+.ax-job-stream {
+    margin: 10px 0 20px 0;
+
+    &__top {
+        position: relative;
+        display: block;
+        font-size: 0.8em;
+        height: 36px;
+    }
+
+    &__content {
+        border-radius: $border-radius;
+        background-color: white;
+        box-shadow: 1px 1px 3px $ax-color-gray-5;
+        cursor: pointer;
+        position: relative;
+
+        &-menu {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+
+            .ax-button--radius-2 {
+                i {
+                    padding-bottom: 0;
+                }
+            }
+        }
+
+        &:hover {
+            box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1), 0 0 0 1px rgba($ax-color-teal-5, .5);
+        }
+
+        &-box {
+            flex: 4;
+            border-top-left-radius: $border-radius;
+            border-bottom-left-radius: $border-radius;
+        }
+
+        &-details {
+            padding: 20px;
+            border-top-right-radius: $border-radius;
+            border-bottom-right-radius: $border-radius;
+            overflow-y: hidden;
+            height: 100%;
+            background-color: $ax-color-teal-1;
+
+            &-row {
+                margin-top: 10px;
+                font-size: .75em;
+                color: $ax-color-gray-6;
+
+                &-job-id {
+                    margin-right: 50px;
+                }
+            }
+
+            &--additional-space {
+                overflow: hidden;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+        }
+    }
+
+    &__status {
+        display: inline-block;
+        line-height: 18px;
+        width: 100%;
+        margin-top: 8px;
+        white-space: nowrap;
+
+        &-icon {
+            font-size: 18px;
+            display: inline-block;
+            height: 18px;
+            width: 18px;
+        }
+
+        &-message {
+            display: inline-block;
+            vertical-align: top;
+            color: $ax-color-gray-5;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            padding-right: 20px;
+        }
+    }
+
+    &__labels {
+        width: calc(100% - #{$ax-job-status-width});
+        overflow: hidden;
+        display: inline-block;
+        float: right;
+        line-height: 1.4em;
+        color: $ax-color-gray-5;
+    }
+
+    &__footer {
+
+    }
+}
+
+.ax-job-label {
+    display: inline-block;
+    height: 24px;
+    padding: 3px 10px;
+
+    background-color: $ax-color-teal-2;
+    border-radius: 12px;
+
+    &--item {
+        margin: 6px;
+        float: right;
+    }
+}
+
+.ax-jira-comments-list {
+    position: relative;
+    margin-left: 40px;
+
+    &__item {
+
+    }
+
+    &__icon {
+        width: 30px;
+        font-size: 30px;
+        position: absolute;
+    }
+
+    &__description {
+        display: inline-block;
+        padding: 5px 10px 10px 40px;
+    }
+}

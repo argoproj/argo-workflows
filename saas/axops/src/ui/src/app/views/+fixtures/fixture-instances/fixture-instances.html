@@ -1,0 +1,58 @@
+<div class="fixture-instances">
+    <div class="content content--with-padding-top">
+        <div class="ax-container">
+            <div class="ax-table-list ax-table-list--clickable" *ngIf="!loadingFixtureClass && !loadingFixtureInstances">
+                <div *ngFor="let instance of filteredInstances; trackBy:trackByFixtureInstanceId" class="ax-table-list__row" [routerLink]="['/app/fixtures', instance.class_id, 'details', instance.id]">
+                    <div class="row">
+                        <div class="columns small-4 fixture-instances__details">
+                            <div class="fixture-instances__main">{{instance.name}}</div>
+                            <div>{{instance.creator}} created on: {{instance.ctime | axShortDateTime}}</div>
+                            <div>STATUS: <span class="fixture-instances__main"> <ax-fixture-instance-status [fixture]="instance"></ax-fixture-instance-status> </span> </div>
+                            <div>{{instance.description}}</div>
+                        </div>
+                        <div class="columns small-6 fixture-instances__attributes">
+                            <div class="row" *ngFor="let attribute of getFixtureAttributes(instance); trackBy:trackByAttributeName">
+                                <div class="columns small-4">
+                                    {{attribute.name | uppercase }}:
+                                </div>
+                                <div class="columns small-8">
+                                    {{attribute.value}}
+                                </div>
+                            </div>
+                            <div class="fixture-instances__action-menu">
+                                <ax-dropdown-menu [settings]="getActionMenu(instance)">
+                                    <button axButtonWave class="ax-button ax-button--radius-2">
+                                        <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                    </button>
+                                </ax-dropdown-menu>
+                            </div>
+                        </div>
+                        <div class="columns small-2 fixture-instances__chart">
+                            <ax-fixture-usage-chart [fixture]="instance"></ax-fixture-usage-chart>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div *ngIf="loadingFixtureClass || loadingFixtureInstances">
+                <ax-loader-list-mockup [itemHeight]="175"></ax-loader-list-mockup>
+            </div>
+            <div *ngIf="!filteredInstances.length" class="ax-table__empty-row">
+                <strong><i class="fa fa-info-circle"></i> No data to display</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ax-fixture-instance-attributes-panel *ngIf="fixtureClass" [fixtureClass]="fixtureClass" mode='create' [show]="showNewInstancePanel" (closePanel)="hideNewInstancePanel()" (save)="createOrEditInstance($event)">
+</ax-fixture-instance-attributes-panel>
+
+<ax-fixture-instance-attributes-panel
+    *ngIf="fixtureClass"
+    [fixtureClass]="fixtureClass"
+    [fixtureInstance]="selectedFixtureInstance"
+    [mode]="instancePanelMode || 'edit'" [show]="instancePanelMode" (closePanel)="hideInstancePanel()" (save)="createOrEditInstance($event)">
+</ax-fixture-instance-attributes-panel>
+
+<ax-fixture-action-launch-panel [actionInfo]="{fixtureClass: fixtureClass, fixtureInstance: selectedFixtureInstance, actionName: actionToLaunch}" (close)="closeLaunchPanel($event)"></ax-fixture-action-launch-panel>
+<ax-fixture-template-panel mode='reassign' [templateGroup]="reassignTemplates" (onClosePanel)="closeReassignPanel($event)">
+</ax-fixture-template-panel>

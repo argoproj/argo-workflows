@@ -1,0 +1,14 @@
+@import '../../../assets/styles/config';
+
+.jira-issue-panel {
+    &__header-btn {
+        float: right;
+        display: inline-block;
+    }
+
+    &__title {
+        display: inline-block;
+        line-height: 80px;
+        color: $ax-color-teal-7;
+    }
+}

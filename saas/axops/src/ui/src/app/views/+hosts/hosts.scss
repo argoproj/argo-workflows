@@ -1,0 +1,80 @@
+@import '../../../assets/styles/config';
+
+.hosts {
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.host {
+    display: inline-block;
+    border: 1px solid #94D2E3;
+    background-color: #EEF5F8;
+    padding: 15px;
+    width: 24%;
+    min-width: 315px;
+    height: 260px;
+    margin-top: 10px;
+    margin-left: 10px;
+    overflow: hidden;
+    &__name {
+        font-size: 16px;
+        display: block;
+        font-weight: bolder;
+        margin-bottom: 5px;
+    }
+
+    &__service-cont {
+        float: left;
+        width: 100%;
+        .title {
+            font-size: 15px;
+            font-weight: 300;
+            color: $ax-color-gray-7;
+        }
+        .services {
+            float: left;
+            width: 100%;
+            max-height: 120px;
+            padding-bottom: 20px;
+            display: block;
+            overflow: hidden;
+            overflow-y: auto;
+
+            .list {
+                letter-spacing: inherit;
+                font-size: 14px;
+                list-style-type: disc;
+                padding: 0 20px;
+                height: auto;
+
+                li {
+                    overflow: initial;
+                    display: list-item;
+                    font-weight: 200;
+                    line-height: 20px;
+                    color: $ax-color-gray-7;
+                }
+            }
+        }
+
+    }
+    &__usage {
+        font-size: 14px;
+        margin-bottom: 10px;
+        float: left;
+        width: 100%;
+        .metric {
+            float: left;
+            clear: both;
+            .title {
+                display: inline-block;
+                width: 80px;
+            }
+        }
+    }
+
+    &__item {
+        display: block;
+    }
+
+}

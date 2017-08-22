@@ -1,0 +1,320 @@
+<div class="job-details row">
+    <div (click)="onBackToSearch()" class="ax-back-to-search" *ngIf="backToSearchUrl">
+        <i class="ax-icon-back"></i>
+    </div>
+    <ax-tabs (selected)="tabChange($event.selectedTab)" [selectedTabKey]="selectedTabKey" class="job-details__tabs" [fixedWidth]="true">
+        <ax-tab [tabKey]="'summary'" [tabTitle]="'Job Summary'" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="204" [noPadding]="true">
+            <div class="content content--with-padding-top">
+                <div class="ax-container">
+                    <div class="job-details__summary-tab" *ngIf="taskLoaded">
+                        <div class="job-details__summary-tab-row">
+                            <ax-job-details-box [task]="task"></ax-job-details-box>
+                        </div>
+                        <div class="job-details__summary-tab-row" *ngIf="task.commit.author">
+                            <ax-commit-details-box [commit]="task.commit"></ax-commit-details-box>
+                        </div>
+                        <div class="job-details__summary-tab-row">
+                            <ax-template-details-box [setTask]="task"></ax-template-details-box>
+                        </div>
+                        <div class="job-details__summary-tab-row" *ngIf="task?.template?.fixtures?.length > 0">
+                            <ax-fixtures-details-box [setTask]="task"></ax-fixtures-details-box>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'workflow'" [tabTitle]="'Workflow'" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="204" [extraHorizontalScrollPadding]="isYamlVisible ? 560 : 60" [noPadding]="true">
+            <div class="content content--with-padding-top">
+                <div class="job-details__workflow" *ngIf="taskLoaded">
+                    <ax-workflow-tree [task]="task" [activeStep]="selectedStepId">
+                        <template let-cell="cell" #nodeInfo>
+                            <div>
+                                <div class="job-details__node-status">
+                                    <span class="text-truncate status-text" ax-tooltip="{{cell.workflow.value.status_detail?.code}}">{{cell.workflow.value.status_detail?.code}}</span>
+                                    <span class="warning-text" ax-tooltip="{{cell.workflow.value.status_detail?.message}}" *ngIf="cell.workflow.value.status_detail?.message && cell.workflow.value.status === -1">
+                                        <i class="fa fa-info-circle info-icon" aria-hidden="true"></i>
+                                    </span>
+                                </div>
+
+                                <div [class]="getProgressClasses(cell.workflow)">
+                                    <div class="job-details__node-progress-overlay">
+                                        <div class="job-details__node-info-duration" [innerHTML]="cell.workflow.value.run_time | duration:true">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="workflow-tree__node-info-footer">
+                                <span *ngIf="cell.workflow.value.status === 0">
+                                    Completed at {{cell.workflow.value.launch_time + cell.workflow.value.run_time | axFullTime}}
+                                </span>
+                                <span *ngIf="cell.workflow.value.status === -1">
+                                    Failed at {{cell.workflow.value.launch_time + cell.workflow.value.run_time | axFullTime}}
+                                </span>
+                            </div>
+                            <div class="job-details__node-overlay">
+                                <ul>
+                                    <li>
+                                        <button
+                                            axButtonWave class="ax-button ax-button--base" (click)="showNodeDetails(cell, 'logs')"
+                                            [disabled]="cell.workflow.value.template.type !== 'container'">LOGS</button>
+                                    </li>
+                                    <li><button axButtonWave class="ax-button  ax-button--base-o" (click)="showYaml(cell)">YAML</button></li>
+                                    <li><button axButtonWave class="ax-button  ax-button--base-o" (click)="showNodeDetails(cell, 'summary')">DETAILS</button></li>
+                                </ul>
+                            </div>
+                        </template>
+                        <template let-cell="cell" #nodeActions>
+                            <ax-job-actions [rootTask]="task" [task]="cell.workflow.value" [stepName]="cell.name" [allowResubmit]="false" *axIfAuthenticated>
+                                <button axButtonWave class="ax-button ax-button--light ax-button--lg ax-button--short"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></button>
+                            </ax-job-actions>
+                        </template>
+                    </ax-workflow-tree>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'logs'" [tabTitle]="'Logs'" [noPadding]="true">
+            <div class="content content--with-padding-top">
+                <div class="job-details__logs">
+                    <div class="job-details__logs-steps" [ngClass]="{'expanded': stepsExpanded}">
+                        <div class="job-details__logs-steps-btn" (click)="stepsExpanded =! stepsExpanded">
+                            <a><i class="fa fa-sitemap"></i></a>
+                        </div>
+                        <div *ngFor="let step of flatListOfSteps; trackBy:trackByStepName"
+                             class="job-details__logs-step job-details__step-layer--{{step.stepLayer}}"
+                             (click)="selectStep(step.value.id)" [ngClass]="{
+                                'job-details__logs-step--selected': step.value.id == selectedStepId,
+                                'job-details__logs-step--not-started': step.isNotStarted,
+                                'job-details__logs-step--cancelled': step.isCancelled,
+                                'job-details__logs-step--succeeded': step.isSucceeded,
+                                'job-details__logs-step--failed': step.isFailed,
+                                'job-details__logs-step--running': step.isRunning,
+                                'job-details__logs-step--first-in-layer': step.firstInLayer
+                            }">
+                            <i class="fa fa-circle"></i>
+                            <span class="job-details__logs-step-name">{{step.name}}</span>
+                            <i class="fa fa-caret-left job-details__logs-step-arrow"
+                               [hidden]="step.value.id !== selectedStepId"></i>
+                        </div>
+                    </div>
+                    <div class="job-details__logs-content" [ngClass]="{'expanded': stepsExpanded}" *ngIf="selectedTask">
+                        <ax-logs [source]="getLogsSource(selectedTask)" *ngIf="selectedTabKey==='logs'" [tailLogs]="tailLogs"></ax-logs>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'artifacts'" [tabTitle]="'Artifacts'" [isOnlyContentScrollable]="true"
+                [extraVerticalScrollPadding]="156" [noPadding]="true" *axIfAuthenticated >
+            <div class="content content--with-padding-top">
+                <div class="job-details__artifacts-tab">
+                    <div class="job-details__artifacts" *ngIf="selectedTabKey == 'artifacts'">
+                        <ax-artifacts [task]="task" (selectedCountChanged)="onSelectedArtifactCountChanged($event)" [allowSelecting]="true"></ax-artifacts>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'fixtures'" [tabTitle]="'Fixtures'" [isOnlyContentScrollable]="true" [noPadding]="true"
+                [extraVerticalScrollPadding]="204">
+            <div class="content content--with-padding-top">
+                <ax-job-fixtures-box *ngIf="task" [task]="task"></ax-job-fixtures-box>
+            </div>
+        </ax-tab>
+    </ax-tabs>
+</div>
+
+<div class="bottom-toolbox">
+    <div *ngIf="selectedTabKey !== 'artifacts'" class="bottom-toolbox__wrapper job-details__toolbox">
+        Status: <i class="fa" aria-hidden="true" ax-status-icon [status]="task.status"></i>
+        <span class="job-details__status-text"> {{task?.status_detail?.code || 'QUEUED'}} {{task?.status_detail?.message}}</span>
+        <div class="pull-right">
+            <a (click)="onViewRecentCommits()" *ngIf="task.commit.author">
+                view recent commits on this branch
+            </a>
+            <a *ngIf="task.template.id" (click)="onViewJobsHistory()">view workflow job history</a>
+            <button class="ax-button ax-button--base-o" axButtonWave (click)="onViewJiraIssuesList(); $event.stopPropagation();" *ngIf="task.jira_issues && task.jira_issues.length">
+                view jira issues: {{ task.jira_issues.length }}
+            </button>
+            <span>
+                <a (click)="toggleTail()" *ngIf="selectedTabKey==='logs' && selectedTask?.status === 2">
+                    {{ tailLogs ? 'STOP FOLLOWING LOGS' : 'FOLLOW LOGS' }}
+                </a>
+                <a *ngIf="selectedTabKey==='logs' && isDownloadLogsEnabled(selectedTask)" (click)="downloadUserLogs(selectedTask)">
+                    download logs
+                </a>
+                <a *ngIf="selectedTabKey==='logs'" class="job-details__toolbox-scroll-to-top" (click)="scrollToTop()">
+                    <i class="fa fa-angle-up"></i>
+                    <span>BACK TO TOP</span>
+                </a>
+            </span>
+        </div>
+    </div>
+    <div *ngIf="selectedTabKey === 'artifacts' && selectedArtifactsCount > 0" class="bottom-toolbox__wrapper job-details__toolbox">
+        <div class="ax-container">
+            <div>
+                <div class="job-details__toolbox-artifacts job-details__toolbox-artifacts-count">{{selectedArtifactsCount}}</div>
+                <div class="job-details__toolbox-artifacts">
+                    <span *ngIf="selectedArtifactsCount === 1">Artifact</span>
+                    <span *ngIf="selectedArtifactsCount > 1" >Artifacts</span>
+                    Selected
+                </div>
+            </div>
+            <button (click)="onDownloadArtifacts()" axButtonWave class="ax-button ax-button--base-o job-details__toolbox-artifacts-button">download</button>
+        </div>
+    </div>
+</div>
+
+<div class="job-details__sticky-yaml" *ngIf="selectedTabKey === 'workflow'">
+    <div class="job-details__sticky-yaml--btn" (click)="showYaml($event)">
+        YAML
+    </div>
+</div>
+
+<ax-sliding-panel [show]="!!browseStepArtifact" (closePanel)="closeSlidingPanel()">
+    <sliding-panel-body>
+        <div class="job-details__sys-console">
+            <ax-zip-viewer [url]="browseStepArtifact"></ax-zip-viewer>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="!!consoleStep" (closePanel)="closeSlidingPanel()">
+    <sliding-panel-body>
+        <div class="job-details__sys-console">
+            <ax-sys-console [setJobId]="getConsoleStepId"></ax-sys-console>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [hasNoPadding]="true" [show]="isRecentCommitsVisible" (closePanel)="closeRecentCommitsPanel()">
+    <sliding-panel-header>
+        Recent Commits on Branch: <span>{{ task.commit.branch }}</span>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="job-details__recent-commits">
+            <ax-recent-commits [repoName]="task.commit.repo"></ax-recent-commits>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [hasNoPadding]="true" [show]="isJobHistoryVisible" (closePanel)="closeJobsHistoryPanel()">
+    <sliding-panel-header>
+        Jobs History for Template: <span>{{task.template.name}}</span>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <ax-jobs-history [template]="taskOriginalTemplate"></ax-jobs-history>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="selectedNode" (closePanel)="closeSlidingPanel()" [hasNoPadding]="true" [hasCloseButton]="true">
+    <sliding-panel-header>
+        Workflow Step: <strong>{{ selectedNode?.name }}</strong>
+    </sliding-panel-header>
+    <sliding-panel-body *ngIf="selectedNode">
+        <div class="workflow-tree__task-details-artifacts" *axIfAuthenticated>
+            <button axButtonWave class="ax-button ax-button--base-o" *ngFor="let item of actionMenu"
+                    (click)="item.action()">{{item.title}}</button>
+            <div class="workflow-tree__task-details-artifacts--btn-pos" *ngIf="artifactDownloadMenu">
+                <ax-dropdown-menu [settings]="artifactDownloadMenu" *axIfAuthenticated>
+                    <button axButtonWave class="ax-button ax-button--base-o">Download artifacts</button>
+                </ax-dropdown-menu>
+            </div>
+            <div class="workflow-tree__task-details-artifacts--btn-pos">
+                <button axButtonWave class="ax-button ax-button--base-o" [disabled]="!isDownloadLogsEnabled(selectedNode.workflow.value)"
+                        (click)="downloadUserLogs(selectedNode.workflow.value)">download logs</button>
+            </div>
+        </div>
+        <ax-tabs [selectedTabKey]="selectedNodeDetailsTab">
+            <ax-tab [tabKey]="'summary'" [tabTitle]="'Summary'">
+                <ax-job-step-summary [step]="selectedNode"></ax-job-step-summary>
+            </ax-tab>
+            <ax-tab [tabKey]="'logs'" [tabTitle]="'Logs'">
+                <div class="job-details__logs job-details__logs--panel">
+                    <ax-logs #stepLogs [source]="getLogsSource(selectedNode.workflow.value)" [tailLogs]="tailLogs"></ax-logs>
+                    <div class="workflow-tree__task-details-footer">
+                        <div class="row">
+                            <div class="columns small-6">
+                                <a class="workflow-tree__back-to-top" (click)="stepLogs.scrollToTop()">
+                                    <span class="workflow-tree__back-to-top__ico"><i class="fa fa-chevron-up"></i></span> BACK TO TOP</a>
+                            </div>
+                            <div class="columns small-6 text-right">
+                                <a *ngIf="selectedNode?.workflow.value.status === 2" axButtonWave class="ax-button ax-button--base-o" (click)="toggleTailLogs()">
+                                    {{ tailLogs ? 'Stop' : 'Start' }} following logs</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ax-tab>
+            <ax-tab [tabKey]="'fixtures'" [tabTitle]="'Fixtures'"
+                    *ngIf="selectedNode.workflow.fixturesUsed && selectedNode.workflow.fixturesUsed.length > 0">
+                <div class="workflow-tree__task-details-body">
+                    <div class="workflow-fixtures-logs">
+                        <div class="workflow-fixtures-logs__nav">
+                            <div class="workflow-fixtures-logs__nav-item" (click)="selectFixture(fixture)"
+                                 *ngFor="let fixture of selectedNode.workflow.fixturesUsed"
+                                [class.active]="selectedFixture.id === fixture.id">
+                                <div class="fixture-status"
+                                     [class.fixture-status--failed]="fixture.status === fixtureStatuses.Cancelled
+                                                    || fixture.status === fixtureStatuses.Failed && !fixture.staticFixtureInfo"
+                                     [class.fixture-status--success]="fixture.status === fixtureStatuses.Success || fixture.staticFixtureInfo"
+                                     [class.fixture-status--in-progress]="fixture.status === fixtureStatuses.Running && !fixture.staticFixtureInfo"
+                                     [class.fixture-status--waiting]="fixture.status === fixtureStatuses.Waiting
+                                        || fixture.status === fixtureStatuses.Init && !fixture.staticFixtureInfo">
+                                    <i class="fa fa-link"></i>
+                                </div>
+                                {{ fixture.name }}
+                                <div class="workflow-fixtures-logs__nav-menu">
+                                    <ax-dropdown-menu [settings]="getFixtureMenu(fixture)">
+                                        <button axButtonWave class="ax-button ax-button--light ax-button--lg ax-button--short"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></button>
+                                    </ax-dropdown-menu>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div *ngIf="!selectedFixture.staticFixtureInfo" class="workflow-fixtures-logs__content">
+                            <ax-logs [source]="getLogsSource(selectedFixture, true)" [tailLogs]="tailLogs" #fixtureLogs></ax-logs>
+                        </div>
+                        <div *ngIf="!selectedFixture.staticFixtureInfo" class="workflow-fixtures-logs__footer">
+                            <div class="row">
+                                <div class="columns small-6">
+                                    <a class="workflow-tree__back-to-top" (click)="fixtureLogs.scrollToTop()">
+                                        <span class="workflow-tree__back-to-top__ico"><i class="fa fa-chevron-up"></i></span> BACK TO TOP</a>
+                                </div>
+                                <div class="columns small-6 text-right">
+                                    <a axButtonWave class="ax-button ax-button--base-o" (click)="toggleTailLogs()">
+                                        {{ tailLogs ? 'Stop' : 'Start' }} following logs</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div *ngIf="selectedFixture.staticFixtureInfo" class="workflow-fixtures-logs__content">
+                            <ax-attributes-panel [attributes]="selectedFixture.staticFixtureInfo" title="Fixture Attributes" noAttributesMessage="There are no attributes for this fixture.">
+                            </ax-attributes-panel>
+                        </div>
+                    </div>
+                </div>
+            </ax-tab>
+            <ax-tab [tabKey]="'artifacts'" [tabTitle]="'Artifacts'">
+                 <ax-artifacts *ngIf="selectedNode.workflow.value" [task]="selectedNode.workflow.value"></ax-artifacts> 
+            </ax-tab>
+        </ax-tabs>
+    </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel class="job-details__yaml-panel" [show]="isYamlVisible" [offCanvas]="true" (closePanel)="closeYamlSlidingPanel()" [hasNoPadding]="true" [hasCloseButton]="true">
+    <sliding-panel-header>
+        <div class="job-details__yaml-header">
+            <div class="job-details__yaml-header-title">
+                <i class="ax-icon-workflow"></i> <strong><a (click)="onViewJobsHistory()">{{ task.name }}</a></strong>
+            </div>
+            <span>
+                COMMIT ID: <a [routerLink]="['/app/timeline/commits/', task.commit.revision]">{{ task.commit.revision }}</a>
+            </span>
+        </div>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <ax-yaml-viewer *ngIf="taskOriginalTemplate" [input]="{template: taskOriginalTemplate, highlightedStep: selectedStepName}"></ax-yaml-viewer>
+    </sliding-panel-body>
+</ax-sliding-panel>
+<ax-artifact-tag-management [workflowId]="task.id"
+                            [usedTags]="artifactTags || []"
+                            [show]="isArtifactTagManagementPanelVisible"
+                            (onClose)="toggleArtifactTagManagementPanel(false)"
+                            (onApply)="updateWorkflowData(true)"></ax-artifact-tag-management>

@@ -1,0 +1,50 @@
+@import '../../../../assets/styles/config';
+
+.volume-form-widget {
+    overflow: hidden;
+    background-color: $ax-color-white;
+    border-radius: 3px;
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, .2);
+
+    &__left {
+        float: left;
+        width: 50%;
+        padding: 30px;
+    }
+
+    &__right {
+        float: left;
+        width: 50%;
+        margin-bottom: -9999px;
+        padding: 20px 30px (9999px + 20px) 30px;
+        background-color: $ax-color-gray-2;
+        border-left: 4px solid $ax-color-gray-3;
+    }
+
+    &__row {
+        padding: 12px 0;
+        font-size: .8em;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid $ax-color-gray-3;
+        }
+
+        .columns:first-child {
+            padding-left: 0;
+        }
+
+        .columns:last-child {
+            padding-right: 0;
+        }
+    }
+
+    &__row-label {
+        color: $ax-color-gray-5;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    &__form-row {
+        padding-top: 6px;
+    }
+}

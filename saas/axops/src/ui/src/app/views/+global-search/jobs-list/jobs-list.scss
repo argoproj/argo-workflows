@@ -1,0 +1,31 @@
+@import '../../../../assets/styles/config';
+
+.jobs-list {
+    &__pagination-position {
+        float: right;
+        margin-top: 4px;
+    }
+
+    &__item {
+        &:hover {
+            cursor: pointer;
+            box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1), 0 0 0 1px rgba($ax-color-teal-5, .5);
+        }
+
+        &--horizontal-scroll {
+            text-overflow: clip !important;
+            overflow: auto !important;
+        }
+    }
+}
+
+.jobs-successfully-notification {
+    background-color: $ax-success-color;
+    margin-left: -50px;
+    margin-right: -40px;
+    padding-left: 35px;
+
+    & > i {
+        margin-right: 15px;
+    }
+}

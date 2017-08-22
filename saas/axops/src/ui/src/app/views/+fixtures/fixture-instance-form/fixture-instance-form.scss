@@ -1,0 +1,13 @@
+.fixture-instance-form {
+    &__array-input {
+        position: relative;
+        display: inline-block;
+        margin-right: 20px;
+    }
+
+    &__array-input-remove {
+        position: absolute;
+        right: -15px;
+        top: 7px;
+    }
+}

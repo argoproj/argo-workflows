@@ -1,0 +1,127 @@
+@import '../../../../assets/styles/config';
+
+.branches-overview {
+    &__timeline {
+        padding-top: 25px;
+    }
+
+    &__container {
+        padding: 14px 20px;
+    }
+
+    &__timeline-now {
+        position: relative;
+        z-index: 1;
+        bottom: -10px;
+        display: inline-block;
+        transform: translateX(calc(-50% + 16px));
+        padding: 4px 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: $ax-color-gray-6;
+        background-color: $ax-color-gray-2;
+        border-radius: 2px;
+        box-shadow: 1px 1px 1px rgba(#000, .05);
+
+        &:after {
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 12px solid $ax-color-gray-2;
+            content: '';
+        }
+    }
+
+    &__timeline-now-wrapper {
+        position: relative;
+        margin: 0 47px;
+    }
+
+    &__row {
+        overflow: hidden;
+    }
+
+    &__branch-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: $ax-color-gray-6;
+    }
+
+    &__branch-ico {
+        position: relative;
+        top: -1px;
+        display: inline-block;
+        vertical-align: middle;
+        width: 22px;
+        height: 22px;
+        margin-right: 2px;
+        line-height: 22px;
+        font-size: 14px;
+        text-align: center;
+        color: #fff;
+        background-color: $ax-color-gray-5;
+        border-radius: 50%;
+
+        i {
+            line-height: inherit;
+        }
+    }
+
+    &__repo {
+        font-size: 12px;
+        color: $ax-color-gray-5;
+    }
+
+    &__statuses {
+        padding: 6px 0 0 28px;
+    }
+
+    &__branch-timeline-row {
+        width: 100%;
+        height: 62px;
+    }
+
+    &__branch-count-info-item {
+        white-space: nowrap;
+        font-weight: 500;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        padding-right: 20px;
+        color: $ax-color-gray-5;
+    }
+
+    &__status {
+        display: inline-block;
+        position: relative;
+        top: -2px;
+        padding-right: 2px;
+        vertical-align: middle;
+
+        &--failed {
+            color: $ax-failed-color;
+        }
+
+        &--delayed {
+            color: $ax-waiting-color;
+        }
+
+        &--successful {
+            color: $ax-success-color;
+        }
+
+        &--running {
+            color: $ax-running-color;
+        }
+
+        &--canceled {
+            color: $ax-cancelled-color;
+        }
+    }
+}

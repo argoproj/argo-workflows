@@ -1,0 +1,47 @@
+<div class="panel panel-[[getSvcStatusColor(svc.status)]]" ng-repeat="svc in services" style="margin-bottom:0px">
+  <div class="panel-heading" data-target="#[[svc.id]]">
+    <span class="pointer" ng-click="toggleExpand(svc.id)">[[svc.launch_time*1000 | date:'yyyy-MM-ddTHH:mm:ss']] - [[svc.name]] - [[svc.id]] - [[svc.user]] <span ng-if="svc.commit">| [[svc.commit.repo]] - [[svc.commit.branch]] - [[svc.commit.revision | limitTo:7]]</span></span>
+    <span ng-if="svc.status <= 0" ng-click="stopJob([[svc.id]])" style="float:right" class="glyphicon glyphicon-remove pointer" aria-hidden="true">
+  </div>
+  <div class="panel-body panel-collapse [[expandedSvs[svc.id]?'':'collapse']]" id="[[svc.id]]">
+    <div ng-repeat="pod in jobPods[svc.id]" class="col-xs-3" style="height:280px" >
+       <div class="panel panel-[[getExitCodeColor(pod.return_code)]]">
+        <div class="panel-heading">
+          <a ng-if='pod.name.indexOf("axworkflowexecutor") >= 0' href="[[adcBaseUrl]]/v1/adc/workflows_v/[[pod.service_id]]">[[pod.name]]<span ng-if="pod.leaf_name">/[[pod.leaf_name]]</span></a>
+          <span ng-if='pod.name.indexOf("axworkflowexecutor") < 0'>[[pod.name]]<span ng-if="pod.leaf_name">/[[pod.leaf_name]]</span></span>
+        </div>
+        <div class="panel-body">
+            <div>service_id:
+              <a href="[[adcBaseUrl]]/v1/adc/workflows/[[pod.service_id]]">[[pod.service_id]]</a>
+            </div>
+            <div ng-if="pod.image">image: [[pod.image]]</div>
+            <div ng-if="pod.fixtures">
+               Fixtures:
+               <li ng-repeat="(req_name, fix_name) in pod.fixtures">[[req_name]]: [[fix_name]]</li>
+            </div>
+            <!--  <div>container_id: [[pod.container_statuses[0].container_id | limitTo:12:9]]</div>  -->
+            <!-- <div>host: [[pod.host_ip]]</div>  -->
+            <div ng-if="pod.leaf_state">leaf_state: [[pod.leaf_state]]</div>
+            <div>start_time: [[pod.start_time | date:'yyyy-MM-ddTHH:MM:ss' ]]</div>
+            <div>end_time: [[pod.end_time | date:'yyyy-MM-ddTHH:MM:ss' ]]</div>
+            <div ng-if="pod.end_time && pod.start_time">duration: [[pod.end_time - pod.start_time | date: 'H:mm:ss': 'UTC' ]]</div>
+            <div ng-if="pod.return_code">return_code: [[pod.return_code]]</div>
+            <div ng-if="pod.failure_reason">failure_reason: [[pod.failure_reason]]</div>
+            <div ng-if="pod.start_time && pod.start_time != pod.end_time">
+              <table class="table table-condensed ctr-table" style="xs-table">
+                <tr ng-repeat="ctr_name in pod.containers">
+                  <td>&bull; [[ctr_name]]</td>
+                  <td style="width:20px">
+                    <a href="services/[[pod.service_id]]/logs?container=[[ctr_name]]"><span class="glyphicon glyphicon-align-left" aria-hidden="true" /></a>
+                    <span ng-if="pod.end_time == null"><a href="services/[[pod.service_id]]/console?container=[[ctr_name]]"><span class="glyphicon glyphicon-console" aria-hidden="true" /></a></span>
+                  </td>
+                </tr>
+              </table>
+              
+            </div>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

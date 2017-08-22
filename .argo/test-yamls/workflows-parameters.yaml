@@ -1,0 +1,38 @@
+---
+type: container
+version: 1
+name: echo-container
+description: Container which echos the supplied message and sleep for a default time
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%inputs.parameters.MESSAGE%%'; sleep %%inputs.parameters.SLEEP%%"]
+inputs:
+  parameters:
+    MESSAGE:
+    SLEEP:
+      default: 60
+
+---
+type: workflow
+version: 1
+name: test-workflow-with-child-argument
+description: Basic workflow with artifacts between steps
+steps:
+- STEP1:
+    template: echo-container
+    arguments:
+      parameters.MESSAGE: "hello world"
+
+---
+type: workflow
+version: 1
+name: test-workflow-with-input-parameter
+description: Basic workflow passing input parameter to child
+inputs:
+  parameters:
+    ECHO:
+steps:
+- STEP1:
+    template: echo-container
+    arguments:
+      parameters.MESSAGE: "%%inputs.parameters.ECHO%%"

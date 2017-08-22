@@ -1,0 +1,90 @@
+.ax-button-label {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    padding: 0.5em 1.2em;
+    border-radius: $border-radius;
+    outline: 0;
+    cursor: pointer;
+    padding: 0 16px;
+    font-weight: 500;
+    font-size: .75em;
+    line-height: 1.5rem;
+
+    &--success {
+        border: 1px solid $ax-success-color;
+        background-color: $ax-success-color;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-success-color;
+        }
+    }
+
+    &--failed {
+        border: 1px solid $ax-failed-color;
+        background-color: $ax-failed-color;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-failed-color;
+        }
+    }
+
+    &--scheduled {
+        border: 1px solid $ax-cancelled-color;
+        background-color: $ax-cancelled-color;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-cancelled-color;
+        }
+    }
+
+    &--running {
+        border: 1px solid $ax-running-color;
+        background-color: $ax-running-color;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-running-color;
+        }
+    }
+
+    &--my-branches {
+        border: 1px solid $ax-color-teal-6;
+        background-color: $ax-color-teal-6;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-color-teal-6;
+        }
+    }
+
+    &--all {
+        border: 1px solid $ax-color-teal-6;
+        background-color: $ax-color-teal-6;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-color-teal-6;
+        }
+    }
+
+    &--stopped {
+        border: 1px solid $ax-cancelled-color;
+        background-color: $ax-cancelled-color;
+        color: $ax-color-gray-2;
+
+        &-active {
+            background-color: $ax-color-gray-2;
+            color: $ax-cancelled-color;
+        }
+    }
+}

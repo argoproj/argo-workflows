@@ -1,0 +1,22 @@
+---
+type: container
+name: node
+container:
+  resources:
+    mem_mib: 2048
+    cpu_cores: 0.4
+    disk_gb: 2
+  image: docker.io/library/node:6.3.1
+  docker_options: ''
+  command: "%%cmd%%"
+inputs:
+  artifacts:
+  - from: "%%code%%"
+    path: "/src"
+  parameters:
+    cmd: {}
+    code: {}
+outputs:
+  artifacts:
+    code:
+      path: "/src"

@@ -1,0 +1,9 @@
+export { PipesModule } from './pipes.module';
+export { BranchesSortPipe } from './branches-sort.pipe';
+export { ShortDateTimePipe } from './shortDateTime.pipe';
+export { FilterByValuesInListPipe } from './filterByValuesInList.pipe';
+export { KeysPipe } from './keys.pipe';
+export { CapitalizePipe } from './capitalize.pipe';
+export { CentsToDollarsPipe } from './centsToDollars.pipe';
+export { FullTimePipe } from './fullTime.pipe';
+export { DurationPipe } from './duration.pipe';

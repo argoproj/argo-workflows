@@ -1,0 +1,124 @@
+@import '../../../../assets/styles/config';
+
+$node-width: 200px;
+
+.app-graph {
+    &__nodes-column {
+        position: relative;
+    }
+
+    &__node {
+        width: $node-width;
+        background-color: $white-color;
+        display: inline-block;
+        padding: 0.8em;
+        margin-bottom: 1.5em;
+        border-radius: $border-radius;
+
+        label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-left: 35px;
+            width: $node-width - 60px - 35px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        &--selected {
+            border: 1px solid $ax-color-teal-6;
+        }
+    }
+
+    &__node-menu {
+        float: right;
+        margin: -6px 0;
+    }
+
+    &__connector-right {
+        position: absolute;
+        border-top: 1px dashed $ax-color-gray-5;
+        left: $node-width;
+        right: -14px;
+
+        top: 28px;
+        margin-left: 15px;
+    }
+
+    &__connector-left {
+        position: absolute;
+        border-top: 1px dashed $ax-color-gray-5;
+        left: 2px;
+        width: 13px;
+        top: 28px;
+    }
+
+    &__connector-down {
+        position: absolute;
+        border-left: 1px dashed $ax-color-gray-5;
+        border-bottom: 1px dashed $ax-color-gray-5;
+        left: 2px;
+        top: 28px;
+        width: 12px;
+        height: 75px;
+
+        &--scaled {
+            height: unset;
+            bottom: -25px;
+        }
+    }
+
+    &__app-icon {
+        background: $ax-success-color;
+        position: absolute;
+        width: 65px;
+        height: 65px;
+        border-radius: 33px;
+        left: -20px;
+        top: -4px;
+        border: 4px solid white;
+        text-align: center;
+        i {
+            color: $white-color;
+            line-height: 56px;
+            font-size: 28px;
+        }
+    }
+
+    &__node-icon {
+        color: $ax-success-color;
+        position: absolute;
+        font-size: 28px;
+
+        &--progress {
+            color: $ax-running-color;
+        }
+
+        &--stop {
+            color: $ax-failed-color;
+        }
+
+        &--status {
+            font-size: 16px;
+            position: absolute;
+            left: 43px;
+            top: 26px;
+            background-color: white;
+            display: inline-block;
+            border-radius: 9px;
+        }
+    }
+
+    &__node--app &__node-icon--status {
+        left: 29px;
+        top: 32px;
+    }
+
+    &__upgrade-message {
+        color: $ax-running-color;
+        position: absolute;
+        font-size: 0.7em;
+        left: 18px;
+        top: 52px;
+    }
+}

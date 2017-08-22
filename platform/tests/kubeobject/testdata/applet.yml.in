@@ -1,0 +1,76 @@
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: applet
+    labels:
+        app: applet
+        tier: platform
+        role: axcritical
+spec:
+    template:
+        metadata:
+            labels:
+                app: applet
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axartifactmanager.axsys:9892/v1/ping http://axdb.axsys:8083/v1/axdb/version"]
+                    }
+                ]'
+                scheduler.alpha.kubernetes.io/critical-pod: ''
+                scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        spec:
+            containers:
+              - name: applet-main
+                image: ${REGISTRY}/${NAMESPACE}/applet:${VERSION}
+                env:
+                   - name: POD_NAME
+                     valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                   - name: POD_NAMESPACE
+                     valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                   - name: LOGMOUNT_PATH
+                     value: /logs
+                   - name: AX_CUSTOMER_ID
+                     value: "${AX_CUSTOMER_ID}"
+                   - name: AX_CLUSTER_NAME_ID
+                     value: "${AX_CLUSTER_NAME_ID}"
+                volumeMounts:
+                   - name: handshake-socket
+                     mountPath: /var/run
+                   - name: database
+                     mountPath: /ax/applet
+                   - name: container-logs
+                     mountPath: /logs
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 200Mi
+                    limits:
+                        cpu: 150m
+                        memory: 600Mi
+            imagePullSecrets:
+                - name: applatix-registry
+            nodeSelector:
+                ax.tier: user
+            volumes:
+              - name: handshake-socket
+                hostPath:
+                    path: /var/run
+              - name: database
+                hostPath:
+                    path: /ax/applet
+              - name: container-logs
+                hostPath:
+                    path: /mnt/ephemeral/docker/containers

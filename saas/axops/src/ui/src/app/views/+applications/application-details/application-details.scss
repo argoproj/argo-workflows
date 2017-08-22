@@ -1,0 +1,72 @@
+@import '../../../../assets/styles/config';
+$padding: 50px;
+
+.application-details {
+    &__logs-content {
+        position: absolute;
+        padding: 1em;
+        top: 0;
+        bottom: 2em;
+        left: 0;
+        right: 0;
+    }
+
+    &__logs-footer {
+        position: absolute;
+        padding: 1em;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    &__graph {
+        padding: 3em;
+    }
+
+    &__spendings {
+        background-color: $white-color;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        padding: 1em;
+    }
+
+    &__deployment-info {
+        &__close-btn {
+            float: right;
+            font-size: 20px;
+            line-height: $top-bar-height;
+            padding-right: $padding;
+        }
+
+        &__breadcrumb {
+            font-size: 12px;
+            height: $top-bar-height;
+            line-height: $top-bar-height;
+            border-bottom: 1px solid $ax-color-gray-2;
+            padding-left: $padding;
+
+            & > a > i {
+                font-size: 16px;
+            }
+        }
+
+        &__header {
+            height: $top-bar-height;
+            background-color: $ax-color-gray-2;
+
+            &--title {
+                display: inline-block;
+                padding-left: $padding;
+                line-height: $top-bar-height;
+                font-weight: 300;
+
+                & > a > i {
+                    font-size: 20px;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,7 @@
+<div *ngIf="state === 'ready'" [style.height]="'100%'">
+    <iframe [attr.src]="indexCacheUrl" [style.height]="'100%'" [style.width]="'100%'" [style.margin]="'10px'"></iframe>
+</div>
+<div *ngIf="state === 'error'" class="white-box">
+    <h6>Live Artifacts viewing is not supported your browser. Please download and unpack artifact using following link:</h6>
+    <a [href]="downloadUrl">{{downloadUrl}}</a>
+</div>

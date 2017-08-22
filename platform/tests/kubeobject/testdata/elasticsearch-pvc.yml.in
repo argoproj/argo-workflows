@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+    name: elasticsearch-pvc
+    annotations:
+        # Current 1.2 alpha feature. Key is needed but value doesn't matter.
+        volume.alpha.kubernetes.io/storage-class: foo
+    labels:
+        app: elasticsearch
+spec:
+    accessModes:
+        ["ReadWriteOnce"]
+    resources:
+        requests:
+            storage: 100Gi

@@ -1,0 +1,97 @@
+@import '../../../assets/styles/config';
+
+$footer-height: 64px;
+$footer-small-height: 55px;
+
+.jira-issue-creator-panel {
+    background-color: #ffffff;
+    height: 100%;
+
+    &__footer {
+        font-size: 14px;
+        position: absolute;
+        display: block;
+        width: 100%;
+        bottom: 1px;
+        height: $footer-height;
+        border-top: 1px solid $ax-color-gray-4;
+        background-color: $ax-color-gray-2;
+        line-height: $footer-height;
+
+        &-item {
+            display: inline-block;
+            margin: 0 20px;
+        }
+
+        @media screen and (max-width: $ax-breakpoint-md) {
+            height: $footer-small-height;
+            line-height: $footer-small-height;
+        }
+    }
+
+    &__form {
+        padding: 30px 20px;
+        font-size: 14px;
+
+        &--label {
+            float: right;
+            line-height: 44px;
+
+            span {
+                color: $ax-status-failed-color;
+            }
+        }
+
+        & > .row {
+            margin-bottom: 15px;
+        }
+
+        & > hr {
+            border-bottom: 1px solid $ax-color-gray-4;
+        }
+
+        &--input {
+            border-radius: $border-radius;
+            border: 1px solid $ax-color-gray-4;
+            box-sizing: border-box;
+            font-size: inherit;
+            margin: 0;
+            vertical-align: baseline;
+            width: 100%;
+            padding: 4px 5px;
+            margin-top: 6px;
+        }
+
+        &--textarea {
+            border-radius: $border-radius;
+            border: 1px solid $ax-color-gray-4;
+            box-sizing: border-box;
+            font-size: inherit;
+            margin: 0;
+            vertical-align: baseline;
+            padding: 4px 5px;
+            resize: vertical;
+            max-height: 400px;
+        }
+    }
+
+    &__btn-create {
+        border-color: transparent;
+        border-radius: 3px;
+        cursor: pointer;
+        display: inline-block;
+        margin: 0 5px;
+        height: 2.14285714em;
+        line-height: 1.42857143;
+        padding: 4px 10px;
+
+        &--primary {
+            background-color: #3572b0;
+            color: #fff;
+
+            &:hover {
+                background-color: #2a67a5;
+            }
+        }
+    }
+}

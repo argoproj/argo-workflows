@@ -1,0 +1,18 @@
+<div class="content content--with-padding-top saml-config">
+    <div class="ax-container">
+        <div class="row">
+            <div class="columns large-6 large-offset-3 medium-8 medium-offset-2 small-12">
+                <div class="white-box">
+                    <h6>Manage Domains</h6>
+                    <p>Please update your selection of allowed domains for Application Deployment</p>
+                    <div class="margin-bottom-large" *ngIf="domainConfig">
+                        <ax-multi-select [options]="availableDomains" [(ngModel)]="selectedDomains"></ax-multi-select>
+                    </div>
+                    <div class="ta-center" *ngIf="domainConfig">
+                        <button (click)="updateSelection()" axButtonWave class="ax-button ax-button--base">Update Domains</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

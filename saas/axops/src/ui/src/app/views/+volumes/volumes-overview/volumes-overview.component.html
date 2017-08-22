@@ -1,0 +1,20 @@
+<ax-tabs [selectedTabKey]="volumesType" (selected)="changeVolumesType($event.selectedTab.tabKey)" [fixedWidth]="true">
+    <ax-tab tabKey="named" tabTitle="NAMED VOLUMES" [noPadding]="true"></ax-tab>
+    <ax-tab tabKey="anonymous" tabTitle="ANONYMOUS VOLUMES" [noPadding]="true"></ax-tab>
+</ax-tabs>
+
+<div class="content content--with-padding-top">
+    <div class="ax-container">
+        <div class="volumes-overview__storage-class" *ngFor="let provider of providers">
+            <div class="volumes-overview__provider-title">
+                <i class="fa ax-icon-stop-property"></i>
+                Storage Class: <span>{{provider.type}}</span>
+            </div>
+            <ax-volumes-list [volumes]="provider.volumes" (onDeletedVolume)="onDeletedVolume()"></ax-volumes-list>
+        </div>
+        <div *ngIf="!providers?.length" class="no-data-panel">
+            <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+        </div>
+    </div>
+</div>
+<ax-volume-add-panel [show]="showAddPanel" (onClosePanel)="closeAddPanel($event)"></ax-volume-add-panel>

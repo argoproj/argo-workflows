@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: test-pod-insufficient-resource
+    labels:
+        app: pi
+spec:
+    containers:
+    - name: pi-container
+      image: perl
+      command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+      resources:
+        requests:
+          cpu: 400000m
+          memory: 1200000Mi
+        limits:
+          cpu: 400000m
+          memory: 1200000Mi
+    restartPolicy: Never

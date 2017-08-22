@@ -1,0 +1,91 @@
+<div class="global-search-filters">
+    <div class="global-search-filters__item" *ngIf="statusesFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="statusesFilter.messages"
+                [items]="statusesFilter.items"
+                [isStaticList]="statusesFilter.isStaticList"
+                [selectedItems]="filters[category].statuses"
+                (onChange)="onStatusChange($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="applicationStatusFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="applicationStatusFilter.messages"
+                [items]="applicationStatusFilter.items"
+                [isStaticList]="applicationStatusFilter.isStaticList"
+                [selectedItems]="filters[category].application_statuses"
+                (onChange)="onApplicationStatusChange($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="authorFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="authorFilter.messages"
+                [items]="authorFilter.items"
+                [selectedItems]="filters[category].authors"
+                (onChange)="onAuthorChange($event)"
+                (onQuery)="onAuthorQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="committerFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="committerFilter.messages"
+                [items]="committerFilter.items"
+                [selectedItems]="filters[category].committers"
+                (onChange)="onCommitterChange($event)"
+                (onQuery)="onCommitterQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="artifactTagFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="artifactTagFilter.messages"
+                [items]="artifactTagFilter.items"
+                [selectedItems]="filters[category].artifact_tags"
+                (onChange)="onArtifactTagChange($event)"
+                (onQuery)="onArtifactTagQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="branchFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="branchFilter.messages"
+                [items]="branchFilter.items"
+                [selectedItems]="filters[category].branch"
+                (onChange)="onBranchChange($event)"
+                (onQuery)="onBranchQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="repoFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="repoFilter.messages"
+                [items]="repoFilter.items"
+                [isStaticList]="repoFilter.isStaticList"
+                [selectedItems]="filters[category].repo"
+                (onChange)="onRepoChange($event)"
+                (onQuery)="onRepoQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+    <div class="global-search-filters__item" *ngIf="appNameFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="appNameFilter.messages"
+                [items]="appNameFilter.items"
+                [selectedItems]="filters[category].app_name"
+                (onChange)="onApplicationNameChange($event)"
+                (onQuery)="onApplicationNameQuery($event)">
+        </ax-filter-multi-select>
+    </div>
+</div>

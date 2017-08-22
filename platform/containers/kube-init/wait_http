@@ -1,0 +1,11 @@
+#!/bin/sh
+
+for url in $@ ; do
+    while [ 1 ] ; do
+        date
+        curl --connect-timeout 1 -f $url && break
+        sleep 1
+    done
+    echo "$url is OK"
+done
+echo "All URLs are OK"

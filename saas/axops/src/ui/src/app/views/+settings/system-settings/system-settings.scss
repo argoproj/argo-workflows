@@ -1,0 +1,31 @@
+@import '../../../../assets/styles/config';
+
+.system-settings {
+    &__popup {
+        padding: 1em;
+    }
+
+    &__encryption-key {
+        width: 350px;
+        word-wrap: break-word;
+        height: 100px;
+        overflow: auto;
+    }
+
+    &__saml-separator {
+        margin-top: 15px;
+        color: $ax-color-gray-6;
+        border-bottom: 1px solid $ax-color-gray-4;
+        text-align: center;
+    }
+
+    &__cidr {
+        position: relative;
+    }
+
+    &__remove-cidr-btn {
+        position: absolute;
+        right: 0;
+        top: 15px;
+    }
+}

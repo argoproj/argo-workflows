@@ -1,0 +1,132 @@
+.spendings-chart {
+    position: relative;
+    height: 100%;
+
+    &__selected-step {
+        position: absolute;
+        z-index: 4;
+        padding-top: 4px;
+        font-size: 14px;
+        white-space: nowrap;
+        color: #bbb;
+        border-top: 8px solid black;
+
+        .fa-times {
+            padding: 4px 6px;
+            margin-left: 2px;
+            font-size: 12px;
+            background-color: #eee;
+            border-radius: 50%;
+            cursor: pointer;
+
+            &:hover {
+                background-color: #eaeaea;
+            }
+        } 
+    }
+
+    & .nv-axis.nv-y {
+        & path.domain {
+            display: none;
+        }
+
+        & .tick line {
+            display: none;
+
+            &.short-y-tick {
+                display: block;
+                stroke-width: 1;
+            }
+        }
+    }
+
+    & .nv-axis.nv-x .tick line {
+        display: none;
+
+        &.short-x-tick {
+            display: block;
+            stroke-width: 2;
+        }
+    }
+
+    & .nv-point.hover, & .nv-point {
+        display: none;
+    }
+
+    &__tooltip {
+        position: absolute;
+        top: -38px;
+        transform: translateX(-50%);
+        min-width: 80px;
+        font-size: 16px;
+        line-height: 2.1;
+        color: #fff;
+        text-align: center;
+        background-color: rgba(0,0,0,.34);
+        border-radius: 4px;
+
+        &::after {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            margin-left: -3px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid rgba(0,0,0,.34);
+            content: '';
+        }
+    }
+    
+    &__tooltip-estimated {
+        position: absolute;
+        margin-top: -100px;
+        right: 0;
+        padding: 10px 20px 14px;
+        font-size: 13px;
+        background-color: #b5cbe5;
+        box-shadow: 3px 3px 5px rgba(0,0,0,.2);
+        border-radius: 4px;
+
+        p {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        &-left {
+            float: left;
+            width: 50%;
+            padding-left: 4px;
+            border-right: 1px solid #e5e5e5;
+        }
+
+        &-right {
+            padding-left: 20px;
+            width: 50%;
+            float: right;
+        }
+
+        &-cost {
+            font-weight: bold;
+        }
+
+        &-des {
+            font-size: 11px;
+            color: #777;
+        }
+
+        &::after {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            margin-left: -4px;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid #b5cbe5;
+            content: '';
+        }
+    }
+}

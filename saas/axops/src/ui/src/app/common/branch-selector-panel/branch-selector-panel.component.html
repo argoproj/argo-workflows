@@ -1,0 +1,48 @@
+<div class="branch-selector-panel">
+    <div class="branch-selector-panel__body-top">
+        <ng-content *ngIf="!selectedRepository"></ng-content>
+        <div *ngIf="selectedRepository">
+            <button (click)="selectRepository(null)" class="branch-selector-panel__btn-back">
+                <i class="fa fa-angle-left" aria-hidden="true"></i>
+            </button>
+            <div class="branch-selector-panel__selected-repo">
+                <div class="branch-selector-panel__selected-repo-title">{{ selectedRepository.name }}</div>
+                <div class="branch-selector-panel__selected-repo-des">{{ selectedRepository.url }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="branch-selector-panel__search">
+        <div class="branch-selector-panel__search-input">
+            <i class="fa fa-search"></i> <input type="text" [(ngModel)]="search" placeholder="Search">
+        </div>
+    </div>
+    <div *ngIf="repositories && !selectedRepository && !search">
+        <div class="branch-selector-panel__list-item branches-panel__list-item--link clearfix"
+             *ngFor="let repository of (repositories); trackBy:trackByRepo"
+             (click)="selectRepository(repository)">
+            {{ repository.name }}
+            <div class="pull-right">
+                <div class="branch-selector-panel__list-next"><i class="fa fa-angle-right" aria-hidden="true"></i></div>
+            </div>
+        </div>
+    </div>
+    <div *ngIf="branches">
+        <div *ngFor="let branch of branches; trackBy:trackByBranch;">
+            <div class="branch-selector-panel__list-item" *ngIf="shouldShowBranch(branch)">
+                <a class="branch-selector-panel__list-star pull-right" *ngIf="isAdded(branch)"
+                   (click)="removeBranch(branch)" ax-tooltip="Remove branch">
+                    <i class="fa fa-star" aria-hidden="true"></i>
+                </a>
+                <a class="branch-selector-panel__list-star pull-right" *ngIf="!isAdded(branch)"
+                   (click)="addBranch(branch)" ax-tooltip="Add branch">
+                    <i class="fa fa-star-o" aria-hidden="true"></i>
+                </a>
+                <div>{{ branch.name }}</div>
+                <div class="branch-selector-panel__list-repo" *ngIf="!selectedRepository">{{ branch.repo }}</div>
+            </div>
+        </div>
+        <div *ngIf="loading && search" class="branch-selector-panel____list-item">
+            <ax-loader-custom></ax-loader-custom>
+        </div>
+    </div>
+</div>

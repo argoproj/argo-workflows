@@ -1,0 +1,514 @@
+@import '../../../../assets/styles/config';
+
+.job-details {
+
+    &__node-overlay {
+        position: absolute;
+        left: -1em;
+        top: -1em;
+        right: -1em;
+        bottom: calc(-1em - 50px);
+        background: rgba($white-color, .7);
+        border: 1em solid rgba($ax-color-gray-2, .7);
+        border-radius: 4px;
+
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.2s linear;
+
+        ul {
+            margin-left: 0;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+
+            li {
+                list-style-type: none;
+                margin-bottom: 1em;
+            }
+        }
+    }
+
+    .workflow-tree__node:hover &__node-overlay {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    &__status-text {
+        color: $ax-color-gray-5;
+    }
+
+    &__tab-actions {
+        position: absolute;
+        right: 1em;
+        top: 1.2em;
+    }
+
+    &__legend-box {
+        display: inline-block;
+        padding: 0 20px;
+        min-width: 150px;
+        border: 0;
+        font-size: 15px;
+        opacity: .7;
+
+        img {
+            width: 20px;
+        }
+        span {
+            display: inline-block;
+            margin-left: 5px;
+        }
+    }
+
+    &__tabs {
+        width: 100%;
+    }
+
+    &__summary-tab {
+        padding: 0 0 10px;
+
+        &-row {
+            padding: 0 0 10px;
+
+            button {
+                width: 200px;
+            }
+        }
+    }
+
+    &__artifacts-tab {
+        padding: 0 0 15px;
+    }
+
+    &__commit {
+        vertical-align: text-top;
+        display: inline-block;
+        width: 300px;
+        white-space: normal;
+        margin-left: 20px;
+        margin-bottom: 20px;
+    }
+
+    &__recent-jobs {
+        padding: 20px;
+    }
+
+    &__recent-job {
+        vertical-align: text-top;
+        width: 300px;
+        white-space: normal;
+        margin-left: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #ECECEC;
+    }
+
+    &__sys-console, &__zip-viewer {
+        padding-top: 20px;
+        height: 100%;
+    }
+
+    &__logs {
+        height: calc(100vh - 409px);
+
+        &--panel {
+            height: calc(100vh - 220px);
+        }
+    }
+
+    &__logs-content {
+        position: fixed;
+        top: 172px;
+        bottom: 0;
+        right: 0;
+        margin-left: -60px;
+        padding: 16px;
+        overflow: hidden;
+        margin-bottom: 54px;
+
+        left: $nav-width + 150px;
+        &.expanded {
+            left: $nav-width + 330px;
+        }
+    }
+
+    &__logs-steps {
+        position: fixed;
+        overflow-y: auto;
+        overflow-x: hidden;
+        top: 172px;
+        bottom: 0;
+        border-right: 1px solid #e8e8e8;
+        margin-bottom: 50px;
+    }
+
+    &__logs-step-name {
+        display: none;
+        width: 180px;
+        padding: 0 0 0 30px;
+        color: $ax-color-gray-7;
+        font-size: 12px;
+
+        .expanded & {
+            display: inline-block;
+            float: right;
+        }
+    }
+
+    $step: 1;
+    $loops: round(10 / $step);
+    $increment: 30;
+    @for $i from 0 through $loops {
+        &__step-layer--#{$i*$step} {
+            .expanded & {
+                padding-left: $i*$increment + 22;
+            }
+        }
+    }
+
+    &__logs-steps-btn {
+        padding: 10px 0;
+        text-align: center;
+
+        a {
+            display: inline-block;
+            vertical-align: middle;
+            padding: 8px;
+            font-size: 15px;
+            color: #777;
+        }
+    }
+
+    &__logs-step--first-in-layer {
+        &:not(:last-child)::before {
+            .expanded & {
+                padding-left: 0;
+                margin-left: -23px;
+                width: 30px;
+                border-bottom: 1px dashed #ddd;
+            }
+        }
+    }
+
+    &__logs-step {
+        position: relative;
+        padding: 16px 22px;
+        font-size: 16px;
+        cursor: pointer;
+        border: 1px solid transparent;
+
+        &:hover {
+            background-color: #dbf0f2;
+        }
+
+        &:not(:last-child)::before {
+            position: absolute;
+            z-index: 1;
+            top: 50%;
+            height: 100%;
+            padding-left: 6px;
+            width: 0;
+            border-right: 1px dashed #ddd;
+            content: '';
+        }
+
+        &--not-started, &--not-started:hover {
+            color: #999;
+            cursor: inherit;
+        }
+
+        &--selected {
+            background-color: #dbf0f2;
+            border-top-color: #00bdce;
+            border-bottom-color: #00bdce;
+        }
+
+        &--succeeded {
+            color: $ax-success-color;
+        }
+
+        &--running {
+            color: $ax-running-color;
+        }
+
+        &--failed {
+            color: $ax-failed-color;
+        }
+
+        &--cancelled {
+            color: $ax-cancelled-color;
+        }
+
+        .fa-circle {
+            position: relative;
+            z-index: 2;
+        }
+    }
+
+    &__logs-step-arrow {
+        position: absolute;
+        top: 50%;
+        right: -3px;
+        transform: translateY(-50%);
+        color: $ax-color-gray-1;
+        font-size: 26px;
+        text-shadow: -1px 0 0 #ddd;
+    }
+
+    &__toolbox {
+        padding-left: 20px;
+        padding-right: 20px;
+        min-height: 0;
+        font-size: 13px;
+        background: $ax-color-gray-2;
+        border-top: 1px solid #e8e8e8;
+        box-shadow: none;
+
+        a {
+            display: inline-block;
+            margin: 0 10px;
+            text-transform: uppercase;
+        }
+
+        &-scroll-to-top {
+            .ax-button {
+                margin-right: 10px;
+            }
+
+            color: #07656e;
+            font-size: 13px;
+            padding-right: 20px;
+
+            i {
+                display: inline-block;
+                margin-right: 4px;
+                font-size: 1.6em;
+            }
+        }
+
+        &-artifacts {
+            display: inline-block;
+            margin-top: 10px;
+            margin-bottom: 20px;
+
+            &-count {
+                color: #fff;
+                background-color: $ax-running-color;
+                width: 30px;
+                border-radius: 15px;
+                text-align: center;
+                font-weight: bold;
+            }
+            &-button {
+                margin-top: 20px;
+            }
+        }
+    }
+
+    &__node-info-duration {
+        position: relative;
+        top: 50%;
+        font-size: 13px;
+        transform: translateY(-50%);
+
+        span {
+            display: block;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    }
+
+    &__node-status {
+        width: 100%;
+        height: 26px;
+        padding-top: 3px;
+        overflow: hidden;
+        color: $ax-color-gray-5;
+        font-size: 13px;
+        text-align: center;
+
+        .status-text {
+            text-overflow: ellipsis;
+            width: calc(100% - 15px);
+            float: left;
+        }
+
+        .warning-text {
+            width: 15px;
+        }
+    }
+
+    &__sticky-yaml {
+        position: absolute;
+        right: 0;
+        top: 219px;
+
+        &--btn {
+            background-color: $ax-color-teal-7;
+            color: #fff;
+            font-size: 13px;
+            padding: 14px 6px;
+            border-top-left-radius: $border-radius;
+            border-bottom-left-radius: $border-radius;
+            cursor: pointer;
+            box-shadow: 0 2px 3px rgba(0,0,0,.3);
+        }
+    }
+
+    &__yaml-panel {
+        .sliding-panel__body {
+            height: calc(100% - 172px);
+
+            @media screen and (max-width: $ax-breakpoint-md) {
+                height: calc(100% - 148px);
+            }
+        }
+    }
+
+    $runningBarColor: #08B789;
+    $failedBarColor: #DE3847;
+    $overlayColor: white;
+    $backColor: #EFEFEF;
+
+    $outer-diameter: 106px;
+    $inner-diameter: 90px;
+
+    &__node-progress {
+        position: relative;
+        width: $outer-diameter;
+        height: $outer-diameter;
+        border-radius: 50%;
+        border: 2px solid $backColor;
+        margin: 0 auto;
+    }
+
+    &__node-progress-overlay {
+        width: $inner-diameter;
+        height: $inner-diameter;
+        background-color: $overlayColor;
+        border-radius: 50%;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0 auto;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    $step: 1;
+    $loops: round(100 / $step);
+    $increment: 360 / $loops;
+    $half: round($loops / 2);
+    @for $i from 0 through $loops {
+        &__node-progress--#{$i*$step}-failed {
+            @if $i < $half {
+                $nextdeg: 90deg + ( $increment * $i );
+                background-image: linear-gradient(90deg, $backColor 50%, transparent 50%, transparent), linear-gradient($nextdeg, $failedBarColor 50%, $backColor 50%, $backColor);
+            } @else {
+                $nextdeg: -90deg + ( $increment * ( $i - $half ) );
+                background-image: linear-gradient($nextdeg, $failedBarColor 50%, transparent 50%, transparent), linear-gradient(270deg, $failedBarColor 50%, $backColor 50%, $backColor);
+            }
+
+            @if $i > 0 {
+                &:after {
+                    background-color: #dadada;
+                }
+            }
+        }
+
+        &__node-progress--#{$i*$step}-running {
+            @if $i < $half {
+                $nextdeg: 90deg + ( $increment * $i );
+                background-image: linear-gradient(
+                                90deg, $backColor 50%, transparent 50%, transparent), linear-gradient($nextdeg, $runningBarColor 50%, $backColor 50%, $backColor);
+            } @else {
+                $nextdeg: -90deg + ( $increment * ( $i - $half ) );
+                background-image: linear-gradient(
+                                $nextdeg, $runningBarColor 50%, transparent 50%, transparent), linear-gradient(270deg, $runningBarColor 50%, $backColor 50%, $backColor);
+            }
+
+            @if $i > 0 {
+                &:after {
+                    background-color: #08B789;
+                }
+            }
+        }
+    }
+
+    &__yaml-header {
+        line-height: 27px;
+
+        & > span {
+            font-size: 12px;
+            margin-bottom: 5px;
+            line-height: 15px;
+
+            & > i {
+                font-size: 15px;
+            }
+        }
+    }
+
+    &__yaml-header-title {
+        font-size: 15px;
+        position: relative;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+        line-height: $top-bar-height;
+
+        @media screen and (max-width: $ax-breakpoint-md) {
+            height: $toolbar-height;
+            line-height: $toolbar-height;
+        }
+
+        i {
+            position: relative;
+            top: -2px;
+            margin-right: 3px;
+        }
+
+        a {
+            color: $ax-color-teal-7;
+        }
+    }
+
+    &__yaml-header-cancel {
+        font-size: 20px;
+        display: inline-block;
+        width: 19%;
+        text-align: right;
+        float: right;
+
+        & > i {
+            cursor: pointer;
+        }
+    }
+
+    &__yaml-header-content {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: 70px;
+        padding-top: 38px;
+        font-size: 12px;
+
+        & > p {
+            margin-bottom: 5px;
+
+            & > span {
+                display: inline-block;
+                width: 70px;
+            }
+
+            & > i {
+                font-size: 15px;
+                vertical-align: sub;
+            }
+        }
+    }
+}

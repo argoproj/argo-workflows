@@ -1,0 +1,38 @@
+@import '../../../assets/styles/config';
+
+.layout {
+    overflow: hidden;
+}
+
+.layout__secret {
+    position: relative;
+    padding: 2em;
+    border: 1px solid $ax-color-gray-4;
+    border-radius: 5px;
+
+    span {
+        height: 38px;
+        display: block;
+        overflow-x: auto;
+        overflow-y: auto;
+        margin-right: 70px;
+    }
+
+    button {
+        position: absolute;
+        right: 1em;
+        bottom: 34px;
+    }
+}
+
+.layout__playground-info {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+}
+
+.layout--playground-info .nav__bar {
+    bottom: 5.5em;
+}

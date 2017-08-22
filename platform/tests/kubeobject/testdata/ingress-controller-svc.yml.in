@@ -1,0 +1,25 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: ingress-controller-svc
+    labels:
+        app: ingress-controller-svc
+        tier: platform
+        role: axcritical
+    annotations:
+        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+        service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+        # certificate should be cluster-nameid-ingress-cert
+        service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "${INGRESS_CONTROLLER_CERT}"
+spec:
+    selector:
+        app: ingress-controller-deployment
+    ports:
+      - name: http
+        port: 80
+        targetPort: 80
+      - name: https
+        port: 443
+        targetPort: 80
+    type: LoadBalancer

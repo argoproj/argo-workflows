@@ -1,0 +1,7 @@
+@import '../../../../assets/styles/config';
+
+.revision-mockup-loader {
+    background: linear-gradient(to right, $ax-color-teal-1 30%,#ffffff 30%,#ffffff 100%);
+    border: 1px solid $ax-color-gray-3;
+    box-shadow: 0 1px 10px $ax-color-gray-3;
+}

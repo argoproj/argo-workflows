@@ -1,0 +1,59 @@
+<div class="ax-toolbar">
+    <div class="ax-container">
+        <div class="ax-toolbar__item">
+            <ax-date-range-dropdown [range]="currentInterval" (rangeChanged)="onDateRangeChange($event)"></ax-date-range-dropdown>
+        </div>
+    </div>
+</div>
+
+<div class="content cashboard">
+    <div class="cashboard__chart-bg">
+        <div class="ax-container cashboard__chart">
+           <ax-cashboard-summaries [input]="cashboardSummariesInput"></ax-cashboard-summaries>
+
+            <div class="row">
+                <div class="small-12 spendings-box" [ngStyle]="{'height': '300px' }">
+                    <ax-spendings-chart
+                            [dateFormatter]="currentInterval.step.dateFormatter"
+                            (onStepClicked)="spendingsLoader.selectIntervalStep($event)"></ax-spendings-chart>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container cashboard__items">
+        <div *ngFor="let row of priciesItemGroups | keys" class="row medium-collapse large-collapse align-stretch">
+            <div *ngFor="let group of row.value" class="columns" [ngClass]="{'large-12': row.value.length === 1, 'large-6': row.value.length === 2}">
+                <div class="cashboard__items-group">
+                    <h2 class="cashboard__items-group-title">{{group.title}}</h2>
+                    <table>
+                        <tr *ngFor="let item of group.items">
+                            <td>
+                                <div class="cashboard__items-avatar"></div>
+                                <a class="cashboard__items-name"
+                                   [routerLink]="['/app/cashboard/details/' + group.type + '/' + item.name, getRouteParams(item.id ? { id: item.id } : null)]">
+                                    {{item.name}}
+                                </a>
+                            </td>
+                            <td width="54%">
+                                <div class="cashboard__progressbar">
+                                    <div class="cashboard__progressbar-bar"
+                                         [ngStyle]="{'width': item.percentage + '%'}"></div>
+                                    <div class="cashboard__progressbar-value">{{item.percentage}}%</div>
+                                </div>
+                            </td>
+                            <td width="14%">
+                                <div class="cashboard__items-cost">${{item.cost}}</div>
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="cashboard__view-all">
+                        <a [routerLink]="['/app/cashboard/details/' + group.type, getRouteParams()]">
+                            {{ 'View All' | translate }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

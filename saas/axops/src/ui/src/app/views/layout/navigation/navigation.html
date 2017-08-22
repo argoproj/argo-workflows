@@ -1,0 +1,116 @@
+<ax-navigation-panel [show]="branchNavPanelOpened" (onClose)="onClosePanel()">
+    <panel-header>Quick Access Menu</panel-header>
+    <panel-body>
+        <ax-branches-panel [linkSegments]="branchNavPanelUrl"
+                           [repositories]="repositories" [loading]="loading"
+                           [isShown]="branchNavPanelUrl">
+        </ax-branches-panel>
+    </panel-body>
+    <panel-footer>
+        <div class="nav__body-bottom">
+            <label>Show Favorite Branches Only</label>
+            <div class="nav__swipe">
+                <ax-swipe-checkbox [labels]="{enable: 'on', disable: 'off'}" [value]="showFavoriteBranches" (click)="toggleFavoriteBranchesEnabled()"></ax-swipe-checkbox>
+            </div>
+        </div>
+    </panel-footer>
+</ax-navigation-panel>
+
+<div class="nav-bar">
+    <div class="nav-bar__logo">
+        <img src="/assets/styles/icons/logo.png" alt="Argo">
+        <div class="nav-bar__version">ver: {{version}}</div>
+    </div>
+    <div class="nav-bar__item" routerLink="/app/timeline" routerLinkActive="active" (click)="close()">
+        <i class="ax-icon-timeline"></i>
+        <span class="nav-bar__item-tooltip">Timeline</span>
+    </div>
+    <div class="nav-bar__item" routerLink="/app/applications" routerLinkActive="active" (click)="close()">
+        <i class="ax-icon-application"></i>
+        <span class="nav-bar__item-tooltip">Applications</span>
+    </div>
+    <div class="nav-bar__item" routerLink="/app/service-catalog/overview" routerLinkActive="active" (click)="close()">
+        <i class="ax-icon-template"></i>
+        <span class="nav-bar__item-tooltip">Templates</span>
+    </div>
+    <div class="nav-bar__item" routerLink="/app/ax-catalog" routerLinkActive="active" (click)="close()">
+        <i class="ax-icon-appstore"></i>
+        <span class="nav-bar__item-tooltip">Catalog</span>
+    </div>
+    <div class="nav-bar__item" (click)="open()">
+        <i class="ax-icon-more"></i>
+    </div>
+</div>
+<div class="nav-overlay" (click)="close()"></div>
+<nav class="nav">
+    <div class="nav__close" (click)="close()">
+        <div class="ax-icon-close"></div>
+    </div>   
+    <div class="nav__list">
+        <a class="nav__item nav__item_tutorial" routerLink="/app/timeline" routerLinkActive="active" (click)="close()" data-tutorial="timeline">
+            <div class="nav__ico"><i class="ax-icon-timeline"></i></div>
+            <div class="nav__name">Timeline</div>
+        </a>
+        <a class="nav__item nav__item_tutorial" routerLink="/app/applications" routerLinkActive="active" (click)="close()" data-tutorial="applications">
+            <div class="nav__ico"><i class="ax-icon-application"></i></div>
+            <div class="nav__name">Applications</div>
+        </a>
+        <a class="nav__item nav__item_tutorial" routerLink="/app/service-catalog/overview" routerLinkActive="active" (click)="close()" data-tutorial="workflows">
+            <div class="nav__ico"><i class="ax-icon-template"></i></div>
+            <div class="nav__name">Templates</div>
+        </a>
+        <a class="nav__item nav__item_tutorial" routerLink="/app/policies/overview" routerLinkActive="active" (click)="close()" data-tutorial="policies">
+            <div class="nav__ico"><i class="ax-icon-policies"></i></div>
+            <div class="nav__name">Policies</div>
+        </a>
+        <h3>Monitoring</h3>
+        <a class="nav__item nav__item_tutorial" routerLink="cashboard" routerLinkActive="active" (click)="close()" data-tutorial="dashboards">
+            <div class="nav__ico"><i class="ax-icon-cashboard"></i></div>
+            <div class="nav__name">Cashboard</div>
+        </a>
+        <a class="nav__item" routerLink="hosts" routerLinkActive="active" (click)="close()">
+            <div class="nav__ico"><i class="ax-icon-axcluster"></i></div>
+            <div class="nav__name">Cluster</div>
+        </a>
+        <a class="nav__item" routerLink="metrics" routerLinkActive="active" (click)="close()">
+            <div class="nav__ico"><i class="ax-icon-metrics"></i></div>
+            <div class="nav__name">Metrics</div>
+        </a>
+        <h3>Infrastructure</h3>
+        <a class="nav__item nav__item_tutorial" routerLink="/app/ax-catalog" routerLinkActive="active" (click)="close()" data-tutorial="ax-catalog">
+            <div class="nav__ico"><i class="ax-icon-appstore"></i></div>
+            <div class="nav__name">Catalog</div>
+        </a>
+        <a class="nav__item nav__item_tutorial" routerLink="fixtures" routerLinkActive="active" (click)="close()" data-tutorial="fixtures">
+            <div class="nav__ico"><i class="ax-icon-fixture"></i></div>
+            <div class="nav__name">Fixtures</div>
+        </a>
+        <a class="nav__item" routerLink="volumes" routerLinkActive="active" (click)="close()">
+            <div class="nav__ico"><i class="ax-icon-volume"></i></div>
+            <div class="nav__name">Volumes</div>
+        </a>
+        <a class="nav__item nav__item_tutorial" routerLink="config-management" routerLinkActive="active" (click)="close()" data-tutorial="configurations">
+            <div class="nav__ico"><i class="ax-icon-configs"></i></div>
+            <div class="nav__name">Configs</div>
+        </a>
+        <template [axIfUserIsInGroup]="['admin', 'super_admin']">
+            <h3>Administration</h3>
+            <a class="nav__item" routerLink="user-management/overview" routerLinkActive="active" (click)="close()">
+                <div class="nav__ico"><i class="ax-icon-users"></i></div>
+                <div class="nav__name">Users</div>
+            </a>
+            <a class="nav__item" routerLink="integrations/overview" routerLinkActive="active" (click)="close()">
+                <div class="nav__ico"><i class="ax-icon-integrations"></i></div>
+                <div class="nav__name">Integrations</div>
+            </a>
+            <a class="nav__item" routerLink="settings/overview" routerLinkActive="active" (click)="close()">
+                <div class="nav__ico"><i class="ax-icon-settings"></i></div>
+                <div class="nav__name">Settings</div>
+            </a>
+            <a class="nav__item" routerLink="help" routerLinkActive="active" (click)="close()">
+                <div class="nav__ico"><i class="ax-icon-docs"></i></div>
+                <div class="nav__name">Docs</div>
+            </a>
+        </template>
+    </div>
+</nav>

@@ -1,0 +1,26 @@
+---
+type: policy
+version: 1
+name: policy-with-no-events
+template: policy-container
+arguments:
+  parameters.sleep: "60"
+notifications:
+- when:
+  - on_failure
+  whom:
+  - committer
+  - author
+  - prod@slack
+when:
+
+---
+type: container
+version: 1
+name: policy-container-ok
+image: "debian:8.5"
+command: ["sh", "-c"]
+args: ["sleep %%inputs.parameters.sleep%%"]
+inputs:
+  parameters:
+    sleep:

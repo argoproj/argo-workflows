@@ -1,0 +1,15 @@
+<div class="deployment-details"
+    ax-infinite-scroll
+    [ax-infinite-scroll-distance]="1"
+    [ax-immediate-check]="true"
+    (scrolled)="onScroll()">
+
+    <div class="deployment-details__content deployment-details__content--stream">
+        <div *ngFor="let deployment of deployments; trackBy:trackByDeploymentId" class="deployment-details__panel deployment-details__panel--bottom-gap deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
+            <div (click)="onShowHistoryDetails.emit({id: deployment.id})" class="clickable">
+                <ax-deployment-history-cell [deployment]="deployment"></ax-deployment-history-cell>
+            </div>
+        </div>
+        <ax-loader-list-mockup [itemHeight]="132" [itemGap]="20" [customClass]="'revision-mockup-loader'" [itemsLength]="limit" [marginLeft]="0" [marginRight]="0" *ngIf="onScrollLoading"></ax-loader-list-mockup>
+    </div>
+</div>

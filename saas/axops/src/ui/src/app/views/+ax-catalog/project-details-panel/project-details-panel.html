@@ -1,0 +1,57 @@
+<div class="project-details-panel">
+    <div class="ax-toolbar">
+        <div class="project-details-panel__header">
+            <div class="ax-container">
+                <div class="row">
+                    <div class="columns small-8 project-details-panel__info">
+                        <a class="project-details-panel__back" [routerLink]="['..']" *ngIf="showBackButton">
+                            <i class="fa fa-arrow-circle-left" aria-hidden="true"></i>
+                        </a>
+                        <h4>{{project?.name}}</h4>
+                        <h6>{{project?.description}}</h6>
+                    </div>
+                    <div class="columns small-4 project-details-panel__icon">
+                        <ax-project-icon [project]="project"></ax-project-icon>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="ax-container">
+            <div class="row">
+                <div class="columns small-8">
+                    <div class="project-details-panel__section">
+                        <h4>{{project?.name}}</h4>
+                        <p>{{project?.description}}</p>
+                    </div>
+                    <div class="project-details-panel__section"><ax-project-launch-button [project]="project"></ax-project-launch-button></div>
+                    <div>
+                        <div class="row project-details-panel__custom-field" *ngFor="let field of customFields; trackBy:byFieldName">
+                            <div class="columns small-4">{{field.name | uppercase}}</div>
+                            <div class="columns small-4">{{field.value}}</div>
+                        </div>
+                        <div class="row project-details__custom-field" *ngIf="project?.categories.length">
+                            <div class="columns small-4">{{'categories' | uppercase}}</div>
+                            <div class="columns small-4">
+                                <ul class="project-details__categories">
+                                    <li *ngFor="let category of project?.categories">{{category}}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details-panel__section">
+                        <ax-markdown *ngIf="project?.assets?.detail" [markdown]="project?.assets?.detail"></ax-markdown>
+                    </div>
+                </div>
+                <div class="columns small-4">
+                    <p>LABELS:</p>
+                    <div *ngFor="let tag of tags">
+                        <div class="project-details-panel__tag">{{tag}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

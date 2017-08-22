@@ -1,0 +1,54 @@
+@import '../../../assets/styles/config';
+
+.labels-filters {
+    width: 800px;
+    height: 80%;
+    margin: -1rem;
+    overflow: hidden;
+
+    &__content {
+        overflow-y: auto;
+        height: 80%;
+        padding: 30px;
+    }
+
+    &__group{
+        border-bottom: 1px solid #eee;
+        padding-top: 10px;
+        h6 {
+            color: $ax-color-teal-6;
+            text-transform: capitalize;
+        }
+        &__row {
+            display: block;
+            line-height: 40px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+
+            &:not(.selected):hover {
+                background-color: rgba(0,0,0,.04);
+            }
+
+            &.selected {
+                border: 1px solid $ax-color-teal-6;
+                border-radius: 5px;
+            }
+            
+            &[hidden] {
+                display: none;
+            }
+        }
+    }
+    
+
+    &__label-name {
+        padding-left: 5px;
+    }
+
+    h3 {
+        color: #aaa;
+        font-size: 15px;
+        text-transform: uppercase;
+    }
+}

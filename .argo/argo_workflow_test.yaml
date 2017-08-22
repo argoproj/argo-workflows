@@ -1,0 +1,148 @@
+---
+type: container
+version: 1
+name: argo-workflow-test
+description: Base ARGO test container
+image: argobase/axdevopsbuilder:v7
+resources:
+  mem_mib: 1024
+  cpu_cores: 0.1
+command: ["%%inputs.parameters.TEST_COMMAND%%"]
+inputs:
+  parameters:
+    TEST_COMMAND: {}
+  artifacts:
+    CODE:
+      path: /src
+
+---
+type: container
+version: 1
+name: argo-deploy
+description: Deploy a fixture
+image: argoproj/argoclustermanager:v1
+resources:
+  mem_mib: 1000
+  cpu_cores: 1.0
+command: ["bash", "-c"]
+args:  [
+  export AX_NAMESPACE=%%inputs.parameters.NAMESPACE%% &&
+  export AX_VERSION=%%inputs.parameters.VERSION%% &&
+  export AWS_CROSS_ACCOUNT_ARN=%%inputs.parameters.ARN%% &&
+  export AX_CUSTOMER_ID=%%inputs.parameters.CUSTOMER_ID%% &&
+  export AX_UPGRADE_FOR_CUSTOMER=true &&
+  /ax/bin/ax-kube-upgrade %%inputs.parameters.CLUSTER_NAME%% reset
+]
+inputs:
+  parameters:
+    ARN:
+      default: ""
+    CLUSTER_NAME:
+      default: ""
+    CLUSTER_ID:
+      default: ""
+    CUSTOMER_ID:
+      default: ""
+    NAMESPACE:
+      default: ""
+    VERSION:
+      default: ""
+  artifacts:
+    CODE:
+      path: /src
+annotations:
+    "ax_ea_docker_enable": '{ "graph-storage-name": "axdeploy2storage", "graph-storage-size": "25Gi", "cpu_cores":"0.5", "mem_mib":"500"}'
+
+---
+type: workflow
+version: 1
+name: AX Workflow Test
+description: AX Workflow Test
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: staging
+    REGISTRY:
+      default: docker.applatix.net
+    REG_USER:
+      default: "%%config.admin@internal.docker.user%%"
+    REG_PASSWORD:
+      default: "%%config.admin@internal.docker.password%%"
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: --no-push
+fixtures:
+- target_cluster:
+    class: "Cluster"
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO_BUILD:
+    template: argo-build
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+- DEPLOY:
+    template: argo-deploy
+    arguments:
+      parameters.CLUSTER_NAME: "%%fixtures.target_cluster.name%%"
+      parameters.CLUSTER_ID: "%%fixtures.target_cluster.cluster_id%%"
+      parameters.CUSTOMER_ID: "%%fixtures.target_cluster.customer_id%%"
+      parameters.ARN: ""
+      parameters.NAMESPACE: ""
+      parameters.VERSION: ""
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+- BASIC_WORKFLOW_TEST_NEGATIVE:
+    template: argo-workflow-test
+    arguments:
+      parameters.TEST_COMMAND: sh -c 'cd /src && export PYTHONPATH=./common/python &&
+                    python3 devops/test/ax/test/devops/e2e/workflow/basic_workflow.py -c %%fixtures.target_cluster.axops_dnsname%% -u %%fixtures.target_cluster.admin_username%% -p %%fixtures.target_cluster.admin_password%% --negative-test'
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  BASIC_WORKFLOW_TEST_POSITIVE:
+    template: argo-workflow-test
+    arguments:
+      parameters.TEST_COMMAND: sh -c 'cd /src && export PYTHONPATH=./common/python &&
+                    python3 devops/test/ax/test/devops/e2e/workflow/basic_workflow.py -c %%fixtures.target_cluster.axops_dnsname%% -u %%fixtures.target_cluster.admin_username%% -p %%fixtures.target_cluster.admin_password%%'
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  NESTED_WORKFLOW_TEST_NEGATIVE:
+    template: argo-workflow-test
+    arguments:
+      parameters.TEST_COMMAND: sh -c 'cd /src && export PYTHONPATH=./common/python &&
+                    python3 devops/test/ax/test/devops/e2e/workflow/nested_workflow.py -c %%fixtures.target_cluster.axops_dnsname%% -u %%fixtures.target_cluster.admin_username%% -p %%fixtures.target_cluster.admin_password%% --negative-test'
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  NESTED_WORKFLOW_TEST_POSITIVE:
+    template: argo-workflow-test
+    arguments:
+      parameters.TEST_COMMAND: sh -c 'cd /src && export PYTHONPATH=./common/python &&
+                    python3 devops/test/ax/test/devops/e2e/workflow/nested_workflow.py -c %%fixtures.target_cluster.axops_dnsname%% -u %%fixtures.target_cluster.admin_username%% -p %%fixtures.target_cluster.admin_password%%'
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+
+---
+type: policy
+version: 1
+name: AX Workflow Test Policy
+description: Policy to trigger test with randomized workflows
+template: AX Workflow Test
+arguments:
+  parameters.NAMESPACE: axsys
+  parameters.VERSION_OPTION: -v latest
+notifications:
+- when:
+  - on_start
+  - on_success
+  - on_failure
+  whom:
+    - committer
+    - author
+- when:
+  - on_change
+  whom:
+    - j7l5a4s7j9c5t9m3@applatix.slack.com
+when:
+- event: on_cron
+  schedule: "0 * * * *"
+  timezone: "US/Pacific"

@@ -1,0 +1,38 @@
+<div class="ax-table-list" [class.ax-table-list--clickable]="volumes?.length">
+    <div class="ax-table-list__head">
+        <div class="row">
+            <div class="columns small-3">{{'Volume name' | translate}}</div>
+            <div class="columns small-2">{{'Storage provider' | translate}}</div>
+            <div class="columns small-2">{{'Status' | translate}}</div>
+            <div class="columns small-5">{{'Usage' | translate}}</div>
+        </div>
+    </div>
+    <div class="ax-table-list__row" *ngFor="let volume of volumes" [routerLink]="'/app/volumes/' + volume.id">
+        <div class="row">
+            <div class="columns small-3">{{ volume.name }}</div>
+            <div class="columns small-2">{{ volume.storage_provider }}</div>
+            <div class="columns small-2">{{ volume.status }}</div>
+            <div class="columns small-5 volumes-list__actions-column">
+                <label>Used:</label> <strong>{{volume.usagePercentage}}%</strong>
+                <span class="volumes-list__separator"> | </span>
+                <label>Applications:</label> <strong>{{volume.applicationsCount}}</strong>
+                <label>Deployments:</label> <strong>{{volume.deploymentsCount}}</strong>
+                <div class="volumes-list__progress-bar">
+                    <ax-progress-bar [progress]="volume.usagePercentage"></ax-progress-bar>
+                    <div class="volumes-list__menu">
+                        <ax-dropdown-menu *ngIf="!volume.anonymous" [settings]="getDropdownMenu(volume)">
+                            <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                            </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="ax-table-list__row" *ngIf="!volumes?.length">
+        <div class="row">
+            <div class="columns small-12">Volumes list is empty.</div>
+        </div>
+    </div>
+</div>

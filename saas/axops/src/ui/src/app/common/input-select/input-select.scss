@@ -1,0 +1,100 @@
+@import '../../../assets/styles/config';
+
+.input-select {
+    &__container {
+        line-height: 1em;
+        &--wide {
+            width: 500px;
+        }
+
+        &--medium {
+            width: 300px;
+        }
+
+        &--small {
+            width: 100px;
+        }
+    }
+
+    &__input {
+        display: inline-block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 6px 12px 6px 35px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.42857143;
+        cursor: pointer;
+        white-space: nowrap;
+
+        &::-webkit-input-placeholder {
+            color: #555;
+        }
+
+        &:-moz-placeholder { /* Firefox 18- */
+            color: #555;
+        }
+
+        &::-moz-placeholder { /* Firefox 19+ */
+            color: #555;
+        }
+
+        &:-ms-input-placeholder {
+            color: #555;
+        }
+    }
+    
+    &__icon {
+        position: absolute;
+        top: 8px;
+        left: 12px;
+        font-size: 15px;
+        color: $ax-color-gray-8;
+    }
+
+    &__dropdown {
+        position: relative;
+        width: 100%;
+        z-index: 3;
+    }
+
+    &__list {
+        position: absolute;
+        width: 100%;
+        max-height: 500px;
+        overflow-y: auto;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &-item {
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            cursor: pointer;
+            background-color: white;
+
+            &:first-child {
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+
+            &:last-child {
+                border-bottom-left-radius: 3px;
+                border-bottom-right-radius: 3px;
+            }
+
+            &--selected {
+                color: white;
+                background-color: #428bca;
+            }
+        }
+    }
+}
+

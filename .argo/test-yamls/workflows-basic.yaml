@@ -1,0 +1,33 @@
+---
+type: workflow
+version: 1
+name: test-basic-sequential-workflow
+description: Basic workflow with two sequential steps
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    template: noop-container
+- STEP2:
+    template: noop-container
+
+---
+type: workflow
+version: 1
+name: test-basic-parallel-workflow
+description: Basic workflow with two parallel steps
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1A:
+    template: noop-container
+  STEP1B:
+    template: noop-container

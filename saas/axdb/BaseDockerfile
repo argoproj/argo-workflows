@@ -1,0 +1,47 @@
+From %%ARGO_BASE_REGISTRY%%/argobase/debian:8.5
+
+# Basic utilities.
+RUN apt-get update && apt-get install -y \
+		apt-utils \
+		curl \
+		git \
+		maven \
+		sudo \
+		wget \
+        vim \
+        bc
+
+# oracle jdk
+RUN mkdir /opt/jdk
+RUN cd /opt
+RUN wget --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u71-b13/jdk-8u71-linux-x64.tar.gz
+RUN tar -zxf jdk-8u71-linux-x64.tar.gz -C /opt/jdk
+RUN update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.8.0_71/bin/java 10000
+RUN update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.8.0_71/bin/javac 10000
+RUN rm jdk-8u71-linux-x64.tar.gz
+
+# install Cassandra
+RUN echo "deb http://debian.datastax.com/datastax-ddc 3.7 main" | tee -a /etc/apt/sources.list.d/cassandra.sources.list
+RUN curl -L https://debian.datastax.com/debian/repo_key | apt-key add -
+
+RUN apt-get update -y && apt-get install -y \
+        datastax-ddc
+
+RUN service cassandra stop
+RUN rm -rf /var/lib/cassandra/data/system/*
+
+# 7000: intra-node communication
+# 7001: TLS intra-node communication
+# 7199: JMX
+# 9042: CQL
+# 9160: thrift service
+EXPOSE 7000 7001 7199 9042 9160
+
+# install cassandra-lucene-index
+RUN cd /root && \
+    git clone http://github.com/Stratio/cassandra-lucene-index && \
+    cd cassandra-lucene-index && \
+    git checkout 3.7.1 && \
+    mvn clean package
+RUN cp /root/cassandra-lucene-index/plugin/target/cassandra-lucene-index-plugin-*.jar /usr/share/cassandra/lib
+RUN rm -rf /root/cassandra-lucene-index

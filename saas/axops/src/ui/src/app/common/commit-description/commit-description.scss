@@ -1,0 +1,23 @@
+@import '../../../assets/styles/config';
+
+.details-box {
+    & h5 {
+        color: $ax-color-gray-6;
+        font-size: 12px;
+        font-weight: bolder;
+        margin: 15px 0 0 0;
+    }
+
+    & p {
+        font-size: 12px;
+        padding: 0 15px 0 0;
+        margin-bottom: 10px;
+        word-break: break-all;
+    }
+
+    & > span {
+        cursor: pointer;
+        font-size: 12px;
+        color: $ax-color-teal-6;
+    }
+}

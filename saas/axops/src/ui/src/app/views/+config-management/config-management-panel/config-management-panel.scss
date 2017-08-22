@@ -1,0 +1,17 @@
+@import '../../../../assets/styles/config';
+
+.config-management-panel {
+    &__reveal-secret {
+        position: absolute;
+        right: -3em;
+        top: 65%;
+        cursor: pointer;
+    }
+
+    &__remove-key {
+        position: absolute;
+        right: -1.5em;
+        top: 65%;
+        cursor: pointer;
+    }
+} 

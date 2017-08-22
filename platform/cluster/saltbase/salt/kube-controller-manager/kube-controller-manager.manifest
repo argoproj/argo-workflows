@@ -1,0 +1,250 @@
+{% set cluster_name = "" -%}
+{% set cluster_cidr = "" -%}
+{% set allocate_node_cidrs = "" -%}
+{% set service_cluster_ip_range = "" %}
+{% set terminated_pod_gc = "" -%}
+
+
+{% if pillar['instance_prefix'] is defined -%}
+  {% set cluster_name = "--cluster-name=" + pillar['instance_prefix'] -%}
+{% endif -%}
+{% if pillar['cluster_cidr'] is defined and pillar['cluster_cidr'] != "" -%}
+  {% set cluster_cidr = "--cluster-cidr=" + pillar['cluster_cidr'] -%}
+{% endif -%}
+{% if pillar['service_cluster_ip_range'] is defined and pillar['service_cluster_ip_range'] != "" -%}
+  {% set service_cluster_ip_range = "--service_cluster_ip_range=" + pillar['service_cluster_ip_range'] -%}
+{% endif -%}
+# When we're using flannel it is responsible for cidr allocation.
+# This is expected to be a short-term compromise.
+{% if pillar.get('network_provider', '').lower() == 'flannel' %}
+  {% set allocate_node_cidrs = "--allocate-node-cidrs=false" -%}
+{% elif pillar.get('network_provider', '').lower() == 'kubenet' %}
+  {% set allocate_node_cidrs = "--allocate-node-cidrs=true" -%}
+{% elif pillar['allocate_node_cidrs'] is defined -%}
+  {% set allocate_node_cidrs = "--allocate-node-cidrs=" + pillar['allocate_node_cidrs'] -%}
+{% endif -%}
+{% if pillar['terminated_pod_gc_threshold'] is defined -%}
+  {% set terminated_pod_gc = "--terminated-pod-gc-threshold=" + pillar['terminated_pod_gc_threshold'] -%}
+{% endif -%}
+
+
+
+
+# AX Resource Tune
+{% set kubecontroller_cpu_req = "200m" -%}
+{% set kubecontroller_mem_req = "800Mi" -%}
+{% set cache_params = "" -%}
+{% set batch_params = "" -%}
+{% if pillar['ax_compute_unit_max'] is defined -%}
+
+  # AX: Configure CPU
+  {% if pillar['kubecontroller_cpu_req'] is defined -%}
+    {% set tmp_cpu = pillar['kubecontroller_cpu_req']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set kubecontroller_cpu_req = tmp_cpu|string + "m" -%}
+  {% endif -%}
+
+  # AX: Configure cache and memory
+  {% set tmp_mem = 0 -%}
+  {% if pillar['kubecontroller_ds_cache'] is defined -%}
+    {% set tmp_ds_cache = pillar['kubecontroller_ds_cache']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set cache_params = cache_params + " " + "--daemonset-lookup-cache-size=" + tmp_ds_cache|string -%}
+    {% set tmp_mem = tmp_mem + tmp_ds_cache -%}
+    {% set kubecontroller_mem_req = tmp_mem|string + "Mi" -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_rs_cache'] is defined -%}
+    {% set tmp_rs_cache = pillar['kubecontroller_rs_cache']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set cache_params = cache_params + " " + "--replicaset-lookup-cache-size=" + tmp_rs_cache|string -%}
+    {% set tmp_mem = tmp_mem + tmp_rs_cache -%}
+    {% set kubecontroller_mem_req = tmp_mem|string + "Mi" -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_rc_cache'] is defined -%}
+    {% set tmp_rc_cache = pillar['kubecontroller_rc_cache']|int * pillar['ax_compute_unit_max']|int -%}
+    {% set cache_params = cache_params + " " + "--replicaset-lookup-cache-size=" + tmp_rc_cache|string -%}
+    {% set tmp_mem = tmp_mem + tmp_rc_cache -%}
+    {% set kubecontroller_mem_req = tmp_mem|string + "Mi" -%}
+  {% endif -%}
+
+  # AX: Configure parallelism
+  {% if pillar['kubecontroller_dp_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-deployment-syncs=" + pillar['kubecontroller_dp_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_ep_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-endpoint-syncs=" + pillar['kubecontroller_ep_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_gc_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-gc-syncs=" + pillar['kubecontroller_gc_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_ns_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-namespace-syncs=" + pillar['kubecontroller_ns_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_rs_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-replicaset-syncs=" + pillar['kubecontroller_rs_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_rq_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-resource-quota-syncs=" + pillar['kubecontroller_rq_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_svc_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-service-syncs=" + pillar['kubecontroller_svc_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_sat_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent-serviceaccount-token-syncs=" + pillar['kubecontroller_sat_batch'] -%}
+  {% endif -%}
+  {% if pillar['kubecontroller_rc_batch'] is defined -%}
+    {% set batch_params = batch_params + " " + "--concurrent_rc_syncs=" + pillar['kubecontroller_rc_batch'] -%}
+  {% endif -%}
+
+{%  endif -%}
+
+
+
+
+{% set enable_garbage_collector = "" -%}
+{% if pillar['enable_garbage_collector'] is defined -%}
+{% set enable_garbage_collector = "--enable-garbage-collector=" + pillar['enable_garbage_collector'] -%}
+{% endif -%}
+
+{% set cloud_provider = "" -%}
+{% set cloud_config = "" -%}
+{% set cloud_config_mount = "" -%}
+{% set cloud_config_volume = "" -%}
+{% set additional_cloud_config_mount = "{\"name\": \"usrsharessl\",\"mountPath\": \"/usr/share/ssl\", \"readOnly\": true}, {\"name\": \"usrssl\",\"mountPath\": \"/usr/ssl\", \"readOnly\": true}, {\"name\": \"usrlibssl\",\"mountPath\": \"/usr/lib/ssl\", \"readOnly\": true}, {\"name\": \"usrlocalopenssl\",\"mountPath\": \"/usr/local/openssl\", \"readOnly\": true}," -%}
+{% set additional_cloud_config_volume = "{\"name\": \"usrsharessl\",\"hostPath\": {\"path\": \"/usr/share/ssl\"}}, {\"name\": \"usrssl\",\"hostPath\": {\"path\": \"/usr/ssl\"}}, {\"name\": \"usrlibssl\",\"hostPath\": {\"path\": \"/usr/lib/ssl\"}}, {\"name\": \"usrlocalopenssl\",\"hostPath\": {\"path\": \"/usr/local/openssl\"}}," -%}
+{% set srv_kube_path = "/srv/kubernetes" -%}
+
+{% if grains.cloud is defined -%}
+  {% if grains.cloud not in ['vagrant', 'vsphere', 'photon-controller', 'azure-legacy'] -%}
+    {% set cloud_provider = "--cloud-provider=" + grains.cloud -%}
+  {% endif -%}
+  {% set service_account_key = "--service-account-private-key-file=/srv/kubernetes/server.key" -%}
+
+  {% if grains.cloud in [ 'openstack' ] and grains.cloud_config is defined -%}
+    {% set cloud_config = "--cloud-config=" + grains.cloud_config -%}
+  {% endif -%}
+
+  {% if grains.cloud in [ 'aws', 'gce' ] and grains.cloud_config is defined -%}
+    {% set cloud_config = "--cloud-config=" + grains.cloud_config -%}
+    {% set cloud_config_mount = "{\"name\": \"cloudconfigmount\",\"mountPath\": \"" + grains.cloud_config + "\", \"readOnly\": true}," -%}
+    {% set cloud_config_volume = "{\"name\": \"cloudconfigmount\",\"hostPath\": {\"path\": \"" + grains.cloud_config + "\"}}," -%}
+  {% endif -%}
+
+  {% if grains.cloud in ['openstack'] -%}
+    {% set cloud_config_mount = "{\"name\": \"instanceid\",\"mountPath\": \"/var/lib/cloud/data/instance-id\",\"readOnly\": true}," -%}
+    {% set cloud_config_volume = "{\"name\": \"instanceid\",\"hostPath\": {\"path\": \"/var/lib/cloud/data/instance-id\"}}," -%}
+  {% endif -%}
+{% endif -%}
+
+{% set root_ca_file = "" -%}
+
+{% if grains['cloud'] is defined and grains.cloud in [ 'aws', 'gce', 'vagrant', 'vsphere', 'photon-controller', 'openstack', 'azure-legacy']    %}
+   {% set root_ca_file = "--root-ca-file=/srv/kubernetes/ca.crt" -%}
+{% endif -%}
+
+{% set log_level = pillar['log_level'] -%}
+{% if pillar['controller_manager_test_log_level'] is defined -%}
+  {% set log_level = pillar['controller_manager_test_log_level'] -%}
+{% endif -%}
+
+{% set feature_gates = "" -%}
+{% if grains.feature_gates is defined -%}
+ {% set feature_gates = "--feature-gates=" + grains.feature_gates -%}
+{% endif -%}
+
+{% set params = "--master=127.0.0.1:8080" + " " + cluster_name + " " + cluster_cidr + " " + allocate_node_cidrs + " " + service_cluster_ip_range + " " + terminated_pod_gc + " " + enable_garbage_collector + " " + cloud_provider  + " " + cloud_config + " " + service_account_key + " " + log_level + " " + root_ca_file -%}
+{% set params = params + " " + feature_gates -%}
+
+
+# test_args has to be kept at the end, so they'll overwrite any prior configuration
+{% if pillar['controller_manager_test_args'] is defined -%}
+{% set params = params + " " + pillar['controller_manager_test_args'] -%}
+{% endif -%}
+
+{
+"apiVersion": "v1",
+"kind": "Pod",
+"metadata": {
+  "name":"kube-controller-manager",
+  "namespace": "kube-system",
+  "labels": {
+    "tier": "control-plane",
+    "component": "kube-controller-manager"
+  }
+},
+"spec":{
+"hostNetwork": true,
+"containers":[
+    {
+    "name": "kube-controller-manager",
+    "image": "{{pillar['kube_docker_registry']}}/kube-controller-manager:{{pillar['kube-controller-manager_docker_tag']}}",
+    "resources": {
+      "requests": {
+        "cpu": "{{kubecontroller_cpu_req}}",
+        "memory": "{{kubecontroller_mem_req}}"
+      }
+    },
+    "command": [
+                 "/bin/sh",
+                 "-c",
+                 "/usr/local/bin/kube-controller-manager {{cache_params}} {{batch_params}} {{params}} 1>>/var/log/kube-controller-manager.log 2>&1"
+               ],
+    "livenessProbe": {
+      "httpGet": {
+        "host": "127.0.0.1",
+        "port": 10252,
+        "path": "/healthz"
+      },
+      "initialDelaySeconds": 15,
+      "timeoutSeconds": 15
+    },
+    "volumeMounts": [
+        {{cloud_config_mount}}
+        {{additional_cloud_config_mount}}
+        { "name": "srvkube",
+        "mountPath": "{{srv_kube_path}}",
+        "readOnly": true},
+        { "name": "logfile",
+        "mountPath": "/var/log/kube-controller-manager.log",
+        "readOnly": false},
+        { "name": "etcssl",
+        "mountPath": "/etc/ssl",
+        "readOnly": true},
+        { "name": "varssl",
+        "mountPath": "/var/ssl",
+        "readOnly": true},
+        { "name": "etcopenssl",
+        "mountPath": "/etc/openssl",
+        "readOnly": true},
+        { "name": "etcpki",
+        "mountPath": "/etc/pki",
+        "readOnly": true}
+      ]
+    }
+],
+"volumes":[
+  {{cloud_config_volume}}
+  {{additional_cloud_config_volume}}
+  { "name": "srvkube",
+    "hostPath": {
+        "path": "{{srv_kube_path}}"}
+  },
+  { "name": "logfile",
+    "hostPath": {
+        "path": "/var/log/kube-controller-manager.log"}
+  },
+  { "name": "etcssl",
+    "hostPath": {
+        "path": "/etc/ssl"}
+  },
+  { "name": "varssl",
+    "hostPath": {
+        "path": "/var/ssl"}
+  },
+  { "name": "etcopenssl",
+    "hostPath": {
+        "path": "/etc/openssl"}
+  },
+  { "name": "etcpki",
+    "hostPath": {
+        "path": "/etc/pki"}
+  }
+]
+}}

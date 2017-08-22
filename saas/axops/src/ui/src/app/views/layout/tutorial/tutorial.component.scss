@@ -1,0 +1,60 @@
+@import '../../../../assets/styles/config';
+
+$tutorialColor: $ax-color-teal-8;
+
+.tutorial {
+    &::before {
+        position: fixed;
+        content: '';
+        left: 0;
+        right: 100px;
+        bottom: 0;
+        top: 0;
+    }
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba($ax-color-gray-2, 0.95);
+    z-index: 10;
+
+    &__header {
+        padding: 1em 6em;
+        font-weight: 100;
+    }
+
+    &__title {
+        padding-top: 2rem;
+        padding-left: 6rem;
+        padding-right: 6rem;
+
+        & i, & i::before {
+            vertical-align: middle;
+        }
+    }
+
+    &__content-wrapper {
+        overflow-y: auto;
+        height: 100%;
+    }
+
+    &__content {
+        font-size: 1.2em;
+        font-weight: 300;
+        position: relative;
+        padding-left: 6em;
+        padding-right: 6em;
+        color: $tutorialColor;
+    }
+
+    &__pointer {
+        transition: top 0.5s;
+        color: $ax-color-gray-2;
+        position: absolute;
+        left: -10px;
+        transform: translateY(-15px);
+        font-size: 2em;
+    }
+}

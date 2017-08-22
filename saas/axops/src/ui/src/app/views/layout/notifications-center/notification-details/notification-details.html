@@ -1,0 +1,20 @@
+<div class="ax-notification-details">
+    <div class="ax-notification-details__header">
+        <a [attr.disabled]="isAcknowledgeByCurrentUser()" class="ax-notification-details__header-link" (click)="!isAcknowledgeByCurrentUser() && acknowledge()"><i class="fa ax-icon-approval"></i>Acknowledge</a>
+    </div>
+    <div class="ax-notification-details__content">
+        <div class="ax-notification-details__title">{{ notification.message }}</div>
+        <div class="ax-notification-details__des">
+            <div>Date: {{ notification.timestamp / 1000 / 1000 | axShortDateTime }}</div>
+            <div>Code: <span class="highlight">{{ notification.code }}</span></div>
+            <div *ngIf="notification.acknowledged_by">Acknowledged By: <span class="highlight">{{ notification.acknowledged_by }}</span></div>
+        </div>
+        <div class="ax-notification-details__subtitle">Details</div>
+        <div class="ax-notification-details__row">
+            <div class="row" *ngFor="let attr of attributes">
+                <div class="cloumns small-2">{{attr | capitalize}}</div>
+                <div class="columns small-10" [innerHTML]="notificationAttributeValue(attr)"></div>
+            </div>
+        </div>
+    </div>
+</div>

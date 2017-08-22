@@ -1,0 +1,259 @@
+{
+  "id": "wudi",
+  "costid": {
+    "project": "prod",
+    "app": "workflow"
+  },
+  "flags": {},
+  "template": {
+    "version": "1.0",
+    "id": "58dd39e6-731a-4efa-99a8-1488d30970fd",
+    "fixtures": [
+      {
+        "ff-root-0-0": {
+          "id": "5f95d0d9-c9cb-472f-b7d0-65e76db8a293",
+          "requirements": {
+            "attributes": {
+              "mock_attr": 123
+            },
+            "is_ax_test_mock": true,
+            "category": "ax_mock",
+            "name": "ax_mock_name"
+          }
+        },
+        "ff-root-0-1": {
+          "id": "c0616420-555a-463f-9da3-f32f553270b8",
+          "requirements": {
+            "attributes": {
+              "mock_attr": 123
+            },
+            "is_ax_test_mock": true,
+            "category": "ax_mock",
+            "name": "ax_mock_name"
+          }
+        }
+      },
+      {
+        "ff-root-1-0": {
+          "id": "400f2d58-ff8f-48d7-99ec-fd8dd84c9faa",
+          "requirements": {
+            "attributes": {
+              "mock_attr": 123
+            },
+            "is_ax_test_mock": true,
+            "category": "ax_mock",
+            "name": "ax_mock_name"
+          }
+        },
+        "ff-root-1-1": {
+          "id": "8cb960f2-69a0-4708-ad96-8d4e2f2bd9d8",
+          "requirements": {
+            "attributes": {
+              "mock_attr": 123
+            },
+            "is_ax_test_mock": true,
+            "category": "ax_mock",
+            "name": "ax_mock_name"
+          }
+        }
+      }
+    ],
+    "cost": 0,
+    "subtype": "workflow",
+    "steps": [
+      {
+        "root-0-0": {
+          "id": "dfddbe15-d6f4-43b3-afbd-d5cf868c36c0",
+          "costid": {
+            "project": "prod",
+            "app": "workflow"
+          },
+          "flags": {},
+          "template": {
+            "version": "1.0",
+            "id": "dfc158ea-90eb-40f1-8cde-0e8664db72b2",
+            "container": {
+              "resources": {
+                "disk_gb": 0.0,
+                "mem_mib": 55.34,
+                "cpu_cores": 0.03
+              },
+              "id": "root-0-0",
+              "tags": {
+                "test": [
+                  "notuse"
+                ]
+              },
+              "image": "alpine:3.5",
+              "constraints": [
+                [
+                  "hostname",
+                  "UNLIKE",
+                  "dns"
+                ]
+              ],
+              "entrypoint": "/bin/sh",
+              "instanceid": "f5d0bb5b-4522-44c4-a329-9322e8a95272",
+              "instances": 1,
+              "command": [
+                "-c",
+                " docker version && sleep 19  && true"
+              ]
+            },
+            "labels": {
+              "ax_ea_docker_enable": "{ \"graph-storage-name\": \"randteststorage\", \"graph-storage-size\": \"10Gi\", \"cpu_cores\": \"0.01\", \"mem_mib\": \"32\" }"
+            },
+            "cost": 0,
+            "outputs": {
+              "artifacts": {
+                "axsrc": {
+                  "path": "/ax/src"
+                },
+                "axsingle": {
+                  "path": "/etc/hosts"
+                }
+              }
+            },
+            "subtype": "workflow",
+            "dns_name": "",
+            "name": "root-0-0",
+            "description": "",
+            "type": "service_template"
+          }
+        }
+      },
+      {
+        "root-1-0": {
+          "id": "a53e0836-1825-420c-b510-5413fd5db20c",
+          "costid": {
+            "project": "prod",
+            "app": "workflow"
+          },
+          "flags": {},
+          "template": {
+            "version": "1.0",
+            "id": "ae16c20e-392f-4c39-8388-3a7e312c75dc",
+            "container": {
+              "resources": {
+                "disk_gb": 0.0,
+                "mem_mib": 52.4,
+                "cpu_cores": 0.02
+              },
+              "id": "root-1-0",
+              "tags": {
+                "test": [
+                  "notuse"
+                ]
+              },
+              "image": "alpine:3.5",
+              "constraints": [
+                [
+                  "hostname",
+                  "UNLIKE",
+                  "dns"
+                ]
+              ],
+              "entrypoint": "/bin/sh",
+              "instanceid": "3b129f77-5ad6-4de8-94cb-e1eefbfde889",
+              "instances": 1,
+              "command": [
+                "-c",
+                "ls -lrt /inputs && ls -lrt /inputs_single/single && docker version && sleep 20  && true"
+              ]
+            },
+            "labels": {
+              "ax_ea_docker_enable": "{ \"graph-storage-name\": \"randteststorage\", \"graph-storage-size\": \"1Gi\", \"cpu_cores\": \"0.01\", \"mem_mib\": \"32\"}"
+            },
+            "cost": 0,
+            "subtype": "workflow",
+            "inputs": {
+              "artifacts": [
+                {
+                  "path": "/inputs",
+                  "name": "axsrc",
+                  "service_instance_id": "dfddbe15-d6f4-43b3-afbd-d5cf868c36c0"
+                },
+                {
+                  "path": "/inputs_single/single",
+                  "name": "axsingle",
+                  "service_instance_id": "dfddbe15-d6f4-43b3-afbd-d5cf868c36c0"
+                }
+              ]
+            },
+            "dns_name": "",
+            "name": "root-1-0",
+            "description": "",
+            "type": "service_template"
+          }
+        },
+        "root-1-1": {
+          "id": "cc81b076-dae4-4b86-bacc-4aa93742cac7",
+          "costid": {
+            "project": "prod",
+            "app": "workflow"
+          },
+          "flags": {},
+          "template": {
+            "version": "1.0",
+            "id": "987dcd51-e85a-4719-90b5-d0bb8a6f79c8",
+            "container": {
+              "resources": {
+                "disk_gb": 0.0,
+                "mem_mib": 37.45,
+                "cpu_cores": 0.03
+              },
+              "id": "root-1-1",
+              "tags": {
+                "test": [
+                  "notuse"
+                ]
+              },
+              "image": "alpine:3.5",
+              "constraints": [
+                [
+                  "hostname",
+                  "UNLIKE",
+                  "dns"
+                ]
+              ],
+              "entrypoint": "/bin/sh",
+              "instanceid": "441497ee-8443-4371-9141-a139a6d20167",
+              "instances": 1,
+              "command": [
+                "-c",
+                "ls -lrt /inputs && ls -lrt /inputs_single/single && docker version && sleep 16  && true"
+              ]
+            },
+            "labels": {
+              "ax_ea_docker_enable": "{ \"graph-storage-name\": \"randteststorage\", \"graph-storage-size\": \"20Gi\", \"cpu_cores\": \"0.01\", \"mem_mib\": \"32\"}"
+            },
+            "cost": 0,
+            "subtype": "workflow",
+            "inputs": {
+              "artifacts": [
+                {
+                  "path": "/inputs",
+                  "name": "axsrc",
+                  "service_instance_id": "dfddbe15-d6f4-43b3-afbd-d5cf868c36c0"
+                },
+                {
+                  "path": "/inputs_single/single",
+                  "name": "axsingle",
+                  "service_instance_id": "dfddbe15-d6f4-43b3-afbd-d5cf868c36c0"
+                }
+              ]
+            },
+            "dns_name": "",
+            "name": "root-1-1",
+            "description": "",
+            "type": "service_template"
+          }
+        }
+      }
+    ],
+    "dns_name": "",
+    "name": "root",
+    "description": "",
+    "type": "service_template"
+  }
+}

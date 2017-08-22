@@ -1,0 +1,81 @@
+@import '../../../assets/styles/config';
+
+.tool-box {
+
+    label.ax-label-placeholder {
+        left: 30px;
+    }
+
+    &__title {
+        text-transform: uppercase;
+        color: $ax-color-gray-6;
+
+        & span {
+            display: inline-block;
+            height: 2em;
+            width: 2em;
+            background-color: #EFF3F5;
+            border-radius: 1em;
+            line-height: 2em;
+            padding-left: 0.75em;
+        }
+    }
+
+    .ax-form-row {
+        padding-left: 2em;
+        padding-right: 2em;
+    }
+
+    .row .columns:not(:last-child) {
+        border-right: 1px solid #ccc;
+    }
+    .ui-select-container input {
+        background-color: inherit;
+    }
+
+    &__close {
+        float: right;
+        margin-top: 12px;
+        font-size: 25px;
+    }
+
+    &__name {
+        display: inline-block;
+        font-size: 15px;
+        font-weight: bold;
+    }
+
+    &__btns {
+        overflow: hidden;
+        margin-top: 30px;
+
+        &--footer {
+            position: absolute;
+            bottom: 0;
+        }
+    }
+
+    &__connected-btn {
+        background: linear-gradient(to right, #1e977a 0%,#19c832 100%);
+        color: white !important;
+    }
+
+    &__loader {
+        text-align: center;
+        padding: 3px 0;
+    }
+
+    &__info {
+        text-align: center;
+        padding: 3px 0;
+        font-size: 14px;
+
+        &--success-msg {
+            color: $ax-success-color;
+        }
+
+        &--error-msg {
+            color: $ax-failed-color;
+        }
+    }
+}

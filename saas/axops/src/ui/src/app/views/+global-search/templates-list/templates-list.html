@@ -1,0 +1,39 @@
+<div class="ax-table-list">
+    <div class="ax-table-list__head">
+        <div class="row">
+            <div class="columns small-3">Template</div>
+            <div class="columns small-2">Description</div>
+            <div class="columns small-2">Type</div>
+            <div class="columns small-2">Branch</div>
+            <div class="columns small-3">Repo</div>
+        </div>
+    </div>
+
+    <div class="ax-table-list__row templates-list__item" *ngFor="let workflow of templates;">
+        <div class="row" *ngIf="dataLoaded" (click)="navigateToDetails(workflow.id)">
+            <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ workflow.name }}">{{ workflow.name }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ workflow.description }}">{{ workflow.description }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ workflow.type }}">{{ workflow.type }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ workflow.branch }}">{{ workflow.branch }}</div>
+            <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ workflow.repo }}">{{ workflow.repo }}</div>
+        </div>
+    </div>
+
+    <div *ngIf="dataLoaded && !templates.length" class="ax-table__empty-row">
+        <strong><i class="fa fa-info-circle"></i> {{ 'No data to display' | translate }}</strong>
+    </div>
+
+    <div *ngIf="!dataLoaded">
+        <ax-loader-list-mockup [itemHeight]="60" [itemsLength]="limit"></ax-loader-list-mockup>
+    </div>
+</div>
+
+<div class="bottom-toolbox bottom-toolbox--small">
+    <div class="bottom-toolbox__wrapper">
+        <div class="ax-container ax-container--additional-padding">
+            <div class="jobs-list__pagination-position">
+                <ax-pagination [pagination]="pagination" [preventActions]="dataLoaded" (onPaginationChange)="onPaginationChange($event)"></ax-pagination>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,90 @@
+@import '../../../assets/styles/config';
+
+.select-search {
+    position: relative;
+    display: block;
+
+    &__title {
+        font-size: .9em;
+        padding: 8px 0;
+        color: $ax-color-gray-7;
+        border-bottom: 2px solid #ccc;
+        cursor: pointer;
+
+        & > i {
+            float: right;
+            font-size: 1.2em;
+            color: $ax-color-gray-5;
+            margin-top: 4px;
+            margin-right: 4px;
+        }
+
+        .active & {
+            border-color: $ax-color-teal-5;
+        }
+    }
+
+    &__placeholder {
+        color: $ax-color-gray-5;
+    }
+
+    &__content {
+        display: none;
+        position: absolute;
+        left: 0;
+        widtH: 100%;
+        min-width: 200px;
+        background-color: $white-color;
+        box-shadow: 1px 1px 3px rgba(0, 0, 0, .2);
+        z-index: 1;
+
+        .active & {
+            display: block;
+        }
+    }
+
+    &__input {
+        padding: 10px;
+
+        & > input[type=text] {
+            background-color: $ax-color-gray-1;
+            border-radius: 4px;;
+            border: 1px solid $ax-color-teal-6;
+            font-size: 13px;
+            height: 35px;
+            padding: 0 5px;
+            width: 100%;
+        }
+
+        & > p {
+            color: $ax-color-gray-5;
+            font-size: 12px;
+            margin-bottom: 0;
+        }
+    }
+
+    &__choices {
+        font-size: 14px;
+        padding: 10px 0;
+        max-height: 300px;
+        overflow: auto;
+    }
+
+    &__choice {
+        cursor: pointer;
+
+        &:hover {
+            background-color: $ax-color-gray-2;
+        }
+    }
+
+    &__choice, &__loader {
+        padding: 8px 10px;
+    }
+
+    &__loader {
+        justify-content: center;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+}

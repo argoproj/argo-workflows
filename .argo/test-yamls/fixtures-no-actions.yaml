@@ -1,0 +1,31 @@
+---
+type: fixture
+version: 1
+name: test-fixture-no-actions
+description: fixture with no actions
+attributes:
+  instance_type:
+    type: string
+    flags: required
+    options:
+    - m3.medium
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    default: m3.large
+  memory_gib:
+    type: int
+    default: 4
+  cpu_cores:
+    type: int
+    default: 1
+    options: [1, 2, 4, 8]
+  ip_address:
+    type: string
+  group:
+    type: string
+    flags: required
+    options: [dev, qa, prod]
+  tags:
+    type: string
+    flags: array

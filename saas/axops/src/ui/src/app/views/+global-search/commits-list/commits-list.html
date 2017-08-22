@@ -1,0 +1,39 @@
+<div class="ax-table-list">
+    <div class="ax-table-list__head">
+        <div class="row">
+            <div class="columns small-3">Description</div>
+            <div class="columns small-2">Author</div>
+            <div class="columns small-2">Committer</div>
+            <div class="columns small-2">Branch</div>
+            <div class="columns small-3">Repo</div>
+        </div>
+    </div>
+
+    <div class="ax-table-list__row jobs-list__item" *ngFor="let commit of commits;">
+        <div class="row" *ngIf="dataLoaded" (click)="navigateToDetails(commit.revision)">
+            <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ commit.description }}">{{ commit.description }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ commit.author }}">{{ commit.author }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ commit.committer }}">{{ commit.committer }}</div>
+            <div class="columns small-2" [ax-highlight-substring]="searchString" ax-tooltip="{{ commit.branch }}">{{ commit.branch }}</div>
+            <div class="columns small-3" [ax-highlight-substring]="searchString" ax-tooltip="{{ commit.repo }}">{{ commit.repo }}</div>
+        </div>
+    </div>
+
+    <div *ngIf="dataLoaded && !commits.length" class="ax-table__empty-row">
+        <strong><i class="fa fa-info-circle"></i> {{ 'No data to display' | translate }}</strong>
+    </div>
+
+    <div *ngIf="!dataLoaded">
+        <ax-loader-list-mockup [itemHeight]="60" [itemsLength]="limit"></ax-loader-list-mockup>
+    </div>
+</div>
+
+<div class="bottom-toolbox bottom-toolbox--small">
+    <div class="bottom-toolbox__wrapper">
+        <div class="ax-container ax-container--additional-padding">
+            <div class="jobs-list__pagination-position">
+                <ax-timerange-pagination #timerangePagination [pagination]="pagination" [preventActions]="dataLoaded" (onPaginationChange)="onPaginationChange($event)"></ax-timerange-pagination>
+            </div>
+        </div>
+    </div>
+</div>

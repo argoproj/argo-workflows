@@ -1,0 +1,66 @@
+{
+  "sequential test_workflow_id: FRESH_STATE": [
+    {
+      "sequential 3de6cafe-3c92-4bdd-a002-fc25c52ae77b: FRESH_STATE": []
+    },
+    {
+      "parallel cb9b4d2b-15be-5cef-852d-6c5ace0b34a1: FRESH_STATE": {
+        "71d9df00-37a8-44b1-aa9c-1ec6f38b6560": {
+          "sequential 71d9df00-37a8-44b1-aa9c-1ec6f38b6560: FRESH_STATE": [
+            {
+              "parallel 2928f71d-171f-50a4-bd7c-3f9be5cfe5f0: FRESH_STATE": {
+                "3e8b9fa3-b2cb-4eb4-bc8c-62e7a563e9f7": {
+                  "user-container 3e8b9fa3-b2cb-4eb4-bc8c-62e7a563e9f7: FRESH_STATE": "None"
+                },
+                "1f92c399-1471-42a8-8147-035b92922c7a": {
+                  "user-container 1f92c399-1471-42a8-8147-035b92922c7a: FRESH_STATE": "None"
+                }
+              }
+            },
+            {
+              "user-container d826434e-d2e8-4ae6-9332-eca9a1495c59: FRESH_STATE": "None"
+            }
+          ]
+        },
+        "b2b90099-6bac-4458-bfb2-12cf29c29c2c": {
+          "sequential b2b90099-6bac-4458-bfb2-12cf29c29c2c: FRESH_STATE": []
+        }
+      }
+    },
+    {
+      "parallel 4eebc128-804d-51ca-b49a-e568f3d49ce2: FRESH_STATE": {
+        "14c80695-5f4a-4451-92ba-df345a238922": {
+          "sequential 14c80695-5f4a-4451-92ba-df345a238922: FRESH_STATE": [
+            {
+              "user-container ef7c92e9-576b-47a3-8594-929c6c38d11b: FRESH_STATE": "None"
+            }
+          ]
+        },
+        "b4ddb672-b489-46bc-8ffd-23d1c30b3d9d": {
+          "sequential b4ddb672-b489-46bc-8ffd-23d1c30b3d9d: FRESH_STATE": [
+            {
+              "user-container da364313-407a-40e8-ba0c-4ae3ec014e58: FRESH_STATE": "None"
+            },
+            {
+              "user-container 13433b16-ec0b-4e1d-ace9-9442080a7f24: FRESH_STATE": "None"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "parallel bf6bae40-b2c9-5acf-a968-609239063024: FRESH_STATE": {
+        "12bcd47a-72bc-44b0-a717-25a1352a9472": {
+          "sequential 12bcd47a-72bc-44b0-a717-25a1352a9472: FRESH_STATE": [
+            {
+              "user-container dfaef36c-76ae-40c3-95c6-c6ac7febe7d2: FRESH_STATE": "None"
+            }
+          ]
+        },
+        "b3b59357-f1a9-41a9-b450-41f963ae38a6": {
+          "sequential b3b59357-f1a9-41a9-b450-41f963ae38a6: FRESH_STATE": []
+        }
+      }
+    }
+  ]
+}

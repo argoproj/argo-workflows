@@ -1,0 +1,19 @@
+<div class="first-user-experience__wrapper">
+    <div class="ax-catalog-wrapper">
+        <div class="ax-top-bar">
+            <div class="ax-top-bar__item">
+                <div class="ax-top-bar__title text-truncate">Catalog</div>
+            </div>
+        </div>
+
+        <router-outlet></router-outlet>
+
+        <div class="ax-catalog-wrapper__get-started">
+            <h2>
+                <span class="start-text">Get started with Argo</span>
+                <button axButtonWave class="ax-button ax-button--base-o" (click)="completeIntroduction()">CONTINUE</button>                 
+            </h2> 
+        </div>
+    </div>
+</div>
+<ax-multiple-service-launch-panel></ax-multiple-service-launch-panel>

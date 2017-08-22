@@ -1,0 +1,18 @@
+//div#builds-line > svg > g.nvd3 > g > g.nv-focus > g.nv-x > g.nv-axis > g > g.tick {
+//  display: none;
+//}
+
+div.builds-line-chart {
+
+  .y-axis-title-builds-line-chart {
+    color: #3E3E3E;
+    position: absolute;
+    font-size: 12px;
+    left: 50px;
+    font-weight: bold;
+  }
+
+  & > svg{
+    height: 400px;
+  }
+}

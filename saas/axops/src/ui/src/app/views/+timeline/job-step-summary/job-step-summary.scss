@@ -1,0 +1,50 @@
+@import '../../../../assets/styles/config';
+
+.job-step-summary {
+    &__error {
+        position: relative;
+        background: #FFFCF7;
+        border: 1px solid $ax-failed-color;
+        padding: 1em;
+        margin-bottom: 1em;
+
+        p {
+            font-weight: 400;
+            margin-left: 2em;
+            margin-top: 0.5em;
+            margin-bottom: 0;
+        }
+    }
+
+    &__error-icon {
+        position: absolute;
+        left: 1em;
+        top: 1.5em;
+        color: $ax-failed-color;
+        display: block;
+        width: 1.5em;
+        height: 1.5em;
+        border: 1px solid $ax-failed-color;
+        border-radius: 0.75em;
+        text-align: center;
+        line-height: 1.5em;
+    }
+
+    &__error-expand-collapse {
+        position: absolute;
+        right: 1em;
+        top: 1em;
+    }
+
+    &__error-details {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .4s;
+        font-weight: 300 !important;
+    }
+
+    &__error--expanded &__error-details {
+        max-height: 200px;
+        overflow: auto;
+    }
+}

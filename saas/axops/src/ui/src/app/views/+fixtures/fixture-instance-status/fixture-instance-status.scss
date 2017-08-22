@@ -1,0 +1,19 @@
+@import '../../../../assets/styles/config';
+
+.fixture-instance-status {
+    &--operating {
+        color: $ax-color-gray-8;
+    }
+
+    &--active {
+        color: $ax-success-color;
+    }
+
+    &--disabled {
+        color: $ax-color-orange;
+    }
+
+    &--error {
+        color: $ax-failed-color;
+    }
+}

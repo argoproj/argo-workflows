@@ -1,0 +1,46 @@
+  <div class="panel panel-default">
+    <div class="panel-heading"><h4><span>Pods</span></h4></div>
+    <table class="table-condensed table-bordered table-hover" style="width:100%">
+      <tr>
+        <th class="col-sm-3">Name</th>
+        <th style="width:15px">Namespace</th>
+        <th style="width:10px">Status</th>
+        <th style="width:10px">Age</th>
+        <th style="width:10px">Restarts</th>
+        <th style="width:20px">Host</th>
+        <th style="width:20px">IP</th>
+        <th class="col-sm-5" colspan="3">Containers</th>
+      </tr>
+      <tr ng-repeat-start="pod in pods">
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.name]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.namespace]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.phase]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.age ]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.restarts]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]">[[pod.host_ip]]</td>
+        <td rowspan="[[pod.container_statuses.length+1]]" style="border: 1px solid #ddd">[[pod.pod_ip]]</td>
+      </tr>
+      <tr ng-repeat="ctr in pod.container_statuses">
+        <td style="width:130px">[[ctr.name]]</td>
+        <td>[[ctr.image]]</td>
+        <td style="width:80px">
+          <span ng-if="pod.labels.service_instance_id">
+            <a href="[['services/' + pod.labels.service_instance_id + '/console?container=' + ctr.name]]"><span class="glyphicon glyphicon-console" aria-hidden="true"></a>
+            <a href="[['services/' + pod.labels.service_instance_id + '/logs?container=' + ctr.name]]"><span class="glyphicon glyphicon-align-left" aria-hidden="true"></a>
+            <span ng-click="stopPod([[pod.lname]], [[pod.namespace]])" class="glyphicon glyphicon-remove pointer" aria-hidden="true"></span>
+          </span>
+          <span ng-if="pod.labels.deployment_id">
+            <a href="[['deployments/' + pod.labels.deployment_id + '/console?instance=' + pod.name]]"><span class="glyphicon glyphicon-console" aria-hidden="true"></a>
+            <a href="[['deployments/' + pod.labels.deployment_id + '/logs?instance=' + pod.name]]"><span class="glyphicon glyphicon-align-left" aria-hidden="true"></a>
+            <span ng-click="stopPod([[pod.lname]], [[pod.namespace]])" class="glyphicon glyphicon-remove pointer" aria-hidden="true"></span>
+          </span>
+          <span ng-if="!pod.labels.service_instance_id && !pod.labels.deployment_id">
+            <a href="[['pods/' + pod.name + '/console?container=' + ctr.name + '&namespace=' + pod.namespace]]"><span class="glyphicon glyphicon-console" aria-hidden="true"></a>
+            <a href="[['pods/' + pod.name + '/logs?container=' + ctr.name + '&namespace=' + pod.namespace]]"><span class="glyphicon glyphicon-align-left" aria-hidden="true"></a>
+            <span ng-click="stopPod([[pod.name]], [[pod.namespace]])" class="glyphicon glyphicon-remove pointer" aria-hidden="true"></span>
+          </span>
+        </td>
+      </tr>
+      <tr ng-repeat-end>
+    </table>
+  </div>

@@ -1,0 +1,9 @@
+[Unit]
+Description=Trigger kubelet-healthcheck periodically
+
+[Timer]
+OnUnitInactiveSec=60s
+Unit=kubelet-healthcheck.service
+
+[Install]
+WantedBy=multi-user.target

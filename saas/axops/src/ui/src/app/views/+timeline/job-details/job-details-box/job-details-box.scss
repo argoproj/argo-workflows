@@ -1,0 +1,8 @@
+@import '../../../../../assets/styles/config';
+
+.job-details-box__labels {
+    &-label {
+        background-color: $ax-color-teal-2;
+        border-color: $ax-color-teal-2;
+    }
+}

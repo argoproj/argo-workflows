@@ -1,0 +1,59 @@
+<div class="ax-table-list">
+    <div class="ax-table-list__head">
+        <div class="row">
+            <div class="columns small-1">
+                {{'Status' | translate}}
+            </div>
+            <div class="columns small-3">
+                {{'Name' | translate}}
+            </div>
+            <div class="columns small-3">
+                {{'Description' | translate}}
+            </div>
+            <div class="columns small-2">
+                {{'Author' | translate}}
+            </div>
+            <div class="columns small-1">
+                {{'Time' | translate}}
+            </div>
+            <div class="columns small-1">
+                {{'Duration' | translate}}
+            </div>
+            <div class="columns small-1">
+                {{'Cost' | translate}}
+            </div>
+        </div>
+    </div>
+    <template ngFor let-task [ngForOf]="tasks" *ngIf="!loading">
+        <div class="ax-table-list__row">
+            <div class="row">
+                <div class="columns small-1">
+                    <i class="fa" aria-hidden="true" ax-status-icon [status]="task.status"></i>
+                    <span ax-tooltip="{{task.status | toServiceStatus | translate}}">{{task.status | toServiceStatus | translate }}</span>
+                </div>
+                <div class="columns small-3">
+                    <span><a ax-tooltip="{{ task.name}}" [routerLink]="['/app/timeline/jobs/', task.id, {'tab': 'summary'}]">{{ task.name}}</a></span>
+                </div>
+                <div class="columns small-3">
+                    <span ax-tooltip="{{task.description}}">{{task.description | truncateTo: 50}}</span>
+                </div>
+                <div class="columns small-2">
+                    <span ax-tooltip="{{task.user}}">{{task.user}}</span>
+                </div>
+                <div class="columns small-1">
+                    <span ax-tooltip="{{task.launch_time | timestamp}}">{{task.launch_time | timestamp }}</span>
+                </div>
+                <div class="columns small-1">
+                    <span ax-tooltip="{{task.run_time | secondsToMilliseconds | humanizeTime}}">{{task.run_time | secondsToMilliseconds | humanizeTime }}</span>
+                </div>
+                <div class="columns small-1">
+                    <span ax-tooltip="{{task.cost | centsToDollars}}">{{task.cost | centsToDollars }}</span>
+                </div>
+            </div>
+        </div>
+    </template>
+    <ax-loader-list-mockup [itemsLength]="20" *ngIf="!dataLoaded"></ax-loader-list-mockup>
+</div>
+<div *ngIf="tasks?.length === 0 && dataLoaded" class="no-data-panel">
+    <strong><i class="fa fa-info-circle"></i>{{ 'No data to display.' | translate }}</strong>
+</div>

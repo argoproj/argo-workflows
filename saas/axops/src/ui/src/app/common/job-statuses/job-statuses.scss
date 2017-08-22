@@ -1,0 +1,33 @@
+@import '../../../assets/styles/config';
+
+.job-statuses {
+    &__item {
+        font-size: 10.6px;
+        color: $ax-color-gray-5;
+
+        strong {
+            font-weight: 500;
+            color: $ax-color-gray-7;
+        }
+
+        &:not(:first-child) {
+            margin-left: 10px;
+        }
+
+        &--successful i {
+            color: $ax-success-color;
+        }
+
+        &--failed i {
+            color: $ax-failed-color;
+        }
+
+        &--in-progress i {
+            color: $ax-running-color;
+        }
+
+        &--queued i {
+            color: $ax-waiting-color;
+        }
+    }
+}

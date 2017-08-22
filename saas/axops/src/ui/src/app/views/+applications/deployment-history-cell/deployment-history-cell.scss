@@ -1,0 +1,75 @@
+@import '../../../../assets/styles/config';
+
+.deployment-history-cell {
+    color: $ax-color-gray-6;
+    position: relative;
+
+    hr {
+        margin: 0 0 10px 0;
+        border-color: $ax-color-gray-3;
+    }
+
+    &__menu {
+        position: absolute;
+        right: 10px;
+        top: 13px;
+        text-align: center;
+        vertical-align: middle;
+
+        button {
+            border: 1px solid $ax-color-gray-4;
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+        }
+    }
+
+    &__row {
+        margin-bottom: 4px;
+        color: $ax-color-gray-7;
+        font-size: 13px;
+
+        span {
+            margin: 5px 0;
+            font-weight: 500;
+            color: $ax-color-gray-5;
+        }
+
+        &--title {
+            margin: 0 0 15px 0;
+        }
+    }
+
+    &__time-part, &__revision-details-part {
+        display: inline-block;
+        padding: 10px 15px;
+        width: 100%;
+    }
+
+    &__time-part {
+        & > i {
+            color: #BFC1C1;
+            font-size: 40px;
+        }
+
+        & > h4 {
+            font-weight: 300;
+            margin-bottom: 0;
+
+            & > span {
+                font-size: 13px;
+            }
+        }
+
+        & > span {
+            font-size: 12px;
+        }
+
+    }
+
+    &__revision-details-part {
+        &--label {
+            color: $ax-color-gray-5;
+        }
+    }
+}

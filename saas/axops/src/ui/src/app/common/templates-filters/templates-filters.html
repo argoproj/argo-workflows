@@ -1,0 +1,26 @@
+<div class="templates-filters__content"
+     ax-infinite-scroll
+     [ax-infinite-scroll-distance]="1"
+     [ax-scroll-window]="false"
+     [ax-immediate-check]="true"
+     (scrolled)="onScroll()">
+    <h3>Select templates</h3>
+    <div>
+        <label class="templates-filters__row" *ngFor="let template of templates">
+            <div class="ax-checkbox">
+                <input type="checkbox"
+                       id="isSelected"
+                       [checked]="template.selected"
+                       (change)="selectTemplate(template)">
+                <span><i class="fa fa-check"></i></span>
+            </div>
+            <span class="templates-filters__template-name">{{template.name}}</span><span class="templates-filters__template-repo">{{template.repo}}/{{template.branch}}</span>
+        </label>
+        <div class="ax-table-list__row" *ngIf="!templates.length && !loading">
+            <div class="row">
+                <div class="columns small-12">{{ 'No data to display' | translate }}</div>
+            </div>
+        </div>
+        <ax-loader-custom [size]="20" *ngIf="loading"></ax-loader-custom>
+    </div>
+</div>

@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    labels:
+        app: minion-manager
+        tier: platform
+        role: axcritical
+    name: minion-manager-config
+data:
+    MM_SPOT_INSTANCES_ENABLED: "${AX_ENABLE_SPOT_INSTANCES}"
+    MM_REGION: "${AX_AWS_REGION}"
+    MM_SCALING_GROUPS: "${AX_SPOT_INSTANCE_ASGS}"
+    MM_CLOUD: "aws"
+    MM_MONITOR_MINIONS: "True"
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: minion-manager
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: minion-manager
+                tier: platform
+                role: axcritical
+            annotations:
+                scheduler.alpha.kubernetes.io/critical-pod: ''
+                scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        spec:
+            containers:
+              - name: minion-manager
+                image: ${REGISTRY}/${NAMESPACE}/minion-manager:${VERSION}
+                # TODO(shri): Fix the command after the new code is checked in.
+                command: ["/ax/bin/minion_manager", "${AX_CLUSTER_NAME_ID}", "${SPOT_INSTANCE_ALL_ASGS}"]
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 80Mi
+                envFrom:
+                - configMapRef:
+                      name: minion-manager-config
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+                - name: applatix-registry

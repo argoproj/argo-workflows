@@ -1,0 +1,128 @@
+@import '../../../assets/styles/config';
+
+$modal-border-radius: 8px;
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    background-color: rgba(222, 222, 222, 0.62); /*dim the background*/
+    border: 1px solid $ax-color-gray-4;
+
+    .modal-container {
+        position: relative;
+        box-shadow: $shadow;
+        margin: 0 auto;
+        top: 25%;
+        width: 35%;
+        min-width: 400px;
+        max-width: 1000px;
+        max-height: 600px;
+        z-index: 20;
+        border-radius: $modal-border-radius;
+
+        &__header {
+            line-height: 60px;
+            padding-left: 30px;
+            height: 60px;
+            background-color: $ax-color-gray-2;
+            border-top-right-radius: $modal-border-radius;
+            border-top-left-radius: $modal-border-radius;
+
+            h2 {
+                margin-left: 5%;
+                line-height: 50px;
+            }
+
+            i {
+                font-size: 21px;
+                float: right;
+                position: absolute;
+                right: 20px;
+                top: 20px;
+                cursor: pointer;
+            }
+        }
+
+        &__footer {
+            background-color: white;
+            bottom: 0;
+            padding-top: 10px;
+            padding-left: 44px;
+            padding-bottom: 40px;
+            border-bottom-right-radius: $modal-border-radius;
+            border-bottom-left-radius: $modal-border-radius;
+
+            & > .ax-button {
+                min-width: 120px;
+                margin-right: 20px;
+            }
+
+            &--additional-padding {
+                padding-left: 154px;
+            }
+        }
+
+        &__body {
+            background-color: white;
+
+            h4, p {
+                padding-left: 30px;
+                margin-top: 40px;
+                margin-right: 10px;
+                word-wrap: break-word;
+            }
+
+            h4 {
+                font-size: 15px;
+                font-weight: bold;
+            }
+
+            p {
+
+                font-size: 15px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                color: $ax-color-gray-6;
+            }
+
+            .copy-content {
+                display: -webkit-box;
+                display: -webkit-flex;
+                display: flex;
+                -webkit-box-align: center;
+                -webkit-align-items: center;
+                align-items: center;
+                -webkit-box-pack: center;
+                -webkit-justify-content: center;
+                justify-content: center;
+            }
+
+        }
+
+        &__icon {
+            transform: translateY(36%);
+
+            & > i {
+                display: block;
+                text-align: end;
+                font-size: 40px;
+
+                &.warning {
+                    color: $ax-color-yellow;
+                }
+
+                &.success {
+                    color: $ax-success-color;
+                }
+
+                &.failed {
+                    color: $ax-failed-color;
+                }
+            }
+        }
+    }
+}

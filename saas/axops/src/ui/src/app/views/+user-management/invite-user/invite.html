@@ -1,0 +1,51 @@
+<form role="form" [formGroup]="inviteForm" (ngSubmit)="inviteUser(inviteForm)">
+    <ax-sliding-panel [show]="show" (closePanel)="close()">
+        <sliding-panel-header>
+            <button axButtonWave class="ax-button ax-button--base" type="submit">
+                {{ 'Invite' | translate }}
+            </button>
+            <button type="button" (click)="close()" axButtonWave class="ax-button">{{ 'Cancel' | translate }}</button>
+        </sliding-panel-header>
+        <sliding-panel-body>
+            <div class="panel-box__title">{{ 'Invite your team members to Argo' | translate }}</div>
+            <div class="panel-box__subtitle">{{ 'The easiest way to give privileges to other users is to add them in the pre-built groups' | translate }}.</div>
+            <div class="invite-box">
+                <div class="invite-box__wrapper">
+                    <div class="ax-form-row">
+                        <input id="username" type="text" class="ax-field" formControlName="username" autocomplete="off"
+                               ax-label-placeholder>
+                        <label for="username" class="ax-label-placeholder">{{ 'Email' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!inviteForm.controls['username'].valid && (inviteForm.controls['username'].touched || submitted)">Email is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="invite-box__form">
+                        <div class="ax-form-row" *ngIf="userGroups?.length > 0">
+                            <label>{{ 'Groups' | translate }}</label>
+                            <ax-select [options]="userGroups" [placeholder]="'Select a group'"
+                                           formControlName="group"></ax-select>
+                            <div class="ax-form-row__error-msg"
+                                 *ngIf="!inviteForm.controls['group'].valid && (inviteForm.controls['group'].touched || submitted)">
+                                Group is required<i class="fa fa-warning"></i>
+                            </div>
+                        </div>
+                        <div class="ax-form-row">
+                            <div class="ax-checkbox">
+                                <input id="isMailingGroup" type="checkbox" formControlName="isMailingGroup"><span><i class="fa fa-check"></i></span>
+                            </div>
+                            <label for="isMailingGroup">Mailing Group</label>
+                        </div>
+                        <div class="ax-form-row" *ngIf="!inviteForm.value.isMailingGroup">
+                            <input id="firstName" type="text" class="ax-field" formControlName="firstName" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="firstName" class="ax-label-placeholder">{{ 'First Name' | translate }}</label>
+                        </div>
+                        <div class="ax-form-row" *ngIf="!inviteForm.value.isMailingGroup">
+                            <input id="lastName" type="text" class="ax-field" formControlName="lastName" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="lastName" class="ax-label-placeholder">{{ 'Last Name' | translate }}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </sliding-panel-body>
+    </ax-sliding-panel>
+</form>

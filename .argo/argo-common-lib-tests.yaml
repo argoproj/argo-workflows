@@ -1,0 +1,35 @@
+---
+type: workflow
+version: 1
+name: argo-common-lib-tests
+description: This is the workflow step for running some common library tests
+inputs:
+  artifacts:
+    CODE:
+steps:
+- PYTHON-LIB-TESTS:
+    template: argo-common-python-unit-test-container
+    arguments:
+      parameters.COMMAND:
+        pytest -vv /src/common/python/argo/
+
+---
+type: container
+version: 1
+name: argo-common-python-unit-test-container
+description: Common python library unit tests
+inputs:
+  artifacts:
+    CODE:
+      path: "/src"
+  parameters:
+    COMMAND:
+image: argobase/axplatbuilder:v15
+command: ["sh", "-c"]
+args: ["%%inputs.parameters.COMMAND%%"]
+env:
+- name: PYTHONPATH
+  value: /src/common/python
+resources:
+  mem_mib: 256
+  cpu_cores: 0.1

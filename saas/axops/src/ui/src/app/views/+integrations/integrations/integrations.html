@@ -1,0 +1,115 @@
+<div class="integrations">
+    <div class="content content--with-padding-top">
+        <div class="ax-container">
+            <div class="integrations__logos">
+                <div *ngFor="let group of groupsInfo"
+                        class="integrations__logo"
+                        [ngClass]="{'integrations__logo--selected': group === selectedToolGroup}"
+                        (click)="selectToolGroup(group)">
+                    <i [class]="group.icon" aria-hidden="true"></i>
+                    <span>{{group.name}}</span>
+                    <div *ngIf="group === selectedToolGroup && createNew" class="integrations__group-pointer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="integrations__group-panel" *ngIf="createNew">
+            <div *ngIf="selectedToolGroup" class="ax-container">
+                <i (click)="setCreateNew(false)" class="ax-icon-cancel integrations__cancel-icon clickable" aria-hidden="true"></i>
+                <template [ngTemplateOutlet]="selectedToolGroup.panelTemplate">
+                </template>
+            </div>
+        </div>
+
+        <div class="ax-container" *ngIf="!createNew">
+            <div class="integrations__list-header">
+                {{selectedToolGroup?.name | uppercase}}
+                <a *ngIf="canCreateMore" (click)="setCreateNew(true)" axButtonWave class="ax-button ax-button--radius ax-button--has-icon"><i aria-hidden="true" class="fa fa-plus"></i></a>
+            </div>
+        </div>
+
+        <div *ngIf="selectedToolGroup?.tools?.length">
+            <div class="ax-table-list ax-table-list--clickable">
+                <div class="ax-container">
+                    <div class="ax-table-list__head">
+                        <div class="row">
+                            <div class="columns small-6">
+                                {{'Url' | translate}}
+                            </div>
+                            <div class="columns small-6">
+                                {{'Username' | translate}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <template ngFor let-tool [ngForOf]="selectedToolGroup?.tools">
+                    <div class="ax-container">
+                        <div class="ax-table-list__row" [ngClass]="{'integrations__selected-tool': tool === selectedTool}" (click)="selectTool(tool)">
+                            <div class="row">
+                                <div class="columns small-6">
+                                    {{tool.url}}
+                                </div>
+                                <div class="columns small-5">
+                                    {{tool.username}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="integrations__group-panel" *ngIf="selectedTool === tool">
+                        <i (click)="selectTool(null)" class="ax-icon-cancel integrations__cancel-icon clickable" aria-hidden="true"></i>
+                        <div *ngIf="selectedToolGroup" class="ax-container">
+                            <template [ngTemplateOutlet]="selectedToolGroup.panelTemplate">
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <template #bitbucketTemplate>
+        <ax-tool-panel [source]="selectedTool" [type]="'bitbucket'" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-tool-panel>
+    </template>
+
+    <template #gitTemplate>
+        <ax-git-panel [source]="selectedTool" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-git-panel>
+    </template>
+
+    <template #githubTemplate>
+        <ax-tool-panel [source]="selectedTool" [type]="'github'" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-tool-panel>
+    </template>
+
+    <template #codecommitTemplate>
+        <ax-tool-panel [source]="selectedTool" [type]="'codecommit'" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-tool-panel>
+    </template>
+
+    <template #gitLabTemplate>
+        <ax-tool-panel [source]="selectedTool" [type]="'gitlab'" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-tool-panel>
+    </template>
+
+    <template #smtpTemplate>
+        <ax-smtp-panel [source]="selectedTool" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-smtp-panel>
+    </template>
+
+    <template #nexusTemplate>
+        <ax-nexus-panel [source]="selectedTool" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-nexus-panel>
+    </template>
+
+    <template #dockerhubRegistryTemplate>
+        <ax-registry-panel [source]="selectedTool" [type]="registerTypes.dockerhub"
+                           (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-registry-panel>
+    </template>
+
+    <template #registryTemplate>
+        <ax-registry-panel [source]="selectedTool" [type]="registerTypes.privateRegistry"
+                           (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-registry-panel>
+    </template>
+
+    <template #slackTemplate>
+        <ax-slack-panel [source]="selectedTool" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-slack-panel>
+    </template>
+
+    <template #jiraTemplate>
+        <ax-jira-panel [source]="selectedTool" (created)="onToolCreated($event)" (deleted)="onToolDeleted()"></ax-jira-panel>
+    </template>
+</div>

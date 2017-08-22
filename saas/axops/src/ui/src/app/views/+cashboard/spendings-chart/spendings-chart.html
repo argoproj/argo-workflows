@@ -1,0 +1,49 @@
+<div class="spendings-chart">
+    <svg>
+        <line *ngIf="selectedStepInfo"
+            [attr.x1]="selectedStepInfo.left"
+            [attr.x2]="selectedStepInfo.left"
+            [attr.y1]="0"
+            [attr.y2]="selectedStepInfo.height"
+            stroke="#E9E9E9"
+            stroke-width="1"/>
+        <line
+            [attr.x1]="preSelectionLeft"
+            [attr.x2]="preSelectionLeft"
+            [attr.y1]="0"
+            [attr.y2]="preSelectionHeight"
+            stroke="#E9E9E9"
+            stroke-width="1"/>
+        <line *ngIf="projectionLine"
+            [attr.x1]="projectionLine.left"
+            [attr.x2]="'100%'"
+            [attr.y1]="projectionLine.top"
+            [attr.y2]="projectionLine.top"
+            stroke="#fff"
+            stroke-width="2"
+            stroke-dasharray="5, 5" />
+    </svg>
+    <div *ngIf="selectedStepInfo"
+         [ngStyle]="{'left': (selectedStepInfo.left + selectedStepInfo.width/2) + 'px' }"
+         class="spendings-chart__tooltip">
+        {{input.perfData[step.index].data | centsToDollars:2}}
+    </div>
+    <div *ngIf="selectedStepInfo" class="spendings-chart__selected-step"
+        [style.left]="selectedStepInfo.left + 'px'"
+        [style.width]="selectedStepInfo.width + 'px'">
+        {{selectedStepInfo.text}}
+        <i class="fa fa-times" aria-hidden="true" (click)="notifyStepClicked(-1)"></i>
+    </div>
+    <div class="spendings-chart__tooltip-estimated" *ngIf="estimatedTooltip.shown && projectionLine"
+        [ngStyle]="{'top': projectionLine.top + 'px'}">
+        <p>Today's Estimated Spending</p>
+        <div class="spendings-chart__tooltip-estimated-left">
+            <div class="spendings-chart__tooltip-estimated-cost">{{estimatedTooltip.day / 24 | centsToDollars:2}}</div>
+            <div class="spendings-chart__tooltip-estimated-des">Per Hour</div>
+        </div>
+        <div class="spendings-chart__tooltip-estimated-right">
+            <div class="spendings-chart__tooltip-estimated-cost">{{estimatedTooltip.day | centsToDollars:2}}</div>
+            <div class="spendings-chart__tooltip-estimated-des">Day</div>
+        </div>
+    </div>
+</div>

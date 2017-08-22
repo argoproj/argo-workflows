@@ -1,0 +1,65 @@
+---
+type: container
+version: 1
+name: switch-to-all-spot-base
+description: This is the base template for switching-to-all-spot
+
+inputs:
+  artifacts:
+    CHECKOUT_ARTIFACT:
+      path: "/src"
+  parameters:
+    BID:
+    ASG_NAME:
+
+image: argobase/axplatbuilder:v15
+command: ['sh', -c]
+args: ['/src/platform/source/tools/update_lc.py --bid %%inputs.parameters.BID%% --asg %%inputs.parameters.ASG_NAME%%']
+env:
+- name: PYTHONPATH
+  value: /src/common/python
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1
+
+---
+type: workflow
+version: 1
+name: switch-to-all-spot-steps
+description: This is the workflow step for updating the launch-config
+
+inputs:
+  artifacts:
+    CHECKOUT_ARTIFACT:
+  parameters:
+    BID:
+    ASG_NAME:
+
+steps:
+  - UPDATING-LC:
+      template: switch-to-all-spot-base
+
+---
+type: workflow
+version: 1
+name: Switch to all spot
+description: This is the workflow for switching an ASG to all spot
+
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    BID:
+      default: '0.150'
+    ASG_NAME:
+      default: 'my-asg-name'
+
+steps:
+    - CHECKOUT:
+        template: argo-checkout
+    - SWITCH-TO-ALL-SPOT:
+        template: switch-to-all-spot-steps
+        arguments:
+          artifacts.CHECKOUT_ARTIFACT: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"

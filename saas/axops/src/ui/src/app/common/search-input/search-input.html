@@ -1,0 +1,5 @@
+<div class="search">
+    <form [formGroup]="searchForm" (ngSubmit)="search(searchForm.value)">
+        <input type="text" formControlName="searchInput" aria-label="Search box"/>
+    </form>
+</div>

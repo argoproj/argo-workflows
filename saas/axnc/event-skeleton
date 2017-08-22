@@ -1,0 +1,193 @@
+[
+  {
+    "code": "job.ci.invalid_command",
+    "message": "Received invalid command from event",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.invalid_event_type",
+    "message": "Received event has invalid type",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.invalid_scm_type",
+    "message": "Received event has invalid SCM type",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.event_creation_failure",
+    "message": "Failed to create AX event",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.event_translate_failure",
+    "message": "Failed to translate CI event",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.template_not_found",
+    "message": "Template specified in command cannot be found",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.yaml_update_failure",
+    "message": "Failed to update YAML contents",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.status_reporting_failure",
+    "message": "Failed to report status to SCM server",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.elb_creation_failure",
+    "message": "Failed to create ELB for webhook",
+    "channel": "job",
+    "severity": "critical"
+  },
+  {
+    "code": "job.ci.elb_verification_timeout",
+    "message": "Timed out waiting for ELB to be ready",
+    "channel": "job",
+    "severity": "critical"
+  },
+  {
+    "code": "job.ci.webhook_creation_failure",
+    "message": "Failed to create webhook",
+    "channel": "job",
+    "severity": "critical"
+  },
+  {
+    "code": "job.ci.elb_deletion_failure",
+    "message": "Failed to delete ELB for webhook",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.webhook_deletion_failure",
+    "message": "Failed to delete webhook",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.ci.repo_not_found",
+    "message": "Repo not found",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "configuration.notification.invalid_smtp",
+    "message": "Invalid SMTP server configured",
+    "channel": "configuration",
+    "severity": "critical"
+  },
+  {
+    "code": "configuration.scm.connection_error",
+    "message": "Failed to connect to SCM server",
+    "channel": "configuration",
+    "severity": "warning"
+  },
+  {
+    "code": "configuration.notification.invalid_slack",
+    "message": "Invalid slack token configured",
+    "channel": "configuration",
+    "severity": "critical"
+  },
+  {
+    "code": "job.scheduler.invalid_policy_definition",
+    "message": "Invalid policy definition",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.scheduler.invalid_cron_expression",
+    "message": "Invalid cron expression in policy definition",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.scheduler.cannot_add_policy_to_scheduler",
+    "message": "Cannot add policy into job scheduler",
+    "channel": "job",
+    "severity": "warning"
+  },
+  {
+    "code": "job.status.started",
+    "message": "Job Started",
+    "channel": "job",
+    "severity": "info",
+    "no_limit": true
+  },
+  {
+    "code": "job.status.success",
+    "message": "Job was successful",
+    "channel": "job",
+    "severity": "info",
+    "no_limit": true
+
+  },
+  {
+    "code": "job.status.failed",
+    "message": "Job failed",
+    "channel": "job",
+    "severity": "warning",
+    "no_limit": true
+  },
+  {
+    "code": "system.adc.missing_heartbeat_from_wfe",
+    "message": "Missing heartbeat from job",
+    "channel": "system",
+    "severity": "critical"
+  },
+  {
+    "code": "deployment.status.changed",
+    "message": "Deployment Status changed",
+    "channel": "deployment",
+    "severity": "warning",
+    "no_limit": true
+  },
+  {
+    "code": "system.platform.error",
+    "message": "Argo platform error",
+    "channel": "system",
+    "severity": "critical"
+  },
+  {
+    "code": "system.fixture.template_disconnected",
+    "message": "Fixture class disconnected from template",
+    "channel": "system",
+    "severity": "warning"
+  },
+  {
+    "code": "system.fixture.invalid_attributes",
+    "message": "Fixture action supplied invalid 'attributes' artifact",
+    "channel": "system",
+    "severity": "warning"
+  },
+  {
+    "code": "system.platform.critical",
+    "message": "Important Argo platform info",
+    "channel": "system",
+    "severity": "critical"
+  },
+  {
+    "code": "configuration.policy.invalid_enabled_policy",
+    "message": "Enabled policy disconnected from template. Automatically disable the policy.",
+    "channel": "configuration",
+    "severity": "warning"
+  },
+  {
+    "code": "configuration.policy.invalid_policy_becomes_valid",
+    "message": "Disconnected policy re-connected to template. Automatically enable the policy.",
+    "channel": "configuration",
+    "severity": "warning"
+  }
+]

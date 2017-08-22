@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+from ax.util.az_patch import az_patch
+az_patch()
+
+import argparse
+import logging
+import signal
+import sys
+
+from ax.version import __version__
+from ax.util.ax_signal import traceback_multithread
+from ax.devops.apps.workflow.ax_workflow_executor import AXWorkflowExecutor
+
+logger = logging.getLogger("ax.devops.apps.workflow.ax_workflow_executor")
+
+
+def signal_handler(signalnum, *args):
+    logger.info("ax workflow executor killed with signal %s", signalnum)
+    sys.exit(0)
+
+
+def debug(sig, frame):
+    logger.info("ax workflow executor ended with signal %s", sig)
+    result = traceback_multithread(sig, frame)
+    logger.info(result)
+
+
+def main():
+    """
+    Main entry point for Work.
+    """
+    parser = argparse.ArgumentParser(description="AXWorkflowExecutor")
+    parser.add_argument('--version', action='version', version="%(prog)s {}".format(__version__))
+    parser.add_argument('--workflow-id', help="Workflow ID")
+    parser.add_argument('--self-container-name', help="Name of self container")
+    parser.add_argument('--report-done-url', help="url to report after workflow is done")
+    parser.add_argument('--ax-sys-cpu-core', default=0.225, help="ax cpu per node")
+    parser.add_argument('--ax-sys-mem-mib', default=560, help="ax memory per node")
+    parser.add_argument('--vol-size', default=100.0, help="max number of gigabytes per node")
+    parser.add_argument('--instance-type', default="m3.large", help="aws instace type")
+    args = parser.parse_args()
+
+    logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(lineno)d %(threadName)s: %(message)s")
+    logging.getLogger("ax").setLevel(logging.DEBUG)
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGUSR1, debug)
+
+    AXWorkflowExecutor.startup_prerequisite(args.workflow_id)
+    AXWorkflowExecutor(workflow_id=args.workflow_id,
+                       self_container_name=args.self_container_name,
+                       report_done_url=args.report_done_url,
+                       ax_sys_cpu_core=args.ax_sys_cpu_core,
+                       ax_sys_mem_mib=args.ax_sys_mem_mib,
+                       vol_size=args.vol_size,
+                       instance_type=args.instance_type).run()
+
+
+if __name__ == '__main__':
+    main()

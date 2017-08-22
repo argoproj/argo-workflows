@@ -1,0 +1,63 @@
+<div class="content">
+    <div (click)="onBackToSearch()" class="ax-back-to-search" *ngIf="backToSearchUrl">
+        <i class="ax-icon-back"></i>
+    </div>
+    <ax-tabs [selectedTabKey]="'workflow'" (selected)="selectedTab($event)">
+        <ax-tab [tabKey]="'workflow'" [tabTitle]="'Workflow'" [isOnlyContentScrollable]="true" [noPadding]="true"
+                [extraVerticalScrollPadding]="156" [extraHorizontalScrollPadding]="isYamlVisible ? 500 : 0">
+            <ax-template-viewer *ngIf="template" [template]="template" #templateViewer></ax-template-viewer>
+        </ax-tab>
+        <ax-tab [tabKey]="'history'" [tabTitle]="'Job History'" [isOnlyContentScrollable]="true"
+                [extraVerticalScrollPadding]="156">
+            <div class="ax-container">
+                <div class="ax-table-list ax-table-list--clickable">
+                    <div class="ax-table-list__head">
+                        <div class="row">
+                            <div class="columns small-2">{{'Date' | translate}}</div>
+                            <div class="columns small-3">{{'Repo' | translate}}</div>
+                            <div class="columns small-2">{{'Branch' | translate}}</div>
+                            <div class="columns small-2">{{'Commit' | translate}}</div>
+                            <div class="columns small-1">{{'Status' | translate}}</div>
+                            <div class="columns small-2">{{'Cost' | translate}}</div>
+                        </div>
+                    </div>
+                    <template ngFor let-task [ngForOf]="tasks">
+                        <div class="ax-table-list__row" (click)="openJob(task.id)">
+                            <div class="row">
+                                <div class="columns small-2 title-text">
+                                    <span ax-tooltip="{{task.launch_time | secondsToMilliseconds | date}}">{{task.launch_time | secondsToMilliseconds | date}}</span>
+                                </div>
+                                <div class="columns small-3">
+                                    <span ax-tooltip="{{task.commit?.repo}}">{{task.commit?.repo}}</span>
+                                </div>
+                                <div class="columns small-2">
+                                    <span ax-tooltip="{{task.commit?.branch}}">{{task.commit?.branch}}</span>
+                                </div>
+                                <div class="columns small-2">
+                                    <span ax-tooltip="{{task.commit?.revision}}">{{task.commit?.revision}}</span>
+                                </div>
+                                <div class="columns small-1">
+                                    <span ax-tooltip="{{task.status | toServiceStatus}}">{{task.status | toServiceStatus}}</span>
+                                </div>
+                                <div class="columns small-2">
+                                    <span ax-tooltip="{{task.cost | centsToDollars}}">{{task.cost | centsToDollars}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <div *ngIf="tasks.length && isLoaded">
+                        <button (click)="onLoadMore()" [disabled]="!canLoadMore" axButtonWave class="ax-button ax-button--base-o ax-button--center">load more</button>
+                    </div>
+                    <div class="ax-table-list__loader" *ngIf="!isLoaded">
+                        <ax-loader-custom [size]="20"></ax-loader-custom>
+                    </div>
+                    <div class="ax-table-list__row" *ngIf="!tasks.length && !isLoaded">
+                        <div class="row">
+                            <div class="columns small-12">{{ 'There is no job history for this workflow' | translate }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+    </ax-tabs>
+</div>

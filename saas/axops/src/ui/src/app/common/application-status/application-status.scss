@@ -1,0 +1,14 @@
+@import '../../../assets/styles/config';
+
+.application-status {
+    i {
+        font-size: 1.3em;
+        padding-right: 10px;
+    }
+    &--init i { color: $ax-init-color; }
+    &--waiting i { color: $ax-waiting-color; }
+    &--active i { color: $ax-success-color; }
+    &--error i { color: $ax-failed-color; }
+    &--terminating i { color: $ax-cancelled-color; }
+    &--terminated i { color: $ax-cancelled-color; }
+}

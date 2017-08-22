@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: fixturemanager
+    labels:
+        app: fixturemanager
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: fixturemanager-deployment
+    ports:
+      - port: 8912
+        targetPort: 8912
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: fixturemanager-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: fixturemanager-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1800", "sh", "-c", "wait_http http://axops-internal:8085/v1/ping http://axops-internal:8085/v1/services?task_only=true&is_active=true&fields=id"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: fixturemanager
+                image: ${REGISTRY}/${NAMESPACE}/fixturemanager:${VERSION}
+                ports:
+                  - containerPort: 8912
+                resources:
+                    requests:
+                        cpu: 100m
+                        memory: 200Mi
+                    limits:
+                        cpu: 200m
+                        memory: 650Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry

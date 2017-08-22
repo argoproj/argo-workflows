@@ -1,0 +1,17 @@
+<div class="commit-box clickable" [routerLink]="[commitHistoryLink]">
+    <div class="commit-box__main">
+        <div class="commit-box__author-info">
+            <div class="commit-box__avatar">{{commit.committer[0]}}</div>
+            <div class="commit-box__title">{{commit.committer}}</div>
+            <div class="commit-box__label">Commited on {{commit.date | axShortDateTime}}</div>
+        </div>
+
+        <div class="commit-box__label">Revision:</div>
+        <div class="commit-box__desc">{{commit.revision | shortRevision}}</div>
+    </div>
+
+    <div class="commit-box__details">
+        <div class="commit-box__label">Commit Description:</div>
+        <div class="commit-box__desc">{{commit.description}}</div>
+    </div>
+</div>

@@ -1,0 +1,22 @@
+<div class="white-box">
+    <div class="row">
+        <div class="columns large-6">
+            <h6>{{title}}</h6>
+        </div>
+    </div>
+    <div class="white-box__details" *ngIf="!hasNoAttributes">
+        <template ngFor let-attribute [ngForOf]="attributes | keys">
+            <div class="row white-box__details-row">
+                <div class="large-3 columns white-box__details-label">
+                    {{ attribute.key }}
+                </div>
+                <div class="large-9 columns">
+                    {{ attribute.value }}
+                </div>
+            </div>
+        </template>
+    </div>
+    <div class="white-box__details" *ngIf="hasNoAttributes">
+        {{noAttributesMessage}}
+    </div>
+</div>

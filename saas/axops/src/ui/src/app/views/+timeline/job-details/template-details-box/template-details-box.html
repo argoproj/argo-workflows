@@ -1,0 +1,22 @@
+<div class="white-box">
+    <div class="row">
+        <div class="columns large-12">
+            <h6>Template: {{ task?.template?.name }}</h6>
+        </div>
+    </div>
+    <div class="white-box__details">
+        <div class="row white-box__details-row">
+            <div class="large-12 columns white-box__details-group-title">
+                Template Parameters:
+            </div>
+        </div>
+        <div class="row white-box__details-row" *ngFor="let parameter of parametersList">
+            <div class="large-3 columns white-box__details-label">
+                {{ parameter.name }}:
+            </div>
+            <div class="large-9 columns columns--narrower-height">
+                {{ parameter.value }}
+            </div>
+        </div>
+    </div>
+</div>

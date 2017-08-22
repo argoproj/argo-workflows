@@ -1,0 +1,70 @@
+@import '../../../../assets/styles/config';
+$toolbar-height: 12em;
+
+.project-details-panel {
+    padding-left: 4em;
+
+    &__header {
+        @include ax-catalog-header;
+
+        height: $toolbar-height;
+    }
+
+    &__info {
+        color: white;
+        padding-top: 4em;
+    }
+
+    &__back {
+        color: white;
+        float: left;
+        font-size: 3em;
+        padding-right: 0.5em;
+    }
+
+    &__icon {
+        .ax-project-icon {
+            position: relative;
+            top: $toolbar-height / 3;
+        }
+    }
+
+    &__tag {
+        background-color: #DFF6F9;
+        border: 1px solid #C1E4E9;
+        border-radius: 5px;
+        display: inline-block;
+        color: $ax-color-gray-5;
+        font-size: 0.75em;
+        padding: 5px 10px;
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    &__custom-field {
+        color: $ax-color-gray-6;
+
+        .columns {
+            border-bottom: 1px solid $ax-color-gray-5;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
+        }
+
+        &:first-child .columns {
+            border-top: 1px solid $ax-color-gray-5;
+        }
+    }
+
+    &__categories {
+        margin-bottom: 0;
+    }
+
+    &__section {
+        margin-top: 1em;
+        margin-bottom: 1em;
+    }
+
+    & .content {
+        margin-top: $toolbar-height;
+    }
+}

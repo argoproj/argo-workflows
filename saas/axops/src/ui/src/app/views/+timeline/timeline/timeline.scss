@@ -1,0 +1,36 @@
+@import '../../../../assets/styles/config';
+
+.timeline {
+    &__branches-filter {
+        & > span {
+            font-size: 0.8em;
+            margin-right: 0.5em;
+            color: $ax-color-gray-6;
+        }
+
+        &-item {
+            font-size: 12px;
+            padding: 0 10px 0 20px;
+            i {
+                padding-right: 4px;
+                font-size: 12px;
+            }
+        }
+        button {
+            text-transform: uppercase;
+        }
+    }
+
+    &.ax-toolbar {
+        white-space: nowrap;
+    }
+
+    &__date-range-dropdown {
+        .dropdown-pane {
+            @media screen and (max-width: 1232px) {
+                left: 0 !important;
+                width: auto !important;
+            }
+        }
+    }
+}

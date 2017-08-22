@@ -1,0 +1,159 @@
+<div class="ax-toolbar">
+    <div class="ax-container clearfix">
+        <div class="pull-left">
+            <div class="ax-toolbar__item">
+                <ax-date-range-dropdown [range]="range"
+                                        (rangeChanged)="onDateRangeChange($event)"></ax-date-range-dropdown>
+            </div>
+            <div class="ax-toolbar__item" *ngIf="customViews && customViews.length > 0">
+                <ax-dropdown #customViewsDropdown [isMenu]="true">
+                    <ax-dropdown-anchor>
+                        <i class="fa fa-qrcode" aria-hidden="true"></i>
+                        {{ selectedCustomViewName ? selectedCustomViewName : 'Custom Views' }}
+                        <i class="fa fa-caret-down" aria-hidden="true"></i>
+                    </ax-dropdown-anchor>
+                    <ax-dropdown-content>
+                        <ul>
+                            <li *ngFor="let customView of customViews; trackBy:byCustomViewName" >
+                                <div (click)="applyCustomView(customView)">
+                                    {{ customView.name }}
+                                    <div class="test-dashboard__custom-view-delete" (click)="deleteCustomView($event, customView)">
+                                        <i class="fa fa-lg fa-times" aria-hidden="true"></i>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </ax-dropdown-content>
+                </ax-dropdown>
+            </div>
+            <div class="ax-toolbar__item clickable test-dashboard__labels text-truncate">
+                <span (click)="showFiltersPanel()">
+                    <i class="fa fa-filter" aria-hidden="true"></i> {{isFiltered ? '' : 'Filters'}}
+                    <span *ngIf="selectedBranch" class="label text-truncate">{{selectedBranch}}</span>
+                    <span *ngIf="selectedRepo" class="label text-truncate">{{selectedRepo}}</span>
+                    <span *ngIf="selectedLabels" class="label text-truncate">{{selectedLabels}}</span>
+                    <span *ngIf="selectedTemplateIds && templatesFilter.selectedTemplateNames | async" class="label text-truncate">{{templatesFilter.selectedTemplateNames | async}}</span>
+                </span>
+                <span *ngIf="isFiltered">
+                    <i class="fa fa-times" aria-hidden="true" (click)="clearFilters()"></i>
+                </span>
+            </div>
+        </div>
+        <div class="pull-right">
+            <div *ngIf="isFiltered || selectedCustomViewName" class="ax-toolbar__item ax-toolbar__item--right-side">
+                <button axButtonWave class="ax-button ax-button--base" (click)="saveCustomView()">Save this view</button>
+            </div>
+            <div class="ax-toolbar__item ax-toolbar__item--right-side">
+                <ax-dropdown [isMenu]="true">
+                    <ax-dropdown-anchor>
+                        Sort by: {{sortBy}}
+                        <i class="fa fa-caret-down" aria-hidden="true"></i>
+                    </ax-dropdown-anchor>
+                    <ax-dropdown-content>
+                        <ul>
+                            <li (click)="applySortBySpending()">Spending</li>
+                            <li (click)="applySortByName()">Name</li>
+                        </ul>
+                    </ax-dropdown-content>
+                </ax-dropdown>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="test-dashboard">
+    <div class="content">
+        <div class="ax-container">
+            <div class="test-dashboard__panel">
+                <div *ngIf="templatesInfo.length > 0">
+                    <div class="test-dashboard__build" *ngFor="let info of templatesInfo; trackBy:byName">
+                        <div class="test-dashboard__build-chart">
+                            <nvd3 [options]="chartOptions" [data]="info.chartData"></nvd3>
+                        </div>
+                        <div class="test-dashboard__build-content">
+                            <h3>{{ info.name }} <small>{{ info.repo }}</small></h3>
+                            <div class="test-dashboard__build-row">
+                                <div class="test-dashboard__build-col test-dashboard__build-col--success">
+                                    <h4>{{getCount(taskStatus.Success, info)}}
+                                        <small>({{getPercent(taskStatus.Success, info)}}%)</small>
+                                    </h4>
+                                    <p>
+                                        <i class="fa fa-circle"></i>
+                                        Successful Jobs
+                                    </p>
+                                </div>
+                                <div class="test-dashboard__build-col test-dashboard__build-col--failed">
+                                    <h4>{{getCount(taskStatus.Failed, info)}}
+                                        <small>({{getPercent(taskStatus.Failed, info)}}%)</small>
+                                    </h4>
+                                    <p>
+                                        <i class="fa fa-circle"></i>
+                                        Failed Jobs
+                                    </p>
+                                </div>
+                                <div class="test-dashboard__build-col test-dashboard__build-col--delayed">
+                                    <h4>{{getCount(taskStatus.Init, info)}}
+                                        <small>({{getPercent(taskStatus.Init, info)}}%)</small>
+                                    </h4>
+                                    <p>
+                                        <i class="fa fa-circle"></i>
+                                        Scheduled Jobs
+                                    </p>
+                                </div>
+                                <div class="test-dashboard__build-col test-dashboard__build-col--progress">
+                                    <h4>{{getCount(taskStatus.Running, info)}}
+                                        <small>({{getPercent(taskStatus.Running, info)}}%)</small>
+                                    </h4>
+                                    <p>
+                                        <i class="fa fa-circle"></i>
+                                        In-progress Jobs
+                                    </p>
+                                </div>
+                                <div class="test-dashboard__build-col test-dashboard__build-col--waiting">
+                                    <h4>{{getCount(taskStatus.Waiting, info)}}
+                                        <small>({{getPercent(taskStatus.Waiting, info)}}%)</small>
+                                    </h4>
+                                    <p>
+                                        <i class="fa fa-circle"></i>
+                                        Waiting Jobs
+                                    </p>
+                                </div>
+                                <div class="test-dashboard__build-col">
+                                    <h4>{{info.cost | centsToDollars:2 }}</h4>
+                                    <p>Total Spending</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="templatesInfo.length <= 0" class="test-dashboard__build">
+                    <div class="test-dashboard__build-row">
+                        <div  class="test-dashboard__message">No data to display</div>
+                    </div>
+                </div>
+            </div>
+            <ax-popup [show]="showCustomViewPopup" [width]="500">
+                <ax-custom-view [setCustomView]="selectedCustomView" (closePopup)="closeCustomViewPopup($event)"></ax-custom-view>
+            </ax-popup>
+        </div>
+    </div>
+</div>
+
+<ax-sliding-panel [show]="filtersPanel" [hasCloseButton]="false" (closePanel)="closePanel()">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" type="button" (click)="applyFilters()">Apply</button>
+        <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <ax-tabs (selected)="onFilterTabChange($event)" [selectedTabKey]="'repos'">
+            <ax-tab [tabKey]="'repos'" [tabTitle]="'Repositories'">
+                <ax-branches-filters [selectedBranch]="selectedBranch" [selectedRepo]="selectedRepo"></ax-branches-filters>
+            </ax-tab>
+            <ax-tab [tabKey]="'labels'" [tabTitle]="'Labels'">
+                <ax-labels-filters [setSelectedLabels]="selectedLabels" [labelsType]="labelType"></ax-labels-filters>
+            </ax-tab>
+            <ax-tab [tabKey]="'service-templates'" [tabTitle]="'Templates'">
+                <ax-templates-filters [selectedTemplateIds]="selectedTemplateIds" [selectedRepo]="selectedRepo" [selectedBranch]="selectedBranch"></ax-templates-filters>
+            </ax-tab>
+        </ax-tabs>
+    </sliding-panel-body>
+</ax-sliding-panel>

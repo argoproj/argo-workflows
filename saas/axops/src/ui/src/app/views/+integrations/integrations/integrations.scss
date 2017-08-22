@@ -1,0 +1,124 @@
+@import '../../../../assets/styles/config';
+
+.integrations {
+    &__logo {
+        cursor: pointer;
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        min-width: 100px;
+        max-width: 120px;
+        min-height: 100px;
+        background-color: #FFFFFF;
+        box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1);
+        border-radius: 8px;
+        margin-left: 1em;
+        margin-right: 1em;
+        text-align: center;
+        border: 1px solid transparent;
+
+        &:not(.integrations__logo--selected):hover {
+            transform: translateY(-1px);
+            box-shadow: 4px 4px 4px rgba(0,0,0,.3);
+        }
+
+        & > i {
+            font-size: 2.2em;
+            width: 100%;
+            padding-top: 1.4rem;
+            padding-bottom: .6rem;
+
+            background: linear-gradient(-129deg, #195C87 0%, #11B2C9 67%, #12D956 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        & i + span {
+            font-size: 14px;
+        }
+
+        & > i.code-commit {
+                width: 38%;
+                background-image: url(assets/styles/icons/codecommitserviceicon-blue_s.png);
+                background-size: contain;
+                background-repeat: no-repeat;
+                padding-top: 3.2rem;
+                background-clip: border-box;
+                -webkit-background-clip: border-box;
+                position: relative;
+                top: 22px;
+                display: inline-block;
+        }
+
+        &--selected {
+            color: $ax-color-teal-7;
+            font-weight: 500;
+            background-color: $ax-color-gray-1;
+            border-color: rgba(0,111,138,.35);
+        }
+
+        &--selected > i {
+            background: linear-gradient(to bottom, #b759b4 0%,#b95db9 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+
+        &--selected > i.code-commit {
+                background-image: url(assets/styles/icons/codecommitserviceicon_magenta_s.png);
+        }
+    }
+
+    &__group-pointer {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 1em solid transparent;
+        border-right: 1em solid transparent;
+        border-bottom: 1.2em solid #FFFFFF;
+        bottom: -2.1em;
+        left: calc(50% - 1em)
+    }
+
+    &__group-panel {
+        position: relative;
+        background: #FFFFFF;
+        margin-top: 2em;
+        margin-bottom: 2em;
+        padding: 2em;
+    }
+
+    &__selected-tool {
+        background-color: $ax-color-teal-2;
+    }
+
+    &__edit-icon {
+        line-height: 60px;
+        color: $ax-color-teal-6;
+    }
+
+    &__cancel-icon {
+        position: absolute;
+        font-size: 2em;
+        color: $ax-color-gray-6;
+        right: 2em;
+        z-index: 1;
+    }
+
+    &__list-header {
+        position: relative;
+        color: $ax-color-gray-6;
+        border-bottom: 1px solid $ax-color-gray-4;
+        padding: 0.1em;
+        margin-top: 1em;
+        margin-bottom: 1em;
+
+        & a {
+            right: 3.5em;
+            top: 0.0em;
+            position: absolute;
+        }
+    }
+}

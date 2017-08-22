@@ -1,0 +1,77 @@
+---
+type: container
+version: 1
+name: volume-no-op
+description: Container which mounts two volumes
+resources:
+  mem_mib: 64
+  cpu_cores: 0.1
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["ls /ax/data && ls /ax/log && echo 'sleeping' && sleep 600"]
+inputs:
+  volumes:
+    DATA:
+      mount_path: /ax/data
+    LOG:
+      mount_path: /ax/log
+
+---
+type: workflow
+version: 1
+name: test-workflow-with-volume
+description: Test workflow which requests a named and anonymous volume
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    VOLUME_NAME:
+volumes:
+  named-data-vol:
+    name: "%%inputs.parameters.VOLUME_NAME%%"
+  anon-log-vol: # anonymous
+    storage_class: ssd
+    size_gb: 10
+steps:
+- test:
+    template: volume-no-op
+    arguments:
+      volumes.DATA: "%%volumes.named-data-vol%%"
+      volumes.LOG: "%%volumes.anon-log-vol%%"
+
+---
+type: workflow
+version: 1
+name: test-workflow-with-volume-inlined
+description: Test workflow which requests a named and anonymous volume (inlined)
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    VOLUME_NAME:
+volumes:
+  named-data-vol:
+    name: "%%inputs.parameters.VOLUME_NAME%%"
+  anon-log-vol: # anonymous
+    storage_class: ssd
+    size_gb: 10
+steps:
+- test:
+    resources:
+      mem_mib: 64
+      cpu_cores: 0.1
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["ls /ax/data && ls /ax/log && echo 'sleeping' && sleep 600"]
+    inputs:
+      volumes:
+        DATA:
+          from: "%%volumes.named-data-vol%%"
+          mount_path: /ax/data
+        LOG:
+          from: "%%volumes.anon-log-vol%%"
+          mount_path: /ax/log

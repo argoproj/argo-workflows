@@ -1,0 +1,71 @@
+<div class="timeline-commit-panel" *ngIf="!isExpanded" (click)="selectCommit()" [class.static]="isStatic">
+    <div class="timeline-commit-panel__wrapper">
+        <div class="timeline-commit-panel__info text-truncate"><strong><i class="ax-icon-user"></i> {{ userEmail }}</strong></div>
+        <div class="timeline-commit-panel__des">
+            <div class="pull-right">
+                <span class="timeline-commit-panel__des-item">ID: {{ localCommit.revision.substring(0, 8) }}</span>
+                <span class="timeline-commit-panel__des-item"><i class="ax-icon-calendar"></i> {{ localCommit.date | timestamp }}</span>
+            </div>
+            <div class="timeline-commit-panel__des-content text-truncate">{{ localCommit.description }}</div>
+        </div>
+        <div class="timeline-commit-panel__status">
+            <div class="timeline-commit-panel__status-des">
+                Total Jobs: <span class="timeline-commit-panel__status-count">{{ localCommit.jobs_fail +
+                localCommit.jobs_success + localCommit.jobs_run + localCommit.jobs_wait + localCommit.jobs_init }}</span>
+            </div>
+        </div>
+        <div class="timeline-commit-panel__toggle" (click)="selectCommit()" *ngIf="!isStatic">
+            <div class="fa fa-angle-down"></div>
+        </div>
+    </div>
+</div>
+<div class="timeline-commit-panel expanded" *ngIf="isExpanded" [class.static]="isStatic"
+     [routerLink]="['/app/timeline/commits/' + localCommit.revision]">
+    <div class="timeline-commit-panel__wrapper">
+        <div class="timeline-commit-panel__info">
+            <ax-commit-author [commit]="localCommit"></ax-commit-author>
+            <div class="timeline-commit-panel__info-item">
+                <span>Branch:</span>
+                <span><a [routerLink]="['/app/timeline', { view: 'commit', repo: localCommit.repo, branch: localCommit.branch}]">
+                    {{ localCommit.branch | truncateTo: 40 }}</a>
+                </span>
+            </div>
+            <div class="timeline-commit-panel__info-item">
+                <span>Repo:</span> <span>{{ localCommit.repo | truncateTo: 40}}</span>
+            </div>
+            <div class="timeline-commit-panel__info-item">
+                <span>Commit ID:</span>
+                <span *ngIf="!isStatic"><a [routerLink]="['/app/timeline/commits/' + localCommit.revision]">
+                    {{ localCommit.revision }}</a></span>
+                <span *ngIf="isStatic">{{ localCommit.revision }}</span>
+            </div>
+        </div>
+        <div class="timeline-commit-panel__des">
+            <div class="timeline-commit-panel__des-content">{{ localCommit.description | truncateTo:400 }}</div>
+            <div class="timeline-commit-panel__des-bottom clearfix">
+                <div class="pull-left" *axIfAuthenticated>
+                    <button axButtonWave class="ax-button ax-button--base-o" (click)="openServiceTemplatePanel($event)"
+                            axButtonWave>Create new job</button>
+                </div>
+                <div class="pull-right">
+                    <ax-job-statuses [successful]="localCommit.jobs_success"
+                                     [failed]="localCommit.jobs_fail"
+                                     [inProgress]="localCommit.jobs_run"
+                                     [queued]="localCommit.jobs_wait + localCommit.jobs_init"></ax-job-statuses>
+                </div>
+            </div>
+        </div>
+        <div class="timeline-commit-panel__status">
+            <div class="timeline-commit-panel__progress">
+                <ax-pie-chart [data]="chartData"></ax-pie-chart>
+                <div class=timeline-commit-panel__progress-des>
+                    {{ localCommit.jobs_fail + localCommit.jobs_success + localCommit.jobs_run + localCommit.jobs_wait + localCommit.jobs_init }}
+                    <small>Total Jobs</small>
+                </div>
+            </div>
+        </div>
+        <div class="timeline-commit-panel__toggle" (click)="selectCommit()" *ngIf="!isStatic">
+            <div class="fa fa-angle-up"></div>
+        </div>
+    </div>
+</div>

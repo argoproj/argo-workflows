@@ -1,0 +1,12 @@
+#!/bin/sh
+
+for endpoint in $@ ; do
+    host_port=`echo $endpoint | sed "s/:/ /g"`
+    while [ 1 ] ; do
+        date
+        nc -z $host_port && break
+        sleep 1
+    done
+    echo "$endpoint is open"
+done
+echo "All endpoints are open"

@@ -1,0 +1,81 @@
+<div class="ax-toolbar-new" *ngIf="!settings.hiddenToolbar" [class.has-sticky-panel]="settings.customStickyPanelHeight">
+    <div class="ax-toolbar-new__nav" *ngIf="settings.branchNavPanelUrl" (click)="openNavPanel()">
+        <i class="ax-icon-branch"></i>
+    </div>
+    <div class="ax-toolbar-new__breadcrumbs" *ngIf="settings.breadcrumb">
+        <template ngFor let-item let-last="last" [ngForOf]="settings.breadcrumb" [ngForTrackBy]="trackByBreadcrumbItem">
+            <a [routerLink]="item.routerLink" *ngIf="item.routerLink">{{ item.title }}</a>
+            <span class="ax-toolbar-new__breadcrumbs-last-item" *ngIf="!item.routerLink">{{ item.title }}</span>
+            <span class="ax-toolbar-new__sep" *ngIf="!last && item.title"></span>
+        </template>
+    </div>
+    <div class="ax-toolbar-new__filters">
+        <div class="ax-toolbar-new__filter" *ngIf="settings.layoutDateRange">
+            <ax-dropdown #dateRangeDropdown customClass="align-date-range-dropdown" class="timeline__date-range-dropdown">
+                <ax-dropdown-anchor>
+                    <div class="ax-toolbar-new__filter-btn">
+                        <i class="ax-icon-calendar" aria-hidden="true"></i> Date:
+                        {{dateRangeFormatted}}
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </div>
+                </ax-dropdown-anchor>
+                <ax-dropdown-content>
+                    <div>
+                        <ax-date-range-selector [input]="settings.layoutDateRange.data"
+                                                [allowAll]="settings.layoutDateRange.isAllDates || false"></ax-date-range-selector>
+                        <div class="date-range-selector__footer">
+                            <div class="row">
+                                <div class="columns small-3">
+                                    <button axButtonWave class="ax-button ax-button--base ax-button--full-width" type="button"
+                                            (click)="applyDateRangeSelection()">Apply</button>
+                                </div>
+                                <div class="columns small-3">
+                                    <button axButtonWave class="ax-button ax-button--link ax-button--full-width" type="button"
+                                            (click)="cancelDateRangeSelection()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ax-dropdown-content>
+            </ax-dropdown>
+        </div><!--
+        --><div class="ax-toolbar-new__filter" *ngIf="settings.toolbarFilters && settings.toolbarFilters.data.length > 0"
+             [class.has-filter]="hasFilters">
+            <ax-dropdown>
+                <ax-dropdown-anchor>
+                    <div class="ax-toolbar-new__filter-btn">
+                        <i class="ax-icon-filter" aria-hidden="true"></i>
+                        <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </div>
+                </ax-dropdown-anchor>
+                <ax-dropdown-content>
+                    <div class="ax-toolbar-new__select">
+                        <div class="ax-toolbar-new__option"
+                             *ngFor="let option of settings.toolbarFilters.data | axSortFilterMenu"
+                             (click)="toggleFilter(option)" [class.has-separator]="option.hasSeparator">
+                            <ax-checkbox [checked]="settings.toolbarFilters.model.indexOf(option.value) > -1"></ax-checkbox>
+                            <div class="ax-toolbar-new__option-ico" *ngIf="option.icon"
+                                 [class.ax-toolbar-new__option-ico--success]="option.icon.color === 'success'"
+                                 [class.ax-toolbar-new__option-ico--fail]="option.icon.color === 'fail'"
+                                 [class.ax-toolbar-new__option-ico--running]="option.icon.color === 'running'"
+                                 [class.ax-toolbar-new__option-ico--queued]="option.icon.color === 'queued'">
+                                <i class="fa fa-circle" aria-hidden="true" *ngIf="!option.icon.className"></i>
+                                <i [attr.class]="option.icon.className" aria-hidden="true" *ngIf="option.icon.className"></i>
+                            </div>
+                            {{ option.name }}
+                        </div>
+                    </div>
+                </ax-dropdown-content>
+            </ax-dropdown>
+        </div>
+    </div>
+
+    <div *ngIf="settings.globalAddAction" class="ax-toolbar-new__global-add" (click)="globalAddHandler()"
+         [style.marginTop.px]="settings.customStickyPanelHeight">
+        <a axButtonWave class="ax-button ax-button--radius ax-button--has-icon"><i class="fa fa-plus" aria-hidden="true"></i></a>
+    </div>
+    <div *ngIf="settings.globalAddActionMenu" class="ax-toolbar-new__global-add"
+         [style.marginTop.px]="settings.customStickyPanelHeight">
+        <ax-dropdown-menu [settings]="settings.globalAddActionMenu"></ax-dropdown-menu>
+    </div>
+</div>

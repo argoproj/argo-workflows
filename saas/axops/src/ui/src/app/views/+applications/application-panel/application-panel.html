@@ -1,0 +1,56 @@
+<div class="application-panel" *ngIf="application">
+    <div class="application-panel__item">
+        <div class="application-panel__item-value">{{ application.daysActive }}</div>
+        <div class="application-panel__item-name">Days active</div>
+    </div>
+    <div class="application-panel__item">
+        <div class="application-panel__item-value">{{ application.daysLastDeployed }}</div>
+        <div class="application-panel__item-name">Days since last deployed</div>
+    </div>
+    <div class="application-panel__item">
+        <div class="application-panel__item-name">Deployments</div>
+        <div class="application-panel__status-bar">
+            <div class="bar" [style.width]="application.activePercentValue + '%'"></div>
+            <div class="bar bar--error" [style.width]="application.errorPercentValue + '%'"></div>
+            <div class="bar bar--stopped" [style.width]="application.stoppedPercentValue + '%'"></div>
+        </div>
+        <div class="application-panel__deployments">
+            <div class="application-panel__deployment-item application-panel__deployment-item--active">
+                <i class="fa fa-circle"></i> Active: <strong>{{ application.deployments_active }}</strong></div>
+            <div class="application-panel__deployment-item application-panel__deployment-item--error">
+                <i class="fa fa-circle"></i> Error: <strong>{{ application.deployments_error }}</strong></div>
+            <div class="application-panel__deployment-item application-panel__deployment-item--stopped">
+                <i class="fa fa-circle"></i> Stopped: <strong>{{ application.deployments_stopped }}</strong></div>
+            <div class="application-panel__deployment-item">
+                <i class="fa fa-circle"></i> Terminated: <strong>{{ application.deployments_terminated }}</strong></div>
+        </div>
+    </div>
+
+    <div class="application-panel__item" *ngIf="isJiraConfigured">
+        <div class="application-panel__item-value application-panel__item-value--highlight">
+            <a (click)="toggleIssuesPanel(application); $event.stopPropagation();">{{ application.jira_issues?.length || 0 }}</a></div>
+        <div class="application-panel__item-name">JIRA issues</div>
+    </div>
+    <div class="application-panel__item" *ngIf="application.endpoints && application.endpoints.length">
+        <div class="application-panel__item-value application-panel__item-value--highlight">
+            <i class="fa fa-external-link"></i></div>
+        <div class="application-panel__item-name" *ngIf="application.endpoints.length === 1">
+            <a href="//{{application.endpoints[0]}}" target="_blank">Endpoint</a></div>
+        <div class="application-panel__item-name application-panel__item-value--highlight" *ngIf="application.endpoints.length > 1">
+            <ax-dropdown isMenu="true">
+                <ax-dropdown-anchor>
+                    <span class="application-panel__item-dropdown">Endpoints
+                        <i class="fa fa-caret-down" *ngIf="application.endpoints?.length > 0"></i></span>
+                </ax-dropdown-anchor>
+                <ax-dropdown-content>
+                    <ul>
+                        <li *ngFor="let url of application.endpoints">
+                            <a href="//{{ url }}" target="_blank">{{ url }}</a>
+                        </li>
+                    </ul>
+                </ax-dropdown-content>
+            </ax-dropdown>
+
+        </div>
+    </div>
+</div>

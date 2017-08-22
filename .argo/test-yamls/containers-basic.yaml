@@ -1,0 +1,71 @@
+---
+type: container
+version: 1
+name: noop-container
+description: Container which does nothing but sleep for 2 minutes
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo 'sleeping for 2 minutes' ; sleep 120; echo 'done'"]
+
+---
+type: container
+version: 1
+name: test-container-with-input-parameter
+description: Container which has a required input parameter
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo 'sleeping for %%inputs.parameters.SLEEP%% seconds' ; sleep %%inputs.parameters.SLEEP%%; echo 'done'"]
+inputs:
+  parameters:
+    SLEEP:
+
+---
+type: container
+version: 1
+name: test-container-with-default-input-parameter
+description: Container which has a input parameter with a default value
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo 'sleeping for %%inputs.parameters.SLEEP%% seconds' ; sleep %%inputs.parameters.SLEEP%%; echo 'done'"]
+inputs:
+  parameters:
+    SLEEP:
+      default: 60
+
+---
+type: container
+version: 1
+name: test-container-with-env-var
+description: Container expects an environment variable to be set
+image: alpine:latest
+command: ["sh", "-c"]
+args: ['env && [ "$FOO" == "bar" ]']
+env:
+- name: FOO
+  value: "%%inputs.parameters.FOO_VAL%%"
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    FOO_VAL:
+      default: bar
+
+---
+type: container
+version: 1
+name: test-container-resource-parameterization
+description: Container which parameterizes resource requests
+inputs:
+  parameters:
+    CPU_CORES:
+      default: "0.1"
+    MEM_MIB:
+      default: "32"
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["sleep 300"]
+resources:
+  cpu_cores: "%%inputs.parameters.CPU_CORES%%"
+  mem_mib: "%%inputs.parameters.MEM_MIB%%"

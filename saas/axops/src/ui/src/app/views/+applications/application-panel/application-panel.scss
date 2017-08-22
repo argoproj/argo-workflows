@@ -1,0 +1,106 @@
+@import '../../../../assets/styles/config';
+$applications-status-width: 200px;
+
+.application-panel {
+    display: flex;
+    font-size: .875em;
+    color: $ax-color-gray-6;
+    background-color: $ax-color-white;
+    box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+
+    &__item {
+        flex: auto;
+        margin: 20px 0;
+        padding: 10px 30px;
+        font-size: .8em;
+        line-height: 1.2;
+        color: $ax-color-gray-5;
+
+        &:not(:first-child) {
+            border-left: 1px solid $ax-color-gray-3;
+        }
+    }
+
+    &__item-value {
+        font-size: 2em;
+
+        &--highlight {
+            color: $ax-color-teal-6;
+        }
+
+        i {
+            font-size: .6em;
+        }
+    }
+
+    &__item-name {
+        text-transform: uppercase;
+
+        i {
+            position: relative;
+            top: -2px;
+        }
+    }
+
+    &__item-dropdown {
+        white-space: nowrap;
+
+        i {
+            position: relative;
+            top: 1px;
+        }
+    }
+
+    &__status-bar {
+        margin-top: 4px;
+        height: 6px;
+        background-color: $ax-color-gray-4;
+        border-radius: 3px;
+        overflow: hidden;
+
+        .bar {
+            height: 100%;
+            background-color: $ax-success-color;
+            float: left;
+
+            &--stopped {
+                background-color: $ax-status-warning-color;
+            }
+
+            &--error {
+                background-color: $ax-status-failed-color;
+            }
+        }
+    }
+
+    &__status-des {
+        line-height: 2.2;
+        padding-top: 12px;
+    }
+
+    &__deployments {
+        margin-top: 10px;
+    }
+
+    &__deployment-item {
+        display: inline-block;
+        font-size: .85em;
+        text-transform: uppercase;
+
+        &:not(:last-child) {
+            margin-right: 8px;
+        }
+
+        &--active i {
+            color: $ax-success-color;
+        }
+
+        &--stopped i {
+            color: $ax-status-warning-color;
+        }
+
+        &--error i {
+            color: $ax-status-failed-color;
+        }
+    }
+}

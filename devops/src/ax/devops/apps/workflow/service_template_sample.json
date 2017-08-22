@@ -1,0 +1,171 @@
+{
+    "id": "5e948d93-1b92-11e6-8140-0242ac110002",
+    "costid": {
+        "app": "devops",
+        "project": "prod"
+    },
+    "template": {
+        "id": "",
+        "type": "service_template",
+        "subtype": "workflow",
+        "version": "1.0",
+        "name": "checkout_build",
+        "dns_name": "",
+        "description": "checkout the code from source tree then build",
+        "cost": 0,
+        "inputs": {
+            "parameters": {
+                "commit": {
+                    "description": "this is the commit",
+                    "default": "%%session.commit%%"
+                },
+                "repo": {
+                    "description": "this is the repo",
+                    "default": "%%session.repo%%"
+                }
+            }
+        },
+        "outputs": {
+            "artifacts": {
+                "build_result_level2": {
+                    "service_id": "%%service.build.id%%",
+                    "name": "build_result"
+                }
+            }
+        },
+        "steps": [
+            {
+                "checkout": {
+                    "id": "34d4a7bf-1b92-11e6-813e-0242ac110002",
+                    "costid": {
+                        "app": "devops",
+                        "project": "prod"
+                    },
+                    "template": {
+                        "id": "",
+                        "type": "service_template",
+                        "subtype": "custom",
+                        "version": "1.0",
+                        "name": "ax_checkout",
+                        "dns_name": "",
+                        "description": "checkout the code from source tree",
+                        "cost": 0,
+                        "container": {
+                            "resources": {
+                                "mem_mib": 0,
+                                "cpu_cores": 0,
+                                "disk_gb": 0
+                            },
+                            "image": "docker.argo.io/ax/ax_checkout",
+                            "docker_options": "-w /workspace -e REPO=%%repo%% -e COMMIT=%%commit%% ",
+                            "command": "checkout.sh"
+                        },
+                        "inputs": {
+                            "parameters": {
+                                "commit": {
+                                    "description": "this is the commit",
+                                    "default": "%%session.commit%%"
+                                },
+                                "repo": {
+                                    "description": "this is the repo",
+                                    "default": "%%session.repo%%"
+                                }
+                            }
+                        },
+                        "outputs": {
+                            "artifacts": {
+                                "checkout_result": {
+                                    "path": "/workspace/src",
+                                    "archive_mode": "tar",
+                                    "storage_method": "s3"
+                                }
+                            }
+                        }
+                    },
+                    "parameters": {
+                        "commit": "abcd1234abcd1234",
+                        "repo": "bucketbucket.io/argo/prod"
+                    },
+                    "status": 1,
+                    "name": "ax_checkout",
+                    "app": "axdevops",
+                    "project": "prod",
+                    "user": "admin@email.com",
+                    "launch_time": 1463422544,
+                    "average_runtime": 100
+                }
+            },
+            {
+                "build": {
+                    "id": "585920d6-1b92-11e6-813f-0242ac110002",
+                    "costid": {
+                        "app": "devops",
+                        "project": "prod"
+                    },
+                    "template": {
+                        "id": "",
+                        "type": "service_template",
+                        "subtype": "build",
+                        "version": "1.0",
+                        "name": "gcc build",
+                        "dns_name": "",
+                        "description": "do a gcc build",
+                        "cost": 0,
+                        "container": {
+                            "resources": {
+                                "mem_mib": 1024,
+                                "cpu_cores": 2,
+                                "disk_gb": 20
+                            },
+                            "image": "docker.argo.io/ax/gcc_libc_toolchain_2.0",
+                            "docker_options": "-w /workspace",
+                            "command": "build.sh"
+                        },
+                        "inputs": {
+                            "artifacts": [
+                                {
+                                    "service_id": "%%service.checkout.id%%",
+                                    "name": "checkout_result",
+                                    "path": "/workspace"
+                                }
+                            ]
+                        },
+                        "outputs": {
+                            "artifacts": {
+                                "build_result": {
+                                    "path": "/workspace/out",
+                                    "archive_mode": "tar",
+                                    "storage_method": "s3"
+                                }
+                            }
+                        }
+                    },
+                    "parameters": {
+                        "service.checkout.id": "34d4a7bf-1b92-11e6-813e-0242ac110002"
+                    },
+                    "status": 1,
+                    "name": "gcc build",
+                    "mem": 1024,
+                    "cpu": 2,
+                    "app": "axdevops",
+                    "project": "prod",
+                    "user": "admin@email.com",
+                    "launch_time": 1463422604,
+                    "average_runtime": 100
+                }
+            }
+        ]
+    },
+    "parameters": {
+        "commit": "abcd1234abcd1234",
+        "repo": "bucketbucket.io/argo/prod",
+        "service.build.id": "585920d6-1b92-11e6-813f-0242ac110002"
+    },
+    "status": 1,
+    "name": "checkout_build",
+    "app": "devops",
+    "project": "prod",
+    "user": "admin@email.com",
+    "launch_time": 1463422614,
+    "average_runtime": 100
+}

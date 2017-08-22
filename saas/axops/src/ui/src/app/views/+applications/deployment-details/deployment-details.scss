@@ -1,0 +1,262 @@
+@import '../../../../assets/styles/config';
+
+$top-bar-height: 56px;
+$round-btn-size: 35px;
+$counter-background-size: 90px;
+$counter-background-active-size: 140px;
+$counter-box-width: 170px;
+$padding: 50px;
+
+.deployment-details {
+    position: relative;
+    background-color: white;
+    min-height: 100vh;
+    font-size: 14px;
+
+    .white-box__details-label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    h2 {
+        display: inline-block;
+        color: $ax-color-gray-6;
+        font-size: 15px;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        margin-top: 30px;
+    }
+
+    &__close-btn {
+        float: right;
+        font-size: 20px;
+        line-height: $top-bar-height;
+        padding-right: $padding;
+    }
+
+    &__content {
+        padding: 40px $padding;
+
+        &--stream {
+
+            &:before {
+                position: absolute;
+                top: $top-bar-height + $top-bar-height; // top bar height + breadcrumb height
+                bottom: 0;
+                left: $padding + 27px;
+                width: 1px;
+                background-color: $ax-color-gray-2;
+                content: '';
+            }
+        }
+    }
+
+    &__title {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: $ax-color-gray-6;
+
+        &--icon {
+            font-size: 40px;
+            color: #A3E4D7;
+            line-height: 40px;
+        }
+    }
+
+    &__btns {
+        display: inline-block;
+        padding-left: $padding;
+    }
+
+    &__btn {
+        display: inline-block;
+        padding-left: 10px;
+
+        &:first-child {
+            padding-left: 0;
+        }
+    }
+
+    &__panel {
+        position: relative;
+        border-radius: $border-radius;
+        border: 1px solid $ax-color-gray-3;
+        height: 100%;
+        box-shadow: 0 1px 5px $ax-color-gray-3;
+        overflow: hidden;
+
+        & > h3 {
+            color: $ax-color-gray-6;
+            font-size: 15px;
+            margin: 10px;
+        }
+
+        &--active {
+            border-color: $ax-color-teal-5;
+        }
+
+        &--inner-small-padding {
+            padding: 5px 10px;
+        }
+
+        &--additional-vertical-padding {
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        &--gradient-background {
+            background: linear-gradient(to right, $ax-color-teal-1 33%,#ffffff 33%,#ffffff 100%);
+        }
+
+        &--bottom-gap {
+            margin-bottom: 20px;
+        }
+    }
+
+    &__panel-actions {
+        display: inline-block;
+        font-size: 15px;
+        bottom: 0;
+        height: 51px;
+        line-height: 51px;
+        border-top: 1px solid $ax-color-gray-2;
+        text-transform: uppercase;
+        width: 90%;
+        margin-left: 5%;
+        margin-right: 5%;
+        margin-top: 20px;
+
+        & > a {
+            font-weight: bold;
+            width: 49%;
+            display: inline-block;
+            text-align: center;
+        }
+    }
+
+    &__edit-scale {
+        position: relative;
+        display: block;
+        margin: 40px auto;
+        margin-top: 50px;
+        width: $counter-box-width;
+
+        &--round-btn {
+            position: relative;
+            display: inline-block;
+            border-radius: 50%;
+            font-size: 40px;
+            font-weight: 100;
+            height: $round-btn-size;
+            width: $round-btn-size;
+            line-height: $round-btn-size;
+            border: 1px solid $ax-color-teal-5;
+            color: $ax-color-teal-5;
+            z-index: 2;
+            background-color: white;
+
+            & > span {
+                position: absolute;
+            }
+
+            &:hover {
+                cursor: pointer;
+                background-color: $ax-color-gray-2;
+            }
+        }
+
+        &--left-btn > span {
+            left: 11px;
+        }
+
+        &--right-btn {
+            float: right;
+
+            & > span {
+                left: 6px;
+            }
+        }
+
+        &--counter {
+            position: absolute;
+            display: inline-block;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 35px;
+            color: white;
+            z-index: 1;
+            top: -8px;
+
+            &-active {
+                color: black;
+            }
+
+            &-current {
+                border-top: 1px solid $ax-color-teal-5;
+                color: $ax-color-gray-5;
+                font-size: 10px;
+                width: 90px;
+                text-align: center;
+                left: calc(50% - 45px);
+                top: 40px;
+            }
+        }
+
+        &--counter-background {
+            border-radius: 50%;
+            height: $counter-background-size;
+            width: $counter-background-size;
+            position: absolute;
+            top: -29px;
+            left: calc(50% - 45px);
+            z-index: 0;
+            background: linear-gradient(315deg, #06C298 0%, #26DB83 100%);
+            transition: all 0.3s linear;
+
+            &-active {
+                height: $counter-background-active-size;
+                width: $counter-background-active-size;
+                background: $ax-color-gray-2;
+                top: -52px;
+                left: calc(50% - 70px);
+            }
+        }
+    }
+
+    &--padding {
+        padding-left: 30px !important;
+    }
+
+    &__white-box {
+        overflow: hidden;
+        font-size: 13px;
+    }
+
+    &__volume-chart, &__volume-chart-info {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    &__volume-chart-info {
+        margin-left: -2.5em;
+        strong {
+            font-size: 2em;
+        }
+    }
+
+    &__volume-chart-graph {
+        position: relative;
+    }
+
+    &__volume-chart-percentage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        font-size: 1.5em;
+        color: $ax-color-teal-6;
+    }
+}

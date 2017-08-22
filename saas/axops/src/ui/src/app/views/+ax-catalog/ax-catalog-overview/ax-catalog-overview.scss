@@ -1,0 +1,95 @@
+@import '../../../../assets/styles/config';
+
+.ax-catalog-overview {
+
+    $toolbar-height: 12em;
+
+    &__header {
+        @include ax-catalog-header;
+        padding-top: 3em;
+        padding-bottom: 3em;
+
+        height: $toolbar-height;
+        color: white;
+        text-align: center;
+    }
+
+    .content {
+        margin-top: $toolbar-height - 5em;
+    }
+
+    &__project .ax-project-icon {
+        cursor: pointer;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    &__project-actions {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        text-align: center;
+
+        & > div {
+            margin-top: 1em;
+            margin-bottom: 1em;
+            text-transform: uppercase;
+        }
+
+        a {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+    }
+
+    &__row {
+        margin-top: 2em;
+        margin-bottom: 2em;
+        position: relative;
+    }
+
+    &__nav {
+        background-color: $ax-color-gray-2;
+        display: block;
+        height: 1.5em;
+        width: 1.5em;
+        text-align: center;
+        border-radius: 0.75em;
+        position: absolute;
+        top: 50%;
+
+        i {
+            font-size: 1.4em;
+        }
+
+        &--left {
+            left: -2em;
+        }
+
+        &--right {
+            right: -2em;
+        }
+    }
+
+    .tabs__nav {
+        text-transform: uppercase;
+    }
+
+    &__project-info {
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 -2px 3px rgba($ax-color-gray-9, .1);
+        background-color: $ax-color-gray-4;
+        padding: 2em 0;
+    }
+
+    &__project-pointer {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-left: 1.3em solid transparent;
+        border-right: 1.3em solid transparent;
+        border-bottom: 1.5em solid $ax-color-gray-4;
+        top: -3.5em;
+    }
+}

@@ -1,0 +1,13 @@
+// Copyright 2015-2017 Applatix, Inc. All rights reserved.
+
+Build instructions:
+
+1. Set GOPATH to $SRC/platform/source/go
+
+2. To build vol_plugin:
+$ cd $SRC/platform/source/go/src/applatix.io/vol_plugin
+$ make
+
+3. To run tests:
+$ cd $SRC/platform/source/go/src/applatix.io/vol_plugin
+$ make test

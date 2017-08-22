@@ -1,0 +1,28 @@
+@import '../../../assets/styles/config';
+
+.progress-bar {
+    position: relative;
+    width: 100%;
+    height: 3px;
+    background-color: $ax-color-gray-4;
+
+    &--failed, &--success, &--waiting, &--running {
+        height: 100%;
+    }
+
+    &--failed {
+        background-color: $ax-failed-color;
+    }
+
+    &--success {
+        background-color: $ax-success-color;
+    }
+
+    &--waiting {
+        background-color: $ax-waiting-color;
+    }
+
+    &--running {
+        background-color: $ax-running-color;
+    }
+}

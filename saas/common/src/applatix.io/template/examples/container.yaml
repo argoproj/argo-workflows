@@ -1,0 +1,84 @@
+---
+type: container
+version: 1
+name: example-container
+description: Example container using all container fields
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["touch /data_file && echo 'sleeping %%inputs.parameters.sleep_time%% seconds' && sleep %%inputs.parameters.sleep_time%%; echo %%env[0].name%%"]
+env:
+- name: MY_ENV_VAR1
+  value: foo
+- name: MY_ENV_VAR2
+  value: bar
+resources:
+  mem_mib: 64
+  cpu_cores: 0.1
+image_pull_policy: Always
+liveness_probe:
+  http_get:
+    path: "/"
+    port: 80
+  initial_delay_seconds: 30
+  timeout_seconds: 5
+readiness_probe:
+  http_get:
+    path: "/"
+    port: 80
+  initial_delay_seconds: 30
+  timeout_seconds: 5
+inputs:
+  parameters:
+    sleep_time:
+outputs:
+  artifacts:
+    data:
+      path: /data_file
+
+---
+type: container
+version: 1
+name: example-checkout
+description: Check out repo to /src (generate an artifact named code)
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.repo%%", "/src", "--commit", "%%inputs.parameters.commit%%"]
+inputs:
+  parameters:
+    commit:
+    repo:
+outputs:
+  artifacts:
+    code:
+      path: /src
+
+---
+type: container
+version: 1
+name: example-build
+description: Accepts a source repository as an artifact (code) and products an output artifact (build)
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["ls -la %%inputs.artifacts.code.path%% && sleep 5 && mkdir /build && echo 1234 > /build/app_binary"]
+inputs:
+  artifacts:
+    code:
+      path: /src
+outputs:
+  artifacts:
+    build:
+      path: /build
+
+---
+type: container
+version: 1
+name: param-declared-twice
+description: param which is declared with same name with different types
+image: get.applatix.io/applatix/axscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.commit%%", "/src", "--commit", "%%inputs.fixtures.commit.hostname%%"]
+inputs:
+  parameters:
+    commit:
+  fixtures:
+    commit:

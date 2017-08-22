@@ -1,0 +1,32 @@
+<div class="ax-jira-issues__list" [ngClass]="customClass">
+    <template ngFor let-jiraIssue [ngForOf]="source">
+        <div class="ax-jira-issues__item">
+            <div class="row">
+                <div class="columns small-7">
+                    <div class="row">
+                        <div class="columns small-3 text-truncate ax-jira-issues__item--issue-label">
+                            <ax-jira-issue-type [type]="jiraIssue?.issuetype?.id"></ax-jira-issue-type>
+                            <a [href]="baseJiraURL + '/browse/' + jiraIssue?.key" target="_blank" ax-tooltip="{{ jiraIssue?.key }}">{{ jiraIssue?.key }}</a>
+                        </div>
+                        <div class="columns small-9 text-truncate ax-jira-issues__item--issue-title" ax-tooltip="{{ jiraIssue?.summary }}">
+                            {{ jiraIssue?.summary }}
+                        </div>
+                    </div>
+                </div>
+                <div class="columns small-5">
+                    <div class="row">
+                        <div class="columns small-4 text-truncate ax-jira-issues__item--issue-assignee" ax-tooltip="Assigne: {{ jiraIssue?.assignee?.key ? jiraIssue?.assignee?.key : 'Unassigned' }}">
+                            <span>Assignee:</span> {{ jiraIssue?.assignee?.key ? jiraIssue?.assignee?.key : 'Unassigned' }}
+                        </div>
+                        <div class="columns small-4 text-truncate ax-jira-issues__item--issue-reporter" ax-tooltip="Reporter: {{ jiraIssue?.reporter?.key ? jiraIssue?.reporter?.key : 'Unassigned' }}">
+                            <span>Reporter:</span> {{ jiraIssue?.reporter?.key ? jiraIssue?.reporter?.key : 'Unassigned' }}
+                        </div>
+                        <div class="columns small-4 text-truncate ax-jira-issues__item--issue-status">
+                            <ax-jira-status [status]="jiraIssue?.status?.id"></ax-jira-status>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>

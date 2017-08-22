@@ -1,0 +1,29 @@
+<div class="content">
+    <div class="profile-box__name" *ngIf="isCurrentLoggedInUser">{{ 'Manage your personal info' | translate }}</div>
+    <div class="profile-box__name" *ngIf="!isCurrentLoggedInUser">{{ 'Manage user info' | translate }}</div>
+    <div class="profile-box">
+        <div class="profile-box__header">
+            <div class="profile-box__avatar">
+                {{ user.getInitial() }}
+            </div>
+        </div>
+        <div class="profile-list">
+            <div class="profile-list__item">
+                <div class="profile-list__label">{{ 'Name' | translate }}</div>
+                <div class="profile-list__value" *ngIf="user.hasOwnProperty('first_name') && user.hasOwnProperty('last_name')">
+                    {{ user.fullname() | truncateTo: 45 }}
+                </div>
+                <div class="profile-list__value" *ngIf="!user.hasOwnProperty('first_name') && !user.hasOwnProperty('last_name')">
+                    {{ user?.username | truncateTo: 45 }}
+                </div>
+            </div>
+            <div class="profile-list__item">
+                <div class="profile-list__label">{{ 'Email' | translate }}</div>
+                <div class="profile-list__value">{{ user?.username }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ax-edit-user [show]="!!editUser && !changePasswordPanel" [user]="user" (onClose)="closeEditPanel()" (onChangePassword)="changePassword()"></ax-edit-user>
+<ax-change-password [show]="!!editUser && changePasswordPanel" [user]="user" (onClose)="closeChangePasswordPanel()"></ax-change-password>

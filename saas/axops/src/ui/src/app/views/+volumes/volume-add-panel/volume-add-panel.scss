@@ -1,0 +1,24 @@
+@import '../../../../assets/styles/config';
+
+.volume-add-panel {
+    h2 {
+        font-weight: 300;
+        font-size: 2.2em;
+        color: $ax-color-teal-7;
+    }
+
+    p {
+        font-size: .8125em;
+    }
+
+    &__select-btn {
+        font-weight: 500;
+        font-size: .9em;
+        color: $ax-color-teal-6;
+        text-transform: uppercase;
+    }
+
+    .ax-table-list__row i.fa {
+        font-size: 18px;
+    }
+}

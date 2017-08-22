@@ -1,0 +1,70 @@
+#!/bin/sh
+set -x
+
+create_sig="CreateSignature"
+found_sig="FoundSignature"
+wrong_sig="ErrInvalidSignature"
+volume_dir="/axsigdata"
+sig_path="/axsigdata/signature"
+ns=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+
+postevent () {
+    trail=0
+    while [ 1 ] ; do
+        cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Event
+metadata:
+    generateName: $HOSTNAME
+    namespace: $ns
+involvedObject:
+    kind: Pod
+    namespace: $ns
+    name: $HOSTNAME
+reason: $1
+message: $2
+firstTimestamp: $(date +"%Y-%m-%dT%TZ")
+lastTimestamp: $(date +"%Y-%m-%dT%TZ")
+EOF
+        # Want some retry here as kubectl could fail
+        if [ $? != "0" ]; then
+            if [ $trail -lt 3 ]; then
+                trail=$(( $trail+1 ))
+                sleep 2
+            else
+                exit 88
+            fi
+        else
+            break
+        fi
+    done
+}
+
+if [ $(stat -c%d "/") == $(stat -c%d "$volume_dir") ]; then
+    echo "Volume directory has same device number as root, volume NOT mounted correctly" >&2
+    exit 86
+else
+    echo "Volume directory has a volume attached, proceed to check signature ..."
+fi
+
+signature=""
+if [ -z ${USE_AXDB+x} ]; then
+    signature=$AX_SIGNATURE
+else
+    signature="$HOSTNAME-$AX_SIGNATURE"
+fi
+
+if [ ! -f "$sig_path" ]; then
+    echo "$signature" > $sig_path
+    if [ $? != "0" ]; then
+        exit 87
+    fi
+    postevent $create_sig "Created volume signature \"$signature\""
+    exit 0
+elif [ -f "$sig_path" ] && [ $(cat $sig_path) == "$signature" ]; then
+    postevent $found_sig "Found signature \"$signature\", correct volume mounted"
+    exit 0
+else
+    postevent $wrong_sig "Expected volume signature \"$signature\" but found \"$(cat $sig_path)\""
+    exit 1
+fi

@@ -1,0 +1,30 @@
+@import '../../../../assets/styles/config';
+
+$icon-color: #a6a6a6;
+
+.fixture-action-launch-panel {
+    &__title {
+        color: $ax-color-teal-7;
+        font-size: 2em;
+        font-weight: lighter;
+    }
+
+    &__subtitle {
+        color: $ax-color-gray-5;
+        font-size: 0.8em;
+        padding-bottom: 30px;
+    }
+
+    h3 {
+        margin: 30px 0 10px;
+        font-size: 1em;
+        font-weight: 500;
+        color: $ax-color-gray-6;
+        text-transform: uppercase;
+
+        & > i {
+            color: $icon-color;
+            padding-right: 5px;
+        }
+    }
+}

@@ -1,0 +1,65 @@
+---
+type: workflow
+name: ci
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout:
+    template: "axscm-checkout"
+- build:
+    template: "build"
+    parameters:
+      code: "%%steps.checkout.code%%"
+
+---
+type: container
+name: build
+container:
+  resources:
+    mem_mib: 1536
+    cpu_cores: 0.4
+    disk_gb: 2
+  image: docker.io/library/node:6.3.1
+  docker_options:
+  command: >
+    bash -c 'cd /src && npm set progress=false && npm install --unsafe-perm && npm run build:prod'
+inputs:
+  artifacts:
+  - from: "%%code%%"
+    path: "/src"
+  parameters:
+    code:
+outputs:
+  artifacts:
+    code:
+      path: "/src"
+
+
+---
+type: policy
+name: ci
+template: ci
+parameters:
+  repo: ""
+  commit: ""
+notifications:
+  -
+    when:
+      - on_change
+    whom:
+      - committer
+      - submitter
+      - author
+when:
+  -
+    event: on_push
+    target_branches:
+      - .*
+  -
+    event: on_pull_request
+    target_branches:
+      - .*

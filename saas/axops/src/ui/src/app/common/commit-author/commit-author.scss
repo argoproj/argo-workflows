@@ -1,0 +1,30 @@
+@import '../../../assets/styles/config';
+
+.commit-author-box {
+
+
+    & > h5 {
+        margin: 6px 0 0 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: $ax-color-gray-7;
+        line-height: 1.4em;
+    }
+
+    & > h6 {
+        color: $ax-color-gray-6;
+        font-size: 12px;
+        font-weight: bold;
+        margin: 2px 0 0 0;
+    }
+
+    & > p {
+        color: $ax-color-gray-6;
+        margin-bottom: 10px;
+        line-height: 1.6em;
+    }
+
+    &-email {
+        font-weight: bolder;
+    }
+}

@@ -1,0 +1,10 @@
+---
+type: workflow
+version: 1
+name: test-workflow-with-list-expansion
+description: Workflow with list expansion
+steps:
+- STEP1:
+    template: echo-container
+    arguments:
+      parameters.MESSAGE: "$${a,b,c,d}$$"

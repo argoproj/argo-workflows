@@ -1,0 +1,17 @@
+<div [class.is-shown]="show">
+    <div class="navigation-panel" [class.has-footer]="showFooter">
+        <div class="navigation-panel__header">
+            <div class="navigation-panel__close" *ngIf="!hideCloseBtn">
+                <button axButtonWave class="ax-button-close" (click)="close()"></button>
+            </div>
+            <ng-content select="panel-header"></ng-content>
+        </div>
+        <div class="navigation-panel__body">
+            <ng-content select="panel-body"></ng-content>
+        </div>
+        <div class="navigation-panel__footer" #panelFooter [hidden]="!showFooter">
+            <ng-content select="panel-footer"></ng-content>
+        </div>
+    </div>
+    <div class="navigation-panel-overlay" (click)="close()"></div>
+</div>

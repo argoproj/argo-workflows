@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: redis
+    labels:
+        app: redis
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: redis-deployment
+    ports:
+      - port: 6379
+        targetPort: 6379
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: redis-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: redis-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-redis-svc"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "redis-data",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: redis
+                image: ${REGISTRY}/${NAMESPACE}/redis:${VERSION}
+                ports:
+                  - containerPort: 6379
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 120Mi
+                volumeMounts:
+                  - mountPath: "/data"
+                    name: redis-data
+            volumes:
+              - name: redis-data
+                persistentVolumeClaim:
+                    claimName: redis-pvc
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry

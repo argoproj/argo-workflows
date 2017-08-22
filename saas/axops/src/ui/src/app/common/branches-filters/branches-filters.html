@@ -1,0 +1,66 @@
+<div class="branches-filters__content">
+    <h3 *ngIf="!selectedRepo">Select repository</h3>
+    <h3 *ngIf="selectedRepo"><a class="ax-button branches-filters__back-btn"
+                    (click)="toggleAllRepos()">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    Selected repository</h3>
+    <label class="branches-filters__row" [hidden]="selectedRepo">
+        <div class="clearfix">
+            <div class="pull-left">
+                <ax-radiobox [label]="'All'" [checked]="selectAllRepos" (onChange)="toggleAllRepos()"></ax-radiobox>
+            </div>
+            <div class="pull-right">
+                <div class="branches-filters__info">All branches from all repositories</div>
+            </div>
+        </div>
+    </label>
+    <label class="branches-filters__row"
+           [hidden]="selectedRepo && selectedRepo !== repo.url"
+           *ngFor="let repo of repositories"
+           [ngClass]="{'selected': selectedRepo === repo.url}">
+        <div class="clearfix">
+            <div class="pull-left">
+                <ax-radiobox
+                        [label]="repo.name"
+                        [checked]="repo.url == selectedRepo && !allRepos" 
+                        [hidden]="selectedRepo && selectedRepo === repo.url"
+                        (onChange)="selectRepo(repo)"></ax-radiobox>
+                 
+                <label *ngIf="selectedRepo && selectedRepo === repo.url">{{repo.name}}</label>
+            </div>
+            <div class="pull-right">
+                <div class="branches-filters__info">{{repo.url}} <i class="fa fa-angle-right"></i></div>
+            </div>
+        </div>
+    </label>
+    <div class="branches-filters__branches" *ngIf="selectedRepo">
+        <div class="clearfix">
+            <div class="pull-left">
+                <h3>
+                    Select branch
+                </h3>
+            </div>
+            <div class="pull-right">
+                <ax-input-select class="branches-filters__search" [inputText]="searchString"
+                                 [cache-inputs]="false"
+                                 [placeholder]="'search'"
+                                 [icon]="'ax-icon-search'"
+                                 [limit]="5"
+                                 (update)="search($event)">
+                </ax-input-select>
+            </div>
+        </div>
+        <label class="branches-filters__row">
+            <ax-radiobox
+                    [label]="selectedRepo ? 'All branches from: ' + selectedRepoName : 'All branches'"
+                    [checked]="selectAllBranches" (onChange)="toggleAllBranches()"></ax-radiobox>
+        </label>
+        <label class="branches-filters__row" *ngFor="let branch of branches" [hidden]="branch.repo !== selectedRepo">
+            <ax-radiobox
+                    [label]="branch.name"
+                    [checked]="branch.name == selectedBranch"
+                    (onChange)="selectBranch(branch.name)"></ax-radiobox>
+        </label>
+    </div>
+</div>

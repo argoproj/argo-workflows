@@ -1,0 +1,24 @@
+{
+  "sequential asd: FRESH_STATE": [
+    {
+      "parallel e190b343-cf40-552b-bcd0-7c4c039428ec: FRESH_STATE": {
+        "75d70c24-3b79-4956-8ae6-d9b723ab33e2": {
+          "sequential 75d70c24-3b79-4956-8ae6-d9b723ab33e2: FRESH_STATE": []
+        },
+        "32f3c0c1-54fd-41fc-a713-9b4b4b88dbfb": {
+          "sequential 32f3c0c1-54fd-41fc-a713-9b4b4b88dbfb: FRESH_STATE": []
+        }
+      }
+    },
+    {
+      "parallel a95cea92-4ad8-544e-a802-72757835012c: FRESH_STATE": {
+        "77f1af9f-6cbc-40ff-92be-9b88125bf75a": {
+          "sequential 77f1af9f-6cbc-40ff-92be-9b88125bf75a: FRESH_STATE": []
+        },
+        "af2c1a93-4223-46cc-a068-49e707a2bf93": {
+          "sequential af2c1a93-4223-46cc-a068-49e707a2bf93: FRESH_STATE": []
+        }
+      }
+    }
+  ]
+}

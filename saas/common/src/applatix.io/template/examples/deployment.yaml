@@ -1,0 +1,158 @@
+---
+type: deployment
+version: 1
+name: claudia-userdb
+application_name: claudia
+deployment_name: claudia-userdb
+scale:
+  min: 1
+internal_routes:
+- name: userdb
+  ports:
+  - port: 5432
+    target_port: 5432
+inputs:
+  parameters:
+    postgres_password:
+      default: my-secret-pw
+    postgres_db:
+      default: userdb
+  volumes:
+    log-vol:
+volumes:
+  userdb-vol:
+    storage_class: ssd
+    size_gb: 1
+containers:
+  userdb:
+    template: claudia-userdb-container
+    arguments:
+      parameters.postgres_password: "%%inputs.parameters.postgres_password%%"
+      parameters.postgres_db: "%%inputs.parameters.postgres_db%%"
+      volumes.userdb-vol: "%%volumes.userdb-vol%%"
+      volumes.log-vol: "%%inputs.volumes.log-vol%%"
+
+---
+type: container
+version: 1
+name: claudia-userdb-container
+image: postgres:9.6.1
+resources:
+  mem_mib: 256
+  cpu_cores: 0.1
+env:
+- name: POSTGRES_PASSWORD
+  value: "%%inputs.parameters.postgres_password%%"
+- name: POSTGRES_DB
+  value: "%%inputs.parameters.postgres_db%%"
+- name: PGDATA
+  value: /var/lib/postgresql/data/pgdata
+inputs:
+  parameters:
+    postgres_password:
+    postgres_db:
+  volumes:
+    userdb-vol:
+      mount_path: /var/lib/postgresql/data
+    log-vol:
+      mount_path: /var/log/postgresql
+
+---
+type: deployment
+version: 1
+name: claudia-userdb-inline-dep
+application_name: claudia
+deployment_name: claudia-userdb
+scale:
+  min: 1
+internal_routes:
+- name: userdb
+  ports:
+  - port: 5432
+    target_port: 5432
+volumes:
+  userdb-vol:
+    storage_class: ssd
+    size_gb: 1
+inputs:
+  parameters:
+    postgres_password:
+      default: my-secret-pw
+    postgres_db:
+      default: userdb
+  volumes:
+    log-vol:
+containers:
+  userdb:
+    image: postgres:9.6.1
+    resources:
+      mem_mib: 256
+      cpu_cores: 0.1
+    env:
+    - name: POSTGRES_PASSWORD
+      value: "%%inputs.parameters.postgres_password%%"
+    - name: POSTGRES_DB
+      value: "%%inputs.parameters.postgres_db%%"
+    - name: PGDATA
+      value: "%%.inputs.userdb-vol.mount_path%%/pgdata"
+    inputs:
+      volumes:
+        userdb-vol:
+          from: "%%volumes.userdb-vol%%"
+          mount_path: /var/lib/postgresql/data
+        log-vol:
+          from: "%%inputs.volumes.log-vol%%"
+          mount_path: /var/log/postgresql
+
+---
+type: deployment
+version: 1
+name: claudia-server
+application_name: claudia
+deployment_name: claudia-server
+scale:
+  min: 1
+external_routes:
+- dns_prefix: "%%inputs.parameters.dns_prefix%%"
+  dns_domain: "%%inputs.parameters.domainname%%"
+  target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  claudiad:
+    image: get.applatix.io/claudia:%%inputs.parameters.version%%
+inputs:
+  parameters:
+    version:
+      default: latest
+    dns_prefix:
+    domainname:
+
+---
+type: deployment
+version: 1
+name: default-val
+application_name: sleep-service
+deployment_name: sleep-service
+inputs:
+  parameters:
+    echo:
+      default: "hello world"
+containers:
+  userdb:
+    template: sleep-container
+    arguments:
+      parameters.sleep: "10"
+
+---
+type: container
+version: 1
+name: sleep-container
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo %%inputs.parameters.echo%%; sleep %%inputs.parameters.sleep%%"]
+inputs:
+  parameters:
+    echo:
+      default: "hello world"
+    sleep:

@@ -1,0 +1,407 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: kafka-zk
+    labels:
+        name: kafka-zk
+        app: kafka-zk-svc
+        service: kafka-zk
+spec:
+    ports:
+      - name: broker
+        port: 9092
+      - name: client
+        port: 2181
+    selector:
+        service: kafka-zk
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: kafka-zk-1
+    labels:
+        name: kafka-zk-1
+        app: kafka-zk-1-svc
+        service: kafka-zk
+spec:
+    ports:
+      - name: broker
+        port: 9092
+      - name: client
+        port: 2181
+      - name: follower
+        port: 2888
+      - name: election
+        port: 3888
+    selector:
+        app: kafka-zk-1
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: kafka-zk-2
+    labels:
+        name: kafka-zk-2
+        app: kafka-zk-2-svc
+        service: kafka-zk
+spec:
+    ports:
+      - name: broker
+        port: 9092
+      - name: client
+        port: 2181
+      - name: follower
+        port: 2888
+      - name: election
+        port: 3888
+    selector:
+        app: kafka-zk-2
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: kafka-zk-3
+    labels:
+        name: kafka-zk-3
+        app: kafka-zk-3-svc
+        service: kafka-zk
+spec:
+    ports:
+      - name: broker
+        port: 9092
+      - name: client
+        port: 2181
+      - name: follower
+        port: 2888
+      - name: election
+        port: 3888
+    selector:
+        app: kafka-zk-3
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: kafka-zk-1
+    labels:
+        name: kafka-zk-1
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: kafka-zk-1
+                service: kafka-zk
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-kafka-zk-1"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "kafka-persistent-storage-1",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: kafka
+                image: ${REGISTRY}/${NAMESPACE}/kafka:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: 1200Mi
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 600Mi
+                env:
+                  - name: KAFKA_MEM_SIZE
+                    value: 384
+                  - name: BROKER_ID
+                    value: "1"
+                  - name: NUM_PARTITIONS
+                    value: "8"
+                  - name: ADVERTISED_HOSTNAME
+                    value: "kafka-zk-1.axsys"
+                  - name: ZOOKEEPER_CONNECT
+                    value: "localhost:2181"
+                  - name: REPLICATION_FACTOR
+                    value: "3"
+                  - name: DEFAULT_REPLICATION_FACTOR
+                    value: "3"
+                ports:
+                  - containerPort: 9092
+                volumeMounts:
+                  - mountPath: /ax/kafka
+                    name: kafka-persistent-storage-1
+              - name: zookeeper
+                image: ${REGISTRY}/${NAMESPACE}/zookeeper:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: "512Mi"
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 100Mi
+                env:
+                  - name: ZK_SERVER_HEAP
+                    value: "64"
+                  - name: ZK_MEM_SIZE
+                    value: 96
+                  - name: ZK_MYID
+                    value: "1"
+                  - name: ZK_NUMBER_OF_NODES
+                    value: "3"
+                  - name: ZK_SERVICE_NAME
+                    value: "kafka-zk"
+                ports:
+                  - containerPort: 2181
+                  - containerPort: 2888
+                  - containerPort: 3888
+                volumeMounts:
+                  - mountPath: /ax/zookeeper
+                    name: kafka-persistent-storage-1
+                livenessProbe:
+                    exec:
+                        command:
+                          - /ax/bin/health.sh
+                    initialDelaySeconds: 240
+                    timeoutSeconds: 15
+                    failureThreshold: 1
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: kafka-persistent-storage-1
+                persistentVolumeClaim:
+                    claimName: kdata-1
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: kafka-zk-2
+    labels:
+        name: kafka-zk-2
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: kafka-zk-2
+                service: kafka-zk
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-kafka-zk-2"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "kafka-persistent-storage-2",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: kafka
+                image: ${REGISTRY}/${NAMESPACE}/kafka:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: 1200Mi
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 600Mi
+                env:
+                  - name: KAFKA_MEM_SIZE
+                    value: 384
+                  - name: BROKER_ID
+                    value: "2"
+                  - name: NUM_PARTITIONS
+                    value: "8"
+                  - name: ADVERTISED_HOSTNAME
+                    value: "kafka-zk-2.axsys"
+                  - name: ZOOKEEPER_CONNECT
+                    value: "localhost:2181"
+                  - name: REPLICATION_FACTOR
+                    value: "3"
+                  - name: DEFAULT_REPLICATION_FACTOR
+                    value: "3"
+                ports:
+                  - containerPort: 9092
+                volumeMounts:
+                  - mountPath: /ax/kafka
+                    name: kafka-persistent-storage-2
+              - name: zookeeper
+                image: ${REGISTRY}/${NAMESPACE}/zookeeper:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: "512Mi"
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 100Mi
+                env:
+                  - name: ZK_SERVER_HEAP
+                    value: "64"
+                  - name: ZK_MEM_SIZE
+                    value: 96
+                  - name: ZK_MYID
+                    value: "2"
+                  - name: ZK_NUMBER_OF_NODES
+                    value: "3"
+                  - name: ZK_SERVICE_NAME
+                    value: "kafka-zk"
+                ports:
+                  - containerPort: 2181
+                  - containerPort: 2888
+                  - containerPort: 3888
+                volumeMounts:
+                  - mountPath: /ax/zookeeper
+                    name: kafka-persistent-storage-2
+                livenessProbe:
+                    exec:
+                        command:
+                          - /ax/bin/health.sh
+                    initialDelaySeconds: 240
+                    timeoutSeconds: 15
+                    failureThreshold: 1
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: kafka-persistent-storage-2
+                persistentVolumeClaim:
+                    claimName: kdata-2
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: kafka-zk-3
+    labels:
+        name: kafka-zk-3
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: kafka-zk-3
+                service: kafka-zk
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-kafka-zk-3"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "kafka-persistent-storage-3",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: kafka
+                image: ${REGISTRY}/${NAMESPACE}/kafka:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: 1200Mi
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 600Mi
+                env:
+                  - name: KAFKA_MEM_SIZE
+                    value: 384
+                  - name: BROKER_ID
+                    value: "3"
+                  - name: NUM_PARTITIONS
+                    value: "8"
+                  - name: ADVERTISED_HOSTNAME
+                    value: "kafka-zk-3.axsys"
+                  - name: ZOOKEEPER_CONNECT
+                    value: "localhost:2181"
+                  - name: REPLICATION_FACTOR
+                    value: "3"
+                  - name: DEFAULT_REPLICATION_FACTOR
+                    value: "3"
+                ports:
+                  - containerPort: 9092
+                volumeMounts:
+                  - mountPath: /ax/kafka
+                    name: kafka-persistent-storage-3
+              - name: zookeeper
+                image: ${REGISTRY}/${NAMESPACE}/zookeeper:${VERSION}
+                imagePullPolicy: Always
+                resources:
+                    limits:
+                        memory: "512Mi"
+                        cpu: 800m
+                    requests:
+                        cpu: 75m
+                        memory: 100Mi
+                env:
+                  - name: ZK_SERVER_HEAP
+                    value: "64"
+                  - name: ZK_MEM_SIZE
+                    value: 96
+                  - name: ZK_MYID
+                    value: "3"
+                  - name: ZK_NUMBER_OF_NODES
+                    value: "3"
+                  - name: ZK_SERVICE_NAME
+                    value: "kafka-zk"
+                ports:
+                  - containerPort: 2181
+                  - containerPort: 2888
+                  - containerPort: 3888
+                volumeMounts:
+                  - mountPath: /ax/zookeeper
+                    name: kafka-persistent-storage-3
+                livenessProbe:
+                    exec:
+                        command:
+                          - /ax/bin/health.sh
+                    initialDelaySeconds: 240
+                    timeoutSeconds: 15
+                    failureThreshold: 1
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: kafka-persistent-storage-3
+                persistentVolumeClaim:
+                    claimName: kdata-3

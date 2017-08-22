@@ -1,0 +1,77 @@
+---
+type: workflow
+version: 1
+name: argo-saas-unit-tests
+description: Workflow step for running all SaaS unit tests
+inputs:
+  artifacts:
+    CODE:
+steps:
+- AXDB-TEST:
+    template: saas-unit-test-base
+    arguments:
+      parameters.COMMAND: /src/saas/axdb/run-test.sh
+  #AXOPS-TEST:
+  #  template: saas-unit-test-base
+  #  arguments:
+  #    parameters.COMMAND: /src/saas/axops/run-test-axops.sh
+  #AXAMM-TEST:
+  #  template: saas-unit-test-base
+  #  arguments:
+  #    parameters.COMMAND: /src/saas/axamm/run-test.sh
+  AXNC-TEST:
+    template: saas-unit-test-base
+    arguments:
+      parameters.COMMAND: /src/saas/axnc/run-test.sh
+  EVENT-TEST:
+    template: saas-unit-test-base
+    arguments:
+      parameters.COMMAND: /src/saas/axops/run-test-event.sh
+  #MODULES-TEST-1:
+  #  template: saas-unit-test-base
+  #  arguments:
+  #    parameters.COMMAND: /src/saas/axops/run-test-modules-1.sh
+  MODULES-TEST-2:
+    template: saas-unit-test-base
+    arguments:
+      parameters.COMMAND: /src/saas/axops/run-test-modules-2.sh
+  # yaml-checker:
+  #   template: axchecker-container
+outputs:
+  artifacts:
+    #coverage-report-axops:
+    #  from: "%%steps.AXOPS-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    coverage-report-axdb:
+      from: "%%steps.AXDB-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    #coverage-report-axamm:
+    #  from: "%%steps.AXAMM-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    coverage-report-axnc:
+      from: "%%steps.AXNC-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+
+---
+type: container
+version: 1
+name: saas-unit-test-base
+description: Base template for running SaaS unit tests
+image: argobase/saasbuilder:v1
+inputs:
+  artifacts:
+    CODE:
+      path: /src
+  parameters:
+    COMMAND:
+command: ["sh", "-c"]
+args: ["
+  /src/saas/common/config/cassandra-test-config.sh /etc/cassandra &&
+  /src/saas/common/config/kafka-test-config.sh &&
+  %%inputs.parameters.COMMAND%%"]
+resources:
+  mem_mib: 1536
+  cpu_cores: 0.5
+outputs:
+  artifacts:
+    COVERAGE-REPORT:
+      path: /src/saas/test
+      meta_data:
+      - browsable
+

@@ -1,0 +1,54 @@
+<div class="ax-top-bar">
+    <div class="ax-top-bar__global-search" [ngClass]="{'ax-top-bar__global-search--expanded': isGlobalSearchVisible}"></div>
+    <div class="ax-top-bar__search">
+        <ax-global-search-input *ngIf="settings.globalSearch | async"
+                                [settings]="settings.globalSearch | async">
+        </ax-global-search-input>
+    </div>
+    <div class="row">
+        <div class="columns small-9 ax-top-bar__left-side">
+            <div class="ax-top-bar__title text-truncate">{{settings.pageTitle}}</div>
+        </div>
+        <div class="columns small-3 ax-top-bar__right-side">
+            <div class="ax-top-bar__tools">
+                <div class="ax-top-bar__tool">
+                    <ax-dropdown #toolsDropDown isMenu="true">
+                        <ax-dropdown-anchor>
+                            <a><i class="ax-icon-manage"></i></a>
+                        </ax-dropdown-anchor>
+                        <ax-dropdown-content>
+                            <ul>
+                                <li [routerLink] [queryParams]="{encryptionTool: 'true'}" (click)="toolsDropDown.close()">Encryption Tool</li>
+                            </ul>
+                        </ax-dropdown-content>
+                    </ax-dropdown>
+                </div>
+                <div class="ax-top-bar__tool ax-top-bar__tool--notifications-center"
+                     [class.ax-top-bar__tool--has-alert]="animateNotificationIcon"
+                     [class.active]="openedNotificationsCenter" *axIfAuthenticated>
+                    <a (click)="openNotificationsCenter()"><i class="ax-icon-notification"></i></a>
+                </div>
+                <div class="ax-top-bar__tool">
+                    <ax-dropdown #helpDropDown isMenu="false">
+                        <ax-dropdown-anchor [routerLink]="['/app/help']">
+                            <a><i class="ax-icon-help"></i></a>
+                        </ax-dropdown-anchor>
+                    </ax-dropdown>
+                </div>
+                <div class="ax-top-bar__tool">
+                    <ax-dropdown #helpDropDown isMenu="true">
+                        <ax-dropdown-anchor>
+                            <ax-avatar [user]="userObj" [size]="30"></ax-avatar>
+                        </ax-dropdown-anchor>
+                        <ax-dropdown-content>
+                            <ul>
+                                <li routerLink="user-management/profile/{{ userObj.username }}">Profile</li>
+                                <li (click)="doSignOut()">Sign Out</li>
+                            </ul>
+                        </ax-dropdown-content>
+                    </ax-dropdown>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

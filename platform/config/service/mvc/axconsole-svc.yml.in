@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axconsole
+    labels:
+        app: axconsole
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: axconsole-deployment
+    ports:
+      - port: 81
+        targetPort: 81
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axconsole-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axconsole-deployment
+                tier: platform
+                role: axcritical
+        spec:
+            containers:
+              - name: axconsole
+                image: ${REGISTRY}/${NAMESPACE}/axconsole:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 150Mi
+                    limits:
+                        cpu: 100m
+                        memory: 300Mi
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry

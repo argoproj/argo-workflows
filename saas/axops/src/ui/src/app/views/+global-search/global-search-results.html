@@ -1,0 +1,45 @@
+<ax-tabs [selectedTabKey]="category" (selected)="tabChange($event.selectedTab.tabKey)" [fixedWidth]="true">
+    <div class="actions">
+        <button class="global-search-results__action-button" (click)="isFiltersVisible = !isFiltersVisible" [ngClass]="{'global-search-results__action-button--active': isFiltersVisible}">
+            <i class="ax-icon-filter" aria-hidden="true"></i>
+            <i class="fa fa-caret-down" aria-hidden="true"></i>
+            <i class="fa fa-circle" aria-hidden="true" [hidden]="!isAnyFilterSelected"></i>
+        </button>
+    </div>
+    <ax-tab tabKey="commits" tabTitle="Commits" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+    </ax-tab>
+    <ax-tab tabKey="jobs" tabTitle="Jobs" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+    </ax-tab>
+    <ax-tab tabKey="templates" tabTitle="Templates" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+    </ax-tab>
+    <ax-tab tabKey="applications" tabTitle="Applications" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+    </ax-tab>
+    <ax-tab tabKey="deployments" tabTitle="Deployments" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+    </ax-tab>
+</ax-tabs>
+
+<div class="content">
+    <div class="global-search-results__filters">
+        <div class="ax-container">
+            <div class="global-search-results" [hidden]="!isFiltersVisible">
+                <ax-global-search-filter [category]="category" [filters]="filters" (onFilterChange)="onFilterChange($event)"></ax-global-search-filter>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container">
+        <div class="global-search-results">
+            <div class="global-search-results__content">
+                <ax-jobs-list [searchString]="searchString" [filters]="filters.jobs" *ngIf="category === 'jobs'"></ax-jobs-list>
+
+                <ax-commits-list [searchString]="searchString" [filters]="filters.commits" *ngIf="category === 'commits'"></ax-commits-list>
+
+                <ax-templates-list [searchString]="searchString" [filters]="filters.templates" *ngIf="category === 'templates'"></ax-templates-list>
+
+                <ax-applications-list [searchString]="searchString" [filters]="filters.applications" *ngIf="category === 'applications'"></ax-applications-list>
+
+                <ax-deployments-list [searchString]="searchString" [filters]="filters.deployments" *ngIf="category === 'deployments'"></ax-deployments-list>
+            </div>
+        </div>
+    </div>
+</div>

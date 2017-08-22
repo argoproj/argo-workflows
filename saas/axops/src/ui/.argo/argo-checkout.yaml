@@ -1,0 +1,23 @@
+---
+type: container
+version: 1
+name: argo-checkout
+description: Checks out a source repository to /src
+
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+outputs:
+  artifacts:
+    code:
+      path: /src
+
+image: argoproj/argoscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.repo%%", "/src", "--commit", "%%inputs.parameters.commit%%"]
+resources:
+  mem_mib: 500
+  cpu_cores: 0.1

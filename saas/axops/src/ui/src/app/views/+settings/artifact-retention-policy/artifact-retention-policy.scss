@@ -1,0 +1,95 @@
+@import '../../../../assets/styles/config';
+
+.artifact-retention-policy {
+    box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1);
+
+    &__header {
+        padding-left: 10px;
+        color: $ax-color-gray-6;
+        background-color: #fff;
+    }
+
+    &__header-des {
+        text-transform: uppercase;
+        line-height: 6em;
+        border-bottom: 1px solid $ax-color-gray-3;
+
+        i {
+            color: #b159a2;
+            vertical-align: middle;
+        }
+
+        &--on-shadow {
+            box-shadow: inset -15px 2px 10px -10px rgba($ax-color-gray-4, .75);
+        }
+
+        .clean-button {
+            margin-top:2em;
+        }
+    }
+
+    &__edit {
+        line-height: 6em;
+        border-bottom: 1px solid $ax-color-gray-3;
+        color: $ax-color-teal-6;
+        background-color: $ax-color-gray-2;
+        cursor: pointer;
+        text-align: center;
+        i {
+            vertical-align: middle;
+        }
+        button {
+            margin-top: 30px;
+            width: 120px;
+        }
+    }
+
+    &__close-button {
+        position: relative;
+        float: right;
+        cursor: pointer;
+        margin-top: 30px;
+
+        .fa-circle {
+            color: $ax-color-gray-1;
+        }
+
+        .fa-times-circle {
+            color: $ax-color-gray-4;
+        }
+    }
+
+    &__footer {
+        border-radius: 0 0 $border-radius $border-radius;
+        background-color: #e7edf1;
+        margin-top: 1px;
+        padding-left: 10px;
+        color: $ax-color-gray-6;
+        font-size: 0.9em;
+        line-height: 2em;
+        text-transform: uppercase;
+
+        &-left {
+            padding: 10px;
+
+            &--shadow {
+                box-shadow: inset -15px 2px 10px -10px rgba($ax-color-gray-4, .75);
+            }
+        }
+
+        &-right {
+            padding: 10px;
+        }
+
+        &-totals {
+            width: 250px;
+        }
+
+        .ax-button {
+            min-width: 120px;
+            margin-top: 10px;
+            margin-left: 10px;
+        }
+    }
+
+}

@@ -1,0 +1,6 @@
+<div *ngFor="let item of itemsList; let l = last">
+    <div class="loader-list-item {{ customClass }}" [style.opacity]="itemOpacity" [style.margin-left]="marginLeft + 'px'"
+         [style.margin-right]="marginRight + 'px'" [style.margin-top]="noMarginTop ?  0 : itemGap + 'px'" [style.margin-bottom]="l ? 0 : itemGap + 'px'">
+        <div class="horizontally-wave-loader" [style.height]="itemHeight + 'px'"></div>
+    </div>
+</div>

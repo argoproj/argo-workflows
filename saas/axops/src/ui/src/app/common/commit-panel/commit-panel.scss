@@ -1,0 +1,254 @@
+@import '../../../assets/styles/config';
+
+$timeline-commit-status-width: 178px;
+
+.timeline-commit-panel {
+    position: relative;
+    overflow: hidden;
+    margin: 8px 0;
+    font-size: .8125em;
+    color: $ax-color-gray-5;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1);
+
+    &__wrapper {
+        position: relative;
+        border-radius: 4px;
+        overflow: hidden;
+        // Fix for chrome - border radius with overflow hidden
+        -webkit-mask-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA5JREFUeNpiYGBgAAgwAAAEAAGbA+oJAAAAAElFTkSuQmCC);
+
+        .timeline-commit-panel:not(.expanded) & {
+            height: 60px;
+        }
+    }
+
+    &.expanded {
+        margin: 28px 0;
+    }
+
+    &:not(.static) {
+        cursor: pointer;
+
+        &:hover {
+            box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1), 0 0 0 1px rgba($ax-color-teal-5, .5);
+        }
+    }
+
+    &.static {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    strong {
+        font-weight: 500;
+        color: $ax-color-gray-7;
+    }
+
+    &--item-height {
+        height: 60px;
+    }
+
+    &__avatar {
+        margin-bottom: 5px;
+    }
+
+    &__toggle {
+        position: absolute;
+        top: 12px;
+        right: 8px;
+        padding: 4px;
+        font-size: 1.6em;
+        color: $ax-color-gray-4;
+        cursor: pointer;
+
+        .expanded & {
+            top: 8px;
+        }
+    }
+
+    &__info {
+        position: relative;
+        float: left;
+        width: 30%;
+        margin-bottom: -9999px;
+        padding: 20px 24px (9999px + 20px);
+
+        .timeline-commit-panel:not(.static) & {
+            background-color: $ax-color-teal-1;
+        }
+
+        .static &:after {
+            position: absolute;
+            top: 12px;
+            right: 0;
+            width: 1px;
+            height: 176px;
+            background-color: $ax-color-gray-3;
+            content: '';
+        }
+
+        &-des {
+            color: $ax-color-gray-5;
+        }
+
+        i {
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+    }
+
+    &__info-item {
+        margin-top: 10px;
+        font-size: .86em;
+        overflow: hidden;
+
+        span {
+            float: left;
+
+            &:first-child {
+                width: 68px;
+                text-transform: uppercase;
+                color: $ax-color-gray-5;
+            }
+
+            &:last-child {
+                width: calc(100% - 68px);
+            }
+        }
+    }
+
+    &__des {
+        float: left;
+        width: calc(70% - #{$timeline-commit-status-width});
+        margin-bottom: -9999px;
+        padding: 20px 30px (9999px + 20px) 24px;
+    }
+
+    &__des-content {
+        padding-bottom: 60px;
+        color: $ax-color-gray-7;
+        line-height: 1.6em;
+        max-height: 8em;
+        overflow: hidden;
+    }
+
+    &__des-bottom {
+        position: absolute;
+        right: $timeline-commit-status-width;
+        padding: 0 20px;
+        bottom: 10px;
+        width: calc(70% - #{$timeline-commit-status-width});
+        line-height: 34px;
+    }
+
+    &__des-item {
+        margin-left: 10px;
+        color: $ax-color-gray-5;
+
+        small {
+            vertical-align: middle;
+        }
+
+        &--success i {
+            color: $ax-success-color;
+        }
+
+        &--fail i {
+            color: $ax-failed-color;
+        }
+
+        &--wait i {
+            color: $ax-waiting-color;
+        }
+
+        &--run i {
+            color: $ax-running-color;
+        }
+    }
+
+    &__status {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: $timeline-commit-status-width;
+        padding: 17px 40px 0 0;
+
+        .expanded & {
+            padding: 44px 0 0;
+            text-align: center;
+            background: linear-gradient(-136deg, #0C3C5A 0%, #0F86A0 48%, #12C3D9 100%);
+        }
+
+        .static & {
+            background: $ax-color-teal-1;
+        }
+    }
+
+    &__status-des {
+        font-size: .8125em;
+        line-height: 1.5;
+        color: $ax-color-gray-5;
+        text-transform: uppercase;
+    }
+
+    &__status-count {
+        display: inline-block;
+        vertical-align: middle;
+        width: 28px;
+        height: 28px;
+        margin-left: 6px;
+        font-weight: 500;
+        line-height: 28px;
+        color: $ax-color-gray-7;
+        text-align: center;
+        background-color: $ax-color-teal-3;
+        border-radius: 50%;
+    }
+
+    $outer-diameter: 130px;
+
+    &__progress {
+        position: relative;
+        display: inline-block;
+        width: $outer-diameter;
+        height: $outer-diameter;
+        border-radius: 50%;
+        margin: 0 auto;
+    }
+
+    &__progress-des {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        color: $ax-color-gray-1;
+        font-weight: 200;
+        font-size: 1.6em;
+        line-height: 1.3;
+        text-align: center;
+
+        .static & {
+            color: $ax-color-gray-6;
+        }
+
+        small {
+            display: block;
+            font-size: .5em;
+        }
+    }
+
+    .ax-icon-calendar {
+        display: inline-block;
+        vertical-align: middle;
+        position: relative;
+        top: -2px;
+        font-size: 1.4em;
+    }
+
+    .ax-icon-user {
+        font-size: 1.4em;
+    }
+}

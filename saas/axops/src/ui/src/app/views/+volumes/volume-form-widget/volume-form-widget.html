@@ -1,0 +1,53 @@
+<form class="volume-form-widget" #volumeForm="ngForm">
+    <div class="volume-form-widget__left">
+        <div class="volume-form-widget__form-row">
+            <div class="ax-form-row">
+                <input type="text" class="ax-field" [(ngModel)]="volume.name" required ax-label-placeholder
+                       name="name" #name="ngModel" id="name">
+                <label for="name" class="ax-label-placeholder">Volume name</label>
+                <div [hidden]="name.valid || name.pristine"
+                     class="ax-form-row__error-msg">
+                    Name is required
+                </div>
+            </div>
+        </div>
+        <div class="volume-form-widget__form-row">
+            <div class="ax-form-row">
+                <input type="number" class="ax-field" [(ngModel)]="volume.attributes.size_gb" ax-label-placeholder
+                       id="size" [min]="1" [max]="1024" name="size" required #size="ngModel">
+                <label for="size" class="ax-label-placeholder">Volume size</label>
+                <div [hidden]="size.valid || size.pristine"
+                     class="ax-form-row__error-msg">
+                    Value of volume size is incorrect.
+                </div>
+                <p>Min 1 GiB - Max 1 TiB</p>
+            </div>
+        </div>
+    </div>
+    <div class="volume-form-widget__right">
+        <div class="volume-form-widget__row">
+            <div class="row">
+                <div class="columns small-5">
+                    <div class="volume-form-widget__row-label">Storage provider name</div>
+                </div>
+                <div class="columns small-5">{{storageClass?.parameters?.aws?.storage_provider_name}}</div>
+            </div>
+        </div>
+        <div class="volume-form-widget__row">
+            <div class="row">
+                <div class="columns small-5">
+                    <div class="volume-form-widget__row-label">Volume type</div>
+                </div>
+                <div class="columns small-5">{{storageClass?.parameters?.aws?.volume_type}}</div>
+            </div>
+        </div>
+        <div class="volume-form-widget__row">
+            <div class="row">
+                <div class="columns small-5">
+                    <div class="volume-form-widget__row-label">File system</div>
+                </div>
+                <div class="columns small-5">{{storageClass?.parameters?.aws?.filesystem}}</div>
+            </div>
+        </div>
+    </div>
+</form>

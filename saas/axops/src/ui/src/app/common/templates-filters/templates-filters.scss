@@ -1,0 +1,58 @@
+@import '../../../assets/styles/config';
+
+.templates-filters {
+    width: 800px;
+    height: 80%;
+    margin: -1rem;
+    overflow: hidden;
+
+    &__content {
+        overflow-y: auto;
+        height: 80%;
+        padding: 30px;
+    }
+
+    &__row {
+        display: block;
+        padding: 0 8px;
+        line-height: 80px;
+        font-size: 12px;
+        font-weight: bold;
+        color: darken($ax-color-teal-6, 3);
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+
+        &:not(.selected):hover {
+            background-color: rgba(0,0,0,.04);
+        }
+
+        &.selected {
+            border: 1px solid $ax-color-teal-6;
+            border-radius: 5px;
+        }
+        
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    &__template-name {
+        padding-left: 20px;
+        width: 200px;
+        display: inline-block;
+        line-height: normal;
+        vertical-align: middle;
+    }
+
+    &__template-repo {
+        padding-left: 20px;
+        color: $ax-color-gray-5;
+    }
+
+
+    h3 {
+        color: #aaa;
+        font-size: 15px;
+        text-transform: uppercase;
+    }
+}

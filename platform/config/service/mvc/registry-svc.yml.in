@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: registry
+    labels:
+        app: registry
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: registry-deployment
+    ports:
+      - port: 443
+        targetPort: 443
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: registry-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: registry-deployment
+                tier: platform
+                role: axcritical
+        spec:
+            containers:
+              - name: registry
+                image: ${REGISTRY}/${NAMESPACE}/registry:${VERSION}
+                env:
+                  - name: AX_REGISTRY_MODE
+                    value: test
+                ports:
+                  - containerPort: 443
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry

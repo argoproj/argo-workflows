@@ -1,0 +1,115 @@
+<div class="content content--with-padding-top" id="overview"
+        ax-infinite-scroll
+        [ax-infinite-scroll-distance]="1"
+        [ax-scroll-window]="false"
+        [ax-immediate-check]="true"
+        (scrolled)="onScroll()">
+    <div class="ax-container">
+        <div *ngIf="invalidOnly" class="policies-overview__invalid" [ngClass]="{'policies-overview__invalid-details-expanded': !invalidDetailsCollapsed}">
+            <span class="policies-overview__invalid-icon">!</span>
+            <p>
+                 <span *ngIf="invalidPolicies.length > 1"> 
+                    Invalid Policies
+                </span> 
+                <span *ngIf="invalidPolicies.length === 1">
+                    Invalid Policy.
+                </span> 
+            </p>
+            <p class="policies-overview__invalid-details">Policy is invalid because it was enabled but gets disconnected from the repo due to syntax error in the service template or deletion in the repo. If the policy becomes valid again from the repo, it will automatically re-enabled. You can also delete the invalid policies if they are no longer needed.</p>    
+            <i class="fa clickable policies-overview__invalid-expand-collapse"
+                [ngClass]="{'fa-angle-down': !invalidDetailsCollapsed, 'fa-angle-up': invalidDetailsCollapsed}" (click)="invalidDetailsCollapsed = !invalidDetailsCollapsed"></i>
+        </div>     
+    </div>
+   
+    <div class="ax-container policies-overview">
+        <div class="ax-table-list ax-table-list--clickable">
+            <div class="ax-table-list__head">
+                <div class="row">
+                    <div class="columns small-3">
+                        <div class="ax-checkbox">
+                            <input type="checkbox" (change)="selectAllPolicies()" [checked]="allSelected">
+                            <span><i class="fa fa-check"></i></span>
+                        </div>
+                        {{'Name' | translate}}
+                    </div>
+                    <div class="columns small-3">
+                        {{'Description' | translate}}
+                    </div>
+                    <div class="columns small-3">
+                        {{'Repo' | translate}}
+                    </div>
+                    <div class="columns small-2">
+                        {{'Branch' | translate}}
+                    </div>
+                    <div class="columns small-1">
+                        {{'Status' | translate}}
+                    </div>
+                </div>
+            </div>
+            <template ngFor let-policy [ngForOf]="policies" let-i="index" *ngIf="!loading">
+                <div class="ax-table-list__row">
+                    <div class="row">
+                        <div class="columns small-3" (click)="goToDetails(policy)">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" id="isSelected" (click)="selectPolicy(policy); $event.stopPropagation()" [checked]="policy.selected">
+                                <span><i class="fa fa-check"></i></span>
+                            </div>
+                            <span class="title-text" ax-tooltip="{{policy.name}}" [ax-highlight-substring]="searchString">{{policy.name}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString" (click)="goToDetails(policy)">
+                            <span ax-tooltip="{{policy.description}}">{{policy.description | truncateTo: 50}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString" (click)="goToDetails(policy)">
+                            <span ax-tooltip="{{policy.repo}}">{{policy.repo}}</span>
+                        </div>
+                        <div class="columns small-2" [ax-highlight-substring]="searchString" (click)="goToDetails(policy)">
+                            <span ax-tooltip="{{policy.branch}}">{{policy.branch}}</span>
+                        </div>
+                        <div class="columns small-1" (click)="goToDetails(policy)">
+                            {{policy.enabled ? 'Active' : 'Disabled' | translate }}
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <ax-loader-custom [size]="20" *ngIf="onScrollLoading" class="jobs-overview__loader"></ax-loader-custom>
+        </div>
+        <div *ngIf="!policies.length && !loading" class="no-data-panel">
+            <strong><i class="fa fa-info-circle"></i>{{ 'There are no policies to display for selected filter.' | translate }}</strong>
+        </div>
+        <ax-loader-list-mockup *ngIf="loading"></ax-loader-list-mockup>
+    </div>
+    <div class="bottom-toolbox bottom-toolbox--small" [hidden]="invalidPolicies.length === 0 || !showInvalidPanel">
+        <div class="bottom-toolbox__wrapper">
+            <div class="ax-containe row">
+                <div class="columns small-9 policies-overview__auto-margin">
+                    <span class="policies-overview__invalid-icon">!</span>
+                    There 
+                    <span *ngIf="invalidPolicies.length > 1">
+                        are some invalid policies.
+                    </span> 
+                    <span *ngIf="invalidPolicies.length === 1">
+                        is One invalid policy.
+                    </span> 
+                    
+                </div>
+                <div class="columns small-2">
+                    <a [routerLink]="['/app/policies/overview', getRouteParams({invalid: true})]">View</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom-toolbox" [hidden]="selectedItems === 0">
+        <div class="bottom-toolbox__wrapper">
+            <div class="ax-container">
+                <h3><em>{{ selectedItems }}</em> Policies selected</h3>
+                <div *ngIf="!invalidOnly">
+                    <button axButtonWave class="ax-button ax-button--base-o" (click)="enableSelectedPolicies(true)">{{ 'Enable' | translate }}</button>
+                    <button axButtonWave class="ax-button ax-button--base-o" (click)="enableSelectedPolicies(false)">{{ 'Disable' | translate }}</button>
+                </div>
+                <div *ngIf="invalidOnly">
+                    <button axButtonWave class="ax-button ax-button--base-o" (click)="deleteSelectedInvalidPolicies()">{{ 'Delete' | translate }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+---
+type: policy
+version: 1
+name: sleep-policy
+template: policy-container
+arguments:
+  parameters.sleep: "60"
+notifications:
+- when:
+  - on_failure
+  whom:
+  - committer
+  - author
+  - prod@slack
+when:
+- event: on_push
+- event: on_pull_request
+- event: on_pull_request_merge
+- event: on_cron
+  schedule: "0 * * * *"
+  timezone: "US/Pacific"
+
+---
+type: container
+version: 1
+name: policy-container
+image: "debian:8.5"
+command: ["sh", "-c"]
+args: ["sleep %%inputs.parameters.sleep%%"]
+inputs:
+  parameters:
+    sleep:

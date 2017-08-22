@@ -1,0 +1,13 @@
+<ax-sliding-panel [show]="show" [hasCloseButton]="false" (closePanel)="close()" class="volume-add-panel">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" type="button" (click)="save()" [disabled]="formInvalid">Save</button>
+        <button axButtonWave class="ax-button" type="button" (click)="close()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <h2>Edit Volume Properties</h2>
+        <p>Argo provides predefined configurations, which differ in performance characteristics, so that you can
+            tailor your storage performance to the needs of your applications.</p>
+        <ax-volume-form-widget [storageClass]="volume.storageClass" [volume]="volume">
+        </ax-volume-form-widget>
+    </sliding-panel-body>
+</ax-sliding-panel>

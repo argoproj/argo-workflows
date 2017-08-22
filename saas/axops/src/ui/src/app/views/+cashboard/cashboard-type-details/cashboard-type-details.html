@@ -1,0 +1,60 @@
+<div class="ax-toolbar">
+    <div class="ax-container">
+        <div class="ax-toolbar__item">
+            <ax-date-range-dropdown [range]="currentInterval" (rangeChanged)="onDateRangeChange($event)">
+            </ax-date-range-dropdown>
+        </div>
+    </div>
+</div>
+
+<div class="content cashboard">
+    <div class="cashboard__chart-bg">
+        <div class="cashboard__steps-container">
+            <div class="ax-container">
+                <div class="cashboard__step"
+                    *ngFor="let step of steps; let i = index"
+                    [style.width]="stepWidth  + '%'">
+                    <div class="cashboard__step-pointer" (click)="spendingsLoader.selectIntervalStep(steps.length - i - 1)"></div>
+                    <div *ngIf="hightlightedStep && hightlightedStep.index === steps.length - i - 1" class="cashboard__selected-step">
+                        {{hightlightedStepText}}
+                        <i class="fa fa-times" aria-hidden="true" (click)="spendingsLoader.selectIntervalStep(-1)"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container">
+        <div class="cashboard__items">
+            <div class="cashboard__items-group">
+                <h2 class="cashboard__items-group-title">Spending by {{titleType}}</h2>
+                <div *ngFor="let chart of spendingCharts; trackBy:trackByName;">
+                    <div class="row align-middle cashboard__box cashboard__box--main">
+                        <div class="small-2 columns text-center">
+                           <a class="cashboard__items-name"
+                                [routerLink]="['/app/cashboard/details/' + type + '/' + chart.name, getRouteParams(chart.id ? { id: chart.id } : null)]">
+                                {{chart.name}}
+                            </a>
+                        </div>
+                        <div class="columns small-8" [ngStyle]="{'height': '100px' }">
+                            <ax-spendings-chart *ngIf="!isStepSelected"
+                                    [data]="chart.input"
+                                    [utilizationOnlyViewMode]="true"
+                                    [hightlightedStep]="hightlightedStep"
+                                    [dateFormatter]="currentInterval.step.dateFormatter"></ax-spendings-chart>
+
+                            <div class="cashboard__progressbar cashboard__progressbar--vertical-center" *ngIf="isStepSelected">
+                                <div class="cashboard__progressbar-bar"
+                                        [ngStyle]="{'width': chart.stepPercentage + '%'}"></div>
+                                <div class="cashboard__progressbar-value">{{chart.stepPercentage}}%</div>
+                            </div>
+                        </div>
+                        <div class="small-2 columns text-center">
+                            <p class="centered-text">${{isStepSelected ? chart.stepUtilization : chart.totalUtilization}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

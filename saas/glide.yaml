@@ -1,0 +1,79 @@
+package: .
+import:
+- package: git.apache.org/thrift.git
+  version: ~0.10.0
+  subpackages:
+  - lib/go/thrift
+- package: github.com/Shopify/sarama
+  version: ~1.11.0
+- package: github.com/sirupsen/logrus
+  version: master
+- package: github.com/boj/redistore
+  version: ~1.2.0
+- package: github.com/bradfitz/gomemcache
+  subpackages:
+  - memcache
+- package: github.com/bsm/sarama-cluster
+  version: ~2.1.5
+- package: github.com/dgrijalva/jwt-go
+  version: ~3.0.0
+- package: github.com/diego-araujo/go-saml
+  version: ~0.2.0
+- package: github.com/garyburd/redigo
+  version: ~1.0.0
+  subpackages:
+  - redis
+- package: github.com/gin-gonic/contrib
+  subpackages:
+  - cache
+  - ginrus
+  - gzip
+  - jwt
+  - secure
+- package: github.com/gocql/gocql
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/gorilla/context
+  version: ~1.1.0
+- package: github.com/gorilla/securecookie
+  version: ~1.1.0
+- package: github.com/gorilla/sessions
+  version: ~1.1.0
+- package: github.com/manucorporat/sse
+- package: github.com/manucorporat/stats
+- package: github.com/nu7hatch/gouuid
+- package: github.com/robfig/cron
+  version: ~1.0.0
+- package: github.com/yhat/wsutil
+- package: github.com/yvasiyarov/go-metrics
+- package: github.com/yvasiyarov/gorelic
+  version: ~0.0.6
+- package: golang.org/x/crypto
+  subpackages:
+  - bcrypt
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: gopkg.in/go-playground/validator.v8
+- package: gopkg.in/redis.v5
+  version: ~5.2.3
+- package: gopkg.in/yaml.v2
+- package: github.com/aws/aws-sdk-go
+  version: ~1.6.27
+- package: github.com/nlopes/slack
+  version: ~0.0.1
+- package: github.com/mitchellh/mapstructure
+- package: github.com/spf13/cobra
+- package: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- package: github.com/ghodss/yaml
+  version: ^1.0.0
+- package: github.com/dchest/uniuri
+- package: github.com/dustin/go-humanize
+testImport:
+- package: github.com/stretchr/testify
+  version: ~1.1.4
+  subpackages:
+  - assert
+- package: gopkg.in/check.v1

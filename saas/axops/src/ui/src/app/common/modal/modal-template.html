@@ -1,0 +1,28 @@
+<div class="modal-overlay">
+    <div class="modal-container">
+        <div class="row modal-container__header">
+            {{ modal.title }}
+            <i class="ax-icon-close" (click)="cancel()"></i>
+        </div>
+        <div class="row modal-container__body">
+            <div class="columns large-2 modal-container__icon" *ngIf="modal.icon && modal.icon.name">
+                <i class="{{ modal?.icon?.name }} {{ modal?.icon?.color }}"></i>
+            </div>
+            <div class="columns" *ngIf="!modal.copy" [ngClass]="{'large-10': modal.icon && modal.icon.name, 'large-12': !modal.icon && !modal.icon.name}">
+                <h4>{{ modal.header }}</h4>
+                <p>{{ modal.message }}</p>
+            </div>
+            <div class="columns large-12 copy-content" *ngIf="modal.copy">
+                <span class="copy-message text-truncate">{{ modal.message }}</span>
+                <button axButtonWave class="ax-button ax-button--base copy-button" [attr.data-clipboard-text]="modal.message" ax-copy-btn>Copy</button>
+            </div>
+        </div>
+        <div class="row modal-container__footer" [ngClass]="{'modal-container__footer--additional-padding': modal.icon && modal.icon.name }" *ngIf="!modal.okButton">
+            <button axButtonWave class="ax-button ax-button--base" (click)="success()">Yes</button>
+            <button axButtonWave class="ax-button ax-button--base-o" (click)="cancel()">Cancel</button>
+        </div>
+        <div class="row modal-container__footer" *ngIf="modal.okButton">
+            <button axButtonWave class="ax-button ax-button--base" (click)="success()">Ok</button>
+        </div>
+    </div>
+</div>

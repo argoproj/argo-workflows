@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="axconsole" ng-controller="ExecController">
+<head>
+<title>[[service_id]]</title>
+
+<style>
+  .terminal {
+    float: left;
+    border: #000 solid 5px;
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 11px;
+    color: #f0f0f0;
+    background: #000;
+  }
+  .terminal-cursor {
+    color: #000;
+    background: #f0f0f0;
+  }
+
+</style>
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+<script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
+<script src="{{ url_for('static', filename='js/exec.controller.js') }}"></script>
+<script src="{{ url_for('static', filename='js/term.js') }}"></script>
+</head>
+
+<body>
+[[error]]
+<div class='col-md-12' style="padding-top:10px">
+<div class="panel panel-default">
+  <div class="panel-heading"><h4>[[service_id]]</h4></div>
+  <div class="panel-body">
+    <input id="command" ng-model="command" />
+    <button ng-if="!connected" ng-click="connect()">Run</button>
+    <button ng-if="connected" ng-click="disconnect()">Close Session</button>
+    <div style="padding-top:10px" id="container-terminal"></div>      
+  </div>
+</div>
+</div>
+</body>
+</html>

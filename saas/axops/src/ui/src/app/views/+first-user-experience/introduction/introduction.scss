@@ -1,0 +1,54 @@
+@import '../../../../assets/styles/config';
+
+.introduction {
+    height: 100vh;
+
+    &__panel {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    & > .row {
+        height: 100%;
+    }
+
+    & > .row > .columns {
+        height: 100%;
+
+        & button {
+            padding: 1em 7em;
+            font-size: 1em;
+            border-radius: 2.0em;
+        }
+
+        &:first-child {
+            background-image: url('#{$icon-path}/introduction-bg.png');
+            background-size: 100%;
+            h1, h6 {
+                color: white;
+            }
+
+            button {
+                background-color: $ax-color-tree-poppy;
+                color: white;
+
+                &:hover {
+                    background-color: white;
+                    color: $ax-color-tree-poppy;
+                }
+            }
+        }
+
+        &:last-child {
+            h1 {
+                color: $ax-color-tapestry;
+            }
+            h6 {
+                color: $ax-color-gray-6;
+            }
+        }
+    }
+}

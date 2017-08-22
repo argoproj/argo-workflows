@@ -1,0 +1,23 @@
+{
+  "inputs": {},
+  "name": "alpine-3.4",
+  "container": {
+    "once": false,
+    "command": "",
+    "expand": false,
+    "image": "argobase/alpine:3.5",
+    "resources": {
+      "cpu_cores": 0.1,
+      "mem_mib": 50,
+      "disk_gb": 0
+    },
+    "docker_options": ""
+  },
+  "subtype": "container",
+  "version": "",
+  "id": "ffff4fbe-6b14-11e6-aaeb-acbc32ca1dbd",
+  "outputs": {},
+  "cost": 0,
+  "type": "service_template",
+  "description": "Service template alpine-3.4 for test"
+}

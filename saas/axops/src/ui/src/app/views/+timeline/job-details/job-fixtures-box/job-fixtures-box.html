@@ -1,0 +1,73 @@
+<div class="job-fixtures-box">
+    <div class="ax-container">
+        <div class="ax-table-list ax-table-list--clickable">
+            <div *ngFor="let fixture of fixtures; trackBy:trackByFixtureId" class="ax-table-list__row" (click)="selectFixture(fixture)">
+                <div class="row">
+                    <div class="columns small-4 job-fixtures-box__details">
+                        <i class="job-fixtures-box__icon ax-icon-fixturenew"></i>
+                        <div class="job-fixtures-box__main">{{fixture.name}}</div>
+                    </div>
+                    <div class="columns small-6 job-fixtures-box__attributes">
+                        <div class="row" *ngFor="let attribute of getFixtureAttributes(fixture); trackBy:trackByAttributeName">
+                            <div class="columns small-4">{{attribute.name | uppercase }}:</div> <div class="columns small-8"> {{attribute.value}} </div>
+                        </div>
+                        <div *ngIf="fixture.template" class="row">
+                            <div class="columns small-4">TEMPLATE:</div> <div class="columns small-8"> {{fixture.template.name}} </div>
+                        </div>
+                    </div>
+                    <div class="columns small-2 job-fixtures-box__chart">
+                        <div class="job-fixtures-box__chart-container">
+                            <p class="job-fixtures-box__chart-title">USAGE IN WORKFLOW</p>
+                            <span class="job-fixtures-box__chart-steps">
+                                <p>{{fixture.steps.length}}</p>
+                                {{fixture.steps.length > 1 ? 'STEP' : 'STEPS'}}
+                            </span>
+                            <nvd3 [options]="chartOptions" [data]="fixture.chartData"></nvd3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ax-sliding-panel [show]="selectedFixture" (closePanel)="selectFixture(null)">
+        <sliding-panel-body>
+            <div *ngIf="selectedFixture">
+                <div class="white-box">
+                    <p class="job-fixtures-box__details-title">
+                        <i class="job-fixtures-box__icon ax-icon-fixturenew"></i> <span>{{selectedFixture.name}}</span>
+                    </p>
+                </div>
+
+                <ax-attributes-panel *ngIf="selectedFixture.staticFixtureInfo"
+                    [attributes]="selectedFixture.staticFixtureInfo" title="Fixture Attributes" noAttributesMessage="There are no attributes for this fixture.">
+                </ax-attributes-panel>
+
+                <div class="white-box" *ngIf="!selectedFixture.staticFixtureInfo">
+                    <h6>LOGS</h6>
+                    <div class="job-fixtures-box__logs">
+                        <ax-logs [source]="getLogsSource(selectedFixture)"></ax-logs>
+                    </div>
+                </div>
+
+                <div class="white-box">
+                    <h6>USAGE</h6>
+                    <div class="row job-fixtures-box__usage-row">
+                        <div class="columns small-3">STEP NAME</div>
+                        <div class="columns small-3">STATUS</div>
+                        <div class="columns small-3">START TIME</div>
+                        <div class="columns small-3">END TIME</div>
+                    </div>
+                    <div class="row job-fixtures-box__usage-row" *ngFor="let step of selectedFixture.steps">
+                        <div class="columns small-3">
+                            <i class="fa fa-cog" aria-hidden="true"></i> {{step.name}}
+                        </div>
+                        <div class="columns small-3">{{step.status | status}}</div>
+                        <div class="columns small-3">{{step.launch_time | timestamp}}</div>
+                        <div class="columns small-3">{{step.launch_time + step.run_time | timestamp}}</div>
+                    </div>
+                </div>
+            </div>
+        </sliding-panel-body>
+    </ax-sliding-panel>
+</div>

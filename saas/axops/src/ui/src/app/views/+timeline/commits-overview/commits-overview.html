@@ -1,0 +1,26 @@
+<div class="content content--without-padding-bottom content--with-padding-top" [ngClass]="{'disable-scroll': !commits}"
+         ax-infinite-scroll
+         [ax-infinite-scroll-distance]="1"
+         [ax-scroll-window]="false"
+         [ax-immediate-check]="true"
+         (scrolled)="onScroll()">
+    <div class="ax-container" *ngIf="commits">
+        <div class="stream">
+            <div *ngFor="let commit of commits; trackBy: commit?.date">
+                <ax-commit-panel [commit]="commit" (onPlusAction)="openServiceTemplatePanel($event)"
+                                 [isExpanded]="commit.revision === expandedCommit"
+                                 (onSelectCommit)="selectCommit($event)"></ax-commit-panel>
+            </div>
+            <ax-loader-custom [size]="20" *ngIf="!dataLoaded" class="commits-overview__loader"></ax-loader-custom>
+            <div *ngIf="dataLoaded && !commits.length" class="no-data-panel">
+                <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-container" *ngIf="!commits">
+        <div class="stream">
+            <ax-loader-list-mockup [itemHeight]="60"></ax-loader-list-mockup>
+        </div>
+    </div>
+</div>

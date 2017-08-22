@@ -1,0 +1,33 @@
+---
+type: workflow
+version: 1
+name: Argo Release
+description: Argo release workflow
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: axsys
+    REGISTRY:
+      default: docker.applatix.net
+    REG_USER:
+      default: "%%config.admin@internal.docker.user%%"
+    REG_PASSWORD:
+      default: "%%config.admin@internal.docker.password%%"
+    BUILD_OPTIONS:
+      default: ""
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO-TEST:
+    template: argo-test
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+- ARGO-BUILD:
+    template: argo-build
+    arguments:
+      parameters.VERSION_OPTION: ""
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"

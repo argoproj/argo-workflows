@@ -1,0 +1,32 @@
+@import '../../../assets/styles/config';
+
+.jira-status {
+    padding: 0 20px;
+    border-radius: $border-radius;
+    font-weight: bolder;
+    text-align: center;
+    text-transform: uppercase;
+    display: inline-block;
+    font-size: 12px;
+    background-color: white;
+
+    &__open {
+        border: 1px solid $ax-color-gray-4;
+        color: #4A6785;
+    }
+
+    &__to-do {
+        background-color: #4A6785;
+        color: white;
+    }
+
+    &__in-progress {
+        color: #594300;
+        border: 1px solid #FFEDBD;
+    }
+
+    &__done, &__closed  {
+        color: #65B174;
+        border: 1px solid #65B174;
+    }
+}

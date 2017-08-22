@@ -1,0 +1,80 @@
+@import '../../../../assets/styles/config';
+
+$timelineHeight: 10px;
+$jobWidth: 10px;
+$jobsCountBadgeWidth: 30px;
+$jobHeight: 60px;
+$jborderRadius: 1px;
+
+.jobs-timeline {
+    position: relative;
+    background-color: $ax-color-gray-2;
+    border: 1px solid white;
+    height: $timelineHeight;
+
+    &__cluster {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        border-radius: $jborderRadius;
+    }
+
+    &__job {
+        transition: height .3s, top .3s;
+        position: absolute;
+        width: $jobWidth;
+        height: $timelineHeight;
+        top: 0;
+        border-radius: $jborderRadius;
+    }
+
+    &__now {
+        position: absolute;
+        height: 260px;
+        top: -150px;
+        border-right: 1px dashed $ax-color-gray-5;
+        // Add additional space on left to avoid hidding jobs which completed close to current time
+        margin-left: $jobsCountBadgeWidth / 2;
+    }
+
+    &__failed { background-color: $ax-failed-color; }
+
+    &__deployed { background-color: $ax-waiting-color; }
+
+    &__succeeded { background-color: $ax-success-color; }
+
+    &__running, &__scheduled {
+        height: $jobHeight/2;
+        top: -($jobHeight/2 - $timelineHeight) / 2;
+        width: $jobsCountBadgeWidth;
+        text-align: center;
+        font-size: 12px;
+        font-weight: bold;
+        color: white;
+        padding-top: 5px;
+    }
+
+    &__running {
+        background-color: rgba($ax-running-color, 1);
+        transform: translateY(50%);
+    }
+
+    &__scheduled {
+        background-color: rgba($ax-init-color, 1);
+        transform: translateY(-50%);
+    }
+
+    &__canceled { background-color: $ax-cancelled-color; }
+
+    &__clickable { cursor: pointer; }
+
+    &__filtered {
+        height: $jobHeight;
+        top: -($jobHeight - $timelineHeight) / 2;
+    }
+
+    &__wrapper {
+        position: relative;
+        margin: 0 26px;
+    }
+}

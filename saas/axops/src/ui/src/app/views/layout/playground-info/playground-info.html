@@ -1,0 +1,19 @@
+<div class="playground-info">
+    <button [routerLink]="['/fue/playground']" axButtonWave class="ax-button ax-button--base"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i> Back to Playground</button>
+    <button *ngIf="showBackUrl" [routerLink]="[taskInfo.backUrl]" axButtonWave class="ax-button ax-button--base-o"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i> Back to {{taskInfo?.name}}</button>
+    <div class="playground-info__description" [ngClass]="{'playground-info__description--right-offset': showBackUrl}">
+        <div class="playground-info__description-text" *ngIf="!showBackUrl">
+            {{taskInfo?.stateDescription}}.
+        </div>
+        <div *ngIf="taskInfo?.videoUrl" class="playground-info__description-tutorial">
+            Please watch the <a (click)="showVideoPopup=true">{{taskInfo?.name}} Tutorial</a> to learn more.
+        </div>
+    </div>
+</div>
+
+<ax-popup [show]="showVideoPopup" [width]="700">
+    <div class="playground-info__video-container">
+        <iframe *ngIf="taskInfo?.videoUrl" [src]="taskInfo?.videoUrl" width="640" height="480" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+        <i class="fa fa-times" aria-hidden="true" (click)="showVideoPopup=false"></i>
+    </div>
+</ax-popup>

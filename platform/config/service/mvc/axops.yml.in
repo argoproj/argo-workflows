@@ -1,0 +1,77 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axops-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axops-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                # Add axnotificaiton.
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axmon:8901/v1/axmon/ping http://axdb:8083/v1/axdb/version ; wait_tcp kafka-zk:9092"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axops
+                image: ${REGISTRY}/${NAMESPACE}/axops:${VERSION}
+                env:
+                  - name: AXDB
+                    value: "http://axdb:8083/v1"
+                  - name: GATEWAY
+                    value: "http://gateway:8889/v1"
+                  - name: AXWORKFLOWADC
+                    value: "http://axworkflowadc:8911/v1/adc"
+                  - name: AXMON
+                    value: "http://axmon:8901/v1/axmon"
+                  - name: AXNOTIFIER
+                    value: "http://axnotification:9889/v1/notifications"
+                  - name: FIXMANAGER
+                    value: "http://fixturemanager:8912/v1"
+                  - name: SCHEDULER
+                    value: "http://axscheduler:9890/v1"
+                  - name: AXARTIFACTMANAGER
+                    value: "http://axartifactmanager:9892/v1"
+                  - name: AX_CLUSTER
+                    value: "${AX_CLUSTER_NAME_ID}"
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                  - name: AX_REGION
+                    value: "${AX_AWS_REGION}"
+                  - name: AX_NAMESPACE
+                    value: "${NAMESPACE}"
+                  - name: AX_VERSION
+                    value: "${VERSION}"
+                  - name: SANDBOX_ENABLED
+                    value: "${SANDBOX_ENABLED}"
+                  - name: AX_MAX_PENDING_JOBS
+                    value: "1000"
+                resources:
+                    requests:
+                        cpu: 300m
+                        memory: 500Mi
+                    limits:
+                        cpu: 1000m
+                        memory: 1500Mi
+              - name: kubectl-proxy
+                image: argoproj/kubectl:v1.6.7
+                args: ["proxy", "-p", "8001"]
+                resources:
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                    limits:
+                        cpu: 100m
+                        memory: 40Mi
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry

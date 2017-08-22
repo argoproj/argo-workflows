@@ -1,0 +1,12 @@
+<div class="spending-square-chart" *ngFor="let chart of charts">
+    <label>{{chart.appName}}: ${{chart.appTotalSpent }}</label>
+    <div class="boxes">
+        <div class="box" 
+            *ngFor="let box of chart.boxes" 
+            [ngStyle]="{'width': box.width + '%', 'height': box.height + '%'}" 
+            [ax-box-tooltip]="box"
+            [ax-box-tooltip-enable]="chart.enableHover">
+            <span>{{box.service.name}}: ${{box.service.displayedSpent}}</span>
+        </div>
+    </div>
+</div>

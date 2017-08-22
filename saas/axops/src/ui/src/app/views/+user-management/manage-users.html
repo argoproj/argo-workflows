@@ -1,0 +1,95 @@
+<ax-tabs [selectedTabKey]="currentView" (selected)="changeView($event.selectedTab.tabKey)" [fixedWidth]="true">
+    <ax-tab tabKey="users" tabTitle="Users" [noPadding]="true" [isOnlyContentScrollable]="true"
+            [extraVerticalScrollPadding]="156">
+        <div class="content content--with-padding-top">
+            <div class="ax-container">
+                <div class="ax-table-list ax-table-list--clickable" *ngIf="currentView == 'users'">
+                    <div class="ax-table-list__head">
+                        <div class="row">
+                            <div class="columns small-2">{{'Name' | translate}}</div>
+                            <div class="columns small-1">{{'Status' | translate}}</div>
+                            <div class="columns small-3">{{'Email' | translate}}</div>
+                            <div class="columns small-3">{{'User Groups' | translate}}</div>
+                            <div class="columns small-2">{{'Date Added' | translate}}</div>
+                            <div class="columns small-1"></div>
+                        </div>
+                    </div>
+                    <template ngFor let-user [ngForOf]="users" let-i="index" *ngIf="users.length && !loading">
+                        <div class="ax-table-list__row" [routerLink]="['..', 'profile', user.username]">
+                            <div class="row">
+                                <div class="columns small-2">
+                                    <span [ax-highlight-substring]="searchString" ax-tooltip="{{user.getName() || '-'}}">{{user.getName() || '-'}}</span>
+                                </div>
+                                <div class="columns small-1" [ax-highlight-substring]="searchString">{{user.state | accountState}}</div>
+                                <div class="columns small-3" [ax-highlight-substring]="searchString">{{user.username}}</div>
+                                <div class="columns small-3">
+                                    <template ngFor let-group [ngForOf]="user.groups" let-j="index">
+                                        <span [ax-highlight-substring]="searchString">{{group | capitalize}} </span>
+                                    </template>
+                                </div>
+                                <div class="columns small-2">{{user?.ctime | timestamp}}</div>
+                                <div class="columns small-1">
+                                    <ax-dropdown-menu [settings]="getUserMenu(user)" *ngIf="!user.isSuperAdmin()">
+                                        <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                            <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                        </button>
+                                    </ax-dropdown-menu>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <div class="ax-table-list__row" *ngIf="!users.length && !loading">
+                        <div class="row">
+                            <div class="columns small-12">{{ 'There are no users to display for selected filter.' | translate }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <ax-loader-list-mockup *ngIf="loading"></ax-loader-list-mockup>
+            </div>
+        </div>
+    </ax-tab>
+    <ax-tab tabKey="invitations" tabTitle="Invitations" [noPadding]="true" [isOnlyContentScrollable]="true"
+            [extraVerticalScrollPadding]="156">
+        <div class="content content--with-padding-top">
+            <div class="ax-container">
+                <div class="ax-table-list ax-table-list--clickable" *ngIf="currentView == 'invitations'">
+                    <div class="ax-table-list__head">
+                        <div class="row">
+                            <div class="columns small-3">Email</div>
+                            <div class="columns small-3">First Name</div>
+                            <div class="columns small-3">Last Name</div>
+                            <div class="columns small-3">Expiration Date</div>
+                        </div>
+                    </div>
+
+                    <div class="ax-table-list__row" *ngFor="let invitation of invitations">
+                        <div class="row">
+                            <div class="columns small-3">{{invitation.email}}</div>
+                            <div class="columns small-3">{{invitation.firstName}}</div>
+                            <div class="columns small-3">{{invitation.lastName}}</div>
+                            <div class="columns small-3">{{invitation.expiry | timestamp}}</div>
+                        </div>
+                    </div>
+                    <div class="ax-table-list__row" *ngIf="!invitations.length && !loading">
+                        <div class="row">
+                            <div class="columns small-12">{{ 'There are no invitations to display.' | translate }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <ax-loader-list-mockup *ngIf="loading"></ax-loader-list-mockup>
+            </div>
+        </div>
+    </ax-tab>
+    <ax-tab tabKey="sso" tabTitle="SSO Configuration" [noPadding]="true" [isOnlyContentScrollable]="true"
+            [extraVerticalScrollPadding]="156">
+        <ax-saml-config></ax-saml-config>
+    </ax-tab>
+</ax-tabs>
+
+<ax-edit-user [show]="!!editedUser && !changePasswordPanel" [user]="editedUser" (onClose)="closeEditPanel()"
+              (onChangePassword)="changePassword()"></ax-edit-user>
+<ax-change-password [show]="!!editedUser && changePasswordPanel" [user]="editedUser"
+                    (onClose)="closeChangePasswordPanel()"></ax-change-password>
+<ax-invite-panel [show]="showInvitePanel" (onClose)="closeInvitePanel()"></ax-invite-panel>

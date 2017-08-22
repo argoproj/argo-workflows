@@ -1,0 +1,181 @@
+@import '../../../assets/styles/config';
+
+$search-panel-transition: left 0.2s linear;
+
+.global-search {
+    &__container {
+        transition: $search-panel-transition;
+        position: absolute;
+        top: 7px;
+        right: 50%;
+        transform: translateX(50%);
+        min-width: 200px;
+        line-height: 1em;
+
+        @media screen and (max-width: $ax-breakpoint-md) {
+            top: 7px;
+        }
+
+        &--opened {
+            left: 80px;
+            right: 200px;
+            transform: none;
+
+            .global-search__input {
+                box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+                background-color: $ax-color-white;
+            }
+        }
+    }
+
+    &__input {
+        display: inline-block;
+        width: 100%;
+        text-align: left;
+        color: $ax-color-gray-6;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 6px 12px 6px 35px;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.42857143;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    &__icon {
+        position: absolute;
+        top: 8px;
+        left: 12px;
+        font-size: 1.2em;
+        color: $ax-color-gray-7;
+
+        .global-search__container--opened & {
+            color: $ax-color-teal-7;
+        }
+    }
+
+    &__dropdown {
+        position: relative;
+        margin-top: 5px;
+        z-index: 3;
+    }
+
+    &__list {
+        position: absolute;
+        width: 100%;
+        max-height: 500px;
+        overflow-y: auto;
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        border: 1px solid $ax-color-gray-4;
+        border-radius: 8px;
+        box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.1);
+        background-color: white;
+
+        &-item {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            cursor: pointer;
+            background-color: white;
+
+            &:first-child {
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
+            }
+
+            &:last-child {
+                border-bottom-left-radius: 3px;
+                border-bottom-right-radius: 3px;
+            }
+
+            &--selected {
+                background-color: $ax-color-gray-2;
+            }
+
+            &-icon {
+                margin-right: 5px;
+                color: $body-fonts-color;
+            }
+
+            &--history, &--suggestion, &--loader, &--search-category {
+                padding: 7px 15px;
+            }
+
+            &--search-category {
+                strong {
+                    color: $ax-color-teal-5;
+                }
+            }
+
+            &--category {
+                text-align: center;
+
+                span {
+                    text-transform: uppercase;
+                    font-size: 12px;
+                }
+
+                &-icon {
+                    font-size: 50px;
+                    border: 1px solid $ax-color-gray-4;
+                    padding: 5px;
+                    border-radius: 8px;
+                    line-height: 50px;
+                    width: 70px;
+                    margin: auto;
+
+                    & > i {
+                        background: -webkit-gradient(linear, left top, left bottom, from(#4357e8), to(#70d55e));
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                    }
+                }
+            }
+
+            &--loader {
+                height: 36px;
+                line-height: 36px;
+            }
+
+            &--inline {
+                background-color: white;
+                display: inline-block;
+                width: calc(10% - 4px);
+                min-width: 100px;
+                cursor: default;
+            }
+        }
+
+        &--hr > hr {
+            margin: 10px;
+            color: $ax-color-gray-4;
+        }
+    }
+
+    &__close {
+        position: absolute;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 64px;
+        color: $ax-color-gray-6;
+        cursor: pointer;
+        font-size: 1.7em;
+        text-align: center;
+    }
+
+    &__top-bar {
+        height: $top-bar-height;
+        width: 100%;
+        position: absolute;
+        display: block;
+        z-index: 1;
+
+        @media screen and (max-width: $ax-breakpoint-md) {
+            height: $top-bar-height - 8;
+        }
+    }
+}

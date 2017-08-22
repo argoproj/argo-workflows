@@ -1,0 +1,45 @@
+<ax-sliding-panel [show]="!!templatesByRepo" [hasCloseButton]="false" (closePanel)="closePanel()">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" [disabled]="!selectedTemplate" type="button"
+                (click)="save()">Save
+        </button>
+        <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <h2>{{messages.title}}</h2>
+        <p>Select the repo/branch where you want to enable and use {{ templateGroup && templateGroup[0].name }} fixtures.</p>
+        <div class="fixture-template-panel">
+            <div class="fixture-template-panel__repo-list" *ngIf="!selectedTemplates">
+                <div class="fixture-template-panel__repo" *ngFor="let templates of templatesByRepo" (click)="selectTemplates(templates)">
+                    <div class="fixture-template-panel__repo-btn"><i aria-hidden="true" class="fa fa-angle-right"></i></div>
+                    <div class="fixture-template-panel__repo-name">{{ templates[0].repo | repoName }}</div>
+                    <div class="fixture-template-panel__repo-url">{{ templates[0].repo }}</div>
+                </div>
+            </div>
+            <div *ngIf="selectedTemplates">
+                <div class="fixture-template-panel__body-top">
+                    <button (click)="selectTemplates(null)" class="fixture-template-panel__btn-back">
+                        <i class="fa fa-angle-left" aria-hidden="true"></i>
+                    </button>
+                    <div class="fixture-template-panel__selected-repo">
+                        <div class="fixture-template-panel__selected-repo-title">{{ selectedTemplates[0].repo | repoName }}</div>
+                        <div class="fixture-template-panel__selected-repo-des">{{ selectedTemplates[0].repo }}</div>
+                    </div>
+                </div>
+
+                <div>
+                     <ax-select-search [items]="selectedGroupTemplates"
+                                          [selected]="{ name: selectedTemplate.branch, value: selectedTemplate }"
+                                          [placeholder]="'Enter branch name'"
+                                          (onSearchQuery)="searchQuery($event)"
+                                          (onSelect)="selectTemplate($event)"></ax-select-search>
+                </div>
+
+                <div class="fixture-template-panel__yaml">
+                    <p>REVIEW FIXTURE CLASS TEMPLATE</p>
+                    <ax-yaml-viewer [input]="{template: selectedTemplate}"></ax-yaml-viewer>
+                </div>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

@@ -1,0 +1,162 @@
+<div class="content content--with-padding-top saml-config">
+    <div class="ax-container">
+        <div class="row white-box white-box--with-ico">
+            <div class="columns small-12 large-7">
+                <h6>Configure Single Sign-On</h6>
+                <p>
+                    SAML 2.0 streamlines the end user experience. Please complete the following
+                    steps and the additional configuration in the Identity Provider’s application to enable the Single Sign-On
+                    for Argo.
+                    <!--For more information, please refer to the-->
+                    <!--<a href="https://s3-us-west-1.amazonaws.com/ax-public/Applatix+Quick+Start+Guide+0.9.1.pdf" target="_blank">Argo Admin Guide</a>.-->
+                </p>
+            </div>
+            <div class="white-box__ico">
+                <i class="fa fa-cog"></i>
+            </div>
+        </div>
+        <div class="row white-box">
+            <div class="columns small-12 large-7">
+                <h6>Step 1: Add Argo application in your Identity Provider</h6>
+            </div>
+            <div class="columns small-12 large-7" *ngIf="samlInfo">
+                <div class="ax-form-row ax-form-copy">
+                    <label>Copy and paste this Sign-On URL, in your identity Provider's settings.</label>
+                    <input disabled="true" type="text" class="ax-field" autocomplete="off" value="{{samlInfo.sso_callback_url}}">
+                    <button axButtonWave class="ax-button ax-button--base" id="copy-sso-url" [attr.data-clipboard-text]="samlInfo.sso_callback_url" ax-copy-btn>Copy</button>
+                </div>
+                <div class="ax-form-row ax-form-copy margin-top-large">
+                    <label>Copy and paste this Entity ID in your identity Provider's settings.</label>
+                    <input disabled="true" type="text" class="ax-field" autocomplete="off" value="{{samlInfo.entity_id}}">
+                    <button axButtonWave class="ax-button ax-button--base" id="copy-entity-id" [attr.data-clipboard-text]="samlInfo.entity_id" ax-copy-btn>Copy</button>
+                </div>
+                <div class="ax-form-row margin-top-large">
+                    <label>Copy and paste this Entity ID in your identity Provider's settings.</label>
+                    <textarea rows="13" disabled="true" type="text" class="ax-field" autocomplete="off" value="{{samlInfo.public_cert}}"></textarea>
+                    <button axButtonWave class="ax-button ax-button--base margin-top-medium fr" id="copy-cert" [attr.data-clipboard-text]="samlInfo.public_cert" ax-copy-btn>Copy</button>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="row white-box">
+            <div class="columns small-12 large-7">
+                <h6>Step 2: Enter the information returned by your Identity Provider</h6>
+            </div>
+            <div class="columns small-12 large-7">
+                <form role="form" [formGroup]="samlConfigEditForm" *ngIf="samlConfigEditForm" (ngSubmit)="saveSamlConfig(samlConfigEditForm)">
+
+                    <div class="ax-form-row">
+                        <input id="button_label" type="text" class="ax-field" formControlName="button_label" autocomplete="off"
+                               ax-label-placeholder>
+                        <label for="button_label" class="ax-label-placeholder">{{ 'Sign In Button label' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['button_label'].valid && (samlConfigEditForm.controls['button_label'].touched || submitted)">Button label is required<i class="fa fa-warning"></i></div>
+                    </div>
+
+                    <div class="ax-form-row">
+                        <input id="idp_sso_url" type="text" class="ax-field" formControlName="idp_sso_url" autocomplete="off"
+                               ax-label-placeholder>
+                        <label for="idp_sso_url" class="ax-label-placeholder">{{ 'SSO Url' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['idp_sso_url'].valid && (samlConfigEditForm.controls['idp_sso_url'].touched || submitted)">Idp sso url is required<i class="fa fa-warning"></i></div>
+                    </div>
+
+                    <div class="ax-form-row">
+                        <textarea id="idp_public_cert" type="text" class="ax-field" formControlName="idp_public_cert" autocomplete="off"
+                            rows="13" ax-label-placeholder></textarea>
+                        <label for="idp_public_cert" class="ax-label-placeholder">{{ 'Public Certificate' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="samlConfigEditForm.errors?.idp_public_cert_required && (samlConfigEditForm.controls['idp_public_cert'].touched || submitted)">Idp public cert is required<i class="fa fa-warning"></i></div>
+                    </div>
+
+                    <a class="advanced dib margin-top-large" (click)="toggleAdvanced()">
+                        <i class="fa fa-angle-down" aria-hidden="true" *ngIf="hideAdvanced"></i>
+                        <i class="fa fa-angle-up" aria-hidden="true" *ngIf="!hideAdvanced"></i> Advanced Settings
+                    </a>
+
+                    <div [hidden]="hideAdvanced">
+                        <div class="ax-form-row">
+                            <input id="email_attribute" type="text" class="ax-field" formControlName="email_attribute" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="email_attribute" class="ax-label-placeholder">{{ 'Email attribute' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['email_attribute'].valid && (samlConfigEditForm.controls['email_attribute'].touched || submitted)">Email attributes is incorrect<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="first_name_attribute" type="text" class="ax-field" formControlName="first_name_attribute" autocomplete="off"
+                                ax-label-placeholder>
+                            <label for="first_name_attribute" class="ax-label-placeholder">{{ 'First name attribute' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['first_name_attribute'].valid && (samlConfigEditForm.controls['first_name_attribute'].touched || submitted)">First name is required<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="last_name_attribute" type="text" class="ax-field" formControlName="last_name_attribute" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="last_name_attribute" class="ax-label-placeholder">{{ 'Last name attribute' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['last_name_attribute'].valid && (samlConfigEditForm.controls['last_name_attribute'].touched || submitted)">Last name is required<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="group_attribute" type="text" class="ax-field" formControlName="group_attribute" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="group_attribute" class="ax-label-placeholder">{{ 'Group attribute' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['group_attribute'].valid && (samlConfigEditForm.controls['group_attribute'].touched || submitted)">Group attribute is required<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="sp_display_name" type="text" class="ax-field" formControlName="sp_display_name" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="sp_display_name" class="ax-label-placeholder">{{ 'Display name' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['sp_display_name'].valid && (samlConfigEditForm.controls['sp_display_name'].touched || submitted)">Display name is required<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="sp_description" type="text" class="ax-field" formControlName="sp_description" autocomplete="off"
+                                   ax-label-placeholder>
+                            <label for="sp_description" class="ax-label-placeholder">{{ 'Description' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!samlConfigEditForm.controls['sp_description'].valid && (samlConfigEditForm.controls['sp_description'].touched || submitted)">Description is required<i class="fa fa-warning"></i></div>
+                        </div>
+                        <div class="ax-form-row">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" id="deflate_response_encoded" formControlName="deflate_response_encoded">
+                                <span><i class="fa fa-check"></i></span>
+                            </div>
+                            <label for="deflate_response_encoded">Deflate response encoded</label>
+                        </div>
+                        <div class="ax-form-row">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" id="sign_request" formControlName="sign_request"><span><i
+                                    class="fa fa-check"></i></span>
+                            </div>
+                            <label for="sign_request">Sign request</label>
+                        </div>
+                        <div class="ax-form-row">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" id="signed_response" formControlName="signed_response"><span><i
+                                    class="fa fa-check"></i></span>
+                            </div>
+                            <label for="signed_response">Signed response</label>
+                        </div>
+                        <div class="ax-form-row">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" id="signed_response_assertion" formControlName="signed_response_assertion"><span><i
+                                    class="fa fa-check"></i></span>
+                            </div>
+                            <label for="signed_response_assertion">Signed response assertion</label>
+                        </div>
+                    </div>
+                    <div class="ax-form-row margin-top-large">
+                        <button type="submit" axButtonWave class="ax-button ax-button--base">{{ isEdit ? 'Update': 'Create' | translate }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="row white-box" *ngIf="isEdit">
+            <div class="columns small-12 large-7">
+                <h6>Remove Single Sign On</h6>
+                <p>
+                    Remove you Single Sign-On Settings. This action cannot be reverted.
+                </p>
+            </div>
+            <div class="columns small-12 large-7">
+                <div class="ax-form-row margin-top-large">
+                    <button axButtonWave class="ax-button ax-button--base" (click)="removeSSO()">Remove</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

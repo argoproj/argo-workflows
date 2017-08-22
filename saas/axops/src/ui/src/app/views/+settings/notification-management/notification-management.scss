@@ -1,0 +1,64 @@
+@import '../../../../assets/styles/config';
+
+.configured-notification {
+    &__top {
+        margin-top: 40px;
+        display: block;
+    }
+
+    &__title {
+        color: $ax-color-gray-6;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: bolder;
+        padding: 0 25px;
+    }
+
+    &__grumpy {
+        color: $ax-color-gray-5;
+    }
+
+    &__dark-grumpy {
+        color: $ax-color-gray-6;
+    }
+
+    &__name {
+        text-transform: uppercase;
+        font-weight: bolder;
+    }
+
+    &__info {
+        display: inline-block;
+        position: absolute;
+        right: 60px;
+    }
+
+    &__info-icon {
+        border-radius: 50%;
+        height: 22px;
+        width: 22px;
+        background-color: $ax-color-gray-5;
+        color: white;
+        font-weight: bolder;
+        font-size: 20px;
+
+        & > span {
+            left: 9px;
+            top: -3px;
+            position: absolute;
+            font-weight: bolder;
+        }
+    }
+
+    &__icon {
+        font-size: 17px;
+        color: $ax-color-gray-8;
+    }
+
+    &__edit-icon {
+        float: right;
+        font-size: 15px;
+        padding-right: 19px;
+        cursor: pointer;
+    }
+}

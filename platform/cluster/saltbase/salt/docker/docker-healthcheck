@@ -1,0 +1,187 @@
+#!/bin/bash
+
+# Original work Copyright 2015 The Kubernetes Authors.
+# Modified work Copyright 2015-2017 Applatix, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This script is intended to be run periodically, to check the health
+# of docker.  If it detects a failure, it will restart docker using systemctl.
+# If docker continues to fail, it will terminate the instance
+
+DOCKER_HC_LOG_TAG="[docker-healthcheck]"
+DOCKER_HC_LOG_PATH="/tmp/docker-healthcheck.log"
+
+log () {
+    logger -t ${DOCKER_HC_LOG_TAG} $1
+}
+
+get-ec2-meta () {
+    placement=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    region=${placement:0:-1}
+    instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+}
+
+instance-id-to-tags () {
+    aws ec2 describe-tags --region ${region} \
+                          --filters "Name=resource-id,Values=${instance_id}" "Name=key,Values=AXClusterNameID,AXCustomerID" \
+                          --query Tags[].Value \
+                          --output text
+}
+
+dump-system () {
+    echo "===== ${DOCKER_HC_LOG_TAG} log =====" >> ${DOCKER_HC_LOG_PATH}
+    grep -F ${DOCKER_HC_LOG_TAG} /var/log/syslog >> ${DOCKER_HC_LOG_PATH}
+
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo "===== Current docker ps output =====" >> ${DOCKER_HC_LOG_PATH}
+    if ! timeout 10 docker ps -a >> ${DOCKER_HC_LOG_PATH} 2>&1; then
+        echo "docker ps stuck" >> ${DOCKER_HC_LOG_PATH}
+    fi
+
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo "===== Current ps auxww output ======" >> ${DOCKER_HC_LOG_PATH}
+    ps auxww >> ${DOCKER_HC_LOG_PATH} 2>&1
+
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo "===== Last 10000 lines of docker log ======" >> ${DOCKER_HC_LOG_PATH}
+    grep -F " docker[" /var/log/syslog | tail -20000 >> ${DOCKER_HC_LOG_PATH} 2>&1
+
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo >> ${DOCKER_HC_LOG_PATH}
+    echo "===== 15 sec of dstat output ======" >> ${DOCKER_HC_LOG_PATH}
+    timeout 15 dstat -am >> ${DOCKER_HC_LOG_PATH} 2>&1
+}
+
+
+persist-docker-healthcheck-log () {
+    local cluster_name_id=$1
+    local customer_id=$2
+    local cluster_uuid=${cluster_name_id:(-36)}
+    local cluster_name=${cluster_name_id/-$cluster_uuid/}
+
+    s3path="s3://applatix-cluster-${customer_id}-0/${cluster_name}/${cluster_uuid}/docker-failure/${instance_id}-$(date +"%Y-%m-%d-%s")"
+    log "persisting docker healthcheck log to ${s3path}"
+
+    log "dumping system ..."
+    dump-system
+
+    aws s3 cp ${DOCKER_HC_LOG_PATH} ${s3path} --acl bucket-owner-full-control
+}
+
+
+bye-world () {
+    log "Getting ec2 instance metadata ..."
+    get-ec2-meta
+
+    log "Getting Applatix cluster information ..."
+    cluster_info=$(instance-id-to-tags)
+
+    log "Persisting docker-healthcheck logs ..."
+    persist-docker-healthcheck-log ${cluster_info}
+
+    log "Terminating instance ${instance_id} in region ${region}"
+    aws --region ${region} ec2 terminate-instances --instance-ids ${instance_id}
+}
+
+
+# Verify if container id is in current host `ps` output
+validate-container-id () {
+    local cid=$1
+    local curps=$2
+    if [[ ${curps} == *"libcontainerd/${cid}"* ]]; then
+        return 0
+    fi
+    return 1
+}
+
+
+# Check if docker ps is giving correct information
+# Related docker issues:
+#   - https://github.com/docker/docker/issues/32413
+check-docker-ps () {
+    if ! container_ids=$(timeout 45 docker ps -q); then
+        log "docker ps stuck"
+        return 1
+    fi
+    local cur_processes=$(ps ax)
+    local invalid_containers=""
+    for cid in ${container_ids}; do
+        if ! validate-container-id ${cid} "${cur_processes}"; then
+            invalid_containers="${invalid_containers} ${cid}"
+        fi
+    done
+    if [[ "${invalid_containers}" == "" ]]; then
+        return 0
+    fi
+
+    log "Containers ${invalid_containers} does not show in ps, waiting for 30 seconds to resolve race condition"
+    sleep 30
+    log "Double check docker ps"
+    
+    if ! container_ids=$(timeout 45 docker ps -q); then
+        log "docker ps stuck"
+        return 1
+    fi
+
+    for bad_cid in ${invalid_containers}; do
+        if [[ ${container_ids} == *"${bad_cid}"* ]]; then
+            log "Invalid container ${bad_cid} still in docker ps."
+            return 1
+        fi
+    done
+    log "check-docker-ps racing condition resolved"
+    return 0
+}
+
+
+if check-docker-ps; then
+    log "docker healthy"
+    exit 0
+fi
+
+log "docker failed"
+log "Giving docker 60 seconds grace before restarting"
+sleep 60
+
+if check-docker-ps; then
+    log "docker recovered"
+    exit 0
+fi
+
+log "docker still down; reporting docker status to Applatix before triggering docker restart."
+log "Getting ec2 instance metadata ..."
+get-ec2-meta
+
+log "Getting Applatix cluster information ..."
+cluster_info=$(instance-id-to-tags)
+
+log "Persisting docker-healthcheck logs ..."
+persist-docker-healthcheck-log ${cluster_info}
+
+log "Restarting docker ..."
+systemctl restart docker
+
+log "Waiting 90 seconds to give docker time to start"
+sleep 90
+
+if check-docker-ps; then
+    log "docker recovered"
+    exit 0
+fi
+
+log "docker still failing, proceed to terminate instance ... R.I.P"
+bye-world

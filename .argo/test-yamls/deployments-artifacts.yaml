@@ -1,0 +1,87 @@
+---
+type: workflow
+version: 1
+name: test-deployment-with-artifacts-launcher
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- PRODUCE:
+    image: alpine:latest
+    command: [sh, -c]
+    args: ["echo 'sleeping for 20 seconds' && sleep 20 && echo 'done'"]
+    outputs:
+      artifacts:
+        DATA:
+          path: /bin
+- DEP_WITH_ART:
+    template: test-deployment-with-input-artifact
+    arguments:
+      artifacts.DATA: "%%steps.PRODUCE.outputs.artifacts.DATA%%"
+  DEP_WITH_ART_INLINED:
+    template: test-deployment-with-input-artifact-inlined
+    arguments:
+      artifacts.DATA: "%%steps.PRODUCE.outputs.artifacts.DATA%%"
+
+---
+type: deployment
+version: 1
+name: test-deployment-with-input-artifact
+inputs:
+  artifacts:
+    DATA:
+application_name: test-app
+deployment_name: dep-with-input-art
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  WEB:
+    template: test-nginx-with-artifact
+
+---
+type: container
+version: 1
+name: test-nginx-with-artifact
+inputs:
+  artifacts:
+    DATA:
+      path: /data
+image: nginx:latest
+command: ["sh", "-c"]
+args: ["find /data && nginx -g 'daemon off;'"]
+resources:
+  cpu_cores: 0.05
+  mem_mib: 32
+
+---
+type: deployment
+version: 1
+name: test-deployment-with-input-artifact-inlined
+inputs:
+  artifacts:
+    DATA:
+application_name: test-app
+deployment_name: dep-with-input-art-inlined
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  WEB:
+    inputs:
+      artifacts:
+        DATA:
+          from: "%%inputs.artifacts.DATA%%"
+          path: /data
+    image: nginx:latest
+    command: ["sh", "-c"]
+    args: ["find /data && nginx -g 'daemon off;'"]
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 32
+

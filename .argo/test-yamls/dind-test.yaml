@@ -1,0 +1,26 @@
+---
+type: workflow
+version: 1
+name: dind-test-wf
+description: This is the workflow for testing dind
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+    - dind-test-step:
+        template: dind-test-container
+---
+type: container
+version: 1
+name: dind-test-container
+description: dind testing
+image: docker:latest
+command: ["sh", "-c", "sleep 600"]
+resources:
+  mem_mib: 300
+  cpu_cores: 0.1
+annotations:
+  ax_ea_docker_enable: '{"graph-storage-size": "10Gi", "cpu_cores":0.1, "mem_mib":200}'

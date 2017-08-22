@@ -1,0 +1,23 @@
+<div class="introduction">
+    <div class="row">
+        <div class="columns small-6">
+            <div class="introduction__panel introduction__panel--left">
+                <h1>Get Started</h1>
+                <h6 *ngIf="!configureNext">Build your first app in under 10 minutes.</h6>
+                <button *ngIf="!configureNext" axButtonWave class="ax-button ax-button--base-o" (click)="completeIntroduction()">CONTINUE</button>
+                <h6 *ngIf="configureNext">Connect your source control and build an app in under 10 minutes.</h6>
+                <button *ngIf="configureNext" axButtonWave class="ax-button ax-button--base-o" [routerLink]="['integrations', {type: 'scm'}]">CONTINUE</button>
+            </div>
+        </div>
+        <div class="columns small-6">
+            <div class="introduction__panel">
+                <h1>Try Argo</h1>
+                <h6>Try out-of-the-box solutions from Catalog to build, test and deploy your applications.</h6>
+                <button axButtonWave class="ax-button ax-button--base-o" (click)="completeIntroduction(['/fue', 'ax-catalog'])">
+                    <i class="fa ax-icon-catalog" aria-hidden="true"></i>
+                    <span>CATALOG</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

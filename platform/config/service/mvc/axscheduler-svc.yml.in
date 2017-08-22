@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axscheduler
+    labels:
+        app: axscheduler
+        tier: devops
+        role: axcritical
+spec:
+    selector:
+        app: axscheduler-deployment
+    ports:
+      - port: 9890
+        targetPort: 9890
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axscheduler-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axscheduler-deployment
+                tier: devops
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axops-internal:8085/v1/ping"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axscheduler
+                image: ${REGISTRY}/${NAMESPACE}/axscheduler:${VERSION}
+                ports:
+                  - containerPort: 9890
+                resources:
+                    requests:
+                        cpu: 75m
+                        memory: 40Mi
+                    limits:
+                        cpu: 150m
+                        memory: 80Mi
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry

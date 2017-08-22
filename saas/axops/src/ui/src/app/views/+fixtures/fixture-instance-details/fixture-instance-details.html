@@ -1,0 +1,124 @@
+<div class="content">
+    <ax-tabs (selected)="tabChange($event.selectedTab)" [selectedTabKey]="activeTab" [fixedWidth]="true">
+        <ax-tab [tabKey]="'summary'" [tabTitle]="'Summary'" [noPadding]="true" [isOnlyContentScrollable]="true"
+                [extraVerticalScrollPadding]="116">
+            <div class="content content--with-padding-top">
+                <div class="ax-container">
+                    <div class="attributes">
+                        <div class="row collapse" *ngIf="!loadingFixture">
+                            <div class="large-8 medium-12">
+                                <div class="attributes__content">
+                                    <div class="attributes__title" ax-tooltip="{{ instance.name }}">
+                                        {{ instance.name }}
+                                    </div>
+                                    <div class="row attributes__content-row">
+                                        <div class="large-3 columns attributes__content-label">
+                                            Status:
+                                        </div>
+                                        <div class="large-9 columns attributes__content-text" ax-tooltip="''">
+                                            <ax-fixture-instance-status [fixture]="instance"></ax-fixture-instance-status>
+                                        </div>
+                                    </div>
+                                    <div class="row attributes__content-row">
+                                        <div class="large-3 columns attributes__content-label">
+                                            Conncurent Usage:
+                                        </div>
+                                        <div class="large-9 columns attributes__content-text" ax-tooltip="{{ instance.concurrency }}">
+                                            {{ instance.concurrency }}
+                                        </div>
+                                    </div>
+                                    <div class="row attributes__content-row">
+                                        <div class="large-3 columns attributes__content-label">
+                                            Created by:
+                                        </div>
+                                        <div class="large-9 columns attributes__content-text" ax-tooltip="{{ instance.creator }}">
+                                            {{ instance.creator }}
+                                        </div>
+                                    </div>
+                                    <div class="row attributes__content-row">
+                                        <div class="large-3 columns attributes__content-label">
+                                            Date Created:
+                                        </div>
+                                        <div class="large-9 columns attributes__content-text" ax-tooltip="{{ instance.ctime | timestamp }}">
+                                            {{ instance.ctime | timestamp }}
+                                        </div>
+                                    </div>
+                                    <div class="attributes__footer">
+                                        <div class="row">
+                                            <div class="large-3 columns">
+                                                <ax-swipe-checkbox [value]="instance.enabled" [title]="'Enable'" (click)="toggleFixtureEnabled()"></ax-swipe-checkbox>
+                                            </div>
+                                            <div class="large-9 columns" ax-tooltip="{{ instance.description }}">
+                                                <div class="attributes__footer-text">
+                                                    {{ instance.description }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="large-4 medium-12 attributes__chart">
+                                <ax-fixture-usage-chart [fixture]="instance"></ax-fixture-usage-chart>
+                            </div>
+                        </div>
+                        <div *ngIf="loadingFixture">
+                            <ax-loader-list-mockup [itemHeight]="336" [itemsLength]="1" [noMarginTop]="true"></ax-loader-list-mockup>
+                        </div>
+                    </div>
+
+                    <h6 class="attributes__subheader-title">Fixture Users:</h6>
+                    <div class="ax-table-list ax-table-list--clickable" *ngIf="tasks">
+                        <div class="ax-table-list__row" *ngFor="let ref of referrers" [routerLink]="ref.routerLink">
+                            <div class="row">
+                                <div class="columns small-3">
+                                    <i *ngIf="ref.type === 'deployment'" class="ax-icon-deployment"></i>
+                                    <i *ngIf="ref.type === 'workflow'" class="ax-icon-job"></i>
+                                    <strong>{{ ref.name }}</strong>
+                                </div>
+                                <div class="columns small-3">{{ ref.submitter }}</div>
+                                <div class="columns small-3">Launched at: {{ ref.launch_time | timestamp }}</div>
+                            </div>
+                        </div>
+                        <div *ngIf="!referrers.length" class="no-data-panel">
+                            <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'attributes'" [tabTitle]="'Attributes'" [noPadding]="true" [isOnlyContentScrollable]="true"
+                [extraVerticalScrollPadding]="116">
+            <div class="content content--with-padding-top">
+                <div class="ax-container">
+                    <ax-attributes-panel [attributes]="instance.attributes" title="Fixture Attributes" noAttributesMessage="There are no attributes for this fixture.">
+                    </ax-attributes-panel>
+                </div>
+            </div>
+        </ax-tab>
+        <ax-tab [tabKey]="'job_history'" [tabTitle]="'Job History'" [noPadding]="true" [isOnlyContentScrollable]="true"
+                [extraVerticalScrollPadding]="116">
+            <div class="content content--with-padding-top">
+                <div class="ax-container">
+                    <div class="attributes__jobs-history-box attributes__jobs-history-box--alignment" *ngIf="tasks && tasks.length && !tasksLoading">
+                        <template ngFor let-task [ngForOf]="tasks">
+                            <ax-job [task]="task" [hideLabels]="true" [extendedCommiterInfo]="!!task.commit.author"></ax-job>
+                        </template>
+                    </div>
+                    <div class="attributes__jobs-history-box" *ngIf="tasksLoading">
+                        <ax-loader-list-mockup [itemHeight]="150"></ax-loader-list-mockup>
+                    </div>
+                    <div *ngIf="tasks && !tasks.length && !tasksLoading" class="no-data-panel no-data-panel--without-top">
+                        <strong><i class="fa fa-info-circle"></i>{{ 'There are no Jobs that were created for the Fixture' | translate }}</strong>
+                    </div>
+                </div>
+            </div>
+        </ax-tab>
+    </ax-tabs>
+</div>
+<ax-fixture-instance-attributes-panel *ngIf="fixtureClass"
+        [fixtureClass]="fixtureClass" [fixtureInstance]="instance" mode='edit' [show]="showEditPanel" (closePanel)="hideEditPanel()" (save)="updateFixture($event)">
+</ax-fixture-instance-attributes-panel>
+<ax-fixture-instance-attributes-panel *ngIf="fixtureClass"
+        [fixtureClass]="fixtureClass" [fixtureInstance]="instance" mode='clone' [show]="showClonePanel" (closePanel)="hideClonePanel()" (save)="cloneFixture($event)">
+</ax-fixture-instance-attributes-panel>
+<ax-fixture-action-launch-panel [actionInfo]="{fixtureClass: fixtureClass, fixtureInstance: instance, actionName: actionToLaunch}" (close)="closeLaunchPanel($event)"></ax-fixture-action-launch-panel>

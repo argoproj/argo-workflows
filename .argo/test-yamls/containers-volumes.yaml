@@ -1,0 +1,10 @@
+---
+type: container
+version: 1
+name: container-with-input-volume
+description: Container which accepts an input volume
+image: httpd:latest
+inputs:
+  volumes:
+    DATA:
+      mount_path: /data

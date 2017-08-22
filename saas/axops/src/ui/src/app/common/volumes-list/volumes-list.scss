@@ -1,0 +1,24 @@
+@import '../../../assets/styles/config';
+
+.volumes-list {
+    &__progress-bar {
+        margin-top: -15px;
+        position: relative;
+        margin-right: 50px;
+    }
+
+    &__menu {
+        position: absolute;
+        right: -35px;
+        top: -40px;
+    }
+
+    &__actions-column.columns {
+        overflow: visible;
+    }
+
+    &__separator {
+        color: $ax-color-gray-4;
+        padding: 0 1em;
+    }
+}

@@ -1,0 +1,33 @@
+From %%ARGO_BASE_REGISTRY%%/argobase/debian:8.5
+
+# Basic utilities.
+RUN apt-get update && apt-get install -y \
+		apt-utils \
+		curl \
+		sudo \
+		wget \
+		vim  \
+		bc
+
+# oracle jdk
+RUN mkdir /opt/jdk
+RUN cd /opt
+RUN wget --header "Cookie: oraclelicense=accept-securebackup-cookie" http://download.oracle.com/otn-pub/java/jdk/8u71-b13/jdk-8u71-linux-x64.tar.gz
+RUN tar -zxf jdk-8u71-linux-x64.tar.gz -C /opt/jdk
+RUN update-alternatives --install /usr/bin/java java /opt/jdk/jdk1.8.0_71/bin/java 10000
+RUN update-alternatives --install /usr/bin/javac javac /opt/jdk/jdk1.8.0_71/bin/javac 10000
+RUN rm jdk-8u71-linux-x64.tar.gz
+
+# install netcat for health check
+RUN apt-get update && apt-get install -y netcat
+
+# install confluent pacakge
+# First install Confluent’s public key, which is used to sign the packages in the apt repository.
+RUN wget -qO - http://packages.confluent.io/deb/3.1/archive.key | sudo apt-key add -
+
+#Add the repository
+#sudo add-apt-repository "deb http://packages.confluent.io/deb/3.0 stable main"
+RUN echo "deb http://packages.confluent.io/deb/3.1 stable main" >> /etc/apt/sources.list
+
+# install confluent platform
+RUN sudo apt-get update && sudo apt-get install -y confluent-platform-2.11

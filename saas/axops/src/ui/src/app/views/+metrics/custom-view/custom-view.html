@@ -1,0 +1,15 @@
+<div class="custom-view">
+    <h3>{{ 'Save Current View' | translate }}</h3>
+    <form role="form" [formGroup]="customViewForm" (ngSubmit)="saveCustomView(customViewForm)">
+        <div class="ax-form-row">
+            <input id="name" type="text" class="ax-field" formControlName="name" autocomplete="off"
+                   ax-label-placeholder>
+            <label for="name" class="ax-label-placeholder">{{ 'Name' | translate }}</label>
+            <div class="ax-form-row__error-msg" *ngIf="!customViewForm.controls['name'].valid && (customViewForm.controls['name'].touched || submitted)">Name is required<i class="fa fa-warning"></i></div>
+        </div>
+        <div class="ax-form-row margin-top-large">
+            <button type="submit" axButtonWave class="ax-button ax-button--base">{{ isEdit && (customViewForm.value.name === customView.name) ? 'Update': 'Create' }}</button>
+            <button type="button" axButtonWave class="ax-button" *ngIf="showClose" (click)="close()">Close</button>
+        </div>
+    </form>
+</div>

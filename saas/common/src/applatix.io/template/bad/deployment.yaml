@@ -1,0 +1,67 @@
+---
+type: container
+version: 1
+name: sleep-container-ok
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo %%inputs.parameters.echo%%; sleep %%inputs.parameters.sleep%%"]
+inputs:
+  parameters:
+    echo:
+      default: "hello world"
+    sleep:    
+  volumes:
+    data-vol:
+      mount_path: /var/lib/postgresql/data
+    log-vol:
+      mount_path: /var/log/postgresql
+
+---
+type: deployment
+version: 1
+name: unsatisfied-sleep-param-from-scope
+application_name: sleep-service
+deployment_name: sleep-service
+inputs:
+  parameters:
+    echo:
+      default: "hello world"
+  volumes:
+    mydatavol:
+volumes:
+  mylogvol:
+    storage_class: ssd
+    size_gb: 3
+containers:
+  userdb:
+    template: sleep-container-ok
+    arguments:
+      parameters.echo:
+      parameters.sleep:
+      volumes.data-vol: "%%inputs.volumes.mydatavol%%"
+      volumes.log-vol: "%%volumes.mylogvol%%"
+
+---
+type: deployment
+version: 1
+name: unsatisfied-sleep-mismatch-type
+application_name: sleep-service
+deployment_name: sleep-service
+inputs:
+  parameters:
+    echo:
+      default: "hello world"
+  volumes:
+    mydatavol:
+volumes:
+  mylogvol:
+    storage_class: ssd
+    size_gb: 3
+containers:
+  userdb:
+    template: sleep-container-ok
+    arguments:
+      parameters.echo:
+      parameters.sleep: "%%volumes.mylogvol%%"
+      volumes.data-vol: "%%inputs.volumes.mydatavol%%"
+      volumes.log-vol: "%%volumes.mylogvol%%"

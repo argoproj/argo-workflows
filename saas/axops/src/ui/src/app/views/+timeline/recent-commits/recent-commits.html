@@ -1,0 +1,61 @@
+<div class="recent-commits">
+    <div class="recent-commits__content">
+        <div class="ax-table-list">
+            <div class="ax-table-list__head">
+                <div class="row">
+                    <div class="columns small-3">
+                        {{'Description' | translate}}
+                    </div>
+                    <div class="columns small-2">
+                        {{'Repo' | translate}}
+                    </div>
+                    <div class="columns small-2">
+                        {{'Branch' | translate}}
+                    </div>
+                    <div class="columns small-2">
+                        {{'Author' | translate}}
+                    </div>
+                    <div class="columns small-2">
+                        {{'Time' | translate}}
+                    </div>
+                    <div class="columns small-1">
+                        {{'Revision' | translate}}
+                    </div>
+                </div>
+            </div>
+            <template ngFor let-commit [ngForOf]="commits" *ngIf="!loading">
+                <div class="ax-table-list__row">
+                    <div class="row">
+                        <div class="columns small-3 recent-commits__status">
+                            <i class="ax-icon-commit"></i>
+                            <span><a ax-tooltip="{{commit.description}}" [routerLink]="['/app/timeline/commits/', commit.revision]">{{ commit.description | truncateTo: 75 }}</a></span>
+                        </div>
+                        <div class="columns small-2">
+                            <span ax-tooltip="{{commit.repo}}">{{commit.repo}}</span>
+                        </div>
+                        <div class="columns small-2">
+                            <span ax-tooltip="{{commit.branch}}">{{commit.branch}}</span>
+                        </div>
+                        <div class="columns small-2">
+                            <span ax-tooltip="{{commit.author}}">{{commit.author}}</span>
+                        </div>
+                        <div class="columns small-2">
+                            <span ax-tooltip="{{commit.date | timestamp }}">{{commit.date | timestamp }}</span>
+                        </div>
+                        <div class="columns small-1">
+                            <span ax-tooltip="{{commit.revision}}">{{commit.revision | shortRevision }}</span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <ax-loader-list-mockup [itemsLength]="5" *ngIf="!dataLoaded"></ax-loader-list-mockup>
+        </div>
+        <div *ngIf="commits?.length === 0 && dataLoaded" class="no-data-panel">
+            <strong><i class="fa fa-info-circle"></i>{{ 'No data to display.' | translate }}</strong>
+        </div>
+
+        <div class="recent-commits__branch-timeline-button">
+            <button [routerLink]="['/app/timeline', { view: 'commit', repo: repoName, branch: branchName}]" axButtonWave class="ax-button ax-button--base-o">view branch timeline</button>
+        </div>
+    </div>
+</div>

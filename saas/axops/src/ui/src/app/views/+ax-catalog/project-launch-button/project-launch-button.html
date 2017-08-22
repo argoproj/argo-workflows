@@ -1,0 +1,20 @@
+<div class="project-launch-button">
+    <button class="ax-button ax-button--base" (click)="launchProject(actions[0])">
+        <ax-loader-custom class="project-launch-button__loader" [size]="12" *ngIf="loading"></ax-loader-custom>
+        {{actions[0]?.name}}
+        <div class="project-launch-button__dropdown-caret" (click)="$event.stopPropagation(); actionsDropDown.open();">
+            <ax-dropdown #actionsDropDown isMenu="true" *ngIf="actions?.length > 1">
+                <ax-dropdown-anchor>
+                    <i class="fa fa-caret-down" aria-hidden="true"></i>
+                </ax-dropdown-anchor>
+                <ax-dropdown-content>
+                    <ul>
+                        <li *ngFor="let action of actions" (click)="launchProject(action)">
+                            {{action.name | uppercase}}
+                        </li>
+                    </ul>
+                </ax-dropdown-content>
+            </ax-dropdown>
+        </div>
+    </button>
+</div>

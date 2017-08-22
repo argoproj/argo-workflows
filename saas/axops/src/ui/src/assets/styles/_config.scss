@@ -1,0 +1,52 @@
+@import 'node_modules/argo-ui-lib/src/assets/styles/config';
+
+$icon-path: 'assets/styles/icons';
+
+// Filter Bar
+$search-input-height: 32px;
+
+// Z indexes
+$bottom-toolbox-z-index: 5;
+$top-bar-z-index: 10;
+$toolbar-z-index: 8;
+$nav-z-index: 11;
+$notifications-panel-z-index: 11;
+
+// Others
+$top-bar-height: 50px;
+$toolbar-height: 48px;
+$nav-width: 60px;
+$nav-panel-width: 480px;
+$notifications-panel-width: 440px;
+$minWidthForExtendedNav: $nav-width + $basePageWidth;
+
+$ax-breakpoint-md: 1400px;
+
+$ax-color-white: #FFFFFF;
+$ax-color-black: $ax-color-gray-9;
+
+// Color aliases. Please use primary names instead.
+$sky-color: $ax-color-teal-5;
+$concrete-color: $ax-color-gray-4;
+$lemon-color: $ax-color-yellow;
+$body-fonts-color: $ax-color-gray-6;
+$ax-color-base: $ax-color-teal-6;
+$ax-color-dark-teal: $ax-color-teal-6;
+$ax-waiting-color-dark: $ax-color-gray-6;
+$ax-waiting-color-light: $ax-color-gray-5;
+$ax-waiting-color: $ax-color-gray-5;
+$ax-cancelled-color: $ax-color-gray-5;
+$ax-init-color: $ax-color-gray-5;
+
+// GUI Libary settings
+$notifications-z-index: 30;
+$notifications-height: $top-bar-height;
+$sliding-panel-z-index: 20;
+$sliding-panel-offcanvas-width: 500px;
+
+@mixin ax-catalog-header {
+    background: linear-gradient(to top left, rgba(#1FBDD0, 0.8) 0%, rgba(#004C67, 0.8) 100%), url('#{$icon-path}/ax-background.png');
+    background-position-y: top, -800px;
+    background-repeat: no-repeat;
+    background-size: cover;
+}

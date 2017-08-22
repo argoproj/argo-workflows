@@ -1,0 +1,11 @@
+<div class="application-panel__status">
+    <div class="application-panel__status-des">Total Deployments:
+        <strong>{{ application?.totalDeployments() }}</strong>
+    </div>
+
+    <div class="application-status-bar">
+        <div class="bar" [style.width]="application.activePercentValue + '%'"></div>
+        <div class="bar bar--error" [style.width]="application.errorPercentValue + '%'"></div>
+    </div>
+
+</div>

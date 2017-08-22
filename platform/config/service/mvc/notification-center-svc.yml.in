@@ -1,0 +1,117 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: ax-notification-center-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: ax-notification-center-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axdb:8083/v1/axdb/version http://axops-internal:8085/v1/ping http://axnotification:9889/v1/ping; wait_tcp kafka-zk:9092"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axnc-dispatcher
+                image: ${REGISTRY}/${NAMESPACE}/axnc:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                env:
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                command:
+                  - /axnc/bin/server
+                  - --role=dispatcher
+                  - --axdb=http://axdb:8083/v1
+                  - --kafka=kafka-zk:9092
+                  - --skeleton=/axnc/event-skeleton
+                  - --interval=30
+                  - --concurrency=1
+              - name: axnc-email-handler
+                image: ${REGISTRY}/${NAMESPACE}/axnc:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                env:
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                command:
+                  - /axnc/bin/server
+                  - --role=email_handler
+                  - --kafka=kafka-zk:9092
+                  - --notification=http://axnotification:9889/v1/notifications
+                  - --concurrency=2
+              - name: axnc-slack-handler
+                image: ${REGISTRY}/${NAMESPACE}/axnc:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                env:
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                command:
+                  - /axnc/bin/server
+                  - --role=slack_handler
+                  - --kafka=kafka-zk:9092
+                  - --axops=http://axops-internal:8085/v1
+                  - --concurrency=2
+              - name: axnc-ui-handler
+                image: ${REGISTRY}/${NAMESPACE}/axnc:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                env:
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                command:
+                  - /axnc/bin/server
+                  - --role=ui_handler
+                  - --axdb=http://axdb:8083/v1
+                  - --kafka=kafka-zk:9092
+                  - --concurrency=4
+              - name: axnc-ax-support-handler
+                image: ${REGISTRY}/${NAMESPACE}/axnc:${VERSION}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 50Mi
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                env:
+                  - name: AXOPS_EXT_DNS
+                    value: "${AXOPS_EXT_DNS}"
+                command:
+                  - /axnc/bin/server
+                  - --role=ax_support_handler
+                  - --kafka=kafka-zk:9092
+                  - --concurrency=1
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+                - name: applatix-registry

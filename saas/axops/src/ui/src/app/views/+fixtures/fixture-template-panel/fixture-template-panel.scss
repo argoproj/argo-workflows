@@ -1,0 +1,84 @@
+@import '../../../../assets/styles/config';
+
+.fixture-template-panel {
+
+    &__repo-list {
+        overflow: hidden;
+        margin-top: 30px;
+        border: 1px solid $ax-color-gray-4;
+        border-radius: 3px;
+    }
+
+    &__repo {
+        padding: 24px 30px;
+        background-color: $ax-color-white;
+        cursor: pointer;
+
+        &:not(:first-child) {
+            border-top: 2px solid $ax-color-gray-3;
+        }
+
+        &:hover {
+            background-color: $ax-color-teal-1;
+        }
+
+        &-name {
+            font-weight: 500;
+            font-size: 1.1em;
+            color: $ax-color-teal-6;
+        }
+
+        &-url {
+            font-size: .9em;
+            color: $ax-color-gray-5;
+        }
+
+        &-btn {
+            float: right;
+            color: $ax-color-teal-6;
+            font-size: 2em;
+        }
+    }
+
+    &__body-top {
+        padding: 30px 20px;
+
+        p {
+            margin: 0;
+            color: #999;
+        }
+    }
+
+    &__btn-back {
+        float: left;
+        display: block;
+        width: 40px;
+        height: 40px;
+        margin-right: 10px;
+        font-size: 1.4em;
+        color: $ax-color-teal-6;
+        background-color: $ax-color-white;
+        border-radius: 50%;
+    }
+
+    &__selected-repo {
+        overflow: hidden;
+        width: auto;
+    }
+
+    &__selected-repo-title {
+        line-height: 1.5;
+        font-weight: 500;
+        color: $ax-color-gray-7;
+    }
+
+    &__selected-repo-des {
+        font-size: .75em;
+        line-height: 1.2;
+        color: $ax-color-gray-6;
+    }
+
+    &__yaml {
+        margin-top: 2em;
+    }
+}

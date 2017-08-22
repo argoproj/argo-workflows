@@ -1,0 +1,39 @@
+@import '../../../assets/styles/config';
+
+.jira-issue-type {
+    display: inline-block;
+    height: 15px;
+    vertical-align: sub;
+
+    &__marker {
+        height: 15px;
+        width: 15px;
+        border-radius: 3px;
+        display: inline-block;
+        position: relative;
+
+        & > i {
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            color: white;
+            font-size: 10px;
+        }
+
+        &--bug {
+            background-color: #E5493A;
+        }
+
+        &--task {
+            background-color: #FF9C23;
+        }
+
+        &--story, &--epic {
+            background-color: #63BA3C;
+        }
+
+        &--sub-task {
+            background-color: #4BAEE8;
+        }
+    }
+}

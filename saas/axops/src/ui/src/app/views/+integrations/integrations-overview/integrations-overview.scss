@@ -1,0 +1,32 @@
+@import '../../../../assets/styles/config';
+
+.integrations-overview {
+    &__top {
+        padding: 20px 0;
+        margin-bottom: 26px;
+        font-size: 1.6em;
+        line-height: 80px;
+        font-weight: 300;
+        color: $ax-color-teal-7;
+        background: $ax-color-white;
+        box-shadow: 1px 2px 3px rgba(#000, .1);
+
+        a {
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        i {
+            margin-right: 12px;
+            font-size: 72px;
+            background: -webkit-gradient(linear, left top, left bottom, from(#6e4ec0), to(#a66ad0));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    }
+
+    &__redirect-panel {
+        margin: 18px 0;
+    }
+}

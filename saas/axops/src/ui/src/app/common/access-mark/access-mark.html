@@ -1,0 +1,6 @@
+<div class="access-mark">
+    <div class="access-mark__icon" [ngClass]="{'access-mark__icon--green': isEnabled, 'access-mark__icon--red': !isEnabled}">
+        <i [ngClass]="{ 'ax-icon-checkmark': isEnabled, 'ax-icon-close': !isEnabled }"></i>
+    </div>
+    <span class="access-mark__message">{{ isEnabled ? 'Enabled' : 'Disabled' }}</span>
+</div>

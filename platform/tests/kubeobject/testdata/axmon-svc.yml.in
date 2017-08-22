@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axmon
+    labels:
+        app: axmon
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: axmon-deployment
+    ports:
+      - port: 8901
+        targetPort: 8901
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axmon-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axmon-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axdb:8083/v1/axdb/status"]
+                    }
+                ]'
+        spec:
+            # This has two containers. One is the axmon container that does
+            # all tasks related to axmon rest api and the other sets up a 
+            # proxy to the API server
+            containers:
+              - name: axmon
+                image: ${REGISTRY}/${NAMESPACE}/axmon:${VERSION}
+                command: ["/ax/bin/axmon", "--no-cluster"]
+                env:
+                  - name: AX_CUSTOMER_ID
+                    value: "${AX_CUSTOMER_ID}"
+                  - name: AX_NAMESPACE
+                    value: "${NAMESPACE}"
+                  - name: AX_VERSION
+                    value: "${VERSION}"
+                  - name: AX_CLUSTER_NAME_ID
+                    value: "${AX_CLUSTER_NAME_ID}"
+                ports:
+                  - containerPort: 8901
+                volumeMounts:
+                  - name: docker-socket-dir
+                    mountPath: /var/run
+                securityContext:
+                    privileged: true
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 150Mi
+                    limits:
+                        memory: 600Mi
+              - name: kubectl-proxy
+                image: ${REGISTRY}/kubectl:v1.6.7
+                args: ["proxy", "-p", "8001"]
+                resources:
+                    requests:
+                        cpu: 25m
+                        memory: 20Mi
+                    limits:
+                        memory: 80Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry
+            volumes:
+                - name: docker-socket-dir
+                  hostPath:
+                      path: /var/run/

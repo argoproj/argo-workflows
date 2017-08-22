@@ -1,0 +1,40 @@
+<div class="app-spendings-chart" [ngClass]="{'app-spendings-chart--loading': chartLoading}">
+    <div class="row app-spendings-chart__title" *ngIf="showTitle">
+        <h5 class="columns small-12 large-12 margin-left-medium">
+            SPENDING
+        </h5>
+    </div>
+    <div class="app-spendings-chart__loader" *ngIf="chartLoading">
+        <ax-loader-custom [size]="30" class="app-spendings-chart__loader"></ax-loader-custom>
+    </div>
+    <div class="row" *ngIf="!chartLoading">
+        <div class="columns small-12 large-12">
+            <div class="padding-left-medium" *ngIf="showTimeRange">
+                <strong>LAST {{ currentInterval.durationDays === 1 ? 'DAY' : currentInterval.durationDays + ' DAYS' }}</strong>
+            </div>
+            <div class="app-spendings-chart__calc-cost padding-left-medium">{{ getTotalCost() | centsToDollars:2 }}</div>
+            <div class="app-spendings-chart__calc-des padding-left-medium">{{ getDateRangeDes() }}</div>
+        </div>
+    </div>
+    <div class="row app-spendings-chart__chart-panel" [ngClass]="{'app-spendings-chart__chart-panel--loading': chartLoading}" [hidden]="chartLoading">
+        <div class="columns small-12 large-12">
+            <div class="app-spendings-chart__chart">
+                <svg>
+                    <line
+                            [attr.x1]="preSelectionLeft"
+                            [attr.x2]="preSelectionLeft"
+                            [attr.y1]="0"
+                            [attr.y2]="preSelectionHeight"
+                            stroke="#E9E9E9"
+                            stroke-width="2"/>
+                </svg>
+                <div *ngIf="selectedStepInfo"
+                     [ngStyle]="{ 'left': getTooltipLeft(selectedStepInfo) + 'px' }"
+                     class="app-spendings-chart__chart-tooltip">
+                    {{data?.perfData[stepIndex]?.data | centsToDollars:2}}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

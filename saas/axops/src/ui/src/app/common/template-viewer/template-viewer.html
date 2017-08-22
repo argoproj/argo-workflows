@@ -1,0 +1,20 @@
+<div class="template-viewer">
+    <div class="template-viewer__workflow">
+        <ax-workflow-tree [template]="template" (onClickShowYaml)="selectYaml($event)" [nodeClickable]="true">
+            <template let-cell="cell" #nodeInfo>
+                <i class="fa template-viewer__node-icon {{getStepIcon(cell)}}"></i>
+            </template>
+        </ax-workflow-tree>
+    </div>
+</div>
+<div class="template-viewer__btn" (click)="showYaml()">YAML</div>
+
+<ax-sliding-panel class="template-viewer__yaml" [show]="isYamlVisible" (closePanel)="closeYaml()" [hasNoPadding]="true" [offCanvas]="true">
+    <sliding-panel-header>
+        <div class="template-viewer__yaml-header"></div>
+        <i class="ax-icon-workflow"></i> <strong>{{ template.name }}</strong>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <ax-yaml-viewer [input]="{template: template, highlightedStep: selectedStep}"></ax-yaml-viewer>
+    </sliding-panel-body>
+</ax-sliding-panel>

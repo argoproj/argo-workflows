@@ -1,0 +1,57 @@
+<div class="ax-job-stream">
+    <div class="ax-job-stream__top">
+        <div class="ax-job-stream__status">
+            <div class="ax-job-stream__status-icon">
+                <i class="fa" aria-hidden="true" ax-status-icon [status]="task.status"></i>
+            </div>
+            <div class="ax-job-stream__status-message">
+                {{ task.status | status }} on: {{ (task.launch_time || task.create_time) | axShortDateTime }} {{ isCancelling(task.status) ? ' - ' + task.status_detail?.message : '' }}
+            </div>
+        </div>
+        <div class="ax-job-stream__labels" *ngIf="hideLabels">
+            <div class="ax-job-label ax-job-label--item" *ngFor="let label of labels;">
+                {{ label }}
+            </div>
+        </div>
+    </div>
+
+    <div class="ax-job-stream__content">
+        <ax-dropdown-menu [settings]="getJobMenu(task)" class="ax-job-stream__content-menu" customClass="left" *axIfAuthenticated>
+            <button axButtonWave class="ax-button ax-button--radius-2"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></button>
+        </ax-dropdown-menu>
+        <div class="row collapse">
+            <div class="columns medium-7">
+                <div class="ax-job-stream__content-box" [routerLink]="['/app/timeline/jobs/', task.id]">
+                    <ax-job-steps [setTask]="task" (onToggleIssues)="onToggleIssues($event)"></ax-job-steps>
+                </div>
+            </div>
+            <div class="columns medium-5">
+                <div class="ax-job-stream__content-details" [routerLink]="['/app/timeline/jobs/', task.id]">
+                    <div *ngIf="extendedCommiterInfo">
+                        <ax-commit-author [commit]="task.commit"></ax-commit-author>
+                        <div class="ax-job-stream__content-details-row">
+                            <span>COMMIT ID:</span>
+                            <span><a [routerLink]="['/app/timeline/commits/', task.commit.revision]">{{ task.commit.revision }}</a></span>
+                        </div>
+                    </div>
+                    <div *ngIf="!extendedCommiterInfo">
+                        <div class="ax-job-stream__content-details-row ax-job-stream__content-details-row-job-id">
+                            <span>JOB ID:</span> <span class="text-truncate">{{ task.id }}</span>
+                        </div>
+                        <div class="ax-job-stream__content-details-row" *ngIf="task.commit.author">
+                            <span>AUTHOR:</span> <span class="text-truncate">{{ task.commit.author }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ax-job-stream__footer" *ngIf="isIssuesVisible">
+            <div class="ax-jira-issues__job-component" *ngIf="jiraIssueLoader">
+                <div class="ax-jira-issues__item">
+                    <ax-loader-custom [size]="21"></ax-loader-custom>
+                </div>
+            </div>
+            <ax-jira-issues-list [source]="jiraIssues" customClass="ax-jira-issues__job-component"></ax-jira-issues-list>
+        </div>
+    </div>
+</div>

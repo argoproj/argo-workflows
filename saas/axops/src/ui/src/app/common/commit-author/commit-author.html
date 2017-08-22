@@ -1,0 +1,7 @@
+<div class="commit-author-box" [ngClass]="'commit-author-box--border-' + separateLinePosition">
+    <div class="commit-author-box__avatar">
+        <ax-avatar [committer]="localCommit.author"></ax-avatar>
+    </div>
+    <h5>{{ userName }}</h5>
+    <p><small><span class="commit-author-box-email">{{ userEmail }}</span> commited on: {{ localCommit.date | timestamp }}</small></p>
+</div>

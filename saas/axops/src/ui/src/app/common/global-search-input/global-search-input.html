@@ -1,0 +1,58 @@
+<div [ngClass]="{'global-search__top-bar': isSearchInputExpanded}">
+    <div class="global-search__container"
+         [ngClass]="{'global-search__container--opened': isSearchInputExpanded, 'global-search__container--closed': !isSearchInputExpanded}">
+        <form [formGroup]="searchForm" (ngSubmit)="onSubmit(searchForm)">
+            <input class="global-search__input"
+                   type="text"
+                   name="inputControl"
+                   autocomplete="off"
+                   formControlName="inputControl"
+                   (click)="onInputClick()"
+                   (keydown)="keyEvent($event)"/>
+        </form>
+        <div class="global-search__icon">
+            <i class="ax-icon-search" aria-hidden="true"></i>
+        </div>
+        <div class="global-search__dropdown" *ngIf="isDropdownVisible">
+            <ul class="global-search__list" *ngIf="loadingSuggestion && searchForm.value.inputControl || checkIfThereIsHistoryOrSuggestions()">
+                <template ngFor let-item let-i="index" [ngForOf]="dropdownList">
+                    <li class="global-search__list-item"
+                        [ngClass]="{'global-search__list-item--selected': isSelected(i), 'global-search__list-item--inline': item.type === 'navigationShortcut'}"
+                        (mouseover)="selectElement(i)"
+                        (click)="onSubmit(searchForm)"
+                        *ngIf="hideNavigationAndSearchSuggestionItemsIfGlobalSearchResults(item)">
+                        <div class="global-search__list-item--category" *ngIf="item.type === 'navigationShortcut'" (click)="navigateTo(item.details.url); $event.stopPropagation();">
+                            <div class="nav__item nav__item--global-search-shortcut">
+                                <div class="nav__ico">
+                                    <i class="{{ item.icon }}"></i>
+                                </div>
+                                <div class="nav__name">{{item.details.name}}</div>
+                            </div>
+                        </div>
+                        <div class="global-search__list-item--search-category" *ngIf="item.type === 'searchCategory' && searchForm.value.inputControl">
+                            {{searchForm.controls['inputControl'].value}} in <strong>{{item.details.description}}</strong>
+                        </div>
+                        <div class="global-search__list-item--suggestion" *ngIf="item.type === 'suggestion'">
+                            {{item.term}} <strong>{{item.details.value}}</strong>
+                        </div>
+                        <div class="global-search__list-item--history" *ngIf="item.type === 'history'">
+                            <i class="global-search__list-item-icon ax-icon-clock"></i>
+                            {{item.details.key}}
+                        </div>
+                    </li>
+                    <li class="global-search__list--hr" *ngIf="(i === dropdownNavigationShortcuts.length - 1) && checkIfItsNotGlobalSearchResultsAndSearchInputIsNotEmptyAndHistoryExist()">
+                        <hr>
+                    </li>
+                    <li class="global-search__list-item global-search__list-item--loader"
+                        *ngIf="(i === (searchInCategories.length - 1)) && loadingSuggestion && !!searchForm.value.inputControl">
+                        <ax-loader-custom [size]="18" [position]="'left'"></ax-loader-custom>
+                    </li>
+                </template>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="global-search__close" *ngIf="isSearchInputExpanded">
+    <i (click)="onCloseClick()" class="ax-icon-cancel" *ngIf="!settings.suppressBackRoute"></i>
+    <i (click)="backRoute && navigateBack()" class="ax-icon-cancel" *ngIf="settings.suppressBackRoute"></i>
+</div>

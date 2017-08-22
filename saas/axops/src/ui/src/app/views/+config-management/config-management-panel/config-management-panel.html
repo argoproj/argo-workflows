@@ -1,0 +1,70 @@
+<ax-sliding-panel [show]="openPanel" [hasCloseButton]="false" (closePanel)="cancel()">
+    <sliding-panel-header>
+        <button *ngIf="panelMode !== 'view'" class="ax-button ax-button--base" axButtonWave [disabled]="configForm.invalid" type="button" (click)="save()">Save</button>
+        <button *ngIf="panelMode !== 'view'" class="ax-button" axButtonWave type="button" (click)="cancel()">Cancel</button>
+        <button *ngIf="panelMode === 'view'" class="ax-button ax-button--base" axButtonWave type="button" (click)="cancel()">Close</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <h2>{{title}}</h2>
+        <p>{{instructText}}</p>
+        <form role="form" [formGroup]="configForm">
+            <div class="white-box">
+                <div class="ax-form-row">
+                    <input class="ax-field" type="text" formControlName="name" ax-label-placeholder>
+                    <label for="name" class="ax-label-placeholder">Name</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!configForm.controls['name'].valid && configForm.controls['name'].touched">
+                        Configuration name is required and must be unique.
+                    </div>
+                </div>
+                <div class="ax-form-row">
+                    <input class="ax-field" type="text" formControlName="description" ax-label-placeholder>
+                    <label for="name" class="ax-label-placeholder">Description</label>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="columns small-11">Enter the information you want to save for your workflows or deployments.</div>
+                <div class="columns small-1">
+                    <a *ngIf="panelMode !== 'view'" class="clickable pull-right" (click)="addValue()">
+                        <i class="fa fa-plus-circle" aria-hidden="true"></i> ADD
+                    </a>
+                </div>
+            </div>
+
+            <div class="white-box">
+                <div class="row" *ngFor="let item of configForm.get('values').controls; let i=index" [formGroup]="item">
+                    <div class="columns small-6 class">
+                        <div class="ax-form-row">
+                            <input type="text" class="ax-field" [attr.id]="'key'+i" formControlName="key" ax-label-placeholder>
+                            <label [attr.for]="'key'+i" class="ax-label-placeholder">Key</label>
+                             <div class="ax-form-row__error-msg"
+                                *ngIf="(!configForm.get('values').controls[i].get('key').valid || configForm.get('values').getError('nonUniqueKeys-' + i) ) && configForm.get('values').controls[i].get('key').touched">
+                                <span *ngIf="configForm.get('values').controls[i].get('key').getError('required')">
+                                    Key name is required.
+                                </span>
+                                <span *ngIf="configForm.get('values').getError('nonUniqueKeys-' + i)">
+                                    Key name must be unique.
+                                </span>
+                                <span *ngIf="configForm.get('values').controls[i].get('key').getError('pattern')">
+                                    Key can only contain letters and numbers.
+                                </span>
+                            </div> 
+                        </div>
+                    </div>
+                    <div class="columns small-5 class">
+                        <div class="ax-form-row">
+                            <input [attr.type]="isShown(i) ? 'text' : 'password'" class="ax-field" [attr.id]="'value'+i" formControlName="value" ax-label-placeholder ax-autocomplete-off>
+                            <label [attr.for]="'value'+i" class="ax-label-placeholder">Value</label>
+                            <div class="ax-form-row__error-msg"
+                                *ngIf="!configForm.get('values').controls[i].get('value').valid && configForm.get('values').controls[i].get('value').touched">
+                                Value is required.
+                            </div>
+                            <i class="fa fa-eye config-management-panel__reveal-secret" aria-hidden="true" (click)="showValue(i)"></i>
+                            <i class="fa ax-icon-cancel config-management-panel__remove-key" aria-hidden="true" (click)="removeKey(i)"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </sliding-panel-body>
+</ax-sliding-panel>

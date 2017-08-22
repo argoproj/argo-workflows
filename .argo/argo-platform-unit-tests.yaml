@@ -1,0 +1,56 @@
+---
+type: workflow
+version: 1
+name: argo-platform-unit-tests
+description: This is the workflow step for running platform unit tests.
+inputs:
+  artifacts:
+    CODE:
+steps:
+- MISC-TESTS:
+    template: argo-platform-unit-test-base
+    arguments:
+      parameters.COMMAND:
+        pytest -vv /src/platform/tests/resource_config/ &&
+        pytest -vv /src/platform/tests/apiclient/ &&
+        pytest -vv /src/platform/tests/kubeobject/ &&
+        pytest -vv /src/platform/tests/util/ &&
+        pytest -vv /src/platform/tests/lib/ax/platform/ax_asg_test.py &&
+        pytest -vv /src/platform/tests/axmon/operations_test.py
+
+        # TODO (#263): add those tests back later
+        # python2 -m pytest -vv /src/platform/tests/minion_manager/ax_minion_manager_test.py &&
+        # python2 -m pytest -vv /src/platform/tests/minion_manager/ax_bid_advisor_test.py
+  KUBE-MONITOR-TESTS:
+    template: argo-platform-unit-test-base
+    arguments:
+      parameters.COMMAND: pytest -s -vv /src/platform/tests/axkubemonitor/
+  HANDSHAKE-SERVER-TESTS:
+    template: argo-platform-unit-test-base
+    arguments:
+      parameters.COMMAND: pytest -vv /src/platform/tests/handshake_server/
+  APPLET-TESTS:
+    template: argo-platform-unit-test-base
+    arguments:
+      parameters.COMMAND: pytest -vv /src/platform/tests/applet/
+
+---
+type: container
+version: 1
+name: argo-platform-unit-test-base
+description: Base template for platform unit tests
+inputs:
+  artifacts:
+    CODE:
+      path: "/src"
+  parameters:
+    COMMAND:
+image: argobase/axplatbuilder:v15
+command: ["sh", "-c"]
+args: ["%%inputs.parameters.COMMAND%%"]
+env:
+- name: PYTHONPATH
+  value: /src/common/python
+resources:
+  mem_mib: 256
+  cpu_cores: 0.1

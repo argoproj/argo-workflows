@@ -1,0 +1,76 @@
+<form role="form" [formGroup]="notificationTrackerForm">
+    <div class="tool-box">
+        <div class="tool-box__form row">
+            <div class="columns small-6">
+                <div class="ax-form-row">
+                    <input id="nickname" type="text" class="ax-field" formControlName="nickname" ax-label-placeholder>
+                    <label for="nickname" class="ax-label-placeholder">{{ 'Nickname' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['nickname'].valid && (notificationTrackerForm.controls['nickname'].touched || submitted)">Nickname is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+                <div class="ax-form-row">
+                    <input id="url" type="text"  class="ax-field" formControlName="url" ax-label-placeholder>
+                    <label for="url" class="ax-label-placeholder">{{ 'Host Name' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['url'].valid && !notificationTrackerForm.controls['url'].disabled && (notificationTrackerForm.controls['url'].touched || submitted)">Host name is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+                <div class="ax-form-row">
+                    <input id="admin-address" type="text"  class="ax-field" formControlName="admin_address" ax-label-placeholder>
+                    <label for="admin-address" class="ax-label-placeholder">{{ 'Admin address' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['admin_address'].valid && (notificationTrackerForm.controls['admin_address'].touched || submitted)">Admin address is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+                <div class="ax-form-row">
+                    <input id="port" type="number"  class="ax-field" formControlName="port" ax-label-placeholder>
+                    <label for="port" class="ax-label-placeholder">{{ 'Port' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['port'].valid && (notificationTrackerForm.controls['port'].touched || submitted)">Port is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+            </div>
+            <div class="columns small-6">
+                <div class="ax-form-row">
+                    <input id="timeout" type="number"  class="ax-field" formControlName="timeout" ax-label-placeholder>
+                    <label for="timeout" class="ax-label-placeholder">{{ 'Timeout' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['timeout'].valid && (notificationTrackerForm.controls['timeout'].touched || submitted)">Port is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+                <div class="ax-form-row">
+                    <div class="ax-checkbox">
+                        <input type="checkbox" id="use-tls" formControlName="use_tls"><span><i class="fa fa-check"></i></span>
+                    </div>
+                    <label for="use-tls">{{ 'TLS' | translate }}</label>
+                </div>
+                <div class="ax-form-row">
+                    <div class="ax-checkbox">
+                        <input #isAuthUsed type="checkbox" id="use-auth" [(ngModel)]="isUserCredentialsVisible" [ngModelOptions]="{standalone: true}"><span><i class="fa fa-check"></i></span>
+                    </div>
+                    <label for="use-auth">{{ 'Use Auth' | translate }}</label>
+                </div>
+                <div class="ax-form-row" [hidden]="!isAuthUsed.checked">
+                    <input id="username" type="text" class="ax-field" formControlName="username" ax-label-placeholder>
+                    <label for="username" class="ax-label-placeholder">{{ 'Username' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['nickname'].valid && (notificationTrackerForm.controls['nickname'].touched || submitted)">Username is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+                <div class="ax-form-row" [hidden]="!isAuthUsed.checked">
+                    <input id="password" type="password" class="ax-field" formControlName="password" ax-label-placeholder ax-autocomplete-off>
+                    <label for="password" class="ax-label-placeholder">{{ 'Password' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!notificationTrackerForm.controls['password'].valid && (notificationTrackerForm.controls['password'].touched || submitted)">Password is incorrect<i class="fa fa-warning"></i></div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="tool-box__loader" *ngIf="showLoader">
+                <ax-loader-custom [size]="20"></ax-loader-custom>
+            </div>
+            <div class="tool-box__info">
+                <div class="credentials-loader-center" *ngIf="isCredentialsLoaderVissible"><ax-loader-custom [size]="20"></ax-loader-custom></div>
+                <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVisible">{{ 'Connection error' | translate }}!</span>
+                <span class="tool-box__info--success-msg" *ngIf="isCredentialsConfirmed && !showLoader"><i class="fa fa-check" aria-hidden="true"></i></span>
+            </div>
+
+            <div class="tool-box__btns" >
+                <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base-o" (click)="connectAccount(notificationTrackerForm)">{{ 'Connect' | translate }}</button>
+                <button *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button" (click)="testCredentials(notificationTrackerForm)">{{ 'Test' | translate }}</button>
+
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="testCredentials(notificationTrackerForm, true)">{{ 'Test' | translate }}</button>
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="disconnectAccount()">{{ 'Disconnect' | translate }}</button>
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button ax-button--base" (click)="saveChanges(notificationTrackerForm)">{{ 'Done' | translate }}</button>
+            </div>
+        </div>
+    </div>
+</form>

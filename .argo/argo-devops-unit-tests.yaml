@@ -1,0 +1,86 @@
+---
+type: workflow
+version: 1
+name: argo-devops-unit-tests
+description: Argo devops unit tests
+inputs:
+  artifacts:
+    CODE:
+steps:
+- SCM-TESTS:
+    template: argo-devops-unit-test-base
+    arguments:
+      parameters.COMMAND: 
+        git config --global user.email "argouser@argoproj" &&
+        git config --global user.name "argouser" &&
+        pytest -vv --maxfail=5 /src/devops/test/ax/test/devops/unit/scm
+  #WORKFLOW-EXECUTOR-TESTS:
+  #  template: argo-devops-unit-test-base
+  #  arguments:
+  #    parameters.COMMAND: pytest -vv --maxfail=5 /src/devops/test/ax/test/devops/e2e/executor
+  FIXTUREMANAGER-TESTS:
+    template: fixturemanager-unit-tests
+  ARTIFACTMANAGER-TESTS:
+    template: argo-devops-unit-test-base
+    arguments:
+      parameters.COMMAND: pytest -vv --maxfail=5 /src/devops/test/ax/test/devops/unit/artifact_manager
+
+---
+type: container
+version: 1
+name: argo-devops-unit-test-base
+description: Base template for DevOps unit tests
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1
+image: argobase/axdevopsbuilder:v8
+command: ["sh", "-c"]
+args: ["%%inputs.parameters.COMMAND%%"]
+env:
+- name: PYTHONPATH
+  value: /src/common/python
+inputs:
+  artifacts:
+    CODE:
+      path: "/src"
+  parameters:
+    COMMAND:
+
+---
+type: workflow
+version: 1
+name: fixturemanager-unit-tests
+description: fixturemanager unit tests
+inputs:
+  artifacts:
+    CODE:
+fixtures:
+- MONGODB:
+    template: test-mongodb
+  REDISDB:
+    template: test-redis
+steps:
+- FIXTUREMANAGER-TESTS:
+    template: argo-devops-unit-test-base
+    arguments:
+      parameters.COMMAND: pytest -vv --maxfail=5 /src/devops/test/ax/test/devops/unit/fixture --redis %%fixtures.REDISDB.ip%% --mongodb %%fixtures.MONGODB.ip%%
+
+---
+type: container
+version: 1
+name: test-mongodb
+description: MongoDB container for purposes of unit tests
+image: mongo:3.2.9
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1
+
+---
+type: container
+version: 1
+name: test-redis
+description: Redis container for purposes of unit tests
+image: redis:3.0.5
+resources:
+  mem_mib: 128
+  cpu_cores: 0.1

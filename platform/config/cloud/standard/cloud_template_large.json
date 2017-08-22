@@ -1,0 +1,21 @@
+{
+    "cloud": {
+        "provider": "aws",
+        "version": 1,
+        "configure": {
+            "cluster_user": "",
+            "cluster_size": "large",
+            "cluster_type": "standard",
+            "region": "us-west-2",
+            "placement": "us-west-2a",
+            "axsys_node_type": "m3.large",
+            "axuser_node_type": "m3.large",
+            "min_node_count": 4,
+            "max_node_count": 20,
+            "axsys_node_count": 3,
+            "node_tiers": "master/applatix/user",
+            "ax_vol_size": 200,
+            "axuser_on_demand_nodes": 0
+        }
+    }
+}

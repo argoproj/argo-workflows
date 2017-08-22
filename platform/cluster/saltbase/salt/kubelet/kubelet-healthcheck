@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+
+KUBELET_HC_LOG_TAG="[kubelet-healthcheck]"
+KUBELET_HC_LOG_PATH="/tmp/kubelet-healthcheck.log"
+KUBELET_CNI_DIR="/var/lib/cni/networks/kubenet/"
+
+# Cannot allocate .0, .1, .255
+MAX_ALLOCATED_NETWORK_ADDR=253
+
+log () {
+    logger -t ${KUBELET_HC_LOG_TAG} $1
+}
+
+get-ec2-meta () {
+    placement=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    region=${placement:0:-1}
+    instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+}
+
+instance-id-to-tags () {
+    aws ec2 describe-tags --region ${region} \
+                          --filters "Name=resource-id,Values=${instance_id}" "Name=key,Values=AXClusterNameID,AXCustomerID" \
+                          --query Tags[].Value \
+                          --output text
+}
+
+dump-system () {
+    echo "===== ${KUBELET_HC_LOG_TAG} log =====" >> ${KUBELET_HC_LOG_PATH}
+    grep -F ${KUBELET_HC_LOG_TAG} /var/log/syslog >> ${KUBELET_HC_LOG_PATH}
+
+    echo >> ${KUBELET_HC_LOG_PATH}
+    echo >> ${KUBELET_HC_LOG_PATH}
+    echo "===== Current CNI Information =====" >> ${KUBELET_HC_LOG_PATH}
+    ls -l ${KUBELET_CNI_DIR} >> ${KUBELET_HC_LOG_PATH} 2>&1
+}
+
+persist-kubelet-healthcheck-log () {
+    local cluster_name_id=$1
+    local customer_id=$2
+    local cluster_uuid=${cluster_name_id:(-36)}
+    local cluster_name=${cluster_name_id/-$cluster_uuid/}
+
+    s3path="s3://applatix-cluster-${customer_id}-0/${cluster_name}/${cluster_uuid}/kubelet-info/${instance_id}-$(date +"%Y-%m-%d-%s")"
+    log "persisting kubelet healthcheck log to ${s3path}"
+
+    log "dumping system before issuing terminating instance ..."
+    dump-system
+
+    aws s3 cp ${KUBELET_HC_LOG_PATH} ${s3path} --acl bucket-owner-full-control
+}
+
+bye-world () {
+    log "Getting ec2 instance metadata ..."
+    get-ec2-meta
+
+    log "Getting Applatix cluster information ..."
+    cluster_info=$(instance-id-to-tags)
+
+    log "Persisting docker-healthcheck logs ..."
+    persist-kubelet-healthcheck-log ${cluster_info}
+
+    log "Terminating instance ${instance_id} in region ${region}"
+    aws --region ${region} ec2 terminate-instances --instance-ids ${instance_id}
+}
+
+get-allocated-network-addresses () {
+    ls -l ${KUBELET_CNI_DIR} | grep -v total | grep -v last_reserved_ip | wc -l
+}
+
+if [[ -d ${KUBELET_CNI_DIR} ]]; then
+    allocated_addr=$(get-allocated-network-addresses)
+    if [[ ${allocated_addr} -lt ${MAX_ALLOCATED_NETWORK_ADDR} ]]; then
+        log "Kubelet has ${allocated_addr} / ${MAX_ALLOCATED_NETWORK_ADDR} pod addresses allocated"
+    else
+        log "Kubelet has ${allocated_addr} / ${MAX_ALLOCATED_NETWORK_ADDR} pod addresses allocated, which is hitting limit. Terminating instance"
+        bye-world
+    fi
+else
+    log "Kubenet CNI directory ${KUBELET_CNI_DIR} has not been created yet"
+fi

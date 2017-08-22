@@ -1,0 +1,31 @@
+@import '../../../assets/styles/config';
+
+.access-mark {
+    &__icon {
+        display: inline-block;
+        border-radius: 50%;
+        height: 21px;
+        width: 21px;
+        vertical-align: middle;
+
+        & > i {
+            color: white;
+            position: absolute;
+            margin-top: 3px;
+            margin-left: 4px;
+        }
+
+        &--red {
+            background-color: $ax-failed-color;
+        }
+
+        &--green {
+            background-color: $ax-success-color;
+        }
+    }
+
+    &__message {
+        display: inline-block;
+        color: $ax-color-gray-8;
+    }
+}

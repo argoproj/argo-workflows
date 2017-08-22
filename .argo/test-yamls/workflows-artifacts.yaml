@@ -1,0 +1,148 @@
+---
+type: container
+version: 1
+name: test-container-with-output-artifact
+description: Container which produces an output artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo 'sleeping for 20 seconds' && sleep 20 && echo 'done'"]
+outputs:
+  artifacts:
+    BIN-OUTPUT:
+      path: /bin
+
+---
+type: container
+version: 1
+name: test-container-with-input-artifact
+description: Container which accepts an input artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["find /root/bin && echo 'sleeping for 20 seconds' && sleep 20 && echo 'done'"]
+inputs:
+  artifacts:
+    BIN-INPUT:
+      path: /root/bin
+
+---
+type: workflow
+version: 1
+name: test-workflow-passing-artifacts
+description: Basic workflow with artifacts between steps
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    template: test-container-with-output-artifact
+- STEP2:
+    template: test-container-with-input-artifact
+    arguments:
+      artifacts.BIN-INPUT: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+
+
+---
+type: workflow
+version: 1
+name: test-workflow-passing-artifacts-inlined
+description: Basic workflow with artifacts between steps
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- STEP1:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo 'sleeping for 20 seconds' && sleep 20 && echo 'done'"]
+    outputs:
+      artifacts:
+        BIN-OUTPUT:
+          path: /bin
+- STEP2:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["find /root/bin && echo 'sleeping for 20 seconds' && sleep 20 && echo 'done'"]
+    inputs:
+      artifacts:
+        BIN-INPUT:
+          from: "%%steps.STEP1.outputs.artifacts.BIN-OUTPUT%%"
+          path: /root/bin
+
+---
+type: workflow
+version: 1
+name: test-workflow-artifact-tag-export
+description: Export an artifact and add tag
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- GENERATE:
+    template: argo-checkout
+outputs:
+  artifacts:
+    CODE:
+      from: "%%steps.GENERATE.outputs.artifacts.CODE%%"
+artifact_tags:
+- my_export_artifact
+
+---
+type: workflow
+version: 1
+name: test-workflow-artifact-tag-consume
+description: Use an artifact exported by a top-level workflow
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- CONSUME:
+    template: test-container-consume-artifact
+    arguments:
+      artifacts.ARTIFACT_TO_CONSUME: "%%artifacts.tag.my_export_artifact.CODE%%"
+  CONSUME_INLINE:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["find /src && sleep 5"]
+    inputs:
+      artifacts:
+        ARTIFACT_TO_CONSUME:
+          from: "%%artifacts.tag.my_export_artifact.CODE%%"
+          path: /src
+---
+type: container
+version: 1
+name: test-container-consume-artifact
+description: Container which consumes an artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["find /src && sleep 5"]
+inputs:
+  artifacts:
+    ARTIFACT_TO_CONSUME:
+      path: /src
+
+---
+type: container
+version: 1
+name: test-container-consume-artifact-tag
+description: Container which consumes an artifact byt its tag
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["find /src && sleep 5"]
+inputs:
+  artifacts:
+    ARTIFACT_TO_CONSUME:
+      from: "%%artifacts.tag.my_export_artifact.CODE%%"
+      path: /src

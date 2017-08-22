@@ -1,0 +1,50 @@
+@import '../../../../assets/styles/config';
+
+.commit-box {
+    background-color: #FFFFFF;
+    border: 1px solid #ECECEC;
+
+    &__author-info:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    &__avatar {
+        float: left;
+        margin-right: 12px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        text-transform: capitalize;
+        text-align: center;
+        font-size: 20px;
+        line-height: 40px;
+        background-color: #CCCCCC;
+    }
+
+    &__title {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #000;
+    }
+
+    &__label {
+        font-size: 12px;
+        color: #999;
+    }
+
+    &__desc {
+        font-size: 12px;
+    }
+
+    &__main {
+        padding: 20px;
+    }
+
+    &__details {
+        padding: 20px;
+        background-color: #FAFAFA;
+        height: 6em;
+    }
+}

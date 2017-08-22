@@ -1,0 +1,45 @@
+#
+# Copyright 2015-2016 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: volume-mounts-fixer
+    labels:
+        app: volume-mounts-fixer
+        tier: platform
+        role: axcritical
+    annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+spec:
+    template:
+        metadata:
+            labels:
+                app: volume-mounts-fixer
+                tier: platform
+                role: axcritical
+        spec:
+            containers:
+              - name: volume-mounts-fixer
+                image: ${REGISTRY}/${NAMESPACE}/volume-mounts-fixer:${VERSION}
+                volumeMounts:
+                   - name: host
+                     mountPath: /hostdev
+                resources:
+                    requests:
+                        cpu: 25m
+                        memory: 60Mi
+                    limits:
+                        cpu: 50m
+                        memory: 120Mi
+                securityContext:
+                    privileged: true
+            imagePullSecrets:
+                - name: applatix-registry
+            hostPID: true
+            volumes:
+              - name: host
+                hostPath:
+                    path: /dev

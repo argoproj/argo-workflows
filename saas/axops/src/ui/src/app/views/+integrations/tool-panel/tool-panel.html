@@ -1,0 +1,73 @@
+<form role="form" [formGroup]="toolForm" class="tool-box">
+    <div class="row tool-box">
+        <div class="columns small-4">
+            <div class="tool-box__title">
+                <span>1</span> Enter {{type}} credentials
+            </div>
+            <div class="ax-form-row">
+                <input id="username-source-control" type="text" class="ax-field" formControlName="username" ax-label-placeholder>
+                <label for="username-source-control" class="ax-label-placeholder">
+                    <span *ngIf="type !== 'codecommit'">{{ 'Username' | translate }}</span>
+                    <span *ngIf="type === 'codecommit'">{{ 'AWS Access Key ID' | translate }}</span>
+                </label>
+                <div class="ax-form-row__error-msg" *ngIf="!toolForm.controls['username'].valid && (toolForm.controls['username'].touched || submitted)">
+                    <span *ngIf="type !== 'codecommit'">{{ 'Username is incorrect' | translate }}</span>
+                    <span *ngIf="type === 'codecommit'">{{ 'AWS Access Key ID is incorrect' | translate }}</span>
+                    <i class="fa fa-warning"></i>
+                </div>
+            </div>
+            <div class="ax-form-row">
+                <input id="password-source-control" type="password" class="ax-field" formControlName="password" ax-label-placeholder ax-autocomplete-off>
+                <label for="password-source-control" class="ax-label-placeholder">
+                    <span *ngIf="type !== 'codecommit'">{{ 'Password/ App Password' | translate }}</span>
+                    <span *ngIf="type === 'codecommit'">{{ 'AWS Secret Access Key' | translate }}</span>
+                </label>
+                <div class="ax-form-row__error-msg" *ngIf="!toolForm.controls['password'].valid && (toolForm.controls['password'].touched || submitted)">
+                    <span *ngIf="type !== 'codecommit'">{{ 'Password is incorrect' | translate }}</span>
+                    <span *ngIf="type === 'codecommit'">{{ 'AWS Secret Access Key is incorrect' | translate }}</span>
+                    <i class="fa fa-warning"></i>
+                </div>
+            </div>
+            <div class="tool-box__btns" *ngIf="!showLoader">
+                <button *ngIf="!isAccountConnected" axButtonWave class="ax-button ax-button--base-o" (click)="connectAccount(toolForm)">Connect</button>
+                <button *ngIf="isAccountConnected" class="ax-button ax-button--base-o tool-box__connected-btn" disabled>
+                    <i class="fa fa-check" aria-hidden="true"></i> Connected
+                </button>
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="disconnectAccount()">Disconnect</button>
+            </div>
+        </div>
+
+        <div class="columns small-8">
+            <div class="tool-box__title">
+                <span>2</span> Add repositories
+            </div>
+            <div class="ax-form-row" *ngIf="allRepos.length">
+                <label>{{ 'Repositories' | translate }}</label>
+                <ax-multi-select [options]="allRepos" [placeholder]="'Select repos'"
+                                 formControlName="repos" [showTooltip]="true"></ax-multi-select>
+            </div>
+            <div class="ax-form-row" *ngIf="!allRepos.length">
+                <div class="ax-form-row__info" [ngClass]="{'ax-form-row__info': submitted, 'ax-form-row__error-msg': submitted}" >{{ 'There is no repository to select' | translate }}</div>
+            </div>
+            <div class="ax-form-row" *ngIf="hasWebHookSupport(type)">
+                <div class="ax-checkbox">
+                    <input type="checkbox" id="use_webhook" formControlName="use_webhook"><span><i class="fa fa-check"></i></span>
+                </div>
+                <label for="use_webhook">Use Webhook </label>
+                <div class="info-text dib margin-left-medium va-mid" ax-tooltip="Expect delays of few seconds when using webhook.">
+                    <i class="fa fa-info-circle info-icon" aria-hidden="true"></i>
+                </div>
+            </div>
+            <div class="tool-box__loader" *ngIf="showLoader">
+                <ax-loader-custom [size]="20"></ax-loader-custom>
+            </div>
+            <div class="tool-box__info">
+                <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVissible">{{ 'Connection error' | translate }}!</span>
+                <span class="tool-box__info--success-msg" *ngIf="isCredentialsConfirmed && !showLoader"><i class="fa fa-check" aria-hidden="true"></i></span>
+            </div>
+            <div class="tool-box__btns tool-box__btns--footer" *ngIf="!showLoader">
+                <button *ngIf="isAccountConnected" axButtonWave class="ax-button ax-button--base" [disabled]="!toolForm.valid" (click)="saveChanges(toolForm)">Done</button>
+            </div>
+        </div>
+    </div>
+</form>

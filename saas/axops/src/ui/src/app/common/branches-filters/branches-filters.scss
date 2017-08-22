@@ -1,0 +1,127 @@
+@import '../../../assets/styles/config';
+
+.branches-filters {
+    width: 800px;
+    height: 476px;
+    margin: -1rem;
+    overflow: hidden;
+
+    @media screen and (max-width: $minWidthForExtendedNav - 1) {
+        width: 680px;
+        height: 400px;
+    }
+
+    &__content {
+        overflow-y: auto;
+        padding: 30px;
+
+        @media screen and (max-width: $minWidthForExtendedNav - 1) {
+            height: 330px;
+        }
+    }
+
+    &__row {
+        display: block;
+        padding: 0 8px;
+        line-height: 56px;
+        font-size: 12px;
+        font-weight: bold;
+        color: darken($ax-color-teal-6, 3);
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+
+        @media screen and (max-width: $minWidthForExtendedNav - 1) {
+            line-height: 60px;
+        }
+
+        &:not(.selected):hover {
+            background-color: rgba(0,0,0,.04);
+        }
+
+        &.selected {
+            border: 1px solid $ax-color-teal-6;
+            border-radius: 5px;
+        }
+        
+        &[hidden] {
+            display: none;
+        }
+    }
+
+    &__info {
+        color: $ax-color-gray-8;
+
+        i {
+            position: relative;
+            top: 4px;
+            margin-left: 12px;
+            font-size: 24px;
+            color: #333;
+
+            .selected & {
+                display: none;
+            }
+        }
+    }
+
+    &__header {
+        padding: 0 20px;
+        line-height: 50px;
+        font-size: 12px;
+        color: #aaa;
+    }
+
+    &__branches {
+        margin-top: 30px;
+
+        h3 i {
+            float: right;
+            position: relative;
+            top: -2px;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+        }
+    }
+
+    &__btns {
+        padding: 12px 0px;
+        background-color: $ax-color-gray-2;
+
+        @media screen and (max-width: $minWidthForExtendedNav - 1) {
+            padding: 14px 10px;
+        }
+    }
+
+    h3 {
+        color: #aaa;
+        font-size: 15px;
+        text-transform: uppercase;
+    }
+
+    &__search {
+        position: relative;
+        top: -4px;
+
+        input {
+            border-radius: 24px;
+            background-color: $ax-color-gray-1;
+            border-color: transparent;
+        }
+    }
+
+    &__back-btn {
+        position: relative;
+        top: -2px;
+        width: 25px;
+        min-width: 0px;
+        font-size: 30px;
+        font-weight: normal;
+        padding-left: 0px;
+        text-align: left;
+
+        &:hover {
+            background-color: transparent !important;
+        }
+    }
+}

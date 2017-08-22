@@ -1,0 +1,85 @@
+---
+type: container
+version: 1
+name: test-fixture-action-ok
+image: "debian:8.5"
+command: ["sh", "-c"]
+args: ["echo 'performing action %%inputs.parameters.ACTION%%'"]
+inputs:
+  parameters:
+    ACTION:
+
+---
+type: fixture
+version: 1
+name: test-fixture-undefined-attr
+attributes:
+  abc:
+    type: string
+actions:
+  dosomething:
+    template: test-fixture-action-ok
+    arguments:
+      parameters.ACTION: "%%attributes.xyz%%"
+
+---
+type: fixture
+version: 1
+name: test-fixture-bad-format
+attributes:
+  abc:
+    type: string
+actions:
+  dosomething:
+    template: test-fixture-action-ok
+    arguments:
+      parameters.ACTION: "%%badformat%%"
+
+---
+type: fixture
+version: 1
+name: incomplete-create
+attributes:
+  abc:
+    type: string
+actions:
+  create:
+    template: test-fixture-action-ok
+    arguments:
+
+---
+type: fixture
+version: 1
+name: test-fixture-extra-params
+attributes:
+  abc:
+    type: string
+actions:
+  dosomething:
+    template: test-fixture-action-ok
+    arguments:
+      parameters.ACTION: foo
+      parameters.ACTION2: foo
+
+---
+type: workflow
+version: 1
+name: test-fixtures-dynamic-no-attribute
+description: Reference a dynamic fixture without an attribute
+fixtures:
+- NGINX:
+    template: test-nginx-ok
+steps:
+- WEB-CLIENT-INLINED:
+   image: alpine:latest
+   command: ["sh", "-c"]
+   args: ["curl http://%%fixtures.NGINX%%"]
+
+---
+type: container
+version: 1
+name: test-nginx-ok
+image: nginx:latest
+resources:
+  cpu_cores: 0.05
+  mem_mib: 64

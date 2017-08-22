@@ -1,0 +1,77 @@
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: v1
+kind: Service
+metadata:
+    name: prometheus
+    labels:
+        app: prometheus
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: prometheus-deployment
+    ports:
+      - port: 9090
+        targetPort: 9090
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: prometheus-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: prometheus-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-prometheus"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "data",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: prometheus
+                image: ${REGISTRY}/${NAMESPACE}/prometheus:${VERSION}
+                ports:
+                  - containerPort: 9090
+                volumeMounts:
+                  - name: data
+                    mountPath: /prometheus
+                securityContext:
+                    privileged: true
+                resources:
+                    requests:
+                        cpu: 200m
+                        memory: 1200Mi
+                    limits:
+                        cpu: 500m
+                        memory: 3000Mi
+            nodeSelector:
+                ax.tier: master
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: data
+                persistentVolumeClaim:
+                    claimName: prometheus-pvc

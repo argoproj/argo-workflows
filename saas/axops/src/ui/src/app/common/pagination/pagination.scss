@@ -1,0 +1,59 @@
+.pagination {
+    font-size: 13px;
+
+    &__position {
+        display: inline-block;
+        vertical-align: middle;
+        text-transform: none;
+        margin-left: 5px;
+        margin-right: 5px;
+    }
+
+    &__btns {
+        display: inline-block;
+    }
+
+    &__btn {
+        display: inline-block;
+        border: 1px solid #8FA4B1;
+        border-radius: 50%;
+        height: 26px;
+        width: 26px;
+        cursor: pointer;
+
+        & > i {
+            position: relative;
+            font-size: 13px;
+            right: -6px;
+            top: 1px;
+            color: #00A2B3;
+            font-weight: bolder;
+        }
+        
+        &--before {
+            transform: rotate(-90deg);
+        }
+
+        &--next {
+            transform: rotate(90deg);
+        }
+
+        &:hover {
+            background-color: #d6dee3;
+        }
+    }
+
+    &__items-per-page {
+        display: inline-block;
+        margin-left: 10px;
+    }
+
+    &__limit {
+        display: inline-block;
+    }
+
+    &--right {
+        float: right;
+    }
+
+}

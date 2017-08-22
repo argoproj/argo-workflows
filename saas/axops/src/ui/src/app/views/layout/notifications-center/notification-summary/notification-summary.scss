@@ -1,0 +1,57 @@
+@import '../../../../../assets/styles/config';
+
+.notification-summary {
+    padding: 16px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid $ax-color-gray-3;
+
+    &:hover {
+        background-color: rgba($ax-color-gray-2, .5);
+    }
+
+    .active & {
+        cursor: default;
+        background-color: $ax-color-gray-2;
+    }
+
+    &__ico {
+        float: left;
+        width: 36px;
+
+        .fa-warning {
+            color: $ax-color-orange;
+        }
+
+        .fa-info-circle {
+            color: $ax-success-color;
+        }
+
+        .fa-times-circle {
+            color: $ax-failed-color;
+        }
+    }
+
+    &__msg {
+        overflow: auto;
+    }
+
+    &__content {
+        overflow: auto;
+    }
+
+    &__content {
+        font-weight: 500;
+        font-size: .8em;
+        color: $ax-color-gray-5;
+
+        .highlight {
+            color: $ax-color-teal-6;
+        }
+    }
+
+    &__msg {
+        font-weight: 400;
+        font-size: 1.14em;
+        color: $ax-color-gray-7;
+    }
+}

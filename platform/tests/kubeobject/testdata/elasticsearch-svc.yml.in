@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: elasticsearch
+    labels:
+        app: elasticsearch
+        tier: platform
+        role: axcritical
+spec:
+    ports:
+      - port: 9200
+        targetPort: 9200
+    selector:
+        app: elasticsearch
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: elasticsearch
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: elasticsearch
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["sh", "-c", "wait_volume"],
+                        "env": [
+                            {
+                                "name": "AX_SIGNATURE",
+                                "value": "${AX_CLUSTER_NAME_ID}-elasticsearch-svc"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "es-persistent-storage",
+                                "mountPath": "/axsigdata"
+                            }
+                        ]
+                    }
+                ]'
+        spec:
+            containers:
+              - image: ${REGISTRY}/${NAMESPACE}/elasticsearch:${VERSION}
+                name: elasticsearch
+                ports:
+                  - containerPort: 9200
+                volumeMounts:
+                  - name: es-persistent-storage
+                    mountPath: /usr/share/elasticsearch/data
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 1400Mi
+                    limits:
+                        cpu: 200m
+                        memory: 1800Mi
+                env:
+                  - name: AX_MEMORY_SIZE
+                    value: "1200"
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: es-persistent-storage
+                persistentVolumeClaim:
+                    claimName: elasticsearch-pvc

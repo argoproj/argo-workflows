@@ -1,0 +1,88 @@
+---
+type: deployment
+version: 1
+name: test-deployment-with-fixtures
+description: Deployment which requests a fixture
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+application_name: test-app
+deployment_name: dep-with-fixtures
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+fixtures:
+- fix1:
+    class: test-fixture
+    attributes:
+      instance_type: m3.large
+  fix2:
+    class: test-fixture
+    attributes:
+      group: prod
+containers:
+  WEB:
+    template: test-container-with-fixture
+    arguments:
+      parameters.FIXTURE_NAME: "%%fixtures.fix1.name%%"
+      parameters.FIXTURE_MEM: "%%fixtures.fix2.memory_gib%%"
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+---
+type: container
+version: 1
+name: test-container-with-fixture
+inputs:
+  parameters:
+    FIXTURE_NAME:
+    FIXTURE_MEM:
+image: nginx:latest
+command: ["sh", "-c"]
+args: ["echo %%inputs.parameters.FIXTURE_NAME%% %%inputs.parameters.FIXTURE_MEM%% && nginx -g 'daemon off;'"]
+resources:
+  cpu_cores: 0.05
+  mem_mib: 32
+
+---
+type: deployment
+version: 1
+name: test-deployment-with-fixtures-inlined
+description: Deployment which requests a fixture (inlined)
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+application_name: test-app
+deployment_name: dep-with-fixtures-inlined
+external_routes:
+- target_port: 80
+  ip_white_list:
+  - 0.0.0.0/0
+fixtures:
+- fix1:
+    class: test-fixture
+    attributes:
+      instance_type: m3.large
+  fix2:
+    class: test-fixture
+    attributes:
+      group: prod
+containers:
+  WEB:
+    image: nginx:latest
+    command: ["sh", "-c"]
+    args: ["echo %%fixtures.fix1.name%% %%fixtures.fix2.memory_gib%% && nginx -g 'daemon off;'"]
+    resources:
+      cpu_cores: 0.05
+      mem_mib: 32

@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: Service
+metadata:
+    labels:
+        app: axdb
+        tier: platform
+        role: critical
+    name: axdb
+spec:
+    ports:
+      - port: 8083
+        targetPort: 8080
+    selector:
+        app: axdbstatefulset
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+    name: axdb
+spec:
+    serviceName: "axdb"
+    replicas: 3
+    template:
+        metadata:
+            labels:
+                app: axdbstatefulset
+                tier: platform
+                role: critical
+            annotations:
+                pod.alpha.kubernetes.io/initialized: "true"
+                pod.alpha.kubernetes.io/init-containers: '[
+                        {
+                            "name": "pre",
+                            "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                            "command": ["sh", "-c", "wait_volume; wait_tcp kafka-zk:9092"],
+                            "env": [
+                                {
+                                    "name": "AX_SIGNATURE",
+                                    "value": "${AX_CLUSTER_NAME_ID}-axdb-svc"
+                                },
+                                {
+                                    "name": "USE_AXDB",
+                                    "value": "use_axdb"
+                                }
+                            ],
+                            "volumeMounts": [
+                                {
+                                    "name": "pdata",
+                                    "mountPath": "/axsigdata"
+                                }
+                            ]
+                        }
+                    ]'
+        spec:
+            containers:
+              - name: axdb
+                image: ${REGISTRY}/${NAMESPACE}/axdb:${VERSION}
+                imagePullPolicy: Always
+                env:
+                  - name: CASSANDRA_HOME
+                    value: /ax/axdb/cassandra
+                  - name: CASSANDRA_SERVICE
+                    value: axdb
+                  - name: CASSANDRA_MEM_LIMIT
+                    value: "1500"
+                  - name: NUMBER_OF_NODES
+                    value: "3"
+                  - name: POD_NAMESPACE
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.namespace
+                  - name: POD_IP
+                    valueFrom:
+                        fieldRef:
+                            fieldPath: status.podIP
+                  - name: AX_NAMESPACE
+                    value: "${NAMESPACE}"
+                  - name: AX_VERSION
+                    value: "${VERSION}"
+                ports:
+                  - containerPort: 8080
+                    name: axdbport
+                resources:
+                    requests:
+                        cpu: 100m
+                        memory: 2000Mi
+                    limits:
+                        cpu: 1000m
+                        memory: 3000Mi
+                volumeMounts:
+                  - name: pdata
+                    mountPath: /ax/axdb/cassandra
+                lifecycle:
+                    preStop:
+                        exec:
+                            command: ["/ax/axdb/flush.sh"]
+                readinessProbe:
+                    exec:
+                        command:
+                          - /bin/bash
+                          - -c
+                          - /ax/axdb/health.sh
+                    initialDelaySeconds: 1
+                    timeoutSeconds: 10
+                    periodSeconds: 10
+            terminationGracePeriodSeconds: 60
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry
+    volumeClaimTemplates:
+      - metadata:
+            name: pdata
+            annotations:
+                volume.alpha.kubernetes.io/storage-class: anything
+        spec:
+            accessModes: [ "ReadWriteOnce" ]
+            resources:
+                requests:
+                    storage: 30Gi

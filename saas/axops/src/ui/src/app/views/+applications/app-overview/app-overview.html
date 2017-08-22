@@ -1,0 +1,93 @@
+<div class="app-overview">
+    <div class="content content--with-padding-top content--without-padding-bottom" [ngClass]="{'disable-scroll': !applications}" ax-infinite-scroll
+        [ax-infinite-scroll-distance]="1" [ax-scroll-window]="false" [ax-immediate-check]="true" [ax-scroll-items]="applications" (scrolled)="onScroll()">
+
+        <div class="ax-container" *ngIf="applications && !firstLoading">
+            <div class="ax-table-list ax-table-list--clickable">
+                <div class="ax-table-list__row" *ngFor="let application of applications" [routerLink]="['/app/applications/details', application.id]">
+                    <div class="row">
+                        <div class="columns small-3 text-truncate text-cell">
+                            <div class="ax-table-list__app-name">
+                                <i class="ax-icon-applications"></i>
+                                <strong>
+                                    {{ application.name }}
+                                </strong>
+                            </div>
+                            
+                            <div class="ax-table-list__indented">
+                                <ax-application-status [status]="application.status"></ax-application-status>
+                            </div>
+
+                            <div class="ax-table-list__indented text-truncate" *ngIf="application.endpoints && application.endpoints.length">
+                                <div *ngIf="application.endpoints.length === 1" (click)="$event.stopPropagation();">
+                                    <a href="//{{application.endpoints[0]}}" target="_blank"><i class="fa fa-external-link"></i> Endpoint</a>
+                                </div>
+                                <div *ngIf="application.endpoints.length > 1" (click)="$event.stopPropagation();">
+                                    <ax-dropdown isMenu="true">
+                                        <ax-dropdown-anchor>
+                                            <span class="application-panel__item-dropdown">
+                                                <a>
+                                                    <i class="fa fa-external-link"></i>
+                                                    Endpoints
+                                                    <i class="fa fa-caret-down" *ngIf="application.endpoints?.length > 0"></i>
+                                                </a>
+                                            </span>
+                                        </ax-dropdown-anchor>
+                                        <ax-dropdown-content>
+                                            <ul>
+                                                <li *ngFor="let url of application.endpoints">
+                                                    <a href="//{{ url }}" target="_blank">{{ url }}</a>
+                                                </li>
+                                            </ul>
+                                        </ax-dropdown-content>
+                                    </ax-dropdown>
+                                </div>
+                            </div>
+
+                        </div>
+                        <div class="columns small-1 text-truncate"> </div>
+                        <div class="columns text-truncate small-5">
+
+                            <div class="application-panel__item">
+                                <div class="application-panel__item-name">Deployments</div>
+                                <div class="application-panel__status-bar">
+                                    <div class="bar" [style.width]="application.activePercentValue + '%'"></div>
+                                    <div class="bar bar--error" [style.width]="application.errorPercentValue + '%'"></div>
+                                    <div class="bar bar--stopped" [style.width]="application.stoppedPercentValue + '%'"></div>
+                                </div>
+                                <div class="application-panel__deployments">
+                                    <div class="application-panel__deployment-item application-panel__deployment-item--active">
+                                        <i class="fa fa-circle"></i> Active: <strong>{{ application.deployments_active }}</strong></div>
+                                    <div class="application-panel__deployment-item application-panel__deployment-item--error">
+                                        <i class="fa fa-circle"></i> Error: <strong>{{ application.deployments_error }}</strong></div>
+                                    <div class="application-panel__deployment-item application-panel__deployment-item--stopped">
+                                        <i class="fa fa-circle"></i> Stopped: <strong>{{ application.deployments_stopped }}</strong></div>
+                                    <div class="application-panel__deployment-item">
+                                        <i class="fa fa-circle"></i> Terminated: <strong>{{ application.deployments_terminated }}</strong></div>
+                                </div>
+                            </div>                            
+                        </div>
+                        <div class="columns small-2"></div>
+                        <div class="columns small-1">
+                            <div class="fr">
+                                <ax-dropdown-menu *ngIf="applicationMenuCreator" [settings]="applicationMenuCreator(application)">
+                                    <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                        <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                    </button>
+                                </ax-dropdown-menu>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <ax-loader-custom [size]="20" *ngIf="!dataLoaded" class="applications__loader"></ax-loader-custom>
+                <div *ngIf="dataLoaded && !applications.length" class="no-data-panel">
+                    <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="ax-container" *ngIf="firstLoading">
+            <ax-loader-list-mockup [itemHeight]="60"></ax-loader-list-mockup>
+        </div>
+    </div>
+</div>

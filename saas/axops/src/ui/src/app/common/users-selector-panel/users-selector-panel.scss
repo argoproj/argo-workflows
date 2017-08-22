@@ -1,0 +1,128 @@
+@import '../../../assets/styles/config';
+
+.users-selector-panel {
+    padding: 0 10px;
+
+    &__title {
+        font-size: 24px;
+        padding: 21px;
+        color: $ax-color-teal-7;
+        border-bottom: 0.5px solid $ax-color-gray-3;
+    }
+
+    &__search {
+        border-bottom: 0.5px solid $ax-color-gray-3;
+        padding: 15px 21px;
+        position: relative;
+
+        & > input {
+            height: 35px;
+            border-radius: 24px;
+            background-color: #F8FBFB;
+            padding: 6px 37px 6px 20px;
+            width: 100%;
+
+            display: inline-block;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857143;
+            cursor: pointer;
+            white-space: nowrap;
+            border: none;
+        }
+
+        & > i {
+            position: absolute;
+            right: 36px;
+            top: 24px;
+            color: $ax-color-teal-7;
+        }
+    }
+
+    &__content {
+
+    }
+
+    &__group {
+
+    }
+
+    &__group-header, &__loader {
+        border-bottom: 0.5px solid $ax-color-gray-3;
+        padding: 20px 21px;
+        position: relative;
+    }
+
+    &__user {
+        display: inline-block;
+
+        & > span {
+            margin-left: 30px;
+        }
+    }
+
+    &__group-icon {
+        position: relative;
+
+        & > i.front {
+            position: absolute;
+            color: $ax-color-gray-7;
+            font-size: 26px;
+            left: 6px;
+            top: -1px;
+        }
+
+        & > i.rear {
+            position: absolute;
+            color: $ax-color-gray-5;
+            font-size: 24px;
+        }
+    }
+
+    &__toggle {
+        display: inline-block;
+        float: right;
+        cursor: pointer;
+    }
+
+    &__group-list {
+        &.expanded {
+            height: auto;
+        }
+
+        &.collapsed {
+            height: 0;
+            display: none;
+        }
+
+        & > ul {
+            margin-top: 7px;
+            margin-bottom: 7px;
+            list-style: none;
+
+            & > li {
+                line-height: 40px;
+                font-size: 14px;
+                margin-left: 10px;
+
+                & > span > i {
+                    font-size: 20px;
+                    color: $ax-color-gray-5;
+                }
+            }
+        }
+    }
+
+    &__close {
+        display: inline-block;
+        font-size: 30px;
+        vertical-align: middle;
+        float: right;
+
+        & > i {
+            cursor: pointer;
+        }
+    }
+}
+

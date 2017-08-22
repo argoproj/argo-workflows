@@ -1,0 +1,61 @@
+@import '../../../assets/styles/config';
+
+.ax-jira-issues {
+    &__item {
+        padding: 20px;
+        position: relative;
+        font-size: 14px;
+        border-bottom: 1px solid $ax-color-gray-2;
+        background-color: $ax-color-gray-1;
+        cursor: auto;
+
+        &:last-child {
+            border-bottom-left-radius: $border-radius;
+            border-bottom-right-radius: $border-radius;
+        }
+
+        &--issue-label {
+            font-weight: bolder;
+
+            & > a {
+                vertical-align: top;
+            }
+        }
+
+        &--issue-title {
+            font-weight: bolder;
+        }
+
+        &--issue-assignee, &--issue-reporter {
+            color: black;
+
+            & > span {
+                color: $ax-color-gray-5;
+            }
+        }
+
+        &--issue-status {
+            text-align: center;
+        }
+
+        &--issue-comment > a {
+            font-weight: bolder;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    &__job-component {
+        .ax-jira-issues__item {
+            &--issue-label {
+                padding-left: 48px;
+            }
+
+            &:first-child {
+                box-shadow: inset 0 2px 7px $ax-color-gray-3;
+            }
+        }
+    }
+}

@@ -1,0 +1,67 @@
+# Common libraries and basic python add-ons
+jsonpickle==0.9.3
+requests==2.9.1
+urllib3==1.20
+nose==1.3.7
+netaddr==0.7.18
+python-dateutil==2.5.3
+PyYAML==3.11
+jsonpath-rw==1.4.0
+websocket-client==0.37.0
+retrying==1.3.3
+pyparsing==2.1.10
+pytest==3.0.2
+validators==0.11.2
+jsonschema==2.6.0
+packaging==16.8
+# bunch needs custom git hash as default bunch is not python 3 compatible
+git+https://github.com/abhinavdas/bunch.git@b1fe0f27883dcae997fd69e3e7f9519ccba94371
+docker-py==1.10.6
+hashids==1.2.0
+
+# Web services
+Flask==0.10.1
+gevent==1.2.0
+greenlet==0.4.11
+# Jinja2 needs to be pinned due to a problem with Jinja 2.9 (SyntaxError: 'yield' inside async function)
+Jinja2==2.8
+twisted==16.6.0
+
+# AWS related
+boto3==1.4.4
+moto==0.4.31
+mock==2.0.0
+httpretty==0.8.14 # To resolve a python3 install problem
+
+# axmon
+transitions==0.4.0
+configobj==5.0.6
+future==0.15.2
+redis==2.10.3
+prometheus_client==0.0.19
+google-api-python-client==1.6.2
+google-cloud==0.26.1
+
+# Kubernetes
+certifi==2016.8.2
+ijson==2.3
+kubernetes==2.0.0
+
+# Kafka
+kafka-python==1.3.1
+
+# axconsole
+Flask-Sockets==0.2.0
+gevent-websocket==0.9.5
+
+# axnotification
+Flask-RESTful==0.3.5
+Flask-SQLAlchemy==2.1
+voluptuous==0.8.11
+
+# master-manager, minion-manager, volume-mounts-fixter
+parse==1.6.6
+
+# Artifacts
+# Jesse patched pyinotify to make it compatible with libc.musl
+git+git://github.com/dsoprea/PyInotify.git@04c13e8546f36c0c11e8e7f22721b5fa210e6ceb

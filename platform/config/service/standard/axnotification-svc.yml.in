@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axnotification
+    labels:
+        app: axnotification
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: axnotification-deployment
+    ports:
+      - port: 9889
+        targetPort: 9889
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axnotification-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axnotification-deployment
+                tier: platform
+                role: axcritical
+        spec:
+            containers:
+              - name: axnotification
+                image: ${REGISTRY}/${NAMESPACE}/axnotification:${VERSION}
+                ports:
+                  - containerPort: 9889
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 40Mi
+                    limits:
+                        cpu: 50m
+                        memory: 80Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry

@@ -1,0 +1,122 @@
+@import '../../../../assets/styles/config';
+
+.test-dashboard {
+    position: relative;
+    min-height: 200px;
+
+    &::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(#36597f, #52c5d4);
+        content: '';
+    }
+
+    &__panel {
+        margin-bottom: 30px;
+        background-color: #fff;
+        box-shadow: -1px 1px 3px rgba(0,0,0,.4);
+    }
+
+    &__message {
+        text-align: center;
+    }
+
+    &__build {
+        padding: 30px 0;
+        overflow: hidden;
+        width: 100%;
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #e7e7e7;
+        }
+
+        &-chart {
+            float: left;
+            width: 240px;
+            height: 106px;
+            margin-right: 30px;
+            border-right: 1px solid #e7e7e7;
+        }
+
+        &-content {
+            overflow: hidden;
+
+            h3 {
+                margin-bottom: 20px;
+                font-weight: bold;
+                font-size: 18px;
+            }
+        }
+
+        &-col {
+            float: left;
+            width: 16.6%;
+
+            &:not(:first-child) {
+                padding-left: 20px;
+            }
+
+            &:not(:last-child) {
+                padding-right: 20px;
+                border-right: 1px solid #e7e7e7;
+            }
+
+            h4 {
+                small {
+                    font-size: 12px;
+                    color: #777;
+                }
+            }
+
+            p {
+                margin: 0;
+                font-size: 12px;
+                color: #777;
+
+                .fa {
+                    font-size: 11px;
+                    color: #ccc;
+                }
+            }
+
+            &--success p .fa {
+                color: $ax-success-color;
+            }
+
+            &--failed p .fa {
+                color: $ax-failed-color;
+            }
+
+            &--delayed p .fa {
+                color: $ax-waiting-color;
+            }
+
+            &--progress p .fa {
+                color: $ax-running-color;
+            }
+        }
+    }
+
+    &__labels {
+        .label {
+            margin-left: 10px;
+            width: 300px;
+        }
+
+        .fa-times {
+            margin-left: 6px;
+        }
+    }
+
+    &__custom-view-delete {
+        float: right;
+        margin-left: 10px;
+        i {
+            line-height: 1em;
+        }
+    }
+}

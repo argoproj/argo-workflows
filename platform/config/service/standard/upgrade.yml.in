@@ -1,0 +1,22 @@
+#
+# Copyright 2015-2016 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: ${POD_NAME}
+    labels:
+        app: upgrade
+        tier: platform
+        role: axcritical
+spec:
+    containers:
+      - name: upgrade
+        image: ${REGISTRY}/${NAMESPACE}/axclustermanager:${VERSION}
+        command: ["bash", "-c", "axtool platform upgrade --image-namespace ${NAMESPACE} --image-version ${VERSION} ; kubectl delete configmap ax-upgrade --namespace axsys"]
+    restartPolicy: Never
+    nodeSelector:
+        ax.tier: applatix
+    imagePullSecrets:
+      - name: applatix-registry

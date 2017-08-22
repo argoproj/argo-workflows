@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: fluentd
+    labels:
+        app: fluentd
+        tier: platform
+        role: axcritical
+    annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+spec:
+    template:
+        metadata:
+            labels:
+                app: fluentd
+                tier: platform
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://elasticsearch.axsys:9200"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: fluentd
+                image: ${REGISTRY}/${NAMESPACE}/fluentd:${VERSION}
+                resources:
+                    limits:
+                        cpu: 100m
+                        memory: 300Mi
+                    requests:
+                        cpu: 50m
+                        memory: 200Mi
+                volumeMounts:
+                  - name: varlog
+                    mountPath: /var/log
+                  - name: varlibdockercontainers
+                    mountPath: /var/lib/docker/containers
+                    readOnly: true
+                  - name: dockermnt
+                    mountPath: /mnt/ephemeral/docker
+                    readOnly: true
+            terminationGracePeriodSeconds: 30
+            imagePullSecrets:
+              - name: applatix-registry
+            volumes:
+              - name: varlog
+                hostPath:
+                    path: /var/log
+              - name: varlibdockercontainers
+                hostPath:
+                    path: /var/lib/docker/containers
+              - name: dockermnt
+                hostPath:
+                  path: /mnt/ephemeral/docker

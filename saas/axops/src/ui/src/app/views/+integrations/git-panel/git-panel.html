@@ -1,0 +1,66 @@
+<form role="form" [formGroup]="gitForm" class="tool-box" >
+    <div class="row">
+        <div class="columns small-12">
+            <div class="tool-box__title">
+                <span>1</span> Enter git credentials
+            </div>
+            <div class="tool-box" [ngClass]="{'tool-box--disconnected': !isAccountConnected}">
+                <div class="ax-form-row">
+                    <div class="ax-checkbox">
+                        <input type="checkbox" id="private_repo" formControlName="isPrivate">
+                        <span><i class="fa fa-check"></i></span>
+                    </div>
+                    <label for="private_repo">Private Repository </label>
+                </div>
+                <div class="tool-box__form">
+                    <div [hidden]="!gitForm.controls['isPrivate'].value">
+                        <div class="ax-form-row">
+                            <input id="username" type="text" class="ax-field" formControlName="username"
+                                   ax-label-placeholder>
+                            <label class="ax-label-placeholder" for="username">{{ 'Username' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!gitForm.controls['username'].valid && (gitForm.controls['username'].touched || submitted)">
+                                <div *ngIf="gitForm.controls['username'].hasError('required')">
+                                    Username is required <i class="fa fa-warning"></i>
+                                </div>
+                                <div *ngIf="gitForm.controls['username'].hasError('pattern')">
+                                    Username is incorrect <i class="fa fa-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ax-form-row">
+                            <input id="password" type="password" class="ax-field" formControlName="password"
+                                   ax-label-placeholder ax-autocomplete-off>
+                            <label class="ax-label-placeholder" for="password">{{ 'Password/ Personal Access Token' | translate }}</label>
+                            <div class="ax-form-row__error-msg" *ngIf="!gitForm.controls['password'].valid && (gitForm.controls['password'].touched || submitted)">
+                                <div *ngIf="gitForm.controls['password'].hasError('required')">
+                                    Password is required <i class="fa fa-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input id="url" type="text"  class="ax-field" formControlName="url" ax-label-placeholder>
+                        <label class="ax-label-placeholder" for="url">{{ 'Repo' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!gitForm.controls['url'].valid && (gitForm.controls['url'].touched || submitted)">Repo is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="tool-box__loader" *ngIf="showLoader">
+                        <ax-loader-custom [size]="20"></ax-loader-custom>
+                    </div>
+                    <div class="tool-box__info">
+                        <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVissible">{{ 'Connection error' | translate }}!</span>
+                    </div>
+                    <div class="tool-box__btns">
+                        <button  *ngIf="!isAccountConnected && !showLoader" axButtonWave class="ax-button ax-button--base" (click)="connectAccount(gitForm)">
+                            Connect
+                        </button>
+                        <button *ngIf="isAccountConnected" class="ax-button ax-button--base-o tool-box__connected-btn" disabled>
+                            <i class="fa fa-check" aria-hidden="true"></i> Connected
+                        </button>
+                        <button *ngIf="isAccountConnected" axButtonWave class="ax-button" (click)="disconnectAccount()">Disconnect</button>
+                        <button *ngIf="isAccountConnected" axButtonWave class="ax-button ax-button--base" [disabled]="!gitForm.valid" (click)="saveChanges(gitForm)">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

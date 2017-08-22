@@ -1,0 +1,192 @@
+<div class="deployment-details">
+    <div class="deployment-details__header">
+        <div class="deployment-details__btns" *ngIf="currentDeployment">
+            <div class="deployment-details__btn" *ngIf="currentDeployment.canStart()">
+                <ax-start-action [deployment]="currentDeployment" (onStart)="onStart($emit)"></ax-start-action>
+            </div>
+            <div class="deployment-details__btn" *ngIf="currentDeployment.canStop()">
+                <ax-stop-action [deployment]="currentDeployment" (onStop)="onStop($emit)"></ax-stop-action>
+            </div>
+            <div class="deployment-details__btn" *ngIf="currentDeployment.canTerminate()" (onTerminate)="onTerminate($emit)">
+                <ax-terminate-action [deployment]="currentDeployment"></ax-terminate-action>
+            </div>
+        </div>
+
+        <div class="deployment-details__close-btn">
+            <i class="ax-icon-close" (click)="onClosePanel()"></i>
+        </div>
+    </div>
+    <div class="deployment-details__content">
+        <div class="deployment-details__title" *ngIf="currentDeployment">
+            <div class="deployment-details__title--icon">
+                <i class="ax-icon-deployment"></i>
+            </div>
+            <span *ngIf="(!currentDeployment.template.external_routes || (currentDeployment.template.external_routes && currentDeployment.template.external_routes.length === 0))">{{ currentDeployment.name }}</span>
+            <a href="http://{{currentDeployment.template.external_routes[0].dns_name}}" target="_blank" *ngIf="(currentDeployment.template.external_routes && currentDeployment.template.external_routes.length > 0)">
+                {{ currentDeployment.name }}<i class="ax-icon-external-link external-link-icon-position"></i>
+            </a>
+        </div>
+
+        <div class="row collapse">
+            <div class="columns small-4">
+                <div class="deployment-details__panel">
+                    <h3 [ngClass]="{ 'bold-text': activeEditScale }">{{ activeEditScale ? 'EDIT SCALE' : 'INSTANCES' }}</h3>
+                    <div class="deployment-details__edit-scale" [ngClass]="{'active': activeEditScale}">
+                        <div class="deployment-details__edit-scale--round-btn deployment-details__edit-scale--left-btn" (click)="subtractInstance();"><span>-</span></div>
+                        <div class="deployment-details__edit-scale--counter" [ngClass]="{'deployment-details__edit-scale--counter-active': activeEditScale}">
+                            {{ activeEditScale ? instances : currentDeployment?.instances?.length || 0 }}
+                        </div>
+                        <div class="deployment-details__edit-scale--counter deployment-details__edit-scale--counter-current" *ngIf="activeEditScale">Current Scale: {{ currentDeployment.instances.length }}</div>
+                        <div class="deployment-details__edit-scale--round-btn deployment-details__edit-scale--right-btn" (click)="addInstance();"><span>+</span></div>
+                        <div class="deployment-details__edit-scale--counter-background" [ngClass]="{'deployment-details__edit-scale--counter-background-active': activeEditScale}"></div>
+                    </div>
+                    <div class="deployment-details__panel-actions" *ngIf="activeEditScale">
+                        <a (click)="editInstances()">Confirm</a> <a (click)="cancelEditInstances()">Cancel</a>
+                    </div>
+                </div>
+            </div>
+            <div class="columns small-8 white-box__details deployment-details--padding deployment-details__white-box">
+                <div class="row white-box__details-row">
+                    <div class="columns small-4 white-box__details-label">STATUS</div>
+                    <div class="columns small-8" *ngIf="currentDeployment">
+                        <ax-application-status [status]="currentDeployment.status"></ax-application-status>
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="columns small-4 white-box__details-label">START TIME</div>
+                    <div class="columns small-8">{{ currentDeployment?.launch_time | timestamp }}</div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="columns small-4 white-box__details-label">TEMPLATE</div>
+                    <div class="columns small-8">
+                        <a [routerLink]="['/app/service-catalog/history', currentDeployment?.template?.id || '']">{{ currentDeployment?.template?.name }}</a>
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="columns small-4 white-box__details-label">JOB ID</div>
+                    <div class="columns small-8">
+                        <a [routerLink]="['/app/timeline/jobs', currentDeployment?.task_id || '']">{{ currentDeployment?.task_id }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div *ngIf="currentDeployment">
+            <h2>{{ 'End Points' | translate | uppercase }}</h2>
+            <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
+                <table class="ax-table ax-table--light ax-table--no-background">
+                    <thead>
+                        <tr class="header">
+                            <th width="33%">{{'Name' | translate | uppercase}}</th>
+                            <th width="15%">{{'Type' | translate | uppercase}}</th>
+                            <th width="15%">{{'Port' | translate | uppercase}}</th>
+                            <th width="17%">{{'Target Port' | translate | uppercase}}</th>
+                            <th width="20%">{{'IP Whitelist' | translate | uppercase}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template ngFor let-route [ngForOf]="(currentDeployment.template.external_routes | axFilterBy: search:'name')">
+                            <tr>
+                                <td>
+                                    <a href="http://{{ route.dns_name }}" target="_blank">{{ route.dns_name }} </a>
+                                </td>
+                                <td>
+                                    {{ 'External' | translate }}
+                                </td>
+                                <td >
+                                    {{ route.port }}
+                                </td>
+                                <td >
+                                    {{ route.target_port }}
+                                </td>
+                                <td >
+                                    {{ route.ip_white_list }}
+                                </td>
+                            </tr>
+                        </template>
+                        <template ngFor let-route [ngForOf]="(currentDeployment.template.internal_routes | axFilterBy: search:'name')">
+                            <template ngFor let-port [ngForOf]="(route.ports | axFilterBy: search:'name')">
+                                <tr>
+                                    <td>
+                                        {{ port.name }}
+                                    </td>
+                                    <td>
+                                        {{ 'Internal' | translate }}
+                                    </td>
+                                    <td >
+                                        {{ port.port }}
+                                    </td>
+                                    <td >
+                                        {{ port.target_port }}
+                                    </td>
+                                    <td >
+                                        {{ port.ip_white_list || '-' }}
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                        <tr *ngIf="!currentDeployment.template.external_routes && !currentDeployment.template.internal_routes || ((currentDeployment.template.external_routes && !currentDeployment.template.external_routes.length) && (currentDeployment.template.internal_routes && !currentDeployment.template.internal_routes.length))">
+                            <td colspan="5" class="ax-table--center">
+                                <span>{{ 'There are no End Points.' | translate }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <h2>{{ 'Recent Revision' | translate | uppercase }}</h2>
+            <h2 class="fr"><a (click)="navigateToRevisionHistory()">{{ 'View Revision History' | translate | uppercase }}</a></h2>
+            <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
+                <div (click)="onShowHistoryDetails.emit({id: currentDeployment.id})" class="clickable">
+                    <ax-deployment-history-cell [deployment]="currentDeployment"></ax-deployment-history-cell>
+                </div>
+            </div>
+        </div>
+
+        <div *ngFor="let volume of volumes">
+            <h2>{{ 'Volume' | translate | uppercase }}</h2>
+            <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
+                <div class="row">
+                    <div class="columns small-4">
+                        <div class="row deployment-details__volume-chart">
+                            <div class="columns small-6 deployment-details__volume-chart-graph">
+                                <nvd3 [options]="chartOptions" [data]="volume.chartData"></nvd3>
+                                <label class="deployment-details__volume-chart-percentage">{{volume.usagePercentage}}%</label>
+                            </div>
+                            <div class="columns small-6">
+                                <div class="deployment-details__volume-chart-info">
+                                    <label><strong>{{volume?.attributes?.usage_gb}}</strong> Gib</label><br/>
+                                    <label>AVAILABLE of {{volume?.attributes?.size_gb}} GiB</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="columns small-8 deployment-details--padding deployment-details__white-box">
+                        <div class="row white-box__details-row">
+                            <div class="columns small-4 white-box__details-label">VOLUME NAME</div>
+                            <div class="columns small-8">
+                                <a [routerLink]="['/app/volumes', volume.id]">{{ volume.name }}</a>
+                            </div>
+                        </div>
+                        <div class="row white-box__details-row" *ngFor="let parameter of volume?.parameters">
+                            <div class="columns small-4 white-box__details-label">{{parameter.title | uppercase}}</div>
+                            <div class="columns small-8">{{parameter.value}}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2>{{ 'Spending for last 30 days' | translate | uppercase }}</h2>
+            <div class="deployment-details__panel deployment-details__panel--additional-vertical-padding" *ngIf="currentDeployment">
+                <ax-app-spendings-chart [showTitle]="false" [showTimeRange]="false" [appName]="currentDeployment.app_name" [deploymentName]="currentDeployment.name">
+                </ax-app-spendings-chart>
+            </div>
+        </div>
+
+    </div>
+</div>

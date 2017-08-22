@@ -1,0 +1,304 @@
+---
+type: workflow
+version: 1
+name: template-ref-with-name
+description: Template ref should not have name field
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout-step:
+    template: template
+    name: checkout
+
+---
+type: workflow
+version: 1
+name: output-artifact-no-from
+description: Output artifact missing from field
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["echo"]
+    args: ["hello"]
+outputs:
+  artifacts:
+    code:
+
+---
+type: workflow
+version: 1
+name: output-artifact-invalid-from
+description: Generate and consume an artifact using inlined containers
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["echo"]
+    args: ["hello"]
+outputs:
+  artifacts:
+    code:
+      from: /src
+
+---
+type: workflow
+version: 1
+name: export-artifact-step-typo
+description: use steps instead of step
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["echo"]
+    args: ["hello"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+outputs:
+  artifacts:
+    code:
+      from: "%%step.checkout-step.outputs.artifacts.code%%"
+
+---
+type: workflow
+version: 1
+name: export-artifact-nonexistant-step
+description: Reference a non-existant step in artifacts
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["echo"]
+    args: ["hello"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+outputs:
+  artifacts:
+    code:
+      from: "%%steps.doesntexist.outputs.artifacts.code%%"
+
+---
+type: workflow
+version: 1
+name: export-artifact-nonexistant-artifact
+description: Reference a non-existant output artifact
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["echo"]
+    args: ["hello"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+outputs:
+  artifacts:
+    code:
+      from: "%%steps.checkout-step.outputs.artifacts.codez%%"
+
+---
+type: workflow
+version: 1
+name: recursive-1
+description: Tests we can detect and error on an infinite recursive nested workflow
+steps:
+- checkout-step:
+    template: recursive-2
+
+---
+type: workflow
+version: 1
+name: recursive-2
+description: Tests we can detect and error on an infinite recursive nested workflow
+steps:
+- checkout-step:
+    template: recursive-1
+
+---
+type: workflow
+version: 1
+name: unsatisfied-child-param
+steps:
+- do-something:
+    template: echo-ok
+
+---
+type: container
+version: 1
+name: echo-ok
+image: alpine:latest
+command: ["echo"]
+args: ["%%inputs.parameters.echo%%"]
+inputs:
+  parameters:
+    echo:
+
+---
+type: container
+version: 1
+name: duplicate-template
+image: alpine:latest
+command: ["echo"]
+args: ["echo hello"]
+
+---
+type: workflow
+version: 1
+name: duplicate-template
+steps:
+- do-something:
+    template: do-something
+
+---
+type: workflow
+version: 1
+name: inlined-ctr-nonexistant-fixture
+steps:
+- checkout-step:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["ping %%fixtures.db.hostname%%"]
+
+---
+type: workflow
+version: 1
+name: vol-parallel-steps
+volumes:
+  vol1:
+    storage_class: ssd
+steps:
+- hello:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo hello"]
+  world:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo world"]
+
+---
+type: workflow
+version: 1
+name: vol-parallel-steps-list-expansion
+volumes:
+  vol1:
+    storage_class: ssd
+steps:
+- step1:
+    template: echo-ok
+    arguments:
+      parameters.echo: "$$[hello,world]$$"
+
+---
+type: workflow
+version: 1
+name: reference-output-from-parallel-step
+description: reference an output from a parallel step
+steps:
+- stepA:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo hello"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+  stepB:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo world"]
+    inputs:
+      artifacts:
+        code:
+          from: "%%steps.stepA.outputs.artifacts.code%%"
+          path: /src
+
+---
+type: workflow
+version: 1
+name: reference-output-from-future-step
+description: reference an output from a future step
+steps:
+- stepA:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo hello"]
+    inputs:
+      artifacts:
+        code:
+          from: "%%steps.stepB.outputs.artifacts.code%%"
+          path: /src
+- stepB:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo world"]
+    outputs:
+      artifacts:
+        code:
+          path: /src
+
+---
+type: workflow
+version: 1
+name: inlined-template-with-arguments-field
+steps:
+- step1:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo world"]
+    arguments:
+      parameters.echo: "$$[hello,world]$$"
+
+---
+type: workflow
+version: 1
+name: invalid-step-name
+steps:
+- step with space:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["echo world"]
+
+---
+type: workflow
+version: 1
+name: invalid-artifact-tag-format
+description: artifact tags is plural instead of singular
+steps:
+- CONSUME:
+    template: test-container-consume-artifact-ok
+    arguments:
+      artifacts.ARTIFACT_TO_CONSUME: "%%artifacts.tags.my_export_artifact.CODE%%"
+
+---
+type: workflow
+version: 1
+name: invalid-artifact-tag-format-inline
+description: artifact tags is plural instead of singular
+steps:
+- CONSUME_INLINE:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["find /src && && sleep 5"]
+    inputs:
+      artifacts:
+        ARTIFACT_TO_CONSUME:
+          from: "%%artifacts.tags.my_export_artifact.CODE%%"
+          path: /src
+
+---
+type: container
+version: 1
+name: test-container-consume-artifact-ok
+description: Container which consumes an artifact
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["find /src && && sleep 5"]
+inputs:
+  artifacts:
+    ARTIFACT_TO_CONSUME:
+      path: /src

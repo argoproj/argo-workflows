@@ -1,0 +1,67 @@
+---
+type: workflow
+version: 1
+name: test-fixtures-dynamic
+description: Workflow which utilizes dynamic fixtures
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+fixtures:
+- NGINX:
+    template: test-nginx
+steps:
+- WEB-CLIENT:
+    template: test-web-client
+    arguments:
+      parameters.URL: "%%fixtures.NGINX.ip%%"
+  WEB-CLIENT-INLINED:
+   image: alpine:latest
+   command: ["sh", "-c"]
+   args: ["
+     apk update && 
+     apk add curl && 
+     for i in $(seq 1 100); do 
+       curl http://%%fixtures.NGINX.ip%% && echo success! && exit 0;
+       sleep 3;
+     done;
+     echo failed!;
+     exit 1
+     "]
+   resources:
+     cpu_cores: 0.05
+     mem_mib: 64
+
+---
+type: container
+version: 1
+name: test-nginx
+image: nginx:latest
+resources:
+  cpu_cores: 0.05
+  mem_mib: 64
+
+---
+type: container
+version: 1
+name: test-web-client
+image: alpine:latest
+inputs:
+  parameters:
+    URL:
+command: ["sh", "-c"]
+args: ["
+  apk update && 
+  apk add curl && 
+  for i in $(seq 1 100); do 
+    curl http://%%inputs.parameters.URL%% && echo success! && exit 0;
+    sleep 3;
+  done;
+  echo failed!;
+  exit 1
+  "]
+resources:
+  cpu_cores: 0.05
+  mem_mib: 64

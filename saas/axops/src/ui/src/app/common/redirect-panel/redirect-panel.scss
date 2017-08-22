@@ -1,0 +1,49 @@
+@import '../../../assets/styles/config';
+
+.redirect-panel {
+    position: relative;
+    padding: 20px;
+    font-size: 16px;
+    background-color: $ax-color-white;
+    border-radius: 4px;
+    box-shadow: 1px 2px 3px rgba(#000, .1);
+    cursor: pointer;
+
+    &:hover {
+        background-color: $ax-color-teal-1;
+    }
+
+    &__ico {
+        position: relative;
+        top: -5px;
+        float: left;
+        margin-right: 10px;
+        font-size: 1.6em;
+        color: $ax-success-color;
+    }
+
+    &__content {
+        overflow: hidden;
+        width: auto;
+        padding-right: 30px;
+    }
+
+    &__title {
+        font-size: 1.2em;
+        color: $ax-color-teal-6;
+    }
+
+    &__description {
+        font-size: .8125em;
+        color: $ax-color-gray-6;
+    }
+
+    &__arrow {
+        position: absolute;
+        top: 50%;
+        right: 30px;
+        transform: translateY(-50%);
+        font-size: 1.4em;
+        color: $ax-color-gray-6;
+    }
+}

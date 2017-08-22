@@ -1,0 +1,39 @@
+---
+type: policy
+version: 1
+name: test-policy
+description: Policy for test purposes (performs checkout)
+template: test-policy-checkout
+notifications:
+- when:
+  - on_failure
+  whom:
+  - committer
+  - author
+  - prod@slack
+when:
+- event: on_push
+- event: on_pull_request
+- event: on_pull_request_merge
+
+---
+type: container
+version: 1
+name: test-policy-checkout
+description: Checks out a source repository to /src
+resources:
+  mem_mib: 500
+  cpu_cores: 0.1
+image: argoproj/argoscm:v2.0
+command: ["axscm"]
+args: ["clone", "%%inputs.parameters.REPO%%", "/src", "--commit", "%%inputs.parameters.COMMIT%%"]
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+outputs:
+  artifacts:
+    CODE:
+      path: /src

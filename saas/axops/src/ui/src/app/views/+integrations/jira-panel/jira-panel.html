@@ -1,0 +1,64 @@
+<form role="form" [formGroup]="jiraForm" class="tool-box">
+    <div class="row">
+        <div class="columns small-4">
+            <div class="tool-box__title">
+                <span>1</span> Enter JIRA credentials
+            </div>
+            <div class="tool-box" [ngClass]="{'tool-box--disconnected': !isAccountConnected}">
+                <div class="tool-box__form">
+                    <div class="ax-form-row">
+                        <input ax-label-placeholder id="url" type="text" class="ax-field" formControlName="url">
+                        <label class="ax-label-placeholder" for="url">{{ 'Server URL' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!jiraForm.controls['url'].valid && (jiraForm.controls['url'].touched || submitted)">Server url is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input ax-label-placeholder id="hostname" type="text" class="ax-field" formControlName="hostname">
+                        <label class="ax-label-placeholder" for="hostname">{{ 'WebHook Hostname' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!jiraForm.controls['hostname'].valid && (jiraForm.controls['hostname'].touched || submitted)">Hostname is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input ax-label-placeholder id="username" type="text" class="ax-field" formControlName="username">
+                        <label class="ax-label-placeholder" for="username">{{ 'Username' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!jiraForm.controls['username'].valid && (jiraForm.controls['username'].touched || submitted)">Username is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="ax-form-row">
+                        <input ax-label-placeholder id="password" type="password" class="ax-field" formControlName="password" ax-autocomplete-off>
+                        <label class="ax-label-placeholder" for="password">{{ 'Password/App Password' | translate }}</label>
+                        <div class="ax-form-row__error-msg" *ngIf="!jiraForm.controls['password'].valid && (jiraForm.controls['password'].touched || submitted)">Password is incorrect<i class="fa fa-warning"></i></div>
+                    </div>
+                    <div class="tool-box__btns">
+                        <button *ngIf="!isAccountConnected && !showLoader" class="ax-button ax-button--base" (click)="connectAccount(jiraForm)">
+                            Connect
+                        </button>
+                        <button *ngIf="isAccountConnected" class="ax-button ax-button--base-o tool-box__connected-btn" disabled>
+                            <i class="fa fa-check" aria-hidden="true"></i> Connected
+                        </button>
+                        <button *ngIf="!isAccountConnected && !showLoader" class="ax-button" (click)="testCredentials(jiraForm)">{{ 'Test' | translate }}</button>
+                        <button *ngIf="isAccountConnected" class="ax-button" (click)="disconnectAccount()">Disconnect</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="columns small-8">
+            <div class="tool-box__title">
+                <span>2</span> Add projects
+            </div>
+            <div class="ax-form-row" *ngIf="allProjects.length">
+                <label>Projects</label>
+                <ax-multi-select [options]="allProjects" [placeholder]="'Select projects'"
+                                 formControlName="projects" [showTooltip]="true"></ax-multi-select>
+            </div>
+            <div class="tool-box__loader" *ngIf="showLoader">
+                <ax-loader-custom [size]="20"></ax-loader-custom>
+            </div>
+            <div class="tool-box__info">
+                <div class="credentials-loader-center" *ngIf="isCredentialsLoaderVissible"><ax-loader-custom [size]="20"></ax-loader-custom></div>
+                <span class="tool-box__info--error-msg" *ngIf="wrongCredentialVissible">{{ 'Connection error' | translate }}!</span>
+                <span class="tool-box__info--success-msg" *ngIf="isCredentialsConfirmed && !showLoader"><i class="fa fa-check" aria-hidden="true"></i></span>
+            </div>
+            <div class="tool-box__btns tool-box__btns--footer">
+                <button *ngIf="isAccountConnected" class="ax-button" (click)="saveChanges(jiraForm)">Done</button>
+            </div>
+        </div>
+    </div>
+</form>

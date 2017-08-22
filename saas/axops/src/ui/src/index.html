@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base href="/">
+    <title>Argo</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/assets/favicon/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="/assets/favicon/manifest.json">
+    <link rel="mask-icon" href="/assets/favicon/safari-pinned-tab.svg" color="#00a2b3">
+    <meta name="theme-color" content="#363c4a">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <link href="https://fonts.googleapis.com/css?family=Heebo:100,300,400,500,700" rel="stylesheet">
+    <meta name="description" content="<%= htmlWebpackPlugin.options.title %>">
+
+    <% if (webpackConfig.htmlElements.headTags) { %>
+        <!-- Configured Head Tags  -->
+        <%= webpackConfig.htmlElements.headTags %>
+            <% } %>
+</head>
+
+<body>
+    <ax-app>
+        Loading...
+    </ax-app>
+
+    <% if (htmlWebpackPlugin.options.metadata.isDevServer && htmlWebpackPlugin.options.metadata.HMR !== true) { %>
+        <!-- Webpack Dev Server reload -->
+        <script src="/webpack-dev-server.js"></script>
+    <% } %>
+</body>
+
+</html>

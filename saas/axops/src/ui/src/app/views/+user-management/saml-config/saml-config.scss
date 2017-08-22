@@ -1,0 +1,59 @@
+.saml-config {
+    &__row {
+        position: relative;
+        overflow: hidden;
+        margin: 30px 0;
+        padding: 30px 20px;
+        background-color: #fff;
+        box-shadow: 0 0 3px 1px rgba(0,0,0,.1);
+
+        &-ico {
+            position: absolute;
+            top: -80px;
+            right: 2px;
+            font-size: 240px;
+            opacity: .1;
+        }
+
+        h6 {
+            font-weight: bold;
+            padding: 0 0 20px;
+        }
+
+        p {
+            font-size: 15px;
+
+            &:last-child {
+                margin: 0;
+            }
+        }
+
+        
+    }
+
+    .ax-form-copy {
+            label{
+                font-size:16px;
+            }
+            .ax-field {
+                width:calc(100% - 85px);
+            }
+
+            .ax-button{
+                margin-top:8px;
+                float:right;
+            }
+        }
+
+        .message {
+            font-weight: normal;
+        }
+
+    &__info {
+        margin: 50px 30px 0 0;
+    }
+
+    .advanced {
+        font-size:16px;
+    }
+}

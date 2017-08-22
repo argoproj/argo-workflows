@@ -1,0 +1,52 @@
+<ax-sliding-panel [show]="show" [hasCloseButton]="false" (closePanel)="closePanel()" class="volume-add-panel">
+    <sliding-panel-header>
+        <button axButtonWave class="ax-button ax-button--base" type="button" (click)="save()"
+                [disabled]="!selectedStorageClass || formInvalid">Save</button>
+        <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <h2>Create new volume</h2>
+        <p>Argo provides predefined configurations, which differ in performance characteristics, so that you can
+            tailor your storage performance to the needs of your applications.</p>
+        <div class="steps">
+            <div class="steps__item" [class.done]="selectedStorageClass" [class.active]="!selectedStorageClass">
+                <div class="steps__number">1</div>
+                <span class="steps__back-link" (click)="selectStorageClass(undefined)"> Select volume configuration </span>
+            </div>
+            <div class="steps__item" [class.active]="selectedStorageClass">
+                <div class="steps__number">2</div>
+                Specify volume properties
+            </div>
+        </div>
+        <div *ngIf="!selectedStorageClass">
+            <div class="ax-table-list ax-table-list--clickable">
+                <div class="ax-table-list__head">
+                    <div class="row">
+                        <div class="columns small-2">Storage provider</div>
+                        <div class="columns small-2">Volume type</div>
+                        <div class="columns small-2">Filesystem</div>
+                        <div class="columns small-5">Description</div>
+                    </div>
+                </div>
+                <div class="ax-table-list__row" *ngFor="let storageClass of storageClasses"
+                     (click)="selectStorageClass(storageClass)">
+                    <div class="row">
+                        <div class="columns small-2">
+                            <i class="fa ax-icon-storageprovider"></i>
+                            {{storageClass.parameters.aws.storage_provider_name}}
+                        </div>
+                        <div class="columns small-2">{{storageClass.parameters.aws.volume_type}}</div>
+                        <div class="columns small-2">{{storageClass.parameters.aws.filesystem}}</div>
+                        <div class="columns small-5" ax-tooltip="{{storageClass.description}}">{{storageClass.description}}</div>
+                        <div class="columns small-1"><span class="volume-add-panel__select-btn">select</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="selectedStorageClass">
+            <p>Please review the selected configuration and enter the volume properties.</p>
+            <ax-volume-form-widget [storageClass]="selectedStorageClass" [volume]="volume">
+            </ax-volume-form-widget>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

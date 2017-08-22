@@ -1,0 +1,36 @@
+<div class="job-steps">
+    <div class="job-steps__title">
+        <div class="job-steps__icon">
+            <i class="ax-icon-job" aria-hidden="true"></i>
+        </div>
+        <div class="job-steps__description">
+            <div class="job-steps__description-title">{{ task.name }}</div>
+            <div class="job-steps__description-des">
+                Submitted by: <span *ngIf="!task.hasOwnProperty('policy_id')">{{ task.user }}</span>
+                <a [routerLink]="['/app/policies/details/', task.policy_id]"
+                   *ngIf="task.hasOwnProperty('policy_id')" >Policy - {{ task.policy_id }}</a></div>
+        </div>
+    </div>
+    <div class="job-steps__timeline">
+        <div class="job-steps__step-dots">
+            <div class="job-steps__step-circle job-steps__step-circle-small"></div>
+            <div class="job-steps__step-circle job-steps__step-circle-small"></div>
+            <div class="job-steps__step-circle job-steps__step-circle-small"></div>
+            <div class="job-steps__step-name">&nbsp;</div>
+        </div>
+        <div *ngFor="let step of steps; let i = index" class="job-steps__step"
+             [ngClass]="{
+                       'job-steps__step--succeeded': step.isSucceeded,
+                       'job-steps__step--failed': step.isFailed,
+                       'job-steps__step--running': step.isRunning}">
+            <div class="job-steps__step-circle" [ngClass]="{
+                       'job-steps__step-circle--succeeded': step.isSucceeded,
+                       'job-steps__step-circle--failed': step.isFailed,
+                       'job-steps__step-circle--running': step.isRunning}"></div>
+            <div class="job-steps__step-name">{{step.name | truncateTo: 25}}</div>
+        </div>
+    </div>
+    <div class="job-steps__issues" *ngIf="isJiraConfigured && task.jira_issues && task.jira_issues.length">
+        <span [ngClass]="{active: isOpen}" (click)="toggleIssuesPanel(); $event.stopPropagation();">JIRA issues: <a>{{ task.jira_issues.length }}</a></span>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+  <div class="panel panel-default">
+    <table class="table-condensed table-bordered table-hover" style="width:100%">
+      <tr>
+        <th class="col-sm-2">Container Name</th>
+        <th class="col-sm-2">Image</th>
+        <th class="col-sm-1">Container ID</th>
+        <th class="col-sm-2">Died</th>
+        <th class="col-sm-1">Exit Code</th>
+        <th class="col-sm-1">Host</th>
+        <th class="col-sm-1"></th>
+      </tr>
+      <tr ng-repeat="ctr in terminatedContainers">
+        <td>[[ctr.Actor.Attributes.name ]]</td>
+        <td>
+          <span ng-show="!ctr.Actor.Attributes.image.startsWith('sha256:')">[[ctr.Actor.Attributes.image]]</span>
+          <span ng-show="ctr.Actor.Attributes.image.startsWith('sha256:')">[[ctr.Actor.Attributes.image | limitTo:12:7 ]]</span>
+        </td>
+        <td>[[ctr.id | limitTo:12 ]]</td>
+        <td><ax-died-date></ax-died-date></td>
+        <td>[[ctr.Actor.Attributes.exitCode ]]</td>
+        <td>[[ctr.host ]]</td>
+        <td>
+          <a href="/logs/[[ctr.id | limitTo:12 ]]"><span class="glyphicon glyphicon-align-left" aria-hidden="true"></a>
+        </td>
+      </tr>
+    </table>
+  </div>

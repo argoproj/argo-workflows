@@ -1,0 +1,31 @@
+---
+type: project
+version: 1
+name: Claudia
+description: AWS cost and usage analysis.
+actions:
+  run:
+    template: sleep-60
+  build & test:
+    template: sleep-60
+categories: ["monitoring", "promoted"]
+publish:
+  branches:
+  - master
+labels:
+  tags: "[\"aws\"]"
+  publisher: Applatix
+assets:
+  icon: "/claudia/icon.png"
+  publisher_icon: "/claudia/AX_Pub.png"
+  detail: "/claudia/detail.md"
+
+---
+type: workflow
+version: 1
+name: sleep-60
+steps:
+- no-op:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    command: ["sleep 60"]

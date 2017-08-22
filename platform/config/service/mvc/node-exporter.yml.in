@@ -1,0 +1,64 @@
+#
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: node-exporter
+    labels:
+        app: node-exporter
+        tier: platform
+        role: axcritical
+    annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+        scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        prometheus.io/port: "9100"
+        prometheus.io/scrape: "true"
+spec:
+    template:
+        metadata:
+            labels:
+                app: node-exporter
+                tier: platform
+                role: axcritical
+            annotations:
+                prometheus.io/port: "9100"
+                prometheus.io/scrape: "true"
+        spec:
+            containers:
+              - name: node-exporter
+                image: "${REGISTRY}/${NAMESPACE}/node-exporter:${VERSION}"
+                command: ["/bin/node_exporter", "-collector.procfs", "/host/proc", "-collector.sysfs", "/host/sys", "-collector.filesystem.ignored-mount-points", "\"^/(sys|proc|host|etc)($|/)\""]
+                ports:
+                  - containerPort: 9100
+                resources:
+                    requests:
+                        cpu: 25m
+                        memory: 50Mi
+                    limits:
+                        cpu: 50m
+                        memory: 100Mi
+                securityContext:
+                    privileged: true
+                volumeMounts:
+                  - mountPath: /host/proc
+                    name: proc-fs
+                  - mountPath: /host/sys
+                    name: sys-fs
+                  - mountPath: /rootfs
+                    name: root-fs
+            imagePullSecrets:
+                - name: applatix-registry
+            hostNetwork: true
+            hostPID: true
+            volumes:
+                - name: proc-fs
+                  hostPath:
+                      path: /proc
+                - name: sys-fs
+                  hostPath:
+                      path: /sys
+                - name: root-fs
+                  hostPath:
+                      path: /

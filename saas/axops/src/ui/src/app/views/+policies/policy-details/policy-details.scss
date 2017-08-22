@@ -1,0 +1,18 @@
+@import '../../../../assets/styles/config';
+
+.policy-details {
+    &__label-elem {
+        color: $ax-color-gray-5;
+        height: 31px;
+        display: inline-block;
+        margin: 0 10px 0 0;
+        padding: 6px 16px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        line-height: 20px;
+    }
+
+    &__label-center {
+        padding: 10px 0 !important;
+    }
+}

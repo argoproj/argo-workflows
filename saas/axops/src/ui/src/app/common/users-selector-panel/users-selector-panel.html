@@ -1,0 +1,57 @@
+<ax-sliding-panel [hasNoPadding]="true" [show]="isPanelVisible" (closePanel)="closeUserSelectorSlidingPanel()" [isMiddle]="true">
+    <sliding-panel-header>
+        <button  axButtonWave class="ax-button ax-button--base" type="button" (click)="add()" [disabled]="false">Add</button>
+    </sliding-panel-header>
+    <sliding-panel-body>
+        <div class="users-selector-panel">
+            <div class="users-selector-panel__title">
+                Select Recipients from Argo User Groups
+            </div>
+            <div class="users-selector-panel__search">
+                <input type="text" [ngModel]="searchedUser" (ngModelChange)='changed($event)'>
+                <i class="ax-icon-search"></i>
+            </div>
+            <div class="users-selector-panel__content">
+                <div class="users-selector-panel__group">
+                    <div class="users-selector-panel__loader" *ngIf="getUsersLoader">
+                        <ax-loader-custom [size]="20"></ax-loader-custom>
+                    </div>
+                </div>
+                <template ngFor let-group [ngForOf]="usersToDisplay">
+                    <div class="users-selector-panel__group" *ngIf="!getUsersLoader">
+                        <div class="users-selector-panel__group-header" [hidden]="!group.display">
+                            <div class="ax-checkbox">
+                                <input type="checkbox" name="options" value="{{ group.name }}" [(ngModel)]="group.checked"><span><i class="fa fa-check"></i></span>
+                            </div>
+                            <div class="users-selector-panel__user">
+                                <div class="users-selector-panel__group-icon">
+                                    <i class="ax-icon-user rear"></i>
+                                    <i class="ax-icon-user front"></i>
+                                </div>
+                                <span>{{ group.name }}</span>
+                            </div>
+                            <div class="users-selector-panel__toggle" (click)="group.isExpanded = !group.isExpanded">
+                                <i class="ax-icon-collapse-arrow" *ngIf="group.isExpanded"></i>
+                                <i class="ax-icon-expand-arrow" *ngIf="!group.isExpanded"></i>
+                            </div>
+                        </div>
+                        <div class="users-selector-panel__group-list" [ngClass]="{expanded: group.isExpanded, collapsed: !group.isExpanded}">
+                            <ul>
+                                <template ngFor let-user [ngForOf]="group.users">
+                                    <li  [hidden]="!user.display">
+                                        <div class="ax-checkbox">
+                                            <input type="checkbox" name="options" value="{{ user.email }}" [(ngModel)]="user.checked"><span><i class="fa fa-check"></i></span>
+                                        </div>
+                                        <span>
+                                            <i class="ax-icon-user"></i> {{ user.name }}
+                                        </span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </sliding-panel-body>
+</ax-sliding-panel>

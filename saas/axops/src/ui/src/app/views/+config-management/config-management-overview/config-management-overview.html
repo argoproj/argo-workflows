@@ -1,0 +1,62 @@
+ <div class="content content--with-padding-top">        
+    <div class="ax-container">
+        <div class="config-management-overview__intro" *ngIf="!configurations.length && !loading">
+            <div class="config-management-overview__intro-ico">
+                <i class="ax-icon-fixturecat"></i>
+            </div>
+            <div class="config-management-overview__intro-des">
+                <p>There are no customized configurations set by any users. You can create one from the link below.</p>
+                <p>
+                    <a [routerLink]="['/app/config-management', {createNew: 'true'}]">Create new configuration</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="ax-table-list" *ngIf="configurations.length && !loading">
+            <div class="ax-table-list__head">
+                <div class="row">
+                    <div class="columns small-2">Name</div>
+                    <div class="columns small-3">Description</div>
+                    <div class="columns small-3">Created</div>
+                    <div class="columns small-3">Created By</div>
+                </div>
+            </div>
+
+            <div *ngFor="let config of configurations; let i = index">
+                <div class="ax-table-list__row clickable" (click)="editSelectedConfig(config)">
+                    <div class="row">
+                        <div class="columns small-2 title-text">
+                            <span ax-tooltip="{{config.name}}">{{config.name}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString">
+                            <span *ngIf="config.description!='.'" ax-tooltip="{{config.description}}">{{config.description}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{config.ctime}}">{{config.ctime*1000 | date: 'medium'}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{config.user}}">{{config.user}}</span>
+                        </div>
+
+                        <div class="columns small-1">
+                            <ax-dropdown-menu [settings]="getDropdownMenu(config)">
+                                <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                </button>
+                            </ax-dropdown-menu>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div> 
+
+<ax-config-management-panel 
+    [openPanel]="!!selectedConfig"
+    [selectedConfig]="selectedConfig"
+    (onSave)="saveConfigChange($event)"
+    (onCancel)="closePanel()"
+    [mode]="getPanelMode(selectedConfig)">
+</ax-config-management-panel>

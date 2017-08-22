@@ -1,0 +1,163 @@
+<div class="content content--with-padding-top">
+    <div class="ax-container" *ngIf="policy">
+        <div class="white-box">
+            <div class="row">
+                <div class="columns large-6">
+                    <h6>{{ 'Policy Details' | translate }}</h6>
+                </div>
+            </div>
+            <div class="white-box__details">
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Policy Name' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.name }}
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Policy Description' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.description }}
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Repository' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.repo }}
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Branch' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.branch }}
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Template' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.template }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="white-box">
+            <div class="row">
+                <div class="columns large-6">
+                    <h6>{{ 'Policy Status' | translate }}</h6>
+                </div>
+            </div>
+            <div class="white-box__details">
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Policy Status' | translate }}:
+                    </div>
+                    <div class="large-9 columns">
+                        {{ policy.enabled ? 'Enabled' : 'Disabled' }}
+                        <div class="pull-right">
+                            <div class="ax-checkbox-slide">
+                                <input type="checkbox" [(ngModel)]="policy.enabled"
+                                       (change)="onChangeStatus($event)"><span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="white-box">
+            <div class="row">
+                <div class="columns large-6">
+                    <h6>{{ 'Notification' | translate }}</h6>
+                </div>
+            </div>
+            <div class="white-box__details" *ngFor="let notification of policy.notifications">
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Recepients' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem" *ngFor="let el of notification.whom">{{ el }}</div>
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'When' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem" *ngFor="let el of notification.when">{{ el }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="white-box">
+            <div class="row">
+                <div class="columns large-6">
+                    <h6>{{ 'Triggers' | translate }}</h6>
+                </div>
+            </div>
+            <div class="white-box__details" *ngFor="let trigger of policy.when">
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Event' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem">{{ trigger.event }}</div>
+                    </div>
+                </div>
+                <div class="row white-box__details-row" *ngIf="ifOnCron(trigger.event)">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Schedule' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem">{{ trigger.schedule }}</div>
+                    </div>
+                </div>
+                <div class="row white-box__details-row" *ngIf="ifOnCron(trigger.event)">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Timezone' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem">{{ trigger.timezone }}</div>
+                    </div>
+                </div>
+                <div class="row white-box__details-row">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ 'Branches' | translate }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem" *ngFor="let el of trigger.target_branches">{{ el }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="white-box">
+            <div class="row">
+                <div class="columns large-6">
+                    <h6>{{ 'Parameters' | translate }}</h6>
+                </div>
+            </div>
+            <div class="white-box__details">
+                <div class="row white-box__details-row" *ngFor="let parameter of parameters">
+                    <div class="large-3 columns white-box__details-label">
+                        {{ parameter.key }}:
+                    </div>
+                    <div class="large-9 columns policy-details__label-center">
+                        <div class="policy-details__label-elem">{{ parameter.value || '&nbsp;' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

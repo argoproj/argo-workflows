@@ -1,0 +1,32 @@
+---
+type: workflow
+version: 1
+name: Argo Approval
+description: This is a test workflow for Argo Approval
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: axsys
+    VERSION:
+      default: staging
+    REQUIRED_APPROVALS:
+      default: ""
+    OPTIONAL_APPROVALS:
+      default: " "
+    NUMBER_OF_OPTIONAL_APPROVALS_NEEDED:
+      default: "0"
+    TIMEOUT_IN_MINUTES:
+      default: "0"
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO-APPROVAL:
+    template: argo-approval
+- ARGO-TEST:
+    template: argo-test
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"

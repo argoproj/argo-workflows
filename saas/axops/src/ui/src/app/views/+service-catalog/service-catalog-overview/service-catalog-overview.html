@@ -1,0 +1,74 @@
+<div class="content content--with-padding-top"
+        ax-infinite-scroll
+        [ax-infinite-scroll-distance]="1"
+        [ax-scroll-window]="false"
+        [ax-immediate-check]="true"
+        (scrolled)="onScroll()">
+    <div class="ax-container">
+        <div class="ax-table-list ax-table-list--clickable">
+            <div class="ax-table-list__head">
+                <div class="row">
+                    <div class="columns small-2">{{'Template' | translate}}</div>
+                    <div class="columns small-3">{{'Description' | translate}}</div>
+                    <div class="columns small-2">{{'Repo' | translate}}</div>
+                    <div class="columns small-2">{{'Branch' | translate}}</div>
+                    <div class="columns small-1">{{'Type' | translate}}</div>
+                    <div class="columns small-1 text-truncate" ax-tooltip="{{'Average Cost' | translate}}">
+                        {{'Average Cost' | translate}}</div>
+                    <div class="columns small-1"></div>
+                </div>
+            </div>
+            <template ngFor let-catalog [ngForOf]="serviceCatalog" let-i="index" *ngIf="!loading">
+                <div class="ax-table-list__row">
+                    <div class="row" [routerLink]="['/app/service-catalog/history/' + catalog.id]">
+                        <div class="columns small-2 title-text" [ax-highlight-substring]="searchString">
+                            <i class="ax-icon-workflow"></i>
+                            <span ax-tooltip="{{catalog.name}}">{{catalog.name}}</span>
+                        </div>
+                        <div class="columns small-3" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{catalog.description}}">{{catalog.description}}</span>
+                        </div>
+                        <div class="columns small-2" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{catalog.repo}}">{{catalog.repo}}</span>
+                        </div>
+                        <div class="columns small-2" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{catalog.branch}}">{{catalog.branch}}</span>
+                        </div>
+                        <div class="columns small-1" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{catalog.type}}">{{catalog.type}}</span>
+                        </div>
+                        <div class="columns small-1" [ax-highlight-substring]="searchString">
+                            <span ax-tooltip="{{catalog.cost | centsToDollars}}">{{catalog.cost | centsToDollars}}</span>
+                        </div>
+                        <div class="columns small-1">
+                            <ax-dropdown #actionDropdown [isMenu]="true">
+                                <ax-dropdown-anchor>
+                                    <div class="align-wrapper">
+                                        <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short"
+                                                (click)="$event.stopPropagation(); actionDropdown.open();">
+                                            <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </ax-dropdown-anchor>
+                                <ax-dropdown-content>
+                                    <ul>
+                                        <li (click)="$event.stopPropagation(); launchTemplate(catalog);actionDropdown.close();">
+                                            Create New Job
+                                        </li>
+                                    </ul>
+                                </ax-dropdown-content>
+                            </ax-dropdown>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <div class="ax-table-list__row" *ngIf="!serviceCatalog.length && !loading">
+                <div class="row">
+                    <div class="columns small-12">{{ 'No data to display' | translate }}</div>
+                </div>
+            </div>
+            <ax-loader-custom [size]="20" *ngIf="onScrollLoading" class="jobs-overview__loader"></ax-loader-custom>
+        </div>
+        <ax-loader-list-mockup *ngIf="loading"></ax-loader-list-mockup>
+    </div>
+</div>

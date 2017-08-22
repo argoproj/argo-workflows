@@ -1,0 +1,212 @@
+hash: e19fdcd63f605d1bd389c7b7e1f307d02551d28d051c0f4196f3c038d36682fd
+updated: 2017-08-09T14:13:23.447381486-07:00
+imports:
+- name: git.apache.org/thrift.git
+  version: b2a4d4ae21c789b689dd162deb819665567f481c
+  subpackages:
+  - lib/go/thrift
+- name: github.com/aws/aws-sdk-go
+  version: 00fb2125993965df739fa3398b03bef3eb2e198f
+  subpackages:
+  - aws
+  - aws/awserr
+  - aws/awsutil
+  - aws/client
+  - aws/client/metadata
+  - aws/corehandlers
+  - aws/credentials
+  - aws/credentials/ec2rolecreds
+  - aws/credentials/endpointcreds
+  - aws/credentials/stscreds
+  - aws/defaults
+  - aws/ec2metadata
+  - aws/endpoints
+  - aws/request
+  - aws/session
+  - aws/signer/v4
+  - private/protocol
+  - private/protocol/query
+  - private/protocol/query/queryutil
+  - private/protocol/rest
+  - private/protocol/restxml
+  - private/protocol/xml/xmlutil
+  - private/waiter
+  - service/s3
+  - service/sts
+- name: github.com/boj/redistore
+  version: fc113767cd6b051980f260d6dbe84b2740c46ab0
+- name: github.com/bradfitz/gomemcache
+  version: 1952afaa557dc08e8e0d89eafab110fb501c1a2b
+  subpackages:
+  - memcache
+- name: github.com/bsm/sarama-cluster
+  version: ccdc0803695fbce22f1706d04ded46cd518fd832
+- name: github.com/davecgh/go-spew
+  version: adab96458c51a58dc1783b3335dcce5461522e75
+  subpackages:
+  - spew
+- name: github.com/dchest/uniuri
+  version: 8902c56451e9b58ff940bbe5fec35d5f9c04584a
+- name: github.com/dgrijalva/jwt-go
+  version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
+  subpackages:
+  - request
+- name: github.com/diego-araujo/go-saml
+  version: 83716ce8996d95d70cc5d496b9bd6dfc4b8b64f9
+  subpackages:
+  - util
+- name: github.com/dustin/go-humanize
+  version: 259d2a102b871d17f30e3cd9881a642961a1e486
+- name: github.com/eapache/go-resiliency
+  version: b1fe83b5b03f624450823b751b662259ffc6af70
+  subpackages:
+  - breaker
+- name: github.com/eapache/go-xerial-snappy
+  version: bb955e01b9346ac19dc29eb16586c90ded99a98c
+- name: github.com/eapache/queue
+  version: 44cc805cf13205b55f69e14bcb69867d1ae92f98
+- name: github.com/garyburd/redigo
+  version: 8873b2f1995f59d4bcdd2b0dc9858e2cb9bf0c13
+  subpackages:
+  - internal
+  - redis
+- name: github.com/ghodss/yaml
+  version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/gin-contrib/sse
+  version: 22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae
+- name: github.com/gin-gonic/contrib
+  version: 0f937ce6d016f44b2f5b1f03787e055977e7c0b8
+  subpackages:
+  - cache
+  - ginrus
+  - gzip
+  - jwt
+  - secure
+  - static
+- name: github.com/gin-gonic/gin
+  version: 81007d2ce0176f7a9ce52dd12e56edd7ef40e72c
+  subpackages:
+  - binding
+  - json
+  - render
+- name: github.com/go-ini/ini
+  version: 3d73f4b845efdf9989fffd4b4e562727744a34ba
+- name: github.com/gocql/gocql
+  version: 77431609f517cb41ee9afdcdd373561c4d935316
+  subpackages:
+  - internal/lru
+  - internal/murmur
+  - internal/streams
+- name: github.com/golang/protobuf
+  version: 1909bc2f63dc92bb931deace8b8312c4db72d12f
+  subpackages:
+  - proto
+- name: github.com/golang/snappy
+  version: 553a641470496b2327abcac10b36396bd98e45c9
+- name: github.com/gorilla/context
+  version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
+- name: github.com/gorilla/securecookie
+  version: 667fe4e3466a040b780561fe9b51a83a3753eefc
+- name: github.com/gorilla/sessions
+  version: ca9ada44574153444b00d3fd9c8559e4cc95f896
+- name: github.com/hailocab/go-hostpool
+  version: e80d13ce29ede4452c43dea11e79b9bc8a15b478
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jmespath/go-jmespath
+  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
+- name: github.com/json-iterator/go
+  version: 9c358632dc6eac53a4940b59266c805024e38e37
+- name: github.com/kardianos/osext
+  version: ae77be60afb1dcacde03767a8c37337fad28ac14
+- name: github.com/klauspost/crc32
+  version: bab58d77464aa9cf4e84200c3276da0831fe0c03
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/manucorporat/stats
+  version: 8f2d6ace262eba462e9beb552382c98be51d807b
+- name: github.com/mattn/go-isatty
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+- name: github.com/mitchellh/mapstructure
+  version: d0303fe809921458f417bcf828397a65db30a7e4
+- name: github.com/nlopes/slack
+  version: 3e8aa5655be613e1d4ce0b740993bb734a2b0f7b
+- name: github.com/nu7hatch/gouuid
+  version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+- name: github.com/pierrec/lz4
+  version: 5a3d2245f97fc249850e7802e3c01fad02a1c316
+- name: github.com/pierrec/xxHash
+  version: a0006b13c722f7f12368c00a3d3c2ae8a999a0c6
+  subpackages:
+  - xxHash32
+- name: github.com/rcrowley/go-metrics
+  version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
+- name: github.com/robfig/cron
+  version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
+- name: github.com/robfig/go-cache
+  version: 9fc39e0dbf62c034ec4e45e6120fc69433a3ec51
+- name: github.com/RobotsAndPencils/go-saml
+  version: fb13cb52a46b55a9f20e6d497658dd494c7c1ef1
+  subpackages:
+  - util
+- name: github.com/Shopify/sarama
+  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
+- name: github.com/sirupsen/logrus
+  version: 181d419aa9e2223811b824e8f0b4af96f9ba9302
+- name: github.com/spf13/cobra
+  version: b26b538f693051ac6518e65672de3144ce3fbedc
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+- name: github.com/ugorji/go
+  version: 5efa3251c7f7d05e5d9704a69a984ec9f1386a40
+  subpackages:
+  - codec
+- name: github.com/yhat/wsutil
+  version: 1d66fa95c997864ba4d8479f56609620fe542928
+- name: github.com/yvasiyarov/go-metrics
+  version: c25f46c4b94079672242ec48a545e7ca9ebe3aec
+- name: github.com/yvasiyarov/gorelic
+  version: 4dc1bb7ab951bc884feb2c009092b1a454152355
+- name: github.com/yvasiyarov/newrelic_platform_go
+  version: 9c099fbc30e90de5bb5c5f94aa5fd08f2daeaacd
+- name: golang.org/x/crypto
+  version: b176d7def5d71bdd214203491f89843ed217f420
+  subpackages:
+  - bcrypt
+  - blowfish
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 1c05540f6879653db88113bc4a2b70aec4bd491f
+  subpackages:
+  - context
+  - websocket
+- name: golang.org/x/sys
+  version: e42485b6e20ae7d2304ec72e535b103ed350cc02
+  subpackages:
+  - unix
+  - windows
+- name: gopkg.in/go-playground/validator.v8
+  version: 5f1438d3fca68893a817e4a66806cea46a9e4ebf
+- name: gopkg.in/inf.v0
+  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/redis.v5
+  version: a16aeec10ff407b1e7be6dd35797ccf5426ef0f0
+  subpackages:
+  - internal
+  - internal/consistenthash
+  - internal/hashtag
+  - internal/pool
+  - internal/proto
+- name: gopkg.in/yaml.v2
+  version: 25c4ec802a7d637f88d584ab26798e94ad14c13b
+testImports:
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+- name: gopkg.in/check.v1
+  version: 20d25e2804050c1cd24a7eea1e7a6447dd0e74ec

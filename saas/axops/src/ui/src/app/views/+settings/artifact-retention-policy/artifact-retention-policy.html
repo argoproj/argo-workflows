@@ -1,0 +1,67 @@
+<div class="content content--with-padding-top">
+    <div *ngIf="dataLoaded" class="ax-container">
+        <div class="artifact-retention-policy">
+            <form [formGroup]="policyForm" novalidate (ngSubmit)="policyForm.valid && onSubmit(policyForm)">
+                <div class="row artifact-retention-policy__header">
+                    <div class="columns artifact-retention-policy__header-des" [ngClass]="{'small-10 large-10': !editMode, 'small-8 large-8 artifact-retention-policy__header-des--on-shadow': editMode}">
+                        <i class="fa fa-2x fa-archive" aria-hidden="true"></i>
+                        <strong>Artifact Retention Policy</strong>
+                        <button *ngIf="!editMode" axButtonWave class="ax-button ax-button--base pull-right clean-button" (click)="cleanArtifacts()">Reclaim Space Now</button>
+                    </div>
+                    <div class="columns artifact-retention-policy__edit" [ngClass]="{'small-2 large-2': !editMode, 'small-4 large-4': editMode}">
+                        <div *ngIf="!editMode" (click)="onEdit()">
+                            <i class="fa fa-2x fa-pencil-square-o" aria-hidden="true"></i>
+                            <span>edit</span>
+                        </div>
+                    </div>
+                </div>
+                <ax-retention-policy-row
+                        [name]="'Exported Artifacts'"
+                        [policy]="policies[retentionTypes.EXPORTED]"
+                        [formGroup]="policyForm.controls[retentionTypes.EXPORTED]"
+                        [policyName]="retentionTypes.EXPORTED"
+                        [editMode]="editMode">
+                </ax-retention-policy-row>
+                <ax-retention-policy-row
+                        [name]="'Internal Artifacts'"
+                        [policy]="policies[retentionTypes.INTERNAL]"
+                        [formGroup]="policyForm.controls[retentionTypes.INTERNAL]"
+                        [policyName]="retentionTypes.INTERNAL"
+                        [editMode]="editMode">
+                </ax-retention-policy-row>
+                <ax-retention-policy-row
+                        [name]="'User Application Logs'"
+                        [policy]="policies[retentionTypes.USER_LOG]"
+                        [formGroup]="policyForm.controls[retentionTypes.USER_LOG]"
+                        [policyName]="retentionTypes.USER_LOG"
+                        [editMode]="editMode">
+                </ax-retention-policy-row>
+                <ax-retention-policy-row
+                        [name]="'Argo System logs'"
+                        [policy]="policies[retentionTypes.AX_LOG]"
+                        [formGroup]="policyForm.controls[retentionTypes.AX_LOG]"
+                        [policyName]="retentionTypes.AX_LOG"
+                        [editMode]="editMode"
+                        [noBorderBottom]="true">
+                </ax-retention-policy-row>
+                <div class="row artifact-retention-policy__footer">
+                    <div class="columns small-8 large-8 artifact-retention-policy__footer-left"
+                         [class.artifact-retention-policy__footer-left--shadow]="editMode">
+                        <div class="row artifact-retention-policy__footer-totals">
+                            <div class="columns small-8 large-8">total artifacts:</div>
+                            <div class="columns small-4 large-4"><strong>{{policies.totalNumber}}</strong></div>
+                        </div>
+                        <div class="row artifact-retention-policy__footer-totals">
+                            <div class="columns small-8 large-8">total size: </div>
+                            <div class="columns small-4 large-4"><strong>{{policies.totalSize | bytesToGb}}</strong></div>
+                        </div>
+                    </div>
+                    <div class="columns small-4 large-4 text-center artifact-retention-policy__footer-right" *ngIf="editMode">
+                        <button axButtonWave class="ax-button ax-button--base-o" (click)="onClose($event)">cancel</button>
+                        <button type="submit" axButtonWave class="ax-button ax-button--base">save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

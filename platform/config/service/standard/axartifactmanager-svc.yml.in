@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axartifactmanager
+    labels:
+        app: axartifactmanager
+        tier: devops
+        role: axcritical
+spec:
+    selector:
+        app: axartifactmanager-deployment
+    ports:
+      - port: 9892
+        targetPort: 9892
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axartifactmanager-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axartifactmanager-deployment
+                tier: devops
+                role: axcritical
+            annotations:
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "imagePullPolicy": "IfNotPresent",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axops-internal:8085/v1/ping"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axartifactmanager
+                image: ${REGISTRY}/${NAMESPACE}/axartifactmanager:${VERSION}
+                ports:
+                  - containerPort: 9892
+                resources:
+                    requests:
+                        cpu: 75m
+                        memory: 100Mi
+                    limits:
+                        cpu: 150m
+                        memory: 200Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+              - name: applatix-registry

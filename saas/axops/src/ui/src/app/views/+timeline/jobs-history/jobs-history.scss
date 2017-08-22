@@ -1,0 +1,34 @@
+@import '../../../../assets/styles/config';
+
+.jobs-history {
+    &__content {
+        background-color: $ax-color-gray-2;
+        padding: 42px 40px 0;
+    }
+
+    &__load-more-button {
+        text-align: center;
+        margin: 20px 0;
+    }
+}
+
+.jobs-history-summary {
+    background-color: white;
+    height: 110px;
+    border: 1px solid $ax-color-gray-3;
+    padding: 25px;
+    margin: 0 0 40px;
+    border-radius: $border-radius;
+
+    &__column {
+        width: 25%;
+        padding-left: 10px;
+        float: left;
+        border-left: 2px solid $ax-color-gray-3;
+        font-size: 0.8em;
+
+        span {
+            padding-left: 4px;
+        }
+    }
+}

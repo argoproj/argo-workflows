@@ -1,0 +1,143 @@
+@import '../../../assets/styles/config';
+
+.branch-selector-panel {
+    &__body-top {
+        padding: 30px 20px;
+        background-color: $ax-color-gray-3;
+
+        p {
+            margin: 0;
+            color: #999;
+        }
+    }
+
+    &__btn-back {
+        float: left;
+        display: block;
+        width: 40px;
+        height: 40px;
+        margin-right: 6px;
+        font-size: 1.4em;
+        color: $ax-color-teal-7;
+        background-color: $ax-color-gray-2;
+        border-radius: 50%;
+    }
+
+    &__selected-repo {
+        overflow: hidden;
+        width: auto;
+    }
+
+    &__selected-repo-title {
+        line-height: 1.5;
+        font-weight: 500;
+        color: $ax-color-gray-7;
+    }
+
+    &__selected-repo-des {
+        font-size: .75em;
+        line-height: 1.2;
+        color: $ax-color-gray-6;
+    }
+
+    &__search {
+        overflow: hidden;
+        padding: 20px 28px 22px;
+        background-color: $ax-color-gray-2;
+    }
+
+    &__search-input {
+        position: relative;
+        padding: 0 20px 0 20px;
+        background-color: #fff;
+        border-bottom: 1px solid $ax-color-gray-3;
+        border-radius: 22px;
+
+        input {
+            width: 100%;
+            font-size: 14px;
+            padding: 6px 12px 6px 30px;
+            color: $ax-color-gray-7;
+            background-color: transparent;
+            border: 0;
+        }
+
+        i {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: $ax-color-gray-5;
+        }
+    }
+
+    &__tabs {
+        padding: 10px 28px 0;
+        border-bottom: 1px solid $ax-color-gray-3;
+
+        a {
+            position: relative;
+            bottom: -1px;
+            display: inline-block;
+            padding: 14px 30px;
+            font-weight: 700;
+            font-size: .8753em;
+            line-height: 1.5;
+            color: $ax-color-teal-6;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+
+            &.active {
+                color: $ax-color-gray-9;
+                border-color: $ax-color-gray-9;
+            }
+
+            &:hover {
+                color: $ax-color-teal-6;
+            }
+        }
+    }
+
+    &__list-item {
+        padding: 16px 28px;
+        font-size: 14px;
+        font-weight: bold;
+        color: $ax-color-teal-6;
+        border-bottom: 1px solid $ax-color-gray-3;
+
+        &--link {
+            cursor: pointer;
+
+            &:hover {
+                color: $ax-color-teal-6;
+                background-color: rgba($ax-color-teal-2, .5);
+            }
+        }
+
+        a {
+            color: inherit;
+
+            &:hover {
+                color: inherit;
+            }
+        }
+    }
+
+    &__list-repo {
+        font-size: .8em;
+        font-weight: 400;
+        color: $ax-color-gray-5;
+    }
+
+    &__list-star {
+        font-size: 20px;
+        color: $ax-color-teal-6;
+
+        &:hover {
+            color: $ax-color-teal-6;
+        }
+    }
+
+    &__list-next {
+        font-size: 1.6em;
+    }
+}

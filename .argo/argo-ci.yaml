@@ -1,0 +1,304 @@
+---
+type: workflow
+version: 1
+name: Argo CI
+description: Argo continuous test and build
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: staging
+    REGISTRY:
+      default: docker.applatix.net
+    REG_USER:
+      default: "%%config.admin@internal.docker.user%%"
+    REG_PASSWORD:
+      default: "%%config.admin@internal.docker.password%%"
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO-TEST:
+    template: argo-test
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+- ARGO-BUILD:
+    template: argo-build
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+
+---
+type: workflow
+version: 1
+name: Argo Build Standalone
+description: Argo standalone build
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    NAMESPACE:
+      default: staging
+    REGISTRY:
+      default: docker.applatix.net
+    REG_USER:
+      default: "%%config.admin@internal.docker.user%%"
+    REG_PASSWORD:
+      default: "%%config.admin@internal.docker.password%%"
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+steps:
+- CHECKOUT:
+    template: argo-checkout
+- ARGO-BUILD:
+    template: argo-build
+    arguments:
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+
+---
+type: workflow
+version: 1
+name: argo-test
+description: Workflow for testing argo
+inputs:
+  parameters:
+    COMMIT:
+    REPO:
+  artifacts:
+    CODE:
+steps:
+- COMMON-LIB-TEST:
+    template: argo-common-lib-tests
+    arguments:
+      artifacts.CODE: "%%inputs.artifacts.CODE%%"
+  DEVOPS-TEST:
+    template: argo-devops-unit-tests
+    arguments:
+      artifacts.CODE: "%%inputs.artifacts.CODE%%"
+  PLATFORM-TEST:
+    template: argo-platform-unit-tests
+    arguments:
+      artifacts.CODE: "%%inputs.artifacts.CODE%%"
+  SAAS-TEST:
+    template: argo-saas-unit-tests
+    arguments:
+      artifacts.CODE: "%%inputs.artifacts.CODE%%"
+termination_policy:
+  time_seconds: 2700
+  spending_cents: 20
+
+---
+type: workflow
+version: 1
+name: argo-build
+description: Workflow for building argo
+inputs:
+  parameters:
+    COMMIT:
+    REPO:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+    BUILD_OPTIONS:
+  artifacts:
+    CODE:
+steps:
+- PLATFORM-BUILD:
+    template: argo-build-base
+    arguments:
+      parameters.COMPONENT: platform
+  DEVOPS-BUILD:
+    template: argo-build-base
+    arguments:
+      parameters.COMPONENT: devops
+  SAAS-BUILD:
+    template: argo-saas-build
+termination_policy:
+  time_seconds: 2700
+  spending_cents: 20
+
+---
+type: container
+version: 1
+name: argo-build-base
+description: Base container for building platform and devops containers
+image: argoproj/argobuild2:latest
+command: ["sh", "-c"]
+args: [
+  REGISTRY=`echo %%inputs.parameters.REGISTRY%%  | sed "s/^docker.io$//g"` &&
+  docker login -u %%inputs.parameters.REG_USER%% -p %%inputs.parameters.REG_PASSWORD%% $REGISTRY &&
+  /src/build/build_%%inputs.parameters.COMPONENT%%.py -r %%inputs.parameters.REGISTRY%% -n %%inputs.parameters.NAMESPACE%% %%inputs.parameters.VERSION_OPTION%% %%inputs.parameters.BUILD_OPTIONS%%
+]
+resources:
+  mem_mib: 300
+  cpu_cores: 0.1
+inputs:
+  parameters:
+    COMPONENT:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+  artifacts:
+    CODE:
+      path: /src
+annotations:
+  ax_ea_docker_enable: '{ "graph-storage-name": "axbuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.9, "mem_mib":1000}'
+
+---
+type: workflow
+version: 1
+name: argo-saas-build
+description: Workflow step for building all SaaS components
+inputs:
+  parameters:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+  artifacts:
+    CODE:
+steps:
+- AXAMM:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: axamm
+  AXDB:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: axdb
+  AXNC:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: axnc
+  AXOPS:
+    template: argo-axops-build
+  ARGOCLI:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: argocli
+  KAFKA:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: kafka
+  ZOOKEEPER:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: zookeeper
+
+---
+type: workflow
+version: 1
+name: argo-axops-build
+description: Workflow step for building all SaaS components
+inputs:
+  parameters:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+  artifacts:
+    CODE:
+steps:
+- AXUI:
+    image: node:6.3.1
+    command: ["bash", "-c"]
+    args: ["cd /src/saas/axops/src/ui && npm install && npm run build:prod"]
+    resources:
+      mem_mib: 1536
+      cpu_cores: 0.2
+    inputs:
+      artifacts:
+        CODE:
+          from: "%%inputs.artifacts.CODE%%"
+          path: /src
+    outputs:
+      artifacts:
+        CODE:
+          path: /src
+- AXOPS:
+    template: argo-saas-build-base
+    arguments:
+      parameters.SERVICE: axops
+      artifacts.CODE: "%%steps.AXUI.outputs.artifacts.CODE%%"
+
+---
+type: container
+version: 1
+name: argo-saas-build-base
+description: Base template for building SaaS component
+image: argobase/saasbuilder:v1
+command: ["sh", "-c"]
+args: [
+  REGISTRY=`echo %%inputs.parameters.REGISTRY%%  | sed "s/^docker.io$//g"` &&
+  docker login -u %%inputs.parameters.REG_USER%% -p %%inputs.parameters.REG_PASSWORD%% $REGISTRY &&
+  /src/build/build_saas.py -bl -r %%inputs.parameters.REGISTRY%% -n %%inputs.parameters.NAMESPACE%%
+  -s %%inputs.parameters.SERVICE%% %%inputs.parameters.VERSION_OPTION%% %%inputs.parameters.BUILD_OPTIONS%%
+]
+resources:
+  mem_mib: 600
+  cpu_cores: 0.2
+inputs:
+  parameters:
+    SERVICE:
+    NAMESPACE:
+    REGISTRY:
+    REG_USER:
+    REG_PASSWORD:
+    VERSION_OPTION:
+      default: -v latest
+    BUILD_OPTIONS:
+      default: ""
+  artifacts:
+    CODE:
+      path: /src
+annotations:
+  ax_ea_docker_enable: '{ "graph-storage-name": "axbuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.3, "mem_mib":600}'
+
+---
+type: policy
+version: 1
+name: Argo CI Policy
+description: Policy to trigger build for all events
+template: Argo CI
+arguments:
+  parameters.NAMESPACE: staging
+  parameters.VERSION_OPTION: -v latest
+  parameters.BUILD_OPTIONS: --no-push
+notifications:
+- when:
+  - on_failure
+  whom:
+  - committer
+  - author
+  - prod@slack
+when:
+- event: on_push
+- event: on_pull_request
+- event: on_pull_request_merge
+- event: on_cron
+  schedule: "0 0 * * *"
+  timezone: "US/Pacific"

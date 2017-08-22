@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: minion-manager-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: minion-manager-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                scheduler.alpha.kubernetes.io/critical-pod: ''
+                scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly", "operator":"Exists"}]'
+        spec:
+            containers:
+              - name: minion-manager
+                image: ${REGISTRY}/${NAMESPACE}/minion-manager:${VERSION}
+                command: ["/ax/bin/minion_manager", "${AX_CLUSTER_NAME_ID}"]
+                env:
+                  - name: AX_CUSTOMER_ID
+                    value: ${AX_CUSTOMER_ID}
+                resources:
+                    requests:
+                        cpu: 50m
+                        memory: 80Mi
+                    limits:
+                        cpu: 50m
+                        memory: 160Mi
+            nodeSelector:
+                ax.tier: applatix
+            imagePullSecrets:
+                - name: applatix-registry

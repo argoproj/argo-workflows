@@ -1,0 +1,7 @@
+<div class="ax-project-icon">
+    <img class="ax-project-icon__publisher-img" *ngIf="project?.assets?.publisher_icon" [src]="project?.assets?.publisher_icon" [alt]="[project?.name]">
+    <div class="ax-project-icon__img">
+        <img [src]="project?.assets?.icon" [alt]="[project?.name]">
+    </div>
+    <span class="ax-project-icon__title">{{project?.name}}</span>
+</div>

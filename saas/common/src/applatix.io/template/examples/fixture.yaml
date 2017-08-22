@@ -1,0 +1,137 @@
+---
+type: fixture
+version: 1
+name: test-fixture
+description: fixture for test purposes
+attributes:
+  instance_type:
+    type: string
+    flags: required
+    options:
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+    default: m3.large
+  memory_gib:
+    type: int
+    default: 4
+  cpu_cores:
+    type: int
+    default: 1
+    options: [1, 2, 4, 8]
+  ip_address:
+    type: string
+  group:
+    type: string
+    flags: required
+    options: [dev, qa, prod]
+  tags:
+    type: string
+    flags: array
+  disable_nightly:
+    type: bool
+
+actions:
+  create:
+    template: test-fixture-action
+    arguments:
+      parameters.INSTANCE_TYPE: "%%attributes.instance_type%%"
+      parameters.ACTION: create    
+  delete:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: delete
+  suspend:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: suspend
+    on_success: disable
+  resume:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: resume
+    on_success: enable
+  upgrade:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: upgrade
+      parameters.UPGRADE_VERSION:
+  health_check_fail:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: fail
+    on_failure: disable
+  bad_attributes:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: success
+      parameters.ATTRIBUTES: "{\"memory_gib\": \"foo\"}"
+  snapshot:
+    template: test-fixture-action
+    arguments:
+      parameters.ACTION: snapshot
+
+---
+type: container
+version: 1
+name: test-fixture-action
+resources:
+  mem_mib: 64
+  cpu_cores: 0.02
+image: "debian:8.5"
+command: ["sh", "-c"]
+args: ["echo 'performing action %%inputs.parameters.ACTION%% instance_type: %%inputs.parameters.INSTANCE_TYPE%%'; sleep 30; echo '%%inputs.parameters.ATTRIBUTES%%' > /tmp/fix_attrs.json; if [ %%inputs.parameters.ACTION%% = fail ] ; then exit 1; fi"]
+inputs:
+  parameters:
+    ACTION:
+    INSTANCE_TYPE:
+      default: ""
+    ATTRIBUTES:
+      default: "{\"ip_address\": \"1.2.3.4\"}"
+    UPGRADE_VERSION:
+      default: ""
+outputs:
+  artifacts:
+    attributes:
+      path: /tmp/fix_attrs.json
+
+---
+type: "workflow"
+version: 1
+name: "AX Fixture Test"
+description: "Workflow which will utilize a fixture"
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+fixtures:
+- fix1:
+    class: test-fixture
+    attributes:
+       instance_type: m3.large
+  fix2:
+    class: test-fixture
+    attributes:
+       group: qa
+steps:
+- sleep:
+    template: "echo-and-sleep"
+    arguments:
+      parameters.message: "%%fixtures.fix1.name%% %%fixtures.fix2.name%%"
+
+---
+type: container
+version: 1
+name: echo-and-sleep
+description: Does nothing but echo a supplied string and sleep
+image: "alpine:latest"
+command: [sh, -c]
+args: ['echo %%inputs.parameters.message%% && sleep %%inputs.parameters.sleep_sec%%']
+inputs:
+  parameters:
+    message:
+    sleep_sec:
+      default: 60

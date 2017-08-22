@@ -1,0 +1,27 @@
+.app-overview{
+    .text-cell{
+        line-height: 30px;
+    }
+
+    .ax-table-list__app-name{
+        padding-top: 10px;
+    }
+
+    .ax-table-list__indented{
+        line-height: 30px;
+        left: 20px;
+        position: relative;
+
+        i.fa-external-link{
+            padding-right: 5px;
+        }
+    }
+
+    .application-panel__item{
+        border-left: 1px solid #DEE6EB;
+    }
+    .application-status i {
+        padding-right: 5px;
+    }
+       
+}

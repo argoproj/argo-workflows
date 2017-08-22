@@ -1,0 +1,499 @@
+{
+  "template": {
+    "cost": 0,
+    "subtype": "workflow",
+    "type": "service_template",
+    "steps": [
+      {
+        "root-0-0": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [],
+            "dns_name": "",
+            "name": "root-0-0",
+            "description": "",
+            "id": "1127e4aa-2525-4605-b6cd-d185db58cae5",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "3de6cafe-3c92-4bdd-a002-fc25c52ae77b"
+        }
+      },
+      {
+        "root-1-0": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [
+              {
+                "root-1-0-0-1": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 19; true"
+                      ],
+                      "once": true,
+                      "id": "root-1-0-0-1",
+                      "instanceid": "bb2a5a7f-25ed-4543-8ccc-09133504a40c"
+                    },
+                    "dns_name": "",
+                    "name": "root-1-0-0-1",
+                    "description": "",
+                    "id": "7ee12857-c014-4ee4-b20e-26d9dbc32876",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "1f92c399-1471-42a8-8147-035b92922c7a"
+                },
+                "root-1-0-0-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 3; true"
+                      ],
+                      "once": true,
+                      "id": "root-1-0-0-0",
+                      "instanceid": "704c2764-48f6-4c52-8042-e213c3fa0141"
+                    },
+                    "dns_name": "",
+                    "name": "root-1-0-0-0",
+                    "description": "",
+                    "id": "4433d62a-680c-4efc-a5af-88f392d1bab6",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "3e8b9fa3-b2cb-4eb4-bc8c-62e7a563e9f7"
+                }
+              },
+              {
+                "root-1-0-1-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 14; true"
+                      ],
+                      "once": true,
+                      "id": "root-1-0-1-0",
+                      "instanceid": "a36941ed-63ce-418d-9618-dcd0f507ba7e"
+                    },
+                    "dns_name": "",
+                    "name": "root-1-0-1-0",
+                    "description": "",
+                    "id": "e8ffec2a-bd81-4508-b506-c3c83938573b",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "d826434e-d2e8-4ae6-9332-eca9a1495c59"
+                }
+              }
+            ],
+            "dns_name": "",
+            "name": "root-1-0",
+            "description": "",
+            "id": "9efcbe79-159a-47d1-b4fc-480e2693c65e",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "71d9df00-37a8-44b1-aa9c-1ec6f38b6560"
+        },
+        "root-1-1": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [],
+            "dns_name": "",
+            "name": "root-1-1",
+            "description": "",
+            "id": "024a0f22-8714-47f6-9add-36a415b319c9",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "b2b90099-6bac-4458-bfb2-12cf29c29c2c"
+        }
+      },
+      {
+        "root-2-1": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [
+              {
+                "root-2-1-0-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 10; true"
+                      ],
+                      "once": true,
+                      "id": "root-2-1-0-0",
+                      "instanceid": "8436ee7e-aa9b-461c-b381-21678ec0d97f"
+                    },
+                    "dns_name": "",
+                    "name": "root-2-1-0-0",
+                    "description": "",
+                    "id": "377892e1-b086-4bdd-a610-c058773e0f1c",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "ef7c92e9-576b-47a3-8594-929c6c38d11b"
+                }
+              }
+            ],
+            "dns_name": "",
+            "name": "root-2-1",
+            "description": "",
+            "id": "5a3c7942-b1a9-4f43-9fd0-ae29b74db1be",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "14c80695-5f4a-4451-92ba-df345a238922"
+        },
+        "root-2-0": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [
+              {
+                "root-2-0-0-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 9; true"
+                      ],
+                      "once": true,
+                      "id": "root-2-0-0-0",
+                      "instanceid": "0bc7805d-ccc3-4f4c-bb3b-95fa623b03c2"
+                    },
+                    "dns_name": "",
+                    "name": "root-2-0-0-0",
+                    "description": "",
+                    "id": "2b148177-5264-4904-986c-d6c85f7bd8ed",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "da364313-407a-40e8-ba0c-4ae3ec014e58"
+                }
+              },
+              {
+                "root-2-0-1-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 14; true"
+                      ],
+                      "once": true,
+                      "id": "root-2-0-1-0",
+                      "instanceid": "d3c80a73-a79d-4e46-a752-1a34176244ca"
+                    },
+                    "dns_name": "",
+                    "name": "root-2-0-1-0",
+                    "description": "",
+                    "id": "38f4b672-5f20-4ac5-addb-fa687d29715a",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "13433b16-ec0b-4e1d-ace9-9442080a7f24"
+                }
+              },
+              {}
+            ],
+            "dns_name": "",
+            "name": "root-2-0",
+            "description": "",
+            "id": "165eeb35-b641-49d6-9064-e679aee6520e",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "b4ddb672-b489-46bc-8ffd-23d1c30b3d9d"
+        }
+      },
+      {
+        "root-3-1": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [],
+            "dns_name": "",
+            "name": "root-3-1",
+            "description": "",
+            "id": "bf967b33-e5c6-4683-b1e8-85fc08cccdea",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "b3b59357-f1a9-41a9-b450-41f963ae38a6"
+        },
+        "root-3-0": {
+          "template": {
+            "cost": 0,
+            "subtype": "workflow",
+            "type": "service_template",
+            "steps": [
+              {
+                "root-3-0-0-0": {
+                  "template": {
+                    "cost": 0,
+                    "subtype": "workflow",
+                    "type": "service_template",
+                    "container": {
+                      "entrypoint": "/bin/sh",
+                      "expand": true,
+                      "constraints": [
+                        [
+                          "hostname",
+                          "UNLIKE",
+                          "dns"
+                        ]
+                      ],
+                      "resources": {
+                        "disk_gb": 0.0,
+                        "cpu_cores": 0.1,
+                        "mem_mib": 40.0
+                      },
+                      "instances": 1,
+                      "tags": {
+                        "test": [
+                          "notuse"
+                        ]
+                      },
+                      "image": "alpine:3.5",
+                      "command": [
+                        "-c",
+                        "sleep 14; true"
+                      ],
+                      "once": true,
+                      "id": "root-3-0-0-0",
+                      "instanceid": "76c15e10-04af-45ba-9e10-dc6a90d4930f"
+                    },
+                    "dns_name": "",
+                    "name": "root-3-0-0-0",
+                    "description": "",
+                    "id": "d2d228e5-6a11-487f-88b5-62c83aa2020a",
+                    "version": "1.0"
+                  },
+                  "costid": {
+                    "app": "workflow",
+                    "project": "prod"
+                  },
+                  "id": "dfaef36c-76ae-40c3-95c6-c6ac7febe7d2"
+                }
+              }
+            ],
+            "dns_name": "",
+            "name": "root-3-0",
+            "description": "",
+            "id": "5d90928c-2a69-42a6-814b-344423e37687",
+            "version": "1.0"
+          },
+          "costid": {
+            "app": "workflow",
+            "project": "prod"
+          },
+          "id": "12bcd47a-72bc-44b0-a717-25a1352a9472"
+        }
+      }
+    ],
+    "dns_name": "",
+    "name": "root",
+    "description": "",
+    "id": "f8e3af37-dd60-4995-8cd8-1ab9e50834bc",
+    "version": "1.0"
+  },
+  "costid": {
+    "app": "workflow",
+    "project": "prod"
+  },
+  "id": "test_workflow_id"
+}

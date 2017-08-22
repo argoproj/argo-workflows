@@ -1,0 +1,99 @@
+<div class="white-box">
+    <div class="row">
+        <div class="columns large-6">
+            <h6>Job Details</h6>
+        </div>
+    </div>
+    <div class="white-box__details">
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Status:
+            </div>
+            <div class="large-9 columns">
+                {{ task.status | jobStatus }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Description:
+            </div>
+            <div class="large-9 columns columns--narrower-height">
+                {{ task.description }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Submitted by:
+            </div>
+            <div class="large-9 columns">
+                <span *ngIf="!task.hasOwnProperty('policy_id')">{{ task.user }}</span>
+                <a [routerLink]="['/app/policies/details/', task.policy_id]" *ngIf="task.hasOwnProperty('policy_id')" >Policy - {{ task.policy_id }}</a>
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Time:
+            </div>
+            <div class="large-9 columns">
+                <span>Started</span> on {{ task.launch_time | timestamp }},
+                <span>{{ task.status | jobStatus }}</span> on {{ task.launch_time + task.run_time | timestamp }}
+            </div>
+        </div>
+        <div class="row white-box__details-row" *ngIf="artifactTags.length">
+            <div class="large-3 columns white-box__details-label">
+                Artifact Tags:
+            </div>
+            <div class="large-9 columns">
+                <div class="job-details-box__labels align-wrapper">
+                    <template ngFor let-tag [ngForOf]="artifactTags">
+                        <div class="ax-label">{{ tag }}</div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        <div class="row white-box__details-row" *ngIf="task.run_time">
+            <div class="large-3 columns white-box__details-label">
+                Duration:
+            </div>
+            <div class="large-9 columns">
+                {{ task.run_time | duration }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Cost:
+            </div>
+            <div class="large-9 columns">
+                {{ task.cost | centsToDollars:4 }}
+            </div>
+        </div>
+        <div class="row white-box__details-row" *ngIf="labels.length">
+            <div class="large-3 columns white-box__details-label">
+                Labels:
+            </div>
+            <div class="large-9 columns">
+                <div class="job-details-box__labels align-wrapper">
+                    <div class="ax-label job-details-box__labels-label" *ngFor="let label of labels;">
+                        {{ label }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Job ID:
+            </div>
+            <div class="large-9 columns">
+                {{ task.id }}
+            </div>
+        </div>
+        <div class="row white-box__details-row">
+            <div class="large-3 columns white-box__details-label">
+                Template:
+            </div>
+            <div class="large-9 columns">
+                {{ task?.template?.name }}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,91 @@
+<div class="content content--with-padding-top">
+    <div class="ax-container">
+        <div class="fixture-classes">
+            <div class="fixture-classes__intro" *ngIf="!hasEnabledClasses && !loading">
+                <div class="fixture-classes__intro-ico">
+                    <i class="ax-icon-fixturecat"></i>
+                </div>
+                <div class="fixture-classes__intro-des">
+                    <p>When you run a workflow or deploy an app, you might need to access a resource that is external to
+                        your Argo Cluster, such as a pool of virtual machines (VMs), databases, other REST-based
+                        services, etc. To manage and access these external resources,
+                        Argo provides "Fixtures". Fixtures allow Argo to perform life-cycle management of these
+                        external resources like creating and deleting instances, loading data, or
+                        any other custom action. Fixtures also allow you to use policies to automatically manage
+                        resources such as auto-suspension or termination based on various metrics and conditions.</p>
+                    <p><strong>STEP 1: ENABLE FIXTURE CLASS</strong><br>Enable the fixture class you want to use for the
+                        repo branch.</p>
+                    <p><strong>STEP 2: ADD FIXTURE</strong><br> Actions for fixtures can be
+                        defined as workflows. Fixtures with similar behavior may be grouped into a common 'class' for
+                        management purposes. Some fixtures may be managed as a pool of resources.
+                    </p>
+                </div>
+            </div>
+
+            <div class="fixture-classes__box clearfix" [ngClass]="{enabled: group.enabledClass}" *ngFor="let group of templateGroups">
+                <div *ngIf="group.enabledClass" [routerLink]="group.enabledClass.id">
+
+                    <div class="fixture-classes__left">
+                        <div *ngIf="group.templates.length > 0" class="fixture-classes__ico"><i class="ax-icon-fixturecat"></i></div>
+                        <div *ngIf="group.templates.length === 0" ax-tooltip="Class is not attached to any template." class="fixture-classes__ico fixture-classes__ico--warning"><i class="ax-icon-fixturecat"></i></div>
+                        <div class="fixture-classes__left-content">
+                            <div class="fixture-classes__name text-truncate">{{ group.enabledClass.name }}</div>
+                            <div class="fixture-classes__status text-truncate">STATUS: Enabled</div>
+                            <div class="fixture-classes__des text-truncate">{{ group.enabledClass.description }}</div>
+                        </div>
+                    </div>
+                    <div class="fixture-classes__content">
+                        <div class="clearfix">
+                            <div class="pull-left"><span class="fixture-classes__des">AVAILABLE FIXTURES:</span> {{group.enabledClass.stats.available}}</div>
+                            <div class="pull-right"><span class="fixture-classes__des">TOTAL FIXTURES:</span> {{group.enabledClass.stats.total}}</div>
+                        </div>
+                        <div class="fixture-classes__progress">
+                            <ax-progress-bar [progress]="group.enabledClass.stats.percentage"></ax-progress-bar>
+                        </div>
+                        <div class="text-truncate">
+                            <span class="fixture-classes__des">Repo/Branch:</span>
+                            {{ group.enabledClass.repo + '/' + group.enabledClass.branch }}
+                        </div>
+                    </div>
+                    <div class="fixture-classes__menu">
+                        <ax-dropdown-menu  [settings]="getGroupMenu(group)">
+                                <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                    <i aria-hidden="true" class="fa fa-ellipsis-v"></i>
+                                </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+
+                <div *ngIf="!group.enabledClass">
+                    <div class="fixture-classes__left">
+                        <div class="fixture-classes__ico"><i class="ax-icon-fixturecat"></i></div>
+                        <div class="fixture-classes__left-content">
+                            <div class="fixture-classes__name text-truncate">{{ group.templates[0].name }}</div>
+                            <div class="fixture-classes__status text-truncate">STATUS: Available</div>
+                            <div class="fixture-classes__des text-truncate">{{ group.templates[0].description }}</div>
+                        </div>
+                    </div>
+                    <div class="fixture-classes__content">
+                        <div class="fixture-classes__content-template">Fixture Class is not enabled</div>
+                    </div>
+                    <div class="fixture-classes__menu">
+                        <ax-dropdown-menu  [settings]="getGroupMenu(group)">
+                                <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                    <i aria-hidden="true" class="fa fa-ellipsis-v"></i>
+                                </button>
+                        </ax-dropdown-menu>
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="loading">
+                <ax-loader-list-mockup [itemHeight]="101" [itemGap]="12" [noMarginTop]="true"></ax-loader-list-mockup>
+            </div>
+        </div>
+    </div>
+</div>
+<ax-fixture-template-panel
+    [mode]="classIdToReassing ? 'reassign' : 'create'"
+    [templateGroup]="classIdToReassing ? reassignTemplates : selectedTemplateGroup?.templates"
+    (onClosePanel)="closeAddPanel($event)">
+</ax-fixture-template-panel>

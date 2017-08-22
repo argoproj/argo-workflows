@@ -1,0 +1,26 @@
+<div class="input-select__container"
+     [ngClass]="{'input-select__container--wide': inputWide === 'wide',
+                 'input-select__container--medium': inputWide === 'medium',
+                 'input-select__container--small': inputWide === 'small'}">
+    <input class="input-select__input" type="text"
+           placeholder="{{placeholder}}"
+           [ngClass]="inputClass"
+           [formControl]="inputControl"
+           (focus)="setDropdownVisibility(true)"
+           (click)="setDropdownVisibility(true)"
+           (keydown)="keyEvent($event)"
+           [(ngModel)]="inputText"/>
+    <div class="input-select__icon">
+        <i [ngClass]="icon" aria-hidden="true"></i>
+    </div>
+    <div class="input-select__dropdown" *ngIf="selectListIsNotEmpty()">
+        <ul class="input-select__list" *ngIf="isDropdownVisible" [hidden]="isListEmpty(inputText)">
+            <li class="input-select__list-item"
+                *ngFor="let item of selectList; let i=index;"
+                [ngClass]="{'input-select__list-item--selected': isSelected(i)}"
+                (click)="selectItem(item.key)"
+                (mouseover)="selectElement(i)"
+                [hidden]="isInputTextInItem(item.key, inputText)">{{item.key}}</li>
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,18 @@
+<div class="jobs-history">
+    <div class="jobs-history__content">
+        <ax-jobs-summary-box
+                [jobs_wait]="jobsCounterByType?.waiting || 0"
+                [jobs_run]="jobsCounterByType?.scheduled || 0"
+                [jobs_fail]="template ? template.jobs_fail : 0"
+                [jobs_success]="template ? template.jobs_success : 0">
+        </ax-jobs-summary-box>
+        <ax-jobs-details-box
+                [tasks]="tasks"
+                [canLoadMore]="canLoadMore"
+                [dataLoaded]="dataLoaded">
+        </ax-jobs-details-box>
+        <div class=" jobs-history__load-more-button">
+            <button (click)="onLoadMore()" *ngIf="canLoadMore" axButtonWave class="ax-button ax-button--base-o">load more</button>
+        </div>
+    </div>
+</div>

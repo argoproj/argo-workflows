@@ -1,0 +1,20 @@
+@import '../../../../assets/styles/config';
+
+.recent-commits {
+    &__repo-name {
+        direction: rtl;
+    }
+
+    &__content {
+        padding: 42px 40px 0;
+    }
+
+    &__branch-timeline-button {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    &__status {
+        border-left: 4px solid $ax-color-gray-3;
+    }
+}

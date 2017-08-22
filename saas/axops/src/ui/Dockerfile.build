@@ -1,0 +1,6 @@
+FROM node:6.3.1
+
+ADD ./package.json /src/package.json
+ADD ./npm-shrinkwrap.json /src/npm-shrinkwrap.json
+WORKDIR /src
+RUN npm install

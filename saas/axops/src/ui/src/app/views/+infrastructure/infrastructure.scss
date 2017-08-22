@@ -1,0 +1,25 @@
+@import '../../../assets/styles/config';
+
+.infrastructure {
+    .chart {
+        background-color: $ax-color-white;
+        border: 1px solid #eee;
+        margin-bottom: 20px;
+
+        .title {
+            margin: 10px;
+            font-size: 18px;
+        }
+    }
+
+    .area {
+        padding-bottom: 1px;
+        margin-bottom: 30px;
+    }
+
+    .columns-same-size {
+        padding: 0;
+        margin: 0 15px 30px 15px;
+        background-color: $ax-color-white;
+    }
+}

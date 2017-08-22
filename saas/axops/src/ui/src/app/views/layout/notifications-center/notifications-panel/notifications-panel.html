@@ -1,0 +1,37 @@
+<div class="notifications-panel-overlay" (click)="close()" *ngIf="show"></div>
+<div class="notifications-panel" [class.show]="show" [class.show-details]="selectedNotification">
+    <div class="notifications-panel__overlay" (click)="close()"></div>
+    <div class="notifications-panel__main">
+        <div class="notifications-panel__header">
+            Notifications
+            <button (click)="close()" class="pull-right"><i class="ax-icon-close"></i></button>
+        </div>
+        <div class="notifications-panel__categories" *ngIf="categories">
+            <ax-switch [options]="categories" [selectedValue]="selectedCategory" [isFlexible]="true"
+                       (onOptionChanged)="categoryChanged($event)"></ax-switch>
+        </div>
+        <div class="notifications-panel__list"
+             ax-infinite-scroll
+             [ax-infinite-scroll-distance]="1"
+             [ax-scroll-window]="false"
+             [ax-immediate-check]="true"
+             (scrolled)="onScroll()">
+            <div *ngFor="let notification of notifications"
+                 [class.active]="notification.event_id === selectedNotification?.event_id">
+                <ax-notification-summary [notification]="notification"
+                                          *ngIf="selectedCategory === 'all' || notification.severity === selectedCategory"
+                                          (click)="showDetails(notification)">
+                </ax-notification-summary>
+            </div>
+            <div class="notifications-panel__loader" *ngIf="loading">
+                <ax-loader-custom></ax-loader-custom>
+            </div>
+        </div>
+    </div><!--
+    --><div class="notifications-panel__details-wrapper">
+        <div class="notifications-panel__details">
+            <button (click)="showDetails(null)" class="notifications-panel__details__close"><i class="ax-icon-close"></i></button>
+            <ax-notification-details *ngIf="selectedNotification" [notification]="selectedNotification"></ax-notification-details>
+        </div>
+    </div>
+</div>

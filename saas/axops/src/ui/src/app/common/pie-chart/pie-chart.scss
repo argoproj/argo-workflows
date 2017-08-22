@@ -1,0 +1,8 @@
+.pie-chart {
+    .nvd3.nv-pie path {
+        stroke: transparent;
+        stroke-width: 0px;
+        stroke-opacity: 1;
+        fill-opacity: 1;
+    }
+}

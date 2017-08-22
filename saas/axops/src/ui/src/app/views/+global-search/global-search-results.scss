@@ -1,0 +1,59 @@
+@import '../../../assets/styles/config';
+
+.global-search-results {
+    &__tabs {
+        margin: 0 20px;
+        padding: 0;
+        overflow: hidden;
+        list-style: none;
+    }
+
+    &__nav-tab {
+        display: inline-block;
+        margin: 0 10px;
+        padding: 8px 25px;
+        color: $ax-color-base;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        cursor: pointer;
+
+        &--active {
+            color: #000;
+            border-bottom: 4px solid $ax-color-base;
+        }
+    }
+
+    &__content {
+        margin: 20px 0;
+    }
+
+    &__action-button {
+        position: relative;
+        color: $ax-color-gray-6;
+        margin-top: 4px;
+        padding: 8px 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        border-radius: 4px;
+        border: 1px solid white;
+
+        &--active {
+            background-color: $ax-color-gray-2;
+            border: 1px solid $ax-color-gray-4;
+        }
+
+        & > i.fa-circle {
+            position: absolute;
+            font-size: 10px;
+            color: $ax-status-failed-color;
+            top: 2px;
+            left: 18px;
+        }
+    }
+
+    &__filters {
+        background-color: $ax-color-gray-2;
+        box-shadow: 0 1px 3px rgba(143, 164, 177, 0.3);
+    }
+}
