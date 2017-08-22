@@ -31,3 +31,5 @@ platform/source/go/pkg
 *.db
 .coverage
 htmlcov/
+/bin/
+.classpath
