@@ -13,6 +13,24 @@ Argo is an open source container-native workflow engine for developing and runni
 * Argo is cloud agnostic. Today we support AWS and GKE (alpha) with additional platforms coming soon.
 * With Argo, you don’t need to install or learn other tools such as Jenkins, Chef, Cloud Formation... 
 
+## Getting started
+
+### Step 1: Download the argo binary
+
+**Mac:** `curl -sSL -O https://s3-us-west-1.amazonaws.com/ax-public/argocli/latest/darwin_amd64/argo`
+
+**Linux:** `curl -sSL -O https://s3-us-west-1.amazonaws.com/ax-public/argocli/latest/linux_amd64/argo`
+
+```
+chmod a+x ./argo
+cp ./argo /usr/local/bin
+```
+
+### Step 2: Install argo
+
+`argo cluster`
+
+
 ## History
 VMs were a big improvement over physical servers when it came to dynamically provisioning and running applications. We found however, that VMs are too clunky and heavyweight for complex automation tasks and orchestrating distributed applications. When we started using containers for the first time, we were very excited by the potential of this lightweight and portable virtualization technology. We started creating a container-native platform for developing and running applications. We started with Mesos because that was the most stable platform for running distributed applicaitons at the time. A year later, we noticed that the Kubernetes community was growing faster and making more progress than any other container orchestration platform. We quickly switched to Kubernetes and haven't look back since :-)
 
