@@ -1,0 +1,18 @@
+{
+	"ImportPath": "github.com/gin-gonic/contrib/sessions",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/boj/redistore",
+			"Rev": "0cd55584b172cefd31c4cb84e2904585d898c7b2"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "ac0ad2fed865d40a0adc1ac3ccaadc3acff5db4b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "f61c3ec2cf65d69e7efedfd4d060fe128882c951"
+		}
+	]
+}

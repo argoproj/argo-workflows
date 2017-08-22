@@ -1,0 +1,10 @@
+{
+	"ImportPath": "github.com/gin-gonic/contrib/gzip",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "ac0ad2fed865d40a0adc1ac3ccaadc3acff5db4b"
+		}
+	]
+}
