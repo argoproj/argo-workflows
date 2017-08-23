@@ -202,13 +202,12 @@ func SecretUpdateKeyHandler(c *gin.Context) {
 			Type:     tool.TypeSecureKey,
 		}
 		keyConfig = &tool.SecureKeyConfig{base, newKey, "default", secret.SECRET_KEY_VERSION}
-		keyConfig.Real = keyConfig
 	} else {
 		keyConfig = keys[0].(*tool.SecureKeyConfig)
 		keyConfig.PrivateKey = newKey
 		keyConfig.Version = secret.SECRET_KEY_VERSION
 	}
-	_, axErr, _ = keyConfig.Update()
+	axErr, _ = tool.Update(keyConfig)
 	if axErr != nil {
 		c.JSON(axerror.REST_INTERNAL_ERR, axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Failed to persist the updated RSA secure key: %v", axErr))
 		return

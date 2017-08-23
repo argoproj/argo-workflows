@@ -125,8 +125,7 @@ func AddExampleRepository() {
 			gitHub := &GitHubConfig{}
 			gitHub.ToolBase = toolBase
 			example1 := &GitConfig{gitHub}
-			example1.Real = example1
-			_, axErr, _ := example1.Create()
+			axErr, _ := Create(example1)
 			if axErr != nil {
 				utils.ErrorLog.Printf("Failed to load the example repository(%v).\n", repo)
 			} else {

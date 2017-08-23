@@ -83,8 +83,7 @@ func LoadRSAKey() *axerror.AXError {
 		}
 
 		keyConfig := &tool.SecureKeyConfig{base, RSAKey, "default", SECRET_KEY_VERSION}
-		keyConfig.Real = keyConfig
-		_, axErr, _ := keyConfig.Create()
+		axErr, _ := tool.Create(keyConfig)
 		if axErr != nil {
 			panic(fmt.Sprintf("Failed to persist the newly created RSA secure key: %v", axErr))
 		}
@@ -97,7 +96,7 @@ func LoadRSAKey() *axerror.AXError {
 			CreateRSAKey()
 			keyconfig.PrivateKey = RSAKey
 			keyconfig.Version = SECRET_KEY_VERSION
-			_, axErr, _ = keyconfig.Update()
+			axErr, _ = tool.Update(keyconfig)
 			if axErr != nil {
 				return axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Failed to persist the updated RSA secure key: %v", axErr)
 			}
