@@ -1,4 +1,8 @@
 .pie-chart {
+    width: 130px;
+    height: 130px;
+    margin: auto;
+
     .nvd3.nv-pie path {
         stroke: transparent;
         stroke-width: 0px;

@@ -127,6 +127,11 @@
         text-transform: uppercase;
     }
 
+    &__top-des {
+        font-size: 13px;
+        color: $ax-color-gray-6;
+    }
+
     &__des {
         color: $ax-color-gray-5;
     }
@@ -144,6 +149,11 @@
 
     &__progress {
         padding: 6px 0 12px;
+    }
+
+    &__repo {
+        font-size: 12px;
+        color: $ax-color-gray-5;
     }
 
     &__menu {

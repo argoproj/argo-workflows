@@ -55,11 +55,11 @@
                                 <ul>
                                     <li>
                                         <button
-                                            axButtonWave class="ax-button ax-button--base" (click)="showNodeDetails(cell, 'logs')"
-                                            [disabled]="cell.workflow.value.template.type !== 'container'">LOGS</button>
+                                            axButtonWave class="ax-button ax-button--base-o" (click)="showNodeDetails(cell, 'logs')"
+                                            *ngIf="cell.workflow.value.template.type === 'container'">LOGS</button>
                                     </li>
-                                    <li><button axButtonWave class="ax-button  ax-button--base-o" (click)="showYaml(cell)">YAML</button></li>
-                                    <li><button axButtonWave class="ax-button  ax-button--base-o" (click)="showNodeDetails(cell, 'summary')">DETAILS</button></li>
+                                    <li><button axButtonWave class="ax-button ax-button--base-o" (click)="showYaml(cell)">YAML</button></li>
+                                    <li><button axButtonWave class="ax-button ax-button--base-o" (click)="showNodeDetails(cell, 'summary')">DETAILS</button></li>
                                 </ul>
                             </div>
                         </template>
@@ -186,7 +186,7 @@
 
 <ax-sliding-panel [hasNoPadding]="true" [show]="isRecentCommitsVisible" (closePanel)="closeRecentCommitsPanel()">
     <sliding-panel-header>
-        Recent Commits on Branch: <span>{{ task.commit.branch }}</span>
+        Recent Commits on Branch: <span class="bold-text marked">{{ task.commit.branch }}</span>
     </sliding-panel-header>
     <sliding-panel-body>
         <div class="job-details__recent-commits">
@@ -197,7 +197,7 @@
 
 <ax-sliding-panel [hasNoPadding]="true" [show]="isJobHistoryVisible" (closePanel)="closeJobsHistoryPanel()">
     <sliding-panel-header>
-        Jobs History for Template: <span>{{task.template.name}}</span>
+        Jobs History for Template: <span class="bold-text marked">{{task.template.name}}</span>
     </sliding-panel-header>
     <sliding-panel-body>
         <ax-jobs-history [template]="taskOriginalTemplate"></ax-jobs-history>
@@ -206,9 +206,10 @@
 
 <ax-sliding-panel [show]="selectedNode" (closePanel)="closeSlidingPanel()" [hasNoPadding]="true" [hasCloseButton]="true">
     <sliding-panel-header>
-        Workflow Step: <strong>{{ selectedNode?.name }}</strong>
+        Workflow Step: <span class="bold-text marked">{{ selectedNode?.name }}</span>
     </sliding-panel-header>
     <sliding-panel-body *ngIf="selectedNode">
+        <div class="workflow-tree__second-bar"></div>
         <div class="workflow-tree__task-details-artifacts" *axIfAuthenticated>
             <button axButtonWave class="ax-button ax-button--base-o" *ngFor="let item of actionMenu"
                     (click)="item.action()">{{item.title}}</button>
@@ -292,7 +293,7 @@
                 </div>
             </ax-tab>
             <ax-tab [tabKey]="'artifacts'" [tabTitle]="'Artifacts'">
-                 <ax-artifacts *ngIf="selectedNode.workflow.value" [task]="selectedNode.workflow.value"></ax-artifacts> 
+                 <ax-artifacts *ngIf="selectedNode.workflow.value" [task]="selectedNode.workflow.value" [isFullWidthContent]="true"></ax-artifacts>
             </ax-tab>
         </ax-tabs>
     </sliding-panel-body>

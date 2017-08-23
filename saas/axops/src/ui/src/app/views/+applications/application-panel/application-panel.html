@@ -27,16 +27,16 @@
     </div>
 
     <div class="application-panel__item" *ngIf="isJiraConfigured">
-        <div class="application-panel__item-value application-panel__item-value--highlight">
+        <div class="application-panel__item-value">
             <a (click)="toggleIssuesPanel(application); $event.stopPropagation();">{{ application.jira_issues?.length || 0 }}</a></div>
         <div class="application-panel__item-name">JIRA issues</div>
     </div>
     <div class="application-panel__item" *ngIf="application.endpoints && application.endpoints.length">
-        <div class="application-panel__item-value application-panel__item-value--highlight">
+        <div class="application-panel__item-value">
             <i class="fa fa-external-link"></i></div>
         <div class="application-panel__item-name" *ngIf="application.endpoints.length === 1">
             <a href="//{{application.endpoints[0]}}" target="_blank">Endpoint</a></div>
-        <div class="application-panel__item-name application-panel__item-value--highlight" *ngIf="application.endpoints.length > 1">
+        <div class="application-panel__item-name" *ngIf="application.endpoints.length > 1">
             <ax-dropdown isMenu="true">
                 <ax-dropdown-anchor>
                     <span class="application-panel__item-dropdown">Endpoints

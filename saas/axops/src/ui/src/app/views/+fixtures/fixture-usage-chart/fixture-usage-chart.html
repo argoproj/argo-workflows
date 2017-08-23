@@ -1,0 +1,15 @@
+<div class="fixture-usage-chart">
+    <div class="fixture-usage-chart__center">
+        <div>
+            <ax-pie-chart [data]="chartData"></ax-pie-chart>
+            <div class="fixture-usage-chart__total-counter">
+                <label>{{usageInfo.deploymentsCount + usageInfo.workflowsCount}}</label>
+                <span>Total</span>
+            </div>
+        </div>
+    </div>
+    <div class="fixture-usage-chart__legend">
+        <span class="fixture-usage-chart__legend-item fixture-usage-chart__legend-item--deployments">DEPLOYMENTS: <b>{{usageInfo.deploymentsCount}}</b></span>
+        <span class="fixture-usage-chart__legend-item fixture-usage-chart__legend-item--workflows">WORKFLOWS: <b>{{usageInfo.workflowsCount}}</b></span>
+    </div>
+</div>

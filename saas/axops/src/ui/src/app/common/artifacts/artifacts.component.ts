@@ -53,6 +53,9 @@ export class ArtifactsComponent implements OnDestroy {
         }
     }
 
+    @Input()
+    public isFullWidthContent: boolean = false;
+
     @Output()
     public selectedCountChanged: EventEmitter<number> = new EventEmitter<number>();
 

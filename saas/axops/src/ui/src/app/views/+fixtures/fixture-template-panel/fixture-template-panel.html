@@ -6,8 +6,8 @@
         <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
     </sliding-panel-header>
     <sliding-panel-body>
-        <h2>{{messages.title}}</h2>
-        <p>Select the repo/branch where you want to enable and use {{ templateGroup && templateGroup[0].name }} fixtures.</p>
+        <div class="panel-box__title">{{messages.title}}</div>
+        <div class="panel-box__subtitle">Select the repo/branch where you want to enable and use {{ templateGroup && templateGroup[0].name }} fixtures.</div>
         <div class="fixture-template-panel">
             <div class="fixture-template-panel__repo-list" *ngIf="!selectedTemplates">
                 <div class="fixture-template-panel__repo" *ngFor="let templates of templatesByRepo" (click)="selectTemplates(templates)">

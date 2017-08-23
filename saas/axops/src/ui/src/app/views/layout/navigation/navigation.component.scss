@@ -321,6 +321,7 @@ $nav-break-height-sm: 746px;
             line-height: 50px;
             vertical-align: middle;
             padding-right: 2em;
+            font-weight: 800;
         }
 
         p {
@@ -335,6 +336,7 @@ $nav-break-height-sm: 746px;
     &__swipe, &__swipe .swipe {
         display: inline-block;
         vertical-align: middle;
+        margin-left: 60px;
     }
 
     hr {

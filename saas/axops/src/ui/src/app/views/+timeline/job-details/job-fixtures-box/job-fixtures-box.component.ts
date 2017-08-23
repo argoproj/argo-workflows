@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import * as _ from 'lodash';
 
 import { Task } from '../../../../model';
 import { TaskService } from '../../../../services';
@@ -37,18 +38,20 @@ export class JobFixturesBoxComponent {
 
     @Input()
     public set task (val: Task) {
-        if (val) {
+        if (!_.isEqual(val, new Task)) {
             let tree = JobTreeNode.createFromTask(val);
             let totalNumberOfSteps = tree.getFlattenNodes().length;
             this.fixtures = tree.getAllUsedFixtures().map(
                 fixture => Object.assign({}, fixture, { chartData: [{y: fixture.steps.length}, {y: totalNumberOfSteps - fixture.steps.length}] }));
+            this.fixturesLoader = false;
         } else {
-            this.fixtures = [];
+            this.fixturesLoader = true;
         }
     }
 
     public fixtures: FixtureInfo[] = [];
     public selectedFixture: FixtureInfo = null;
+    public fixturesLoader: boolean = false;
 
     constructor(private taskService: TaskService) {}
 

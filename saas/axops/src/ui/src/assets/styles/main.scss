@@ -173,6 +173,10 @@ div.validation-default-message, div.validation-message {
     font-weight: bold;
 }
 
+.marked {
+    color: $ax-color-gray-6;
+}
+
 .error-msg {
     font-size: 13px;
     line-height: 13px !important;

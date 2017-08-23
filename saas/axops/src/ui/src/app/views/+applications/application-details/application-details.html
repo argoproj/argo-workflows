@@ -60,7 +60,7 @@
 
 <ax-sliding-panel [show]="logsInfo" (closePanel)="closeLogPanel()">
     <sliding-panel-header>
-        Logs for <strong>{{logsInfo?.pod.name}}</strong>
+        <span class="application-details__panel-header">Logs for <strong>{{logsInfo?.pod.name}}</strong></span>
     </sliding-panel-header>
     <sliding-panel-body *ngIf="logsInfo">
         <div class="application-details__logs-content">
@@ -82,7 +82,7 @@
 
 <ax-sliding-panel [show]="consoleInfo" (closePanel)="closeConsolePanel()">
     <sliding-panel-header>
-        Pod: <strong>{{consoleInfo?.pod?.name}}</strong>
+        <span class="application-details__panel-header">Pod: <strong>{{consoleInfo?.pod?.name}}</strong></span>
     </sliding-panel-header>
     <sliding-panel-body *ngIf="consoleInfo">
         <ax-sys-console [consoleAccessSettings]="consoleInfo"></ax-sys-console>
@@ -91,11 +91,15 @@
 
 <ax-sliding-panel [show]="showSpendingsPanel" (closePanel)="closeSpendingsPanel()">
     <sliding-panel-header>
-        Spendings: <strong>{{application?.name}}</strong>
+        <span class="application-details__panel-header">Spendings: <strong>{{application?.name}}</strong></span>
     </sliding-panel-header>
     <sliding-panel-body *ngIf="application">
         <div class="application-details__spendings">
-            <ax-app-spendings-chart [appName]="application.name"></ax-app-spendings-chart>
+            <div>
+                <div class="deployment-details__panel deployment-details__panel--inner-padding">
+                    <ax-app-spendings-chart [appName]="application.name"></ax-app-spendings-chart>
+                </div>
+            </div>
         </div>
     </sliding-panel-body>
 </ax-sliding-panel>

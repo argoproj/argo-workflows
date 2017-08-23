@@ -1,11 +1,11 @@
 <ax-sliding-panel *ngIf="fixtureClass" [show]="visible" (closePanel)="hidePanel()">
      <sliding-panel-header>
         <button axButtonWave class="ax-button ax-button--base" type="button" (click)="fixtureForm.valid && processInstance(fixtureForm.value)">{{messages.saveButtonTitle}}</button>
-        <button axButtonWave class="ax-button ax-button--base-o" type="button" (click)="hidePanel()">Cancel</button>
+        <button axButtonWave class="ax-button" type="button" (click)="hidePanel()">Cancel</button>
     </sliding-panel-header>
     <sliding-panel-body>
-        <h3>{{messages.title}}</h3>
-        <p>Please specify the attributes for: {{fixtureClass.name}} </p>
+        <div class="panel-box__title">{{messages.title}}</div>
+        <div class="panel-box__subtitle">Please specify the attributes for: {{fixtureClass.name}} </div>
         <ax-fixture-instance-form #fixtureForm [fixtureInstance]="mode == 'clone' ? instanceForClone : instance" [fixtureClass]="fixtureClass"></ax-fixture-instance-form>
     </sliding-panel-body>
 </ax-sliding-panel>

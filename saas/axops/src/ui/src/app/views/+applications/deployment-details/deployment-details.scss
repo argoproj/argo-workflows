@@ -1,6 +1,6 @@
 @import '../../../../assets/styles/config';
 
-$top-bar-height: 56px;
+$top-bar-height: 50px;
 $round-btn-size: 35px;
 $counter-background-size: 90px;
 $counter-background-active-size: 140px;
@@ -19,13 +19,17 @@ $padding: 50px;
         text-overflow: ellipsis;
     }
 
-    h2 {
+    h3 {
         display: inline-block;
         color: $ax-color-gray-6;
-        font-size: 15px;
+        font-size: 16px;
+        font-weight: 500;
         text-transform: uppercase;
-        margin-bottom: 5px;
-        margin-top: 30px;
+        margin: 30px 0 10px;
+    }
+
+    &__action-btn {
+        margin: 30px 0 10px;
     }
 
     &__close-btn {
@@ -35,8 +39,15 @@ $padding: 50px;
         padding-right: $padding;
     }
 
+    &__header {
+        background-color: $ax-color-gray-2;
+        border-bottom: 1px solid $ax-color-gray-3;
+        height: $top-bar-height;
+    }
+
     &__content {
         padding: 40px $padding;
+        background-color: $ax-color-gray-2;
 
         &--stream {
 
@@ -81,10 +92,10 @@ $padding: 50px;
     &__panel {
         position: relative;
         border-radius: $border-radius;
-        border: 1px solid $ax-color-gray-3;
         height: 100%;
-        box-shadow: 0 1px 5px $ax-color-gray-3;
+        box-shadow: 2px 3px 1px $ax-color-gray-4;
         overflow: hidden;
+        background-color: white;
 
         & > h3 {
             color: $ax-color-gray-6;
@@ -98,6 +109,10 @@ $padding: 50px;
 
         &--inner-small-padding {
             padding: 5px 10px;
+        }
+
+        &--inner-padding {
+            padding: 20px;
         }
 
         &--additional-vertical-padding {
