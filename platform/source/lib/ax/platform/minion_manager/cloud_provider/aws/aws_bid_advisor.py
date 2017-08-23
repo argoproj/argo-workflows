@@ -277,14 +277,16 @@ class AWSBidAdvisor(object):
     def get_spot_instance_price(self, instance_type, zone):
         """
         Returns the spot-instance price for the given instance_type and zone.
+        Caller is *required* to acquire the lock.
         """
+        assert self.lock.locked(), "BidAdvisor lock not acquired"
+
         # The spot price list is sorted by time. Find the latest instance
         # for the zone and instance_type and use that as the spot price.
-        with self.lock:
-            for price_info in self.spot_price_list:
-                if price_info["InstanceType"] == instance_type and \
-                        price_info["AvailabilityZone"] == zone:
-                    return float(price_info["SpotPrice"])
+        for price_info in self.spot_price_list:
+            if price_info["InstanceType"] == instance_type and \
+                    price_info["AvailabilityZone"] == zone:
+                return float(price_info["SpotPrice"])
         return None
 
     def get_new_bid(self, zone, instance_type):
