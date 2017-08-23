@@ -83,12 +83,12 @@ func CreateToolWithType(toolType string) gin.HandlerFunc {
 			return
 		}
 
-		created, axErr, code := t.(tool.Tool).Create()
+		axErr, code := tool.Create(t.(tool.Tool))
 		if axErr != nil {
 			c.JSON(code, axErr)
 			return
 		}
-		created.Omit()
+		t.(tool.Tool).Omit()
 		c.JSON(code, t)
 
 		service.UpdateServiceETag()
@@ -295,7 +295,7 @@ func CreateJira() gin.HandlerFunc {
 	return CreateToolWithType(tool.TypeJira)
 }
 
-func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.AXError) {
+func unmarshalTool(toolType string, configBytes []byte) (tool.Tool, *axerror.AXError) {
 	var t tool.Tool
 	var err error
 	switch toolType {
@@ -305,7 +305,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		github.Real = github
 		t = github
 	case tool.TypeBitBucket:
 		bitbucket := &tool.BitbucketConfig{}
@@ -313,7 +312,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		bitbucket.Real = bitbucket
 		t = bitbucket
 	case tool.TypeGitLab:
 		gitlab := &tool.GitLabConfig{}
@@ -321,7 +319,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		gitlab.Real = gitlab
 		t = gitlab
 	case tool.TypeCodeCommit:
 		codecommit := &tool.CodeCommitConfig{}
@@ -329,7 +326,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		codecommit.Real = codecommit
 		t = codecommit
 	case tool.TypeGIT:
 		git := &tool.GitConfig{}
@@ -337,7 +333,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		git.Real = git
 		t = git
 	case tool.TypeSMTP:
 		smtp := &tool.SMTPConfig{}
@@ -345,7 +340,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		smtp.Real = smtp
 		t = smtp
 	case tool.TypeSlack:
 		slack := &tool.SlackConfig{}
@@ -353,7 +347,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		slack.Real = slack
 		t = slack
 	case tool.TypeSplunk:
 		splunk := &tool.SplunkConfig{}
@@ -361,7 +354,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		splunk.Real = splunk
 		t = splunk
 	case tool.TypeSAML:
 		saml := &tool.SAMLConfig{}
@@ -369,7 +361,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		saml.Real = saml
 		t = saml
 	case tool.TypeServer:
 		cert := &tool.ServerCertConfig{}
@@ -377,7 +368,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		cert.Real = cert
 		t = cert
 	case tool.TypeDockerHub:
 		dockerhub := &tool.DockerHubConfig{}
@@ -385,7 +375,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		dockerhub.Real = dockerhub
 		t = dockerhub
 	case tool.TypePrivateRegistry:
 		private := &tool.PrivateRegistryConfig{}
@@ -393,7 +382,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		private.Real = private
 		t = private
 	case tool.TypeRoute53:
 		domain := &tool.DomainConfig{}
@@ -401,7 +389,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		domain.Real = domain
 		t = domain
 	case tool.TypeNexus:
 		nexus := &tool.NexusConfig{}
@@ -409,7 +396,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		nexus.Real = nexus
 		t = nexus
 	case tool.TypeSecureKey:
 		securekey := &tool.SecureKeyConfig{}
@@ -417,7 +403,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		securekey.Real = securekey
 		t = securekey
 	case tool.TypeJira:
 		jira := &tool.JiraConfig{}
@@ -425,7 +410,6 @@ func unmarshalTool(toolType string, configBytes []byte) (interface{}, *axerror.A
 		if err != nil {
 			return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("%v", err)
 		}
-		jira.Real = jira
 		t = jira
 	default:
 		return nil, axerror.ERR_API_INVALID_REQ.NewWithMessagef("The %v is not supported type.", toolType)
@@ -581,13 +565,13 @@ func PutTool(toolType string) gin.HandlerFunc {
 			return
 		}
 
-		updated, axErr, code := newTool.(tool.Tool).Update()
+		axErr, code := tool.Update(newTool.(tool.Tool))
 		if axErr != nil {
 			c.JSON(code, axErr)
 			return
 		} else {
-			updated.(tool.Tool).Omit()
-			c.JSON(code, updated)
+			newTool.(tool.Tool).Omit()
+			c.JSON(code, newTool)
 
 			service.UpdateServiceETag()
 			service.UpdateTemplateETag()
@@ -630,7 +614,7 @@ func DeleteTool(toolType string) gin.HandlerFunc {
 			}
 		}
 
-		if axErr, code := t.(tool.Tool).Delete(); axErr != nil {
+		if axErr, code := tool.Delete(t.(tool.Tool)); axErr != nil {
 			c.JSON(code, axErr)
 			return
 		} else {
@@ -697,7 +681,7 @@ func UpdateScmTools() {
 
 	if len(tools) != 0 {
 		for _, t := range tools {
-			UpdateScmTool(t.(tool.Tool).GetID())
+			UpdateScmTool(t.GetID())
 		}
 	}
 }
@@ -710,10 +694,10 @@ func UpdateScmTool(id string) {
 	}
 
 	if t != nil {
-		if _, axErr, _ := t.(tool.Tool).Update(); axErr != nil {
-			utils.ErrorLog.Printf("[SCM] Update tool %v %v %v to devops failed: %v\n", t.(tool.Tool).GetID(), t.(tool.Tool).GetType(), t.(tool.Tool).GetURL(), axErr)
+		if axErr, _ := tool.Update(t); axErr != nil {
+			utils.ErrorLog.Printf("[SCM] Update tool %v %v %v to devops failed: %v\n", t.GetID(), t.GetType(), t.GetURL(), axErr)
 		} else {
-			utils.InfoLog.Printf("[SCM] Updated the SCM configurration: %v", t.(tool.Tool).GetURL())
+			utils.InfoLog.Printf("[SCM] Updated the SCM configurration: %v", t.GetURL())
 		}
 	}
 }
@@ -726,10 +710,10 @@ func PushNotificationConfig() {
 
 	if len(tools) != 0 {
 		for _, t := range tools {
-			if axErr, _ = t.(tool.Tool).PushUpdate(); axErr != nil {
-				panic(fmt.Sprintf("Init: Push tool %v to axnotification failed: %v", t.(tool.Tool).GetID(), axErr))
+			if axErr, _ = t.PushUpdate(); axErr != nil {
+				panic(fmt.Sprintf("Init: Push tool %v to axnotification failed: %v", t.GetID(), axErr))
 			} else {
-				utils.InfoLog.Printf("Pushed the notification configuration successfully: %v", t.(tool.Tool).GetURL())
+				utils.InfoLog.Printf("Pushed the notification configuration successfully: %v", t.GetURL())
 			}
 		}
 	}
@@ -743,10 +727,10 @@ func ApplyAuthenticationConfig() {
 
 	if len(tools) != 0 {
 		for _, t := range tools {
-			if axErr, _ = t.(tool.Tool).PushUpdate(); axErr != nil {
-				panic(fmt.Sprintf("Init: Load authentication configuration %v failed: %v", t.(tool.Tool).GetID(), axErr))
+			if axErr, _ = t.PushUpdate(); axErr != nil {
+				panic(fmt.Sprintf("Init: Load authentication configuration %v failed: %v", t.GetID(), axErr))
 			} else {
-				utils.InfoLog.Printf("Loaded the authentication configurration successfully: %v", t.(tool.Tool).GetURL())
+				utils.InfoLog.Printf("Loaded the authentication configurration successfully: %v", t.GetURL())
 			}
 		}
 	}
@@ -782,7 +766,7 @@ func TestTool() gin.HandlerFunc {
 			}
 
 			if old != nil {
-				oldTool := old.(tool.Tool)
+				oldTool := old
 
 				// Copy fields from old tool
 				t["type"] = oldTool.GetType()
@@ -816,7 +800,7 @@ func TestTool() gin.HandlerFunc {
 			return
 		}
 
-		axErr, code := toolObj.(tool.Tool).Test()
+		axErr, code := toolObj.Test()
 		if axErr != nil {
 			if code == 401 {
 				// UI has some special logic for 401, work around in the backend for now

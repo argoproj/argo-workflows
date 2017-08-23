@@ -283,9 +283,8 @@ func LoadCustomCert() {
 			Type:     tool.TypeServer,
 		}
 		crtConfig := &tool.ServerCertConfig{base, crt, key}
-		crtConfig.Real = crtConfig
 
-		_, axErr, _ := crtConfig.Create()
+		axErr, _ := tool.Create(crtConfig)
 		if axErr != nil {
 			panic(fmt.Sprintf("Failed to persisted the newly created self-signed certificate: %v", axErr))
 		}
@@ -546,8 +545,7 @@ func CreateDomainManagementTool() *axerror.AXError {
 			domain := &tool.DomainConfig{&tool.ToolBase{}, nil, nil}
 			domain.Category = tool.CategoryDomainManagement
 			domain.Type = tool.TypeRoute53
-			domain.Real = domain
-			_, axErr, _ := domain.Create()
+			axErr, _ := tool.Create(domain)
 			if axErr != nil {
 				return axErr
 			}

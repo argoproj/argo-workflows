@@ -38,7 +38,7 @@ type ToolDB struct {
 	Config   string `json:"config,omitempty"`
 }
 
-func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
+func (t *ToolDB) ToTool() (Tool, *axerror.AXError) {
 	config := t.Config
 	switch t.Type {
 	case TypeGitHub:
@@ -47,7 +47,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeBitBucket:
 		tool := &BitbucketConfig{}
@@ -55,7 +54,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeGitLab:
 		tool := &GitLabConfig{}
@@ -63,7 +61,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeCodeCommit:
 		tool := &CodeCommitConfig{}
@@ -71,7 +68,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeGIT:
 		tool := &GitConfig{}
@@ -79,7 +75,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeSMTP:
 		tool := &SMTPConfig{}
@@ -87,7 +82,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeSlack:
 		tool := &SlackConfig{}
@@ -95,7 +89,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeSplunk:
 		tool := &SplunkConfig{}
@@ -103,7 +96,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeSAML:
 		tool := &SAMLConfig{}
@@ -111,7 +103,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeServer:
 		tool := &ServerCertConfig{}
@@ -119,7 +110,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeDockerHub:
 		tool := &DockerHubConfig{}
@@ -127,7 +117,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypePrivateRegistry:
 		tool := &PrivateRegistryConfig{}
@@ -135,7 +124,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeRoute53:
 		tool := &DomainConfig{}
@@ -143,7 +131,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeNexus:
 		tool := &NexusConfig{}
@@ -151,7 +138,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeSecureKey:
 		tool := &SecureKeyConfig{}
@@ -159,7 +145,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	case TypeJira:
 		tool := &JiraConfig{}
@@ -167,7 +152,6 @@ func (t *ToolDB) ToTool() (interface{}, *axerror.AXError) {
 		if err != nil {
 			return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessage("Can not unmarshal the configuration.")
 		}
-		tool.Real = tool
 		return tool, nil
 	default:
 		return nil, axerror.ERR_AX_INTERNAL.NewWithMessagef("The %v is not supported type.", t.Type)
@@ -189,7 +173,7 @@ func (t *ToolDB) delete() *axerror.AXError {
 	return nil
 }
 
-func GetToolByID(id string) (interface{}, *axerror.AXError) {
+func GetToolByID(id string) (Tool, *axerror.AXError) {
 	schemes, axErr := GetTools(map[string]interface{}{
 		ToolID: id,
 	})
@@ -205,19 +189,19 @@ func GetToolByID(id string) (interface{}, *axerror.AXError) {
 	return schemes[0], nil
 }
 
-func GetToolsByType(toolType string) ([]interface{}, *axerror.AXError) {
+func GetToolsByType(toolType string) ([]Tool, *axerror.AXError) {
 	return GetTools(map[string]interface{}{
 		ToolType: toolType,
 	})
 }
 
-func GetToolsByCategory(category string) ([]interface{}, *axerror.AXError) {
+func GetToolsByCategory(category string) ([]Tool, *axerror.AXError) {
 	return GetTools(map[string]interface{}{
 		ToolCategory: category,
 	})
 }
 
-func GetTools(params map[string]interface{}) ([]interface{}, *axerror.AXError) {
+func GetTools(params map[string]interface{}) ([]Tool, *axerror.AXError) {
 
 	toolDBs := []ToolDB{}
 	axErr := utils.Dbcl.Get(axdb.AXDBAppAXOPS, ToolTableName, params, &toolDBs)
@@ -225,7 +209,7 @@ func GetTools(params map[string]interface{}) ([]interface{}, *axerror.AXError) {
 		return nil, axErr
 	}
 
-	tools := []interface{}{}
+	tools := []Tool{}
 	for i, _ := range toolDBs {
 		tool, axErr := toolDBs[i].ToTool()
 		if axErr != nil {

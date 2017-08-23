@@ -24,7 +24,6 @@ type ToolBase struct {
 	Category string `json:"category,omitempty"`
 	Type     string `json:"type,omitempty"`
 	Password string `json:"password,omitempty"`
-	Real     Tool   `json:"-"`
 }
 
 func (t *ToolBase) GetID() string {
@@ -43,92 +42,59 @@ func (t *ToolBase) GetType() string {
 	return t.Type
 }
 
-func (t *ToolBase) GetConfig() (string, *axerror.AXError, int) {
-	configStr, err := json.Marshal(t.Real)
-	if err != nil {
-		return "", axerror.ERR_AX_INTERNAL.NewWithMessage(fmt.Sprintf("Failed to marshal the tool object: %v", err)), axerror.REST_INTERNAL_ERR
-	}
-	return string(configStr), nil, axerror.REST_STATUS_OK
-}
-
 func (t *ToolBase) GetPassword() string {
 	return t.Password
 }
 
-func (t *ToolBase) Create() (Tool, *axerror.AXError, int) {
-
+func (t *ToolBase) GenerateUUID() {
 	t.ID = utils.GenerateUUIDv1()
-
-	if err, code := t.Real.pre(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.validate(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.Real.validate(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.Real.PushUpdate(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.save(); err != nil {
-		return nil, err, code
-	}
-
-	return t.Real, nil, axerror.REST_CREATE_OK
 }
 
-func (t *ToolBase) Update() (Tool, *axerror.AXError, int) {
+func Create(t Tool) (*axerror.AXError, int) {
+	t.GenerateUUID()
 
-	if err, code := t.Real.pre(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.validate(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.Real.validate(); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.Real.PushUpdate(); err != nil {
-		return nil, err, code
-	}
-
-	old, err := GetToolByID(t.ID)
-	if err != nil {
-		return nil, err, axerror.REST_INTERNAL_ERR
-	}
-
-	if old == nil {
-		return nil, axerror.ERR_API_RESOURCE_NOT_FOUND.New(), axerror.REST_NOT_FOUND
-	}
-
-	oldTool := old.(Tool)
-
-	if err, code := t.Real.Post(oldTool, t.Real); err != nil {
-		return nil, err, code
-	}
-
-	if err, code := t.save(); err != nil {
-		return nil, err, code
-	}
-
-	return t.Real, nil, axerror.REST_STATUS_OK
-}
-
-func (t *ToolBase) Delete() (*axerror.AXError, int) {
-
-	if err, code := t.Real.pushDelete(); err != nil {
+	if err, code := t.pre(); err != nil {
 		return err, code
 	}
 
-	old, err := GetToolByID(t.ID)
+	if err, code := validate(t); err != nil {
+		return err, code
+	}
+
+	if err, code := t.validate(); err != nil {
+		return err, code
+	}
+
+	if err, code := t.PushUpdate(); err != nil {
+		return err, code
+	}
+
+	if err, code := save(t); err != nil {
+		return err, code
+	}
+
+	return nil, axerror.REST_CREATE_OK
+}
+
+func Update(t Tool) (*axerror.AXError, int) {
+
+	if err, code := t.pre(); err != nil {
+		return err, code
+	}
+
+	if err, code := validate(t); err != nil {
+		return err, code
+	}
+
+	if err, code := t.validate(); err != nil {
+		return err, code
+	}
+
+	if err, code := t.PushUpdate(); err != nil {
+		return err, code
+	}
+
+	old, err := GetToolByID(t.GetID())
 	if err != nil {
 		return err, axerror.REST_INTERNAL_ERR
 	}
@@ -139,18 +105,50 @@ func (t *ToolBase) Delete() (*axerror.AXError, int) {
 
 	oldTool := old.(Tool)
 
-	if err, code := t.Real.Post(oldTool, nil); err != nil {
+	if err, code := t.Post(oldTool, t); err != nil {
 		return err, code
 	}
 
-	if err, code := t.delete(); err != nil {
+	if err, code := save(t); err != nil {
 		return err, code
 	}
 
 	return nil, axerror.REST_STATUS_OK
 }
 
-func (t *ToolBase) delete() (*axerror.AXError, int) {
+func Delete(t Tool) (*axerror.AXError, int) {
+
+	if err, code := t.pushDelete(); err != nil {
+		return err, code
+	}
+
+	old, err := GetToolByID(t.GetID())
+	if err != nil {
+		return err, axerror.REST_INTERNAL_ERR
+	}
+
+	if old == nil {
+		return axerror.ERR_API_RESOURCE_NOT_FOUND.New(), axerror.REST_NOT_FOUND
+	}
+
+	oldTool := old.(Tool)
+
+	if err, code := t.Post(oldTool, nil); err != nil {
+		return err, code
+	}
+
+	if err, code := toolDelete(t); err != nil {
+		return err, code
+	}
+
+	return nil, axerror.REST_STATUS_OK
+}
+
+func (t *ToolBase) Post(old, new interface{}) (*axerror.AXError, int) {
+	return nil, axerror.REST_STATUS_OK
+}
+
+func toolDelete(t Tool) (*axerror.AXError, int) {
 
 	tool := &ToolDB{
 		ID: t.GetID(),
@@ -163,8 +161,7 @@ func (t *ToolBase) delete() (*axerror.AXError, int) {
 	return nil, axerror.REST_STATUS_OK
 }
 
-func (t *ToolBase) save() (*axerror.AXError, int) {
-
+func save(t Tool) (*axerror.AXError, int) {
 	tool := &ToolDB{
 		ID:       t.GetID(),
 		URL:      t.GetURL(),
@@ -172,7 +169,7 @@ func (t *ToolBase) save() (*axerror.AXError, int) {
 		Type:     t.GetType(),
 	}
 
-	config, err, code := t.GetConfig()
+	config, err, code := getConfig(t)
 	if err != nil {
 		return err, code
 	}
@@ -186,27 +183,31 @@ func (t *ToolBase) save() (*axerror.AXError, int) {
 	return nil, axerror.REST_STATUS_OK
 }
 
-func (t *ToolBase) validate() (*axerror.AXError, int) {
+func validate(t Tool) (*axerror.AXError, int) {
 
-	if t.Category == "" {
+	if t.GetCategory() == "" {
 		return ErrToolMissingCategory, axerror.REST_BAD_REQ
 	}
 
-	if t.Type == "" {
+	if t.GetType() == "" {
 		return ErrToolMissingType, axerror.REST_BAD_REQ
 	}
 
-	if t.URL == "" {
+	if t.GetURL() == "" {
 		return ErrToolMissingUrl, axerror.REST_BAD_REQ
 	}
 
-	if t.ID == "" {
+	if t.GetID() == "" {
 		return ErrToolMissingID, axerror.REST_BAD_REQ
 	}
 
 	return nil, axerror.REST_STATUS_OK
 }
 
-func (t *ToolBase) Post(old, new interface{}) (*axerror.AXError, int) {
-	return nil, axerror.REST_STATUS_OK
+func getConfig(t Tool) (string, *axerror.AXError, int) {
+	configStr, err := json.Marshal(t)
+	if err != nil {
+		return "", axerror.ERR_AX_INTERNAL.NewWithMessage(fmt.Sprintf("Failed to marshal the tool object: %v", err)), axerror.REST_INTERNAL_ERR
+	}
+	return string(configStr), nil, axerror.REST_STATUS_OK
 }
