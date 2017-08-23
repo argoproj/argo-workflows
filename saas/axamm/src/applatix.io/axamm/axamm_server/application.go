@@ -1,17 +1,18 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+
 	"applatix.io/axamm/application"
 	"applatix.io/axdb"
 	"applatix.io/axerror"
 	"applatix.io/axops/utils"
 	"applatix.io/common"
-	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"net/http"
-	"strings"
-	"sync"
 )
 
 type ApplicationsData struct {

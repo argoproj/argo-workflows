@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -101,4 +102,25 @@ func (c *ArgoClient) ServiceGet(id string) (*service.Service, *axerror.AXError) 
 func (c *ArgoClient) ServiceDelete(id string) *axerror.AXError {
 	url := fmt.Sprintf("services/%s", id)
 	return c.delete(url, nil)
+}
+
+// ServiceLogs retrieves the HTTP response object to a /logs endpoint containing a streaming response body
+func (c *ArgoClient) ServiceLogs(id string) (*http.Response, *axerror.AXError) {
+	// TODO: a better interface would be to return a io.ReaderCloser containing the RAW log messages, or a channel of log entries
+	url := fmt.Sprintf("services/%s/logs", id)
+	req, axErr := c.prepareRequest("GET", url, nil)
+	if axErr != nil {
+		return nil, axErr
+	}
+	// We use a new HTTP client instead of the default, since we do not want the
+	// connection to timeout while reading the response body when tailing logs
+	clnt := c.newHTTPClient(0)
+	res, err := clnt.Do(req)
+	if err != nil {
+		return nil, axerror.ERR_AX_HTTP_CONNECTION.NewWithMessage(err.Error())
+	}
+	if res.StatusCode >= 400 {
+		return nil, c.handleErrResponse(res)
+	}
+	return res, nil
 }

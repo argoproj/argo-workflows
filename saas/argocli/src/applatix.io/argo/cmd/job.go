@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -76,6 +80,8 @@ func init() {
 
 	jobCmd.AddCommand(jobKillCmd)
 
+	jobCmd.AddCommand(jobLogsCmd)
+
 	gitPath, _ = exec.LookPath("git")
 }
 
@@ -111,8 +117,14 @@ var jobKillCmd = &cobra.Command{
 	Run:   jobKill,
 }
 
+var jobLogsCmd = &cobra.Command{
+	Use:   "logs SERVICE_ID",
+	Short: "Retrieve logs from a container",
+	Run:   jobLogs,
+}
+
 var (
-	defaultServiceListFields = []string{"id", "name", "username", "launch_time", "status", "status_detail", "failure_path"}
+	defaultServiceListFields = []string{"id", "name", "username", "launch_time", "status", "status_detail", "failure_path", "policy_id"}
 	sinceRegex               = regexp.MustCompile("^(\\d+)([smhd])$")
 )
 
@@ -149,6 +161,15 @@ func statusString(svc *service.Service) string {
 	return statusStr
 }
 
+func submitterString(svc *service.Service) string {
+	if svc.PolicyId != "" {
+		// The service object currently does not capture the policy name -- just the ID.
+		// When we start capturing more policy information, change to display the policy name.
+		return "Policy"
+	}
+	return svc.User
+}
+
 func jobList(cmd *cobra.Command, args []string) {
 	params := api.ServiceListParams{
 		Username: jobListArgs.submitter,
@@ -173,7 +194,7 @@ func jobList(cmd *cobra.Command, args []string) {
 		cTime := time.Unix(svc.CreateTime, 0)
 		now := time.Now()
 		hrTimeDiff := humanize.RelTime(cTime, now, "ago", "later")
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", svc.Id, svc.Name, svc.User, hrTimeDiff, statusString(svc))
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", svc.Id, svc.Name, submitterString(svc), hrTimeDiff, statusString(svc))
 	}
 	w.Flush()
 }
@@ -312,6 +333,50 @@ func jobKill(cmd *cobra.Command, args []string) {
 	printJob(svc)
 }
 
+// This struct is the format
+type JSONLog struct {
+	Log    string `json:"log"`
+	Stream string `json:"stream"`
+	Time   string `json:"time"`
+}
+
+func jobLogs(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		cmd.HelpFunc()(cmd, args)
+		os.Exit(1)
+	}
+	initClient()
+	res, axErr := apiClient.ServiceLogs(args[0])
+	checkFatal(axErr)
+	defer res.Body.Close()
+	contentType := res.Header.Get("Content-Type")
+	switch contentType {
+	case "text/event-stream":
+		rd := bufio.NewReader(res.Body)
+		for {
+			line, err := rd.ReadBytes('\n')
+			if err != nil {
+				if err == io.EOF {
+					return
+				}
+				log.Fatal("Read Error:", err)
+			}
+			if !bytes.HasPrefix(line, []byte("data:")) {
+				continue
+			}
+			line = bytes.TrimPrefix(line, []byte("data:"))
+			var jl JSONLog
+			err = json.Unmarshal(line, &jl)
+			if err != nil {
+				log.Fatalf("Failed to decode line '%s': %v", string(line), err)
+			}
+			log.Print(jl.Log)
+		}
+	default:
+
+	}
+}
+
 func printJob(svc *service.Service) {
 	const svcFmtStr = "%-17s %v\n"
 	fmt.Printf(svcFmtStr, "ID:", svc.Id)
@@ -335,7 +400,7 @@ func printJob(svc *service.Service) {
 			fmt.Printf(svcFmtStr, "Failure Path:", strings.Join(failurePath, " -> "))
 		}
 	}
-	fmt.Printf(svcFmtStr, "Submitter:", svc.User)
+	fmt.Printf(svcFmtStr, "Submitter:", submitterString(svc))
 	fmt.Printf(svcFmtStr, "Submitted:", humanizeTimestamp(svc.CreateTime))
 	if svc.LaunchTime > 0 {
 		fmt.Printf(svcFmtStr, "Started:", humanizeTimestamp(svc.LaunchTime))
@@ -373,28 +438,20 @@ func printJobTree(svc *service.Service) {
 	for _, child := range svc.Children {
 		statusMap[child.Id] = child.Status
 	}
+	statusMap[svc.Id] = svc.Status
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	printJobTreeHelper(w, svc, svc.Name, statusMap, 0, " ", false)
+	printJobTreeHelper(w, svc, svc.Name, statusMap, 0, " ", " ")
 	w.Flush()
 }
 
-var statusIconMap = map[int]string{
-	utils.ServiceStatusInitiating: "⧖",
-	utils.ServiceStatusWaiting:    "⧖",
-	utils.ServiceStatusRunning:    "●",
-	utils.ServiceStatusCanceling:  "⚠",
-	utils.ServiceStatusCancelled:  "⚠",
-	utils.ServiceStatusSkipped:    "-",
-	utils.ServiceStatusSuccess:    "\033[32m✔\033[0m",
-	utils.ServiceStatusFailed:     "\033[31m✖\033[0m",
-}
+var jobStatusIconMap map[int]string
 
-func printJobTreeHelper(w *tabwriter.Writer, svc *service.Service, nodeName string, statusMap map[string]int, depth int, prefix string, isLast bool) {
+func printJobTreeHelper(w *tabwriter.Writer, svc *service.Service, nodeName string, statusMap map[string]int, depth int, nodePrefix string, childPrefix string) {
 	if svc.Template == nil {
 		return
 	}
 	nodeStatus := statusMap[svc.Id]
-	nodeName = fmt.Sprintf("%s %s", statusIconMap[nodeStatus], nodeName)
+	nodeName = fmt.Sprintf("%s %s", jobStatusIconMap[nodeStatus], nodeName)
 
 	templateType := svc.Template.GetType()
 	var svcID string
@@ -402,40 +459,66 @@ func printJobTreeHelper(w *tabwriter.Writer, svc *service.Service, nodeName stri
 		svcID = svc.Id
 	}
 
-	if depth == 0 {
-		fmt.Fprintf(w, "%s\n", nodeName)
+	fmt.Fprintf(w, "%s%s\t%s\n", nodePrefix, nodeName, svcID)
+	if len(svc.Children) > 0 {
 		fmt.Fprintf(w, " |\n")
-	} else {
-		if isLast {
-			fmt.Fprintf(w, "%s└- %s\t%s\n", prefix, nodeName, svcID)
-		} else {
-			fmt.Fprintf(w, "%s├- %s\t%s\n", prefix, nodeName, svcID)
-		}
 	}
 	if templateType == template.TemplateTypeWorkflow {
 		wt := svc.Template.(*service.EmbeddedWorkflowTemplate)
 		for i, parallelSteps := range wt.Steps {
 			j := 0
-			for stepName, childSvc := range parallelSteps {
-				j = j + 1
-				last := bool(i == len(wt.Steps)-1) && bool(j == len(parallelSteps))
-				var childPrefix string
-				if depth == 0 {
-					childPrefix = prefix
-				} else {
-					if isLast {
-						childPrefix = prefix + "    "
+			lastStepGroup := bool(i == len(wt.Steps)-1)
+			var part1, subp1 string
+			if lastStepGroup {
+				part1 = "└-"
+				subp1 = "  "
+			} else {
+				part1 = "├-"
+				subp1 = "| "
+			}
+			// display parallel steps in alphabetical order (for consistency between CLI invocations)
+			var keys []string
+			for k := range parallelSteps {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, stepName := range keys {
+				childSvc := parallelSteps[stepName]
+				if j > 0 {
+					if lastStepGroup {
+						part1 = "  "
 					} else {
-						childPrefix = prefix + "|   "
+						part1 = "| "
 					}
 				}
-				printJobTreeHelper(w, childSvc, stepName, statusMap, depth+1, childPrefix, last)
+				firstParallel := bool(j == 0)
+				lastParallel := bool(j == len(parallelSteps)-1)
+				var part2, subp2 string
+				if firstParallel {
+					part2 = "·-"
+					if !lastParallel {
+						subp2 = "| "
+					} else {
+						subp2 = "  "
+					}
+
+				} else if lastParallel {
+					part2 = "└-"
+					subp2 = "  "
+				} else {
+					part2 = "├-"
+					subp2 = "| "
+				}
+				childNodePrefix := childPrefix + part1 + part2
+				childChldPrefix := childPrefix + subp1 + subp2
+				printJobTreeHelper(w, childSvc, stepName, statusMap, depth+1, childNodePrefix, childChldPrefix)
+				j = j + 1
 			}
 		}
 	}
 }
 
-// jobURL returns the formulat for a job URL given a job ID
+// jobURL returns the job URL given a job ID
 func jobURL(id string) string {
 	return fmt.Sprintf("%s/app/timeline/jobs/%s", apiClient.Config.URL, id)
 }
