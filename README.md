@@ -5,7 +5,7 @@
 ## What is Argo?
 Argo is an open source container-native workflow engine for developing and running applications on Kubernetes.
 * Define workflows where each step in the workflow is a container.
-* Run rich CI/CD workflows using Docker-in-Docker, Kubernetes-in-Kubernetes, complex testing with built in artifact management, secret management and lifecycle management of dev/test resources.
+* Run rich CI/CD workflows using Docker-in-Docker, complex testing with built in artifact management, secret management and lifecycle management of dev/test resources.
 * Build, test and deploy scalable stateful and stateless cloud-native apps and microservices.
 
 ## Why Argo?

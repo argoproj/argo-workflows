@@ -3,6 +3,7 @@
 * Make it easier to use and contribute to the proejct.
 * Install Argo on any existing k8s cluster.
 * Integrate Argo with k8s RBAC & secrets.
+* Support for running (KinK) Kubernetes in Kubernetes.
 
 # History
 
