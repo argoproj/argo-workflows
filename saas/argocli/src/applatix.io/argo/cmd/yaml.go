@@ -78,12 +78,14 @@ func validateYAML(cmd *cobra.Command, args []string) {
 		ctx, err = buildContextFromFiles(yamlFiles)
 	}
 	exitCode := 0
+	errorString := ansiFormat("ERROR", FgRed)
+	okString := ansiFormat("OK", FgGreen)
 	if ctx != nil {
 		if !ctx.IgnoreErrors {
 			firstErr, filePath := ctx.FirstError()
 			if firstErr != nil {
-				fmt.Printf("[\033[1;30m%s\033[0m]\n", filePath)
-				fmt.Printf(" - \033[31mERROR\033[0m %s: %v\n", firstErr.Template.GetName(), firstErr.AXErr)
+				fmt.Printf("[%s]\n", ansiFormat(filePath, Bold, FgBlack))
+				fmt.Printf(" - %s %s: %v\n", errorString, firstErr.Template.GetName(), firstErr.AXErr)
 				os.Exit(1)
 			}
 		}
@@ -95,14 +97,14 @@ func validateYAML(cmd *cobra.Command, args []string) {
 				//fmt.Println(result, exists, err)
 				if exists {
 					if !printedFilePath {
-						fmt.Printf("[\033[1;30m%s\033[0m]\n", filePath)
+						fmt.Printf("[%s]\n", ansiFormat(filePath, Bold, FgBlack))
 						printedFilePath = true
 					}
 					if result.AXErr != nil {
 						exitCode = 1
-						fmt.Printf(" - \033[31mERROR\033[0m %s: %v\n", templateName, result.AXErr)
+						fmt.Printf(" - %s %s: %v\n", errorString, templateName, result.AXErr)
 					} else {
-						fmt.Printf(" - \033[32mOK\033[0m    %s\n", templateName)
+						fmt.Printf(" - %s    %s\n", okString, templateName)
 					}
 				}
 			}

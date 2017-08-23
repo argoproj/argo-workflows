@@ -32,6 +32,7 @@ type globalFlags struct {
 	config        string            // --config
 	trace         bool              // --trace
 	clusterConfig api.ClusterConfig // --cluster, --username, --password
+	noColor       bool              // --no-color
 }
 
 func init() {
@@ -40,6 +41,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&globalArgs.clusterConfig.Password, "password", "", "Argo password")
 	RootCmd.PersistentFlags().StringVar(&globalArgs.config, "config", "", "Name or path to a Argo cluster config")
 	RootCmd.PersistentFlags().BoolVar(&globalArgs.trace, "trace", false, "Log API requests")
+	RootCmd.PersistentFlags().BoolVar(&globalArgs.noColor, "no-color", false, "Disable colorized output")
 }
 
 func initConfig() api.ClusterConfig {
