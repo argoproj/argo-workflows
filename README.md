@@ -25,7 +25,7 @@ Argo is an open source container-native workflow engine for developing and runni
 * Managed fixtures.
 
 ## Resources
-* Argo website: https://argoproj.io
+* Argo website: https://argoproj.github.io/argo-site
 * Argo GitHub:  https://github.com/argoproj
 * Argo forum:   https://groups.google.com/forum/#!forum/argoproj
 
