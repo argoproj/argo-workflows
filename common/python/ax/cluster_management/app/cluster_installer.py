@@ -53,6 +53,7 @@ CLUSTER_CONFIG_TEMPLATES = {
 DEFAULT_NODE_SPOT_PRICE = "0.1512"
 CLUSTER_META_DATA_PATH = "/tmp/cluster_meta/metadata.yaml"
 ARGO_CONFIG = "/root/.argo/{fname}"
+ARGO_CONFIG_DEFAULT = ARGO_CONFIG.format(fname='default')
 
 
 class ClusterInstaller(ClusterOperationBase):
@@ -104,7 +105,8 @@ class ClusterInstaller(ClusterOperationBase):
         # Dump Argo cluster profile
         if username and password:
             logger.info("Generating Argo cluster profile ...")
-            with open(ARGO_CONFIG.format(fname=self._idobj.get_cluster_name_id()), "w") as f:
+            argo_config_path = ARGO_CONFIG.format(fname=self._idobj.get_cluster_name_id())
+            with open(argo_config_path, "w") as f:
                 f.write(
                     """
 insecure: true
@@ -113,6 +115,9 @@ url: https://{dns}
 username: {username}
 """.format(password=password, dns=cluster_dns, username=username)
             )
+            if not os.path.exists(ARGO_CONFIG_DEFAULT):
+                # if user has not yet configured default argo config, symlink a default config to the one just created
+                os.symlink(os.path.basename(argo_config_path), ARGO_CONFIG_DEFAULT)
 
         summary = """
               Cluster Name:  {cluster_name}
