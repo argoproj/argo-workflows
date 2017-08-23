@@ -179,15 +179,31 @@
     "severity": "critical"
   },
   {
-    "code": "configuration.policy.invalid_enabled_policy",
+    "code": "job.policy.invalid_enabled_policy",
     "message": "Enabled policy disconnected from template. Automatically disable the policy.",
-    "channel": "configuration",
-    "severity": "warning"
+    "channel": "job",
+    "severity": "warning",
+    "no_limit": true
   },
   {
-    "code": "configuration.policy.invalid_policy_becomes_valid",
+    "code": "job.policy.invalid_policy_becomes_valid",
     "message": "Disconnected policy re-connected to template. Automatically enable the policy.",
-    "channel": "configuration",
-    "severity": "warning"
+    "channel": "job",
+    "severity": "warning",
+    "no_limit": true
+  },
+  {
+    "code": "job.policy.enabled_policy",
+    "message": "Policy enabled",
+    "channel": "job",
+    "severity": "info",
+    "no_limit": true
+  },
+  {
+    "code": "job.policy.disabled_policy",
+    "message": "Policy disabled",
+    "channel": "job",
+    "severity": "info",
+    "no_limit": true
   }
 ]
