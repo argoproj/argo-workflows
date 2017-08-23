@@ -20,7 +20,7 @@ const (
 var (
 	paramNameRegexStr       = "[-0-9A-Za-z_]+"
 	paramNameRegex          = regexp.MustCompile("^[-0-9A-Za-z_]+$")
-	ouputArtifactRegexp     = regexp.MustCompile(`^%%steps\.` + paramNameRegexStr + `\.outputs\.artifacts\.` + paramNameRegexStr + `%%$`)
+	ouputArtifactRegexp     = regexp.MustCompile(`^%%(steps|fixtures)\.` + paramNameRegexStr + `\.outputs\.artifacts\.` + paramNameRegexStr + `%%$`)
 	VarRegex                = regexp.MustCompile("%%[-0-9A-Za-z_]+(\\.[-0-9A-Za-z_]+)*%%")
 	varRegexExact           = regexp.MustCompile("^%%[-0-9A-Za-z_]+(\\.[-0-9A-Za-z_]+)*%%$")
 	listExpansionParamRegex = regexp.MustCompile("\\$\\$\\[(.*)\\]\\$\\$")
