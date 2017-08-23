@@ -171,6 +171,10 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 	// the previous step group to the current scope
 	scopedParams := tmpl.parametersInScope()
 
+	// dynFixtureOutputs keeps track of any outputs produced by dynamic fixtures.
+	// We will add this to the scope after all steps complete
+	dynFixtureOutputs := paramMap{}
+
 	// Verify any dynamic fixtures. Template references must be container type
 	for i, parallelFixtures := range tmpl.Fixtures {
 		for fixRefName, ftr := range parallelFixtures {
@@ -189,6 +193,15 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 			axErr := validateReceiverParams(st.GetName(), ctrTemplate.Inputs, ftr.Arguments, scopedParams)
 			if axErr != nil {
 				return axerror.ERR_AXDB_INVALID_PARAM.NewWithMessagef("fixtures[%d].%s: %v", i, fixRefName, axErr)
+			}
+			if ctrTemplate.Outputs != nil {
+				for artRefName := range ctrTemplate.Outputs.Artifacts {
+					p := param{
+						name:      fmt.Sprintf("fixtures.%s.outputs.artifacts.%s", fixRefName, artRefName),
+						paramType: paramTypeArtifact,
+					}
+					dynFixtureOutputs[p.name] = p
+				}
 			}
 		}
 	}
@@ -271,6 +284,12 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 		}
 	}
 
+	// Add dynamic fixtures outputs to the scope
+	axErr := scopedParams.merge(dynFixtureOutputs)
+	if axErr != nil {
+		return axErr
+	}
+
 	// Do one last validation of all parameters used in the template
 	usedParams, axErr := tmpl.usedParameters()
 	if axErr != nil {
@@ -281,8 +300,8 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 		return axErr
 	}
 
-	// See if this workflow is exporting any artifacs. If so, verify that 'from' is
-	// referencing a valid step, and that step has expected artifact with the name.
+	// See if this workflow is exporting any artifacts. If so, verify that 'from' is
+	// referencing a valid step or fixture, and that step has expected artifact with the name.
 	if tmpl.Outputs != nil && tmpl.Outputs.Artifacts != nil {
 		for refName, art := range tmpl.Outputs.Artifacts {
 			if art.Path != "" {
@@ -292,7 +311,7 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from is required", refName)
 			}
 			if !ouputArtifactRegexp.MatchString(art.From) {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from invalid format '%s'. expected format: '%%%%steps.<step_name>.outputs.artifacts.<artifact_name>%%%%'", refName, art.From)
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from invalid format '%s'. expected format: '%%%%(steps|fixtures).<REF_NAME>.outputs.artifacts.<ARTIFACT_NAME>%%%%'", refName, art.From)
 			}
 			pName := strings.Trim(art.From, "%")
 			_, ok := scopedParams[pName]

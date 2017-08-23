@@ -221,10 +221,27 @@ func buildReplaceMap(tmpl EmbeddedTemplateIf, arguments template.Arguments) (map
 		}
 	}
 
-	// For any immediate children of this template, replace usages of %%steps.STEPNAME.outputs.artifacts.ARTNAME%% with concrete services IDs.
-	// This is only needed with workflows, since containers don't have children, and deployments do not use outputs from child containers
+	// For any immediate children of this template, replace usages of %%steps.STEPNAME.outputs.artifacts.ARTNAME%% or
+	// %%fixtures.FIXNAME.outputs.artifacts.ARTNAME%% with concrete services IDs. This is only needed with workflows,
+	// since containers don't have children, and deployments do not use outputs from child containers
 	if tmpl.GetType() == template.TemplateTypeWorkflow {
 		wft := tmpl.(*EmbeddedWorkflowTemplate)
+		for _, parallelFixtures := range wft.Fixtures {
+			for fixRefName, ftr := range parallelFixtures {
+				if !ftr.IsDynamicFixture() {
+					continue
+				}
+				outputs := ftr.Template.GetOutputs()
+				if outputs == nil {
+					continue
+				}
+				// The following converts %%fixtures.STEP1.outputs.artifacts.ARTNAME%% to %%service.service_id.outputs.artifacts.ARTNAME%%
+				for artName := range outputs.Artifacts {
+					serviceOutputRef := fmt.Sprintf("%%%%service.%s.outputs.artifacts.%s%%%%", ftr.Id, artName)
+					replaceMap[fmt.Sprintf("%%%%fixtures.%s.outputs.artifacts.%s%%%%", fixRefName, artName)] = &serviceOutputRef
+				}
+			}
+		}
 		for _, parallelSteps := range wft.Steps {
 			for stepName, step := range parallelSteps {
 				if step.Template == nil {
