@@ -30,14 +30,13 @@ $connectorColor: #8FA4B1;
     }
 
     &__table-headline {
-        border-left: 1px solid #e8e8e8;
-        color: #A3A3A3;
+        border-left: 1px solid $ax-color-gray-5;
+        color: $ax-color-gray-5;
         margin-left: 80px;
         padding-left: 5px;
         height: 40px;
         font-size: 12px;
         text-align: left;
-        font-weight: lighter;
     }
 
     &__node {
@@ -309,14 +308,20 @@ $connectorColor: #8FA4B1;
 
     &__task-details-artifacts {
         position: absolute;
-        z-index: 1;
-        top: 18px;
+        z-index: 2;
+        top: 7px;
         right: 16px;
 
         &--btn-pos {
             display: inline-block;
             vertical-align: middle;
         }
+    }
+
+    &__second-bar {
+        height: 48px;
+        display: block;
+        width: 100%;
     }
 }
 

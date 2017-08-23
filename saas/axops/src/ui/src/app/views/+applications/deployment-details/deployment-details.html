@@ -73,7 +73,7 @@
 
 
         <div *ngIf="currentDeployment">
-            <h2>{{ 'End Points' | translate | uppercase }}</h2>
+            <h3>{{ 'End Points' | translate | uppercase }}</h3>
             <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
                 <table class="ax-table ax-table--light ax-table--no-background">
                     <thead>
@@ -137,8 +137,8 @@
         </div>
 
         <div>
-            <h2>{{ 'Recent Revision' | translate | uppercase }}</h2>
-            <h2 class="fr"><a (click)="navigateToRevisionHistory()">{{ 'View Revision History' | translate | uppercase }}</a></h2>
+            <h3>{{ 'Recent Revision' | translate | uppercase }}</h3>
+            <a class="fr deployment-details__action-btn" (click)="navigateToRevisionHistory()">{{ 'View Revision History' | translate | uppercase }}</a>
             <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
                 <div (click)="onShowHistoryDetails.emit({id: currentDeployment.id})" class="clickable">
                     <ax-deployment-history-cell [deployment]="currentDeployment"></ax-deployment-history-cell>
@@ -147,7 +147,7 @@
         </div>
 
         <div *ngFor="let volume of volumes">
-            <h2>{{ 'Volume' | translate | uppercase }}</h2>
+            <h3>{{ 'Volume' | translate | uppercase }}</h3>
             <div class="deployment-details__panel deployment-details__panel--inner-small-padding deployment-details__panel--gradient-background">
                 <div class="row">
                     <div class="columns small-4">
@@ -181,7 +181,7 @@
         </div>
 
         <div>
-            <h2>{{ 'Spending for last 30 days' | translate | uppercase }}</h2>
+            <h3>{{ 'Spending for last 30 days' | translate | uppercase }}</h3>
             <div class="deployment-details__panel deployment-details__panel--additional-vertical-padding" *ngIf="currentDeployment">
                 <ax-app-spendings-chart [showTitle]="false" [showTimeRange]="false" [appName]="currentDeployment.app_name" [deploymentName]="currentDeployment.name">
                 </ax-app-spendings-chart>

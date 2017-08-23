@@ -13,6 +13,7 @@ $node-width: 200px;
         display: inline-block;
         padding: 0.8em;
         margin-bottom: 1.5em;
+        border: 1px solid $white-color;
         border-radius: $border-radius;
 
         label {
@@ -23,6 +24,7 @@ $node-width: 200px;
             width: $node-width - 60px - 35px;
             display: inline-block;
             vertical-align: middle;
+            font-size: 14px;
         }
 
         &--selected {
@@ -88,7 +90,7 @@ $node-width: 200px;
     &__node-icon {
         color: $ax-success-color;
         position: absolute;
-        font-size: 28px;
+        font-size: 26px;
 
         &--progress {
             color: $ax-running-color;

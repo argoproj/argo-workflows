@@ -27,6 +27,10 @@
             li {
                 list-style-type: none;
                 margin-bottom: 1em;
+
+                button {
+                    width: 85px;
+                }
             }
         }
     }
@@ -197,10 +201,13 @@
         padding: 16px 22px;
         font-size: 16px;
         cursor: pointer;
-        border: 1px solid transparent;
+        border-top: 1px solid transparent;
+        border-bottom: 1px solid transparent;
+        border-right: 1px solid transparent;
+        border-left: 5px solid transparent;
 
         &:hover {
-            background-color: #dbf0f2;
+            background-color: $ax-color-gray-2;
         }
 
         &:not(:last-child)::before {
@@ -220,9 +227,10 @@
         }
 
         &--selected {
-            background-color: #dbf0f2;
-            border-top-color: #00bdce;
-            border-bottom-color: #00bdce;
+            background-color: $ax-color-gray-2;
+            border-left: 5px solid $ax-color-teal-6;
+            border-top: 1px solid $ax-color-gray-3;
+            border-bottom: 1px solid $ax-color-gray-3;
         }
 
         &--succeeded {

@@ -12,7 +12,7 @@
             </div>
         </div>
 
-        <div class="ax-table-list" *ngIf="configurations.length && !loading">
+        <div class="ax-table-list ax-table-list--clickable" *ngIf="configurations.length && !loading">
             <div class="ax-table-list__head">
                 <div class="row">
                     <div class="columns small-2">Name</div>
@@ -23,7 +23,7 @@
             </div>
 
             <div *ngFor="let config of configurations; let i = index">
-                <div class="ax-table-list__row clickable" (click)="editSelectedConfig(config)">
+                <div class="ax-table-list__row" (click)="editSelectedConfig(config)">
                     <div class="row">
                         <div class="columns small-2 title-text">
                             <span ax-tooltip="{{config.name}}">{{config.name}}</span>

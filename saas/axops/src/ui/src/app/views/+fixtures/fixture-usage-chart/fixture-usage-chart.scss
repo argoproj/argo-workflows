@@ -1,28 +1,79 @@
 @import '../../../../assets/styles/config';
 
 .fixture-usage-chart {
-    &__title {
-        color: $ax-color-teal-1;
+    display: block;
+    position: relative;
+    min-width: 200px;
+
+    &__legend {
+        display: block;
+        position: relative;
+        width:100%;
+        margin: auto;
+        text-align: center;
+        padding-bottom: 20px;
+        line-height: 0;
+        margin-top: 10px;
+        font-weight: 400;
+    }
+
+    &__legend-item {
+        color: $ax-color-gray-5;
         text-align: center;
         margin-bottom: 0.1em;
+        margin-left: 0.5em;
+        margin-right: 0.5em;
+        font-size: 1em;
 
         &::before {
             content: ' ';
             display: inline-block;
-            width: 0.5em;
-            height: 0.5em;
-            border-radius: 1em;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            vertical-align: middle;
             background-color: white;
             margin-bottom: 2px;
             margin-right: 2px;
         }
 
         &--deployments::before {
-            background-color: $ax-color-teal-5;
+            background-color: #bf86f1;
         }
 
         &--workflows::before {
-            background-color: $ax-success-color-light;
+            background-color: #0055b9;
+        }
+    }
+
+    &__center {
+        display: block;
+        position: relative;
+        width: 50%;
+        margin: auto;
+    }
+
+    &__total-counter {
+        position: absolute;
+        top: 44px;
+        left: 50%;
+        transform: translate(-50%);
+        color: $ax-color-gray-5;
+
+        & > label {
+            display: block;
+            font-weight: 300;
+            font-size: 2.5em;
+            line-height: 1em;
+            text-align: center;
+        }
+
+        & > span {
+            display: block;
+            font-size: .8em;
+            font-weight: 400;
+            line-height: 1em;
+            text-align: center;
         }
     }
 }

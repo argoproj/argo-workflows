@@ -1,6 +1,6 @@
 <div class="app-graph">
     <div *ngIf="application">
-        <div class="row" *ngFor="let deployment of deployments; let isFirstDeployment=first; let isLastDeployment=last; trackBy: trackByDeploymentName">
+        <div class="row" *ngFor="let deployment of deployments; trackBy: trackByDeploymentName; let isFirstDeployment=first; let isLastDeployment=last">
             <div class="columns small-4 app-graph__nodes-column">
                 <div *ngIf="isFirstDeployment" class="app-graph__node app-graph__node--app">
                     <div class="app-graph__connector-right"></div>
@@ -41,7 +41,7 @@
                 </div>
             </div>
             <div class="columns small-4 app-graph__nodes-column">
-                <div *ngFor="let instance of deployment.instances; let isLastInstance=last; trackBy: trackByPodName" class="app-graph__node clickable"
+                <div *ngFor="let instance of deployment.instances; trackBy: trackByPodName; let isLastInstance=last;" class="app-graph__node clickable"
                     (click)="podSelected.emit({deployment: deployment.name, pod: instance.name})">
                     <i class="ax-icon-pod app-graph__node-icon"></i>
                     <div *ngIf="!isLastInstance"  class="app-graph__connector-down"></div>

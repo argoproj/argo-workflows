@@ -2,7 +2,7 @@
     <div class="ax-container">
         <div class="ax-table-list ax-table-list--clickable">
             <div *ngFor="let fixture of fixtures; trackBy:trackByFixtureId" class="ax-table-list__row" (click)="selectFixture(fixture)">
-                <div class="row">
+                <div class="row" *ngIf="!fixturesLoader">
                     <div class="columns small-4 job-fixtures-box__details">
                         <i class="job-fixtures-box__icon ax-icon-fixturenew"></i>
                         <div class="job-fixtures-box__main">{{fixture.name}}</div>
@@ -27,18 +27,23 @@
                     </div>
                 </div>
             </div>
+
+            <div *ngIf="fixturesLoader">
+                <ax-loader-list-mockup [itemHeight]="196"></ax-loader-list-mockup>
+            </div>
+
+            <div class="row no-data-panel" *ngIf="!fixtures.length && !fixturesLoader">
+                <div class="columns small-12">{{ 'There are no fixtures.' | translate }}</div>
+            </div>
         </div>
     </div>
 
     <ax-sliding-panel [show]="selectedFixture" (closePanel)="selectFixture(null)">
+        <sliding-panel-header>
+            <i class="ax-icon-fixturenew"></i> <span class="bold-text marked" *ngIf="selectedFixture">{{selectedFixture.name}}</span>
+        </sliding-panel-header>
         <sliding-panel-body>
             <div *ngIf="selectedFixture">
-                <div class="white-box">
-                    <p class="job-fixtures-box__details-title">
-                        <i class="job-fixtures-box__icon ax-icon-fixturenew"></i> <span>{{selectedFixture.name}}</span>
-                    </p>
-                </div>
-
                 <ax-attributes-panel *ngIf="selectedFixture.staticFixtureInfo"
                     [attributes]="selectedFixture.staticFixtureInfo" title="Fixture Attributes" noAttributesMessage="There are no attributes for this fixture.">
                 </ax-attributes-panel>

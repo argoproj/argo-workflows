@@ -7,28 +7,30 @@
                         <div class="columns small-4 fixture-instances__details">
                             <div class="fixture-instances__main">{{instance.name}}</div>
                             <div>{{instance.creator}} created on: {{instance.ctime | axShortDateTime}}</div>
-                            <div>STATUS: <span class="fixture-instances__main"> <ax-fixture-instance-status [fixture]="instance"></ax-fixture-instance-status> </span> </div>
+                            <div>STATUS: <ax-fixture-instance-status [fixture]="instance"></ax-fixture-instance-status></div>
                             <div>{{instance.description}}</div>
                         </div>
-                        <div class="columns small-6 fixture-instances__attributes">
+                        <div class="columns small-4 fixture-instances__attributes">
                             <div class="row" *ngFor="let attribute of getFixtureAttributes(instance); trackBy:trackByAttributeName">
-                                <div class="columns small-4">
+                                <div class="columns small-6">
                                     {{attribute.name | uppercase }}:
                                 </div>
-                                <div class="columns small-8">
+                                <div class="columns small-6">
                                     {{attribute.value}}
                                 </div>
                             </div>
-                            <div class="fixture-instances__action-menu">
-                                <ax-dropdown-menu [settings]="getActionMenu(instance)">
-                                    <button axButtonWave class="ax-button ax-button--radius-2">
-                                        <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
-                                    </button>
-                                </ax-dropdown-menu>
-                            </div>
                         </div>
-                        <div class="columns small-2 fixture-instances__chart">
+                        <div class="columns small-4 fixture-instances__chart">
+                            <div class="fixture-instances__separator"></div>
                             <ax-fixture-usage-chart [fixture]="instance"></ax-fixture-usage-chart>
+                        </div>
+
+                        <div class="fixture-instances__action-menu">
+                            <ax-dropdown-menu [settings]="getActionMenu(instance)">
+                                <button axButtonWave class="ax-button ax-button--radius-2">
+                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
+                                </button>
+                            </ax-dropdown-menu>
                         </div>
                     </div>
                 </div>

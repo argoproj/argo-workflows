@@ -36,14 +36,18 @@
                     </div>
                     <div class="fixture-classes__content">
                         <div class="clearfix">
-                            <div class="pull-left"><span class="fixture-classes__des">AVAILABLE FIXTURES:</span> {{group.enabledClass.stats.available}}</div>
-                            <div class="pull-right"><span class="fixture-classes__des">TOTAL FIXTURES:</span> {{group.enabledClass.stats.total}}</div>
+                            <div class="pull-left fixture-classes__top-des">
+                                Available Fixtures: <strong>{{group.enabledClass.stats.available}}</strong>
+                            </div>
+                            <div class="pull-right fixture-classes__top-des">
+                                Total Fixtures: <strong>{{group.enabledClass.stats.total}}</strong>
+                            </div>
                         </div>
                         <div class="fixture-classes__progress">
                             <ax-progress-bar [progress]="group.enabledClass.stats.percentage"></ax-progress-bar>
                         </div>
-                        <div class="text-truncate">
-                            <span class="fixture-classes__des">Repo/Branch:</span>
+                        <div class="fixture-classes__repo text-truncate">
+                            Repo/Branch:
                             {{ group.enabledClass.repo + '/' + group.enabledClass.branch }}
                         </div>
                     </div>

@@ -24,7 +24,7 @@ $padding: 50px;
     }
 
     &__spendings {
-        background-color: $white-color;
+        background-color: $ax-color-gray-2;
         position: absolute;
         left: 0;
         right: 0;
@@ -45,7 +45,7 @@ $padding: 50px;
             font-size: 12px;
             height: $top-bar-height;
             line-height: $top-bar-height;
-            border-bottom: 1px solid $ax-color-gray-2;
+            border-bottom: 1px solid $ax-color-gray-3;
             padding-left: $padding;
 
             & > a > i {
@@ -56,17 +56,28 @@ $padding: 50px;
         &__header {
             height: $top-bar-height;
             background-color: $ax-color-gray-2;
+            border-bottom: 1px solid $ax-color-gray-3;
 
             &--title {
                 display: inline-block;
                 padding-left: $padding;
                 line-height: $top-bar-height;
-                font-weight: 300;
+                font-weight: 500;
+                font-size: .925em;
 
                 & > a > i {
                     font-size: 20px;
                 }
             }
+        }
+    }
+
+    &__panel-header {
+        font-weight: 500;
+        font-size: .925em;
+
+        & > strong {
+            font-weight: 500;
         }
     }
 }
