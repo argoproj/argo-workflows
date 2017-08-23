@@ -24,6 +24,8 @@ const (
 
 	CodeDeploymentStatusChanged = "deployment.status.changed"
 
-	CodeEnabledPolicyInvalid      = "configuration.policy.invalid_enabled_policy"
-	CodeInvalidPolicyBecomesValid = "configuration.policy.invalid_policy_becomes_valid"
+	CodeEnabledPolicyInvalid      = "job.policy.invalid_enabled_policy"
+	CodeInvalidPolicyBecomesValid = "job.policy.invalid_policy_becomes_valid"
+	CodeEnabledPolicy             = "job.policy.enabled_policy"
+	CodeDisabledPolicy            = "job.policy.disabled_policy"
 )

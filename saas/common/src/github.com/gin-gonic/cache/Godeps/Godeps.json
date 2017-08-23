@@ -1,0 +1,22 @@
+{
+	"ImportPath": "github.com/gin-gonic/contrib/cache",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/bradfitz/gomemcache/memcache",
+			"Rev": "72a68649ba712ee7c4b5b4a943a626bcd7d90eb8"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "ac0ad2fed865d40a0adc1ac3ccaadc3acff5db4b"
+		},
+		{
+			"ImportPath": "github.com/robfig/go-cache",
+			"Rev": "9fc39e0dbf62c034ec4e45e6120fc69433a3ec51"
+		}
+	]
+}

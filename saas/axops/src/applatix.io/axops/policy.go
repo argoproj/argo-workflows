@@ -9,7 +9,11 @@ import (
 	"applatix.io/axops/policy"
 	"applatix.io/axops/utils"
 	"applatix.io/axops/yaml"
+	"applatix.io/common"
+	"applatix.io/notification_center"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 type PoliciesData struct {
@@ -126,6 +130,7 @@ func EnablePolicy() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 		p, axErr := policy.GetPolicyByID(id)
+
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
@@ -136,14 +141,26 @@ func EnablePolicy() gin.HandlerFunc {
 			return
 		}
 
+		if p.Status == policy.InvalidStatus {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_AX_ILLEGAL_ARGUMENT.New())
+			return
+		}
+
+		// Get user who enabled the policy
+		u := GetContextUser(c)
 		p.Enabled = utils.NewTrue()
+		current_time := time.Now()
+		p.Status = fmt.Sprintf("Policy %s is enabled by %s on %s", p.Name, u.Username, current_time.Format("2006-01-02 15:04:05"))
 		p, axErr = p.Update()
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
 		}
 
+		// Notify job scheduler for cron
 		go yaml.NotifyScheduleChange(p.Repo, p.Branch)
+		// Send notification to notification center
+		go sendNotificationForPolicy(p)
 
 		c.JSON(axerror.REST_STATUS_OK, p)
 		return
@@ -173,14 +190,27 @@ func DisablePolicy() gin.HandlerFunc {
 			return
 		}
 
+		if p.Status == policy.InvalidStatus {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_AX_ILLEGAL_ARGUMENT.New())
+			return
+		}
+
+		// Get user who disables the policy
+		u := GetContextUser(c)
 		p.Enabled = utils.NewFalse()
+		current_time := time.Now()
+		p.Status = fmt.Sprintf("Policy %s is disabled by %s on %s", p.Name, u.Username, current_time.Format("2006-01-02 15:04:05"))
+
 		p, axErr = p.Update()
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
 		}
 
+		// Notify job scheduler for cron
 		go yaml.NotifyScheduleChange(p.Repo, p.Branch)
+		// Send notification to notification center
+		go sendNotificationForPolicy(p)
 
 		c.JSON(axerror.REST_STATUS_OK, p)
 		return
@@ -218,5 +248,20 @@ func DeletePolicy() gin.HandlerFunc {
 		}
 		c.JSON(axerror.REST_STATUS_OK, utils.NullMap)
 		return
+	}
+}
+
+func sendNotificationForPolicy(p *policy.Policy) {
+	detail := map[string]interface{}{}
+	detail["Policy Url"] = fmt.Sprintf("https://%s/app/policies/details/%s", common.GetPublicDNS(), p.ID)
+	detail["Policy Name"] = p.Name
+	detail["Policy Associated Template"] = p.Template
+	detail["Policy Repo"] = p.Repo
+	detail["Policy Branch"] = p.Branch
+	detail["Message"] = p.Status
+	if *(p.Enabled) == true {
+		notification_center.Producer.SendMessage(notification_center.CodeEnabledPolicy, "", []string{}, detail)
+	} else if *(p.Enabled) == false {
+		notification_center.Producer.SendMessage(notification_center.CodeDisabledPolicy, "", []string{}, detail)
 	}
 }

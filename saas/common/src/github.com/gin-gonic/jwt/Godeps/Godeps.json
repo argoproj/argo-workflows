@@ -1,0 +1,22 @@
+{
+	"ImportPath": "github.com/gin-gonic/contrib/jwt",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Rev": "5ca80149b9d3f8b863af0e2bb6742e608603bd99"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "ac0ad2fed865d40a0adc1ac3ccaadc3acff5db4b"
+		},
+		{
+			"ImportPath": "github.com/jacobsa/oglematchers",
+			"Rev": "3ecefc49db07722beca986d9bb71ddd026b133f0"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey",
+			"Rev": "958443eebb772fc6c1dcc2a44cdc6a59e1b3ff0d"
+		}
+	]
+}
