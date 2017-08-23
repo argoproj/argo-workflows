@@ -65,3 +65,45 @@ args: ["
 resources:
   cpu_cores: 0.05
   mem_mib: 64
+
+---
+type: workflow
+version: 1
+name: test-fixtures-dynamic-outputs
+description: Workflow which exports artifacts produced by dynamic fixtures
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+fixtures:
+- DYN_FIX_WITH_OUTPUTS:
+    template: test-dynamic-fixture-container-with-outputs
+steps:
+- WEB-CLIENT-INLINED:
+   image: alpine:latest
+   command: [sh, -c]
+   args: ["sleep 60"]
+   resources:
+     cpu_cores: 0.05
+     mem_mib: 64
+outputs:
+  artifacts:
+    WF_OUTPUTS:
+      from: "%%fixtures.DYN_FIX_WITH_OUTPUTS.outputs.artifacts.BIN-DIR%%"
+
+---
+type: container
+version: 1
+name: test-dynamic-fixture-container-with-outputs
+image: alpine:latest
+command: [sh, -c]
+args: ["sleep 999999"]
+resources:
+  cpu_cores: 0.05
+  mem_mib: 64
+outputs:
+  artifacts:
+    BIN-DIR:
+      path: /bin
