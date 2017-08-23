@@ -80,7 +80,7 @@ var loginCmd = &cobra.Command{
 		if axErr != nil {
 			// TODO: need to completely rework axerror to preserve original,
 			// underlying error and not rely on this clunky string search
-			if axErr.Code == axerror.ERR_AX_HTTP_CONNECTION.Code && strings.Contains(axErr.Message, "certificate is not valid") {
+			if axErr.Code == axerror.ERR_AX_HTTP_CONNECTION.Code && (strings.Contains(axErr.Message, "certificate is not valid") || strings.Contains(axErr.Message, "certificate is valid for")) {
 				fmt.Printf("Cluster is using an invalid or self-signed certificate. Proceed insecurely (y/n)? ")
 				insecure, _ := reader.ReadString('\n')
 				insecure = strings.TrimSpace(strings.ToLower(insecure))
