@@ -44,4 +44,3 @@ export { SlackService } from './slack.service';
 export * from './playground-info.service';
 export * from './system-request.service';
 export * from './retention-policy.service';
-export * from './shared.service';

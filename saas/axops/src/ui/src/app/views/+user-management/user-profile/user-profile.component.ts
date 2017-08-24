@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { User } from '../../../model';
-import { UsersService, AuthenticationService, SharedService } from '../../../services';
+import { UsersService, AuthenticationService } from '../../../services';
 import { LayoutSettings, HasLayoutSettings } from '../../layout';
 import { UserUtils } from '../user-utils';
 
@@ -27,8 +27,7 @@ export class UserProfileComponent implements OnInit, OnDestroy, LayoutSettings, 
         private usersService: UsersService,
         private authenticationService: AuthenticationService,
         private activatedRoute: ActivatedRoute,
-        private utils: UserUtils,
-        private sharedService: SharedService) {
+        private utils: UserUtils) {
     }
 
     public get layoutSettings(): LayoutSettings {
@@ -84,14 +83,10 @@ export class UserProfileComponent implements OnInit, OnDestroy, LayoutSettings, 
     }
 
     private async loadUser() {
-        let emitToLayout = !this.user.id;
         await this.usersService.getUser(this.username).subscribe(result => {
             this.user = result;
             if (this.username === this.authenticationService.getUsername()) {
                 this.isCurrentLoggedInUser = true;
-            }
-            if (emitToLayout) {
-                this.sharedService.updateSource.next(this.layoutSettings);
             }
         });
     }
