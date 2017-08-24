@@ -2,10 +2,13 @@
     <div (click)="onBackToSearch()" class="ax-back-to-search" *ngIf="backToSearchUrl">
         <i class="ax-icon-back"></i>
     </div>
+    <div class="template-viewer__btn" style="z-index: 1" (click)="templateViewer.showYaml()">YAML</div>
     <ax-tabs [selectedTabKey]="'workflow'" (selected)="selectedTab($event)">
         <ax-tab [tabKey]="'workflow'" [tabTitle]="'Workflow'" [isOnlyContentScrollable]="true" [noPadding]="true"
                 [extraVerticalScrollPadding]="156" [extraHorizontalScrollPadding]="isYamlVisible ? 500 : 0">
-            <ax-template-viewer *ngIf="template" [template]="template" #templateViewer></ax-template-viewer>
+            <div class="service-history__yaml-panel">
+                <ax-template-viewer *ngIf="template" [template]="template" [isHiddenYamlBtn]="true" #templateViewer></ax-template-viewer>
+            </div>
         </ax-tab>
         <ax-tab [tabKey]="'history'" [tabTitle]="'Job History'" [isOnlyContentScrollable]="true"
                 [extraVerticalScrollPadding]="156">
