@@ -15,7 +15,6 @@ import {
     SecretService,
     ViewPreferencesService,
     AuthenticationService,
-    SharedService
 } from '../../services';
 import { Task, Application } from '../../model';
 
@@ -101,8 +100,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
             private playgroundInfoService: PlaygroundInfoService,
             private notificationService: NotificationService,
             private viewPreferencesService: ViewPreferencesService,
-            private authenticationService: AuthenticationService,
-            private sharedService: SharedService) {
+            private authenticationService: AuthenticationService) {
 
         this.encryptForm = new FormGroup({
             repo: new FormControl('', Validators.required),
@@ -142,10 +140,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
         this.subscriptions.push(playgroundInfoService.getPlaygroundTaskInfo().subscribe(info => {
             this.playgroundTask = info;
-        }));
-
-        this.subscriptions.push(this.sharedService.updateSource.subscribe((layout) => {
-            this.layoutSettings = layout;
         }));
 
         this.authenticationService.getCurrentUser().then(user => {
