@@ -297,7 +297,6 @@ notifications:
   - prod@slack
 when:
 - event: on_push
-- event: on_pull_request_merge
 - event: on_cron
   schedule: "0 0 * * *"
   timezone: "US/Pacific"
