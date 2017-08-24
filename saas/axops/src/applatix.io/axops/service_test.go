@@ -23,7 +23,7 @@ func (ss *S) TestServiceLifeCycle(t *check.C) {
 	if axErr != nil {
 		fail(t)
 	}
-	workflowTemplate := tmpl.(service.EmbeddedWorkflowTemplate)
+	workflowTemplate := tmpl.(*service.EmbeddedWorkflowTemplate)
 
 	data := &GeneralGetResult{}
 	err := axopsClient.Get("commits", nil, data)
@@ -54,8 +54,9 @@ func (ss *S) TestServiceLifeCycle(t *check.C) {
 	axErr = axopsClient.Get("services/"+resultMap["id"].(string), nil, &s)
 	checkError(t, axErr)
 
-	checkoutId := workflowTemplate.Steps[0]["checkout"].Id
-	buildId := workflowTemplate.Steps[1]["axdb_build"].Id
+	postedTmpl := s.Template.(*service.EmbeddedWorkflowTemplate)
+	checkoutId := postedTmpl.Steps[0]["checkout"].Id
+	buildId := postedTmpl.Steps[1]["axdb_build"].Id
 
 	checkServiceStatus := func(serviceid string, expectedStatus int) {
 		params := map[string]interface{}{axdb.AXDBUUIDColumnName: serviceid}
@@ -134,8 +135,9 @@ func (ss *S) TestServiceLifeCycle(t *check.C) {
 	axErr = axopsClient.Get("services/"+resultMap["id"].(string), nil, &s)
 	checkError(t, axErr)
 
-	checkoutId = workflowTemplate.Steps[0]["checkout"].Id
-	buildId = workflowTemplate.Steps[1]["axdb_build"].Id
+	postedTmpl = s.Template.(*service.EmbeddedWorkflowTemplate)
+	checkoutId = postedTmpl.Steps[0]["checkout"].Id
+	buildId = postedTmpl.Steps[1]["axdb_build"].Id
 
 	eventMap = map[string]interface{}{"status": "WAITING"}
 	eventMap["service_id"] = checkoutId
@@ -188,7 +190,7 @@ func (ss *S) TestServiceLifeCycle(t *check.C) {
 }
 
 func (ss *S) TestServiceExpandParameters(t *check.C) {
-
+	t.Skip("List expansion not yet supported.")
 	workflowTemplateStr, axErr := utils.ReadFromFile("testdata/template/workflow_expand.json")
 	t.Assert(axErr, check.IsNil)
 

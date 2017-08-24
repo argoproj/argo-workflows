@@ -2,22 +2,25 @@
 package axops_test
 
 import (
+	"encoding/json"
+	"flag"
+	"os/exec"
+	"runtime/debug"
+	"testing"
+	"time"
+
 	"applatix.io/axdb/axdbcl"
 	"applatix.io/axdb/core"
 	"applatix.io/axerror"
 	"applatix.io/axops"
 	"applatix.io/axops/event"
 	"applatix.io/axops/user"
+	"applatix.io/common"
+	"applatix.io/notification_center"
 	"applatix.io/restcl"
 	"applatix.io/test"
-	"encoding/json"
-	"flag"
 	"github.com/Shopify/sarama"
 	"gopkg.in/check.v1"
-	"os/exec"
-	"runtime/debug"
-	"testing"
-	"time"
 )
 
 const (
@@ -93,7 +96,7 @@ func (s *S) SetUpSuite(c *check.C) {
 
 	// startup axops server
 	axops.InitTest(axdburl, gatewayurl, workflowadcurl, axmonurl, axnotifierurl, fixmgrurl, schedulerurl)
-	event.Init("localhost:9092")
+	event.Init(kafkaurl)
 	axops.CreateTables()
 
 	var err error
@@ -115,6 +118,8 @@ func (s *S) SetUpSuite(c *check.C) {
 	time.Sleep(2 * time.Second)
 
 	user.InitAdminInternalUser()
+
+	notification_center.InitProducer("axops_test", common.DebugLog, kafkaurl)
 }
 
 func PostOneEvent(c *check.C, topic string, key string, op string, data interface{}) {

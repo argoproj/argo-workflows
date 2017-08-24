@@ -140,3 +140,7 @@ func NewFalse() *bool {
 	b := false
 	return &b
 }
+
+func NewString(s string) *string {
+	return &s
+}
