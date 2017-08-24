@@ -2,14 +2,15 @@
 package axops_test
 
 import (
+	"fmt"
+	"time"
+
 	"applatix.io/axerror"
 	"applatix.io/axops/user"
 	"applatix.io/axops/utils"
 	"applatix.io/restcl"
 	"applatix.io/test"
-	"fmt"
 	"gopkg.in/check.v1"
-	"time"
 )
 
 func (s *S) TestUserLogin(c *check.C) {
@@ -24,7 +25,7 @@ func (s *S) TestUserLogin(c *check.C) {
 	user.ResetPassword("Test@test100", true)
 
 	// login with right password
-	_, err := axopsExternalClient.Post("login",
+	_, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": user.Username,
 			"password": "Test@test100",
@@ -32,7 +33,7 @@ func (s *S) TestUserLogin(c *check.C) {
 	c.Assert(err, check.IsNil)
 
 	// login with wrong password
-	_, err = axopsExternalClient.Post("login",
+	_, err = axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": user.Username,
 			"password": "applatix",
@@ -48,7 +49,7 @@ func (s *S) TestUserList(c *check.C) {
 	err = uu.ResetPassword("Test@test100", false)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": "admin@internal",
 			"password": "Test@test100",
@@ -73,7 +74,7 @@ func (s *S) TestUserCreateWithoutState(c *check.C) {
 	err = uu.ResetPassword("Test@test100", false)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": "admin@internal",
 			"password": "Test@test100",
@@ -99,7 +100,6 @@ func (s *S) TestUserCreateWithoutState(c *check.C) {
 	c.Assert(uu.AuthSchemes[0], check.Equals, "native")
 	c.Assert(uu.Groups[0], check.Equals, user.GroupDeveloper)
 	c.Assert(uu.Password, check.Equals, "")
-	c.Assert(uu.Salt, check.Equals, "")
 }
 
 func (s *S) TestUserCRUD(c *check.C) {
@@ -110,7 +110,7 @@ func (s *S) TestUserCRUD(c *check.C) {
 	err = uu.ResetPassword("Test@test100", false)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": "admin@internal",
 			"password": "Test@test100",
@@ -138,7 +138,6 @@ func (s *S) TestUserCRUD(c *check.C) {
 	c.Assert(uu.AuthSchemes[0], check.Equals, "native")
 	c.Assert(uu.Groups[0], check.Equals, user.GroupDeveloper)
 	c.Assert(uu.Password, check.Equals, "")
-	c.Assert(uu.Salt, check.Equals, "")
 
 	// R
 	copy := &user.User{}
@@ -149,7 +148,6 @@ func (s *S) TestUserCRUD(c *check.C) {
 	c.Assert(copy.AuthSchemes[0], check.Equals, "native")
 	c.Assert(copy.Groups[0], check.Equals, user.GroupDeveloper)
 	c.Assert(copy.Password, check.Equals, "")
-	c.Assert(copy.Salt, check.Equals, "")
 
 	// U
 	u = &user.User{}
@@ -163,7 +161,6 @@ func (s *S) TestUserCRUD(c *check.C) {
 	c.Assert(u.AuthSchemes[0], check.Equals, "native")
 	c.Assert(u.Groups[0], check.Equals, user.GroupAdmin)
 	c.Assert(u.Password, check.Equals, "")
-	c.Assert(u.Salt, check.Equals, "")
 	c.Assert(u.FirstName, check.Equals, uu.FirstName)
 	c.Assert(u.LastName, check.Equals, uu.LastName)
 
@@ -358,7 +355,7 @@ func (s *S) TestUserSuperAdmin(c *check.C) {
 	err = developer.ResetPassword("Test@test100", true)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": usr.Username,
 			"password": "Test@test100",
@@ -564,7 +561,7 @@ func (s *S) TestUserAdmin(c *check.C) {
 	err = developer.ResetPassword("Test@test100", true)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": usr.Username,
 			"password": "Test@test100",
@@ -772,7 +769,7 @@ func (s *S) TestUserDeveloper(c *check.C) {
 	err = developer.ResetPassword("Test@test100", true)
 	c.Assert(err, check.IsNil)
 
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": usr.Username,
 			"password": "Test@test100",
@@ -950,7 +947,7 @@ func (s *S) TestUserCRUDwithTriableClient(c *check.C) {
 
 	result := map[string]interface{}{}
 
-	err, _ = axopsExternalClient.PostWithTimeRetry("login",
+	err, _ = axopsExternalClient.PostWithTimeRetry("auth/login",
 		nil,
 		map[string]string{
 			"username": "admin@internal",
@@ -982,7 +979,6 @@ func (s *S) TestUserCRUDwithTriableClient(c *check.C) {
 	c.Assert(uu.AuthSchemes[0], check.Equals, "native")
 	c.Assert(uu.Groups[0], check.Equals, user.GroupDeveloper)
 	c.Assert(uu.Password, check.Equals, "")
-	c.Assert(uu.Salt, check.Equals, "")
 
 	// R
 	copy := &user.User{}
@@ -993,7 +989,6 @@ func (s *S) TestUserCRUDwithTriableClient(c *check.C) {
 	c.Assert(copy.AuthSchemes[0], check.Equals, "native")
 	c.Assert(copy.Groups[0], check.Equals, user.GroupDeveloper)
 	c.Assert(copy.Password, check.Equals, "")
-	c.Assert(copy.Salt, check.Equals, "")
 
 	// U
 	u = &user.User{}
@@ -1007,7 +1002,6 @@ func (s *S) TestUserCRUDwithTriableClient(c *check.C) {
 	c.Assert(u.AuthSchemes[0], check.Equals, "native")
 	c.Assert(u.Groups[0], check.Equals, user.GroupAdmin)
 	c.Assert(u.Password, check.Equals, "")
-	c.Assert(u.Salt, check.Equals, "")
 	c.Assert(u.FirstName, check.Equals, uu.FirstName)
 	c.Assert(u.LastName, check.Equals, uu.LastName)
 

@@ -11,10 +11,10 @@ steps:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axdb/run-test.sh
-  #AXOPS-TEST:
-  #  template: saas-unit-test-base
-  #  arguments:
-  #    parameters.COMMAND: /src/saas/axops/run-test-axops.sh
+  AXOPS-TEST:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/axops/run-test-axops.sh
   #AXAMM-TEST:
   #  template: saas-unit-test-base
   #  arguments:
@@ -39,8 +39,8 @@ steps:
   #   template: axchecker-container
 outputs:
   artifacts:
-    #coverage-report-axops:
-    #  from: "%%steps.AXOPS-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    coverage-report-axops:
+     from: "%%steps.AXOPS-TEST.outputs.artifacts.COVERAGE-REPORT%%"
     coverage-report-axdb:
       from: "%%steps.AXDB-TEST.outputs.artifacts.COVERAGE-REPORT%%"
     #coverage-report-axamm:

@@ -2,67 +2,64 @@
 package axops_test
 
 import (
+	"encoding/json"
+	"time"
+
 	"applatix.io/axops/label"
-	"applatix.io/axops/notification"
 	"applatix.io/axops/policy"
 	"applatix.io/common"
+	"applatix.io/template"
 	"applatix.io/test"
-	"encoding/json"
 	"gopkg.in/check.v1"
-	"time"
 )
 
 func (s *S) TestPolicyGetList(c *check.C) {
 
 	randStr := "rand" + test.RandStr()
-	p1 := &policy.Policy{
-		Name:        randStr,
-		Description: randStr,
-		Repo:        randStr,
-		Branch:      randStr,
-		Template:    randStr,
-		Enabled:     test.NewTrue(),
-		Notifications: []notification.Notification{
-			notification.Notification{
-				When: []string{"on_change"},
-				Whom: []string{label.UserLabelSubmitter},
-			},
+	p1 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p1.Name = randStr
+	p1.Description = randStr
+	p1.Repo = randStr
+	p1.Branch = randStr
+	p1.Template = randStr
+	p1.Enabled = test.NewTrue()
+	p1.Notifications = []template.Notification{
+		template.Notification{
+			When: []string{"on_change"},
+			Whom: []string{label.UserLabelSubmitter},
 		},
-		When: []policy.When{
-			policy.When{
-				Event:          "on_push",
-				TargetBranches: []string{"master"},
-			},
+	}
+	p1.When = []template.When{
+		template.When{
+			Event: "on_push",
 		},
-		Parameters: map[string]string{
-			"a": "a",
-			"b": "1",
-			"c": "1.0",
-			"d": "true",
-		},
+	}
+	p1.Arguments = map[string]*string{
+		"a": test.NewString("a"),
+		"b": test.NewString("1"),
+		"c": test.NewString("1.0"),
+		"d": test.NewString("true"),
 	}
 
 	randStr = "rand" + test.RandStr()
-	p2 := &policy.Policy{
-		Name:          randStr,
-		Description:   randStr,
-		Repo:          randStr,
-		Branch:        randStr,
-		Template:      randStr,
-		Enabled:       test.NewFalse(),
-		Notifications: []notification.Notification{},
-		When: []policy.When{
-			policy.When{
-				Event:          "on_push",
-				TargetBranches: []string{"master"},
-			},
+	p2 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p2.Name = randStr
+	p2.Description = randStr
+	p2.Repo = randStr
+	p2.Branch = randStr
+	p2.Template = randStr
+	p2.Enabled = test.NewFalse()
+	p2.Notifications = []template.Notification{}
+	p2.When = []template.When{
+		template.When{
+			Event: "on_push",
 		},
-		Parameters: map[string]string{
-			"a": "a",
-			"b": "1",
-			"c": "1.0",
-			"d": "true",
-		},
+	}
+	p2.Arguments = map[string]*string{
+		"a": test.NewString("a"),
+		"b": test.NewString("1"),
+		"c": test.NewString("1.0"),
+		"d": test.NewString("true"),
 	}
 
 	_, err := p1.Insert()
@@ -173,31 +170,29 @@ func (s *S) TestPolicyGetList(c *check.C) {
 func (s *S) TestPolicyEnableDisable(c *check.C) {
 
 	randStr := "rand" + test.RandStr()
-	p1 := &policy.Policy{
-		Name:        randStr,
-		Description: randStr,
-		Repo:        randStr,
-		Branch:      randStr,
-		Template:    randStr,
-		Enabled:     test.NewFalse(),
-		Notifications: []notification.Notification{
-			notification.Notification{
-				When: []string{"on_change"},
-				Whom: []string{label.UserLabelSubmitter},
-			},
+	p1 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p1.Name = randStr
+	p1.Description = randStr
+	p1.Repo = randStr
+	p1.Branch = randStr
+	p1.Template = randStr
+	p1.Enabled = test.NewFalse()
+	p1.Notifications = []template.Notification{
+		template.Notification{
+			When: []string{"on_change"},
+			Whom: []string{label.UserLabelSubmitter},
 		},
-		When: []policy.When{
-			policy.When{
-				Event:          "on_push",
-				TargetBranches: []string{"master"},
-			},
+	}
+	p1.When = []template.When{
+		template.When{
+			Event: "on_push",
 		},
-		Parameters: map[string]string{
-			"a": "a",
-			"b": "1",
-			"c": "1.0",
-			"d": "true",
-		},
+	}
+	p1.Arguments = map[string]*string{
+		"a": test.NewString("a"),
+		"b": test.NewString("1"),
+		"c": test.NewString("1.0"),
+		"d": test.NewString("true"),
 	}
 
 	p1, err := p1.Insert()
