@@ -81,7 +81,7 @@ fixtures:
 - DYN_FIX_WITH_OUTPUTS:
     template: test-dynamic-fixture-container-with-outputs
 steps:
-- WEB-CLIENT-INLINED:
+- SLEEPER:
    image: alpine:latest
    command: [sh, -c]
    args: ["sleep 60"]
@@ -107,3 +107,42 @@ outputs:
   artifacts:
     BIN-DIR:
       path: /bin
+
+---
+type: workflow
+version: 1
+name: test-fixtures-dynamic-inputs
+description: Workflow which supplies input parameters to dynamic fixtures
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    ECHO:
+      default: hello world
+fixtures:
+- DYN_FIX_WITH_INPUTS:
+    template: test-dynamic-fixture-container-with-inputs
+steps:
+- SLEEPER:
+   image: alpine:latest
+   command: [sh, -c]
+   args: ["sleep 60"]
+   resources:
+     cpu_cores: 0.05
+     mem_mib: 64
+
+---
+type: container
+version: 1
+name: test-dynamic-fixture-container-with-inputs
+image: alpine:latest
+command: [sh, -c]
+args: ["echo %%inputs.parameters.ECHO%%; sleep 999999"]
+resources:
+  cpu_cores: 0.05
+  mem_mib: 64
+inputs:
+  parameters:
+    ECHO:
