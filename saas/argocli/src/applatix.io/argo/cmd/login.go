@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"regexp"
 	"strings"
 
 	"applatix.io/api"
@@ -16,17 +17,26 @@ import (
 )
 
 var (
-	loginConfig   string // --config
+	loginArgs     loginFlags
 	clusterConfig api.ClusterConfig
+
+	// regex to match SSL certificate related failures from net/http
+	x509Error = regexp.MustCompile(".*(x509.*)")
 )
+
+type loginFlags struct {
+	config   string // --config
+	insecure bool   // --insecure
+}
 
 func init() {
 	RootCmd.AddCommand(loginCmd)
 
-	loginCmd.Flags().StringVar(&loginConfig, "config", "", "Configuration name")
+	loginCmd.Flags().StringVar(&loginArgs.config, "config", "", "Configuration name")
 	loginCmd.Flags().StringVar(&clusterConfig.URL, "url", "", "Cluster URL")
 	loginCmd.Flags().StringVar(&clusterConfig.Username, "username", "", "Username")
 	loginCmd.Flags().StringVar(&clusterConfig.Password, "password", "", "Password")
+	loginCmd.Flags().BoolVar(&loginArgs.insecure, "insecure", false, "Allow config to use insecure option for invalid certificates")
 }
 
 var loginCmd = &cobra.Command{
@@ -38,12 +48,12 @@ var loginCmd = &cobra.Command{
 		}
 		reader := bufio.NewReader(os.Stdin)
 
-		if loginConfig == "" {
+		if loginArgs.config == "" {
 			fmt.Printf("Enter a configuration name (%s): ", api.DefaultConfigName)
-			loginConfig, _ = reader.ReadString('\n')
-			loginConfig = strings.TrimSpace(loginConfig)
-			if loginConfig == "" {
-				loginConfig = api.DefaultConfigName
+			loginArgs.config, _ = reader.ReadString('\n')
+			loginArgs.config = strings.TrimSpace(loginArgs.config)
+			if loginArgs.config == "" {
+				loginArgs.config = api.DefaultConfigName
 			}
 		}
 
@@ -80,12 +90,16 @@ var loginCmd = &cobra.Command{
 		if axErr != nil {
 			// TODO: need to completely rework axerror to preserve original,
 			// underlying error and not rely on this clunky string search
-			if axErr.Code == axerror.ERR_AX_HTTP_CONNECTION.Code && (strings.Contains(axErr.Message, "certificate is not valid") || strings.Contains(axErr.Message, "certificate is valid for")) {
-				fmt.Printf("Cluster is using an invalid or self-signed certificate. Proceed insecurely (y/n)? ")
-				insecure, _ := reader.ReadString('\n')
-				insecure = strings.TrimSpace(strings.ToLower(insecure))
-				if insecure != "y" && insecure != "yes" {
-					os.Exit(1)
+			if axErr.Code == axerror.ERR_AX_HTTP_CONNECTION.Code && x509Error.MatchString(axErr.Message) {
+				errorMsg := x509Error.ReplaceAllString(axErr.Message, "${1}")
+				fmt.Printf("%s: Cluster is using an invalid certificate: %s\n", ansiFormat("WARNING", FgRed), errorMsg)
+				if !loginArgs.insecure {
+					fmt.Printf("Proceed insecurely (y/n)? ")
+					insecure, _ := reader.ReadString('\n')
+					insecure = strings.TrimSpace(strings.ToLower(insecure))
+					if insecure != "y" && insecure != "yes" {
+						os.Exit(1)
+					}
 				}
 				// Try again insecurely
 				newTrue := true
@@ -104,7 +118,7 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
-		configPath := path.Join(usr.HomeDir, api.ArgoDir, loginConfig)
+		configPath := path.Join(usr.HomeDir, api.ArgoDir, loginArgs.config)
 		err = clusterConfig.WriteConfigFile(configPath)
 		if err != nil {
 			log.Fatalf("Failed to write config file: %v\n", err)
