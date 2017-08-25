@@ -359,11 +359,7 @@
 
     &__yaml-panel {
         .sliding-panel__body {
-            height: calc(100% - 172px);
-
-            @media screen and (max-width: $ax-breakpoint-md) {
-                height: calc(100% - 148px);
-            }
+            height: calc(100% - 156px);
         }
     }
 
