@@ -15,6 +15,10 @@ steps:
    template: saas-unit-test-base
    arguments:
      parameters.COMMAND: /src/saas/axops/run-test-axops.sh
+  TEMPLATE-TEST:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/common/run-test.sh
   #AXAMM-TEST:
   #  template: saas-unit-test-base
   #  arguments:
@@ -35,8 +39,6 @@ steps:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axops/run-test-modules-2.sh
-  # yaml-checker:
-  #   template: axchecker-container
 outputs:
   artifacts:
     coverage-report-axops:

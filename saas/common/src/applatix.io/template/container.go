@@ -101,7 +101,7 @@ func (tmpl *ContainerTemplate) Validate(preproc ...bool) *axerror.AXError {
 	}
 
 	if tmpl.Inputs != nil {
-		axErr := tmpl.Inputs.Validate()
+		axErr := tmpl.Inputs.Validate(true)
 		if axErr != nil {
 			return axErr
 		}
@@ -128,17 +128,16 @@ func (tmpl *ContainerTemplate) Validate(preproc ...bool) *axerror.AXError {
 			if len(tmpl.Inputs.Fixtures) > 0 || len(tmpl.Inputs.Parameters) > 0 {
 				return axerror.ERR_API_INVALID_PARAM.NewWithMessage("inlined containers can only have 'artifacts' and 'volumes' as inputs")
 			}
-
 		}
 	}
 
 	if tmpl.Outputs != nil && tmpl.Outputs.Artifacts != nil {
 		for refName, art := range tmpl.Outputs.Artifacts {
 			if art.Path == "" {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.path is required", refName)
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s 'path' field is required", refName)
 			}
 			if art.From != "" {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from is only valid in workflow templates, not container", refName)
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s 'from' field is only valid in workflow templates, not container", refName)
 			}
 		}
 	}
