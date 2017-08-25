@@ -63,19 +63,7 @@ spec:
                         cpu: 200m
                         memory: 300Mi
                     limits:
-                        cpu: 400m
-                        memory: 600Mi
-                volumeMounts:
-                  - mountPath: /ax/data
-                    name: gateway-persistent-storage
-              - name: repomanager
-                image: ${REGISTRY}/${NAMESPACE}/repomanager:${VERSION}
-                resources:
-                    requests:
-                        cpu: 150m
-                        memory: 400Mi
-                    limits:
-                        cpu: 200m
+                        cpu: 800m
                         memory: 600Mi
                 volumeMounts:
                   - mountPath: /ax/data
