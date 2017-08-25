@@ -106,6 +106,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
             secret: new FormControl('', Validators.required),
         });
 
+
+
+        
         this.subscriptions.push(this.slidingPanelService.panelOpened.subscribe(
             isHidden => setTimeout(() => this.hiddenScrollbar = isHidden)));
 

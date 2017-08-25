@@ -49,7 +49,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             this.jobFilter = new JobFilter();
             this.layoutDateRange.isAllDates = this.currentView !== 'overview';
 
-            this.toolbarFilters.data = this.getFiltersByView(this.currentView);
+            this.getFiltersByView(this.currentView);
 
             this.toolbarFilters.model = [];
 
@@ -155,7 +155,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
     };
 
     public changeView(view: string) {
-        this.toolbarFilters.data = this.getFiltersByView(view);
+        this.getFiltersByView(view);
         this.router.navigate(['/app/timeline', this.getRouteParams({ view })]);
     }
 
@@ -195,10 +195,16 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
 
     private getFiltersByView(view) {
         this.currentView = view;
-        let filters = [];
+        if(this.toolbarFilters.data){
+            this.toolbarFilters.data.length = 0;
+        } else {
+            this.toolbarFilters.data = [];
+        }
+
+        // let filters = this.toolbarFilters.data;
 
         if (view !== 'overview') {
-            filters.push({
+            this.toolbarFilters.data.push({
                 value: 'showMyOnly',
                 name: 'My ' + this.currentViewTitle,
                 hasSeparator: true,
@@ -207,7 +213,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
         }
 
         if (view === 'job' || view === 'overview') {
-            filters.push({
+            this.toolbarFilters.data.push({
                 value: 'failed',
                 name: 'Failed',
                 icon: { color: 'fail' },
@@ -218,7 +224,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             });
         }
         if (view === 'job') {
-            filters.push({
+            this.toolbarFilters.data.push({
                 value: 'running',
                 name: 'In-Progress',
                 icon: { color: 'running' },
@@ -229,7 +235,8 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             });
         }
 
-        return filters;
+        // this.toolbarFilters.data
+        // return filters;
     }
 
     private getCategoryByView(view): string {
