@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { ReplaySubject } from 'rxjs';
+import { ReplaySubject, Subscription } from 'rxjs';
 
 import { LayoutSettings } from '../../layout';
 import { DropdownMenuSettings, NotificationsService } from 'argo-ui-lib/src/components';
@@ -15,7 +15,7 @@ import { ApplicationsService, ModalService } from '../../../services';
     templateUrl: './app-overview.html',
     styles: [require('./app-overview.scss')],
 })
-export class AppOverviewComponent implements LayoutSettings, OnInit {
+export class AppOverviewComponent implements LayoutSettings, OnInit, OnDestroy {
     public searchString: string = null;
     public globalSearch: ReplaySubject<GlobalSearchSetting> = new ReplaySubject<GlobalSearchSetting>();
 
@@ -49,6 +49,8 @@ export class AppOverviewComponent implements LayoutSettings, OnInit {
     private canScroll: boolean = true;
     private firstLoading: boolean = true;
     private applications: Application[] = [];
+    private getApplicationSubscription: Subscription;
+
     constructor(private route: ActivatedRoute,
                 private router: Router,
                 private location: Location,
@@ -70,6 +72,10 @@ export class AppOverviewComponent implements LayoutSettings, OnInit {
             this.reset();
             this.getApplications();
         });
+    }
+
+    public ngOnDestroy() {
+        this.unsubscribeGetApplication();
     }
 
     get pageTitle(): string {
@@ -180,7 +186,9 @@ export class AppOverviewComponent implements LayoutSettings, OnInit {
     }
 
     private getApplications(hideLoader: boolean = true) {
-        this.applicationsService.getApplications({
+        this.unsubscribeGetApplication();
+
+        this.getApplicationSubscription = this.applicationsService.getApplications({
             limit: this.bufferSize,
             offset: this.offset,
             include_details: false,
@@ -196,6 +204,13 @@ export class AppOverviewComponent implements LayoutSettings, OnInit {
         }, () => {
             this.dataLoaded = true;
         });
+    }
+
+    private unsubscribeGetApplication() {
+        if (this.getApplicationSubscription) {
+            this.getApplicationSubscription.unsubscribe();
+            this.getApplicationSubscription = null;
+        }
     }
 
     private reset() {
