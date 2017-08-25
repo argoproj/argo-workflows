@@ -123,6 +123,6 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Failed to write config file: %v\n", err)
 		}
-		log.Printf("Config written to: %s\n", configPath)
+		fmt.Printf("Config written to: %s\n", configPath)
 	},
 }
