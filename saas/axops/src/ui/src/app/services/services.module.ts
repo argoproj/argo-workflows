@@ -50,7 +50,6 @@ import { PlaygroundInfoService } from './playground-info.service';
 import { TrackingService } from './tracking.service';
 import { SlackService } from './slack.service';
 import { SystemRequestService } from './system-request.service';
-import { SharedService } from './shared.service';
 
 @NgModule({
     providers: [
@@ -98,7 +97,6 @@ import { SharedService } from './shared.service';
         GlobalSearchService,
         SecretService,
         TrackingService,
-        SharedService,
         PlaygroundInfoService,
         {
             provide: ContentService,

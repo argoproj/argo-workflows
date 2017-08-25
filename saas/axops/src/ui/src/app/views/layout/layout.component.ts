@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 import { Component, ViewChild, OnInit, OnDestroy } from '@angular/core';
-import { RouterOutlet, Router, NavigationEnd, ActivatedRoute } from '@angular/router';
+import { RouterOutlet, Router, ActivatedRoute } from '@angular/router';
 import { Subject, Subscription, Observable } from 'rxjs';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 
@@ -15,7 +15,6 @@ import {
     SecretService,
     ViewPreferencesService,
     AuthenticationService,
-    SharedService
 } from '../../services';
 import { Task, Application } from '../../model';
 
@@ -70,7 +69,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
     public jiraIssueCreatorPanelComponent: JiraIssueCreatorPanelComponent;
     @ViewChild(JiraIssuesPanelComponent)
     public jiraIssuesPanelComponent: JiraIssuesPanelComponent;
-    public layoutSettings: LayoutSettings = {};
     public globalSearch: GlobalSearchSetting;
     public hiddenScrollbar: boolean;
     public openedPanelOffCanvas: boolean;
@@ -101,20 +99,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
             private playgroundInfoService: PlaygroundInfoService,
             private notificationService: NotificationService,
             private viewPreferencesService: ViewPreferencesService,
-            private authenticationService: AuthenticationService,
-            private sharedService: SharedService) {
+            private authenticationService: AuthenticationService) {
 
         this.encryptForm = new FormGroup({
             repo: new FormControl('', Validators.required),
             secret: new FormControl('', Validators.required),
         });
-
-        this.subscriptions.push(router.events.subscribe(event => {
-            if (event instanceof NavigationEnd) {
-                let component: any = this.routerOutlet.component;
-                this.layoutSettings = component ? component.layoutSettings || {} : {};
-            }
-        }));
 
         this.subscriptions.push(this.slidingPanelService.panelOpened.subscribe(
             isHidden => setTimeout(() => this.hiddenScrollbar = isHidden)));
@@ -142,10 +132,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
         this.subscriptions.push(playgroundInfoService.getPlaygroundTaskInfo().subscribe(info => {
             this.playgroundTask = info;
-        }));
-
-        this.subscriptions.push(this.sharedService.updateSource.subscribe((layout) => {
-            this.layoutSettings = layout;
         }));
 
         this.authenticationService.getCurrentUser().then(user => {
@@ -189,6 +175,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
             this.jiraIssuesPanelComponent.item = value.item;
             this.jiraIssuesPanelComponent.associateWith = value.associateWith;
         }));
+    }
+
+    public get layoutSettings(): LayoutSettings {
+        let component: any = this.routerOutlet.isActivated ? this.routerOutlet.component : null;
+        return component ? component.layoutSettings || {} : {};
     }
 
     public ngOnInit() {

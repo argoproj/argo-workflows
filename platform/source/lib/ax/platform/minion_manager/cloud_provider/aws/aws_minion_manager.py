@@ -81,8 +81,6 @@ class AWSMinionManager(MinionManagerBase):
                                   name="MinionManagerRestAPI")
         self.rest_thread.setDaemon(True)
 
-        self.k8s_client = KubernetesApiClient()
-
     @staticmethod
     @retry(wait_exponential_multiplier=1000, stop_max_attempt_number=3)
     def describe_asg_with_retries(ac_client, asgs):
@@ -501,6 +499,7 @@ class AWSMinionManager(MinionManagerBase):
 
     def rest_api(self):
         """ Thread that responds to the Flask api endpoints. """
+        k8s_client = KubernetesApiClient()
         app = Flask("MinionManagerRestAPI")
 
         def _update_config_map(enabled_str, asgs):
@@ -510,7 +509,7 @@ class AWSMinionManager(MinionManagerBase):
             if asgs:
                 cmap.data["MM_SCALING_GROUPS"] = asgs
 
-            self.k8s_client.api.replace_namespaced_config_map(
+            k8s_client.api.replace_namespaced_config_map(
                 cmap, MM_CONFIG_MAP_NAMESPACE, MM_CONFIG_MAP_NAME)
 
         @app.route('/spot_instance_config', methods=['PUT'])
@@ -537,7 +536,7 @@ class AWSMinionManager(MinionManagerBase):
         @app.route('/spot_instance_config', methods=['GET'])
         def _get_spot_instances():
             """ Get spot-instances config. """
-            cmap = self.k8s_client.api.read_namespaced_config_map(
+            cmap = k8s_client.api.read_namespaced_config_map(
                 namespace=MM_CONFIG_MAP_NAMESPACE, name=MM_CONFIG_MAP_NAME)
             return jsonify({"status": cmap.data["MM_SPOT_INSTANCE_ENABLED"], "asgs": cmap.data["MM_SCALING_GROUPS"]})
 
