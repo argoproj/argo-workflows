@@ -15,6 +15,7 @@ import subprocess
 import yaml
 from pprint import pformat
 
+from ax.cloud import Cloud
 from ax.cloud.aws import AWS_DEFAULT_PROFILE
 from ax.meta import AXCustomerId
 from ax.platform.ax_cluster_info import AXClusterInfo
@@ -187,7 +188,8 @@ class ClusterUpgrader(ClusterOperationBase):
             "OLD_KUBE_VERSION": self._current_software_info.kube_version,
             "NEW_KUBE_VERSION": self._cfg.target_software_info.kube_version,
             "NEW_CLUSTER_INSTALL_VERSION": self._cfg.target_software_info.kube_installer_version,
-            "ARGO_AWS_REGION": self._cluster_config.get_region()
+            "ARGO_AWS_REGION": self._cluster_config.get_region(),
+            "AX_TARGET_CLOUD": Cloud().target_cloud()
         }
         
         if self._cfg.cloud_profile:
@@ -198,7 +200,6 @@ class ClusterUpgrader(ClusterOperationBase):
         logger.info("Upgrading Kubernetes with environments %s", pformat(env))
         env.update(os.environ)
         subprocess.check_call(["upgrade-kubernetes"], env=env)
-
 
     def _start_platform(self):
         """
