@@ -13,7 +13,7 @@ logger = logging.getLogger('ax.build')
 
 DEVOPS_CONTAINERS_PATH = os.path.join(SRC_PATH, "devops/builds")
 
-DEVOPS_BUILDER_IMAGE = '{}/argobase/axdevopsbuilder:v8'.format(ARGO_BASE_REGISTRY)
+DEVOPS_BUILDER_IMAGE = '{}/argobase/axdevopsbuilder:v9'.format(ARGO_BASE_REGISTRY)
 DEBIAN_BUILDER_IMAGE = '{}/argobase/axplatbuilder-debian:v15'.format(ARGO_BASE_REGISTRY)
 
 class DevOpsModules(object):
