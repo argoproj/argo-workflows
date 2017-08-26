@@ -355,9 +355,9 @@ export class MultipleServiceLaunchPanelComponent {
     private setParamValue(parameterValue: string) {
         let vTemp = parameterValue;
         this.session = {
-            commit: this.commit.revision,
-            repo: this.commit.repo,
-            branch: this.commit.branch
+            commit: this.commit.revision || this.getFallbackTemplateValue('commit'),
+            repo: this.commit.repo || this.getFallbackTemplateValue('repo'),
+            branch: this.commit.branch || this.getFallbackTemplateValue('branch')
         };
 
         // this is required to GUI-1367 launch a workflow using the workflow instance's exported artifact
@@ -374,6 +374,13 @@ export class MultipleServiceLaunchPanelComponent {
         parameterValue = parameterValue.replace(/%%/g, '');
 
         return this.session[parameterValue.substring(parameterValue.indexOf('.') + 1).toString()] || vTemp;
+    }
+
+    private getFallbackTemplateValue(prop: string) {
+        if (this.templatesToSubmit.length === 1 && this.templatesToSubmit[0][prop]) {
+            return this.templatesToSubmit[0][prop];
+        }
+        return;
     }
 
     private resubmitTask(task, runPartial = false): any {
