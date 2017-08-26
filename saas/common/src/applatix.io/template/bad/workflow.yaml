@@ -302,3 +302,43 @@ inputs:
   artifacts:
     ARTIFACT_TO_CONSUME:
       path: /src
+
+---
+type: workflow
+version: 1
+name: workflow-with-input-artifact-path
+description: workflows should not set 'path' for input artifacts
+inputs:
+  artifacts:
+    ARTIFACT_TO_CONSUME:
+      path: /src
+steps:
+- CONSUME_INLINE:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["find /src && && sleep 5"]
+    inputs:
+      artifacts:
+        ARTIFACT_TO_CONSUME:
+          from: "%%inputs.artifacts.ARTIFACT_TO_CONSUME%%"
+          path: /src
+
+---
+type: workflow
+version: 1
+name: workflow-with-input-volume-mount_path
+description: workflows should not set 'mount_path' for input volumes
+inputs:
+  volumes:
+    DATA:
+      mount_path: /src
+steps:
+- CONSUME_INLINE:
+    image: alpine:latest
+    command: ["sh", "-c"]
+    args: ["find /src && && sleep 5"]
+    inputs:
+      volumes:
+        DATA:
+          from: "%%inputs.volumes.DATA%%"
+          mount_path: /src
