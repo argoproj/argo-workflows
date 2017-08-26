@@ -31,10 +31,10 @@ steps:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axops/run-test-event.sh
-  #MODULES-TEST-1:
-  #  template: saas-unit-test-base
-  #  arguments:
-  #    parameters.COMMAND: /src/saas/axops/run-test-modules-1.sh
+  MODULES-TEST-1:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/axops/run-test-modules-1.sh
   MODULES-TEST-2:
     template: saas-unit-test-base
     arguments:
