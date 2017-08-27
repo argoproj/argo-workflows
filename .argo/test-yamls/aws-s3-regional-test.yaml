@@ -1,0 +1,20 @@
+---
+type: workflow
+version: 1
+name: argo-aws-s3-regional-test
+description: Test S3 wrapper against real aws server in a randomly choosen region
+inputs:
+    parameters:
+        COMMIT:
+            default: "%%session.commit%%"
+        REPO:
+            default: "%%session.repo%%"
+steps:
+  - checkout:
+        template: argo-checkout
+  - aws-s3:
+        template: argo-platform-unit-test-base
+        arguments:
+            artifacts.CODE: "%%steps.checkout.outputs.artifacts.CODE%%"
+            parameters.COMMAND: "pytest -vv /src/platform/tests/aws_s3/"
+
