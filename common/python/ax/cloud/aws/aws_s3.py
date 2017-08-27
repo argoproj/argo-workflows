@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2015-2016 Applatix, Inc. All rights reserved.
+# Copyright 2015-2017 Applatix, Inc. All rights reserved.
 #
 
 """
@@ -16,6 +16,8 @@ import time
 
 import boto3
 import requests
+from ax.cloud import Cloud
+from botocore.client import Config
 from botocore.exceptions import ClientError
 from retrying import retry
 
@@ -81,7 +83,8 @@ class AXS3Bucket(object):
         :return:
         """
         self._name = bucket_name
-        self._region = region if region else self._get_bucket_region_from_aws(aws_profile)
+        self._aws_profile = aws_profile
+        self._region = region if region else self._get_bucket_region_from_aws()
         assert self._region, "Please make sure bucket {} is created, or provide a region name to create bucket".format(self._name)
         logger.info("Using region %s for bucket %s", self._region, self._name)
 
@@ -102,18 +105,16 @@ class AXS3Bucket(object):
         wait_exponential_multiplier=1000,
         stop_max_attempt_number=3
     )
-    def _get_bucket_region_from_aws(self, profile):
-        """
-        Find out location of a bucket.
-        """
-        # There is actually no easy way to achieve this.
-        # Most APIs require region first.
+    def _get_bucket_region_from_aws(self):
+        # We assume cluster is not access any resource outside partition, e.g.
+        # clusters in partition "aws" will not access resource in partition "aws-us-gov"
+        instance_region = Cloud().meta_data().get_region()
+        s3 = boto3.Session(
+            profile_name=self._aws_profile,
+            region_name=instance_region
+        ).client("s3", config=Config(signature_version='s3v4'))
 
-        # Step 1. Call head_bucket() to get location.
-        # Don't give up when there is error.
-        # It's likely response headers contain location info even return code is not 200.
-        s3 = boto3.Session(profile_name=profile).client("s3")
-        logger.debug("Looking for region for bucket %s from head_bucket.", self._name)
+        logger.debug("Finding region for bucket %s from with initial region %s", self._name, instance_region)
         try:
             response = s3.head_bucket(Bucket=self._name)
             logger.debug("Head_bucket returned OK %s", response)
@@ -125,33 +126,7 @@ class AXS3Bucket(object):
         headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
         region = headers.get("x-amz-bucket-region", headers.get("x-amz-region", None))
         logger.debug("Found region %s from head_bucket for %s, headers %s", region, self._name, headers)
-        if region is not None:
-             return region
-
-        # Step 2. In the unlikely event head_bucket fails, try to get it from get_bucket_location.
-        logger.debug("Looking for region for bucket %s from get_bucket_location.", self._name)
-        try:
-            return s3.get_bucket_location(Bucket=self._name)["LocationConstraint"]
-        except Exception as e:
-            if "NoSuchBucket" in str(e):
-                # Just in case someone deleted it.
-                return None
-
-        # Step 3. This is very similar to step 1. However we access API directly.
-        # We don't call this at first as it might cause slow down problem.
-        logger.debug("Looking for region for bucket %s from API endpoint directly.", self._name)
-        # According to https://github.com/aws/aws-sdk-go/issues/720#issuecomment-243891223
-        # performing a HEAD request and examine header is the best way to do so
-        head_bucket_url = "http://{bucket_name}.s3.amazonaws.com".format(bucket_name=self._name)
-        ret = requests.head(head_bucket_url, timeout=3)
-        try:
-            return ret.headers["x-amz-bucket-region"]
-        except KeyError:
-            logger.debug("Cannot get region from headers. Headers: %s. HTTP status code: %s", ret.headers, ret.status_code)
-            if ret.status_code == 404:
-                return None
-            else:
-                ret.raise_for_status()
+        return region
 
     def region(self):
         return self._region
