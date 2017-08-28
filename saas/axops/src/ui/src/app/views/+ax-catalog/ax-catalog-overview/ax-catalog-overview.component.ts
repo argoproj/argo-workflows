@@ -8,7 +8,7 @@ import { LayoutSettings, HasLayoutSettings } from '../../layout/layout.component
 import { ViewUtils, GlobalSearchSetting, LOCAL_SEARCH_CATEGORIES, BranchesFiltersComponent } from '../../../common';
 
 @Component({
-    selector: 'ax-cataglog-overview',
+    selector: 'ax-catalog-overview',
     templateUrl: './ax-catalog-overview.html',
     styles: [ require('./ax-catalog-overview.scss') ],
 })
