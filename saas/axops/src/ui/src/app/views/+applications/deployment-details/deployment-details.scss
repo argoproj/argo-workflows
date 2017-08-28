@@ -89,6 +89,11 @@ $padding: 50px;
         }
     }
 
+    &__icon {
+        font-size: 17px;
+        vertical-align: middle;
+    }
+
     &__panel {
         position: relative;
         border-radius: $border-radius;

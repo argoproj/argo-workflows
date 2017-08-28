@@ -34,6 +34,8 @@ export class DeploymentDetailsComponent implements OnDestroy {
     public onShowHistory = new EventEmitter();
     @Output()
     public onShowHistoryDetails = new EventEmitter<{ id: string }>();
+    @Output()
+    public onRedeploy = new EventEmitter();
 
     public instances: number = 0;
     public activeEditScale: boolean;
@@ -78,6 +80,10 @@ export class DeploymentDetailsComponent implements OnDestroy {
             this.deploymentChangedSubscription.unsubscribe();
             this.deploymentChangedSubscription = null;
         }
+    }
+
+    public redeploy() {
+        this.onRedeploy.emit(this.currentDeployment);
     }
 
     public onClosePanel() {
