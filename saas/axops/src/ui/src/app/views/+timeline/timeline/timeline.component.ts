@@ -195,13 +195,11 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
 
     private getFiltersByView(view) {
         this.currentView = view;
-        if (this.toolbarFilters.data){
+        if (this.toolbarFilters.data) {
             this.toolbarFilters.data.length = 0;
         } else {
             this.toolbarFilters.data = [];
         }
-
-        // let filters = this.toolbarFilters.data;
 
         if (view !== 'overview') {
             this.toolbarFilters.data.push({
@@ -234,9 +232,6 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
                 icon: { color: 'queued' },
             });
         }
-
-        // this.toolbarFilters.data
-        // return filters;
     }
 
     private getCategoryByView(view): string {
