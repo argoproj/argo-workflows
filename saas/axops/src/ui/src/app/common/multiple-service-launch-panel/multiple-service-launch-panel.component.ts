@@ -335,7 +335,7 @@ export class MultipleServiceLaunchPanelComponent {
                     if (resubmitFailedParameters) { // resubmit failed
                         val = resubmitFailedParameters[property];
                     } else if (templateInputParams[property] && templateInputParams[property].hasOwnProperty('default')) {
-                        val = this.setParamValue(templateInputParams[property]['default'], index);
+                        val = this.setParamValue(templateInputParams[property]['default'], template);
                         required = false;
                     }
                     newForm.addControl(property, new FormControl(val, required ? Validators.required : null));
@@ -352,12 +352,12 @@ export class MultipleServiceLaunchPanelComponent {
     }
 
     // if default value for parameter starts and ends with %%, replace the value with corresponding commits parameter
-    private setParamValue(parameterValue: string, index = 0) {
+    private setParamValue(parameterValue: string, template: Template) {
         let vTemp = parameterValue;
         this.session = {
-            commit: this.commit.revision || this.getFallbackTemplateValue('revision', index),
-            repo: this.commit.repo || this.getFallbackTemplateValue('repo', index),
-            branch: this.commit.branch || this.getFallbackTemplateValue('branch', index)
+            commit: this.commit.revision || template.revision,
+            repo: this.commit.repo || template.repo,
+            branch: this.commit.branch || template.branch
         };
 
         // this is required to GUI-1367 launch a workflow using the workflow instance's exported artifact
@@ -374,13 +374,6 @@ export class MultipleServiceLaunchPanelComponent {
         parameterValue = parameterValue.replace(/%%/g, '');
 
         return this.session[parameterValue.substring(parameterValue.indexOf('.') + 1).toString()] || vTemp;
-    }
-
-    private getFallbackTemplateValue(prop: string, index = 0) {
-        if (this.templatesToSubmit.length === 1 && this.templatesToSubmit[index][prop]) {
-            return this.templatesToSubmit[index][prop];
-        }
-        return;
     }
 
     private resubmitTask(task, runPartial = false): any {
