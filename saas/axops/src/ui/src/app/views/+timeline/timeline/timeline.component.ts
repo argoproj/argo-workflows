@@ -49,8 +49,8 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             this.jobFilter = new JobFilter();
             this.layoutDateRange.isAllDates = this.currentView !== 'overview';
 
-            this.getFiltersByView(this.currentView);
 
+            this.getFiltersByView(this.currentView);
             this.toolbarFilters.model = [];
 
             if (this.showMyOnly ) {
@@ -143,7 +143,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
     };
 
     public toolbarFilters = {
-        data: undefined,
+        data: [],
         model: [],
         onChange: (data) => {
             for (let status of Object.keys(this.jobFilter)) {
@@ -155,7 +155,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
     };
 
     public changeView(view: string) {
-        this.getFiltersByView(view);
+        this.toolbarFilters.data = [];
         this.router.navigate(['/app/timeline', this.getRouteParams({ view })]);
     }
 
@@ -195,7 +195,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
 
     private getFiltersByView(view) {
         this.currentView = view;
-        if(this.toolbarFilters.data){
+        if (this.toolbarFilters.data){
             this.toolbarFilters.data.length = 0;
         } else {
             this.toolbarFilters.data = [];
