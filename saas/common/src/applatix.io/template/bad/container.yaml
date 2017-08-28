@@ -83,3 +83,27 @@ command: ["sh", "-c"]
 args: ["echo '%%echo%%'"]
 resources:
   cpu_cores: abc
+
+---
+type: container
+version: 1
+name: input-artifact-missing-path
+description: input artifacts to containers should specify path
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%echo%%'"]
+inputs:
+  artifacts:
+    CODE:
+
+---
+type: container
+version: 1
+name: input-volume-missing-mount_path
+description: input volume to containers should specify mount_path
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["echo '%%echo%%'"]
+inputs:
+  volumes:
+    CODE:

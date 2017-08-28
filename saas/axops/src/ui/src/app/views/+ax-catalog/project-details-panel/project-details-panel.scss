@@ -8,6 +8,7 @@ $toolbar-height: 12em;
         @include ax-catalog-header;
 
         height: $toolbar-height;
+        margin-left: -64px;
     }
 
     &__info {

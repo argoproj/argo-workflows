@@ -94,7 +94,7 @@ func (tmpl *DeploymentTemplate) Validate(preproc ...bool) *axerror.AXError {
 	if tmpl.DeploymentName == "" {
 		return axerror.ERR_API_INVALID_PARAM.NewWithMessage("'deployment' field missing or empty")
 	}
-	axErr := tmpl.Inputs.Validate()
+	axErr := tmpl.Inputs.Validate(false)
 	if axErr != nil {
 		return axErr
 	}

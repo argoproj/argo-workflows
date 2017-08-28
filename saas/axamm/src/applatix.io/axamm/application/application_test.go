@@ -12,7 +12,7 @@ import (
 
 func (s *S) TestCreateDeleteApplication(c *check.C) {
 
-	name := TEST_PREFIX + "-" + "applicaiton-" + test.RandStr()
+	name := TEST_PREFIX + "-" + "application-" + test.RandStr()
 
 	get, err := application.GetLatestApplicationByName(name, true)
 	c.Assert(err, check.IsNil)

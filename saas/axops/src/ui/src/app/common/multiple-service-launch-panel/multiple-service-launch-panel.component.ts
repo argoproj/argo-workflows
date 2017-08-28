@@ -335,7 +335,7 @@ export class MultipleServiceLaunchPanelComponent {
                     if (resubmitFailedParameters) { // resubmit failed
                         val = resubmitFailedParameters[property];
                     } else if (templateInputParams[property] && templateInputParams[property].hasOwnProperty('default')) {
-                        val = this.setParamValue(templateInputParams[property]['default']);
+                        val = this.setParamValue(templateInputParams[property]['default'], template);
                         required = false;
                     }
                     newForm.addControl(property, new FormControl(val, required ? Validators.required : null));
@@ -352,12 +352,12 @@ export class MultipleServiceLaunchPanelComponent {
     }
 
     // if default value for parameter starts and ends with %%, replace the value with corresponding commits parameter
-    private setParamValue(parameterValue: string) {
+    private setParamValue(parameterValue: string, template: Template) {
         let vTemp = parameterValue;
         this.session = {
-            commit: this.commit.revision,
-            repo: this.commit.repo,
-            branch: this.commit.branch
+            commit: this.commit.revision || template.revision,
+            repo: this.commit.repo || template.repo,
+            branch: this.commit.branch || template.branch
         };
 
         // this is required to GUI-1367 launch a workflow using the workflow instance's exported artifact

@@ -15,6 +15,7 @@ import subprocess
 import yaml
 from pprint import pformat
 
+from ax.cloud import Cloud
 from ax.cloud.aws import AWS_DEFAULT_PROFILE
 from ax.meta import AXCustomerId
 from ax.platform.ax_cluster_info import AXClusterInfo
@@ -71,20 +72,21 @@ class ClusterUpgrader(ClusterOperationBase):
         upgrade_service = True
 
         if self._cfg.target_software_info.kube_installer_version == self._current_software_info.kube_installer_version \
-            and self._cfg.target_software_info.kube_version == self._current_software_info.kube_version:
+            and self._cfg.target_software_info.kube_version == self._current_software_info.kube_version \
+                and not self._cfg.force_upgrade:
             upgrade_kube = False
 
         if self._cfg.target_software_info.image_namespace == self._current_software_info.image_namespace \
             and self._cfg.target_software_info.image_version == self._current_software_info.image_version \
             and self._cfg.target_software_info.image_version != "latest" \
-            and not upgrade_kube:
+            and not upgrade_kube \
+                and not self._cfg.force_upgrade:
             upgrade_service = False
 
-        if not upgrade_service and not upgrade_kube and not self._cfg.force_upgrade:
+        if not upgrade_service and not upgrade_kube:
             logger.info("%sCluster's software versions is not changed, not performing upgrade.%s", COLOR_GREEN, COLOR_NORM)
             logger.info("%sIf you want to force upgrade cluster, please specify --force-upgrade flag.%s", COLOR_YELLOW, COLOR_NORM)
             return
-
 
         if self._cfg.dry_run:
             logger.info("DRY RUN: upgrading cluster %s", self._name_id)
@@ -186,7 +188,8 @@ class ClusterUpgrader(ClusterOperationBase):
             "OLD_KUBE_VERSION": self._current_software_info.kube_version,
             "NEW_KUBE_VERSION": self._cfg.target_software_info.kube_version,
             "NEW_CLUSTER_INSTALL_VERSION": self._cfg.target_software_info.kube_installer_version,
-            "ARGO_AWS_REGION": self._cluster_config.get_region()
+            "ARGO_AWS_REGION": self._cluster_config.get_region(),
+            "AX_TARGET_CLOUD": Cloud().target_cloud()
         }
         
         if self._cfg.cloud_profile:
@@ -197,7 +200,6 @@ class ClusterUpgrader(ClusterOperationBase):
         logger.info("Upgrading Kubernetes with environments %s", pformat(env))
         env.update(os.environ)
         subprocess.check_call(["upgrade-kubernetes"], env=env)
-
 
     def _start_platform(self):
         """
