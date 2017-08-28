@@ -68,42 +68,43 @@ class AXMon(with_metaclass(Singleton, object)):
         conf = Task.insert_defaults(data)
         dry_run = data.get("dry_run", False)
         if dry_run:
-            name = Task.generate_job_name(conf)
+            name = Task.generate_name(conf)
             logger.debug("task_create: dry_run name is {}".format(name))
             return {"{}".format(name): KubeObjStatusCode.OK}
 
         # create the workflow
-        task = Task()
+        task_id = Task.generate_name(conf)
+        task = Task(task_id)
         job_obj = task.create(conf)
         task.start(job_obj)
-        return {"{}".format(task.jobname): KubeObjStatusCode.OK}
+        return {"{}".format(task.name): KubeObjStatusCode.OK}
 
     def task_show(self, task_id):
         if task_id is None:
             raise ValueError("task id must be specified")
-        task = Task()
-        return task.status(task_id)
+        task = Task(task_id)
+        return task.status()
 
-    def task_delete(self, task_id, delete_pod, force):
-        logger.debug("Deleting task %s delete_pod=%s force=%s", task_id, delete_pod, force)
+    def task_delete(self, task_id, force):
+        logger.debug("Deleting task %s force=%s", task_id, force)
         if task_id is None:
             raise ValueError("task id must be specified")
-        task = Task()
-        return task.delete(task_id, delete_pod=delete_pod, force=force)
+        task = Task(task_id)
+        return task.delete(force=force)
 
     def task_stop_running_pod(self, task_id):
         logger.debug("Stopping task %s", task_id)
         if task_id is None:
             raise ValueError("task id must be specified")
-        task = Task()
-        return task.stop_running_pod(task_id)
+        task = Task(task_id)
+        return task.stop()
 
     def task_log(self, task_id):
         logger.debug("Getting log endpoint for %s", task_id)
         if task_id is None:
             raise ValueError("task id must be specified")
-        task = Task()
-        return task.get_log_endpoint(task_id)
+        task = Task(task_id)
+        return task.get_log_endpoint()
 
     def add_registry(self, server, username, password, save=True):
         client = AXDockerClient()
