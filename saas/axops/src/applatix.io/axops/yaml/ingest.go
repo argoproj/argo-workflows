@@ -168,8 +168,8 @@ func updatePolicies(ctx *template.TemplateBuildContext) *axerror.AXError {
 
 	newPolicy := func(tmpl *template.PolicyTemplate) *policy.Policy {
 		return &policy.Policy{
-			PolicyTemplate: tmpl,
-			Enabled:        utils.NewFalse(),
+			PolicyTemplate: *tmpl,
+			Enabled:        false,
 		}
 	}
 
@@ -183,9 +183,7 @@ func updatePolicies(ctx *template.TemplateBuildContext) *axerror.AXError {
 		}
 		updated[new.GetName()] = true
 		updatedPolicy := newPolicy(new.(*template.PolicyTemplate))
-		if old.Enabled != nil {
-			updatedPolicy.Enabled = old.Enabled
-		}
+		updatedPolicy.Enabled = old.Enabled
 
 		// If the old policy is an invalid one, that means it was an enabled policy but for some
 		//  reason gets deleted or becomes syntax invalid. The new change will put things back
@@ -193,7 +191,7 @@ func updatePolicies(ctx *template.TemplateBuildContext) *axerror.AXError {
 		if old.Status == policy.InvalidStatus {
 			utils.DebugLog.Printf("Invalid policy %v (%v) becomes valid. Turn it back on\n", old, old.Enabled)
 			updatedPolicy.Status = ""
-			updatedPolicy.Enabled = utils.NewTrue()
+			updatedPolicy.Enabled = true
 
 			// Send notification to notification center
 			detail := map[string]interface{}{}
@@ -231,11 +229,11 @@ func updatePolicies(ctx *template.TemplateBuildContext) *axerror.AXError {
 	// When deleting policies through GC, we would like to handle the enabled policy gracefully just like updateYAML
 	for _, p := range toBeDeleted {
 		utils.DebugLog.Printf("Delete policy %v %v\n", p, p.Enabled)
-		if p.Enabled != nil && *(p.Enabled) == true {
+		if p.Enabled {
 			// If a policy is enabled, but from the source code, it gets deleted or syntax becomes
 			//  invalid for whatever reason, we cannot just delete it without notifying user. The
 			//  following change will make the policy invalid and let the user figure out what to do.
-			p.Enabled = utils.NewFalse()
+			p.Enabled = false
 			p.Status = policy.InvalidStatus
 			_, e := p.Update()
 			if e != nil {
