@@ -180,7 +180,7 @@ class Task(object):
         }
 
         if pending:
-            # If the pod is pending it is likely stuck on container image pull failure which
+            # If the pod is pending it is likely stuck on container image pull failure
             try:
                 for init_status in status.status.init_container_statuses or []:
                     if init_status.state.waiting is not None:
