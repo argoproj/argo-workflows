@@ -5,16 +5,18 @@
 #
 # Module to manage instance profiles for AX cluster.
 
+import copy
 import logging
 
 from ax.aws.profiles import AWSAccountInfo
+from ax.cloud.aws import get_aws_partition_from_region, AWS_ALL_RESOURCES
 from ax.cloud.aws.instance_profile import InstanceProfile
 
 logger = logging.getLogger(__name__)
 
 
 # Default instance profile statement for master.
-master_policy = {
+MASTER_POLICY_TEMPLATE = {
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -35,7 +37,7 @@ master_policy = {
         {
             "Effect": "Allow",
             "Action": "s3:*",
-            "Resource": "arn:aws:s3:::applatix-*"
+            "Resource": "arn:{partition}:s3:::applatix-*"
         },
         {
             "Action": [
@@ -51,20 +53,28 @@ master_policy = {
             "Resource": "*",
             "Effect": "Allow"
         },
+        {
+            "Action": "iam:PassRole",
+            "Resource": [
+                "arn:{partition}:iam::{account}:role/{master_name}",
+                "arn:{partition}:iam::{account}:role/{minion_name}"
+            ],
+            "Effect": "Allow"
+        }
     ]
 }
 
 # Default instance profile statement for minions.
-minion_policy = {
+MINION_POLICY_TEMPLATE = {
     "Version": "2012-10-17",
     "Statement": [
         {
             "Action": "s3:*",
             "Resource": [
-                "arn:aws:s3:::applatix-*",
-                "arn:aws:s3:::*axawss3-test*",
-                "arn:aws:s3:::ax-public",
-                "arn:aws:s3:::ax-public/*"
+                "arn:{partition}:s3:::applatix-*",
+                "arn:{partition}:s3:::*axawss3-test*",
+                "arn:{partition}:s3:::ax-public",
+                "arn:{partition}:s3:::ax-public/*"
             ],
             "Effect": "Allow"
         },
@@ -145,33 +155,33 @@ minion_policy = {
             ],
             "Resource": "*",
             "Effect": "Allow"
+        },
+        {
+            "Action": "iam:PassRole",
+            "Resource": [
+                "arn:{partition}:iam::{account}:role/{master_name}",
+                "arn:{partition}:iam::{account}:role/{minion_name}"
+            ],
+            "Effect": "Allow"
         }
     ]
 }
 
 
 class AXClusterInstanceProfile(object):
-    def __init__(self, name_id, aws_profile=None):
+    def __init__(self, name_id, region_name, aws_profile=None):
         self._name_id = name_id
         self._master_name = name_id + "-master"
         self._minion_name = name_id + "-minion"
+        self._aws_partition = get_aws_partition_from_region(region_name)
         self._master_profile = InstanceProfile(self._master_name, aws_profile=aws_profile)
         self._minion_profile = InstanceProfile(self._minion_name, aws_profile=aws_profile)
 
         # Create pass_role statement specific to this cluster.
         self._account = AWSAccountInfo(aws_profile=aws_profile).get_account_id()
-        pass_role = {
-            "Action": "iam:PassRole",
-            "Resource": [
-                "arn:aws:iam::{}:role/{}".format(self._account, self._master_name),
-                "arn:aws:iam::{}:role/{}".format(self._account, self._minion_name),
-            ],
-            "Effect": "Allow"
-        }
-        self._master_policy = master_policy
-        self._master_policy["Statement"] += [pass_role]
-        self._minion_policy = minion_policy
-        self._minion_policy["Statement"] += [pass_role]
+
+        self._master_policy = self._format_policy_resources(MASTER_POLICY_TEMPLATE)
+        self._minion_policy = self._format_policy_resources(MINION_POLICY_TEMPLATE)
 
     def update(self):
         """
@@ -202,3 +212,25 @@ class AXClusterInstanceProfile(object):
         No need to lookup from AWS as name is sufficient.
         """
         return self._minion_name
+
+    def _format_policy_resources(self, policy):
+        """
+        Dynamically insert critical information into policy: aws partition, aws account id,
+        master name, minion name
+        :param policy:
+        :return:
+        """
+        p = copy.deepcopy(policy)
+        for statement in p.get("Statement", []):
+            resource = statement.get("Resource", AWS_ALL_RESOURCES)
+            if resource != AWS_ALL_RESOURCES:
+                new_resource = []
+                if isinstance(resource, list):
+                    for r in resource:
+                        new_resource.append(r.format(partition=self._aws_partition, account=self._account,
+                                                     master_name=self._master_name, minion_name=self._minion_name))
+                else:
+                    new_resource.append(resource.format(partition=self._aws_partition, account=self._account,
+                                                        master_name=self._master_name, minion_name=self._minion_name))
+                statement["Resource"] = new_resource
+        return p

@@ -757,11 +757,11 @@ function delete-tag {
 
 # Creates the IAM roles (if they do not already exist)
 function create-iam-profiles {
-    /ax/bin/ax-upgrade-misc --ensure-aws-iam --cluster-name-id $CLUSTER_ID --aws-profile $AWS_DEFAULT_PROFILE
+    /ax/bin/ax-upgrade-misc --ensure-aws-iam --cluster-name-id $CLUSTER_ID --aws-profile $AWS_DEFAULT_PROFILE --aws-region ${AWS_REGION}
 }
 
 function delete-iam-profiles {
-    /ax/bin/ax-upgrade-misc --delete-aws-iam --cluster-name-id $CLUSTER_ID --aws-profile $AWS_DEFAULT_PROFILE
+    /ax/bin/ax-upgrade-misc --delete-aws-iam --cluster-name-id $CLUSTER_ID --aws-profile $AWS_DEFAULT_PROFILE --aws-region ${AWS_REGION}
 }
 
 # Wait for instance to be in specified state
