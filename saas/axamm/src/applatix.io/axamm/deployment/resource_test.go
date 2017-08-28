@@ -1,71 +1,79 @@
 package deployment_test
 
 import (
+	"fmt"
+	"strconv"
+
 	"applatix.io/axamm/deployment"
 	"applatix.io/axops/service"
+	"applatix.io/axops/utils"
 	"applatix.io/common"
 	"applatix.io/template"
 	"gopkg.in/check.v1"
 )
 
 func createDeployment(cpu, mem float64, scale, maxSurge, maxUnavailable int, useRollingUpdate bool) *deployment.Deployment {
-	ctn1 := &service.ServiceTemplate{
-		Type:    service.DocTypeServiceTemplate,
-		Subtype: service.TemplateTypeContainer,
-		Name:    "test-ctn1",
-		Id:      common.GenerateUUIDv1(),
-		Container: &service.TemplateContainer{
-			ImageURL: "%%image1%%",
-			Command:  "%%cmd1%%",
-			Resources: &service.TemplateResource{
-				CPUCores: cpu,
-				MemMiB:   mem,
-			},
-		},
-		Inputs: &service.TemplateInput{
-			Parameters: map[string]*service.TemplateParameterInput{
-				"image1": nil,
-				"cmd1":   nil,
-			},
+	ctn1 := &service.EmbeddedContainerTemplate{
+		ContainerTemplate: &template.ContainerTemplate{},
+	}
+	ctn1.Type = template.TemplateTypeContainer
+	ctn1.Name = "test-ctn1"
+	ctn1.ID = common.GenerateUUIDv1()
+	ctn1.Image = "%%image1%%"
+	ctn1.Command = []string{"%%cmd1%%"}
+	ctn1.Resources = &template.ContainerResources{
+		CPUCores: template.NumberOrString(fmt.Sprintf("%f", cpu)),
+		MemMiB:   template.NumberOrString(fmt.Sprintf("%f", mem)),
+	}
+	ctn1.Inputs = &template.Inputs{
+		Parameters: map[string]*template.InputParameter{
+			"image1": nil,
+			"cmd1":   nil,
 		},
 	}
 
-	t := &service.ServiceTemplate{
-		Type:    service.DocTypeServiceTemplate,
-		Subtype: service.TemplateTypeDeployment,
-		Name:    "test",
-		Id:      common.GenerateUUIDv1(),
-		Scale: &template.Scale{
-			Min: scale,
-		},
-		Containers: []service.ServiceMap{
-			map[string]*service.Service{
-				"ctn1": &service.Service{
-					Template: ctn1,
-				},
-			},
-			map[string]*service.Service{
-				"ctn1": &service.Service{
-					Template: ctn1,
-				},
-			},
+	t := &service.EmbeddedDeploymentTemplate{
+		DeploymentTemplate: &template.DeploymentTemplate{},
+	}
+	t.Type = template.TemplateTypeDeployment
+	t.Name = "test"
+	t.ID = common.GenerateUUIDv1()
+	t.Scale = &template.Scale{
+		Min: scale,
+	}
+	t.Containers = map[string]*service.Service{
+		"ctn1": &service.Service{
+			Template: ctn1,
 		},
 	}
 	if useRollingUpdate {
-		t.Strategy = &service.TemplateStrategy{
-			Type: service.StrategyRollingUpdate,
-			RollingUpdate: &service.RollingUpdateStrategy{
-				MaxUnavailable: maxUnavailable,
-				MaxSurge:       maxSurge,
+		t.Strategy = &template.Strategy{
+			Type: template.StrategyRollingUpdate,
+			RollingUpdate: &template.RollingUpdateStrategy{
+				MaxUnavailable: strconv.Itoa(maxUnavailable),
+				MaxSurge:       strconv.Itoa(maxSurge),
 			},
 		}
 	} else {
-		t.Strategy = &service.TemplateStrategy{
-			Type: service.StrategyRecreate,
+		t.Strategy = &template.Strategy{
+			Type: template.StrategyRecreate,
 		}
 	}
 
-	return &deployment.Deployment{deployment.Base{Id: common.GenerateUUIDv1(), Name: "test-deployment", Template: t, Parameters: map[string]interface{}{"image1": "image1", "image2": "image2", "cmd1": "cmd1", "cmd2": "cmd2"}}, "", "", "", "", "", nil, "", nil, nil, nil}
+	dep := deployment.Deployment{
+		deployment.Base{
+			Id:       common.GenerateUUIDv1(),
+			Name:     "test-deployment",
+			Template: t,
+			Arguments: map[string]*string{
+				"image1": utils.NewString("image1"),
+				"image2": utils.NewString("image2"),
+				"cmd1":   utils.NewString("cmd1"),
+				"cmd2":   utils.NewString("cmd2"),
+			},
+		}, "", "", "", "", "", nil, "", nil, nil, nil,
+	}
+	return &dep
 
 }
 

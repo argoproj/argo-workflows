@@ -4,7 +4,7 @@ name: quick-exit
 description: does nothing and exits quickly
 resources:
   mem_mib: 32
-  cpu_cores: 0.1
+  cpu_cores: 0.01
 image: alpine:latest
 command: ["sh",  "-c", "exit 0"]
 

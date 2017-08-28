@@ -2,9 +2,11 @@
 package project_test
 
 import (
-	"applatix.io/axops"
 	"applatix.io/axops/label"
 	"applatix.io/axops/project"
+	"applatix.io/axops/utils"
+	"applatix.io/axops/yaml"
+	"applatix.io/template"
 	"gopkg.in/check.v1"
 )
 
@@ -19,19 +21,31 @@ func assertLabels(c *check.C, count int) {
 
 func (s *S) TestProject(c *check.C) {
 	c.Log("TestProject")
-	p := &project.Project{
-		Name:        "test",
-		Description: "testD",
-		Categories:  []string{"A", "B"},
-		Labels:      project.TypeStringMap{"lang": "go", "db": "axdb"},
-		Assets: &project.Assets{
-			Icon:   &project.AssetDetail{Path: "icon.png"},
-			Detail: &project.AssetDetail{Path: "d.md"},
-		},
-		Actions: []project.Action{{Name: "build", Template: "T1", Parameters: project.TypeStringMap{"commit": "a"}}, {Name: "test", Template: "T2", Parameters: project.TypeStringMap{"image": "i1"}}},
-		Repo:    "R1",
-		Branch:  "B1",
+	p := &project.Project{}
+	p.Name = "test"
+	p.Description = "testD"
+	p.Categories = []string{"A", "B"}
+	p.Labels = map[string]string{"lang": "go", "db": "axdb"}
+	p.Assets = &project.Assets{
+		Icon:   &project.AssetDetail{Path: "icon.png"},
+		Detail: &project.AssetDetail{Path: "d.md"},
 	}
+	p.Actions = map[string]template.TemplateRef{
+		"build": {
+			Template: "T1",
+			Arguments: map[string]*string{
+				"commit": utils.NewString("a"),
+			},
+		},
+		"test": {
+			Template: "T2",
+			Arguments: map[string]*string{
+				"image": utils.NewString("i1"),
+			},
+		},
+	}
+	p.Repo = "R1"
+	p.Branch = "B1"
 	p1, err := p.Insert()
 	c.Assert(err, check.IsNil)
 
@@ -51,6 +65,6 @@ func (s *S) TestProject(c *check.C) {
 	c.Assert(err, check.IsNil)
 	p4, err := project.GetProjectByID(p1.ID)
 	c.Assert(p4 == nil, check.Equals, true)
-	axops.GarbageCollectLabels()
+	yaml.GarbageCollectLabels()
 	assertLabels(c, 0)
 }
