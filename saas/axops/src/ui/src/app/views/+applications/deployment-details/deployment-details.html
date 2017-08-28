@@ -1,6 +1,9 @@
 <div class="deployment-details">
     <div class="deployment-details__header">
         <div class="deployment-details__btns" *ngIf="currentDeployment">
+            <div class="deployment-details__btn">
+                <a (click)="redeploy()"><i class="ax-icon-retry deployment-details__icon" aria-hidden="true"></i>{{ 'Redeploy' | uppercase }}</a>
+            </div>
             <div class="deployment-details__btn" *ngIf="currentDeployment.canStart()">
                 <ax-start-action [deployment]="currentDeployment" (onStart)="onStart($emit)"></ax-start-action>
             </div>
