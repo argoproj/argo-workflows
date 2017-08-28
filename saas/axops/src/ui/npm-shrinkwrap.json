@@ -396,9 +396,9 @@
       "resolved": "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-1.1.2.tgz"
     },
     "argo-ui-lib": {
-      "version": "1.0.4",
-      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.4",
-      "resolved": "git+https://github.com/argoproj/ui-lib.git#7a490a4f2c8db0eca0dc6fd9e4dd0a113bc51018"
+      "version": "1.0.5",
+      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.5",
+      "resolved": "git+https://github.com/argoproj/ui-lib.git#b8c57c025c0a7fa2c36659bcb8b361e9a01618ff"
     },
     "argparse": {
       "version": "1.0.9",
