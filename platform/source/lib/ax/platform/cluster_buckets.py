@@ -9,6 +9,7 @@ import logging
 
 from ax.aws.profiles import AWSAccountInfo
 from ax.cloud import Cloud
+from ax.cloud.aws import get_aws_partition_from_region
 from ax.meta import AXClusterId, AXClusterConfigPath, AXClusterDataPath, AXSupportConfigPath, AXUpgradeConfigPath
 
 from ax.platform.exceptions import AXPlatformException
@@ -29,43 +30,14 @@ DATA_CORS_CONFIG = {
     }
 }
 
-upgrade_bucket_policy_template = """
+SUPPORT_BUCKET_POLICY_TEMPLATE = """
 {
     "Version": "2012-10-17",
     "Statement": [
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": "arn:aws:iam::{id}:root"
-            },
-            "Action": [
-                "s3:ListBucket",
-                "s3:GetBucketLocation",
-                "s3:ListBucketMultipartUploads",
-                "s3:ListBucketVersions"
-            ],
-            "Resource": "arn:aws:s3:::{s3}"
-        },
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "arn:aws:iam::{id}:root"
-            },
-            "Action": "s3:*",
-            "Resource": "arn:aws:s3:::{s3}/*"
-        }
-    ]
-}
-"""
-
-support_bucket_policy_template = """
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": "arn:aws:iam::{id}:root"
+                "AWS": "arn:{partition}:iam::{account}:root"
             },
             "Action": [
                 "s3:ListBucket",
@@ -74,12 +46,12 @@ support_bucket_policy_template = """
                 "s3:ListBucketVersions",
                 "s3:GetBucketAcl"
             ],
-            "Resource": "arn:aws:s3:::{s3}"
+            "Resource": "arn:{partition}:s3:::{bucket_name}"
         },
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": "arn:aws:iam::{id}:root"
+                "AWS": "arn:{partition}:iam::{account}:root"
             },
             "Action": [
                 "s3:GetObject",
@@ -88,7 +60,7 @@ support_bucket_policy_template = """
                 "s3:AbortMultipartUpload",
                 "s3:ListMultipartUploadParts"
             ],
-            "Resource": "arn:aws:s3:::{s3}/*"
+            "Resource": "arn:{partition}:s3:::{bucket_name}/*"
         }
     ]
 }
@@ -185,6 +157,7 @@ class AXPortalBuckets(object):
         self._name_id = name_id
         self._aws_profile = aws_profile
         self._aws_region = aws_region
+        self._aws_partition = get_aws_partition_from_region(self._aws_region)
 
     def update(self, iam):
         """
@@ -204,7 +177,7 @@ class AXPortalBuckets(object):
         if not support_bucket.get_policy():
             logger.info("Argo support bucket policy does not exist, creating new one...")
             if not support_bucket.put_policy(
-                    policy=self._generate_bucket_policy_string(template=support_bucket_policy_template,
+                    policy=self._generate_bucket_policy_string(template=SUPPORT_BUCKET_POLICY_TEMPLATE,
                                                                bucket_name=support_bucket.get_bucket_name(),
                                                                iam=iam)
             ):
@@ -217,7 +190,7 @@ class AXPortalBuckets(object):
         if not upgrade_bucket.get_policy():
             logger.info("Argo upgrade bucket policy does not exist, creating new one...")
             if not upgrade_bucket.put_policy(
-                    policy=self._generate_bucket_policy_string(template=support_bucket_policy_template,
+                    policy=self._generate_bucket_policy_string(template=SUPPORT_BUCKET_POLICY_TEMPLATE,
                                                                bucket_name=upgrade_bucket.get_bucket_name(),
                                                                iam=iam)
             ):
@@ -241,6 +214,6 @@ class AXPortalBuckets(object):
         aws_cid = AWSAccountInfo(aws_profile=self._aws_profile).get_account_id_from_iam(iam)
         policy = json.loads(template)
         for s in policy["Statement"]:
-            s["Principal"]["AWS"] = s["Principal"]["AWS"].format(id=aws_cid)
-            s["Resource"] = s["Resource"].format(s3=bucket_name)
+            s["Principal"]["AWS"] = s["Principal"]["AWS"].format(partition=self._aws_partition, account=aws_cid)
+            s["Resource"] = s["Resource"].format(partition=self._aws_partition, bucket_name=bucket_name)
         return json.dumps(policy)

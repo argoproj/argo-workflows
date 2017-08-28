@@ -6,3 +6,12 @@
 
 
 AWS_DEFAULT_PROFILE = "default"
+
+
+AWS_ALL_RESOURCES = "*"
+
+
+class AWSPartitions:
+    PARTITION_AWS = "aws"
+    PARTITION_US_GOV = "aws-us-gov"
+    PARTITION_CHINA = "aws-cn"

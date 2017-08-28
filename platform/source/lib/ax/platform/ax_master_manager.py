@@ -626,7 +626,8 @@ class AXMasterManager:
             self.master_instance = self.ec2.Instance(instance_id)
             logger.info("Running master %s.", instance_id)
             self.aws_image = ami_id
-            self.instance_profile = AXClusterInstanceProfile(self.cluster_name_id, aws_profile=self.profile).get_master_arn()
+            self.instance_profile = AXClusterInstanceProfile(self.cluster_name_id, region_name=self.region,
+                                                             aws_profile=self.profile).get_master_arn()
             self.populate_attributes()
             master_tag_updated = self.ensure_master_tags()
             # TODO: Possible race here.
