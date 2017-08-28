@@ -6,7 +6,7 @@
 #   docker run -d --name rest-proxy --link zookeeper:zookeeper --link schema-registry:schema-registry \
 #       confluent/rest-proxy
 
-FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.1
+FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.5
 
 RUN ["mkdir", "-p", "/ax/rest-proxy/bin"]
 COPY rest-proxy-run.sh /ax/rest-proxy/bin/rest-proxy-run.sh
