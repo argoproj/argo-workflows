@@ -255,11 +255,7 @@ export class AppDetailsComponent implements OnInit, OnDestroy, LayoutSettings, H
             let items: {title: string, iconName: string, action: () => any}[] = [];
             items.push({
                 title: 'Redeploy',  iconName: '',
-                action: async () => {
-                    let task = await this.createRedeployTask(deployment);
-                    let commit = Object.assign(new Commit(), { repo: deployment.template.repo, branch: deployment.template.branch });
-                    this.launchPanelService.openPanel(commit, task);
-                }
+                action: async () => this.redeploy(deployment),
             });
             if (ACTIONS_BY_STATUS.START.indexOf(deployment.status) > -1) {
                 items.push({
@@ -293,6 +289,12 @@ export class AppDetailsComponent implements OnInit, OnDestroy, LayoutSettings, H
             }
             return new DropdownMenuSettings(items);
         };
+    }
+
+    public async redeploy(deployment: Deployment) {
+        let task = await this.createRedeployTask(deployment);
+        let commit = Object.assign(new Commit(), { repo: deployment.template.repo, branch: deployment.template.branch });
+        this.launchPanelService.openPanel(commit, task);
     }
 
     public onCloseAdditionalInfo() {
