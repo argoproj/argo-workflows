@@ -190,11 +190,11 @@ func GarbageCollectTemplatePolicyProjectFixture() {
 		for _, p := range policies {
 			if branchesMap[p.Repo+"_"+p.Branch] == nil {
 				utils.DebugLog.Printf("GC POLICIES: %v %v is gone, deleting the policy %v(%v).\n", p.Repo, p.Branch, p.Name, p.ID)
-				if p.Enabled != nil && *(p.Enabled) == true {
+				if p.Enabled {
 					// If a policy is enabled, but from the source code, it gets deleted or syntax becomes
 					//  invalid for whatever reason, we cannot just delete it without notifying user. The
 					//  following change will make the policy invalid and let the user figure out what to do.
-					p.Enabled = utils.NewFalse()
+					p.Enabled = false
 					p.Status = policy.InvalidStatus
 					_, e := p.Update()
 					if e != nil {

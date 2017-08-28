@@ -7,7 +7,6 @@ import (
 	"applatix.io/axdb"
 	"applatix.io/axerror"
 	"applatix.io/axops/utils"
-	"applatix.io/template"
 )
 
 const (
@@ -55,7 +54,7 @@ type policyDB struct {
 	Branch      string            `json:"branch"`
 	Revision    string            `json:"revision"`
 	Template    string            `json:"template"`
-	Enabled     *bool             `json:"enabled"`
+	Enabled     bool              `json:"enabled"`
 	Body        string            `json:"body"`
 	Labels      map[string]string `json:"labels"`
 	RepoBranch  string            `json:"repo_branch"`
@@ -63,7 +62,7 @@ type policyDB struct {
 }
 
 func (p *policyDB) policy() (*Policy, *axerror.AXError) {
-	policy := &Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	policy := &Policy{}
 	if p.Body != "" {
 		err := json.Unmarshal([]byte(p.Body), policy)
 		if err != nil {
