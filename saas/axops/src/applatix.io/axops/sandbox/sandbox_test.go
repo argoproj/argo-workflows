@@ -35,7 +35,7 @@ func createUser(c *check.C, group string) *user.User {
 }
 
 func login(c *check.C, u *user.User) map[string]interface{} {
-	result, err := axopsExternalClient.Post("login",
+	result, err := axopsExternalClient.Post("auth/login",
 		map[string]string{
 			"username": u.Username,
 			"password": "Test@test100",

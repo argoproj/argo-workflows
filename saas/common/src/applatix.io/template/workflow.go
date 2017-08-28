@@ -56,7 +56,7 @@ func (tmpl *WorkflowTemplate) Validate(preproc ...bool) *axerror.AXError {
 	if axErr := tmpl.BaseTemplate.Validate(); axErr != nil {
 		return axErr
 	}
-	if axErr := tmpl.Inputs.Validate(); axErr != nil {
+	if axErr := tmpl.Inputs.Validate(false); axErr != nil {
 		return axErr
 	}
 	if axErr := tmpl.Fixtures.Validate(); axErr != nil {
@@ -304,11 +304,11 @@ func (tmpl *WorkflowTemplate) ValidateContext(context *TemplateBuildContext) *ax
 	// referencing a valid step or fixture, and that step has expected artifact with the name.
 	if tmpl.Outputs != nil && tmpl.Outputs.Artifacts != nil {
 		for refName, art := range tmpl.Outputs.Artifacts {
-			if art.Path != "" {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.path is only valid in container templates, not workflow", refName)
-			}
 			if art.From == "" {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from is required", refName)
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s 'from' field is required", refName)
+			}
+			if art.Path != "" {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s 'path' field is only valid in container templates, not workflow", refName)
 			}
 			if !ouputArtifactRegexp.MatchString(art.From) {
 				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("outputs.artifacts.%s.from invalid format '%s'. expected format: '%%%%(steps|fixtures).<REF_NAME>.outputs.artifacts.<ARTIFACT_NAME>%%%%'", refName, art.From)

@@ -229,7 +229,15 @@ func EmbedWorkflowTemplate(tmpl *template.WorkflowTemplate, ctx *template.Templa
 						Template: eCtrTmpl.(*EmbeddedContainerTemplate),
 						Service:  &Service{},
 					}
-					cRef.Arguments = fixTmplRef.Arguments
+					if fixTmplRef.Arguments != nil {
+						cRef.Arguments = fixTmplRef.Arguments
+					} else {
+						cRef.Arguments = make(template.Arguments)
+					}
+					axErr = inferArgumentsToChild(tmpl, ctx.Templates[fixTmplRef.Template], cRef.Arguments)
+					if axErr != nil {
+						return nil, axErr
+					}
 					eTmpl.Fixtures[i][fixRefName] = &EmbeddedFixtureTemplateRef{
 						EmbeddedContainerTemplateRef: &cRef,
 					}

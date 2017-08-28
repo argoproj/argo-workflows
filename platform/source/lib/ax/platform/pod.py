@@ -285,17 +285,6 @@ class Pod(KubeObject):
 
         raise AXPlatformException("Pod for a task needs to have a non-wait container")
 
-    def _delete_volumes_for_pod(self, status):
-        # TODO: Disable this for now. We need a better solution than a hard delete of volumes
-        # This delete is right now commented out as it is deleting all volumes including volumes
-        # attached via volume pool
-        # for volume in status.spec.volumes:
-        #    assert isinstance(volume, swagger_client.V1Volume), "Expect an object of type V1Volume"
-        #    pvc = volume.persistent_volume_claim
-        #    if pvc is not None and not pvc.read_only:
-        #        VolumeManager().delete(pvc.claim_name)
-        pass
-
     def _get_status_obj(self):
         status = self.client.api.read_namespaced_pod_status(self.namespace, self.name)
         assert isinstance(status, swagger_client.V1Pod), "Status object should be of type V1Pod"
