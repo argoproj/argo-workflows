@@ -370,7 +370,7 @@ func jobLogs(cmd *cobra.Command, args []string) {
 			if err != nil {
 				log.Fatalf("Failed to decode line '%s': %v", string(line), err)
 			}
-			log.Print(jl.Log)
+			fmt.Print(jl.Log)
 		}
 	default:
 

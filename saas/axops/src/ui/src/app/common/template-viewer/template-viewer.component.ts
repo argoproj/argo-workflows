@@ -13,6 +13,9 @@ export class TemplateViewerComponent {
     @Input()
     public template: Template;
 
+    @Input()
+    public isHiddenYamlBtn: false;
+
     public selectedStep: string;
     public isYamlVisible: boolean;
 

@@ -8,7 +8,7 @@ import (
 
 func (s *S) TestCreateApplicationObject(c *check.C) {
 
-	name := TEST_PREFIX + "-" + "applicaiton-" + test.RandStr()
+	name := TEST_PREFIX + "-" + "application-" + test.RandStr()
 
 	a := &application.Application{
 		Name:        name,
@@ -46,7 +46,7 @@ func (s *S) TestCreateApplicationObject(c *check.C) {
 
 func (s *S) TestUpdateApplicationObject(c *check.C) {
 
-	name := TEST_PREFIX + "-" + "applicaiton-" + test.RandStr()
+	name := TEST_PREFIX + "-" + "application-" + test.RandStr()
 
 	a := &application.Application{
 		Name:        name,
@@ -77,7 +77,7 @@ func (s *S) TestUpdateApplicationObject(c *check.C) {
 
 func (s *S) TestDeleteApplicationObject(c *check.C) {
 
-	name := TEST_PREFIX + "-" + "applicaiton-" + test.RandStr()
+	name := TEST_PREFIX + "-" + "application-" + test.RandStr()
 
 	a := &application.Application{
 		Name:        name,

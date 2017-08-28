@@ -301,7 +301,7 @@ var (
 	invalidParamNameErrStr = "invalid parameter name: '%s'. names must be one word, and contain only alphanumeric, underscore, or dash characters"
 )
 
-func (in *Inputs) Validate() *axerror.AXError {
+func (in *Inputs) Validate(isContainer bool) *axerror.AXError {
 	if in == nil {
 		return nil
 	}
@@ -310,14 +310,32 @@ func (in *Inputs) Validate() *axerror.AXError {
 			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef(invalidParamNameErrStr, pName)
 		}
 	}
-	for pName := range in.Artifacts {
+	for pName, art := range in.Artifacts {
 		if !paramNameRegex.MatchString(pName) {
 			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef(invalidParamNameErrStr, pName)
 		}
+		if isContainer {
+			if art == nil || art.Path == "" {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("inputs.artifacts.%s 'path' field is required for containers", pName)
+			}
+		} else {
+			if art != nil && art.Path != "" {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("inputs.artifacts.%s 'path' field is only valid for container templates", pName)
+			}
+		}
 	}
-	for pName := range in.Volumes {
+	for pName, vol := range in.Volumes {
 		if !paramNameRegex.MatchString(pName) {
 			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef(invalidParamNameErrStr, pName)
+		}
+		if isContainer {
+			if vol == nil || vol.MountPath == "" {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("inputs.volumes.%s 'mount_path' field is required for containers", pName)
+			}
+		} else {
+			if vol != nil && vol.MountPath != "" {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("inputs.volumes.%s 'mount_path' field is only valid for container templates", pName)
+			}
 		}
 	}
 	for pName := range in.Fixtures {

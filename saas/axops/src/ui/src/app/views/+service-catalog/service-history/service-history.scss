@@ -1,0 +1,7 @@
+.service-history {
+    &__yaml-panel {
+        .sliding-panel__body {
+            height: calc(100% - 156px);
+        }
+    }
+}

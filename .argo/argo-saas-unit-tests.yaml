@@ -11,14 +11,18 @@ steps:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axdb/run-test.sh
-  #AXOPS-TEST:
-  #  template: saas-unit-test-base
-  #  arguments:
-  #    parameters.COMMAND: /src/saas/axops/run-test-axops.sh
-  #AXAMM-TEST:
-  #  template: saas-unit-test-base
-  #  arguments:
-  #    parameters.COMMAND: /src/saas/axamm/run-test.sh
+  AXOPS-TEST:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/axops/run-test-axops.sh
+  TEMPLATE-TEST:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/common/run-test.sh
+  AXAMM-TEST:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/axamm/run-test.sh
   AXNC-TEST:
     template: saas-unit-test-base
     arguments:
@@ -27,24 +31,22 @@ steps:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axops/run-test-event.sh
-  #MODULES-TEST-1:
-  #  template: saas-unit-test-base
-  #  arguments:
-  #    parameters.COMMAND: /src/saas/axops/run-test-modules-1.sh
+  MODULES-TEST-1:
+   template: saas-unit-test-base
+   arguments:
+     parameters.COMMAND: /src/saas/axops/run-test-modules-1.sh
   MODULES-TEST-2:
     template: saas-unit-test-base
     arguments:
       parameters.COMMAND: /src/saas/axops/run-test-modules-2.sh
-  # yaml-checker:
-  #   template: axchecker-container
 outputs:
   artifacts:
-    #coverage-report-axops:
-    #  from: "%%steps.AXOPS-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    coverage-report-axops:
+     from: "%%steps.AXOPS-TEST.outputs.artifacts.COVERAGE-REPORT%%"
     coverage-report-axdb:
       from: "%%steps.AXDB-TEST.outputs.artifacts.COVERAGE-REPORT%%"
-    #coverage-report-axamm:
-    #  from: "%%steps.AXAMM-TEST.outputs.artifacts.COVERAGE-REPORT%%"
+    coverage-report-axamm:
+     from: "%%steps.AXAMM-TEST.outputs.artifacts.COVERAGE-REPORT%%"
     coverage-report-axnc:
       from: "%%steps.AXNC-TEST.outputs.artifacts.COVERAGE-REPORT%%"
 

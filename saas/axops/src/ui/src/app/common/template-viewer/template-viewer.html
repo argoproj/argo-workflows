@@ -7,7 +7,7 @@
         </ax-workflow-tree>
     </div>
 </div>
-<div class="template-viewer__btn" (click)="showYaml()">YAML</div>
+<div class="template-viewer__btn template-viewer__btn--high-priority" (click)="showYaml()" *ngIf="!isHiddenYamlBtn">YAML</div>
 
 <ax-sliding-panel class="template-viewer__yaml" [show]="isYamlVisible" (closePanel)="closeYaml()" [hasNoPadding]="true" [offCanvas]="true">
     <sliding-panel-header>

@@ -11,6 +11,7 @@ import { TemplateViewerComponent } from '../../../common/template-viewer/templat
 @Component({
     selector: 'ax-service-history',
     templateUrl: './service-history.html',
+    styles: [ require('./service-history.scss') ],
 })
 export class ServiceHistoryComponent implements LayoutSettings, OnInit, AfterViewInit, OnDestroy {
     public canLoadMore: boolean = false;

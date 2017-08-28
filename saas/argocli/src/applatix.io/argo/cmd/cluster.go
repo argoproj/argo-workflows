@@ -65,10 +65,10 @@ func clusterShell(cmd *cobra.Command, args []string) {
 	homePath := usr.HomeDir
 
 	clusterManagerImage := fmt.Sprintf("%s/%s/axclustermanager:%s", registry, namespace, version)
-	log.Printf("Getting the most up to date docker image (%s) for cluster management...\n", clusterManagerImage)
+	fmt.Printf("Getting the most up to date docker image (%s) for cluster management...\n", clusterManagerImage)
 	runCmdTTY(dockerPath, "pull", clusterManagerImage)
 
-	log.Println("Entering cluster management shell...")
+	fmt.Println("Entering cluster management shell...")
 	volAWS := fmt.Sprintf("%s/.aws:/root/.aws", homePath)
 	volKube := fmt.Sprintf("%s/.kube:/tmp/ax_kube", homePath)
 	volSSH := fmt.Sprintf("%s/.ssh:/root/.ssh", homePath)

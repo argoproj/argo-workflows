@@ -2,12 +2,14 @@
 package axops_test
 
 import (
+	"encoding/json"
+	"time"
+
 	"applatix.io/axops/project"
 	"applatix.io/common"
+	"applatix.io/template"
 	"applatix.io/test"
-	"encoding/json"
 	"gopkg.in/check.v1"
-	"time"
 )
 
 func assertCatSearch(c *check.C, cat string, expectedCount int) {
@@ -34,33 +36,50 @@ func assertLabelSearch(c *check.C, word string, expectedCount int) {
 
 func (s *S) TestProjectGetList(c *check.C) {
 	randStr := "rand" + test.RandStr()
-	p1 := &project.Project{
-		Name:        randStr,
-		Description: randStr,
-		Repo:        randStr,
-		Branch:      randStr,
-		Categories:  []string{"A2", "B1"},
-		Labels:      project.TypeStringMap{"lang": "go", "db": "axdb"},
-		Assets: &project.Assets{
-			Icon:   &project.AssetDetail{Path: "icon.png"},
-			Detail: &project.AssetDetail{Path: "d.md"},
+	p1 := &project.Project{}
+	p1.Name = randStr
+	p1.Description = randStr
+	p1.Repo = randStr
+	p1.Branch = randStr
+	p1.Categories = []string{"A2", "B1"}
+	p1.Labels = map[string]string{"lang": "go", "db": "axdb"}
+	p1.Assets = &project.Assets{
+		Icon:   &project.AssetDetail{Path: "icon.png"},
+		Detail: &project.AssetDetail{Path: "d.md"},
+	}
+	p1.Actions = map[string]template.TemplateRef{
+		"build": template.TemplateRef{
+			Template:  "T1",
+			Arguments: map[string]*string{"repo": test.NewString("a")},
 		},
-		Actions: []project.Action{{Name: "build", Template: "T1", Parameters: project.TypeStringMap{"repo": "a"}}, {Name: "test", Template: "T2", Parameters: project.TypeStringMap{"image": "i1"}}},
+		"test": template.TemplateRef{
+			Template:  "T2",
+			Arguments: map[string]*string{"image": test.NewString("i1")},
+		},
 	}
 
 	randStr = "rand" + test.RandStr()
-	p2 := &project.Project{
-		Name:        randStr,
-		Description: randStr,
-		Repo:        randStr,
-		Branch:      randStr,
-		Categories:  []string{"A1", "B1"},
-		Labels:      project.TypeStringMap{"lang": "go"},
-		Assets: &project.Assets{
-			Icon:   &project.AssetDetail{Path: "icon.png"},
-			Detail: &project.AssetDetail{Path: "d.md"},
+	p2 := &project.Project{}
+	p2.Name = randStr
+	p2.Description = randStr
+	p2.Repo = randStr
+	p2.Branch = randStr
+	p2.Categories = []string{"A1", "B1"}
+
+	p2.Labels = map[string]string{"lang": "go"}
+	p2.Assets = &project.Assets{
+		Icon:   &project.AssetDetail{Path: "icon.png"},
+		Detail: &project.AssetDetail{Path: "d.md"},
+	}
+	p2.Actions = map[string]template.TemplateRef{
+		"build": template.TemplateRef{
+			Template:  "T1",
+			Arguments: map[string]*string{"repo": test.NewString("a")},
 		},
-		Actions: []project.Action{{Name: "build", Template: "T1", Parameters: project.TypeStringMap{"repo": "a"}}, {Name: "test", Template: "T2", Parameters: project.TypeStringMap{"image": "i1"}}},
+		"test": template.TemplateRef{
+			Template:  "T2",
+			Arguments: map[string]*string{"image": test.NewString("i1")},
+		},
 	}
 
 	_, err := p1.Insert()

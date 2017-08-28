@@ -65,3 +65,43 @@ containers:
       parameters.sleep: "%%volumes.mylogvol%%"
       volumes.data-vol: "%%inputs.volumes.mydatavol%%"
       volumes.log-vol: "%%volumes.mylogvol%%"
+
+---
+type: deployment
+version: 1
+name: deployment-with-input-artifact-path
+description: deployments should not set 'path' for input artifacts
+application_name: sleep-service
+deployment_name: sleep-service
+inputs:
+  artifacts:
+    DATA:
+      path: /data
+containers:
+  userdb:
+    image: postgres:9.6.1
+    inputs:
+      artifacts:
+        DATA:
+          from: "%%inputs.artifacts.DATA%%"
+          path: /data
+
+---
+type: deployment
+version: 1
+name: deployment-with-input-volume-mount_path
+description: deployments should not set 'path' for input volumes
+application_name: sleep-service
+deployment_name: sleep-service
+inputs:
+  volumes:
+    DATA:
+      mount_path: /data
+containers:
+  userdb:
+    image: postgres:9.6.1
+    inputs:
+      volumes:
+        DATA:
+          from: "%%inputs.artifacts.DATA%%"
+          mount_path: /data
