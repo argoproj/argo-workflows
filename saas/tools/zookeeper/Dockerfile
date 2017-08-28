@@ -4,7 +4,7 @@
 #   docker build -t %%ARGO_BASE_REGISTRY%%/argobase/min/zookeeper:latest .
 #   docker run -d --name zookeeper %%ARGO_BASE_REGISTRY%%/argobase/min/zookeeper:latest
 
-FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.4
+FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.5
 
 ENV LOG_DIR "/ax/zookeeper/log"
 ENV ZK_DATA_DIR "/ax/zookeeper/data"

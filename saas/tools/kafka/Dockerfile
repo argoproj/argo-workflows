@@ -5,7 +5,7 @@
 #   docker build -t confluent/kafka kafka
 #   docker run -d --name kafka --link zookeeper:zookeeper confluent/kafka
 
-FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.4
+FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.5
 
 
 ENV LOG_DIR "/ax/kafka/log"
