@@ -103,31 +103,11 @@ class AXArtifacts:
         return None
 
     @staticmethod
-    def get_artifact_input_destination_file_path(artifact_from_template, artifact_from_db):
-        dest_name = None
-        if "path" in artifact_from_template:
-            path = artifact_from_template["path"]
-            dest_path, dest_name = os.path.split(path)
-        elif "dest_path" in artifact_from_template:
-            dest_path = artifact_from_template["dest_path"]
-        else:
-            if artifact_from_db and "src_path" in artifact_from_db:
-                dest_path = artifact_from_db["src_path"]
-            else:
-                return None
-
-        if dest_name:
-            pass
-        elif "dest_name" in artifact_from_template:
-            dest_name = artifact_from_template["dest_name"]
-        else:
-            if artifact_from_db and "src_name" in artifact_from_db:
-                dest_name = artifact_from_db["src_name"]
-            else:
-                return None
-        file_path = os.path.join(dest_path, dest_name)
-
-        return file_path
+    def get_artifact_input_destination_file_path(artifact_from_template):
+        path = artifact_from_template.get("path", None)
+        if not path:
+            raise ValueError("path is required in input artifact template {}".format(artifact_from_template))
+        return path
 
     @staticmethod
     def is_test_service_instance(service_instance_id):
@@ -185,16 +165,7 @@ class AXArtifacts:
                                      service_instance_id, artifact)
                         return None
 
-            file_path = AXArtifacts.get_artifact_input_destination_file_path(artifact_from_template=artifact,
-                                                                             artifact_from_db=art)
-            if file_path is None:
-                logger.error("cannot determine the file path for %s %s, skip", artifact, art)
-                if test_mode:
-                    # in test_mode, not every input artifacts exists
-                    continue
-                else:
-                    return None
-
+            file_path = AXArtifacts.get_artifact_input_destination_file_path(artifact_from_template=artifact)
             host_file_path = os.path.join(host_scratch_root, in_label, str(artifact_idx))
             art_mapping = (host_file_path, file_path)
             logger.debug("add art_mapping %s", art_mapping)

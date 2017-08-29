@@ -350,6 +350,7 @@ class PodSpec(object):
         self.restart_policy = None
         self._artifact_vols = []
         self._tier = "user"
+        self.hostname = None
 
     def set_tier(self, t):
         self._tier = t
@@ -467,6 +468,8 @@ class PodSpec(object):
 
         # generate the pod specification
         pspec = swagger_client.V1PodSpec()
+        if self.hostname:
+            pspec.hostname = self.hostname
         pspec.containers = []
 
         if "wait" in self.cmap:

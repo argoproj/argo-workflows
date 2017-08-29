@@ -16,11 +16,6 @@ class Annotations(with_metaclass(Singleton, object)):
         "title": "Validation schema for enabling docker",
         "type": "object",
         "properties": {
-            "graph-storage-name": {
-                "type": "string",
-                "minLength": 5,
-                "maxLength": 233
-            },
             "graph-storage-size": {
                 "type": "string",
                 "pattern": "^[0-9]+Gi$"
@@ -37,6 +32,43 @@ class Annotations(with_metaclass(Singleton, object)):
 
         },
         "required": ["graph-storage-size", "mem_mib", "cpu_cores"]
+    }
+
+    ax_ea_executor = {
+        "$schema": "http://json-schema.org/schema#",
+        "title": "Validation schema for enabling docker",
+        "type": "object",
+        "properties": {
+            "disable": {
+                "type": "boolean"
+            }
+        },
+        "required": ["disable"]
+    }
+
+    ax_ea_privileged = {
+        "$schema": "http://json-schema.org/schema#",
+        "title": "Validation schema for enabling docker",
+        "type": "boolean"
+    }
+
+    ax_ea_graph_storage_volume = {
+        "$schema": "http://json-schema.org/schema#",
+        "title": "Validation schema for enabling docker",
+        "type": "object",
+        "properties": {
+            "graph-storage-size": {
+                "type": "string",
+                "pattern": "^[0-9]+Gi$"
+            }
+        },
+        "required": ["graph-storage-size"]
+    }
+
+    ax_ea_hostname = {
+        "$schema": "http://json-schema.org/schema#",
+        "title": "Validation schema for enabling docker",
+        "type": "string"
     }
 
     def __init__(self):

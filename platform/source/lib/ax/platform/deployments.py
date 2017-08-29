@@ -295,6 +295,18 @@ class Deployment(object):
         artifacts_container = pod_spec.enable_artifacts(self._software_info.image_namespace, self._software_info.image_version,
                                                         None, main_container.to_dict())
 
+        # Set up special circumstances based on annotations
+        # Check if we need to circumvent the executor script. This is needed for containers that run
+        # special init processes such as systemd as these processes like to be pid 1
+        if main_container.executor_spec:
+            main_container_spec.command = None
+            if main_container.docker_spec is not None:
+                raise ValueError("We do not support ax_ea_docker_enable with ax_ea_executor")
+
+        # Does this container need to be privileged
+        main_container_spec.privileged = main_container.privileged
+
+        # Check if docker daemon sidecar needs to be added
         if main_container.docker_spec:
             # graph storage size is specified in GiB
             dind_container_spec = pod_spec.enable_docker(main_container.docker_spec.graph_storage_size_mib)
@@ -302,6 +314,15 @@ class Deployment(object):
             dind_container_spec.add_resource_constraints("cpu_cores", main_container.docker_spec.cpu_cores, limit=None)
             dind_container_spec.add_resource_constraints("mem_mib", main_container.docker_spec.mem_mib, limit=None)
             dind_container_spec.add_volumes(container_vols)
+
+        # Do we only need docker graph storage volume for the main container
+        if main_container.graph_storage:
+            dgs_vol = ContainerVolume("graph-storage-vol-only", main_container.graph_storage.mount_path)
+            dgs_vol.set_type("DOCKERGRAPHSTORAGE", main_container.graph_storage.graph_storage_size_mib)
+            main_container_spec.add_volume(dgs_vol)
+
+        # set the pod hostname to value provided in main container spec
+        pod_spec.hostname = main_container.hostname
 
         # TODO: This needs fixup. job name is used in init container to ask permission to start
         # TODO: Don't know if this is needed in deployment or not?
