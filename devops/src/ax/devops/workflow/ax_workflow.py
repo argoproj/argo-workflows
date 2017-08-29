@@ -9,7 +9,6 @@ Module for AXWorkflow
 """
 
 import json
-import time
 import uuid
 import time
 
