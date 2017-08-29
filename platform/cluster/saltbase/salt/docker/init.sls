@@ -416,7 +416,7 @@ docker-upgrade:
 # TODO: Fix this
 fix-service-docker:
   cmd.wait:
-    - name: /opt/kubernetes/helpers/services enable docker
+    - name: /opt/kubernetes/helpers/services bounce docker
     - watch:
       - file: {{ pillar.get('systemd_system_path') }}/docker.service
       - file: {{ environment_file }}
