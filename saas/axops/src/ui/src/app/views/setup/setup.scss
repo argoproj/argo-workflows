@@ -60,7 +60,13 @@ $setup-box-content-shadow: 3px 3px 20px black;
     }
 
     &__header {
-
+        h1 {
+            line-height: 80px;
+            font-size: 35px;
+            font-weight: 300;
+            color: white;
+            text-align: center;
+        }
     }
 
     &__content {
@@ -71,7 +77,20 @@ $setup-box-content-shadow: 3px 3px 20px black;
         border: 1px solid black;
         box-shadow: $setup-box-content-shadow;
 
+        p {
+            font-size: 15px;
+            color: $ax-color-gray-6;
+        }
+
+        form {
+            padding: 0 20px;
+        }
+
         &--welcome {
+            width: 500px;
+        }
+
+        &--forgot-password {
             width: 500px;
         }
     }
@@ -87,5 +106,23 @@ $setup-box-content-shadow: 3px 3px 20px black;
         font-weight: 300;
         line-height: 142px;
         padding-left: 220px;
+    }
+
+    &__back-btn {
+        margin-bottom: 30px;
+
+        a {
+            font-size: 14px;
+            color: $ax-color-gray-6;
+
+            &:hover {
+                color: $ax-color-gray-5;
+            }
+        }
+
+        i {
+            padding-right: 2px;
+            font-size: 20px;
+        }
     }
 }
