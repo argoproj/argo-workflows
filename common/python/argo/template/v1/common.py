@@ -243,29 +243,53 @@ class VolumeDetails(Volume):
         self.set_fields(fields)
 
 
-class DockerSpec(ObjectParser):
+class GraphStorageSpec(ObjectParser):
     def __init__(self):
-        self.graph_storage_name = None
         self.graph_storage_size_mib = 0.0
-        self.cpu_cores = 0.0
-        self.mem_mib = 0
-
         self._object_parser_fields = {
-            "graph-storage-name": OD(field_name="graph_storage_name"),
-            "graph-storage-size": OD(field_name="graph_storage_size_mib"),
-            "cpu_cores": OD(),
-            "mem_mib": OD()
+            "graph-storage-size": OD(field_name="graph_storage_size_mib", required=True)
         }
-        super(DockerSpec, self).__init__()
+        super(GraphStorageSpec, self).__init__()
 
     def parse(self, data, error_on_not_found=False):
-        super(DockerSpec, self).parse(data, error_on_not_found=error_on_not_found)
+        super(GraphStorageSpec, self).parse(data, error_on_not_found=error_on_not_found)
         # special parsing for graph storage size
         if not isinstance(self.graph_storage_size_mib, int):
             self.graph_storage_size_mib = int(self.graph_storage_size_mib[:-2]) * 1024
 
     def to_dict(self):
-        ret = super(DockerSpec, self).to_dict()
+        ret = super(GraphStorageSpec, self).to_dict()
         ret["graph-storage-size"] = "{}Gi".format(self.graph_storage_size_mib / 1024)
         return ret
 
+
+class DockerSpec(GraphStorageSpec):
+    def __init__(self):
+        super(DockerSpec, self).__init__()
+        self.cpu_cores = 0.0
+        self.mem_mib = 0
+
+        fields = {
+            "cpu_cores": OD(required=True),
+            "mem_mib": OD(required=True)
+        }
+        self.set_fields(fields)
+
+
+class GraphStorageVolumeSpec(GraphStorageSpec):
+    def __init__(self):
+        self.mount_path = None
+        super(GraphStorageVolumeSpec, self).__init__()
+        fields = {
+            "mount-path": OD(field_name="mount_path", required=True)
+        }
+        self.set_fields(fields)
+
+
+class ExecutorSpec(ObjectParser):
+    def __init__(self):
+        self.disable = False
+        self._object_parser_fields = {
+            "disable" : None
+        }
+        super(ExecutorSpec, self).__init__()

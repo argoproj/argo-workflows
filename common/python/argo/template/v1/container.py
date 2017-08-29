@@ -7,7 +7,7 @@
 import json
 
 from .base import BaseTemplate
-from .common import Inputs, Outputs, DockerSpec
+from .common import Inputs, Outputs, DockerSpec, ExecutorSpec, GraphStorageVolumeSpec
 from argo.parser.parser import ObjectParser, ObjectDefinition as OD
 
 from ax.platform.annotations import Annotations
@@ -45,6 +45,10 @@ class ContainerTemplate(BaseTemplate):
 
         # derived field from annotations
         self.docker_spec = None
+        self.executor_spec = None
+        self.privileged = False
+        self.graph_storage = None
+        self.hostname = None
 
         # these fields need to be moved out
         self.once = True
@@ -81,10 +85,48 @@ class ContainerTemplate(BaseTemplate):
             self.docker_spec = DockerSpec()
             self.docker_spec.parse(dspec)
 
+        espec = self.annotations.get("ax_ea_executor", None)
+        if espec is not None:
+            espec = json.loads(espec)
+            annotations_obj.parse("ax_ea_executor", espec)
+            self.executor_spec = ExecutorSpec()
+            self.executor_spec.parse(espec)
+
+        priv_bool = self.annotations.get("ax_ea_privileged", None)
+        if priv_bool is not None:
+            priv_bool = json.loads(priv_bool)
+            annotations_obj.parse("ax_ea_privileged", priv_bool)
+            self.privileged = priv_bool
+
+        gs_spec = self.annotations.get("ax_ea_graph_storage_volume", None)
+        if gs_spec:
+            gs_spec = json.loads(gs_spec)
+            annotations_obj.parse("ax_ea_graph_storage_volume", gs_spec)
+            self.graph_storage = GraphStorageVolumeSpec()
+            self.graph_storage.parse(gs_spec)
+
+        hostname_spec = self.annotations.get("ax_ea_hostname", None)
+        if hostname_spec:
+            annotations_obj.parse("ax_ea_hostname", hostname_spec)
+            self.hostname = hostname_spec
+
     def to_dict(self):
         ret = super(ContainerTemplate, self).to_dict()
         if self.docker_spec:
             ret["annotations"]["ax_ea_docker_enable"] = json.dumps(self.docker_spec.to_dict())
+
+        if self.executor_spec:
+            ret["annotations"]["ax_ea_executor"] = json.dumps(self.executor_spec.to_dict())
+
+        if self.privileged:
+            ret["annotations"]["ax_ea_privileged"] = json.dumps(self.privileged)
+
+        if self.graph_storage:
+            ret["annotations"]["ax_ea_graph_storage_volume"] = json.dumps(self.graph_storage.to_dict())
+
+        if self.hostname:
+            ret["annotations"]["ax_ea_hostname"] = self.hostname
+
         return ret
 
     def get_resources(self):

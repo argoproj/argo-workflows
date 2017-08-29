@@ -137,3 +137,27 @@ def test_rolling_update_int_conversion():
     assert data_back["max_unavailable"] == "2", "dict conversion error"
 
 
+def test_annotations_docker_spec():
+
+    cont_dict_with_art.update(
+        {
+            "annotations": {
+                "ax_ea_docker_enable": '{"graph-storage-size": "20Gi", "cpu_cores": 1, "mem_mib": 512}',
+                "ax_ea_graph_storage_volume": '{"graph-storage-size": "20Gi", "mount-path": "/var/lib/docker"}',
+                "ax_ea_privileged": 'true',
+                "ax_ea_executor": '{"disable": true}',
+                "ax_ea_hostname": "somelabel"
+            }
+        }
+    )
+
+    c = ContainerTemplate()
+    c.parse(cont_dict_with_art)
+    check_val(c.docker_spec, "graph_storage_size_mib", 20*1024)
+    check_val(c.docker_spec, "cpu_cores", 1)
+    check_val(c.docker_spec, "mem_mib", 512)
+    check_val(c.graph_storage, "graph_storage_size_mib", 20*1024)
+    check_val(c.graph_storage, "mount_path", "/var/lib/docker")
+    check_val(c, "privileged", True)
+    check_val(c.executor_spec, "disable", True)
+    check_val(c, "hostname", "somelabel")
