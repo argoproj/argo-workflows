@@ -280,7 +280,7 @@ def test_gateway_svc_info():
     assert dep.replica == 1
     assert not dep.svc_elb
     assert not dep.extra_poll
-    assert dep.usage == (350, 700, 0, 0)
+    assert dep.usage == (200, 300, 0, 0)
 
 
 def test_axops_info():

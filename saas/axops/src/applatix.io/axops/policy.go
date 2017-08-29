@@ -149,7 +149,7 @@ func EnablePolicy() gin.HandlerFunc {
 
 		// Get user who enabled the policy
 		u := GetContextUser(c)
-		p.Enabled = utils.NewTrue()
+		p.Enabled = true
 		current_time := time.Now()
 		p.Status = fmt.Sprintf("Policy %s is enabled by %s on %s", p.Name, u.Username, current_time.Format("2006-01-02 15:04:05"))
 		p, axErr = p.Update()
@@ -198,7 +198,7 @@ func DisablePolicy() gin.HandlerFunc {
 
 		// Get user who disables the policy
 		u := GetContextUser(c)
-		p.Enabled = utils.NewFalse()
+		p.Enabled = false
 		current_time := time.Now()
 		p.Status = fmt.Sprintf("Policy %s is disabled by %s on %s", p.Name, u.Username, current_time.Format("2006-01-02 15:04:05"))
 
@@ -260,9 +260,9 @@ func sendNotificationForPolicy(p *policy.Policy) {
 	detail["Policy Repo"] = p.Repo
 	detail["Policy Branch"] = p.Branch
 	detail["Message"] = p.Status
-	if *(p.Enabled) == true {
+	if p.Enabled == true {
 		notification_center.Producer.SendMessage(notification_center.CodeEnabledPolicy, "", []string{}, detail)
-	} else if *(p.Enabled) == false {
+	} else {
 		notification_center.Producer.SendMessage(notification_center.CodeDisabledPolicy, "", []string{}, detail)
 	}
 }

@@ -1,0 +1,294 @@
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 20 minutes #1"
+description: "Trigger build every 20 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/20 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 20 minutes #2"
+description: "Trigger build every 20 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/20 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 20 minutes #3"
+description: "Trigger build every 20 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/20 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 20 minutes #4"
+description: "Trigger build every 20 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/20 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 20 minutes #5"
+description: "Trigger build every 20 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/20 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 30 minutes"
+description: "Trigger build every 30 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/30 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every Hour"
+description: "Trigger build every hour"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "37 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 2 Hours"
+description: "Trigger build every 2 hours"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "23 */2 * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 10 Minutes"
+description: "Trigger build every 10 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/10 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 5 Minutes #1"
+description: "Trigger build every 5 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/5 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 5 Minutes #2"
+description: "Trigger build every 5 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/5 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 5 Minutes #3"
+description: "Trigger build every 5 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/5 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 5 Minutes #4"
+description: "Trigger build every 5 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/5 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 5 Minutes #5"
+description: "Trigger build every 5 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/5 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 1 Minutes #1"
+description: "Trigger build every 1 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/1 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 1 Minutes #2"
+description: "Trigger build every 1 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/1 * * * *"
+    timezone: "US/Pacific"
+
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 1 Minutes #3"
+description: "Trigger build every 1 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/1 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 1 Minutes #4"
+description: "Trigger build every 1 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/1 * * * *"
+    timezone: "US/Pacific"
+
+---
+type: "policy"
+version: 1
+name: "Argo Stress Every 1 Minutes #5"
+description: "Trigger build every 1 minutes"
+template: "Argo CI"
+arguments:
+      parameters.NAMESPACE: "stresstest"
+      parameters.VERSION_OPTION: "-v test"
+      parameters.BUILD_OPTIONS: "--no-push"
+when:
+  - event: "on_cron"
+    schedule: "*/1 * * * *"
+    timezone: "US/Pacific"

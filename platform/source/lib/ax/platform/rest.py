@@ -513,7 +513,7 @@ def task_delete(task_id):
     if stop_running_pod_only == "True":
         result = axmon.task_stop_running_pod(task_id)
     else:
-        result = axmon.task_delete(task_id, delete_pod=delete_pod == "True", force=force == "True")
+        result = axmon.task_delete(task_id, force=force == "True")
     return jsonify(result=result)
 
 @_app.route("/v1/axmon/task/<task_id>/logs", methods=['GET'])

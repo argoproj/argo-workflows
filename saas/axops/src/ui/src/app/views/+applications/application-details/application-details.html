@@ -24,7 +24,9 @@
     <sliding-panel-body>
         <ax-deployment-details *ngIf="selectedDeploymentName"
             [deployment]="selectedDeployment"
-            (onClose)="onDeploymentSelected(null)" (onShowHistory)="openSelectedDeploymentHistory()"
+            (onClose)="onDeploymentSelected(null)"
+            (onRedeploy)="redeploy($event)"
+            (onShowHistory)="openSelectedDeploymentHistory()"
             (onShowHistoryDetails)="openHistoryDetails($event.id)"></ax-deployment-details>
     </sliding-panel-body>
 </ax-sliding-panel>

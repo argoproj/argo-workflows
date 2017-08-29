@@ -16,13 +16,13 @@ import (
 func (s *S) TestPolicyGetList(c *check.C) {
 
 	randStr := "rand" + test.RandStr()
-	p1 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p1 := &policy.Policy{}
 	p1.Name = randStr
 	p1.Description = randStr
 	p1.Repo = randStr
 	p1.Branch = randStr
 	p1.Template = randStr
-	p1.Enabled = test.NewTrue()
+	p1.Enabled = true
 	p1.Notifications = []template.Notification{
 		template.Notification{
 			When: []string{"on_change"},
@@ -42,13 +42,13 @@ func (s *S) TestPolicyGetList(c *check.C) {
 	}
 
 	randStr = "rand" + test.RandStr()
-	p2 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p2 := &policy.Policy{}
 	p2.Name = randStr
 	p2.Description = randStr
 	p2.Repo = randStr
 	p2.Branch = randStr
 	p2.Template = randStr
-	p2.Enabled = test.NewFalse()
+	p2.Enabled = false
 	p2.Notifications = []template.Notification{}
 	p2.When = []template.When{
 		template.When{
@@ -170,13 +170,13 @@ func (s *S) TestPolicyGetList(c *check.C) {
 func (s *S) TestPolicyEnableDisable(c *check.C) {
 
 	randStr := "rand" + test.RandStr()
-	p1 := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p1 := &policy.Policy{}
 	p1.Name = randStr
 	p1.Description = randStr
 	p1.Repo = randStr
 	p1.Branch = randStr
 	p1.Template = randStr
-	p1.Enabled = test.NewFalse()
+	p1.Enabled = false
 	p1.Notifications = []template.Notification{
 		template.Notification{
 			When: []string{"on_change"},
@@ -210,7 +210,7 @@ func (s *S) TestPolicyEnableDisable(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(p, check.NotNil)
 	c.Assert(p.ID, check.Equals, p1.ID)
-	c.Assert(*p.Enabled, check.Equals, true)
+	c.Assert(p.Enabled, check.Equals, true)
 
 	_, err = axopsClient.Put("policies/"+p.ID+"/disable", nil)
 	c.Assert(err, check.IsNil)
@@ -219,5 +219,5 @@ func (s *S) TestPolicyEnableDisable(c *check.C) {
 	c.Assert(err, check.IsNil)
 	c.Assert(p, check.NotNil)
 	c.Assert(p.ID, check.Equals, p1.ID)
-	c.Assert(*p.Enabled, check.Equals, false)
+	c.Assert(p.Enabled, check.Equals, false)
 }

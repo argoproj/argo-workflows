@@ -11,14 +11,14 @@ import (
 
 func (s *S) TestPolicyInsertUpdate(c *check.C) {
 	randStr := test.RandStr()
-	p := &policy.Policy{PolicyTemplate: &template.PolicyTemplate{}}
+	p := &policy.Policy{}
 	p.ID = utils.GenerateUUIDv1()
 	p.Name = randStr
 	p.Description = randStr
 	p.Repo = randStr
 	p.Branch = randStr
 	p.Template = randStr
-	p.Enabled = test.NewTrue()
+	p.Enabled = true
 	p.Notifications = []template.Notification{
 		template.Notification{
 			Whom: []string{"a", "b"},
@@ -51,12 +51,12 @@ func (s *S) TestPolicyInsertUpdate(c *check.C) {
 	c.Assert(copy.Repo, check.Equals, p.Repo)
 	c.Assert(copy.Branch, check.Equals, p.Branch)
 	c.Assert(copy.Template, check.Equals, p.Template)
-	c.Assert(*copy.Enabled, check.Equals, *p.Enabled)
+	c.Assert(copy.Enabled, check.Equals, p.Enabled)
 	c.Assert(len(copy.Notifications), check.Equals, len(p.Notifications))
 	c.Assert(len(copy.When), check.Equals, len(p.When))
 	c.Assert(len(copy.Arguments), check.Equals, len(p.Arguments))
 
-	p.Enabled = test.NewFalse()
+	p.Enabled = false
 	p.Description = "changed"
 	p, err = p.Update()
 	c.Assert(err, check.IsNil)
@@ -72,7 +72,7 @@ func (s *S) TestPolicyInsertUpdate(c *check.C) {
 	c.Assert(copy.Repo, check.Equals, p.Repo)
 	c.Assert(copy.Branch, check.Equals, p.Branch)
 	c.Assert(copy.Template, check.Equals, p.Template)
-	c.Assert(*copy.Enabled, check.Equals, *p.Enabled)
+	c.Assert(copy.Enabled, check.Equals, p.Enabled)
 	c.Assert(len(copy.Notifications), check.Equals, len(p.Notifications))
 	c.Assert(len(copy.When), check.Equals, len(p.When))
 	c.Assert(len(copy.Arguments), check.Equals, len(p.Arguments))

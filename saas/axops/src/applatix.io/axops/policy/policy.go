@@ -18,8 +18,8 @@ const (
 )
 
 type Policy struct {
-	*template.PolicyTemplate
-	Enabled *bool  `json:"enabled,omitempty"`
+	template.PolicyTemplate
+	Enabled bool   `json:"enabled,omitempty"`
 	Status  string `json:"status,omitempty"`
 }
 
