@@ -50,7 +50,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             this.layoutDateRange.isAllDates = this.currentView !== 'overview';
 
 
-            this.getFiltersByView(this.currentView);
+            this.updateFiltersByView(this.currentView);
             this.toolbarFilters.model = [];
 
             if (this.showMyOnly ) {
@@ -193,13 +193,9 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
         return ViewUtils.sanitizeRouteParams(params, updatedParams);
     }
 
-    private getFiltersByView(view) {
+    private updateFiltersByView(view) {
         this.currentView = view;
-        if (this.toolbarFilters.data) {
-            this.toolbarFilters.data.length = 0;
-        } else {
-            this.toolbarFilters.data = [];
-        }
+        this.toolbarFilters.data.length = 0;
 
         if (view !== 'overview') {
             this.toolbarFilters.data.push({
