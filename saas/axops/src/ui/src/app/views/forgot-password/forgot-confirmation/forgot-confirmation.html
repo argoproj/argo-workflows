@@ -1,10 +1,23 @@
-<div class="login">
-    <div class="login__box">
-        <div class="login__logo login__logo--neg"></div>
-        <h4>Reset password link is sent</h4>
-        <div>Check your email and click the link to reset your password</div>
-        <div class="login__more-row">
-            <a routerLink="/login">{{ 'Go to Login' | translate }}</a>
+<div class="setup">
+    <div class="setup__shortcut">
+        <div class="argo"></div>
+        <div class="logo"></div>
+    </div>
+
+    <div class="setup__box">
+        <div class="setup__header">
+            <h1>{{ 'Password Reset Email Sent' | translate }}?</h1>
+        </div>
+        <div class="setup__content setup__content--forgot-password-confirm">
+            <p>
+                {{ 'Please check your inbox. We just emailed you a link to reset your password. If you don\'t receive anything, first check your spam folder and then try again.' | translate }}.
+            </p>
+
+            <div class="setup__btn-center setup__btn-center--additional-top-margin">
+                <a axButtonWave class="ax-button ax-button--base-o" routerLink="/login">
+                    {{ 'Sign In' | translate }}
+                </a>
+            </div>
         </div>
     </div>
 </div>

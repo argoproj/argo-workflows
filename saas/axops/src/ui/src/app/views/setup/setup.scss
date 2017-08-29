@@ -93,11 +93,23 @@ $setup-box-content-shadow: 3px 3px 20px black;
         &--forgot-password {
             width: 500px;
         }
+
+        &--forgot-password-confirm {
+            width: 635px;
+        }
     }
 
     &__title {
         color: #f27f53;
         font-size: 26px;
+    }
+
+    &__btn-center {
+        text-align: center;
+
+        &--additional-top-margin {
+            margin-top: 40px;
+        }
     }
 
     &__welcome-text {
