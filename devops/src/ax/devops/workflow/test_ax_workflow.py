@@ -11,7 +11,7 @@ Module for test AXWorkflow
 import json
 import os
 
-from ax.devops.apps.workflow.ax_workflow import AXWorkflow
+from .ax_workflow import AXWorkflow
 
 test_db_dict = {}
 test_db_file = "test_db_file"

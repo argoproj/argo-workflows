@@ -50,7 +50,7 @@ spec:
                     value: "${AX_NODE_MIN_RESERVED_CPU}"
                   - name: AX_NODE_MIN_RESERVED_MEM
                     value: "${AX_NODE_MIN_RESERVED_MEM}"
-                command: ["/ax/src/ax/devops/apps/workflow/adc", "--image-namespace", "${NAMESPACE}", "--image-version", "${VERSION}"]
+                command: ["/ax/src/ax/devops/workflow/adc", "--image-namespace", "${NAMESPACE}", "--image-version", "${VERSION}"]
                 ports:
                   - containerPort: 8911
                 resources:

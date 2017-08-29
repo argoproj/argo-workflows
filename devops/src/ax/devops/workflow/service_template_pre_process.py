@@ -135,6 +135,7 @@ def get_artifact_sid_and_name(art):
 
     return None, None
 
+
 def service_template_pre_process(service_template_root, leaf, parameter, name, full_path):
     leaf = copy.deepcopy(leaf)
     my_id = leaf.get("id", None)
