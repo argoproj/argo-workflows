@@ -128,6 +128,7 @@ export class DeploymentsListComponent implements OnChanges, OnDestroy {
             this.dataLoaded = true;
 
             this.items = result.slice(0, this.limit) || [];
+            this.bulkUpdater.items = this.items;
 
             this.pagination = {
                 offset: pagination.offset,
@@ -138,6 +139,7 @@ export class DeploymentsListComponent implements OnChanges, OnDestroy {
         }, error => {
             this.dataLoaded = true;
             this.items = [];
+            this.bulkUpdater.items = this.items;
         }));
     }
 
