@@ -54,7 +54,7 @@ $setup-box-content-shadow: 3px 3px 20px black;
 
     &__box {
         position: fixed;
-        top: 45%;
+        top: 40%;
         left: 50%;
         transform: translate(-50%, -50%);
     }
@@ -94,7 +94,7 @@ $setup-box-content-shadow: 3px 3px 20px black;
             width: 500px;
         }
 
-        &--forgot-password-confirm {
+        &--forgot-password-confirm, &--reset-password-confirm {
             width: 635px;
         }
     }
