@@ -8,12 +8,12 @@
         <div class="setup__header">
             <div class="setup__logo"></div>
             <div class="setup__welcome-text">
-                Welcome!
+                {{ 'Welcome!' | translate }}
             </div>
         </div>
         <div class="setup__content setup__content--welcome">
             <div class="setup__title">
-                Create Your Account Password
+                {{ 'Create Your Account Password' | translate }}
             </div>
 
             <form role="form" [formGroup]="signupForm">
@@ -48,7 +48,7 @@
                 </div>
                 <div class="ax-form-row">
                     <input id="repeat_password" type="password" class="ax-field" formControlName="repeat_password" autocomplete="off" ax-label-placeholder>
-                    <label for="repeat_password" class="ax-label-placeholder">{{ 'Re-enter Password' | translate }}</label>
+                    <label for="repeat_password" class="ax-label-placeholder">{{ 'Confirm Password' | translate }}</label>
                     <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['repeat_password'].valid && signupForm.controls['repeat_password'].touched">
                         Password is wrong<i class="fa fa-warning"></i>
                     </div>
@@ -57,7 +57,7 @@
                     </div>
                 </div>
                 <div class="ax-form-row">
-                    <button axButtonWave class="ax-button ax-button--base ax-button--full-width" type="submit" (click)="createAccount(signupForm)" [disabled]="!signupForm.valid">
+                    <button axButtonWave class="ax-button ax-button--base ax-button--full-width setup__btn" type="submit" (click)="createAccount(signupForm)" [disabled]="!signupForm.valid">
                         {{ 'Create' | translate }}
                     </button>
                 </div>

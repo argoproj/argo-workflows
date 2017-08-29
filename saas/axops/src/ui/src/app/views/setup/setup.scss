@@ -73,7 +73,7 @@ $setup-box-content-shadow: 3px 3px 20px black;
         background-color: white;
         display: block;
         border-radius: 8px;
-        padding: 40px 60px;
+        padding: 50px 60px;
         border: 1px solid black;
         box-shadow: $setup-box-content-shadow;
 
@@ -86,11 +86,7 @@ $setup-box-content-shadow: 3px 3px 20px black;
             padding: 0 20px;
         }
 
-        &--welcome {
-            width: 500px;
-        }
-
-        &--forgot-password {
+        &--forgot-password, &--reset-password, &--welcome {
             width: 500px;
         }
 
@@ -125,6 +121,7 @@ $setup-box-content-shadow: 3px 3px 20px black;
 
         a {
             font-size: 14px;
+            font-weight: 500;
             color: $ax-color-gray-6;
 
             &:hover {
@@ -136,5 +133,11 @@ $setup-box-content-shadow: 3px 3px 20px black;
             padding-right: 2px;
             font-size: 20px;
         }
+    }
+
+    &__btn {
+        padding: 10px 40px;
+        border-radius: 20px;
+        font-size: 14px;
     }
 }
