@@ -144,7 +144,7 @@ type Input struct {
 // InputParameter indicate a passed string parameter to a service template with an optional default value
 type InputParameter struct {
 	Input   `json:",squash"`
-	Default *string       `json:"default"`
+	Default *string       `json:"default,omitempty"`
 	Options []interface{} `json:"options,omitempty"` // TODO: implement validation
 	Regex   string        `json:"regex,omitempty"`   // TODO: implement validation
 }
