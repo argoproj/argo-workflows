@@ -58,6 +58,19 @@ S3_ENDPOINT_COMMON = "https://s3-{region}.amazonaws.com/{bucket_name}"
 S3_ENDPOINT_VIRGINIA = "https://s3.amazonaws.com/{bucket_name}"
 
 
+# Getting bucket region is tricky. The method that can work reliably if to start boto3 session
+# with a random region, and call head_bucket but enforce signature V4. In addition, the random
+# region should be inside the same aws partition as the actual region of the bucket.
+#
+# If this code runs on an aws instance then perfect, we can get this initial region from their
+# metadata server, assuming we don't access buckets in different partition. But if this code
+# is invoked in a normal user environment, i.e. laptop, we need to guess partitions.
+#
+# The following list provides region in each partition we can use to get bucket's actual
+# region.
+PARTITION_DEFAULT_REGIONS = ["us-east-1", "us-gov-west-1", "cn-north-1"]
+
+
 def head_bucket_retry(exception):
     # Retrying on head bueckt is tricky, as HTTP code can change
     # from time to time after the bucket is created:
@@ -106,27 +119,37 @@ class AXS3Bucket(object):
         stop_max_attempt_number=3
     )
     def _get_bucket_region_from_aws(self):
-        # We assume cluster is not access any resource outside partition, e.g.
-        # clusters in partition "aws" will not access resource in partition "aws-us-gov"
-        instance_region = Cloud().meta_data().get_region()
-        s3 = boto3.Session(
-            profile_name=self._aws_profile,
-            region_name=instance_region
-        ).client("s3", config=Config(signature_version='s3v4'))
 
-        logger.debug("Finding region for bucket %s from with initial region %s", self._name, instance_region)
-        try:
-            response = s3.head_bucket(Bucket=self._name)
-            logger.debug("Head_bucket returned OK %s", response)
-        except ClientError as e:
-            if "Not Found" in str(e):
+        def _do_get_region(start_region):
+            s3 = boto3.Session(
+                profile_name=self._aws_profile,
+                region_name=start_region
+            ).client("s3", config=Config(signature_version='s3v4'))
+
+            logger.debug("Finding region for bucket %s from with initial region %s", self._name, start_region)
+            try:
+                response = s3.head_bucket(Bucket=self._name)
+                logger.debug("Head_bucket returned OK %s", response)
+            except ClientError as e:
+                response = getattr(e, "response", {})
+                logger.debug("Head_bucket returned error %s, inspecting headers", response)
                 return None
-            response = getattr(e, "response", {})
-            logger.debug("Head_bucket returned error %s, inspecting headers", response)
-        headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
-        region = headers.get("x-amz-bucket-region", headers.get("x-amz-region", None))
-        logger.debug("Found region %s from head_bucket for %s, headers %s", region, self._name, headers)
-        return region
+            headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
+            region = headers.get("x-amz-bucket-region", headers.get("x-amz-region", None))
+            logger.debug("Found region %s from head_bucket for %s, headers %s", region, self._name, headers)
+            return region
+
+        if Cloud().own_cloud() == Cloud.CLOUD_AWS:
+            # When running on AWS instance, we query metadata server for initial region to get bucket region
+            return _do_get_region(Cloud().meta_data().get_region())
+        else:
+            # Assume we don't have AWS metadata server access
+            for r in PARTITION_DEFAULT_REGIONS:
+                logger.debug("Trying partition default region %s to get bucket region.", r)
+                bucket_region = _do_get_region(r)
+                if bucket_region:
+                    return bucket_region
+        return None
 
     def region(self):
         return self._region
