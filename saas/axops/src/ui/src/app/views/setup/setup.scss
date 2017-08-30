@@ -90,6 +90,10 @@ $setup-box-content-shadow: 3px 3px 20px black;
             width: 500px;
         }
 
+        &--setup-confirm {
+            width: 540px;
+        }
+
         &--forgot-password-confirm, &--reset-password-confirm {
             width: 635px;
         }
