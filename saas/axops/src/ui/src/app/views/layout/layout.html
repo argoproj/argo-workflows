@@ -1,6 +1,6 @@
 <div [ngClass]="{'extended-bg': layoutSettings.hasExtendedBg, 'hidden-toolbar': layoutSettings.hiddenToolbar, 'layout--playground-info': !!playgroundTask, 'has-tabs': layoutSettings.hasTabs}"
     class="layout" [class.opened-nav]="openedNav">
-    <ax-notifications [leftOffset]="100"></ax-notifications>
+    <ax-notifications [leftOffset]="60"></ax-notifications>
     <ax-notification></ax-notification>
     <ax-notifications-panel [show]="showNotificationsCenter" (onClose)="toggleNotificationsCenter(false)"></ax-notifications-panel>
     <ax-navigation [branchNavPanelUrl]="layoutSettings?.branchNavPanelUrl" [branchNavPanelOpened]="branchNavPanelOpened" (onCloseNavPanel)="closeBranchNavPanel()" (onToggleNav)="toggleNav($event)"></ax-navigation>
