@@ -1,0 +1,156 @@
+@import '../../../assets/styles/config';
+
+$logoWhitePath: 'assets/styles/icons/argologo-white.svg';
+$logoProPath: 'assets/styles/icons/ArgoPro.svg';
+$logoNegativePath: 'assets/styles/icons/argo.png';
+
+$setup-box-content-shadow: 3px 3px 20px black;
+
+.setup {
+    min-height:100vh;
+    background-position: 15rem;
+    background-size: cover;
+    background: linear-gradient(to top left,
+            rgba(122, 139, 207, 0.8) 0%,
+            rgba(46, 50, 90, 0.8) 100%),
+    url("assets/styles/icons/stars.gif");
+    display: flex;
+
+    &__logo {
+        background-image: url($logoNegativePath);
+        background-repeat: no-repeat;
+        background-size: contain;
+        margin: auto;
+        height: 260px;
+        width: 150px;
+        position: absolute;
+        left: 47px;
+    }
+
+    &__shortcut {
+        .logo {
+            position: absolute;
+            top: 27px;
+            left: 76px;
+            height: 22px;
+            width: 63px;
+            background-size: contain;
+            background-image: url($logoWhitePath);
+            background-repeat: no-repeat;
+        }
+
+        .argo {
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            height: 30px;
+            width: 30px;
+            background-size: contain;
+            background-image: url($logoProPath);
+            background-repeat: no-repeat;
+        }
+    }
+
+    &__box {
+        margin: auto auto 50px auto;
+
+        &--welcome {
+            margin-top: 50px;
+        }
+
+        &--forgot-password, &--reset-password, &--setup-confirm, &--forgot-password-confirm, &--reset-password-confirm {
+            margin-top: 130px;
+        }
+    }
+
+    &__header {
+        position: relative;
+
+        h1 {
+            line-height: 80px;
+            font-size: 35px;
+            font-weight: 300;
+            color: white;
+            text-align: center;
+            margin-bottom: 0;
+        }
+    }
+
+    &__content {
+        background-color: white;
+        display: block;
+        border-radius: 8px;
+        padding: 50px 60px;
+        border: 1px solid black;
+        box-shadow: $setup-box-content-shadow;
+        z-index: 1;
+        position: relative;
+
+        p {
+            font-size: 15px;
+            color: $ax-color-gray-6;
+        }
+
+        form {
+            padding: 0 20px;
+        }
+
+        &--forgot-password, &--reset-password, &--welcome {
+            width: 500px;
+        }
+
+        &--setup-confirm {
+            width: 540px;
+        }
+
+        &--forgot-password-confirm, &--reset-password-confirm {
+            width: 635px;
+        }
+    }
+
+    &__title {
+        color: #f27f53;
+        font-size: 26px;
+    }
+
+    &__btn-center {
+        text-align: center;
+
+        &--additional-top-margin {
+            margin-top: 40px;
+        }
+    }
+
+    &__welcome-text {
+        color: white;
+        font-size: 47px;
+        font-weight: 300;
+        line-height: 142px;
+        padding-left: 220px;
+    }
+
+    &__back-btn {
+        margin-bottom: 30px;
+
+        a {
+            font-size: 14px;
+            font-weight: 500;
+            color: $ax-color-gray-6;
+
+            &:hover {
+                color: $ax-color-gray-5;
+            }
+        }
+
+        i {
+            padding-right: 2px;
+            font-size: 20px;
+        }
+    }
+
+    &__btn {
+        padding: 10px 40px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+}

@@ -1,43 +1,67 @@
-<div class="login">
-    <div class="login__box">
-        <div class="login__logo login__logo--neg"></div>
-        <div>
-            <h4> Welcome to Argo </h4>
-            <div>Create your Argo account</div>
+<div class="setup">
+    <div class="setup__shortcut">
+        <div class="argo"></div>
+        <div class="logo"></div>
+    </div>
+
+    <div class="setup__box setup__box--welcome">
+        <div class="setup__header">
+            <div class="setup__logo"></div>
+            <div class="setup__welcome-text">
+                {{ 'Welcome!' | translate }}
+            </div>
         </div>
-        <form role="form" [formGroup]="signupForm">
-            <div class="ax-form-row" *ngIf="!isSingleUser">
-                <input id="username" type="email" class="ax-field" formControlName="username" autocomplete="off" ax-label-placeholder>
-                <label for="username" class="ax-label-placeholder">{{ 'Email' | translate }}</label>
-                <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['username'].valid && signupForm.controls['username'].touched">Email is wrong<i class="fa fa-warning"></i></div>
+        <div class="setup__content setup__content--welcome">
+            <div class="setup__title">
+                {{ 'Create Your Account Password' | translate }}
             </div>
-            <div class="ax-form-row" *ngIf="!isSingleUser">
-                <input id="first_name" type="text" class="ax-field" formControlName="first_name" autocomplete="off" ax-label-placeholder>
-                <label for="first_name" class="ax-label-placeholder">{{ 'First Name' | translate }}</label>
-                <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['first_name'].valid && signupForm.controls['first_name'].touched">First name is wrong<i class="fa fa-warning"></i></div>
-            </div>
-            <div class="ax-form-row" *ngIf="!isSingleUser">
-                <input id="last_name" type="text" class="ax-field" formControlName="last_name" autocomplete="off" ax-label-placeholder>
-                <label for="last_name" class="ax-label-placeholder">{{ 'Last Name' | translate }}</label>
-                <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['last_name'].valid && signupForm.controls['last_name'].touched">Last name is wrong<i class="fa fa-warning"></i></div>
-            </div>
-            <div class="ax-form-row">
-                <input id="password" type="password" class="ax-field" formControlName="password" autocomplete="off" ax-label-placeholder>
-                <label for="password" class="ax-label-placeholder">{{ 'Password' | translate }}</label>
-                <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['password'].valid && signupForm.controls['password'].touched">
-                    {{ 'Password should contain at least 8 characters including one uppercase, one lowercase, one number and one special character' | translate }}.<i class="fa fa-warning"></i></div>
-            </div>
-            <div class="ax-form-row">
-                <input id="repeat_password" type="password" class="ax-field" formControlName="repeat_password" autocomplete="off" ax-label-placeholder>
-                <label for="repeat_password" class="ax-label-placeholder">{{ 'Re-enter Password' | translate }}</label>
-                <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['repeat_password'].valid && signupForm.controls['repeat_password'].touched">Password is wrong<i class="fa fa-warning"></i></div>
-                <div class="ax-form-row__error-msg" *ngIf="signupForm.errors && signupForm.errors.mismatchedPasswords && signupForm.controls['repeat_password'].touched">Your password and confirmation password do not match.<i class="fa fa-warning"></i></div>
-            </div>
-            <div class="ax-form-row">
-                <button axButtonWave class="ax-button ax-button--base" type="submit" (click)="createAccount(signupForm)" [disabled]="!signupForm.valid">
-                     {{ 'Create' | translate }}
-                </button>
-            </div>
-        </form>
+
+            <form role="form" [formGroup]="signupForm">
+                <div class="ax-form-row" *ngIf="!isSingleUser">
+                    <input id="username" type="email" class="ax-field" formControlName="username" autocomplete="off" ax-label-placeholder>
+                    <label for="username" class="ax-label-placeholder">{{ 'Email' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['username'].valid && signupForm.controls['username'].touched">
+                        Emailis wrong<i class="fa fa-warning"></i>
+                    </div>
+                </div>
+                <div class="ax-form-row" *ngIf="!isSingleUser">
+                    <input id="first_name" type="text" class="ax-field" formControlName="first_name" autocomplete="off" ax-label-placeholder>
+                    <label for="first_name" class="ax-label-placeholder">{{ 'First Name' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['first_name'].valid && signupForm.controls['first_name'].touched">
+                        First name is wrong<i class="fa fa-warning"></i>
+                    </div>
+                </div>
+                <div class="ax-form-row" *ngIf="!isSingleUser">
+                    <input id="last_name" type="text" class="ax-field" formControlName="last_name" autocomplete="off" ax-label-placeholder>
+                    <label for="last_name" class="ax-label-placeholder">{{ 'Last Name' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['last_name'].valid && signupForm.controls['last_name'].touched">
+                        Last name is wrong<i class="fa fa-warning"></i>
+                    </div>
+                </div>
+                <div class="ax-form-row">
+                    <input id="password" type="password" class="ax-field" formControlName="password" autocomplete="off" ax-label-placeholder>
+                    <label for="password" class="ax-label-placeholder">{{ 'Password' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['password'].valid && signupForm.controls['password'].touched">
+                        {{ 'Password should contain at least 8 characters including one uppercase, one lowercase, one
+                        number and one special character' | translate }}.<i class="fa fa-warning"></i>
+                    </div>
+                </div>
+                <div class="ax-form-row">
+                    <input id="repeat_password" type="password" class="ax-field" formControlName="repeat_password" autocomplete="off" ax-label-placeholder>
+                    <label for="repeat_password" class="ax-label-placeholder">{{ 'Confirm Password' | translate }}</label>
+                    <div class="ax-form-row__error-msg" *ngIf="!signupForm.controls['repeat_password'].valid && signupForm.controls['repeat_password'].touched">
+                        Password is wrong<i class="fa fa-warning"></i>
+                    </div>
+                    <div class="ax-form-row__error-msg" *ngIf="signupForm.errors && signupForm.errors.mismatchedPasswords && signupForm.controls['repeat_password'].touched">
+                        Your password and confirmation password do not match.<i class="fa fa-warning"></i>
+                    </div>
+                </div>
+                <div class="ax-form-row">
+                    <button axButtonWave class="ax-button ax-button--base ax-button--full-width setup__btn" type="submit" (click)="createAccount(signupForm)" [disabled]="!signupForm.valid">
+                        {{ 'Create' | translate }}
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
