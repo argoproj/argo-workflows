@@ -25,7 +25,6 @@ $setup-box-content-shadow: 3px 3px 20px black;
         width: 150px;
         position: absolute;
         left: 47px;
-        z-index: -1;
     }
 
     &__shortcut {
@@ -53,19 +52,27 @@ $setup-box-content-shadow: 3px 3px 20px black;
     }
 
     &__box {
-        position: fixed;
-        top: 40%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        margin: auto auto 50px auto;
+
+        &--welcome {
+            margin-top: 50px;
+        }
+
+        &--forgot-password, &--reset-password, &--setup-confirm, &--forgot-password-confirm, &--reset-password-confirm {
+            margin-top: 130px;
+        }
     }
 
     &__header {
+        position: relative;
+
         h1 {
             line-height: 80px;
             font-size: 35px;
             font-weight: 300;
             color: white;
             text-align: center;
+            margin-bottom: 0;
         }
     }
 
@@ -76,6 +83,8 @@ $setup-box-content-shadow: 3px 3px 20px black;
         padding: 50px 60px;
         border: 1px solid black;
         box-shadow: $setup-box-content-shadow;
+        z-index: 1;
+        position: relative;
 
         p {
             font-size: 15px;
