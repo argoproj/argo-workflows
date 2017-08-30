@@ -15,6 +15,7 @@ var VerifyEmailBody = template.Must(template.New("VerifyEmail").Parse(`
 
 <p>Thanks!</p>
 
+<p>Team Argo</p>
 </body>
 </html>
 `))
@@ -31,6 +32,7 @@ var ResetPasswordBody = template.Must(template.New("RestPassword").Parse(`
 
 <p>Thanks!</p>
 
+<p>Team Argo</p>
 </body>
 </html>
 `))
@@ -47,6 +49,7 @@ var UserOnboardBody = template.Must(template.New("UserOnboard").Parse(`
 
 <p>Thanks!</p>
 
+<p>Team Argo</p>
 </body>
 </html>
 `))
@@ -67,8 +70,9 @@ var SandboxUserOnboardBody = template.Must(template.New("SandboxUserOnboard").Pa
 <![endif]--><a href="{{.SignupURL}}" style="background-color:#7fdee6;border:1px solid #00BDCE;border-radius:50px;color:#333;display:inline-block;font-family:arial;font-size:14px;font-weight:bold;line-height:40px;text-align:center;text-decoration:none;width:300px;-webkit-text-size-adjust:none;mso-hide:all;">Get Started with Argo Playground</a></div>
 </p>
 
-<p>Thank you for your interest in Argo. If you require help at any time, please contact Argo team!</p>
+<p>Thank you for your interest in Argo. If you require help at any time, please contact us!</p>
 
+<p>Team Argo</p>
 </body>
 </html>
 `))
