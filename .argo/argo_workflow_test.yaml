@@ -3,7 +3,7 @@ type: container
 version: 1
 name: argo-workflow-test
 description: Base ARGO test container
-image: argobase/axdevopsbuilder:v7
+image: argobase/axplatbuilder:v16
 resources:
   mem_mib: 1024
   cpu_cores: 0.1

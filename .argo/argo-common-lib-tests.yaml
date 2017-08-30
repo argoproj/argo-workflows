@@ -24,7 +24,7 @@ inputs:
       path: "/src"
   parameters:
     COMMAND:
-image: argobase/axplatbuilder:v15
+image: argobase/axplatbuilder:v16
 command: ["sh", "-c"]
 args: ["%%inputs.parameters.COMMAND%%"]
 env:
