@@ -203,7 +203,7 @@ export class GlobalSearchInputComponent implements OnInit, OnChanges, OnDestroy 
     }
 
     public ngOnChanges(changes: SimpleChanges) {
-        if (this.searchForm && changes.hasOwnProperty('settings')) {
+        if (this.searchForm && changes.hasOwnProperty('settings') && this.hasChanged(changes['settings'].currentValue, changes['settings'].previousValue)) {
             // set values after reload page
             this.isSearchInputExpanded = this.settings.keepOpen;
             this.globalSearchService.toggleGlobalSearch.emit(this.isSearchInputExpanded);
@@ -217,6 +217,25 @@ export class GlobalSearchInputComponent implements OnInit, OnChanges, OnDestroy 
                 this.setDropdownForEmptyInputValue(this.searchForm.controls['inputControl'].value, this.settings.searchCategory);
             }
         }
+    }
+
+    private hasChanged(first: Object, second: Object) {
+        if (!!first !== !!second) {
+            return true;
+        }
+        let firstKeys = Object.keys(first || {}).sort();
+        let secondKeys = Object.keys(second || {}).sort();
+        if (firstKeys.length !== secondKeys.length) {
+            return true;
+        }
+        for (let i = 0; i < firstKeys.length; i++) {
+            let firstKey = firstKeys[i];
+            let secondKey = secondKeys[i];
+            if (firstKey !== secondKey || first[firstKey] !== second[secondKey]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public ngOnDestroy() {
