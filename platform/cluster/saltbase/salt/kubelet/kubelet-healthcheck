@@ -5,11 +5,9 @@
 
 
 KUBELET_HC_LOG_TAG="[kubelet-healthcheck]"
+KUBELET_LOG_TAG="kubelet["
 KUBELET_HC_LOG_PATH="/tmp/kubelet-healthcheck.log"
-KUBELET_CNI_DIR="/var/lib/cni/networks/kubenet/"
-
-# Cannot allocate .0, .1, .255
-MAX_ALLOCATED_NETWORK_ADDR=253
+KUBELET_HEALTHZ="http://127.0.0.1:10248/healthz"
 
 log () {
     logger -t ${KUBELET_HC_LOG_TAG} $1
@@ -30,12 +28,16 @@ instance-id-to-tags () {
 
 dump-system () {
     echo "===== ${KUBELET_HC_LOG_TAG} log =====" >> ${KUBELET_HC_LOG_PATH}
-    grep -F ${KUBELET_HC_LOG_TAG} /var/log/syslog >> ${KUBELET_HC_LOG_PATH}
+    grep -F "${KUBELET_HC_LOG_TAG}" /var/log/syslog >> ${KUBELET_HC_LOG_PATH}
 
     echo >> ${KUBELET_HC_LOG_PATH}
     echo >> ${KUBELET_HC_LOG_PATH}
-    echo "===== Current CNI Information =====" >> ${KUBELET_HC_LOG_PATH}
-    ls -l ${KUBELET_CNI_DIR} >> ${KUBELET_HC_LOG_PATH} 2>&1
+    echo >> ${KUBELET_HC_LOG_PATH}
+    echo >> ${KUBELET_HC_LOG_PATH}
+    echo >> ${KUBELET_HC_LOG_PATH}
+
+    echo "===== Last 20000 lines of kubelet log =====" >> ${KUBELET_HC_LOG_PATH}
+    grep -F "${KUBELET_LOG_TAG}" /var/log/syslog | tail -20000 >> ${KUBELET_HC_LOG_PATH}
 }
 
 persist-kubelet-healthcheck-log () {
@@ -57,28 +59,48 @@ bye-world () {
     log "Getting ec2 instance metadata ..."
     get-ec2-meta
 
-    log "Getting Applatix cluster information ..."
+    log "Getting Argo cluster information ..."
     cluster_info=$(instance-id-to-tags)
 
-    log "Persisting docker-healthcheck logs ..."
+    log "Persisting kubelet-healthcheck logs ..."
     persist-kubelet-healthcheck-log ${cluster_info}
 
     log "Terminating instance ${instance_id} in region ${region}"
     aws --region ${region} ec2 terminate-instances --instance-ids ${instance_id}
 }
 
-get-allocated-network-addresses () {
-    ls -l ${KUBELET_CNI_DIR} | grep -v total | grep -v last_reserved_ip | wc -l
-}
 
-if [[ -d ${KUBELET_CNI_DIR} ]]; then
-    allocated_addr=$(get-allocated-network-addresses)
-    if [[ ${allocated_addr} -lt ${MAX_ALLOCATED_NETWORK_ADDR} ]]; then
-        log "Kubelet has ${allocated_addr} / ${MAX_ALLOCATED_NETWORK_ADDR} pod addresses allocated"
-    else
-        log "Kubelet has ${allocated_addr} / ${MAX_ALLOCATED_NETWORK_ADDR} pod addresses allocated, which is hitting limit. Terminating instance"
-        bye-world
-    fi
-else
-    log "Kubenet CNI directory ${KUBELET_CNI_DIR} has not been created yet"
+if [[ $(cat /proc/uptime | awk '{print int($1)}') -lt 300 ]]; then
+    log "Boot up time less than 300, skip kubelet health check"
+    exit 0
 fi
+
+
+if timeout 5 curl --silent ${KUBELET_HEALTHZ} > /dev/null; then
+    log "Kubelet Healthy"
+    exit 0
+fi
+
+log "Kubelet not healthy, sleeping for 90 seconds for it to recover"
+sleep 90
+
+if timeout 5 curl --silent ${KUBELET_HEALTHZ} > /dev/null; then
+    log "Kubelet Recovered"
+    exit 0
+fi
+
+log "Kubelet still not healthy, restarting kubelet"
+
+systemctl restart kubelet
+
+log "Restarted Kubelet, waiting for 60s"
+sleep 60
+
+if timeout 5 curl --silent ${KUBELET_HEALTHZ} > /dev/null; then
+    log "Kubelet Recovered"
+    exit 0
+fi
+
+log "Kubelet still failed. Proceed to terminate instance"
+bye-world
+
