@@ -18,6 +18,8 @@ export class Task {
     artifact_tags: string = '';
     name: string = '';
     app: string = '';
+    repo: string = '';
+    branch: string = '';
     desc: string = '';
     endpoint: string = '';
     user: string = '';
