@@ -612,14 +612,11 @@ function ensure-temp-dir {
 # downloaded by the master as part of the start up script for the master.
 #
 # Assumed vars:
-#   SERVER_BINARY_TAR
 #   SALT_TAR
 # Vars set:
 #   SERVER_BINARY_TAR_URL
 #   SALT_TAR_URL
 function upload-server-tars() {
-  SERVER_BINARY_TAR_URL=
-  SERVER_BINARY_TAR_HASH=
   SALT_TAR_URL=
   SALT_TAR_HASH=
   BOOTSTRAP_SCRIPT_URL=
@@ -627,7 +624,6 @@ function upload-server-tars() {
 
   ensure-temp-dir
 
-  SERVER_BINARY_TAR_HASH=$(sha1sum-file "${SERVER_BINARY_TAR}")
   SALT_TAR_HASH=$(sha1sum-file "${SALT_TAR}")
   BOOTSTRAP_SCRIPT_HASH=$(sha1sum-file "${BOOTSTRAP_SCRIPT}")
 
@@ -697,15 +693,10 @@ function upload-server-tars() {
   mkdir -p ${local_dir}/installer/${installer_version}
 
   echo "+++ Staging server tars to S3 Storage: ${AWS_S3_BUCKET}/${staging_path}"
-  cp -a "${SERVER_BINARY_TAR}" ${local_dir}
   cp -a "${SALT_TAR}" ${local_dir}/installer/${installer_version}/
   cp -a "${BOOTSTRAP_SCRIPT}" ${local_dir}/installer/${installer_version}/
 
   aws s3 sync --region ${s3_bucket_location} --exact-timestamps ${local_dir} "s3://${AWS_S3_BUCKET}/${staging_path}/"
-
-  local server_binary_path="${staging_path}/${SERVER_BINARY_TAR##*/}"
-  aws s3api put-object-acl --region ${s3_bucket_location} --bucket ${AWS_S3_BUCKET} --key "${server_binary_path}" --grant-read 'uri="http://acs.amazonaws.com/groups/global/AllUsers"'
-  SERVER_BINARY_TAR_URL="${s3_url_base}/${AWS_S3_BUCKET}/${server_binary_path}"
 
   local salt_tar_path="${installer_staging_path}/${SALT_TAR##*/}"
   aws s3api put-object-acl --region ${s3_bucket_location} --bucket ${AWS_S3_BUCKET} --key "${salt_tar_path}" --grant-read 'uri="http://acs.amazonaws.com/groups/global/AllUsers"'
@@ -716,7 +707,6 @@ function upload-server-tars() {
   BOOTSTRAP_SCRIPT_URL="${s3_url_base}/${AWS_S3_BUCKET}/${bootstrap_script_path}"
 
   echo "Uploaded server tars:"
-  echo "  SERVER_BINARY_TAR_URL: ${SERVER_BINARY_TAR_URL}"
   echo "  SALT_TAR_URL: ${SALT_TAR_URL}"
   echo "  BOOTSTRAP_SCRIPT_URL: ${BOOTSTRAP_SCRIPT_URL}"
 }

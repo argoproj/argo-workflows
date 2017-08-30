@@ -45,10 +45,10 @@ kdef()
         return 1
     fi
 
-    if [[ -z "$(which kubectl-1.5.7)" || -z "$(which kubectl-1.6.7)" ]]
+    if [[ -z "$(which kubectl-1.6.7)" ]]
     then
         echo
-        echo "You need to install two versions of kubectl client, 1.5.7 and 1.6.7."
+        echo "You need to install kubectl client 1.6.7."
         echo
     fi
 
@@ -66,19 +66,7 @@ kdef()
         export DEFAULT_NAMESPACE=$2
     fi
 
-    if grep -q "name: gcp" ${HOME}/.kube/cluster_${DEFAULT_KCLUSTER}.conf ; then
-        echo "Target cluster ${DEFAULT_KCLUSTER} in GCP cloud."
-        export KUBECTL=kubectl-1.5.7
-    else
-        echo "Target cluster ${DEFAULT_KCLUSTER} in AWS cloud."
-        server=`kubectl-1.5.7 --kubeconfig=${HOME}/.kube/cluster_${DEFAULT_KCLUSTER}.conf version | grep -i server | cut -d ":" -f 5 2> /dev/null`
-        if [[ $server == *"v1.6"* ]]; then
-            export KUBECTL=kubectl-1.6.7
-        else
-            echo "Using default kubectl version 1.6.7"
-            export KUBECTL=kubectl-1.6.7
-        fi
-    fi
+    export KUBECTL=kubectl-1.6.7
 }
 
 kundef()
