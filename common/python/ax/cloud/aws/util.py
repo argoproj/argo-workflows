@@ -8,6 +8,7 @@
 import boto3
 from botocore.exceptions import ClientError, EndpointConnectionError, ConnectionClosedError, BotoCoreError
 
+from .consts import AWSPartitions
 
 def default_aws_retry(exception):
     # Boto has 3 types of errors (see botocore/exceptions.py)
@@ -69,3 +70,18 @@ def tag_dict_to_aws_filter(tags):
         )
     return filters
 
+
+def get_aws_partition_from_region(region_name):
+    """
+    Given region, return the partition name. Partition is used to form Amazon Resource Number (ARNs)
+    See http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+    :param region_name:
+    :return:
+    """
+    region_string = region_name.lower()
+    if region_string.startswith("cn-"):
+        return AWSPartitions.PARTITION_CHINA
+    elif region_string.startswith("us-gov"):
+        return AWSPartitions.PARTITION_US_GOV
+    else:
+        return AWSPartitions.PARTITION_AWS

@@ -83,5 +83,5 @@ func clusterShell(cmd *cobra.Command, args []string) {
 		"-it", "--net", "host",
 		"-v", volAWS, "-v", volKube, "-v", volSSH, "-v", volArgo, // map required volumes from home directory
 		"-e", envRegistry, "-e", envNamespace, "-e", envVersion, "-e", envRegistrySecrets, // Create env vars required for cluster manager
-		clusterManagerImage, "bash")
+		clusterManagerImage)
 }

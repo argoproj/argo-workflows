@@ -94,8 +94,9 @@ class MinionUpgrade(object):
 
         # Replace ImageId and everything listed in default_kube_up_env.
         config["ImageId"] = ami_id
-        config["IamInstanceProfile"] = AXClusterInstanceProfile(self._cluster_name_id,
-                                                                aws_profile=self._profile).get_minion_instance_profile_name()
+        config["IamInstanceProfile"] = AXClusterInstanceProfile(
+            self._cluster_name_id, region_name=self._region, aws_profile=self._profile
+        ).get_minion_instance_profile_name()
         user_data = zlib.decompressobj(32 + zlib.MAX_WBITS).decompress(user_data)
         user_data = kube_env_update(user_data, updates)
         comp = zlib.compressobj(9, zlib.DEFLATED, zlib.MAX_WBITS | 16)

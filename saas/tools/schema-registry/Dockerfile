@@ -6,7 +6,7 @@
 #   docker run -d --name schema-registry --link zookeeper:zookeeper --link kafka:kafka \
 #       --env SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL=none confluent/schema-registry
 
-FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.1
+FROM %%ARGO_BASE_REGISTRY%%/argobase/kafka-base:v1.5
 
 RUN mkdir -p /ax/schema-registry/bin
 COPY schema-registry-run.sh /ax/schema-registry/bin/schema-registry-run.sh

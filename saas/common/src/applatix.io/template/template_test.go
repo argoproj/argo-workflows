@@ -427,3 +427,49 @@ func TestTemplateSerialization(t *testing.T) {
 		}
 	}
 }
+
+func TestTemplateDefaultParamValue(t *testing.T) {
+	ctx := template.NewTemplateBuildContext()
+	ctx.IgnoreErrors = false
+
+	// Verify that if input parameter's default field is null, it is omitted
+	axErr := ctx.ParseFile([]byte(`
+type: container
+version: 1
+name: null-default-val
+image: alpine:latest
+inputs:
+  parameters:
+    MYPARAM:
+      default:
+`), "")
+	assert.Nil(t, axErr)
+	axErr = ctx.Validate()
+	assert.Nil(t, axErr)
+	eTmpl, axErr := service.EmbedServiceTemplate(ctx.Templates["null-default-val"], ctx)
+	assert.Nil(t, axErr)
+	jsonBytes, err := json.Marshal(eTmpl)
+	assert.Nil(t, err)
+	log.Println(string(jsonBytes))
+	assert.False(t, strings.Contains(string(jsonBytes), "\"default\""))
+
+	// Verify that if input parameter's default field is "", it is not omitted
+	axErr = ctx.ParseFile([]byte(`
+type: container
+version: 1
+name: empty-str-default-val
+image: alpine:latest
+inputs:
+  parameters:
+    MYPARAM:
+      default: ""
+`), "")
+	assert.Nil(t, axErr)
+	eTmpl, axErr = service.EmbedServiceTemplate(ctx.Templates["empty-str-default-val"], ctx)
+	assert.Nil(t, axErr)
+	jsonBytes, err = json.Marshal(eTmpl)
+	assert.Nil(t, err)
+	log.Println(string(jsonBytes))
+	assert.True(t, strings.Contains(string(jsonBytes), "\"default\":\"\""))
+
+}

@@ -2,7 +2,7 @@ export class CustomRegex {
 
     // Password will match only: 8+ letters, at least 1 lower case letter,
     // at least 1 upper case letter, and at least 1 special character
-    public static password = /^(?=.*?[A-Za-z])(?=.*?[0-9])(?=.*?[#?!@()_+=;:"\'<>,./~{\[\\}|\]$%^&*-]).{8,}$/;
+    public static password = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@()_+=;:"\'<>,./~{\[\\}|\]$%^&*-]).{8,}$/;
     // Minimum 8 characters at least 1 Alphabet, 1 Number and 1 Special Character:
     // public static password: string = '^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$';
 
@@ -25,7 +25,7 @@ export class CustomRegex {
 
     public static myToolsUsername: string = '.+';
 
-    static passwordPattern = /^(?=.*[a-z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
+    static passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})/;
 
     static emailPattern = new RegExp(''
         + /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))/.source
