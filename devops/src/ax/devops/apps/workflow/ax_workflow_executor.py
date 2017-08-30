@@ -2722,6 +2722,7 @@ class AXWorkflowExecutor(object):
             }
 
         node.first_time_see_image_pull = None
+        got_result = False
         while True:
             workflow = AXWorkflow.get_workflow_by_id_from_db(workflow_id=node.workflow_id)
             assert workflow, "{} no workflow".format(log_prefix)
@@ -2798,6 +2799,7 @@ class AXWorkflowExecutor(object):
                     if ret[0]:
                         logger.info("%s redis result=%s fast path",
                                     log_prefix, container_result)
+                        got_result = True
                         break
 
                 logger.info("%s no redis result yet %s", log_prefix, task_result_key)
@@ -2822,6 +2824,7 @@ class AXWorkflowExecutor(object):
                         if ret[0]:
                             logger.info("%s callback result=%s",
                                         log_prefix, container_result)
+                            got_result = True
                             break
 
                     logger.debug("%s no redis result yet", log_prefix)
@@ -2883,6 +2886,7 @@ class AXWorkflowExecutor(object):
                                     if ret[0]:
                                         logger.warning("%s got callback result=%s after RECHECK",
                                                        log_prefix, container_result)
+                                        got_result = True
                                         break
 
                                 logger.warning("%s no redis result in RECHECK", log_prefix)
@@ -2951,9 +2955,9 @@ class AXWorkflowExecutor(object):
             if (not local_is_expecting) and (not node.is_dind) and ret[0] == AXWorkflowNodeResult.FAILED and ret[1].get(AXWorkflowNodeResult.DETAIL_TAG_FAILURE_REASON, None) in keep_pod_condition:
                 # keep the pod for debugging purpose
                 logger.info("keep the pod for debugging purpose. container_status=%s", container_status)
-                rc_del, result_del = axsys_client.delete_service(uc_name, delete_pod=False)
+                rc_del, result_del = axsys_client.delete_service(uc_name, delete_pod=False, force=got_result)
             else:
-                rc_del, result_del = axsys_client.delete_service(uc_name, force=local_is_expecting)
+                rc_del, result_del = axsys_client.delete_service(uc_name, force=local_is_expecting or got_result)
             logger.info("%s deletion return %s %s", log_prefix, rc_del, result_del)
 
         return ret
