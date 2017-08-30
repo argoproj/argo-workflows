@@ -131,8 +131,6 @@ export class BranchesOverviewComponent implements OnChanges, OnDestroy {
             name: input.branch,
             repo: input.repo,
             shortcutRepoBranch: `${new RepoNamePipe().transform(input.repo)}/${input.branch}`,
-            mostRecentCommitUnitTime: input.tasks.length > 0 ?
-                input.tasks.sort((first, second) => second.commit.date - first.commit.date)[0].commit.date : 0,
             failedJobsCount: input.tasks.filter(task => task.status === TaskStatus.Failed).length,
             scheduledJobsCount: input.tasks.filter(task => task.status === TaskStatus.Init || task.status === TaskStatus.Waiting).length,
             successfulJobsCount: input.tasks.filter(task => task.status === TaskStatus.Success).length,
