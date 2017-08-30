@@ -2,8 +2,6 @@
 
 FROM %%BUILDER_IMAGE_ID%%
 
-COPY docker_build/requirements /tmp/requirements
-
 # Git requires a user to be set for some operations to run without errors (e.g. merge). Since we override this with
 # the --author option, the values here do not matter
 RUN apk --no-cache --update add mercurial \

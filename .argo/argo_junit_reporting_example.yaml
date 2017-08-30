@@ -3,7 +3,7 @@ type: container
 version: 1
 name: junit-reporting-test
 description: This is the base template for junit reporting test
-image: argobase/axdevopsbuilder:v7
+image: argobase/axplatbuilder:v16
 resources:
   mem_mib: 128
   cpu_cores: 0.1

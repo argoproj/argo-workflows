@@ -10,7 +10,7 @@ from .common import ProdBuilder, SRC_PATH, run_cmd, ARGO_BASE_REGISTRY
 
 logger = logging.getLogger('ax.build')
 
-PLATFORM_BUILDER_IMAGE = '{}/argobase/axplatbuilder:v15'.format(ARGO_BASE_REGISTRY)
+PLATFORM_BUILDER_IMAGE = '{}/argobase/axplatbuilder:v16'.format(ARGO_BASE_REGISTRY)
 
 PRODUCTION_SERVICES = [
     "axmon",
