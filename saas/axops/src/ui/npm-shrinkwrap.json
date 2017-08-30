@@ -397,7 +397,7 @@
     },
     "argo-ui-lib": {
       "version": "1.0.5",
-      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.5",
+      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.6",
       "resolved": "git+https://github.com/argoproj/ui-lib.git#f78f15c6c2f566534798a36d5eb211eaae36fb73"
     },
     "argparse": {
