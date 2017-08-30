@@ -623,9 +623,6 @@ func (ic *InlineContainerTemplateRef) Validate() *axerror.AXError {
 // Validate ensures volume reference name is acceptable by k8s and calls validate against each volume
 func (vols VolumeRequirements) Validate() *axerror.AXError {
 	for refName, vol := range vols {
-		if !common.ValidateKubeObjName(refName) {
-			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("Invalid volume reference name '%s'. Expected format ^([a-z0-9]([-a-z0-9]*[a-z0-9])?)$", refName)
-		}
 		axErr := vol.Validate()
 		if axErr != nil {
 			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("volumes.%v: %v", refName, axErr)
