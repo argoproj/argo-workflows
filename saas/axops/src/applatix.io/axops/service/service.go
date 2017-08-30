@@ -95,6 +95,8 @@ type Service struct {
 	IsSubmitted       bool                        `json:"is_submitted"`
 	JiraIssues        []string                    `json:"jira_issues,omitempty"`
 	Fixtures          map[string]interface{}      `json:"fixtures,omitempty"`
+	Repo              string                      `json:"repo,omitempty"`
+	Branch            string                      `json:"branch,omitempty"`
 }
 
 func (s *Service) UnmarshalJSON(b []byte) error {
@@ -1228,6 +1230,14 @@ func (service *Service) InitFromMap(srvMap map[string]interface{}) *axerror.AXEr
 
 	if srvMap[ServiceName] != nil {
 		service.Name = srvMap[ServiceName].(string)
+	}
+
+	if srvMap[ServiceBranch] != nil {
+		service.Branch = srvMap[ServiceBranch].(string)
+	}
+
+	if srvMap[ServiceRepo] != nil {
+		service.Repo = srvMap[ServiceRepo].(string)
 	}
 
 	if srvMap[ServiceDescription] != nil {
