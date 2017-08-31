@@ -80,6 +80,7 @@ def get_public_ip_through_external_server():
         try:
             server_url = server[0]
             resp = requests.get(url=server_url, timeout=15)
+            resp.raise_for_status()
             conf = json.loads(resp.text)
             ip = conf[server[1]]
             if ip is not None:
