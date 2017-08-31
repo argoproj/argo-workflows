@@ -39,7 +39,9 @@ class AWSMetaData(object):
         return r.text
 
     def get_public_ip(self):
-        return requests.get(self._meta_url + "public-ipv4", timeout=3).text.strip()
+        r = requests.get(self._meta_url + "public-ipv4", timeout=3)
+        r.raise_for_status()
+        return r.text.strip()
 
     def get_instance_id(self):
         url = self._meta_url + "instance-id"
