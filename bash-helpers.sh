@@ -104,7 +104,15 @@ kp()
 
 kdesc()
 {
-    k "describe" "pods" $@
+    if [ -z "$1" ]
+    then
+        echo "Usage: kdesc pod-name-prefix"
+        return 1
+    fi
+    pod=`kp | grep $1 | cut -d " " -f 1`
+    shift
+    echo "Using pod: " $pod
+    k "describe" "pods" $pod $@
 }
 
 kdp()
