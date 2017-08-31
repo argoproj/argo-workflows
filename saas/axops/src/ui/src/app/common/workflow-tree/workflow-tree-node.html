@@ -12,12 +12,6 @@
                                                     || cell.workflow.fixturesStatus === statuses.Init
                                                     || cell.workflow.fixturesStatus === statuses.Skipped">
                     <i class="fa fa-link" [ax-tooltip]="myTooltip"></i></div>
-                <ax-tooltip-content #myTooltip [animation]="true" placement="bottom">
-                    Used Fixtures:
-                    <ul>
-                        <li *ngFor="let fixture of cell.workflow.fixturesUsed">{{fixture.name}}</li>
-                    </ul>
-                </ax-tooltip-content>
             </span>
         </div>
 
