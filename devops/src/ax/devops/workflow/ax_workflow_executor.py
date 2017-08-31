@@ -30,9 +30,9 @@ from ax.devops.axdb.axdb_client import AxdbClient
 from ax.devops.axsys.axsys_client import AxsysClient
 from ax.devops.kafka.kafka_client import ExecutorProducerClient
 from ax.devops.redis.redis_client import RedisClient, REDIS_HOST, DB_RESULT
-from ax.devops.apps.workflow.service_template_pre_process import service_template_pre_process
-from ax.devops.apps.workflow.ax_workflow import AXWorkflow, AXWorkflowResource
-from ax.devops.apps.workflow.ax_workflow_constants import INSTANCE_RESOURCE, MINIMUM_RESOURCE_SCALE
+from .service_template_pre_process import service_template_pre_process
+from .ax_workflow import AXWorkflow, AXWorkflowResource
+from .ax_workflow_constants import INSTANCE_RESOURCE, MINIMUM_RESOURCE_SCALE
 
 logger = logging.getLogger(__name__)
 

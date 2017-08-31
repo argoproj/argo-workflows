@@ -183,17 +183,13 @@ export class TaskService {
         if (params.hasOwnProperty('isActive')) {
             search.set('is_active', params.isActive.toString());
         }
-        search.set('fields', [TaskFieldNames.status, TaskFieldNames.commit].join(','));
+        search.set('fields', [TaskFieldNames.status, TaskFieldNames.commit, TaskFieldNames.branch, TaskFieldNames.repo].join(','));
         return this.http
             .get(`v1/services`, { headers, search }).map(res => res.json())
             .map((res: { data: Task[] }) => {
                 let branchByTasks = new Map<string, Task[]>();
                 res.data.forEach(task => {
-                    if (!task.commit.branch || !task.commit.repo) {
-                        return;
-                    }
-
-                    let key = `${task.commit.branch}:${task.commit.repo}`;
+                    let key = `${task.branch}:${task.repo}`;
                     let tasks = branchByTasks.get(key) || [];
                     tasks.push(task);
                     branchByTasks.set(key, tasks);

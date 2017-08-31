@@ -1,6 +1,6 @@
 # Roadmap
 
-* Make it easier to use and contribute to the proejct.
+* Make it easier to use and contribute to the project.
 * Install Argo on any existing k8s cluster.
 * Integrate Argo with k8s RBAC & secrets.
 * Support for running (KinK) Kubernetes in Kubernetes.

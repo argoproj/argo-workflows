@@ -11,7 +11,6 @@ export interface BranchInfo {
     name: string;
     repo: string;
     shortcutRepoBranch: string;
-    mostRecentCommitUnitTime: number;
     failedJobsCount: number;
     scheduledJobsCount: number;
     successfulJobsCount: number;

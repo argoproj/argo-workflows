@@ -13,7 +13,7 @@ import uuid
 
 from unittest.mock import patch
 
-import ax.devops.apps.workflow.test_ax_workflow as test_ax_workflow
+import ax.devops.workflow.test_ax_workflow as test_ax_workflow
 
 from .ax_workflow import AXWorkflow
 from .ax_workflow_executor import AXWorkflowExecutor, AXWorkflowNodeResult

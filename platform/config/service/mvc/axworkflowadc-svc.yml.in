@@ -37,7 +37,7 @@ spec:
             containers:
               - name: axworkflowadc
                 image: ${REGISTRY}/${NAMESPACE}/workflow:${VERSION}
-                command: ["/ax/src/ax/devops/apps/workflow/adc", "--image-namespace", "${NAMESPACE}", "--image-version", "${VERSION}"]
+                command: ["/ax/src/ax/devops/workflow/adc", "--image-namespace", "${NAMESPACE}", "--image-version", "${VERSION}"]
                 ports:
                   - containerPort: 8911
                 resources:

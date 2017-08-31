@@ -18,9 +18,9 @@ inputs:
     postgres_db:
       default: userdb
   volumes:
-    log-vol:
+    LOG-VOL:
 volumes:
-  userdb-vol:
+  USERDB-VOL:
     storage_class: ssd
     size_gb: 1
 containers:
@@ -29,8 +29,8 @@ containers:
     arguments:
       parameters.postgres_password: "%%inputs.parameters.postgres_password%%"
       parameters.postgres_db: "%%inputs.parameters.postgres_db%%"
-      volumes.userdb-vol: "%%volumes.userdb-vol%%"
-      volumes.log-vol: "%%inputs.volumes.log-vol%%"
+      volumes.userdb-vol: "%%volumes.USERDB-VOL%%"
+      volumes.log-vol: "%%inputs.volumes.LOG-VOL%%"
 
 ---
 type: container

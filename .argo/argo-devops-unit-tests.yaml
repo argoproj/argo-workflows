@@ -33,7 +33,7 @@ description: Base template for DevOps unit tests
 resources:
   mem_mib: 128
   cpu_cores: 0.1
-image: argobase/axdevopsbuilder:v8
+image: argobase/axplatbuilder:v16
 command: ["sh", "-c"]
 args: ["%%inputs.parameters.COMMAND%%"]
 env:

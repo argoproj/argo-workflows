@@ -24,10 +24,10 @@ RUN pip2 install --upgrade setuptools && pip3 install --upgrade setuptools
 COPY docker_build/requirements /tmp/requirements
 
 RUN apk --update --no-cache add \
-    python-dev python3-dev musl-dev zlib-dev linux-headers gcc g++ &&\
+    python-dev python3-dev musl-dev zlib-dev linux-headers gcc g++ make &&\
     pip2 install --no-cache-dir -r /tmp/requirements/requirements.txt && \
     pip3 install --no-cache-dir -r /tmp/requirements/requirements.txt && \
-    apk del python-dev python3-dev musl-dev zlib-dev linux-headers gcc g++
+    apk del python-dev python3-dev musl-dev zlib-dev linux-headers gcc g++ make
 
 # Alpine bug for certifi
 RUN pip2 install --upgrade certifi==2015.04.28 && pip3 install --upgrade certifi==2015.04.28
