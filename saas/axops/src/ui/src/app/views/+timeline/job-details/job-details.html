@@ -55,18 +55,43 @@
                                 <ul>
                                     <li>
                                         <button
-                                            axButtonWave class="ax-button ax-button--base-o" (click)="showNodeDetails(cell, 'logs')"
-                                            *ngIf="cell.workflow.value.template.type === 'container'">LOGS</button>
+                                            axButtonWave
+                                            class="ax-button ax-button--base-o"
+                                            (click)="showNodeDetails(cell, 'logs')"
+                                            *ngIf="cell.workflow.value.template.type === 'container'">
+                                            LOGS
+                                        </button>
                                     </li>
-                                    <li><button axButtonWave class="ax-button ax-button--base-o" (click)="showYaml(cell)">YAML</button></li>
-                                    <li><button axButtonWave class="ax-button ax-button--base-o" (click)="showNodeDetails(cell, 'summary')">DETAILS</button></li>
+                                    <li>
+                                        <button
+                                            axButtonWave
+                                            class="ax-button ax-button--base-o" 
+                                            (click)="showYaml(cell)">
+                                            YAML
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button 
+                                            axButtonWave 
+                                            class="ax-button ax-button--base-o" 
+                                            (click)="showNodeDetails(cell, 'summary')">
+                                            DETAILS
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <!-- <template let-cell="cell" #nodeActions> -->
+                                        <ax-job-actions [rootTask]="task" [task]="cell.workflow.value" [stepName]="cell.name" [allowResubmit]="false" *axIfAuthenticated>
+                                            <button axButtonWave class="ax-button ax-button--base-o">
+                                                ACTIONS
+                                            </button>
+                                        </ax-job-actions>
+                                        <!-- </template>                                     -->
+                                    </li>                                    
                                 </ul>
                             </div>
                         </template>
                         <template let-cell="cell" #nodeActions>
-                            <ax-job-actions [rootTask]="task" [task]="cell.workflow.value" [stepName]="cell.name" [allowResubmit]="false" *axIfAuthenticated>
-                                <button axButtonWave class="ax-button ax-button--light ax-button--lg ax-button--short"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></button>
-                            </ax-job-actions>
+                            <button axButtonWave class="ax-button ax-button--light ax-button--lg ax-button--short"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></button>
                         </template>
                     </ax-workflow-tree>
                 </div>
