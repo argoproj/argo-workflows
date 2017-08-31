@@ -3180,15 +3180,15 @@ class AXWorkflowExecutor(object):
         t.start()
 
     def _heartbeat_with_adc_thread(self, workflow_id):
-        sleep_ms_at_least = 2 * 60 * 1000  # every 2 minutes
+        sleep_ms_at_least = 20 * 1000  # every 20 seconds
         sleep_ms_at_most = sleep_ms_at_least + 10 * 1000  # plus 10 seconds
 
         count = 0
         while True:
             sleep_second = int(random.randint(sleep_ms_at_least, sleep_ms_at_most) / 1000)
             while sleep_second > 0:
+                time_start = time.time()
                 try:
-                    time_start = time.time()
                     workflow_query_key = AXWorkflow.REDIS_QUERY_LIST_KEY.format(workflow_id)
                     tuple_val = redis_client.brpop([workflow_query_key], timeout=sleep_second)
                     if tuple_val is not None:

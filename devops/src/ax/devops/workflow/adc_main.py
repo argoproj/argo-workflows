@@ -505,8 +505,8 @@ class ADC(with_metaclass(Singleton, object)):
         return result
 
     def _heartbeat_with_wfe_thread(self):
-        idle_ms_threshold = 10 * 60 * 1000
-        poll_interval_second = 60 * 1
+        idle_ms_threshold = 1 * 60 * 1000  # If no heartbeat for 1 minute, process overdue WFEs
+        poll_interval_second = 15  # Check overdue WFEs every 15 seconds
         try:
             while True:
                 time.sleep(poll_interval_second)
