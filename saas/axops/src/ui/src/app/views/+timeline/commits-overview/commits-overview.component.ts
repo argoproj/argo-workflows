@@ -81,8 +81,13 @@ export class CommitsOverviewComponent implements OnChanges {
     }
 
     public selectCommit(obj: {revision: string, repo: string}): void {
-        this.expandedCommit = this.expandedCommit === obj.revision ? null : obj.revision;
-        this.expandedCommitRepo = this.expandedCommitRepo === obj.repo ? null : obj.repo;
+        if (this.expandedCommit === obj.revision && this.expandedCommitRepo === obj.repo) {
+            this.expandedCommit = null;
+            this.expandedCommitRepo = null;
+        } else {
+            this.expandedCommit = obj.revision;
+            this.expandedCommitRepo = obj.repo;
+        }
     }
 
     private setScrollAtributes(takenCommitsLength: number): void {
