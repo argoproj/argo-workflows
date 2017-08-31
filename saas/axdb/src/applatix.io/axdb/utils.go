@@ -43,6 +43,9 @@ func EscapedString(str string) string {
 // Lucene query for doing search and sorting
 type LuceneFilterBase struct {
 	Type   string      `json:"$$ax$$type$$ax$$,omitempty"`
+	Should []LuceneFilterBase `json:"$$ax$$should$$ax$$,omitempty"`
+	Must   []LuceneFilterBase `json:"$$ax$$must$$ax$$,omitempty"`
+	Not    []LuceneFilterBase `json:"$$ax$$not$$ax$$,omitempty"`
 	Field  string      `json:"$$ax$$field$$ax$$,omitempty"`
 	Value  interface{} `json:"$$ax$$value$$ax$$,omitempty"`
 	Values interface{} `json:"$$ax$$values$$ax$$,omitempty"`
@@ -51,6 +54,12 @@ type LuceneFilterBase struct {
 	Upper        int64 `json:"$$ax$$upper$$ax$$,omitempty"`
 	IncludeLower bool  `json:"$$ax$$include_lower$$ax$$,omitempty"`
 	IncludeUpper bool  `json:"$$ax$$include_upper$$ax$$,omitempty"`
+}
+
+func NewLuceneBooleanFilterBase() *LuceneFilterBase {
+	return &LuceneFilterBase{
+		Type: "boolean",
+	}
 }
 
 func NewLuceneWildCardFilterBase(field string, value interface{}) LuceneFilterBase {
@@ -109,8 +118,24 @@ type LuceneFilter struct {
 	Not    []LuceneFilterBase `json:"$$ax$$not$$ax$$,omitempty"`
 }
 
+
 func (filter *LuceneFilter) addShould(should LuceneFilterBase) {
-	filter.Should = append(filter.Should, should)
+	// we support 2 levels of nesting for filter
+	// top level is assumed to use Must(AND). Everything in Should(OR) and Not is nested inside the Must
+	// ex: a AND (b or c)
+	var inner *LuceneFilterBase
+	for i,v := range filter.Must {
+		if len(v.Should) > 0 {
+			inner = &filter.Must[i]
+			inner.Should = append(inner.Should, should)
+			break;
+		}
+	}
+	if inner == nil {
+		inner = NewLuceneBooleanFilterBase()
+		inner.Should = append(inner.Should, should)
+		filter.Must = append(filter.Must, *inner)
+	}
 }
 
 func (filter *LuceneFilter) addMust(must LuceneFilterBase) {
@@ -118,7 +143,22 @@ func (filter *LuceneFilter) addMust(must LuceneFilterBase) {
 }
 
 func (filter *LuceneFilter) addNot(not LuceneFilterBase) {
-	filter.Not = append(filter.Not, not)
+	// we support 2 levels of nesting for filter
+	// top level is assumed to use Must(AND). Should(OR) and Not is nested inside the Must
+	// ex: a AND (b or c)
+	var inner *LuceneFilterBase
+	for i,v := range filter.Must {
+		if len(v.Should) > 0 {
+			inner = &filter.Must[i]
+			inner.Not = append(inner.Not, not)
+			break;
+		}
+	}
+	if inner == nil {
+		inner = NewLuceneBooleanFilterBase()
+		inner.Not = append(inner.Not, not)
+		filter.Must = append(filter.Must, *inner)
+	}
 }
 
 func NewLuceneFilter() *LuceneFilter {
