@@ -45,7 +45,7 @@
                         background-color: #FFFFFF;
                         box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
                         transition: opacity .2s, transform .2s, visibility .2s;              
-                        li{
+                        li {
                             width: max-content;
                             margin-bottom: 0;
                             font-size: 14px;
@@ -65,6 +65,11 @@
                 padding-top: 5px;
                 padding-bottom: 5px;
             }
+            ax-job-actions {
+                .ax-button {
+                    padding: 5px 12px;
+                }
+            }            
         }
 
         .workflow-tree__node-actions{
