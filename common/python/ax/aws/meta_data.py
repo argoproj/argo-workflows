@@ -20,7 +20,6 @@ class AWSMetaData(object):
     There are usually higher level interfaces to use in other places.
     """
     def __init__(self):
-        assert AXEnv().is_in_pod() or AXEnv().on_kube_host()
         self._meta_url = "http://169.254.169.254/latest/meta-data/"
         self._user_url = "http://169.254.169.254/latest/user-data/"
 
