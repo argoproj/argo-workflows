@@ -30,6 +30,7 @@ export class CommitsOverviewComponent implements OnChanges {
 
     public templates: Template[] = [];
     public expandedCommit: string;
+    public expandedCommitRepo: string;
     public mockupList: any[] = [];
 
     private commits: Commit[];
@@ -79,8 +80,9 @@ export class CommitsOverviewComponent implements OnChanges {
         }
     }
 
-    public selectCommit(revision: string): void {
-        this.expandedCommit = this.expandedCommit === revision ? null : revision;
+    public selectCommit(obj: {revision: string, repo: string}): void {
+        this.expandedCommit = this.expandedCommit === obj.revision ? null : obj.revision;
+        this.expandedCommitRepo = this.expandedCommitRepo === obj.repo ? null : obj.repo;
     }
 
     private setScrollAtributes(takenCommitsLength: number): void {
