@@ -44,7 +44,7 @@ from ax.devops.axsys.axsys_client import AxsysClient
 from ax.devops.axdb.axdb_client import AxdbClient
 from ax.devops.axdb.axops_client import AxopsClient
 from ax.devops.client.artifact_client import AxArtifactManagerClient
-from ax.devops.apps.workflow.ax_workflow import AXWorkflow
+from ax.devops.workflow.ax_workflow import AXWorkflow
 from ax.devops.artifact.constants import RETENTION_TAG_DEFAULT, RETENTION_TAG_AX_LOG, RETENTION_TAG_AX_LOG_EXTERNAL, RETENTION_TAG_USER_LOG, \
     RETENTION_TAG_LONG_RETENTION, FLAG_IS_ALIAS, FLAG_IS_NOT_ALIAS, ARTIFACT_TYPE_INTERNAL, ARTIFACT_TYPE_AX_LOG, ARTIFACT_TYPE_AX_LOG_EXTERNAL, \
     ARTIFACT_TYPE_USER_LOG, ARTIFACT_TYPE_EXPORTED

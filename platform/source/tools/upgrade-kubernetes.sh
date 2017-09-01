@@ -19,7 +19,7 @@ AX_VOL_DISK_TYPE="${AX_VOL_DISK_TYPE:-gp2}"
 
 # Environments variable required
 REQUIRED_ENV="CLUSTER_NAME_ID AX_CUSTOMER_ID OLD_KUBE_VERSION"
-REQUIRED_ENV="${REQUIRED_ENV} NEW_KUBE_VERSION NEW_CLUSTER_INSTALL_VERSION"
+REQUIRED_ENV="${REQUIRED_ENV} NEW_KUBE_VERSION NEW_CLUSTER_INSTALL_VERSION KUBERNETES_SERVER_HASH"
 REQUIRED_ENV="${REQUIRED_ENV} ARGO_AWS_REGION"
 
 declare -A asg_desired
@@ -61,10 +61,9 @@ ensure-env () {
 
     echo "Generating Kubernetes sha1sum ..."
     NEW_KUBE_SALT_TAR=/kubernetes/server/kubernetes-salt.tar.gz
-    NEW_KUBE_SERVER_TAR=/kubernetes/server/kubernetes-server-linux-amd64.tar.gz
 
     export NEW_KUBE_SALT_SHA1=${AX_KUBE_SALT_HASH:-$(sha1sum ${NEW_KUBE_SALT_TAR} | awk '{ print $1; }')}
-    export NEW_KUBE_SERVER_SHA1=${AX_KUBE_SERVER_HASH:-$(sha1sum ${NEW_KUBE_SERVER_TAR} | awk '{ print $1; }')}
+    export NEW_KUBE_SERVER_SHA1=${KUBERNETES_SERVER_HASH}
 }
 
 
@@ -101,11 +100,10 @@ upload-kubernetes-server-binaries () {
     local -r kube_installer_path="${kube_tmp}/installer/${NEW_CLUSTER_INSTALL_VERSION}/"
     mkdir -p "${kube_installer_path}"
 
-    cp -a /kubernetes/server/kubernetes-server-linux-amd64.tar.gz "${kube_tmp}"
     cp -a /kubernetes/server/bootstrap-script "${kube_installer_path}"
     cp -a /kubernetes/server/kubernetes-salt.tar.gz "${kube_installer_path}"
 
-    ${AWSCLI} s3 sync ${kube_tmp} s3://applatix-cluster-${AX_CUSTOMER_ID}-0/kubernetes-staging/${NEW_KUBE_VERSION} --acl public-read
+    ${AWSCLI} s3 sync ${kube_tmp} s3://applatix-cluster-${AX_CUSTOMER_ID}-0/kubernetes-staging/v${NEW_KUBE_VERSION} --acl public-read
 }
 
 
@@ -253,33 +251,10 @@ wait-for-master () {
     echo "=== Step 4. Wait for kubernetes to come up."
     echo
 
-    commit=$(echo ${NEW_KUBE_VERSION} | cut -f4 -d-)
-    kube=release/$(echo ${NEW_KUBE_VERSION} | cut -f2 -d-)
-    # Order is important here.
-    # Kube API server will come up first with correct version. But it'll be shutdown again by rc.local.
-    # It seems that systemd would always perform these tasks in this order:
-    #   - Set broken motd
-    #   - Start API server
-    #   - Restart API server
-    #   - Set correct motd.
-
     # Give master totally 10 min to bootstrap
     local attempt=0
-    while ! k version | grep ${commit} ; do
+    while ! k version | grep ${NEW_KUBE_VERSION} ; do
         echo "Waiting for master to initialize ..."
-        sleep 20
-        attempt=$(($attempt+1))
-        if [[ ${attempt} -gt 30 ]]; then
-            echo
-            echo "Master fail to boot up, or is unlikely to be healthy"
-            echo
-            exit 1
-        fi
-    done
-    echo "Master initialized"
-
-    while ! km grep ${kube} /etc/motd ; do
-        echo "Waiting for master to setup ..."
         sleep 20
         attempt=$(($attempt+1))
         if [[ ${attempt} -gt 30 ]]; then

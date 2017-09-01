@@ -11,8 +11,8 @@ Main entry point for adc (AdmissionController).
 import argparse
 import logging
 
-from ax.devops.apps.workflow.adc_rest import adc_rest_start
-from ax.devops.apps.workflow.adc_main import ADC, __version__
+from .adc_rest import adc_rest_start
+from .adc_main import ADC, __version__
 
 logger = logging.getLogger(__name__)
 

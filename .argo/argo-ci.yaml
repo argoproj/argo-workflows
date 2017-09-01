@@ -158,7 +158,7 @@ inputs:
     CODE:
       path: /src
 annotations:
-  ax_ea_docker_enable: '{ "graph-storage-name": "axbuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.9, "mem_mib":1000}'
+  ax_ea_docker_enable: '{ "graph-storage-name": "axbuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.4, "mem_mib":750}'
 
 ---
 type: workflow

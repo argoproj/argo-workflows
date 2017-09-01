@@ -30,9 +30,9 @@ from ax.devops.axdb.axdb_client import AxdbClient
 from ax.devops.axsys.axsys_client import AxsysClient
 from ax.devops.kafka.kafka_client import ExecutorProducerClient
 from ax.devops.redis.redis_client import RedisClient, REDIS_HOST, DB_RESULT
-from ax.devops.apps.workflow.service_template_pre_process import service_template_pre_process
-from ax.devops.apps.workflow.ax_workflow import AXWorkflow, AXWorkflowResource
-from ax.devops.apps.workflow.ax_workflow_constants import INSTANCE_RESOURCE, MINIMUM_RESOURCE_SCALE
+from .service_template_pre_process import service_template_pre_process
+from .ax_workflow import AXWorkflow, AXWorkflowResource
+from .ax_workflow_constants import INSTANCE_RESOURCE, MINIMUM_RESOURCE_SCALE
 
 logger = logging.getLogger(__name__)
 
@@ -3180,15 +3180,15 @@ class AXWorkflowExecutor(object):
         t.start()
 
     def _heartbeat_with_adc_thread(self, workflow_id):
-        sleep_ms_at_least = 2 * 60 * 1000  # every 2 minutes
+        sleep_ms_at_least = 20 * 1000  # every 20 seconds
         sleep_ms_at_most = sleep_ms_at_least + 10 * 1000  # plus 10 seconds
 
         count = 0
         while True:
             sleep_second = int(random.randint(sleep_ms_at_least, sleep_ms_at_most) / 1000)
             while sleep_second > 0:
+                time_start = time.time()
                 try:
-                    time_start = time.time()
                     workflow_query_key = AXWorkflow.REDIS_QUERY_LIST_KEY.format(workflow_id)
                     tuple_val = redis_client.brpop([workflow_query_key], timeout=sleep_second)
                     if tuple_val is not None:

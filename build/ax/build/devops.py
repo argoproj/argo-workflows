@@ -13,8 +13,9 @@ logger = logging.getLogger('ax.build')
 
 DEVOPS_CONTAINERS_PATH = os.path.join(SRC_PATH, "devops/builds")
 
-DEVOPS_BUILDER_IMAGE = '{}/argobase/axdevopsbuilder:v9'.format(ARGO_BASE_REGISTRY)
-DEBIAN_BUILDER_IMAGE = '{}/argobase/axplatbuilder-debian:v15'.format(ARGO_BASE_REGISTRY)
+DEVOPS_BUILDER_IMAGE = '{}/argobase/axplatbuilder:v16'.format(ARGO_BASE_REGISTRY)
+DEBIAN_BUILDER_IMAGE = '{}/argobase/axplatbuilder-debian:v16'.format(ARGO_BASE_REGISTRY)
+
 
 class DevOpsModules(object):
     TEMPLATES = 'templates'
@@ -25,11 +26,6 @@ class DevOpsModules(object):
 
 ALL_MODULES = [getattr(DevOpsModules, m) for m in dir(DevOpsModules) if not m.startswith('_')]
 DEFAULT_MODULES = [DevOpsModules.INFRASTRUCTURE, DevOpsModules.DEVOPS, DevOpsModules.WORKFLOW]
-
-BASE_CONTAINERS = [
-    'axdevopsbuilder',
-    'axdevopsbuilder-debian'
-]
 
 
 class DevOpsBuilder(ProdBuilder):
@@ -46,14 +42,6 @@ class DevOpsBuilder(ProdBuilder):
             services = self.get_default_services()
         super(DevOpsBuilder, self).__init__(services=services, python_version=3, **kwargs)
         self.builder_image = kwargs.get('builder') or DEVOPS_BUILDER_IMAGE
-        if kwargs.get('no_builder'):
-            logger.info("BUILDING base images first {}".format(BASE_CONTAINERS))
-            bak_services = self.services
-            self.services = BASE_CONTAINERS
-            self.build()
-            logger.info("Base images built successfully")
-            self.builder_image = "%s/%s/%s:%s" % (self.registry, self.image_namespace, "axdevopsbuilder", self.image_version)
-            self.services = bak_services
 
     def get_default_services(self):
         """Default services to build"""
@@ -109,14 +97,6 @@ class DevOpsBuilder(ProdBuilder):
         # Workaround due to the python3.4 shutil.copytree have the bug on NFS
         # dereference symlink
         run_cmd('cp -LR {} {}/src'.format(PYTHON_COMMON_PATH, docker_build_dir))
-        run_cmd('cp -LR {}/devops/requirements {}'.format(SRC_PATH, docker_build_dir))
-
-        if not re.search('devopsbuilder', container_build_path):
-            # DevOps source code is not protected (for the time being). Platform code is.
-            # Do not copy platform code into devops containers to maintain this protection
-            # and prevent exposure of our platform source to customers.
-            shutil.rmtree("{}/src/ax/platform".format(docker_build_dir))
-            shutil.rmtree("{}/src/ax/platform_client".format(docker_build_dir))
 
     def build_one(self, container, **kwargs):
         path = self.get_container_build_path(container)

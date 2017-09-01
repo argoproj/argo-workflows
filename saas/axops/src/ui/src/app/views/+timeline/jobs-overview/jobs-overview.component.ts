@@ -1,5 +1,5 @@
 import { Component, OnChanges, Input, OnDestroy, NgZone } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 
 import { DateRange } from 'argo-ui-lib/src/components';
 import { TaskService } from '../../../services';
@@ -31,6 +31,7 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
 
     public hideLabels: boolean = true;
     private tasks: Task[];
+    private tasksBuffer: Task[] = [];
     private idToTask: Map<string, Task> = new Map<string, Task>();
     private canScroll: boolean = false;
     private offset: number = 0;
@@ -45,15 +46,8 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
         this.getTasksUnsubscribe();
 
         this.tasks = null;
-        this.indexTasks();
-        this.getTasksSubscription = this.getTasks(0, this.bufferSize, true, true).subscribe(res => {
-            this.tasks = res.data;
-            this.indexTasks();
-            // Force loading second page of data after first page since pagination is not applied to active/schedule tasks
-            this.canScroll = res.data.length === this.bufferSize || this.dateRange.containsToday;
-            this.offset = this.offset + res.data.length;
-            this.dataLoaded = true;
-        });
+        this.idToTask = new Map<string, Task>();
+        this.getTasksSubscription = this.loadNextTasksPage(true, true);
 
         this.subscribeToEvents();
     }
@@ -72,71 +66,76 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
         if (this.canScroll) {
             this.canScroll = false;
             this.dataLoaded = false;
-            this.getTasks(this.offset, this.bufferSize, false, true).subscribe(res => {
-                this.dataLoaded = true;
-                this.tasks = this.tasks.concat(res.data);
-                this.indexTasks();
-                this.canScroll = res.data.length === this.bufferSize;
-                this.offset = this.offset + res.data.length;
+            this.loadNextTasksPage(false, true);
+        }
+    }
+
+    private loadNextTasksPage(isFirstLoad: boolean, hideLoader?: boolean): Subscription {
+        if (isFirstLoad) {
+            this.tasksBuffer = [];
+            this.tasks = [];
+            this.offset = 0;
+        }
+        let tasksObservable: Observable<Task[]>;
+        // Client side pagination for active tasks. This is required since backend does not support active tasks pagination.
+        if (this.tasksBuffer.length > 0) {
+            let res = this.tasksBuffer.slice(0, this.bufferSize);
+            this.tasksBuffer = this.tasksBuffer.slice(this.bufferSize);
+            tasksObservable = Observable.from([res]);
+            this.canScroll = true;
+        } else {
+            let params = {
+                startTime: null,
+                endTime: null,
+                limit: this.bufferSize,
+                offset: this.offset,
+                repo: this.selectedRepo,
+                branch: this.selectedBranch,
+                branches: this.selectedRepo || this.selectedBranch ? null : this.branchesContext,
+                username: [this.selectedUsername],
+                fields: [TaskFieldNames.name,
+                    TaskFieldNames.status,
+                    TaskFieldNames.commit,
+                    TaskFieldNames.failurePath,
+                    TaskFieldNames.labels,
+                    TaskFieldNames.username,
+                    TaskFieldNames.templateId,
+                    TaskFieldNames.parameters,
+                    TaskFieldNames.jira_issues,
+                    TaskFieldNames.policy_id,
+                ],
+                search: this.searchString,
+                status: [],
+            };
+            // Don't load active tasks if date range does not include today's date and does not load active tasks during pagination
+            if ( !isFirstLoad || !this.dateRange.containsToday) {
+                params['isActive'] = false;
+            }
+
+            if (!this.dateRange.isAllDates) {
+                params.startTime = this.dateRange.startDate;
+                params.endTime = this.dateRange.endDate;
+            }
+
+            if (this.jobFilter && !this.jobFilter.allSelected) {
+                params.status = this.getFilteredStatuses();
+            }
+
+            tasksObservable = this.taskService.getTasks(params, hideLoader).map(res => {
+                let tasks = res.data.slice(0, this.bufferSize);
+                this.tasksBuffer = res.data.slice(this.bufferSize);
+                this.canScroll = tasks.length === this.bufferSize;
+                this.offset = this.offset + tasks.length;
+                return tasks;
             });
         }
-    }
 
-    private getTasks(skip: number, limit: number, isFirstLoad: boolean, hideLoader?: boolean) {
-        let params = {
-            startTime: null,
-            endTime: null,
-            limit: null,
-            offset: null,
-            repo: this.selectedRepo,
-            branch: this.selectedBranch,
-            branches: this.selectedRepo || this.selectedBranch ? null : this.branchesContext,
-            username: [this.selectedUsername],
-            fields: [TaskFieldNames.name,
-                TaskFieldNames.status,
-                TaskFieldNames.commit,
-                TaskFieldNames.failurePath,
-                TaskFieldNames.labels,
-                TaskFieldNames.username,
-                TaskFieldNames.templateId,
-                TaskFieldNames.parameters,
-                TaskFieldNames.jira_issues,
-                TaskFieldNames.policy_id,
-            ],
-            search: this.searchString,
-            status: [],
-        };
-        // Don't load active tasks if date range does not include today's date and does not load active tasks during pagination
-        if ( !isFirstLoad || !this.dateRange.containsToday) {
-            params['isActive'] = false;
-        }
-
-        if (!this.dateRange.isAllDates) {
-            params.startTime = this.dateRange.startDate;
-            params.endTime = this.dateRange.endDate;
-        }
-
-        if (skip) {
-            params.offset = skip;
-        }
-
-        if (limit) {
-            params.limit = limit;
-        }
-
-        if (this.jobFilter && !this.jobFilter.allSelected) {
-            params.status = this.getFilteredStatuses();
-        }
-
-        params.search = this.searchString;
-
-        return this.taskService.getTasks(params, hideLoader);
-    }
-
-
-    private indexTasks() {
-        this.idToTask = new Map<string, Task>();
-        (this.tasks || []).forEach(task => this.idToTask.set(task.id, task));
+        return tasksObservable.subscribe(tasks => {
+            this.tasks = this.tasks.concat(tasks);
+            this.idToTask = new Map<string, Task>();
+            (this.tasks || []).forEach(task => this.idToTask.set(task.id, task));
+            this.dataLoaded = true;
+        });
     }
 
     private subscribeToEvents() {

@@ -34,11 +34,11 @@ from ax.version import __version__
 from ax.util.singleton import Singleton
 from ax.util.ax_signal import traceback_multithread
 
-from ax.devops.apps.workflow.adc_state import ADCStateMachine, ADCState
-from ax.devops.apps.workflow.ax_workflow import AXWorkflow, AXWorkflowResource, AXResource
-from ax.devops.apps.workflow.ax_workflow_constants import INSTANCE_RESOURCE, AX_EXECUTOR_RESOURCE
-from ax.devops.apps.workflow.ax_workflow_executor import AXWorkflowExecutor, AXWorkflowNodeResult, AXWorkflowEvent, WorkflowNode
-from ax.devops.apps.workflow.test_ax_workflow_executor import gen_random_workflow
+from .adc_state import ADCStateMachine, ADCState
+from .ax_workflow import AXWorkflow, AXWorkflowResource, AXResource
+from .ax_workflow_constants import INSTANCE_RESOURCE, AX_EXECUTOR_RESOURCE
+from .ax_workflow_executor import AXWorkflowExecutor, AXWorkflowNodeResult, AXWorkflowEvent, WorkflowNode
+from .test_ax_workflow_executor import gen_random_workflow
 from ax.notification_center import FACILITY_AX_WORKFLOW_ADC, CODE_ADC_MISSING_HEARTBEAT_FROM_WFE
 
 logger = logging.getLogger(__name__)
@@ -505,8 +505,8 @@ class ADC(with_metaclass(Singleton, object)):
         return result
 
     def _heartbeat_with_wfe_thread(self):
-        idle_ms_threshold = 10 * 60 * 1000
-        poll_interval_second = 60 * 1
+        idle_ms_threshold = 1 * 60 * 1000  # If no heartbeat for 1 minute, process overdue WFEs
+        poll_interval_second = 15  # Check overdue WFEs every 15 seconds
         try:
             while True:
                 time.sleep(poll_interval_second)
@@ -941,7 +941,7 @@ class ADC(with_metaclass(Singleton, object)):
         del w
         container_name, service_template = self._prepare_executor_service_template(workflow_id=workflow_id, costid=costid)
 
-        cmd = "/ax/src/ax/devops/apps/workflow/workflowexecutor"
+        cmd = "/ax/src/ax/devops/workflow/workflowexecutor"
         url = "http://axworkflowadc.axsys:{port}/v1/adc/notification/workflow".format(port=self._port)
         command = "python3 {cmd} --self-container-name {container_name} --workflow-id {workflow_id} --report-done-url {url} " \
                   "--ax-sys-cpu-core {cpu} --ax-sys-mem-mib {mem} --vol-size {vol_size} --instance-type {instance_type}".\

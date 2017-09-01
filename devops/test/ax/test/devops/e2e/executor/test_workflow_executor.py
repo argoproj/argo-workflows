@@ -3,7 +3,7 @@ import os
 import json
 import pytest
 
-from ax.devops.apps.workflow.ax_workflow_executor import AXWorkflowNodeResult, AXWorkflowEvent, AXWorkflowExecutor
+from ax.devops.workflow.ax_workflow_executor import AXWorkflowNodeResult, AXWorkflowEvent, AXWorkflowExecutor
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(lineno)d %(threadName)s: %(message)s")
@@ -84,7 +84,7 @@ def test_recover(workflow_executor, monkeypatch, name):
                 results = []
                 for line in lines:
                     r = json.loads(line)
-                    from ax.devops.apps.workflow.ax_workflow_executor import AXWorkflowNodeResult
+                    from ax.devops.workflow.ax_workflow_executor import AXWorkflowNodeResult
                     results.append(AXWorkflowNodeResult(workflow_id=r.get("root_id"),
                                                         node_id=r.get("leaf_id"),
                                                         sn=r.get("sn"),

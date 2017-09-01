@@ -9,9 +9,9 @@ import sys
 
 from ax.version import __version__
 from ax.util.ax_signal import traceback_multithread
-from ax.devops.apps.workflow.ax_workflow_executor import AXWorkflowExecutor
+from ax.devops.workflow.ax_workflow_executor import AXWorkflowExecutor
 
-logger = logging.getLogger("ax.devops.apps.workflow.ax_workflow_executor")
+logger = logging.getLogger("ax.devops.workflow.ax_workflow_executor")
 
 
 def signal_handler(signalnum, *args):

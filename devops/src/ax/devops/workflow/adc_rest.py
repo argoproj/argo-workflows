@@ -15,7 +15,7 @@ from gevent import pywsgi
 from ax.exceptions import AXException, AXIllegalOperationException, AXServiceTemporarilyUnavailableException, AXIllegalArgumentException
 from werkzeug.exceptions import BadRequest
 
-from ax.devops.apps.workflow.adc_main import ADC, ADC_DEFAULT_PORT
+from .adc_main import ADC, ADC_DEFAULT_PORT
 
 dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
 _app = Flask("ADC", template_folder=dir_path)
