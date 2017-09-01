@@ -36,6 +36,7 @@ class AxsysClient(object):
     CONTAINER_RUNNING = "CONTAINER_RUNNING"
     CONTAINER_IMAGE_PULL_BACKOFF = "CONTAINER_IMAGE_PULL_BACKOFF"
     CONTAINER_STOPPED = "CONTAINER_STOPPED"
+    CONTAINER_FAILED = "CONTAINER_FAILED"
     CONTAINER_NOTFOUND = "CONTAINER_NOTFOUND"
     CONTAINER_UNKNOWN = "CONTAINER_UNKNOWN"
 
@@ -330,24 +331,27 @@ class AxsysClient(object):
                 return AxsysClient.CONTAINER_NOTFOUND
             else:
                 r = result.get('result', {})
+
             try:
-                failed = r.get('failed', 0)
-                if (failed is not None) and int(failed) > 0:
-                    logger.debug("result=%s", r)
-            except Exception:
-                pass
-            if r.get('succeeded', False):
-                return AxsysClient.CONTAINER_STOPPED
-            elif r.get('active', False):
-                reason = r.get('reason', None)
-                if reason == 'ImagePullBackOff':
-                    return AxsysClient.CONTAINER_IMAGE_PULL_BACKOFF
+                failed = r.get('failed', False)
+                if failed:
+                    logger.debug("failed result=%s", r)
+                    return AxsysClient.CONTAINER_FAILED
+                if r.get('succeeded', False):
+                    return AxsysClient.CONTAINER_STOPPED
+                elif r.get('active', False):
+                    reason = r.get('reason', None)
+                    if reason == 'ImagePullBackOff':
+                        return AxsysClient.CONTAINER_IMAGE_PULL_BACKOFF
+                    else:
+                        if reason:
+                            logger.warning("Other wait reason: %s", reason)
+                        return AxsysClient.CONTAINER_RUNNING
                 else:
-                    if reason:
-                        logger.warning("Other wait reason: %s", reason)
-                    return AxsysClient.CONTAINER_RUNNING
-            else:
-                return AxsysClient.CONTAINER_PENDING
+                    return AxsysClient.CONTAINER_PENDING
+            except Exception:
+                logger.exception("bad result %s", result)
+                return AxsysClient.CONTAINER_UNKNOWN
         else:
             return AxsysClient.CONTAINER_UNKNOWN
 
