@@ -3,10 +3,6 @@
 $search-panel-transition: left 0.2s linear;
 
 .global-search {
-    &__full-width {
-        width: 100%;
-    }
-
     &__container {
         transition: $search-panel-transition;
         position: absolute;

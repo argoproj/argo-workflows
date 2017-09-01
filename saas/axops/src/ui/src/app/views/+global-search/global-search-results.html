@@ -22,14 +22,14 @@
 
 <div class="content">
     <div class="global-search-results__filters">
-        <div class="ax-container global-search__full-width">
+        <div class="ax-container ax-container--full-width">
             <div class="global-search-results" [hidden]="!isFiltersVisible">
                 <ax-global-search-filter [category]="category" [filters]="filters" (onFilterChange)="onFilterChange($event)"></ax-global-search-filter>
             </div>
         </div>
     </div>
 
-    <div class="ax-container global-search__full-width">
+    <div class="ax-container ax-container--full-width">
         <div class="global-search-results">
             <div class="global-search-results__content">
                 <ax-jobs-list [searchString]="searchString" [filters]="filters.jobs" *ngIf="category === 'jobs'"></ax-jobs-list>
