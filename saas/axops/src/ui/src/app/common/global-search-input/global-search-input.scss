@@ -18,7 +18,7 @@ $search-panel-transition: left 0.2s linear;
 
         &--opened {
             left: 80px;
-            right: 200px;
+            right: 80px;
             transform: none;
 
             .global-search__input {
@@ -41,6 +41,13 @@ $search-panel-transition: left 0.2s linear;
         line-height: 1.42857143;
         cursor: pointer;
         white-space: nowrap;
+    }
+
+    &__tabs {
+        .tabs__nav {
+            padding-left: 80px;
+            padding-right: 80px;
+        }
     }
 
     &__icon {

@@ -53,7 +53,7 @@
 
 <div class="bottom-toolbox bottom-toolbox--small">
     <div class="bottom-toolbox__wrapper">
-        <div class="ax-container ax-container--additional-padding">
+        <div class="ax-container ax-container--full-width">
             <h3><em>{{ bulkUpdater.selectedCount }}</em> Application{{bulkUpdater.selectedCount != 1 ? 's' : ''}} selected</h3>
             <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('start')" [disabled]="bulkUpdater.noApplicableSelected('start')">Start</button>
             <button axButtonWave class="ax-button ax-button--base-o" (click)="bulkUpdater.execute('stop')" [disabled]="bulkUpdater.noApplicableSelected('stop')">Stop</button>

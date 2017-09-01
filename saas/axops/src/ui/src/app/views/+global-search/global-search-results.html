@@ -1,33 +1,35 @@
-<ax-tabs [selectedTabKey]="category" (selected)="tabChange($event.selectedTab.tabKey)" [fixedWidth]="true">
-    <div class="actions">
-        <button class="global-search-results__action-button" (click)="isFiltersVisible = !isFiltersVisible" [ngClass]="{'global-search-results__action-button--active': isFiltersVisible}">
-            <i class="ax-icon-filter" aria-hidden="true"></i>
-            <i class="fa fa-caret-down" aria-hidden="true"></i>
-            <i class="fa fa-circle" aria-hidden="true" [hidden]="!isAnyFilterSelected"></i>
-        </button>
-    </div>
-    <ax-tab tabKey="commits" tabTitle="Commits" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
-    </ax-tab>
-    <ax-tab tabKey="jobs" tabTitle="Jobs" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
-    </ax-tab>
-    <ax-tab tabKey="templates" tabTitle="Templates" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
-    </ax-tab>
-    <ax-tab tabKey="applications" tabTitle="Applications" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
-    </ax-tab>
-    <ax-tab tabKey="deployments" tabTitle="Deployments" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
-    </ax-tab>
-</ax-tabs>
+<div class="global-search__tabs">
+    <ax-tabs [selectedTabKey]="category" (selected)="tabChange($event.selectedTab.tabKey)">
+        <div class="actions">
+            <button class="global-search-results__action-button" (click)="isFiltersVisible = !isFiltersVisible" [ngClass]="{'global-search-results__action-button--active': isFiltersVisible}">
+                <i class="ax-icon-filter" aria-hidden="true"></i>
+                <i class="fa fa-caret-down" aria-hidden="true"></i>
+                <i class="fa fa-circle" aria-hidden="true" [hidden]="!isAnyFilterSelected"></i>
+            </button>
+        </div>
+        <ax-tab tabKey="commits" tabTitle="Commits" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        </ax-tab>
+        <ax-tab tabKey="jobs" tabTitle="Jobs" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        </ax-tab>
+        <ax-tab tabKey="templates" tabTitle="Templates" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        </ax-tab>
+        <ax-tab tabKey="applications" tabTitle="Applications" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        </ax-tab>
+        <ax-tab tabKey="deployments" tabTitle="Deployments" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        </ax-tab>
+    </ax-tabs>
+</div>
 
 <div class="content">
     <div class="global-search-results__filters">
-        <div class="ax-container">
+        <div class="ax-container ax-container--full-width">
             <div class="global-search-results" [hidden]="!isFiltersVisible">
                 <ax-global-search-filter [category]="category" [filters]="filters" (onFilterChange)="onFilterChange($event)"></ax-global-search-filter>
             </div>
         </div>
     </div>
 
-    <div class="ax-container">
+    <div class="ax-container ax-container--full-width">
         <div class="global-search-results">
             <div class="global-search-results__content">
                 <ax-jobs-list [searchString]="searchString" [filters]="filters.jobs" *ngIf="category === 'jobs'"></ax-jobs-list>
