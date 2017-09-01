@@ -35,6 +35,8 @@ default_kube_up_env = {
     "DOCKER_STORAGE": "overlay2",
     "REGISTER_MASTER_KUBELET": "true",
     "AX_ENABLE_MASTER_FLUENTD": "false",
+    "SERVER_BINARY_TAR_URL": "https://storage.googleapis.com/kubernetes-release/release/v{version}/kubernetes-server-linux-amd64.tar.gz".format(version=os.getenv("KUBERNETES_VERSION")),
+    "SERVER_BINARY_TAR_HASH": os.getenv("KUBERNETES_SERVER_HASH"),
 }
 
 
@@ -75,19 +77,14 @@ def kube_env_update(input_string, updates):
     output = StringIO.StringIO()
     buf = StringIO.StringIO(input_string)
     for line in buf.readlines():
-        if "SERVER_BINARY_TAR_URL" in line:
-            format = 'SERVER_BINARY_TAR_URL: \'https://{aws_s3_prefix}.amazonaws.com/applatix-cluster-{bucket_suffix}/kubernetes-staging/{ax_version}/kubernetes-server-linux-amd64.tar.gz\''
-            result = parse(format, line)
-            assert result is not None, "Failed to parse SERVER_BINARY_TAR_URL"
-            line = "SERVER_BINARY_TAR_URL: 'https://" + result['aws_s3_prefix'] + ".amazonaws.com/applatix-cluster-" + \
-                   result[
-                       'bucket_suffix'] + "/kubernetes-staging/" + kube_version + "/kubernetes-server-linux-amd64.tar.gz'\n"
+        if "SERVER_BINARY_TAR_URL: '" in line:
+            line = "SERVER_BINARY_TAR_URL: 'https://storage.googleapis.com/kubernetes-release/release/v{kube_version}/kubernetes-server-linux-amd64.tar.gz'\n".format(kube_version=kube_version)
         elif "SALT_TAR_URL" in line:
             format = 'SALT_TAR_URL: \'https://{aws_s3_prefix}.amazonaws.com/applatix-cluster-{bucket_suffix}/kubernetes-staging/{ax_version}/kubernetes-salt.tar.gz\''
             result = parse(format, line)
             assert result is not None, "Failed to parse SALT_TAR_URL"
             line = "SALT_TAR_URL: 'https://" + result['aws_s3_prefix'] + ".amazonaws.com/applatix-cluster-" + result[
-                'bucket_suffix'] + "/kubernetes-staging/" + kube_version + "/installer/" + cluster_install_version + "/kubernetes-salt.tar.gz'\n"
+                'bucket_suffix'] + "/kubernetes-staging/v" + kube_version + "/installer/" + cluster_install_version + "/kubernetes-salt.tar.gz'\n"
         elif "wget" in line and "bootstrap" in line:
             # Update bootstrap script download version. Use strict parse to make sure any deviation from standard format would fail.
             line = line.strip()
@@ -98,7 +95,7 @@ def kube_env_update(input_string, updates):
             line = format.format(options=result["options"],
                                  aws_s3_prefix=result["aws_s3_prefix"],
                                  bucket_suffix=result["bucket_suffix"],
-                                 kube_version=kube_version,
+                                 kube_version="v" + kube_version,
                                  install_version=cluster_install_version,
                                  trailing=result["trailing"])
             line = "  " + line + "\n"
@@ -180,7 +177,7 @@ def prepare_kube_install_config(name_id, aws_profile, cluster_info, cluster_conf
         "KUBE_AWS_INSTANCE_PREFIX": name_id,
         "AWS_S3_BUCKET": AXClusterConfigPath(name_id).bucket(),
         "AWS_S3_REGION": cluster_config.get_region(),
-        "AWS_S3_STAGING_PATH": "kubernetes-staging/{}".format(kube_version),
+        "AWS_S3_STAGING_PATH": "kubernetes-staging/v{}".format(kube_version),
 
         # Node Configs
         "AX_CLUSTER_NUM_NODES_MIN": cluster_config.get_min_node_count(),

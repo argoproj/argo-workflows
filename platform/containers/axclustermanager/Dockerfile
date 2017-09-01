@@ -1,10 +1,10 @@
-FROM %%ARGO_BASE_REGISTRY%%/argobase/kubernetes-distro:ax-v1.6.7-6341-095136c-050831f
+FROM %%ARGO_BASE_REGISTRY%%/argobase/kubernetes-distro:v1.6.7
 
 # Remove built-in kubeup code and copy AX version to container.
 RUN rm -rf /kubernetes/cluster
 ADD docker_build/cluster /kubernetes/cluster
 
-ENV AX_KUBE_VERSION ax-v1.6.7-6341-095136c-050831f
+ENV AX_KUBE_VERSION ${KUBERNETES_VERSION}
 ENV AX_AWS_IMAGE_NAME k8s-1.6-debian-jessie-amd64-hvm-ebs-2017-05-02
 
 ENV AX_KUBERNETES_ROOT /kubernetes

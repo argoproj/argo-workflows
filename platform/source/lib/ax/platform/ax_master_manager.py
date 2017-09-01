@@ -162,6 +162,7 @@ class AXMasterManager:
         try:
             user_data = self.user_data_fixup(user_data)
         except Exception as e:
+            logger.exception("Failed while fixing up user-data")
             raise AXPlatformException("Failed while fixing up user-data: " + str(e))
 
         with open(USER_DATA_FILE_NEW, "w") as f:

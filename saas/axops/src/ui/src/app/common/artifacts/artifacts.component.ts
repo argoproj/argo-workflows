@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnDestroy, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { URLSearchParams } from '@angular/http';
 import { Subscription } from 'rxjs';
 
@@ -22,7 +22,7 @@ class ArtifactGroup {
     templateUrl: './artifacts.html',
     styles: [ require('./artifacts.scss') ],
 })
-export class ArtifactsComponent implements OnDestroy {
+export class ArtifactsComponent implements OnChanges, OnDestroy {
     protected readonly artifactTypeFilter: string[] = [
         ARTIFACT_TYPES.USER_LOG, ARTIFACT_TYPES.INTERNAL, ARTIFACT_TYPES.EXPORTED, ARTIFACT_TYPES.AX_LOG, ARTIFACT_TYPES.AX_LOG_EXTERNAL
     ];
@@ -31,19 +31,7 @@ export class ArtifactsComponent implements OnDestroy {
     public allowSelecting: boolean = false;
 
     @Input()
-    public set task(val: Task) {
-        if (val && val.id) {
-            if (val.id === val.task_id) {
-                this.loadArtifacts(val.id, null);
-            } else {
-                this.loadArtifacts(null, val.id);
-            }
-            this.flatMapOfSteps = JobTreeNode.createFromTask(val).getFlattenNodes().map(item => ({
-                id: item.value.id,
-                isRunning: item.value.status === TaskStatus.Running,
-            }));
-        }
-    }
+    public task: Task;
 
     @Input()
     public set deployment(val: Deployment) {
@@ -77,6 +65,23 @@ export class ArtifactsComponent implements OnDestroy {
 
     public ngOnDestroy() {
         this.artifactSubscriptionsCleanup();
+    }
+
+    public ngOnChanges(changes: SimpleChanges) {
+        if (changes.task) {
+            let val = changes.task.currentValue;
+            if (val && val.id) {
+                if (val.id === val.task_id) {
+                    this.loadArtifacts(val.id, null);
+                } else {
+                    this.loadArtifacts(null, val.id);
+                }
+                this.flatMapOfSteps = JobTreeNode.createFromTask(val).getFlattenNodes().map(item => ({
+                    id: item.value.id,
+                    isRunning: item.value.status === TaskStatus.Running,
+                }));
+            }
+        }
     }
 
     private loadArtifacts(workflowId: string, serviceInstanceId: string): void {

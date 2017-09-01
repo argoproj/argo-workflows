@@ -37,6 +37,7 @@ class Cloud(with_metaclass(Singleton, object)):
 
     CLOUD_AWS = "aws"
     CLOUD_GCP = "gcp"
+    CLOUD_UNKNOWN = "unknown"
 
     VALID_TARGET_CLOUD_INPUT = [CLOUD_AWS, CLOUD_GCP]
 
@@ -51,7 +52,8 @@ class Cloud(with_metaclass(Singleton, object)):
 
     CLOUD_INTERNAL_TO_INPUT = {
         AX_CLOUD_AWS: CLOUD_AWS,
-        AX_CLOUD_GCP: CLOUD_GCP
+        AX_CLOUD_GCP: CLOUD_GCP,
+        AX_CLOUD_UNKNOWN: CLOUD_UNKNOWN
     }
 
     def __init__(self, target_cloud=None):
