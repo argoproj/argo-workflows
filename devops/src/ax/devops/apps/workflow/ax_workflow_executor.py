@@ -2731,7 +2731,9 @@ class AXWorkflowExecutor(object):
                                    AXWorkflow.FAILED, AXWorkflow.FORCED_FAILED]:
                 # this should never happen
                 container_status = axsys_client.get_container_status(container_name=uc_name)
-                if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, AxsysClient.CONTAINER_PENDING, AxsysClient.CONTAINER_STOPPED]:
+                if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF,
+                                        AxsysClient.CONTAINER_PENDING, AxsysClient.CONTAINER_STOPPED,
+                                        AxsysClient.CONTAINER_FAILED]:
                     logger.info("%s is still in %s. delete", log_prefix, container_status)
                     rc_del, result_del = axsys_client.delete_service(service_name=uc_name, force=True)
                     logger.info("%s delete return %s %s",
@@ -2809,7 +2811,7 @@ class AXWorkflowExecutor(object):
                 need_to_delete_container = False
                 if container_status not in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, AxsysClient.CONTAINER_PENDING]:
                     node.first_time_see_image_pull = None
-                    if container_status == AxsysClient.CONTAINER_STOPPED:
+                    if container_status in [AxsysClient.CONTAINER_STOPPED, AxsysClient.CONTAINER_FAILED]:
                         if local_is_expecting:
                             logger.warning("%s this is strange", log_prefix)
                         need_to_delete_container = True
@@ -2940,7 +2942,8 @@ class AXWorkflowExecutor(object):
                 logger.info("%s got something from check_status", log_prefix)
 
         container_status = axsys_client.get_container_status(container_name=uc_name)
-        if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, AxsysClient.CONTAINER_PENDING, AxsysClient.CONTAINER_STOPPED, AxsysClient.CONTAINER_UNKNOWN]:
+        if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, AxsysClient.CONTAINER_PENDING,
+                                AxsysClient.CONTAINER_STOPPED, AxsysClient.CONTAINER_FAILED, AxsysClient.CONTAINER_UNKNOWN]:
             if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, AxsysClient.CONTAINER_PENDING, AxsysClient.CONTAINER_UNKNOWN]:
                 if ret[0] == AXWorkflowNodeResult.INTERRUPTED:
                     logger.info("%s is still %s, stop", log_prefix, container_status)

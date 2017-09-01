@@ -980,7 +980,7 @@ class ADC(with_metaclass(Singleton, object)):
                 if container_status in [AxsysClient.CONTAINER_RUNNING, axsys_client.CONTAINER_IMAGE_PULL_BACKOFF, axsys_client.CONTAINER_PENDING]:
                     logger.info("[adc] [%s]: container %s is still %s", workflow_id, container_name, container_status)
                     return False
-                elif container_status == AxsysClient.CONTAINER_STOPPED:
+                elif container_status in [AxsysClient.CONTAINER_STOPPED, AxsysClient.CONTAINER_FAILED]:
                     # delete it
                     logger.info("[adc] [%s]: delete stopped %s",
                                 workflow_id, container_name)
@@ -1026,7 +1026,7 @@ class ADC(with_metaclass(Singleton, object)):
                             workflow_id, container_name, container_status)
                 return
             else:
-                if container_status == AxsysClient.CONTAINER_STOPPED:
+                if container_status in [AxsysClient.CONTAINER_STOPPED, AxsysClient.CONTAINER_FAILED]:
                     # delete it
                     logger.info("[adc] [%s]: delete stopped %s", workflow_id, container_name)
                     rc_del, result_del = axsys_client.delete_service(service_name=container_name)
