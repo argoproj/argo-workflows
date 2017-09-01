@@ -70,6 +70,6 @@ export class CommitPanelComponent implements OnInit {
     }
 
     selectCommit() {
-        this.onSelectCommit.next(this.localCommit.revision);
+        this.onSelectCommit.next({revision: this.localCommit.revision, repo: this.localCommit.repo});
     }
 }
