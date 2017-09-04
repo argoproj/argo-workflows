@@ -60,14 +60,14 @@ export class FixtureClassesComponent implements HasLayoutSettings, OnInit {
     public getGroupMenu(templateGroup: TemplateGroup) {
         if (templateGroup.enabledClass) {
             return new DropdownMenuSettings([{
-                title: 'Reassign',
+                title: 'Reassign Template',
                 action: () => {
                     this.classIdToReassing = templateGroup.enabledClass.id;
                     this.selectTemplateGroup(templateGroup);
                 },
                 iconName: 'ax-icon-connect'
             }, {
-                title: 'Delete',
+                title: 'Delete Class',
                 action: () => {
                     this.modalService.showModal(
                         'Delete fixture class?', `Are you sure you want to delete fixture class '${templateGroup.enabledClass.name}'?`).subscribe(async confirmed => {
