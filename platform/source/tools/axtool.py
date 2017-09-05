@@ -154,9 +154,8 @@ class AxTool(object):
 
         assert AXEnv().is_in_pod() or args.cluster_name, "Must specify cluster name from outside cluster"
         name_id = AXClusterId(args.cluster_name, args.aws_profile).get_cluster_name_id()
-        portal_url = os.getenv("PORTAL_URL", None)
         if args.subcommand == 'start':
-            AXPlatform(cluster_name_id=name_id, aws_profile=args.aws_profile, debug=args.debug, portal_url=portal_url).start()
+            AXPlatform(cluster_name_id=name_id, aws_profile=args.aws_profile, debug=args.debug).start()
         elif args.subcommand == 'stop':
             AXPlatform(cluster_name_id=name_id, aws_profile=args.aws_profile).stop()
 
