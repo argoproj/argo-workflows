@@ -76,7 +76,7 @@ export class ConfigManagementPanelComponent {
         let values = this.configForm.controls.values as FormArray;
         let keyControl = new FormControl(key, [Validators.required, Validators.pattern(CustomRegex.templateInputName)]);
         this.setEnabled(keyControl, enabled);
-        let valueControl = new FormControl(value, [Validators.required, Validators.pattern(CustomRegex.templateInputName)]);
+        let valueControl = new FormControl(value, [Validators.required]);
         this.setEnabled(valueControl, enabled);
         values.push(new FormGroup({
             key: keyControl,
@@ -132,6 +132,7 @@ export class ConfigManagementPanelComponent {
         Object.keys(this.config && this.config.value || {}).forEach(key => {
             this.addValue(key, this.config.value[key], this.panelMode !== 'view');
         });
+        this.shownItems = [];
     }
 
     private setEnabled(control: AbstractControl, enabled: boolean) {
