@@ -60,7 +60,7 @@ class AXPlatform(object):
         else:
             return super(AXPlatform, cls).__new__(cls)
 
-    def __init__(self, cluster_name_id=None, aws_profile=None, debug=True, portal_url=None,
+    def __init__(self, cluster_name_id=None, aws_profile=None, debug=True,
                  manifest_root=AXPlatformConfigDefaults.DefaultManifestRoot,
                  config_file=AXPlatformConfigDefaults.DefaultPlatformConfigFile,
                  software_info=None):
@@ -70,7 +70,6 @@ class AXPlatform(object):
         :param cluster_name_id: cluster name id
         :param aws_profile: aws profile to authenticate all aws clients
         :param debug: debug mode
-        :param portal_url: url to report to portal
         :param manifest_root: root directory to all ax service objects
         """
         self._software_info = software_info if software_info else SoftwareInfo()
@@ -94,7 +93,6 @@ class AXPlatform(object):
             self._account = ""
         self._bucket_name = self._cluster_config_path.bucket()
         self._bucket = Cloud().get_bucket(self._bucket_name, aws_profile=self._aws_profile, region=self._region)
-        self._portal_url = portal_url
 
         # In debug mode, when we failed to create an object, we don't delete it but just
         # leave it for debug.
@@ -779,7 +777,6 @@ class AXPlatform(object):
             logger.error("Autoscaling group name not found for %s", self._cluster_name_id)
             raise AXPlatformException("Cannot find cluster autoscaling group")
 
-    # TODO (#157) Need to separate portal report and upload version
     # TODO (#157) Version should only be uploaded during install and upgrade time
     def _update_version(self):
         # Software info we get during install / upgrade does not contain ami id
@@ -789,7 +786,6 @@ class AXPlatform(object):
         AXVersion(
             AXCustomerId().get_customer_id(),
             self._cluster_name_id,
-            self._portal_url,
             self._aws_profile
         ).update(
             self._software_info.to_dict()

@@ -23,6 +23,9 @@ saas/common/src/git.apache.org/
 saas/common/src/github.com/
 saas/common/src/golang.org/
 saas/common/src/gopkg.in/
+saas/*/github.com/
+saas/*/golang.org/
+saas/*/gopkg.in/
 saas/axops/src/applatix.io/axops/axops_server/docs.go
 platform/source/go/src/github.com
 platform/source/go/src/golang.org
