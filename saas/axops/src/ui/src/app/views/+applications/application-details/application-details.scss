@@ -2,6 +2,11 @@
 $padding: 50px;
 
 .application-details {
+    &__wrapper {
+        overflow: auto;
+        height: calc(100vh - #{$top-bar-height + $toolbar-height + 106});
+    }
+
     &__logs-content {
         position: absolute;
         padding: 1em;
