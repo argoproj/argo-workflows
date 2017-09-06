@@ -144,11 +144,11 @@ export class FixtureInstancesComponent implements HasLayoutSettings, LayoutSetti
         return new DropdownMenuSettings([{
             title: 'Create Instance',
             action: () => this.router.navigate([{ create: 'true' }], { relativeTo: this.route }),
-            iconName: ''
+            iconName: 'ax-icon-fixturenew'
         }, {
             title: 'Reassign Template',
             action: () => this.router.navigate([{ reassign: 'true' }], { relativeTo: this.route }),
-            iconName: ''
+            iconName: 'ax-icon-connect'
         }, {
             title: 'Delete Class',
             action: () => {
@@ -159,7 +159,7 @@ export class FixtureInstancesComponent implements HasLayoutSettings, LayoutSetti
                     }
                 });
             },
-            iconName: ''
+            iconName: 'ax-icon-stop'
         }], 'fa-ellipsis-v');
     }
 

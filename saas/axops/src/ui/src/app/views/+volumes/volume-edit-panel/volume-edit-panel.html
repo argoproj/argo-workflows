@@ -7,7 +7,8 @@
         <h2>Edit Volume Properties</h2>
         <p>Argo provides predefined configurations, which differ in performance characteristics, so that you can
             tailor your storage performance to the needs of your applications.</p>
-        <ax-volume-form-widget [storageClass]="volume.storageClass" [volume]="volume">
+        <ax-volume-form-widget [storageClass]="volume.storageClass" [volume]="volume" *ngIf="volume">
         </ax-volume-form-widget>
+        <ax-loader-list-mockup [itemHeight]="324" [itemsLength]="1" *ngIf="loaderEditVolume"></ax-loader-list-mockup>
     </sliding-panel-body>
 </ax-sliding-panel>
