@@ -151,8 +151,11 @@ class Pod(KubeObject):
                 )
             ]
             logger.debug("Try gracefully stop main container in [%s][%s]. cmd=%s", jobname, self.name, cmd)
-            output = self.exec_commands(cmd)
-            logger.debug("Kill output:\n%s", output)
+            try:
+                output = self.exec_commands(cmd)
+                logger.debug("Kill output:\n%s", output)
+            except Exception:
+                logger.exception("exception:")
 
         main_name = self.get_main_container_name()
         wait_name = SIDEKICK_WAIT_CONTAINER_NAME
