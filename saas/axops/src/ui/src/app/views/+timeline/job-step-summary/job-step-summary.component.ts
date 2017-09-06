@@ -14,6 +14,10 @@ export class JobStepSummaryComponent {
     public errorDetailsCollapsed = false;
     public task: Task;
 
+    public get isFailedTask() {
+        return this.task && this.task.status == TaskStatus.Failed;
+    }
+
     @Input()
     public set step(val: NodeInfo) {
         let task = val.workflow.value;

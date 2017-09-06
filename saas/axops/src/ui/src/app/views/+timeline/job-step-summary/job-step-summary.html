@@ -1,9 +1,9 @@
 <div class="job-step-summary">
-    <div *ngIf="task?.status_detail?.message" class="job-step-summary__error" [ngClass]="{'job-step-summary__error--expanded': !errorDetailsCollapsed}">
+    <div *ngIf="isFailedTask" class="job-step-summary__error" [ngClass]="{'job-step-summary__error--expanded': !errorDetailsCollapsed}">
         <span class="job-step-summary__error-icon">!</span>
         <p>{{task.status_detail.code}}</p>
         <p class="job-step-summary__error-details">{{task.status_detail.message}}</p>
-        <i class="fa clickable job-step-summary__error-expand-collapse"
+        <i *ngIf="task.status_detail.message" class="fa clickable job-step-summary__error-expand-collapse"
             [ngClass]="{'fa-angle-down': !errorDetailsCollapsed, 'fa-angle-up': errorDetailsCollapsed}" (click)="errorDetailsCollapsed = !errorDetailsCollapsed"></i>
     </div>
     <div class="white-box">
