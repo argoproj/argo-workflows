@@ -1,4 +1,4 @@
-From %%ARGO_BASE_REGISTRY%%/argobase/axdb-base:v1.3
+From %%ARGO_BASE_REGISTRY%%/argobase/axdb-base:v1.4
 
 WORKDIR /
 
