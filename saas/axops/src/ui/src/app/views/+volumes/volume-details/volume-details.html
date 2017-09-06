@@ -10,7 +10,7 @@
 
 <div class="content volume-details">
     <div class="ax-container">
-        <div class="row">
+        <div class="row collapse">
             <div class="columns small-4">
                 <div class="white-box volume-details__box">
                     <div class="volume-details__usage">
@@ -50,13 +50,15 @@
             </div>
 
             <div class="columns small-8">
-                <div *ngFor="let chart of charts" class="white-box white-box--no-padding volume-details__chart" [hidden]="showChartLoader">
-                    <h6>{{chart.title}}</h6>
-                    <nvd3 [options]="chart.options" [data]="chart.data"></nvd3>
-                </div>
+                <div class="volume-details__chart-column">
+                    <div *ngFor="let chart of charts" class="white-box white-box--no-padding volume-details__chart" [hidden]="showChartLoader">
+                        <h6>{{chart.title}}</h6>
+                        <nvd3 [options]="chart.options" [data]="chart.data"></nvd3>
+                    </div>
 
-                <div class="volume-details__chart--loader">
-                    <ax-loader-list-mockup *ngIf="showChartLoader" [itemHeight]="156" [itemGap]="30" [itemsLength]="3" [marginLeft]="0" [marginRight]="0"></ax-loader-list-mockup>
+                    <div class="volume-details__chart--loader">
+                        <ax-loader-list-mockup *ngIf="showChartLoader" [itemHeight]="156" [itemGap]="30" [itemsLength]="3" [marginLeft]="0" [marginRight]="0"></ax-loader-list-mockup>
+                    </div>
                 </div>
             </div>
         </div>

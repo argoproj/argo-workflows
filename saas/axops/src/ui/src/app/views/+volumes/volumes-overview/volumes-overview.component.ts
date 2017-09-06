@@ -15,6 +15,7 @@ export class VolumesOverviewComponent implements HasLayoutSettings, LayoutSettin
     public providers: { type: string, volumes: Volume[] }[] = [];
     public showAddPanel: boolean = false;
     public volumesType: 'named' | 'anonymous';
+    public isLoadingVolumes: boolean = false;
 
     constructor(
         private volumesService: VolumesService,
@@ -63,7 +64,8 @@ export class VolumesOverviewComponent implements HasLayoutSettings, LayoutSettin
     }
 
     private async loadVolumes() {
-        let volumes = await this.volumesService.getVolumes({ named: this.volumesType === 'named' }, false);
+        this.isLoadingVolumes = true;
+        let volumes = await this.volumesService.getVolumes({ named: this.volumesType === 'named' });
         let volumesByProvider = new Map<string, Volume[]>();
         volumes.forEach(volume => {
             let providerVolumes = volumesByProvider.get(volume.storage_provider) || [];
@@ -74,5 +76,6 @@ export class VolumesOverviewComponent implements HasLayoutSettings, LayoutSettin
             type: entry[0],
             volumes: entry[1]
         }));
+        this.isLoadingVolumes = false;
     }
 }
