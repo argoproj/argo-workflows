@@ -5,9 +5,10 @@ import { NotificationsService } from 'argo-ui-lib/src/components';
 @Component({
     selector: 'ax-spot-instances-panel',
     templateUrl: './spot-instances-panel.html',
+    styles: [ require('./spot-instances-panel.scss') ]
 })
 export class SpotInstancesPanelComponent implements OnInit {
-    spotInstancesEnabled: boolean = false;
+    spotInstancesOption: 'none' | 'partial' | 'all';
     dataLoaded: boolean = true;
 
     constructor(
@@ -17,17 +18,16 @@ export class SpotInstancesPanelComponent implements OnInit {
 
     ngOnInit() {
         this.systemService.getSpotInstanceConfig().subscribe(res => {
-            this.spotInstancesEnabled = res.status === 'True';
+            this.spotInstancesOption = res.status;
             this.dataLoaded = true;
-        },
-            () => this.dataLoaded = true);
+        }, () => this.dataLoaded = true);
     }
 
-    onChangeStatus(e: any): void {
-        this.systemService.updateSpotInstanceConfig({'enabled': e.target.checked}, true)
+    onChangeStatus(option: 'none' | 'partial' | 'all'): void {
+        this.systemService.updateSpotInstanceConfig({'asgs': option}, true)
             .subscribe(() => {
-                this.spotInstancesEnabled = e.target.checked;
-                this.notificationsService.success(`Spot Instances ${e.target.checked ? 'enabled' : 'disabled'}`);
-            }, () => e.target.checked = this.spotInstancesEnabled);
+                this.spotInstancesOption = option;
+                this.notificationsService.success(`Spot Instances set to: ${ option === 'all' ? 'full' : option }`);
+            });
     }
 }
