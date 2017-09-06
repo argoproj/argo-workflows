@@ -1449,9 +1449,41 @@ class ADC(with_metaclass(Singleton, object)):
             return ret
         raise AXIllegalArgumentException("[adc] [{}]: Workflow does't exist.".format(workflow_id))
 
+
+    def _delete_wfe_pod_thread(self, workflow_id, workflow_json):
+        try:
+            container_name = workflow_json.get("container_name", None)
+            nodes_stats = workflow_json.get("nodes_stats", None)
+            result_code = workflow_json.get("result_code", None)
+            forced = workflow_json.get("forced", None)
+
+            if container_name and (nodes_stats is not None) and (result_code is not None):
+                last_status = AXWorkflowExecutor.last_step_update_db(
+                    log_prefix="[adc] [{}] shutdown:".format(workflow_id),
+                    workflow_id=workflow_id,
+                    result_code=result_code, forced=forced)
+                rc_del, result_del = axsys_client.delete_service(service_name=container_name)
+                logger.info("[adc] [%s] in notification delete %s return %s %s",
+                            workflow_id, container_name, rc_del, result_del)
+                AXWorkflowEvent.save_workflow_event_to_db(workflow_id=workflow_id,
+                                                          event_type=AXWorkflowEvent.TERMINATE,
+                                                          detail={"result_code": result_code,
+                                                                  "last_status": last_status,
+                                                                  "nodes_stats": nodes_stats})
+            else:
+                logger.error("incomplete workflow_json for %s. %s", workflow_id, workflow_json)
+        except Exception as e:
+            logger.exception("got exception while delete wfe pod %s", workflow_id)
+
+    def start_delete_wfe_pod_thread(self, workflow_id, workflow_json):
+        logger.info("[adc] [%s] start delete-wfe thread", workflow_id)
+        t = threading.Thread(name="delete-wfe-" + workflow_id,
+                             target=self._delete_wfe_pod_thread, args=(workflow_id, workflow_json))
+        t.daemon = True
+        t.start()
+
     def notification_workflow(self, workflow_json):
         workflow_id = workflow_json.get("workflow_id", None)
-        new_status = workflow_json.get("last_status", None)
         event = workflow_json.get("event", False)
 
         if workflow_id is None:
@@ -1465,11 +1497,12 @@ class ADC(with_metaclass(Singleton, object)):
             raise AXServiceTemporarilyUnavailableException("[adc] [{}]: ADC is not ready".format(workflow_id))
 
         if event == "done":
-            logger.info("[adc] [resource] [%s]: notification workflow_status=%s detail=%s",
-                        workflow_id, new_status, workflow_json)
+            logger.info("[adc] [resource] [%s]: notification detail=%s",
+                        workflow_id, workflow_json)
             self._update_workflow_sets_by_id(workflow_id, None)
             workflow = self._get_workflow_by_id_from_db(workflow_id=workflow_id)
             if workflow:
+                self.start_delete_wfe_pod_thread(workflow_id, workflow_json)
                 with self._suspended_q_cond:
                     if self._resource_release(workflow):
                         self._suspended_q_cond.notify_all()

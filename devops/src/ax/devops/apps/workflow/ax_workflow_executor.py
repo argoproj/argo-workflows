@@ -1472,7 +1472,7 @@ class AXWorkflowExecutor(object):
             assert self._service_template.get("id") == self.workflow_id
         except Exception:
             logger.exception("%s: invalid workflow_id", self.log_prefix)
-            self.stop_self_container()
+            self._exit_wfe()
             assert False
             # should not reach here
 
@@ -3257,35 +3257,29 @@ class AXWorkflowExecutor(object):
         t.daemon = True
         t.start()
 
-    def report_to_adc(self, result_code, last_status, nodes_stats, max_retry=1000):
+    def report_to_adc(self, result_code, nodes_stats, forced, max_retry=1000):
         if self._report_done_url:
             counter = 0
             post_message = {"workflow_id": self.workflow_id,
+                            "container_name": self._self_container_name,
                             "event": "done",
-                            "last_status": last_status,
-                            "nodes_stats": nodes_stats}
+                            "nodes_stats": nodes_stats,
+                            "result_code": result_code,
+                            "forced": forced}
             while counter < max_retry:
                 counter += 1
                 try:
                     if self._test_expected_failure_node is not None:
                         msg = None
-                        if last_status == AXWorkflow.SUCCEED and self._test_expected_failure_node > 0:
-                            msg = "test expect {} nodes fail, but workflow result is {}".format(self._test_expected_failure_node,
-                                                                                                result_code)
-                        elif (last_status == AXWorkflow.FAILED or last_status == AXWorkflow.FORCED_FAILED) and self._test_expected_failure_node == 0:
-                            msg = "test expect {} nodes fail, but workflow result is {}".format(
-                                self._test_expected_failure_node,
-                                result_code)
                         if msg:
                             logger.critical("%s", msg)
                             post_message["CRITICAL"] = msg
 
                         post_message["expected_failure_node"] = self._test_expected_failure_node
 
-                    logger.info("%s report to %s. last_status=%s result=%s",
+                    logger.info("%s report to %s. result=%s",
                                 self.log_prefix,
                                 self._report_done_url,
-                                last_status,
                                 post_message)
                     r = requests.post(self._report_done_url, json=post_message)
                     if r.status_code == 200:
@@ -3313,12 +3307,13 @@ class AXWorkflowExecutor(object):
         else:
             logger.info("%s no report", self.log_prefix)
 
-    def last_step_update_db(self, result_code, forced):
+    @staticmethod
+    def last_step_update_db(log_prefix, workflow_id, result_code, forced):
         count = 0
         if forced:
             assert result_code == AXWorkflowNodeResult.FAILED
         while True:
-            workflow = AXWorkflow.get_workflow_by_id_from_db(self._workflow_id)
+            workflow = AXWorkflow.get_workflow_by_id_from_db(workflow_id)
             assert workflow
             if workflow.status in [AXWorkflow.RUNNING_DEL, AXWorkflow.RUNNING_DEL_FORCE]:
                 new_status = AXWorkflow.DELETED
@@ -3331,21 +3326,21 @@ class AXWorkflowExecutor(object):
                     else:
                         new_status = AXWorkflow.FAILED
                 else:
-                    assert False, "{} bad state {} last result_code={}".format(self.log_prefix, workflow.status, result_code)
+                    assert False, "{} bad state {} last result_code={}".format(log_prefix, workflow.status, result_code)
             elif workflow.status in [AXWorkflow.DELETED, AXWorkflow.SUCCEED, AXWorkflow.FAILED, AXWorkflow.FORCED_FAILED]:
-                logger.info("%s no change workflow status %s", self.log_prefix, workflow.status)
+                logger.info("%s no change workflow status %s", log_prefix, workflow.status)
                 return workflow.status
             else:
-                assert False, "{} bad state {}, last result_code={}".format(self.log_prefix, workflow.status, result_code)
+                assert False, "{} bad state {}, last result_code={}".format(log_prefix, workflow.status, result_code)
 
             assert new_status is not None
-            logger.info("%s change workflow status %s->%s", self.log_prefix, workflow.status, new_status)
+            logger.info("%s change workflow status %s->%s", log_prefix, workflow.status, new_status)
             if AXWorkflow.update_workflow_status_in_db(workflow=workflow, new_status=new_status):
                 return new_status
             else:
                 count += 1
                 if count > 10:
-                    assert False, "{} state {} too many update failure. last result_code={}".format(self.log_prefix, workflow.status, result_code)
+                    assert False, "{} state {} too many update failure. last result_code={}".format(log_prefix, workflow.status, result_code)
 
     def last_step(self, result_code, forced):
         if self._fake_run:
@@ -3356,28 +3351,15 @@ class AXWorkflowExecutor(object):
         logger.info("%s last_step result=%s", self.log_prefix, result_code)
         logger.info("%s Workflow Tree after last step \n%s", self.log_prefix, str(self._root_node))
 
-        last_status = self.last_step_update_db(result_code=result_code, forced=forced)
-        self.report_to_adc(result_code=result_code, last_status=last_status, nodes_stats=nodes_stats)
-        AXWorkflowEvent.save_workflow_event_to_db(workflow_id=self._workflow_id,
-                                                  event_type=AXWorkflowEvent.TERMINATE,
-                                                  detail={"result_code": result_code,
-                                                          "last_status": last_status,
-                                                          "nodes_stats": nodes_stats})
+        self.report_to_adc(result_code=result_code, nodes_stats=nodes_stats, forced=forced)
+
         self._send_heartbeat = False
         self._can_send_nodes_status = False
         self.shutdown()
 
-    def stop_self_container(self, max_retry=30):
-        count = 0
-        while True:
-            logger.info("%s kill self_container %s", self.log_prefix, self._self_container_name)
-            # delete_service may stuck or fail
-            axsys_client.delete_service(self._self_container_name)
-            time.sleep(60)
-            count += 1
-            if count > max_retry:
-                logger.info("%s call os.exit(9)", self.log_prefix)
-                os._exit(9)
+    def _exit_wfe(self):
+        logger.info("%s call os.exit(0)", self.log_prefix)
+        os._exit(0)
 
     def shutdown(self):
         with self._results_q_cond:
@@ -3385,7 +3367,7 @@ class AXWorkflowExecutor(object):
             self._results_q_cond.notifyAll()
             logger.info("%s sent shutdown notification", self.log_prefix)
 
-        self.stop_self_container()
+        self._exit_wfe()
 
     def _get_workflow_results_from_db(self):
         return AXWorkflowNodeResult.load_results_from_db(self._workflow_id)
