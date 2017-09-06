@@ -40,8 +40,8 @@ export class VolumesService {
         )).toPromise().then(res => this.deserializeVolume(res.json()));
     }
 
-    public async getVolumeById(id: string): Promise<Volume> {
-        return this.http.get(`v1/storage/volumes/${id}`).toPromise().then(res => this.deserializeVolume(res.json()));
+    public async getVolumeById(id: string, hideLoader: boolean = true): Promise<Volume> {
+        return this.http.get(`v1/storage/volumes/${id}`, {headers: new AxHeaders({noLoader: hideLoader}) }).toPromise().then(res => this.deserializeVolume(res.json()));
     }
 
     public async deleteVolume(id: string) {

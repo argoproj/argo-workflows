@@ -1,18 +1,8 @@
-<div class="ax-toolbar volume-details">
-    <div class="ax-container">
-        <div class="ax-toolbar__item">
-            <button class="ax-toolbar__button">
-                <ax-date-range-dropdown [range]="dateRange" (rangeChanged)="onDateRangeChanged($event)"></ax-date-range-dropdown>
-            </button>
-        </div>
-    </div>
-</div>
-
-<div class="content volume-details">
+<div class="content content--with-padding-top volume-details">
     <div class="ax-container">
         <div class="row collapse">
             <div class="columns small-4">
-                <div class="white-box volume-details__box">
+                <div class="white-box volume-details__box" *ngIf="!volumeLoader">
                     <div class="volume-details__usage">
                         <strong>VOLUME USAGE:</strong>
                         <div class="row">
@@ -47,6 +37,9 @@
                         </div>
                     </div>
                 </div>
+                <div class="volume-details__load-panel" *ngIf="volumeLoader">
+                    <ax-loader-list-mockup [itemsLength]="1" [itemHeight]="528"></ax-loader-list-mockup>
+                </div>
             </div>
 
             <div class="columns small-8">
@@ -65,15 +58,19 @@
 
         <h6 class="volume-details__users-title">VOLUME USERS:</h6>
         <div class="ax-table-list ax-table-list--clickable">
-            <div class="ax-table-list__row" *ngFor="let deployment of deployments"
-                [routerLink]="['/app/applications/details', deployment.app_generation, 'deployment', deployment.id]">
-                <div class="row">
-                    <div class="columns small-4"><i class="ax-icon-deployment"></i> <strong>{{ deployment.name }}</strong></div>
-                    <div class="columns small-4">{{ deployment.status }}</div>
-                    <div class="columns small-4">{{ deployment.app_name }}</div>
+            <div *ngIf="!showChartLoader">
+                <div class="ax-table-list__row" *ngFor="let deployment of deployments"
+                    [routerLink]="['/app/applications/details', deployment.app_generation, { 'deployment': deployment.name }]">
+                    <div class="row">
+                        <div class="columns small-4"><i class="ax-icon-deployment"></i> <strong>{{ deployment.name }}</strong></div>
+                        <div class="columns small-4">{{ deployment.status }}</div>
+                        <div class="columns small-4">{{ deployment.app_name }}</div>
+                    </div>
                 </div>
             </div>
-            <div *ngIf="!deployments.length" class="no-data-panel">
+
+            <ax-loader-list-mockup *ngIf="showChartLoader" [itemsLength]="1"></ax-loader-list-mockup>
+            <div *ngIf="!deployments.length && !showChartLoader" class="no-data-panel">
                 <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
             </div>
         </div>

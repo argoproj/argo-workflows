@@ -90,6 +90,7 @@ export class VolumesOverviewComponent implements HasLayoutSettings, LayoutSettin
     private async loadVolumes() {
         this.isLoadingVolumes = true;
         let volumes = await this.volumesService.getVolumes({ named: this.volumesType === 'named' });
+        this.isLoadingVolumes = false;
         let volumesByProvider = new Map<string, Volume[]>();
         volumes.forEach(volume => {
             let providerVolumes = volumesByProvider.get(volume.storage_provider) || [];
@@ -100,6 +101,5 @@ export class VolumesOverviewComponent implements HasLayoutSettings, LayoutSettin
             type: entry[0],
             volumes: entry[1]
         }));
-        this.isLoadingVolumes = false;
     }
 }
