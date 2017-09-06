@@ -15,7 +15,7 @@ export class JobStepSummaryComponent {
     public task: Task;
 
     public get isFailedTask() {
-        return this.task && this.task.status == TaskStatus.Failed;
+        return this.task && this.task.status === TaskStatus.Failed;
     }
 
     @Input()
