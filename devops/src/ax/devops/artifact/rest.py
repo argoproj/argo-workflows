@@ -213,7 +213,7 @@ def _search_artifacts(params):
     :returns:
     """
     parsed_params = {}
-    for k in ('artifact_id', 'full_path', 'name', 'service_instance_id', 'workflow_id', 'is_alias', 'artifact_type'):
+    for k in ('artifact_id', 'full_path', 'name', 'service_instance_id', 'workflow_id', 'is_alias'):
         if k in request.args:
             parsed_params[k] = params[k]
     for k in ('deleted', 'retention_tags', 'tags'):
