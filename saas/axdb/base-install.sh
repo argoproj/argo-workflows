@@ -24,7 +24,7 @@ rm jdk-8u144-linux-x64.tar.gz
 echo "deb http://debian.datastax.com/datastax-ddc 3.7 main" | tee -a /etc/apt/sources.list.d/cassandra.sources.list
 curl -L https://debian.datastax.com/debian/repo_key | apt-key add -
 apt-get update -y && apt-get install -y \
-        datastax-ddc
+        datastax-ddc python-cassandra
 service cassandra stop
 rm -rf /var/lib/cassandra/data/system/*
 

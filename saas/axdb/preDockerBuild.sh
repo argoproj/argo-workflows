@@ -3,5 +3,5 @@
 base_registry=${ARGO_BASE_REGISTRY:-docker.io}
 dev_registry=${ARGO_DEV_REGISTRY}
 
-cat BaseDockerfile | sed "s#%%ARGO_BASE_REGISTRY%%#${base_registry}#g" | docker build -t ${dev_registry}/axdb-base:v1.3 -f - .
-docker push ${dev_registry}/axdb-base:v1.3
+cat BaseDockerfile | sed "s#%%ARGO_BASE_REGISTRY%%#${base_registry}#g" | docker build -t ${dev_registry}/axdb-base:v1.4 -f - .
+docker push ${dev_registry}/axdb-base:v1.4
