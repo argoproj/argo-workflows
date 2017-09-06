@@ -38,13 +38,15 @@
     transition: width .5s;
     width: 100%;
 
-    &[ax-infinite-scroll] {
+    &[ax-infinite-scroll],
+    &--internal-scroll {
         height: calc(100vh - #{$top-bar-height + $toolbar-height});
         overflow: hidden;
         overflow-y: auto;
     }
 
-    .tabs__content &[ax-infinite-scroll] {
+    .tabs__content &[ax-infinite-scroll],
+    .has-tabs &.content--internal-scroll {
         height: calc(100vh - 156px);
     }
 

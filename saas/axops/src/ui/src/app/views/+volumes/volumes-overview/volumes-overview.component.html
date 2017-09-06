@@ -3,7 +3,7 @@
     <ax-tab tabKey="anonymous" tabTitle="ANONYMOUS VOLUMES" [noPadding]="true"></ax-tab>
 </ax-tabs>
 
-<div class="content content--with-padding-top">
+<div class="content content--with-padding-top content--internal-scroll">
     <div class="ax-container">
         <div *ngIf="!isLoadingVolumes">
             <div class="volumes-overview__storage-class" *ngFor="let provider of providers">
@@ -11,7 +11,7 @@
                     <i class="fa ax-icon-stop-property"></i>
                     Storage Class: <span>{{provider.type}}</span>
                 </div>
-                <ax-volumes-list [volumes]="provider.volumes" (onDeletedVolume)="onDeletedVolume()"></ax-volumes-list>
+                <ax-volumes-list [volumes]="provider.volumes" (onDeletedVolume)="onDeletedVolume()" (onEditVolume)="onEditVolume($event)"></ax-volumes-list>
             </div>
         </div>
         <ax-loader-list-mockup [itemHeight]="200" *ngIf="isLoadingVolumes"></ax-loader-list-mockup>
@@ -21,3 +21,4 @@
     </div>
 </div>
 <ax-volume-add-panel [show]="showAddPanel" (onClosePanel)="closeAddPanel($event)"></ax-volume-add-panel>
+<ax-volume-edit-panel [show]="showEditPanel" [volume]="editedVolume" [editVolumeId]="editVolumeId" (closePanel)="cancelEdit()" (saveVolume)="editVolume($event)"></ax-volume-edit-panel>
