@@ -200,6 +200,9 @@ class AXClusterConfig(with_metaclass(Singleton, object)):
     def get_kube_installer_config(self):
         return self._conf["cloud"]["kube_installer_config"]
 
+    def get_cluster_provider(self):
+        return self._conf["cloud"].get("cluster_provider", None)
+
     # Setters. Currently only a very limited items is mutable
     def set_ax_cluster_user(self, user):
         self._conf["cloud"]["configure"]["cluster_user"] = user
@@ -230,6 +233,12 @@ class AXClusterConfig(with_metaclass(Singleton, object)):
 
     def set_kube_installer_config(self, config):
         self._conf["cloud"]["kube_installer_config"] = config
+
+    def set_support_object_store_name(self, bucket_name):
+        self._conf["cloud"]["configure"]["support_object_store_name"] = bucket_name
+
+    def set_cluster_provider(self, cluster_provider):
+        self._conf["cloud"]["cluster_provider"] = cluster_provider
 
     def reload_config(self):
         """

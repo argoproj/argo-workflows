@@ -39,6 +39,9 @@ spec:
               - name: axworkflowadc
                 image: ${REGISTRY}/${NAMESPACE}/workflow:${VERSION}
                 command: ["/ax/src/ax/devops/workflow/adc", "--image-registry", "${REGISTRY}", "--image-namespace", "${NAMESPACE}", "--image-version", "${VERSION}"]
+                env:
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                 ports:
                   - containerPort: 8911
                 resources:

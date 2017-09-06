@@ -77,6 +77,8 @@ spec:
                     value: "${NAMESPACE}"
                   - name: AX_VERSION
                     value: "${VERSION}"
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                 ports:
                   - containerPort: 8080
                     name: axdbport

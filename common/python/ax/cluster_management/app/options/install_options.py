@@ -8,14 +8,15 @@ import logging
 import os
 import random
 import re
-from netaddr import IPAddress
 
 from ax.cloud import Cloud
 from ax.cloud.aws import EC2, AWS_DEFAULT_PROFILE
 from ax.platform.cluster_config import AXClusterSize, AXClusterType, SpotInstanceOption
 from ax.platform.component_config import SoftwareInfo
+from netaddr import IPAddress
+
 from .common import add_common_flags, add_software_info_flags, validate_software_info, \
-    ClusterManagementOperationConfigBase, typed_raw_input_with_default
+    ClusterOperationDefaults, ClusterManagementOperationConfigBase, typed_raw_input_with_default
 
 
 logger = logging.getLogger(__name__)
@@ -331,6 +332,22 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
 
         return all_errs
 
+class PlatformOnlyInstallConfig(ClusterInstallConfig):
+
+        def __init__(self, cfg):
+            cfg.cluster_size = AXClusterSize.CLUSTER_USER_PROVIDED
+            cfg.cluster_type = None
+            cfg.vpc_id = None
+            cfg.vpc_cidr_base = None
+            cfg.subnet_mask_size = None
+            cfg.trusted_cidrs = None
+            cfg.user_on_demand_nodes = None
+            cfg.spot_instances_option = "none"
+            cfg.cluster_autoscaling_scan_interval = None
+            cfg.support_object_store_name = ""
+            cfg.enable_sandbox = None
+            cfg.platform_bootstrap_config = "/ax/config/service/config/user_k8s_platform-bootstrap.cfg"
+            super(PlatformOnlyInstallConfig, self).__init__(cfg)
 
 def add_install_flags(parser):
     assert isinstance(parser, argparse.ArgumentParser)
@@ -364,3 +381,19 @@ def add_install_flags(parser):
 
     # TODO: consider removing --enable-sandbox due to open source
     parser.add_argument("--enable-sandbox", default=False, action="store_true", help="Install this cluster as a sandbox")
+
+def add_platform_only_flags(parser):
+    assert isinstance(parser, argparse.ArgumentParser)
+
+    add_common_flags(parser)
+
+    add_software_info_flags(parser)
+
+    # Cloud information
+    parser.add_argument("--cloud-region", default=None, help="A valid cloud region")
+    parser.add_argument("--cloud-placement", default=None, help="A valid cloud placement")
+
+    # Add bucket
+    parser.add_argument("--cluster-bucket", default=None, required=True, help="S3 complaint bucket to use")
+    # Add kubeconfig
+    parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")

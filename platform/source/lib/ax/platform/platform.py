@@ -29,7 +29,7 @@ from ax.platform.ax_asg import AXUserASGManager
 from ax.platform.ax_cluster_info import AXClusterInfo
 from ax.platform.ax_monitor import AXKubeMonitor
 from ax.platform.ax_monitor_helper import KubeObjStatusCode, KubeObjWaiter
-from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption
+from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption, ClusterProvider
 from ax.platform.cluster_version import AXVersion
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.exceptions import AXPlatformException
@@ -148,6 +148,48 @@ class AXPlatform(object):
                     kube_namespace=namespace
                 )
 
+    def _generate_replacing_for_user_provisioned_cluster(self):
+        # Platform code are running in python 2.7, and therefore for trusted cidr list, the str() method
+        # will return something like [u'54.149.149.230/32', u'73.70.250.25/32', u'104.10.248.90/32'], and
+        # this 'u' prefix cannot be surpressed. With this prefix, our macro replacing would create invalid
+        # yaml files, and therefore we construct string manually here
+        trusted_cidr = self._cluster_config.get_trusted_cidr()
+        if isinstance(trusted_cidr, list):
+            trusted_cidr_str = "["
+            for cidr in trusted_cidr:
+                trusted_cidr_str += "\"{}\",".format(str(cidr))
+            trusted_cidr_str = trusted_cidr_str[:-1]
+            trusted_cidr_str += "]"
+        else:
+            trusted_cidr_str = "[{}]".format(trusted_cidr)
+
+        self._persist_node_resource_rsvp(0, 0)
+
+        with open("/kubernetes/cluster/version.txt", "r") as f:
+            cluster_install_version = f.read().strip()
+
+        return {
+            "REGISTRY": self._software_info.registry,
+            "REGISTRY_SECRETS": self._software_info.registry_secrets,
+            "NAMESPACE": self._software_info.image_namespace,
+            "VERSION": self._software_info.image_version,
+            "AX_CLUSTER_NAME_ID": self._cluster_name_id,
+            "AX_AWS_REGION": self._region,
+            "AX_AWS_ACCOUNT": self._account,
+            "AX_CUSTOMER_ID": AXCustomerId().get_customer_id(),
+            "TRUSTED_CIDR": trusted_cidr_str,
+            "NEW_KUBE_SALT_SHA1": os.getenv("NEW_KUBE_SALT_SHA1") or " ",
+            "NEW_KUBE_SERVER_SHA1": os.getenv("NEW_KUBE_SERVER_SHA1") or " ",
+            "AX_KUBE_VERSION": os.getenv("AX_KUBE_VERSION"),
+            "AX_CLUSTER_INSTALL_VERSION": cluster_install_version,
+            "SANDBOX_ENABLED": str(self._cluster_config.get_sandbox_flag()),
+            "ARGO_LOG_BUCKET_NAME": self._cluster_config.get_support_object_store_name(),
+            "AX_CLUSTER_META_URL_V1": self._bucket.get_object_url_from_key(key=self._cluster_config_path.cluster_metadata()),
+            "DNS_SERVER_IP": os.getenv("DNS_SERVER_IP", default_kube_up_env["DNS_SERVER_IP"]),
+            "ARGO_DATA_BUCKET_NAME": AXClusterConfigPath(self._cluster_name_id).bucket(),
+        }
+
+
     def _generate_replacing(self):
         # Platform code are running in python 2.7, and therefore for trusted cidr list, the str() method
         # will return something like [u'54.149.149.230/32', u'73.70.250.25/32', u'104.10.248.90/32'], and
@@ -260,7 +302,10 @@ class AXPlatform(object):
         # Generate kube-objects
         steps = self._config.steps
         self._load_kube_objects_from_steps(steps)
-        self._replacing = self._generate_replacing()
+        if self._cluster_config.get_cluster_provider() != ClusterProvider.USER:
+            self._replacing = self._generate_replacing()
+        else:
+            self._replacing = self._generate_replacing_for_user_provisioned_cluster()
 
         # TODO: remove component's dependencies to AXOPS_EXT_DNS env (#32)
         # At this moment, we MUST separate first step due to the above dependency
@@ -329,6 +374,9 @@ class AXPlatform(object):
 
         :param objects: AXPlatformObjectGroup
         """
+        if objects is None or len(objects.object_set) == 0:
+            return
+
         assert isinstance(objects, AXPlatformObjectGroup)
         if not self._should_create_group(
             policy=objects.policy,

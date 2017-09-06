@@ -38,6 +38,9 @@ spec:
             containers:
               - name: axartifactmanager
                 image: ${REGISTRY}/${NAMESPACE}/axartifactmanager:${VERSION}
+                env:
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                 ports:
                   - containerPort: 9892
                 resources:

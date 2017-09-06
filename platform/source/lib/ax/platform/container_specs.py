@@ -65,6 +65,7 @@ class ArtifactsContainer(Container):
         self.add_env("AX_POD_NAMESPACE", value_from="metadata.namespace")
         self.add_env("AX_NODE_NAME", value_from="spec.nodeName")
         self.add_env("ARGO_LOG_BUCKET_NAME", os.getenv("ARGO_LOG_BUCKET_NAME", ""))
+        self.add_env("ARGO_DATA_BUCKET_NAME", os.getenv("ARGO_DATA_BUCKET_NAME", ""))
 
         annotation_vol = ContainerVolume("annotations", "/etc/axspec")
         annotation_vol.set_type("DOWNWARDAPI", "metadata.annotations")
@@ -103,7 +104,7 @@ class SidecarTask(WaitContainer):
         # Sidecar needs to manage logs so add the log path here
         logpath = ContainerVolume("containerlogs", "/logs")
         if Cloud().in_cloud_aws():
-            logpath.set_type("HOSTPATH", "/mnt/ephemeral/docker/containers")
+            logpath.set_type("HOSTPATH", "/var/lib/docker/containers")
         elif Cloud().in_cloud_gcp():
             logpath.set_type("HOSTPATH", "/var/lib/docker/containers")
         self.add_volume(logpath)

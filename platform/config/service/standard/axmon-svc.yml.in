@@ -46,6 +46,8 @@ spec:
                 command: ["/ax/bin/axmon"]
                 #imagePullPolicy: Always
                 env:
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                   - name: ARGO_DIST_REGISTRY
                     value: "${REGISTRY}"
                   - name: ARGO_DIST_REGISTRY_SECRETS

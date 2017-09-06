@@ -48,7 +48,8 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
         self._cluster_name_id = cluster_name_id
 
         self._config = AXClusterConfig(cluster_name_id=cluster_name_id, aws_profile=aws_profile)
-        self._kube_config = kube_config if kube_config else self.default_config_path.format(cluster_name_id)
+        tmp_kube_config = kube_config if kube_config else self.default_config_path.format(cluster_name_id)
+        self._kube_config = os.getenv("ARGO_KUBE_CONFIG_PATH", tmp_kube_config)
         self._key_file = key_file if key_file else self.default_key_path.format(cluster_name_id)
         self._metadata_file = metadata if metadata else self.default_cluster_meta_path
 
