@@ -11,7 +11,7 @@ from future.utils import with_metaclass
 from ax.meta import AXClusterId
 from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.ax_cluster_info import AXClusterInfo
-
+from .state import ClusterStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +66,57 @@ def check_cluster_staging(cluster_info_obj, stage):
 
 
 class ClusterOperationBase(with_metaclass(abc.ABCMeta, object)):
-    def __init__(self, cluster_name, cluster_id=None, cloud_profile=None):
+    def __init__(self, cluster_name, cluster_id=None, cloud_profile=None, generate_name_id=False, dry_run=True):
         if cluster_id:
             input_name = "{}-{}".format(cluster_name, cluster_id)
         else:
             input_name = cluster_name
 
         self._idobj = AXClusterId(name=input_name, aws_profile=cloud_profile)
+        if generate_name_id:
+            # This is used during installation to pre-generate cluster name id record
+            try:
+                self._idobj.get_cluster_name_id()
+            except Exception as e:
+                logger.info("Cannot find cluster name id: %s. Cluster is not yet created.", e)
+                self._idobj.create_cluster_name_id()
+        self._csm = ClusterStateMachine(cluster_name_id=self._idobj.get_cluster_name_id(), cloud_profile=cloud_profile)
+        self._dry_run = dry_run
+
+    def start(self):
+        self.pre_run()
+        self.run()
+        self.post_run()
 
     @abc.abstractmethod
     def run(self):
+        """
+        Main operation logics
+        :return:
+        """
         pass
+
+    @abc.abstractmethod
+    def pre_run(self):
+        """
+        Pre run actions, mainly setup / validations
+        :return:
+        """
+        pass
+
+    @abc.abstractmethod
+    def post_run(self):
+        """
+        Post run actions, i.e. cleanups
+        :return:
+        """
+        pass
+
+    def _persist_cluster_state_if_needed(self):
+        if self._dry_run:
+            logger.info("DRY RUN: not persisting cluster state")
+        else:
+            self._csm.persist_state()
 
 
 class CommonClusterOperations(object):

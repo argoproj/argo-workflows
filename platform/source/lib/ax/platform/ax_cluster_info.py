@@ -62,6 +62,7 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
         self._s3_cluster_software_info = config_path.versions()
         self._s3_platform_manifest_dir = config_path.platform_manifest_dir()
         self._s3_platform_config = config_path.platform_config()
+        self._s3_cluster_current_state = config_path.current_state()
 
         self._s3_master_config_prefix = config_path.master_config_dir()
         self._s3_master_attributes_path = config_path.master_attributes_path()
@@ -250,6 +251,16 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
         if not self._bucket.delete_object(key=self._staging_info[stage]):
             raise AXPlatformException("Failed to delete {} information".format(stage))
         logger.info("Deleted Argo install %s info from s3 ...", stage)
+
+    def download_cluster_current_state(self):
+        logger.info("Downloading cluster current state ...")
+        return self._bucket.get_object(key=self._s3_cluster_current_state)
+
+    def upload_cluster_current_state(self, state):
+        logger.info("Uploading cluster current state ...")
+        if not self._bucket.put_object(key=self._s3_cluster_current_state, data=state):
+            raise AXPlatformException("Failed to upload cluster current state info for {}".format(self._cluster_name_id))
+        logger.info("Uploading cluster current state ... DONE")
 
     def get_kube_config_file_path(self):
         """
