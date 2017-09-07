@@ -1,8 +1,8 @@
 <div class="row white-box">
     <div class="columns small-12 large-7">
         <h6>{{ 'Spot Instance Configuration' | translate }}</h6>
-        <button axButtonWave class="ax-button ax-button--base-o spot-instance__btn" (click)="onChangeStatus('none')" [disabled]="spotInstancesOption === 'none'">{{ 'None' | translate | uppercase }}</button>
-        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeStatus('partial')" [disabled]="spotInstancesOption === 'partial'">{{ 'Partial' | translate| uppercase }}</button>
-        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeStatus('all')" [disabled]="spotInstancesOption === 'all'">{{ 'Full' | translate | uppercase }}</button>
+        <button axButtonWave class="ax-button ax-button--base-o spot-instance__btn" (click)="onChangeOption('none')" [disabled]="spotInstancesOption === 'none'">{{ 'None' | translate | uppercase }}</button>
+        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('partial')" [disabled]="spotInstancesOption === 'partial'">{{ 'Partial' | translate| uppercase }}</button>
+        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('all')" [disabled]="spotInstancesOption === 'all'">{{ 'Full' | translate | uppercase }}</button>
     </div>
 </div>
