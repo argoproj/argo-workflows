@@ -11,6 +11,7 @@ export class JobsFilters extends InitFilters {
     statuses?: string[] = [];
     authors?: string[] = [];
     artifact_tags?: string[] = [];
+    templates?: string[] = [];
 }
 
 export class CommitsFilters extends InitFilters {

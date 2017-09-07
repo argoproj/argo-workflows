@@ -100,6 +100,15 @@ export class TemplateService {
         return this._http.get(`v1/templates`, { search: search, headers: customHeader }).map(res => res.json());
     }
 
+    public getUniqueListOfTemplates(showLoader = true) {
+        let search = new URLSearchParams();
+        search.set('sort', 'name');
+        search.set('fields', 'name');
+        search.set('dedup', 'true');
+
+        return this._http.get(`v1/templates`, { search: search, headers: new AxHeaders({noLoader: showLoader}) }).map(res => res.json());
+    }
+
     getTemplateByIdAsync(templateId, noErrorHandling = false): Observable<Template> {
         return this._http.get(`v1/templates/${templateId}`, { headers: new AxHeaders({ noErrorHandling }) }).map(res => res.json());
     }
