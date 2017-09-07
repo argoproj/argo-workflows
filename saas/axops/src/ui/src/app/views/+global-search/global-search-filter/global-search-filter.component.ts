@@ -390,7 +390,7 @@ export class GlobalSearchFilterComponent implements OnChanges, OnDestroy {
 
     public onTemplateQuery() {
         if (this.templateFilter.isVisible && this.templateFilter.items.length === 0) {
-            this.templateService.getUniqueListOfTemplates().toPromise().then((res: { data: Template[]}) => {
+            this.templateService.getTemplatesAsync({ dedup: true, fields: ['name'], sort: 'name'}, false).toPromise().then((res: { data: Template[]}) => {
                 let templatesList = res.data.map(template => {
                     return { name: template.name, value: template.name, checked: false };
                 });
