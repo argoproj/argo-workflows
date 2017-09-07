@@ -121,6 +121,7 @@ class AXClusterConfigPath(with_metaclass(Singleton, AXConfigBase)):
     CLUSTER_TERRAFORM_DIR = "{name}/{id}/terraform/"
     CLUSTER_S3_PLATFORM_MANIFEST_DIR = "{name}/{id}/platform/manifests/"
     CLUSTER_S3_PLATFORM_CONFIG = "{name}/{id}/platform/config"
+    CLUSTER_S3_CURRENT_STATE = "{name}/{id}/current_state"
 
     def __init__(self, name_id):
         super(AXClusterConfigPath, self).__init__(name_id)
@@ -173,6 +174,9 @@ class AXClusterConfigPath(with_metaclass(Singleton, AXConfigBase)):
 
     def platform_config(self):
         return self.CLUSTER_S3_PLATFORM_CONFIG.format(name=self._cluster_name, id=self._cluster_id)
+
+    def current_state(self):
+        return self.CLUSTER_S3_CURRENT_STATE.format(name=self._cluster_name, id=self._cluster_id)
 
 
 class AXClusterDataPath(with_metaclass(Singleton, AXConfigBase)):

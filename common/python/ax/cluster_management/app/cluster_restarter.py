@@ -11,6 +11,7 @@ Module for pausing an Argo cluster
 
 import logging
 import yaml
+import sys
 import time
 
 from ax.cloud.aws import EC2InstanceState
@@ -43,7 +44,8 @@ class ClusterResumer(ClusterOperationBase):
         super(ClusterResumer, self).__init__(
             cluster_name=self._cfg.cluster_name,
             cluster_id=self._cfg.cluster_id,
-            cloud_profile=self._cfg.cloud_profile
+            cloud_profile=self._cfg.cloud_profile,
+            dry_run=self._cfg.dry_run
         )
 
         # This will raise exception if name/id mapping cannot be found
@@ -76,11 +78,20 @@ class ClusterResumer(ClusterOperationBase):
             )
         )
 
-    def run(self):
-        # Abort operation if cluster is not successfully installed
+    def pre_run(self):
+        if self._csm.is_running():
+            logger.info("Cluster is already running.")
+            sys.exit(0)
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2"):
             raise RuntimeError("Cluster is not successfully installed: Stage2 information missing! Operation aborted.")
+        self._csm.do_resume()
+        self._persist_cluster_state_if_needed()
 
+    def post_run(self):
+        self._csm.done_resume()
+        self._persist_cluster_state_if_needed()
+
+    def run(self):
         if self._cfg.dry_run:
             logger.info("DRY RUN: Resuming cluster %s with software info %s",
                         self._name_id, self._software_info.to_dict())

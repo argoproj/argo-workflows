@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import yaml
 from pprint import pformat
 from retrying import retry
@@ -63,19 +64,12 @@ class ClusterInstaller(ClusterOperationBase):
         super(ClusterInstaller, self).__init__(
             cluster_name=self._cfg.cluster_name,
             cluster_id=self._cfg.cluster_id,
-            cloud_profile=self._cfg.cloud_profile
+            cloud_profile=self._cfg.cloud_profile,
+            generate_name_id=True,
+            dry_run=self._cfg.dry_run
         )
 
-        # This might make constructor heavy, but we need name_id to initialize critical objects
-        # such as AXClusterConfig and AXClusterInfo. It works technically if we initialize them
-        # to None and instantiate them when needed, but it makes programing error prone since python
-        # is not typed. The reason is that if you initialize these objects in other functions, IDE
-        # won't know the type of them and thus there will be no error checking about how you use them
-        try:
-            self._name_id = self._idobj.get_cluster_name_id()
-        except Exception as e:
-            logger.info("Cannot find cluster name id: %s. Cluster is not yet created.", e)
-            self._name_id = self._idobj.create_cluster_name_id()
+        self._name_id = self._idobj.get_cluster_name_id()
 
         # Ensure cluster buckets before instantiating any class that uses cluster buckets
         # Note that AXClusterId object is an exception as we need to create cluster name_id
@@ -89,6 +83,17 @@ class ClusterInstaller(ClusterOperationBase):
 
         self._cluster_config = AXClusterConfig(cluster_name_id=self._name_id, aws_profile=self._cfg.cloud_profile)
         self._cluster_info = AXClusterInfo(cluster_name_id=self._name_id, aws_profile=self._cfg.cloud_profile)
+
+    def pre_run(self):
+        if self._csm.is_running():
+            logger.info("Cluster is already installed and running. Please ask your administrator")
+            sys.exit(0)
+        self._csm.do_install()
+        self._persist_cluster_state_if_needed()
+
+    def post_run(self):
+        self._csm.done_install()
+        self._persist_cluster_state_if_needed()
 
     def run(self):
         """
