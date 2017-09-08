@@ -102,6 +102,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     }
 
     ngOnInit() {
+        let that = this;
         this.chartOptions = {
             chart: {
                 type: 'pieChart',
@@ -115,7 +116,14 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
                 donut: true,
                 donutRatio: 0.54,
                 tooltip: { enabled: false },
-                color: ['#18BE94', '#E96D76', '#FBB465', '#0DADEA', '#ccc']
+                color: ['#18BE94', '#E96D76', '#FC9820', '#0DADEA', '#ccc'],
+                pie: {
+                    dispatch: {
+                        elementClick: function(e) {
+                            that.navitageToGlobalSearch(e.index);
+                        }
+                    }
+                }
             }
         };
     }
@@ -344,5 +352,9 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         this.range = range;
         this.selectedCustomViewName = selectedCustomViewName;
         this.sortBy = sortBy;
+    }
+
+    private navitageToGlobalSearch(pieChartPartIndex: number) {
+        console.log(pieChartPartIndex);
     }
 }
