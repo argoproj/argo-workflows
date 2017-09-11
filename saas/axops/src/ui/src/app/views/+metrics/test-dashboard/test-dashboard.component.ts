@@ -1,14 +1,15 @@
 import * as _ from 'lodash';
 import { Observable } from 'rxjs';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, NgZone } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { LayoutSettings, HasLayoutSettings } from '../../layout';
 import { TaskStatus, LABEL_TYPES, CustomView, CustomViewInfo, CUSTOM_VIEW_TYPES } from '../../../model';
 import { TaskService, CustomViewService, ModalService } from '../../../services';
 import { SortOperations } from '../../../common/sortOperations/sortOperations';
 
-import { BranchesFiltersComponent, LabelsFiltersComponent, TemplatesFiltersComponent } from '../../../common';
+import { BranchesFiltersComponent, LabelsFiltersComponent, TemplatesFiltersComponent, GlobalSearchFilters } from '../../../common';
 import { NotificationsService, DateRange } from 'argo-ui-lib/src/components';
 
 declare let d3: any;
@@ -61,6 +62,8 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     templatesFilter: TemplatesFiltersComponent;
 
     constructor(private router: Router,
+                private zone: NgZone,
+                private location: Location,
                 private activatedRoute: ActivatedRoute,
                 private taskService: TaskService,
                 private customViewService: CustomViewService,
@@ -119,8 +122,11 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
                 color: ['#18BE94', '#E96D76', '#FC9820', '#0DADEA', '#ccc'],
                 pie: {
                     dispatch: {
-                        elementClick: function(e) {
-                            that.navitageToGlobalSearch(e.index);
+                        elementClick: (e) => {
+                            that.zone.run(() => {
+                                let chartIndex = $(e.element).closest('.chart-index').prop('id');
+                                that.navitageToGlobalSearch(chartIndex, e.index);
+                            });
                         }
                     }
                 }
@@ -260,6 +266,33 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             });
     }
 
+    private navitageToGlobalSearch(pieChartPartIndex: number, piePieceIndex: '1' | '2' | '3' | '4' | '5') { // Success, Failed, Init, Running, Waiting
+        console.log(pieChartPartIndex, piePieceIndex, this.templatesInfo[pieChartPartIndex]);
+
+        let filters = new GlobalSearchFilters();
+        switch (piePieceIndex) {
+            case '1':
+                console.log('success', 1)
+                break;
+            case '2':
+                console.log('failed', 2)
+                break;
+            case '3':
+                console.log('init', 3)
+                break;
+            case '4':
+                console.log('running', 4)
+                break;
+            case '5':
+                console.log('waiting', 5)
+                break;
+        }
+        // if (applicationName) {
+        //     filters.jobs.app_name = [applicationName];
+        // }
+        this.router.navigate(['/app/search', { category: 'jobs', backRoute: this.location.path(), filters: JSON.stringify(filters)}]);
+    }
+
     private navigate(params: any) {
         let routeParams = <any>{};
         _.extend(routeParams, this.activatedRoute.snapshot.params, params);
@@ -352,9 +385,5 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         this.range = range;
         this.selectedCustomViewName = selectedCustomViewName;
         this.sortBy = sortBy;
-    }
-
-    private navitageToGlobalSearch(pieChartPartIndex: number) {
-        console.log(pieChartPartIndex);
     }
 }
