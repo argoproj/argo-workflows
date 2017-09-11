@@ -13,6 +13,7 @@ import logging
 import json
 import subprocess
 import yaml
+import requests
 
 from ax.cloud import Cloud
 from ax.cloud.aws import AWS_DEFAULT_PROFILE
@@ -32,6 +33,9 @@ from .common import ClusterOperationBase, check_cluster_staging
 from .options import ClusterUninstallConfig
 
 logger = logging.getLogger(__name__)
+
+ARGO_UNINSTALL_START_DOWNLOAD = "https://s3-us-west-1.amazonaws.com/ax-public/downloads/uninstall_start"
+ARGO_UNINSTALL_FINISH_DOWNLOAD = "https://s3-us-west-1.amazonaws.com/ax-public/downloads/uninstall_finish"
 
 
 class ClusterUninstaller(ClusterOperationBase):
@@ -77,6 +81,10 @@ class ClusterUninstaller(ClusterOperationBase):
         if self._cfg.dry_run:
             logger.info("DRY RUN: Uninstalling cluster %s", self._name_id)
             return
+        try:
+            requests.get(ARGO_UNINSTALL_START_DOWNLOAD)
+        except:
+            pass
 
         logger.info("%s\n\nUninstalling cluster %s%s\n", COLOR_GREEN, self._name_id, COLOR_NORM)
 
@@ -98,6 +106,11 @@ class ClusterUninstaller(ClusterOperationBase):
         except Exception as e:
             logger.exception(e)
             raise RuntimeError(e)
+
+        try:
+            requests.get(ARGO_UNINSTALL_FINISH_DOWNLOAD)
+        except:
+            pass
 
     def _ensure_critical_information(self):
         """
