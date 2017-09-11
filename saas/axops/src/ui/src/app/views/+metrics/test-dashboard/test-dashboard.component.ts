@@ -8,6 +8,7 @@ import { LayoutSettings, HasLayoutSettings } from '../../layout';
 import { TaskStatus, LABEL_TYPES, CustomView, CustomViewInfo, CUSTOM_VIEW_TYPES } from '../../../model';
 import { TaskService, CustomViewService, ModalService } from '../../../services';
 import { SortOperations } from '../../../common/sortOperations/sortOperations';
+import { TASK_STATUSES } from '../../../pipes/statusToNumber.pipe';
 
 import { BranchesFiltersComponent, LabelsFiltersComponent, TemplatesFiltersComponent, GlobalSearchFilters } from '../../../common';
 import { NotificationsService, DateRange } from 'argo-ui-lib/src/components';
@@ -266,30 +267,29 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             });
     }
 
-    private navitageToGlobalSearch(pieChartPartIndex: number, piePieceIndex: '1' | '2' | '3' | '4' | '5') { // Success, Failed, Init, Running, Waiting
-        console.log(pieChartPartIndex, piePieceIndex, this.templatesInfo[pieChartPartIndex]);
-
+    private navitageToGlobalSearch(pieChartPartIndex: number, piecePieIndex: 0 | 1 | 2 | 3 | 4 ) { // Success, Failed, Init, Running, Waiting
         let filters = new GlobalSearchFilters();
-        switch (piePieceIndex) {
-            case '1':
-                console.log('success', 1)
+        switch (piecePieIndex) {
+            case 0:
+                filters.jobs.statuses = [ TASK_STATUSES.SUCCESSFUL ];
                 break;
-            case '2':
-                console.log('failed', 2)
+            case 1:
+                filters.jobs.statuses = [ TASK_STATUSES.FAILED ];
                 break;
-            case '3':
-                console.log('init', 3)
+            case 2:
+                filters.jobs.statuses = [ TASK_STATUSES.IN_PROGRESS ];
                 break;
-            case '4':
-                console.log('running', 4)
+            case 3:
+                filters.jobs.statuses = [ TASK_STATUSES.IN_PROGRESS ];
                 break;
-            case '5':
-                console.log('waiting', 5)
+            case 4:
+                filters.jobs.statuses = [ TASK_STATUSES.QUEUED ];
                 break;
         }
-        // if (applicationName) {
-        //     filters.jobs.app_name = [applicationName];
-        // }
+
+        filters.jobs.templates = [ this.templatesInfo[pieChartPartIndex].name ];
+        filters.jobs.repo = [ this.templatesInfo[pieChartPartIndex].repo ];
+
         this.router.navigate(['/app/search', { category: 'jobs', backRoute: this.location.path(), filters: JSON.stringify(filters)}]);
     }
 
