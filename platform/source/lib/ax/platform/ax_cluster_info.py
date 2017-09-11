@@ -63,6 +63,7 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
         self._s3_platform_manifest_dir = config_path.platform_manifest_dir()
         self._s3_platform_config = config_path.platform_config()
         self._s3_cluster_current_state = config_path.current_state()
+        self._s3_portal_support_flag = config_path.portal_support()
 
         self._s3_master_config_prefix = config_path.master_config_dir()
         self._s3_master_attributes_path = config_path.master_attributes_path()
@@ -261,6 +262,23 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
         if not self._bucket.put_object(key=self._s3_cluster_current_state, data=state):
             raise AXPlatformException("Failed to upload cluster current state info for {}".format(self._cluster_name_id))
         logger.info("Uploading cluster current state ... DONE")
+
+    def enable_portal_support(self):
+        logger.info("Setting portal support flag ...")
+        if not self._bucket.put_object(key=self._s3_portal_support_flag, data="True"):
+            raise AXPlatformException("Failed to upload cluster status before pause")
+        logger.info("Setting portal support flag ... DONE")
+
+    def disable_portal_support(self):
+        logger.info("Deleting portal support flag ...")
+        if not self._bucket.delete_object(key=self._s3_portal_support_flag):
+            raise AXPlatformException("Failed to upload cluster status before pause")
+        logger.info("Deleted portal support flag")
+
+    def is_cluster_supported_by_portal(self):
+        logger.info("Checking portal support flag ...")
+        data = self._bucket.get_object(key=self._s3_portal_support_flag)
+        return False if not data else True
 
     def get_kube_config_file_path(self):
         """
