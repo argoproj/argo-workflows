@@ -79,6 +79,9 @@ class ClusterResumer(ClusterOperationBase):
         )
 
     def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
+
         if self._csm.is_running():
             logger.info("Cluster is already running.")
             sys.exit(0)
