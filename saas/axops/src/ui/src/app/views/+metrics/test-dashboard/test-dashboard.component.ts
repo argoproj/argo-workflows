@@ -42,7 +42,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     selectedRepo: string = null;
     selectedBranch: string = null;
     selectedLabels: string = null;
-    selectedTemplateIds: string = null;
+    selectedTemplateNames: string = null;
     selectedCustomView: CustomView = null;
     selectedCustomViewName: string = null;
     filterInfo: string = '';
@@ -148,7 +148,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
 
     get isFiltered(): boolean {
         return (this.selectedBranch != null || this.selectedRepo != null ||
-            this.selectedLabels != null || this.selectedTemplateIds != null);
+            this.selectedLabels != null || this.selectedTemplateNames != null);
     }
 
     byName(info: TemplateInfo) {
@@ -168,7 +168,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = this.branchesFilter.selectedRepo ? encodeURIComponent(this.branchesFilter.selectedRepo) : null;
         params.branch = this.branchesFilter.selectedBranch ? encodeURIComponent(this.branchesFilter.selectedBranch) : null;
         params.labels = this.labelsFilter.selectedLabels ? encodeURIComponent(this.labelsFilter.selectedLabels) : null;
-        params.template = this.templatesFilter.selectedTemplateIds ? encodeURIComponent(this.templatesFilter.selectedTemplateIds) : null;
+        params.template_name = this.templatesFilter.selectedTemplateNames ? encodeURIComponent(this.templatesFilter.selectedTemplateNames) : null;
         this.navigate(params);
     }
 
@@ -179,7 +179,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = customViewInfo.repo ? encodeURIComponent(customViewInfo.repo) : null;
         params.branch = customViewInfo.branch ? encodeURIComponent(customViewInfo.branch) : null;
         params.labels = customViewInfo.labels ? encodeURIComponent(customViewInfo.labels) : null;
-        params.template = customViewInfo.template ? encodeURIComponent(customViewInfo.template) : null;
+        params.template_name = customViewInfo.template_name ? encodeURIComponent(customViewInfo.template_name) : null;
         params.custom_view = customView.name ? encodeURIComponent(customView.name) : null;
         this.navigate(params);
     }
@@ -203,7 +203,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     onFilterTabChange(event: any) {
         if (event.selectedTab.tabKey === 'service-templates') {
             if (!this.templatesFilter.templates.length) {
-                this.templatesFilter.loadTemplates(0);
+                this.templatesFilter.loadTemplates();
             }
         }
     }
@@ -221,7 +221,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         info.repo = this.selectedRepo;
         info.branch = this.selectedBranch;
         info.labels = this.selectedLabels;
-        info.template = this.selectedTemplateIds;
+        info.template_name = this.selectedTemplateNames;
         this.selectedCustomView.info = JSON.stringify(info);
         this.showCustomViewPopup = true;
     }
@@ -231,7 +231,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = null;
         params.branch = null;
         params.labels = null;
-        params.template = null;
+        params.template_name = null;
         params.custom_view = null;
         this.navigate(params);
     }
@@ -316,7 +316,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             repo: this.selectedRepo,
             // Note: backend api only expects ';' to be encoded not the ':'
             labels: labelsQ,
-            templateIds: this.selectedTemplateIds,
+            template_name: this.selectedTemplateNames,
             fields: ['commit', 'template', 'status']
         }, false).map(res => {
             let templateToInfo = new Map<string, TemplateInfo>();
@@ -363,7 +363,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         let selectedBranch = params['branch'] ? decodeURIComponent(params['branch']) : null;
         let selectedRepo = params['repo'] ? decodeURIComponent(params['repo']) : null;
         let selectedLabels = params['labels'] ? decodeURIComponent(params['labels']) : null;
-        let selectedTemplateIds = params['template'] ? decodeURIComponent(params['template']) : null;
+        let selectedTemplateNames = params['template_name'] ? decodeURIComponent(params['template_name']) : null;
         let selectedCustomViewName = params['custom_view'] ? decodeURIComponent(params['custom_view']) : null;
         let sortBy = params['sort_by'] ? decodeURIComponent(params['sort_by']) : SORT_BY.spending;
 
@@ -371,7 +371,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             selectedBranch !== this.selectedBranch ||
             selectedRepo !== this.selectedRepo ||
             selectedLabels !== this.selectedLabels ||
-            selectedTemplateIds !== this.selectedTemplateIds ||
+            selectedTemplateNames !== this.selectedTemplateNames ||
             selectedCustomViewName !== this.selectedCustomViewName ||
             sortBy !== this.sortBy
         ) {
@@ -381,7 +381,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         this.selectedBranch = selectedBranch;
         this.selectedRepo = selectedRepo;
         this.selectedLabels = selectedLabels;
-        this.selectedTemplateIds = selectedTemplateIds;
+        this.selectedTemplateNames = selectedTemplateNames;
         this.range = range;
         this.selectedCustomViewName = selectedCustomViewName;
         this.sortBy = sortBy;

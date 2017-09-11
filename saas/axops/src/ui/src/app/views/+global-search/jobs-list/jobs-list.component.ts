@@ -76,7 +76,8 @@ export class JobsListComponent implements OnChanges, OnDestroy {
             authors: this.filters.authors,
             artifact_tags: this.filters.artifact_tags,
             branch: this.filters.branch,
-            repo: this.filters.repo
+            repo: this.filters.repo,
+            templates: this.filters.templates,
         };
         // restart pagination if changed search parameters
         this.pagination = {limit: this.limit, offset: 0, listLength: this.tasks.length};
@@ -156,6 +157,7 @@ export class JobsListComponent implements OnChanges, OnDestroy {
             repo: null,
             branches: null,
             username: null,
+            template_name: null,
             fields: [
                 TaskFieldNames.name,
                 TaskFieldNames.status,
@@ -208,6 +210,11 @@ export class JobsListComponent implements OnChanges, OnDestroy {
 
             parameters.branches = parameters.branches || [];
             parameters.branches = parameters.branches.concat(branches || []);
+        }
+
+
+        if (params.templates && params.templates.length) {
+            parameters.template_name = params.templates;
         }
 
         return this.taskService.getTasks(parameters, true);

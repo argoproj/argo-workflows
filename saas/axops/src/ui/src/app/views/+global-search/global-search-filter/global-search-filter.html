@@ -77,6 +77,18 @@
                 (onQuery)="onRepoQuery($event)">
         </ax-filter-multi-select>
     </div>
+    <div class="global-search-filters__item" *ngIf="templateFilter.isVisible">
+        <ax-filter-multi-select
+                [brightStyle]="true"
+                [width]="195"
+                [texts]="templateFilter.messages"
+                [items]="templateFilter.items"
+                [isStaticList]="templateFilter.isStaticList"
+                [selectedItems]="filters[category].templates"
+                (onChange)="onTemplateChange($event)"
+                (onQuery)="onTemplateQuery($event)">
+        </ax-filter-multi-select>
+    </div>
     <div class="global-search-filters__item" *ngIf="appNameFilter.isVisible">
         <ax-filter-multi-select
                 [brightStyle]="true"
