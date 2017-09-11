@@ -66,6 +66,8 @@ class ClusterPauser(ClusterOperationBase):
         self._cidr = str(get_public_ip()) + "/32"
 
     def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
         if self._csm.is_paused():
             logger.info("Cluster is already paused.")
             sys.exit(0)

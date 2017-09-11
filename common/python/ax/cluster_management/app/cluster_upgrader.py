@@ -70,6 +70,9 @@ class ClusterUpgrader(ClusterOperationBase):
         self._upgrade_service_needed = True
 
     def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
+
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2"):
             raise RuntimeError("Cluster is not successfully installed: Stage2 information missing! Operation aborted.")
 
