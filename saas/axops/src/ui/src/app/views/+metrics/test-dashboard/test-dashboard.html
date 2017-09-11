@@ -32,7 +32,7 @@
                     <span *ngIf="selectedBranch" class="label text-truncate">{{selectedBranch}}</span>
                     <span *ngIf="selectedRepo" class="label text-truncate">{{selectedRepo}}</span>
                     <span *ngIf="selectedLabels" class="label text-truncate">{{selectedLabels}}</span>
-                    <span *ngIf="selectedTemplateIds && templatesFilter.selectedTemplateNames | async" class="label text-truncate">{{templatesFilter.selectedTemplateNames | async}}</span>
+                    <span *ngIf="selectedTemplateNames" class="label text-truncate">{{selectedTemplateNames}}</span>
                 </span>
                 <span *ngIf="isFiltered">
                     <i class="fa fa-times" aria-hidden="true" (click)="clearFilters()"></i>
@@ -138,7 +138,7 @@
     </div>
 </div>
 
-<ax-sliding-panel [show]="filtersPanel" [hasCloseButton]="false" (closePanel)="closePanel()">
+<ax-sliding-panel [show]="filtersPanel" [hasNoPadding]="true" [hasCloseButton]="false" (closePanel)="closePanel()">
     <sliding-panel-header>
         <button axButtonWave class="ax-button ax-button--base" type="button" (click)="applyFilters()">Apply</button>
         <button axButtonWave class="ax-button" type="button" (click)="closePanel()">Cancel</button>
@@ -152,7 +152,7 @@
                 <ax-labels-filters [setSelectedLabels]="selectedLabels" [labelsType]="labelType"></ax-labels-filters>
             </ax-tab>
             <ax-tab [tabKey]="'service-templates'" [tabTitle]="'Templates'">
-                <ax-templates-filters [selectedTemplateIds]="selectedTemplateIds" [selectedRepo]="selectedRepo" [selectedBranch]="selectedBranch"></ax-templates-filters>
+                <ax-templates-filters [selectedTemplateNames]="selectedTemplateNames"></ax-templates-filters>
             </ax-tab>
         </ax-tabs>
     </sliding-panel-body>
