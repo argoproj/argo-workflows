@@ -504,7 +504,7 @@ class AWSMinionManager(MinionManagerBase):
         app = Flask("MinionManagerRestAPI")
 
         def _update_config_map(enabled_str, asgs):
-            cmap = self.k8s_client.api.read_namespaced_config_map(
+            cmap = k8s_client.api.read_namespaced_config_map(
                 namespace=MM_CONFIG_MAP_NAMESPACE, name=MM_CONFIG_MAP_NAME)
             cmap.data["MM_SPOT_INSTANCE_ENABLED"] = enabled_str
             if asgs:

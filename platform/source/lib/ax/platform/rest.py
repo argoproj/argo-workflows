@@ -37,6 +37,7 @@ from ax.platform.bootstrap import AXBootstrap
 from ax.platform.deployments import Deployment
 from ax.platform.axmon_main import AXMon
 from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption
+from ax.platform.minion_management.spot_instance_option_manager import SpotInstanceOptionManager
 from ax.platform.volumes import VolumeManager
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.cloudprovider.aws import Route53, Route53HostedZone
@@ -203,25 +204,23 @@ def put_spot_instance_config():
         raise ValueError("enabled must be string or boolean")
     payload = {'enabled': enabled_str}
 
-    # Get "asgs" option
-    (asgs,) = _get_optional_arguments('asgs')
-    if asgs is not None:
-        assert asgs in SpotInstanceOption.VALID_SPOT_INSTANCE_OPTIONS, "Unknown spot-instance-option " + asgs
-        asg_option = ""
-        if asgs == SpotInstanceOption.PARTIAL_SPOT:
-            asg_option = asg_manager.get_variable_asg()["AutoScalingGroupName"]
-        elif asgs == SpotInstanceOption.ALL_SPOT:
-            for asg in asg_manager.get_all_asgs():
-                asg_option = asg_option + asg["AutoScalingGroupName"] + " "
-            # Remove the last <space>
-            asg_option = asg_option[:-1]
-        elif asgs == SpotInstanceOption.NO_SPOT:
+    # Get "spot_instances_option" option
+    (option,) = _get_optional_arguments('spot_instances_option')
+    if option is not None:
+        spotOptionMgr = SpotInstanceOptionManager(
+            cluster_name_id, AXClusterConfig().get_region())
+        asg_names = spotOptionMgr.option_to_asgs(option)
+        asg_option = " ".join(asg_names)
+
+        if option == SpotInstanceOption.NO_SPOT:
             _app.logger.info("ASGS passed in a \"none\". Disabling minion-manager.")
             enabled_str = "False"
             payload['enabled'] = enabled_str
+
         payload['asgs'] = asg_option
 
-    requests.put(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config", params=payload)
+    response = requests.put(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config", params=payload)
+    response.raise_for_status()
 
     _app.logger.info("Change in Spot instance config: {}".format(enabled_str))
     return jsonify({"status": "ok"})
@@ -230,7 +229,15 @@ def put_spot_instance_config():
 @_app.route("/v1/axmon/cluster/spot_instance_config", methods=['GET'])
 def get_spot_instance_config():
     response = requests.get(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config")
-    return response.text
+    response.raise_for_status()
+    details = response.json()
+    assert "asgs" in details, "No asgs returned by minion-manager"
+
+    spotOptionMgr = SpotInstanceOptionManager(
+        cluster_name_id, AXClusterConfig().get_region())
+    spot_option = spotOptionMgr.asgs_to_option(details["asgs"].split(" "))
+
+    return jsonify({"status": "ok", "enabled": details["status"], "spot_instances_option": spot_option})
 
 @_app.route("/v1/axmon/portal", methods=['GET'])
 def axmon_api_get_portal():
