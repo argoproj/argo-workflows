@@ -217,7 +217,8 @@ def put_spot_instance_config():
 
         payload['asgs'] = asg_option
 
-    requests.put(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config", params=payload)
+    response = requests.put(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config", params=payload)
+    response.raise_for_status()
 
     _app.logger.info("Change in Spot instance config: {}".format(enabled_str))
     return jsonify({"status": "ok"})
