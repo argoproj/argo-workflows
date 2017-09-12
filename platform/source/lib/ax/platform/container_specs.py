@@ -135,18 +135,24 @@ class InitContainerTask(ArtifactsContainer):
         self.args = ["pre"]
 
 
+class InitContainerSetup(Container):
+
+    def __init__(self):
+        super(InitContainerSetup, self).__init__("axsetup", "busybox:1.27.2-musl")
+        c = ContainerVolume("static-bin-share", "/copyout")
+        c.set_type("EMPTYDIR")
+        self.add_volume(c)
+        self.command = ["/bin/cp", "-f", "/bin/true", "/copyout"]
+
+
 class InitContainerPullImage(Container):
 
     def __init__(self, customer_image):
         super(InitContainerPullImage, self).__init__(INIT_CONTAINER_NAME_PULLIMAGE, customer_image)
-        nothing_hostpath = ContainerVolume("bin-nothing", "/bin/nothing")
-        if Cloud().in_cloud_aws():
-            nothing_hostpath.set_type("HOSTPATH", "/bin/nothing")
-        elif Cloud().in_cloud_gcp():
-            nothing_hostpath.set_type("HOSTPATH", "/etc/nothing")
-        self.add_volume(nothing_hostpath)
-
-        self.command = ["/bin/nothing"]
+        c = ContainerVolume("static-bin-share", "/staticbin")
+        c.set_type("EMPTYDIR")
+        self.add_volume(c)
+        self.command = ["/staticbin/true"]
 
         # AA-3175: CPU and memory are set to lowest possible so that pod requests are kept at a minimum
         self.add_resource_constraints("cpu_cores", 0.001)
