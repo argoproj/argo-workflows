@@ -85,6 +85,12 @@ class AXUserASGManager(with_metaclass(Singleton, object)):
     def get_all_asgs(self):
         return self.asgs.values()
 
+    def get_all_asg_names(self):
+        asg_names = []
+        for asg in self.asgs.values():
+            asg_names.append(asg["AutoScalingGroupName"])
+        return asg_names
+
     @retry(retry_on_exception=default_aws_retry, wait_exponential_multiplier=1000, stop_max_attempt_number=3)
     def set_asg_spec(self, name, minsize, maxsize, desired=-1):
         if desired < 0:
