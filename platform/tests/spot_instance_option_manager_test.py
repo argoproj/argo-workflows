@@ -10,7 +10,7 @@ import pytest
 import unittest
 
 from ax.platform.cluster_config import SpotInstanceOption
-from ax.platform.minion_management.spot_instance_option_manager import SpotInstanceOptionManager
+from ax.platform.minion_manager import SpotInstanceOptionManager
 import boto3
 from bunch import bunchify
 from moto import mock_autoscaling, mock_sts
