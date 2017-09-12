@@ -22,7 +22,7 @@ from ax.platform.exceptions import AXPlatformException
 from ax.platform.ax_monitor import AXKubeMonitor
 from ax.platform.ax_monitor_helper import KubeObjWaiter, KubeObjStatusCode
 from ax.platform.container import ContainerVolume
-from ax.platform.container_specs import InitContainerPullImage, InitContainerTask, SidecarDockerDaemon
+from ax.platform.container_specs import InitContainerPullImage, InitContainerTask, SidecarDockerDaemon, InitContainerSetup
 from ax.platform.container_specs import SIDEKICK_WAIT_CONTAINER_NAME, DIND_CONTAINER_NAME
 from ax.util.ax_artifact import AXArtifacts
 
@@ -375,10 +375,12 @@ class PodSpec(object):
             raise AXPlatformException("Pod needs to have main and wait container before enabling artifacts")
 
         # Add an init container that gets artifacts and creates mappings in the main container
+        c_setup = InitContainerSetup()
         customer_image = self.cmap["main"].image
         c_pullimage = InitContainerPullImage(customer_image)
         c_artifacts = InitContainerTask(customer_image, namespace, version)
 
+        self.add_init_container(c_setup)
         self.add_init_container(c_pullimage)
         self.add_init_container(c_artifacts)
 
