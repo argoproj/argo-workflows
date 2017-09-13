@@ -396,9 +396,9 @@
       "resolved": "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-1.1.2.tgz"
     },
     "argo-ui-lib": {
-      "version": "1.0.5",
-      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.6",
-      "resolved": "git+https://github.com/argoproj/ui-lib.git#f78f15c6c2f566534798a36d5eb211eaae36fb73"
+      "version": "1.0.6",
+      "from": "git+https://github.com/argoproj/ui-lib.git#4e54415",
+      "resolved": "git+https://github.com/argoproj/ui-lib.git#4e54415dde7b4eae31854b5cee03fa588435fae2"
     },
     "argparse": {
       "version": "1.0.9",
@@ -5510,7 +5510,7 @@
     },
     "svg-pathdata": {
       "version": "1.0.4",
-      "from": "svg-pathdata@>=1.0.3 <2.0.0",
+      "from": "svg-pathdata@>=1.0.4 <2.0.0",
       "resolved": "https://registry.npmjs.org/svg-pathdata/-/svg-pathdata-1.0.4.tgz",
       "dependencies": {
         "isarray": {

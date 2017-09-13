@@ -11,33 +11,14 @@
     </div>
     <div class="ax-toolbar-new__filters">
         <div class="ax-toolbar-new__filter" *ngIf="settings.layoutDateRange">
-            <ax-dropdown #dateRangeDropdown customClass="align-date-range-dropdown" class="timeline__date-range-dropdown">
-                <ax-dropdown-anchor>
-                    <div class="ax-toolbar-new__filter-btn">
-                        <i class="ax-icon-calendar" aria-hidden="true"></i> Date:
-                        {{dateRangeFormatted}}
-                        <i class="fa fa-angle-down" aria-hidden="true"></i>
-                    </div>
-                </ax-dropdown-anchor>
-                <ax-dropdown-content>
-                    <div>
-                        <ax-date-range-selector [input]="settings.layoutDateRange.data"
-                                                [allowAll]="settings.layoutDateRange.isAllDates || false"></ax-date-range-selector>
-                        <div class="date-range-selector__footer">
-                            <div class="row">
-                                <div class="columns small-3">
-                                    <button axButtonWave class="ax-button ax-button--base ax-button--full-width" type="button"
-                                            (click)="applyDateRangeSelection()">Apply</button>
-                                </div>
-                                <div class="columns small-3">
-                                    <button axButtonWave class="ax-button ax-button--link ax-button--full-width" type="button"
-                                            (click)="cancelDateRangeSelection()">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </ax-dropdown-content>
-            </ax-dropdown>
+            <ax-date-range-dropdown [range]="settings.layoutDateRange.data" (rangeChanged)="applyDateRangeSelection($event)"
+                                    [allowAll]="settings.layoutDateRange.isAllDates || false">
+                <div class="ax-toolbar-new__filter-btn">
+                    <i class="ax-icon-calendar" aria-hidden="true"></i> Date:
+                    {{dateRangeFormatted}}
+                    <i class="fa fa-angle-down" aria-hidden="true"></i>
+                </div>
+            </ax-date-range-dropdown>
         </div><!--
         --><div class="ax-toolbar-new__filter" *ngIf="settings.toolbarFilters && settings.toolbarFilters.data.length > 0"
              [class.has-filter]="hasFilters">
