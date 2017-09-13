@@ -37,7 +37,7 @@ from ax.platform.bootstrap import AXBootstrap
 from ax.platform.deployments import Deployment
 from ax.platform.axmon_main import AXMon
 from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption
-from ax.platform.minion_management.spot_instance_option_manager import SpotInstanceOptionManager
+from ax.platform.minion_manager import SpotInstanceOptionManager
 from ax.platform.volumes import VolumeManager
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.cloudprovider.aws import Route53, Route53HostedZone
