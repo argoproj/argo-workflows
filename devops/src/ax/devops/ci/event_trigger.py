@@ -3,6 +3,7 @@ import logging
 import re
 import requests
 
+from urllib.parse import urlparse
 from ax.devops.axdb.axops_client import AxopsClient
 from ax.devops.ci.constants import AxCommands, AxEventTypes
 from ax.devops.exceptions import YamlUpdateError
@@ -110,6 +111,10 @@ class EventTrigger(object):
         """
         applicable_policies = []
         if event['type'] == AxEventTypes.PULL_REQUEST:
+            # Verify is the source repo of the pull request is configured in the integration page
+            if not self.verify_repo_configured(event['source_repo']):
+                return applicable_policies
+
             key_repo, key_branch = 'target_repo', 'target_branch'
         else:
             key_repo, key_branch = 'repo', 'branch'
@@ -121,6 +126,29 @@ class EventTrigger(object):
                 applicable_policies.append(policy)
 
         return applicable_policies
+
+    def verify_repo_configured(self, repo_url):
+        """Verify is the repo is integrated into argo from the tools integration page"""
+        tools = self.axops_client.get_tools(category='scm')
+        for tool in tools:
+            repo_list = tool['repo']
+            for repo in repo_list:
+                res = self.get_vendor_owner_name(repo)
+                if res and res == self.get_vendor_owner_name(repo_url):
+                    return True
+        return False
+
+    @staticmethod
+    def get_vendor_owner_name(repo_url):
+        """Get vendor, repo owner and repo name from the repo url"""
+        parsed_url = urlparse(repo_url)
+        protocol, vendor = parsed_url.scheme, parsed_url.hostname
+        m = re.match(r'/([a-zA-Z0-9-]+)/([a-zA-Z0-9_.-]+)', parsed_url.path)
+        if not m:
+            logger.warning('Illegal repo URL: %s, skip', parsed_url)
+            return []
+        _, repo_owner, repo_name = parsed_url.path.split('/', maxsplit=2)
+        return [vendor, repo_owner, repo_name]
 
     def match(self, policy, event):
         """Determine if a policy is applicable to an event.
