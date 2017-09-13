@@ -107,7 +107,7 @@ def test():
 @app.route('/v1/scm/events', methods=['POST'])
 def events():
     """Create a DevOps event."""
-    payload, headers = get_json(), request.META
+    payload, headers = get_json(), request.headers
     try:
         logger.info('Translating SCM event ...')
         event_list = EventTranslator.translate(payload, headers)
