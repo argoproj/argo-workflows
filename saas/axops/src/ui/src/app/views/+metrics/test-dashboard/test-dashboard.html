@@ -65,9 +65,9 @@
         <div class="ax-container">
             <div class="test-dashboard__panel">
                 <div *ngIf="templatesInfo.length > 0">
-                    <div class="test-dashboard__build" *ngFor="let info of templatesInfo; trackBy:byName">
+                    <div class="test-dashboard__build" *ngFor="let info of templatesInfo; trackBy:byName; let index = index">
                         <div class="test-dashboard__build-chart">
-                            <nvd3 [options]="chartOptions" [data]="info.chartData"></nvd3>
+                            <nvd3 class="chart-index" id="{{index}}" [options]="chartOptions" [data]="info.chartData"></nvd3>
                         </div>
                         <div class="test-dashboard__build-content">
                             <h3>{{ info.name }} <small>{{ info.repo }}</small></h3>
