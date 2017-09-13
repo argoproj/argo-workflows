@@ -1,0 +1,101 @@
+---
+type: workflow
+version: 1
+name: gui-proxy
+description: "Workflow which builds and starts UI on existing cluster. Useful for testing UI changes without redeploying whole cluster."
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    APPNAME:
+      default: "%%session.branch%%"
+    DOMAIN:
+      default: " "
+steps:
+- checkout:
+    template: argo-checkout
+- build:
+    template: gui-build
+    arguments:
+      artifacts.CODE: "%%steps.checkout.outputs.artifacts.CODE%%"
+- deploy:
+    template: gui-proxy-server-deployment
+    arguments:
+        artifacts.CODE: "%%steps.build.outputs.artifacts.CODE%%"
+
+---
+type: container
+version: 1
+name: gui-build
+inputs:
+  artifacts:
+    CODE:
+      path: /src
+outputs:
+  artifacts:
+    CODE:
+      path: /src
+image: node:6.3.1
+command: ["bash", "-c"]
+args: ["cd /src/saas/axops/src/ui && npm set progress=false && npm install --unsafe-perm && npm run build:prod"]
+resources:
+  mem_mib: 1536
+  cpu_cores: 0.4
+
+---
+type: container
+version: 1
+name: gui-proxy-server
+resources:
+  mem_mib: 2048
+  cpu_cores: 0.4
+image: node:6.3.1
+command: ["sh", "-c"]
+args: ["cd /src/saas/axops/src/ui && AX_CLUSTER_HOST=axops.axsys npm run server:prod"]
+inputs:
+  artifacts:
+    CODE:
+      path: "/src"
+
+---
+type: deployment
+version: 1
+name: gui-proxy-server-deployment
+inputs:
+  parameters:
+    APPNAME:
+    DOMAIN:
+  artifacts:
+    CODE:
+application_name: "%%inputs.parameters.APPNAME%%"
+deployment_name: "argo-gui-proxy"
+scale:
+  min: 1
+external_routes:
+  - dns_prefix: "%%inputs.parameters.APPNAME%%"
+    dns_domain: "%%inputs.parameters.DOMAIN%%"
+    target_port: 3000
+    ip_white_list:
+      - 0.0.0.0/0
+containers:
+  SERVER:
+    template: gui-proxy-server
+
+---
+type: policy
+version: 1
+name: gui-proxy-policy
+template: gui-proxy
+notifications:
+  -
+    when:
+      - on_change
+    whom:
+      - committer
+      - submitter
+      - author
+when:
+  -
+    event: on_push
