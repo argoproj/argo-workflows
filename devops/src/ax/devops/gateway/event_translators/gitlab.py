@@ -24,7 +24,7 @@ class GitLabEventTranslator(BaseEventTranslator):
         :param headers:
         :return:
         """
-        event_key = headers.get('HTTP_X_GITLAB_EVENT')
+        event_key = headers.get('X-Gitlab-Event')
         if event_key not in GitLabEventTypes.values():
             raise UnrecognizableEventType('Unrecognizable event type', detail='Unrecognizable event type ({})'.format(event_key))
         if event_key == GitLabEventTypes.MERGE_REQUEST:

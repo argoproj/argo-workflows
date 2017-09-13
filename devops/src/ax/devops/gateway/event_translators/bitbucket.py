@@ -25,7 +25,7 @@ class BitBucketEventTranslator(BaseEventTranslator):
         :param headers:
         :return:
         """
-        event_key = headers.get('HTTP_X_EVENT_KEY')
+        event_key = headers.get('X-Event-Key')
         scm_type = payload.get('repository', {}).get('scm')
         if event_key not in BitBucketEventTypes.values():
             cls.event_notification_client.send_message_to_notification_center(CODE_JOB_CI_INVALID_EVENT_TYPE, detail={'event_type': event_key})
