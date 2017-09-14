@@ -12,6 +12,7 @@ Module for pausing an Argo cluster
 import logging
 import os
 import subprocess
+import sys
 import yaml
 from pprint import pformat
 
@@ -40,7 +41,8 @@ class ClusterUpgrader(ClusterOperationBase):
         super(ClusterUpgrader, self).__init__(
             cluster_name=self._cfg.cluster_name,
             cluster_id=self._cfg.cluster_id,
-            cloud_profile=self._cfg.cloud_profile
+            cloud_profile=self._cfg.cloud_profile,
+            dry_run=self._cfg.dry_run
         )
 
         # This will raise exception if name/id mapping cannot be found
@@ -64,34 +66,39 @@ class ClusterUpgrader(ClusterOperationBase):
             )
         )
         self._cidr = str(get_public_ip()) + "/32"
+        self._upgrade_kube_needed = True
+        self._upgrade_service_needed = True
 
-    def run(self):
+    def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
+
+        if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2"):
+            raise RuntimeError("Cluster is not successfully installed: Stage2 information missing! Operation aborted.")
+
         self._runtime_validation()
 
-        upgrade_kube = True
-        upgrade_service = True
+        self._csm.do_upgrade()
+        self._persist_cluster_state_if_needed()
 
         if self._cfg.target_software_info.kube_installer_version == self._current_software_info.kube_installer_version \
             and self._cfg.target_software_info.kube_version == self._current_software_info.kube_version \
                 and not self._cfg.force_upgrade:
-            upgrade_kube = False
+            self._upgrade_kube_needed = False
 
         if self._cfg.target_software_info.image_namespace == self._current_software_info.image_namespace \
             and self._cfg.target_software_info.image_version == self._current_software_info.image_version \
             and self._cfg.target_software_info.image_version != "latest" \
-            and not upgrade_kube \
+            and not self._upgrade_kube_needed \
                 and not self._cfg.force_upgrade:
-            upgrade_service = False
+            self._upgrade_service_needed = False
 
-        if not upgrade_service and not upgrade_kube:
+        if not self._upgrade_kube_needed and not self._upgrade_service_needed:
             logger.info("%sCluster's software versions is not changed, not performing upgrade.%s", COLOR_GREEN, COLOR_NORM)
             logger.info("%sIf you want to force upgrade cluster, please specify --force-upgrade flag.%s", COLOR_YELLOW, COLOR_NORM)
-            return
+            sys.exit(0)
 
-        if self._cfg.dry_run:
-            logger.info("DRY RUN: upgrading cluster %s", self._name_id)
-            return
-
+    def run(self):
         upgrade_info = "    Software Image: {}:{}  ->  {}:{}\n".format(
             self._current_software_info.image_namespace, self._current_software_info.image_version,
             self._cfg.target_software_info.image_namespace, self._cfg.target_software_info.image_version
@@ -104,7 +111,11 @@ class ClusterUpgrader(ClusterOperationBase):
         )
         logger.info("\n\n%sUpgrading cluster %s:\n\n%s%s\n", COLOR_GREEN, self._name_id, upgrade_info, COLOR_NORM)
 
-        # Main pause cluster routine
+        if self._cfg.dry_run:
+            logger.info("DRY RUN: upgrading cluster %s", self._name_id)
+            return
+
+        # Main upgrade cluster routine
         try:
             self._ensure_credentials()
 
@@ -112,13 +123,13 @@ class ClusterUpgrader(ClusterOperationBase):
 
             ensure_manifest_temp_dir()
 
-            if upgrade_service:
+            if self._upgrade_service_needed:
                 self._shutdown_platform()
 
-            if upgrade_kube:
+            if self._upgrade_kube_needed:
                 self._upgrade_kube()
 
-            if upgrade_service:
+            if self._upgrade_service_needed:
                 self._start_platform()
                 self._cluster_info.upload_platform_manifests_and_config(
                     platform_manifest_root=self._cfg.manifest_root,
@@ -130,6 +141,10 @@ class ClusterUpgrader(ClusterOperationBase):
             raise RuntimeError(e)
         finally:
             self._disallow_upgrader_access_if_needed()
+
+    def post_run(self):
+        self._csm.done_upgrade()
+        self._persist_cluster_state_if_needed()
 
     def _runtime_validation(self):
         all_errs = []

@@ -40,6 +40,10 @@
             height: 106px;
             margin-right: 30px;
             border-right: 1px solid #e7e7e7;
+
+            g.nv-slice {
+                cursor: pointer;
+            }
         }
 
         &-content {
@@ -92,7 +96,7 @@
             }
 
             &--delayed p .fa {
-                color: $ax-waiting-color;
+                color: $ax-color-tree-poppy;
             }
 
             &--progress p .fa {

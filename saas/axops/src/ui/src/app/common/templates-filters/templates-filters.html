@@ -1,12 +1,19 @@
-<div class="templates-filters__content"
-     ax-infinite-scroll
-     [ax-infinite-scroll-distance]="1"
-     [ax-scroll-window]="false"
-     [ax-immediate-check]="true"
-     (scrolled)="onScroll()">
-    <h3>Select templates</h3>
+<div class="templates-filters__content">
+    <div class="clearfix">
+        <div class="pull-left">
+            <h3>Select templates</h3>
+        </div>
+        <div class="pull-right">
+            <div class="templates-filters__search">
+                <input class="templates-filters__search-input" [(ngModel)]="filterString" (keyup)="filter($event)" placeholder="Search">
+                <div class="templates-filters__search-icon">
+                    <i aria-hidden="true" class="ax-icon-search"></i>
+                </div>
+            </div>
+        </div>
+    </div>
     <div>
-        <label class="templates-filters__row" *ngFor="let template of templates">
+        <label class="templates-filters__row" *ngFor="let template of templates" [hidden]="!template.visible">
             <div class="ax-checkbox">
                 <input type="checkbox"
                        id="isSelected"
@@ -14,7 +21,7 @@
                        (change)="selectTemplate(template)">
                 <span><i class="fa fa-check"></i></span>
             </div>
-            <span class="templates-filters__template-name">{{template.name}}</span><span class="templates-filters__template-repo">{{template.repo}}/{{template.branch}}</span>
+            <span class="templates-filters__template-name">{{template.name}}</span>
         </label>
         <div class="ax-table-list__row" *ngIf="!templates.length && !loading">
             <div class="row">

@@ -152,8 +152,6 @@ class ContainerOuterExecutor(object):
                                                           "pre_docker_id.txt")
 
         logger.info("<env>: container %s", self._container)
-        logger.info("<env>: cmd_options %s", self._cmd_options)
-        logger.info("<env>: entrypoint %s", self._entrypoint)
         logger.info("<env>: commands %s", self._commands)
         logger.info("<env>: args %s", self._args)
         logger.info("<env>: artifacts %s %s", self._inputs, self._outputs)
@@ -190,8 +188,6 @@ class ContainerOuterExecutor(object):
         template.parse(data)
         self._docker_enable = False # TODO: template.is_docker_enabled()
         self._container = template.get_main_container()
-        self._cmd_options = None
-        self._entrypoint = None
         self._commands = self._container.command
         self._args = self._container.args
         self._inputs = None
@@ -237,13 +233,9 @@ class ContainerOuterExecutor(object):
         self._repo = self._container.get("repo", "")
 
         if "docker" in self._container:
-            self._cmd_options = self._container["docker"].get("cmd_options", None)
-            self._entrypoint = self._container["docker"].get("entrypoint", None)
             self._commands = self._container["docker"].get("commands", None)
             self._args = self._container["docker"].get("args", None)
         else:
-            self._cmd_options = None
-            self._entrypoint = None
             self._commands = None
             self._args = None
 
@@ -521,25 +513,25 @@ class ContainerOuterExecutor(object):
             return False
 
         # Adding encrypted strings into a set if there is any in cmd_options or entry point
-        logger.info("Start decrypting.")
-        if self._cmd_options is not None or self._entrypoint is not None:
-            entry_word_list = list()
-            if self._cmd_options is not None:
-                entry_word_list.extend(self._cmd_options.split())
-            if self._entrypoint is not None:
-                entry_word_list.extend(self._entrypoint.split())
-            for entry_word in entry_word_list:
-                match_obj = re.match("%%secrets.(.*)%%", entry_word)
-                if match_obj is not None:
-                    token = match_obj.group(1)
-                    if token and token not in self._encrypted_strings:
-                        try:
-                            self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
-                        except Exception as e:
-                            logger.exception("Failed to decrypt %s", token)
-                            self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
-                            self._write_executor_sh()
-                            return False
+        # logger.info("Start decrypting.")
+        # if self._cmd_options is not None or self._entrypoint is not None:
+        #     entry_word_list = list()
+        #     if self._cmd_options is not None:
+        #         entry_word_list.extend(self._cmd_options.split())
+        #     if self._entrypoint is not None:
+        #         entry_word_list.extend(self._entrypoint.split())
+        #     for entry_word in entry_word_list:
+        #         match_obj = re.match("%%secrets.(.*)%%", entry_word)
+        #         if match_obj is not None:
+        #             token = match_obj.group(1)
+        #             if token and token not in self._encrypted_strings:
+        #                 try:
+        #                     self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
+        #                 except Exception as e:
+        #                     logger.exception("Failed to decrypt %s", token)
+        #                     self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
+        #                     self._write_executor_sh()
+        #                     return False
 
         self._gen_user_command()
         bad_artifacts4, _ = self._do_save_artifacts(dry_run_mode=True)
@@ -735,68 +727,77 @@ class ContainerOuterExecutor(object):
         return cmdArray
 
     @staticmethod
-    def _get_real_command(entrypoint_in_image, command_in_image, cmd, entrypoint, commands, args):
-        # https://docs.docker.com/engine/reference/builder/
-        logger.info("<env>: entrypoint_in_image:%s cmd_in_image:%s cmd:%s entrypoint:%s commands:%s args:%s",
-                    entrypoint_in_image, command_in_image, cmd, entrypoint, commands, args)
+    def _get_real_command(entrypoint_in_image, command_in_image, command, args):
+        logger.info("<env>: Entrypoint_in_image:%s Cmd_in_image:%s command:%s args:%s",
+                    entrypoint_in_image, command_in_image, command, args)
 
-        if commands:
-            entrypoint = commands
-            logger.info("<env>: use commands %s as entrypoint", commands)
-        if args is not None:
-            cmd = args
-            logger.info("<env>: use args %s as cmd", args)
+        # According to https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/
+        # 1. If you do not supply command or args for a Container, the defaults defined in the Docker image are used.
+        # 2. If you supply a command but no args for a Container, only the supplied command is used. The default EntryPoint and the default Cmd defined in the Docker image are ignored.
+        # 3. If you supply only args for a Container, the default Entrypoint defined in the Docker image is run with the args that you supplied.
+        # 4. If you supply a command and args, the default Entrypoint and the default Cmd defined in the Docker image are ignored. Your command is run with your args.
 
-        # process entrypoint_in_image
-        if entrypoint_in_image and isinstance(entrypoint_in_image, string_types):
-            entrypoint_in_image = ["/bin/sh", "-c", entrypoint_in_image]
-        if entrypoint_in_image and not isinstance(entrypoint_in_image, list):
-            logger.error("<env>: bad entrypoint_in_image %s", entrypoint_in_image)
-            entrypoint_in_image = None
+        # Condition #1
+        if command is None and args is None:
+            # process entrypoint_in_image
+            if entrypoint_in_image and isinstance(entrypoint_in_image, string_types):
+                entrypoint_in_image = ["/bin/sh", "-c", entrypoint_in_image]
+            if entrypoint_in_image and not isinstance(entrypoint_in_image, list):
+                logger.error("<env>: bad entrypoint_in_image %s", entrypoint_in_image)
+                entrypoint_in_image = None
+            # process command_in_image
+            if command_in_image and isinstance(command_in_image, string_types):
+                command_in_image = ["/bin/sh", "-c", command_in_image]
+            if command_in_image and not isinstance(command_in_image, list):
+                logger.error("<env>: bad command_in_image %s", command_in_image)
+                command_in_image = None
 
-        # process command_in_image
-        if command_in_image and isinstance(command_in_image, string_types):
-            command_in_image = ["/bin/sh", "-c", command_in_image]
-        if command_in_image and not isinstance(command_in_image, list):
-            logger.error("<env>: bad command_in_image %s", command_in_image)
-            command_in_image = None
-
-        # process cmd
-        if cmd and isinstance(cmd, string_types):
-            # cmd = ContainerOuterExecutor._split_cmd(cmd)
-            cmd = ["/bin/sh", "-c", cmd]
-        if cmd and not isinstance(cmd, list):
-            logger.error("<env>: bad cmd %s", cmd)
-            cmd = None
-
-        # process entrypoint
-        if entrypoint and isinstance(entrypoint, string_types):
-            entrypoint = [entrypoint]
-        if entrypoint and not isinstance(entrypoint, list):
-            logger.error("<env>: bad entrypoint %s", entrypoint)
-            entrypoint = None
-
-        if entrypoint:
-            if cmd is not None:
-                return entrypoint + cmd
-            elif command_in_image:
-                return entrypoint + command_in_image
-            else:
-                return entrypoint
-        elif entrypoint_in_image:
-            if cmd is not None:
-                return entrypoint_in_image + cmd
-            elif command_in_image:
-                return entrypoint_in_image + command_in_image
-            else:
-                return entrypoint_in_image
-        else:
-            if cmd is not None:
-                return cmd
-            elif command_in_image:
-                return command_in_image
-            else:
+            if entrypoint_in_image is None and command_in_image is None:
                 return None
+            elif entrypoint_in_image is None:
+                return command_in_image
+            elif command_in_image is None:
+                return entrypoint_in_image
+            else:
+                return entrypoint_in_image + command_in_image
+
+        # Condition #2
+        if command is not None and args is None:
+            if isinstance(command, list):
+                return command
+            else:
+                logger.error("<env>: bad command %s, expecting a list", command)
+                return None
+
+        # Condition #3
+        if command is None and args is not None:
+            # process entrypoint_in_image
+            if entrypoint_in_image and isinstance(entrypoint_in_image, string_types):
+                entrypoint_in_image = ["/bin/sh", "-c", entrypoint_in_image]
+            if entrypoint_in_image and not isinstance(entrypoint_in_image, list):
+                logger.error("<env>: bad entrypoint_in_image %s", entrypoint_in_image)
+                entrypoint_in_image = None
+
+            if isinstance(args, list):
+                if entrypoint_in_image is None:
+                    return args
+                else:
+                    return entrypoint_in_image + args
+            else:
+                logger.error("<env>: bad command %s, expecting a list", command)
+                if entrypoint_in_image is None:
+                    return None
+                else:
+                    return entrypoint_in_image
+
+        # Condition #4
+        if command is not None and args is not None:
+            if not isinstance(command, list):
+                command = []
+            if not isinstance(args, list):
+                args = []
+
+            return command + args
 
     def _get_real_command_for_container(self):
         try:
@@ -808,9 +809,7 @@ class ContainerOuterExecutor(object):
 
         real_cmd = self._get_real_command(entrypoint_in_image=entrypoint_in_image,
                                           command_in_image=command_in_image,
-                                          cmd=self._cmd_options,
-                                          entrypoint=self._entrypoint,
-                                          commands=self._commands,
+                                          command=self._commands,
                                           args=self._args)
 
         return real_cmd
