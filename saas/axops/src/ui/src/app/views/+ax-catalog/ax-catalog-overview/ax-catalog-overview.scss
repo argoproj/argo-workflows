@@ -14,8 +14,14 @@
         text-align: center;
     }
 
-    .content {
-        margin-top: $toolbar-height - 5em;
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    &__project {
+        width: 25%;
+        padding: 10px;
     }
 
     &__project .ax-project-icon {
@@ -69,10 +75,6 @@
         &--right {
             right: -2em;
         }
-    }
-
-    .tabs__nav {
-        text-transform: uppercase;
     }
 
     &__project-info {

@@ -1,50 +1,66 @@
 @import '../../../../assets/styles/config';
-$icon-size: 10em;
 
 .ax-project-icon {
     position: relative;
-    background-color: #FFFFFF;
-    width: $icon-size;
-    height: $icon-size;
+    background-color: #fff;
     border-radius: 4px;
     box-shadow: 1px 2px 3px rgba($ax-color-gray-9, .1);
-    margin-bottom: 5px;
 
-    img.ax-project-icon__publisher-img {
-        position: absolute;
-        width: 1em;
-        height: 1em;
-        object-fit: contain;
-        left: 1em;
-        top: 1em;
-    }
-
-    &__img {
-        display: block;
-        width: 4em;
-        height: 4em;
+    &__header {
         position: relative;
-        top: 1.5em;
-        margin-left: auto;
-        margin-right: auto;
+        padding: 24px 14px 14px;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        background-color: #333;
 
-        img {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            top: 50%;
-            transform: translateY(-50%);
-            object-fit: contain;
+        &--1 {
+            background: linear-gradient(135deg, #31a0cb, #4fc09f);
         }
     }
 
-    &__title {
-        position: absolute;
-        bottom: 1em;
-        left: 0;
-        right: 0;
-        line-height: 1em;
-        height: 2em;
+    &__img {
+        overflow: hidden;
+        width: 70px;
+        height: 70px;
+        padding: 0 10px;
+        line-height: 70px;
+        background-color: #fff;
+        border-radius: 50%;
         text-align: center;
+
+        img {
+            max-height: 100%;
+        }
+    }
+
+    &__axlogo {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 1.2em;
+        color: #fff;
+    }
+
+    &__title {
+        overflow: hidden;
+        height: 46px;
+        margin-top: 8px;
+        font-size: 1.2em;
+        line-height: 1.2;
+        font-weight: 500;
+        color: #fff;
+    }
+
+    &__body {
+        min-height: 200px;
+        padding: 20px 14px 54px;
+        font-size: .8em;
+    }
+
+    &__body-btn {
+        position: absolute;
+        right: calc(14px + 16%);
+        left: calc(14px + 16%);
+        bottom: 14px;
     }
 }

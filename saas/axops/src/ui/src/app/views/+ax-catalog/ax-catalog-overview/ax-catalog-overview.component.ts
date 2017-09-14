@@ -16,7 +16,7 @@ export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, La
 
     public allProjects: Project[] = [];
     public selectedProject: Project;
-    public categories: {name: string; projectRows: Project[][] }[] = [];
+    public categories: {name: string; projects: Project[] }[] = [];
     public selectedCategory: string;
     public branch: string;
     public repo: string;
@@ -53,16 +53,16 @@ export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, La
                     this.categories = Array.from(categoryToProject.entries())
                         .filter(([category]) => category !== PROMOTED_CATEGORY_NAME)
                         .map(([category, projects]) => {
-                            let rowSize = 5;
-                            let projectRows: Project[][] = [];
-                            while (projects.length > 0) {
-                                let row = projects.splice(0, rowSize);
-                                projectRows.push(row);
-                                while (row.length < rowSize) {
-                                    row.push(null);
-                                }
-                            }
-                            return { name: category, projectRows };
+                            // let rowSize = 4;
+                            // let projectRows: Project[] = [];
+                            // while (projects.length > 0) {
+                            //     let row = projects.splice(0, rowSize);
+                            //     projectRows.push(row);
+                            //     while (row.length < rowSize) {
+                            //         row.push(null);
+                            //     }
+                            // }
+                            return { name: category, projects };
                         });
                     this.selectedCategory = this.categories.length > 0 && this.categories[0].name;
                 });
