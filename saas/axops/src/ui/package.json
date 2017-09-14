@@ -40,7 +40,7 @@
     "@types/webpack": "^1.12.36",
     "angular2-template-loader": "^0.6.0",
     "angular2-toaster": "2.0.0",
-    "argo-ui-lib": "git+https://github.com/argoproj/ui-lib.git#4e54415",
+    "argo-ui-lib": "git+https://github.com/argoproj/ui-lib.git#v1.0.8",
     "assets-webpack-plugin": "^3.5.0",
     "awesome-typescript-loader": "^3.1.2",
     "clipboard": "^1.5.12",
