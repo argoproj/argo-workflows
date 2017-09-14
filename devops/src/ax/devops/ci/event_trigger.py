@@ -111,8 +111,8 @@ class EventTrigger(object):
         """
         applicable_policies = []
         if event['type'] == AxEventTypes.PULL_REQUEST:
-            # Verify is the source repo of the pull request is configured in the integration page
-            if not self.verify_repo_configured(event['source_repo']):
+            # Verify if the source repo of the pull request is configured in the integration page
+            if not self.verify_repo_configured(event['repo']):
                 return applicable_policies
 
             key_repo, key_branch = 'target_repo', 'target_branch'
@@ -130,11 +130,13 @@ class EventTrigger(object):
     def verify_repo_configured(self, repo_url):
         """Verify is the repo is integrated into argo from the tools integration page"""
         tools = self.axops_client.get_tools(category='scm')
+        vendor_owner_name = self.get_vendor_owner_name(repo_url)
+
         for tool in tools:
-            repo_list = tool['repo']
+            repo_list = tool.get('repos', [])
             for repo in repo_list:
                 res = self.get_vendor_owner_name(repo)
-                if res and res == self.get_vendor_owner_name(repo_url):
+                if res and res == vendor_owner_name:
                     return True
         return False
 
