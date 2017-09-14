@@ -9,14 +9,15 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
+	"regexp"
+
 	"applatix.io/axdb"
 	"applatix.io/axerror"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gzip"
 	"github.com/gocql/gocql"
 	"github.com/nu7hatch/gouuid"
-	"regexp"
 )
 
 func GetGZipHandler() func(c *gin.Context) {
@@ -179,8 +180,9 @@ func GetContextParams(c *gin.Context, sFields []string, bFields []string, iField
 			// Make sure sort field is included in the SELECT fields
 			if params[axdb.AXDBSelectColumns] != nil {
 				fieldStrs := params[axdb.AXDBSelectColumns].([]string)
-				fieldStrs = append(fieldStrs, sort)
-				fieldStrs = DedupFields(fieldStrs)
+				if !StringInSlice(sort, fieldStrs) {
+					fieldStrs = append(fieldStrs, sort)
+				}
 				params[axdb.AXDBSelectColumns] = fieldStrs
 			}
 		}
