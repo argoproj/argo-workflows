@@ -1,6 +1,6 @@
 {
   "name": "ax-gui",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "dependencies": {
     "@angular/common": {
       "version": "2.4.9",
@@ -396,9 +396,9 @@
       "resolved": "https://registry.npmjs.org/are-we-there-yet/-/are-we-there-yet-1.1.2.tgz"
     },
     "argo-ui-lib": {
-      "version": "1.0.5",
-      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.6",
-      "resolved": "git+https://github.com/argoproj/ui-lib.git#f78f15c6c2f566534798a36d5eb211eaae36fb73"
+      "version": "1.0.8",
+      "from": "git+https://github.com/argoproj/ui-lib.git#v1.0.8",
+      "resolved": "git+https://github.com/argoproj/ui-lib.git#d003d978dc80a92a738b66286ea0922460669d05"
     },
     "argparse": {
       "version": "1.0.9",
@@ -5510,7 +5510,7 @@
     },
     "svg-pathdata": {
       "version": "1.0.4",
-      "from": "svg-pathdata@>=1.0.3 <2.0.0",
+      "from": "svg-pathdata@>=1.0.4 <2.0.0",
       "resolved": "https://registry.npmjs.org/svg-pathdata/-/svg-pathdata-1.0.4.tgz",
       "dependencies": {
         "isarray": {
@@ -5831,9 +5831,9 @@
       "resolved": "https://registry.npmjs.org/ttf2woff/-/ttf2woff-2.0.1.tgz",
       "dependencies": {
         "pako": {
-          "version": "1.0.5",
+          "version": "1.0.6",
           "from": "pako@>=1.0.0 <2.0.0",
-          "resolved": "https://registry.npmjs.org/pako/-/pako-1.0.5.tgz"
+          "resolved": "https://registry.npmjs.org/pako/-/pako-1.0.6.tgz"
         }
       }
     },
