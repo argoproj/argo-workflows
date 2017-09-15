@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import yaml
+import requests
 from pprint import pformat
 from retrying import retry
 
@@ -55,6 +56,8 @@ DEFAULT_NODE_SPOT_PRICE = "0.1512"
 CLUSTER_META_DATA_PATH = "/tmp/cluster_meta/metadata.yaml"
 ARGO_CONFIG = "/root/.argo/{fname}"
 ARGO_CONFIG_DEFAULT = ARGO_CONFIG.format(fname='default')
+ARGO_INSTALL_START_DOWNLOAD = "https://s3-us-west-1.amazonaws.com/ax-public/downloads/install_start"
+ARGO_INSTALL_FINISH_DOWNLOAD = "https://s3-us-west-1.amazonaws.com/ax-public/downloads/install_finish"
 
 
 class ClusterInstaller(ClusterOperationBase):
@@ -100,6 +103,11 @@ class ClusterInstaller(ClusterOperationBase):
         Main install routine
         :return:
         """
+        try:
+            requests.get(ARGO_INSTALL_START_DOWNLOAD)
+        except:
+            pass
+
         self._pre_install()
         self._ensure_kubernetes_cluster()
         if self._cfg.dry_run:
@@ -145,6 +153,11 @@ please contact your administrator for more information to configure your argo CL
             password=password
         )
         logger.info("Cluster information:\n%s%s%s\n", COLOR_GREEN, summary, COLOR_NORM)
+        try:
+            requests.get(ARGO_INSTALL_FINISH_DOWNLOAD)
+        except:
+            pass
+
 
     def _pre_install(self):
         """
