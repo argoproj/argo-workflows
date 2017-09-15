@@ -8,7 +8,7 @@ import { Project } from '../../../model';
 
 @Component({
     selector: 'ax-project-details',
-    template: '<ax-project-details-panel [project]="project" [showBackButton]="true"></ax-project-details-panel>',
+    template: '<ax-project-details-panel [project]="project"></ax-project-details-panel>',
 })
 export class ProjectDetailsComponent implements OnInit, HasLayoutSettings {
     public project: Project;
@@ -25,6 +25,17 @@ export class ProjectDetailsComponent implements OnInit, HasLayoutSettings {
     }
 
     get layoutSettings(): LayoutSettings {
-        return this;
+        return {
+            pageTitle: 'CATALOG',
+            breadcrumb: [
+                {
+                    title: 'All Apps',
+                    routerLink: ['/app/ax-catalog'],
+                },
+                {
+                  title: this.project && this.project.name,
+                },
+            ]
+        };
     }
 }
