@@ -5,7 +5,7 @@
                 <div class="ax-container">
                     <div class="ax-catalog-overview__list">
                         <div *ngFor="let item of category.projects" class="ax-catalog-overview__project">
-                            <ax-project-icon *ngIf="item" [project]="item"></ax-project-icon>
+                            <ax-project-icon [project]="item"></ax-project-icon>
                         </div>
                     </div>
                 </div>
@@ -14,8 +14,18 @@
     </div>
     <div class="content" *ngIf="searchString">
         <div class="ax-container">
-            <ax-projects-list [projects]="allProjects" [searchString]="searchString"></ax-projects-list>
+            <div class="ax-catalog-overview__search-list">
+                <div *ngFor="let item of allProjects" class="ax-catalog-overview__project">
+                    <ax-project-icon [project]="item"></ax-project-icon>
+                </div>
+                <div class="ax-table-list ax-table-list--clickable projects-list" *ngIf="!projects?.length">
+                    <div class="ax-table-list__row">
+                        <div class="row">
+                            <div class="columns small-12">There are no projects to display for selected filter.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>

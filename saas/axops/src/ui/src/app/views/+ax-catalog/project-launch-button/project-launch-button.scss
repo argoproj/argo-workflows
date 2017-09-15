@@ -1,8 +1,12 @@
 .project-launch-button {
     position: relative;
+    display: inline-block;
+    min-width: 120px;
+    max-width: 100%;
 
     .ax-button {
-        padding: 1em 4em;
+        padding-left: 3em;
+        padding-right: 3em;
     }
 
     &__dropdown-caret {

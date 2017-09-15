@@ -10,7 +10,6 @@ import { ProjectIconComponent } from './project-icon/project-icon.component';
 import { ProjectLaunchButtonComponent } from './project-launch-button/project-launch-button.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
 import { ProjectDetailsPanelComponent } from './project-details-panel/project-details-panel.component';
-import { ProjectsListComponent } from './projects-list/projects-list.component';
 
 export const routes = [
     {
@@ -28,7 +27,6 @@ export const routes = [
         ProjectLaunchButtonComponent,
         ProjectDetailsComponent,
         ProjectDetailsPanelComponent,
-        ProjectsListComponent,
     ],
     imports: [
         CommonModule,

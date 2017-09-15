@@ -12,9 +12,46 @@
         border-top-left-radius: 4px;
         border-top-right-radius: 4px;
         background-color: #333;
+        cursor: pointer;
 
-        &--1 {
+        .ax-catalog-overview__project:nth-child(10n - 9) & {
             background: linear-gradient(135deg, #31a0cb, #4fc09f);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 8) & {
+            background: linear-gradient(135deg, #40ace4, #b98ac2);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 7) & {
+            background: linear-gradient(135deg, #4879e5, #ade75d);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 6) & {
+            background: linear-gradient(135deg, #7a6cc2, #8ab3c2);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 5) & {
+            background: linear-gradient(135deg, #c2b070, #a44a8c);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 4) & {
+            background: linear-gradient(135deg, #25d3c0, #e4c772);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 3) & {
+            background: linear-gradient(135deg, #e9d98e, #da8b55);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 2) & {
+            background: linear-gradient(135deg, #6e64b5, #e791dc);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n - 1) & {
+            background: linear-gradient(135deg, #4fcb79, #057883);
+        }
+
+        .ax-catalog-overview__project:nth-child(10n) & {
+            background: linear-gradient(135deg, #8cc0ba, #3012a6);
         }
     }
 
@@ -59,8 +96,9 @@
 
     &__body-btn {
         position: absolute;
-        right: calc(14px + 16%);
-        left: calc(14px + 16%);
+        right: 14px;
+        left: 14px;
         bottom: 14px;
+        text-align: center;
     }
 }
