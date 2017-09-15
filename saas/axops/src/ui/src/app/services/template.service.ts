@@ -31,6 +31,7 @@ export class TemplateService {
         offset?: number,
         sort?: string,
         type?: string[],
+        dedup?: boolean,
     }, showLoader =  true) {
         let customHeader = new Headers();
         let search = new URLSearchParams();
@@ -95,6 +96,10 @@ export class TemplateService {
 
         if (params.type) {
             search.set('type', params.type.join(','));
+        }
+
+        if (params.dedup) {
+            search.set('dedup', 'true');
         }
 
         return this._http.get(`v1/templates`, { search: search, headers: customHeader }).map(res => res.json());

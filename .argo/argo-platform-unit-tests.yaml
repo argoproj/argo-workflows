@@ -17,9 +17,11 @@ steps:
         pytest -vv /src/platform/tests/util/ &&
         pytest -vv /src/platform/tests/lib/ax/platform/ax_asg_test.py &&
         pytest -vv /src/platform/tests/axmon/operations_test.py &&
+        python2 -m pytest -s -vv /src/platform/tests/cluster_state_machine/ &&
         python2 -m pytest -s -vv /src/platform/tests/minion_manager/aws/aws_minion_manager_test.py &&
         python2 -m pytest -s -vv /src/platform/tests/minion_manager/aws/aws_bid_advisor_test.py &&
-        python2 -m pytest -s -vv /src/platform/tests/minion_manager/broker_test.py
+        python2 -m pytest -s -vv /src/platform/tests/minion_manager/broker_test.py &&
+        python2 -m pytest -s -vv /src/platform/tests/spot_instance_option_manager_test.py
   KUBE-MONITOR-TESTS:
     template: argo-platform-unit-test-base
     arguments:

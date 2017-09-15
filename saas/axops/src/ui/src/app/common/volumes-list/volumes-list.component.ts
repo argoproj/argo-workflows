@@ -18,6 +18,9 @@ export class VolumesListComponent {
     @Output()
     public onDeletedVolume: EventEmitter<string> = new EventEmitter<string>();
 
+    @Output()
+    public onEditVolume: EventEmitter<Volume> = new EventEmitter<Volume>();
+
     constructor(
         private volumesService: VolumesService,
         private notificationsService: NotificationsService,
@@ -26,6 +29,12 @@ export class VolumesListComponent {
 
     public getDropdownMenu(volume: Volume) {
         return new DropdownMenuSettings([{
+            title: 'Edit',
+            iconName: 'fa-pencil-square-o',
+            action: async () => {
+                this.onEditVolume.emit(volume);
+            }
+        }, {
             title: 'Delete',
             iconName: 'fa-times-circle-o',
             action: () => {

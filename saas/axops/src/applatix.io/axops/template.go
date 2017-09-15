@@ -5,6 +5,7 @@ package axops
 import (
 	"net/http"
 	"sort"
+	"strings"
 
 	"applatix.io/axdb"
 	"applatix.io/axerror"
@@ -12,6 +13,11 @@ import (
 	"applatix.io/axops/utils"
 	"applatix.io/template"
 	"github.com/gin-gonic/gin"
+)
+
+// Query parameters
+const (
+	TemplateDedup = "dedup"
 )
 
 // Fake object for swagger
@@ -33,12 +39,14 @@ type TemplatesData struct {
 // @Param   search	 query   string     false       "Search."
 // @Param   search_fields query   string     false       "Search fields."
 // @Param   fields	 query   string     false       "Fields, eg:fields=id,name,repo,branch,description,subtype,cost"
+// @Param   dedup	 query   string     false       "Deduplicates result set if parameter is set to true"
 // @Success 200 {object} TemplatesData
 // @Failure 500 {object} axerror.AXError "Internal server error"
 // @Resource /templates
 // @Router /templates [GET]
 func TemplateListHandler(c *gin.Context) {
 
+	dedup := strings.ToLower(c.Request.URL.Query().Get(TemplateDedup)) == "true"
 	if etag := c.Request.Header.Get("If-None-Match"); len(etag) > 0 && service.GetTemplateETag() == etag {
 		c.Status(http.StatusNotModified)
 		return
@@ -73,6 +81,23 @@ func TemplateListHandler(c *gin.Context) {
 	if axErr != nil {
 		c.JSON(axerror.REST_BAD_REQ, axErr)
 		return
+	}
+
+	if dedup {
+		m := make(map[string]service.EmbeddedTemplateIf)
+
+		for _, item := range tempArray {
+			str := item.String()
+			m[str] = item
+		}
+
+		var new []service.EmbeddedTemplateIf
+
+		for _, t := range m {
+			new = append(new, t)
+		}
+
+		tempArray = new
 	}
 
 	// This piece of code is mainly for UI query optimization. The templates loads quite

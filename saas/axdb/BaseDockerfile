@@ -3,3 +3,6 @@ From %%ARGO_BASE_REGISTRY%%/argobase/mini-debian:9.1
 ADD base-install.sh /tmp/base-install.sh
 RUN /tmp/base-install.sh
 
+# For cqlsh bug that is not compatible with newer python version.
+# https://stackoverflow.com/questions/38616858/cqlsh-connection-error-ref-does-not-take-keyword-arguments
+ENV CQLSH_NO_BUNDLED=TRUE

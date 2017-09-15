@@ -1,19 +1,21 @@
-<div class="content">
+<div class="content content--without-padding-bottom ">
     <ax-application-panel *ngIf="application" [application]="application"></ax-application-panel>
-    <div class="ax-container">
-        <div class="row">
-            <div class="columns small-12">
-                <div class="application-details__graph">
-                    <ax-app-graph
-                            [application]="application"
-                            [selectedDeploymentName]="selectedDeploymentName"
-                            [applicationMenuCreator]="applicationMenuCreator"
-                            [deploymentMenuCreator]="deploymentMenuCreator"
-                            [podMenuCreator]="podMenuCreator"
-                            [statusFilters]="toolbarFilters?.model"
-                            (deploymentSelected)="onDeploymentSelected($event)"
-                            (podSelected)="showPodLogs($event.deployment, $event.pod)"
-                    ></ax-app-graph>
+    <div class="application-details__wrapper">
+        <div class="ax-container">
+            <div class="row">
+                <div class="columns small-12">
+                    <div class="application-details__graph">
+                        <ax-app-graph
+                                [application]="application"
+                                [selectedDeploymentName]="selectedDeploymentName"
+                                [applicationMenuCreator]="applicationMenuCreator"
+                                [deploymentMenuCreator]="deploymentMenuCreator"
+                                [podMenuCreator]="podMenuCreator"
+                                [statusFilters]="toolbarFilters?.model"
+                                (deploymentSelected)="onDeploymentSelected($event)"
+                                (podSelected)="showPodLogs($event.deployment, $event.pod)"
+                        ></ax-app-graph>
+                    </div>
                 </div>
             </div>
         </div>
