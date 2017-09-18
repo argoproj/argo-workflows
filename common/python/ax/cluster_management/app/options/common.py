@@ -8,8 +8,12 @@ import argparse
 import os
 from future.utils import with_metaclass
 
-from ax.cloud.aws import AWS_DEFAULT_PROFILE
 from ax.platform.component_config import AXPlatformConfigDefaults, SoftwareInfo
+
+# We should set aws profile to None if user does not provide one
+# because in python None type is different from str, we convert None
+# to string first and then finally it to None
+AWS_NO_PROFILE = "None"
 
 
 def typed_raw_input_with_default(prompt, default, type_converter):
@@ -20,7 +24,7 @@ def typed_raw_input_with_default(prompt, default, type_converter):
 
 class ClusterOperationDefaults:
     CLOUD_PROVIDER = "aws"
-    CLOUD_PROFILE = AWS_DEFAULT_PROFILE
+    CLOUD_PROFILE = AWS_NO_PROFILE
     PLATFORM_SERVICE_MANIFEST_ROOT = AXPlatformConfigDefaults.DefaultManifestRoot
     PLATFORM_BOOTSTRAP_CONFIG_FILE = AXPlatformConfigDefaults.DefaultPlatformConfigFile
 
@@ -71,7 +75,7 @@ class ClusterManagementOperationConfigBase(with_metaclass(abc.ABCMeta, object)):
             if self.cloud_profile is None:
                 self.cloud_profile = typed_raw_input_with_default(
                     prompt="Please enter your cloud provider profile. If you don't provide one, we are going to use the default you configured on host.",
-                    default=AWS_DEFAULT_PROFILE,
+                    default=AWS_NO_PROFILE,
                     type_converter=str
                 )
 
@@ -81,6 +85,10 @@ class ClusterManagementOperationConfigBase(with_metaclass(abc.ABCMeta, object)):
             confirmation += "Cloud Profile:         {}\n".format(self.cloud_profile)
             confirmation += "\n\nPlease press ENTER to continue or press Ctrl-C to terminate:"
             raw_input(confirmation)
+
+        # TODO: revise this once we bring GCP into picture
+        if self.cloud_profile == AWS_NO_PROFILE:
+            self.cloud_profile = None
 
 
 def validate_software_info(software_info):

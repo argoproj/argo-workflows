@@ -182,8 +182,6 @@ class ClusterUninstaller(ClusterOperationBase):
 
         if self._cfg.cloud_profile:
             env["AWS_DEFAULT_PROFILE"] = self._cfg.cloud_profile
-        else:
-            env["AWS_DEFAULT_PROFILE"] = AWS_DEFAULT_PROFILE
 
         logger.info("\n\n%sCalling kube-down ...%s\n", COLOR_GREEN, COLOR_NORM)
         AXKubeUpDown(cluster_name_id=self._name_id, env=env, aws_profile=self._cfg.cloud_profile).down()
