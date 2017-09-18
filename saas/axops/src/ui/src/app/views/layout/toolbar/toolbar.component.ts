@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { LayoutSettings } from '../';
-import { DropDownComponent, DateRangeSelectorComponent } from 'argo-ui-lib/src/components';
+import { DateRange } from 'argo-ui-lib/src/components';
 
 @Component({
     selector: 'ax-toolbar',
@@ -8,12 +8,6 @@ import { DropDownComponent, DateRangeSelectorComponent } from 'argo-ui-lib/src/c
     styles: [ require('./toolbar.scss') ],
 })
 export class ToolbarComponent {
-
-    @ViewChild('dateRangeDropdown')
-    public dateRangeDropdown: DropDownComponent;
-
-    @ViewChild(DateRangeSelectorComponent)
-    public dateRangeSelector: DateRangeSelectorComponent;
 
     @Input()
     public settings: LayoutSettings;
@@ -33,13 +27,8 @@ export class ToolbarComponent {
         return this.settings.layoutDateRange.data.format();
     };
 
-    public cancelDateRangeSelection() {
-        this.dateRangeDropdown.close();
-    }
-
-    public applyDateRangeSelection() {
-        this.dateRangeDropdown.close();
-        this.settings.layoutDateRange.onApplySelection(this.dateRangeSelector.input);
+    public applyDateRangeSelection(dateRange: DateRange) {
+        this.settings.layoutDateRange.onApplySelection(dateRange);
     }
 
     public toggleFilter(option) {
