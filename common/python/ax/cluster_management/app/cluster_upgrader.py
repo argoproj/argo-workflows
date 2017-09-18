@@ -209,8 +209,6 @@ class ClusterUpgrader(ClusterOperationBase):
         
         if self._cfg.cloud_profile:
             env["ARGO_AWS_PROFILE"] = self._cfg.cloud_profile
-        else:
-            env["ARGO_AWS_PROFILE"] = AWS_DEFAULT_PROFILE
 
         logger.info("Upgrading Kubernetes with environments %s", pformat(env))
         env.update(os.environ)
