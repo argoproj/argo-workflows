@@ -17,7 +17,7 @@ def run():
     parser.add_argument("cluster_name_id", help="Name of the cluster")
     parser.add_argument("command", help="Command, server or upgrade")
     parser.add_argument("--region", help="Region name")
-    parser.add_argument("--profile", help="Profile name")
+    parser.add_argument("--profile", default=None, help="Profile name")
     parser.add_argument('--version', action='version', version="%(prog)s {}".format(__version__))
     usr_args = parser.parse_args()
 

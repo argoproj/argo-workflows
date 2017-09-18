@@ -201,8 +201,6 @@ def prepare_kube_install_config(name_id, aws_profile, cluster_info, cluster_conf
 
     if aws_profile:
         env["AWS_DEFAULT_PROFILE"] = aws_profile
-    else:
-        env["AWS_DEFAULT_PROFILE"] = AWS_DEFAULT_PROFILE
 
     optional_env = {
         # Start off directly with all spot instances only for dev clusters.
