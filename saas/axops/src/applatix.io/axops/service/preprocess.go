@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"applatix.io/axerror"
@@ -521,12 +522,14 @@ func replaceStringMap(from interface{}, to interface{}, replacements map[string]
 	byteStr := string(bytes)
 	for fromVal, toVal := range replacements {
 		//log.Printf("Replacing %s to %s\n", fromVal, *toVal)
-		escToVal := strings.Replace(*toVal, "\"", "\\\"", -1)
+		// The following escapes any special characters (e.g. newlines, tabs, etc...) in preparation for substitution
+		escToVal := strconv.Quote(*toVal)
+		escToVal = escToVal[1 : len(escToVal)-1]
 		byteStr = strings.Replace(byteStr, fromVal, escToVal, -1)
 	}
 	err = json.Unmarshal([]byte(byteStr), to)
 	if err != nil {
-		utils.DebugLog.Printf("Argument substitution failed (unmarshaling): %v\n%s", err, byteStr)
+		utils.DebugLog.Printf("Argument substitution failed (unmarshaling): %v\nBefore:\n%s\nAfter\n%s", err, string(bytes), byteStr)
 		return axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Argument substitution failed (unmarshaling): %v", err)
 	}
 	return nil
