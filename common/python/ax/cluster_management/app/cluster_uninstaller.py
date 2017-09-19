@@ -15,7 +15,6 @@ import subprocess
 import yaml
 
 from ax.cloud import Cloud
-from ax.cloud.aws import AWS_DEFAULT_PROFILE
 from ax.cloud.aws.ebs import delete_tagged_ebs
 from ax.cloud.aws.elb import ManagedElb
 from ax.cloud.aws.server_cert import delete_server_certificate
@@ -28,7 +27,7 @@ from ax.platform.consts import COMMON_CLOUD_RESOURCE_TAG_KEY
 from ax.util.const import COLOR_GREEN, COLOR_NORM, COLOR_YELLOW
 from ax.util.network import get_public_ip
 
-from .common import ClusterOperationBase, check_cluster_staging
+from .common import ClusterOperationBase, check_cluster_staging, is_portal_env
 from .options import ClusterUninstallConfig
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class ClusterUninstaller(ClusterOperationBase):
         self._cidr = str(get_public_ip()) + "/32"
 
     def pre_run(self):
-        if self._cluster_info.is_cluster_supported_by_portal():
+        if not is_portal_env() and self._cluster_info.is_cluster_supported_by_portal():
             raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
         # Abort operation if cluster is not successfully installed
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2") and not self._cfg.force_uninstall:
