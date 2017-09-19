@@ -22,6 +22,10 @@ TEMP_PLATFORM_MANIFEST_ROOT = "/tmp/platform/manifests/"
 TEMP_PLATFORM_CONFIG_PATH = "/tmp/platform/platform-bootstrap.cfg"
 
 
+def is_portal_env():
+    return bool(os.getenv("ARGO_PORTAL_HOST"))
+
+
 def ensure_manifest_temp_dir():
     if not os.path.exists(TEMP_PLATFORM_MANIFEST_ROOT):
         os.makedirs(TEMP_PLATFORM_MANIFEST_ROOT)

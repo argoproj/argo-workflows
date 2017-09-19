@@ -17,7 +17,6 @@ import yaml
 from pprint import pformat
 
 from ax.cloud import Cloud
-from ax.cloud.aws import AWS_DEFAULT_PROFILE
 from ax.meta import AXCustomerId
 from ax.platform.ax_cluster_info import AXClusterInfo
 from ax.platform.bootstrap import AXBootstrap
@@ -28,7 +27,7 @@ from ax.util.const import COLOR_GREEN, COLOR_YELLOW, COLOR_NORM
 from ax.util.network import get_public_ip
 
 from .common import ClusterOperationBase, check_cluster_staging, ensure_manifest_temp_dir,\
-    TEMP_PLATFORM_MANIFEST_ROOT, TEMP_PLATFORM_CONFIG_PATH
+    TEMP_PLATFORM_MANIFEST_ROOT, TEMP_PLATFORM_CONFIG_PATH, is_portal_env
 from .options import ClusterUpgradeConfig
 
 logger = logging.getLogger(__name__)
@@ -70,7 +69,7 @@ class ClusterUpgrader(ClusterOperationBase):
         self._upgrade_service_needed = True
 
     def pre_run(self):
-        if self._cluster_info.is_cluster_supported_by_portal():
+        if not is_portal_env() and self._cluster_info.is_cluster_supported_by_portal():
             raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
 
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2"):
