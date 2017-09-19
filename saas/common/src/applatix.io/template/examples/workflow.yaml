@@ -151,3 +151,29 @@ image: mongo:%%inputs.parameters.version%%
 #             ping %%fixtures.myfix.hostname%% &&
 #             ping %%fixtures.myfix_1.hostname%% &&
 #             ping %%inputs.fixtures.myfix.hostname%%"]
+
+---
+type: workflow
+version: 1
+name: workflow-yaml-multiline
+steps:
+- ECHO:
+    template: echo-multiline
+    arguments:
+      parameters.CMD: >
+        echo this &&
+        echo is &&
+        echo a &&
+        echo multiline &&
+        echo command
+
+---
+type: container
+version: 1
+name: echo-multiline
+inputs:
+  parameters:
+    CMD:
+image: alpine:latest
+command: ["sh", "-c"]
+args: ["%%inputs.parameters.CMD%%"]

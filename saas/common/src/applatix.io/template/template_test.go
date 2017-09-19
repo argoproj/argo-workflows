@@ -270,6 +270,8 @@ func TestArgumentSubstitution(t *testing.T) {
 	ctx.IgnoreErrors = false
 	axErr := ctx.ParseDirectory(yaml20dir)
 	assert.Nil(t, axErr)
+	axErr = ctx.ParseDirectory(goodYAMLdir)
+	assert.Nil(t, axErr)
 	if len(ctx.Results) != 0 {
 		t.Fatalf("Expected no parse errors: %s", ctx.Results)
 	}
@@ -357,6 +359,14 @@ func TestArgumentSubstitution(t *testing.T) {
 	_, axErr = eTmpl.SubstituteArguments(nil)
 	assert.Nil(t, axErr)
 
+	// test with presence of yaml multiline scalar
+	tmpl = ctx.Results["workflow-yaml-multiline"].Template
+	log.Println(tmpl)
+	eTmpl, axErr = service.EmbedServiceTemplate(tmpl, ctx)
+	logTemplate(t, eTmpl)
+	assert.Nil(t, axErr)
+	_, axErr = eTmpl.SubstituteArguments(nil)
+	assert.Nil(t, axErr)
 }
 
 func logTemplate(t *testing.T, tmpl service.EmbeddedTemplateIf) {
