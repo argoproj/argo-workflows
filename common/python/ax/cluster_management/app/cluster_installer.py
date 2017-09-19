@@ -28,6 +28,7 @@ from ax.platform.cluster_buckets import AXClusterBuckets
 from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption, AXClusterSize
 from ax.platform.ax_cluster_info import AXClusterInfo
 from ax.platform.ax_kube_up_down import AXKubeUpDown
+from ax.platform.cluster_config.consts import ClusterProvider
 from ax.platform.kube_env_config import prepare_kube_install_config
 from ax.platform.platform import AXPlatform
 from ax.platform.resource import KubeMasterResourceConfig
@@ -49,6 +50,7 @@ CLUSTER_CONFIG_TEMPLATES = {
         "medium": "cloud_template_medium.json",
         "large": "cloud_template_large.json",
         "xlarge": "cloud_template_xlarge.json",
+        "user_provided": "cloud_template_user_provided.json"
 }
 
 DEFAULT_NODE_SPOT_PRICE = "0.1512"
@@ -107,6 +109,7 @@ class ClusterInstaller(ClusterOperationBase):
             return
         cluster_dns, username, password = self._ensure_argo_microservices()
 
+    def persist_username_password_locally(self, username, password, cluster_dns):
         # Dump Argo cluster profile
         if username and password:
             logger.info("Generating Argo cluster profile ...")
@@ -146,6 +149,20 @@ please contact your administrator for more information to configure your argo CL
         )
         logger.info("Cluster information:\n%s%s%s\n", COLOR_GREEN, summary, COLOR_NORM)
 
+    def run(self):
+        """
+        Main install routine
+        :return:
+        """
+        self._pre_install()
+        self._ensure_kubernetes_cluster()
+        if self._cfg.dry_run:
+            logger.info("DRY RUN: not installing cluster")
+            return
+        cluster_dns, username, password = self._ensure_argo_microservices()
+
+        self.persist_username_password_locally(username, password, cluster_dns)
+
     def _pre_install(self):
         """
         Pre install ensures the following stuff:
@@ -169,7 +186,6 @@ please contact your administrator for more information to configure your argo CL
 
         # Generate raw config dict
         raw_cluster_config_dict = self._generate_raw_cluster_config_dict()
-
         # Set cluster config object with raw cluster config dict
         self._cluster_config.set_config(raw_cluster_config_dict)
 
@@ -247,6 +263,48 @@ please contact your administrator for more information to configure your argo CL
 
         logger.info("Cluster installation step: Ensure Kubernetes Cluster successfully finished")
 
+    def install_and_run_platform(self):
+        logger.info("Starting platform install")
+        # Install Argo micro-services
+        # Platform install
+        platform = AXPlatform(
+            cluster_name_id=self._name_id,
+            aws_profile=self._cfg.cloud_profile,
+            manifest_root=self._cfg.manifest_root,
+            config_file=self._cfg.bootstrap_config
+        )
+
+        install_platform_failed = False
+        install_platform_failure_message = ""
+        try:
+            platform.start()
+            platform.stop_monitor()
+        except Exception as e:
+            logger.exception(e)
+            install_platform_failed = True
+            install_platform_failure_message = str(e) + "\nPlease manually check the cluster status and retry installation with same command if the error is transient."
+
+        if install_platform_failed:
+            raise RuntimeError(install_platform_failure_message)
+
+        # In case platform is successfully installed,
+        # connect to axops to get initial username and password
+        username, password = self._get_initial_cluster_credentials()
+
+        logger.info("Done with platform install")
+        return platform.cluster_dns_name, username, password
+
+    def post_install(self):
+        # Persist manifests to S3
+        self._cluster_info.upload_platform_manifests_and_config(
+            platform_manifest_root=self._cfg.manifest_root,
+            platform_config=self._cfg.bootstrap_config
+        )
+
+        # Finally persist stage2 information
+        self._cluster_info.upload_staging_info(stage="stage2", msg="stage2")
+        logger.info("Cluster installation step: Ensure Argo Micro-services successfully finished")
+
     def _ensure_argo_microservices(self):
         """
         This step won't run if there is "--dry-run" specified.
@@ -308,31 +366,9 @@ please contact your administrator for more information to configure your argo CL
             max=axuser_max_count
         )
 
-        # Install Argo micro-services
-        # Platform install
-        platform = AXPlatform(
-            cluster_name_id=self._name_id,
-            aws_profile=self._cfg.cloud_profile,
-            manifest_root=self._cfg.manifest_root,
-            config_file=self._cfg.bootstrap_config
-        )
+        cluster_dns, username, password = self.install_and_run_platform()
 
-        install_platform_failed = False
-        install_platform_failure_message = ""
-        try:
-            platform.start()
-            platform.stop_monitor()
-        except Exception as e:
-            logger.exception(e)
-            install_platform_failed = True
-            install_platform_failure_message = str(e) + "\nPlease manually check the cluster status and retry installation with same command if the error is transient."
-
-        if install_platform_failed:
-            raise RuntimeError(install_platform_failure_message)
-
-        # In case platform is successfully installed,
-        # connect to axops to get initial username and password
-        username, password = self._get_initial_cluster_credentials()
+        self.post_install()
 
         # Remove access from 0.0.0.0/0 if this is not what user specifies
         if EC2IPPermission.AllIP not in trusted_cidrs:
@@ -342,16 +378,7 @@ please contact your administrator for more information to configure your argo CL
                 action_name="disallow-creator"
             )
 
-        # Persist manifests to S3
-        self._cluster_info.upload_platform_manifests_and_config(
-            platform_manifest_root=self._cfg.manifest_root,
-            platform_config=self._cfg.bootstrap_config
-        )
-
-        # Finally persist stage2 information
-        self._cluster_info.upload_staging_info(stage="stage2", msg="stage2")
-        logger.info("Cluster installation step: Ensure Argo Micro-services successfully finished")
-        return platform.cluster_dns_name, username, password
+        return cluster_dns_name, username, password
 
     @retry(wait_fixed=5, stop_max_attempt_number=10)
     def _get_initial_cluster_credentials(self):
@@ -431,19 +458,20 @@ please contact your administrator for more information to configure your argo CL
         axuser_node_type = config["cloud"]["configure"]["axuser_node_type"]
         axuser_node_max = config["cloud"]["configure"]["max_node_count"] - axsys_node_max
         cluster_type = config["cloud"]["configure"]["cluster_type"]
-        master_config = KubeMasterResourceConfig(
-            usr_node_type=axuser_node_type,
-            usr_node_max=axuser_node_max,
-            ax_node_type=axsys_node_type,
-            ax_node_max=axsys_node_max,
-            cluster_type=cluster_type
-        )
-        if self._cfg.cluster_size == AXClusterSize.CLUSTER_MVC:
-            # MVC cluster does not follow the heuristics we used to configure master
-            config["cloud"]["configure"]["master_type"] = "m3.xlarge"
-        else:
-            config["cloud"]["configure"]["master_type"] = master_config.master_instance_type
-        config["cloud"]["configure"]["master_config_env"] = master_config.kube_up_env
+        if self._cfg.cluster_size != AXClusterSize.CLUSTER_USER_PROVIDED:
+            master_config = KubeMasterResourceConfig(
+                usr_node_type=axuser_node_type,
+                usr_node_max=axuser_node_max,
+                ax_node_type=axsys_node_type,
+                ax_node_max=axsys_node_max,
+                cluster_type=cluster_type
+            )
+            if self._cfg.cluster_size == AXClusterSize.CLUSTER_MVC:
+                # MVC cluster does not follow the heuristics we used to configure master
+                config["cloud"]["configure"]["master_type"] = "m3.xlarge"
+            else:
+                config["cloud"]["configure"]["master_type"] = master_config.master_instance_type
+            config["cloud"]["configure"]["master_config_env"] = master_config.kube_up_env
 
         # TODO (#121) Need to revise the relationship between user_on_demand_nodes and node minimum, system node count
         config["cloud"]["configure"]["axuser_on_demand_nodes"] = self._cfg.user_on_demand_nodes
@@ -470,3 +498,18 @@ please contact your administrator for more information to configure your argo CL
         """
         config["cloud"]["trusted_cidr"] = self._cfg.trusted_cidrs
         return config
+
+    def update_and_save_config(self, cluster_bucket=None):
+        """
+        Update the config to use the given bucket and upload cluster_config and kubeconfig
+        to the given bucket.
+        """
+        raw_cluster_config_dict = self._generate_raw_cluster_config_dict()
+        self._cluster_config.set_config(raw_cluster_config_dict)
+        self._cluster_config.set_cluster_provider(ClusterProvider.USER)
+        self._cluster_config.set_support_object_store_name(cluster_bucket)
+
+        # Save config file to s3.
+        self._cluster_config.save_config()
+
+        self._cluster_info.upload_kube_config()

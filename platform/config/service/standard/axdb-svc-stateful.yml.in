@@ -57,6 +57,8 @@ spec:
                 image: ${REGISTRY}/${NAMESPACE}/axdb:${VERSION}
                 imagePullPolicy: Always
                 env:
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                   - name: CASSANDRA_HOME
                     value: /ax/axdb/cassandra
                   - name: CASSANDRA_SERVICE

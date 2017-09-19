@@ -1,0 +1,21 @@
+{
+    "cloud": {
+        "provider": "aws",
+        "version": 1,
+        "configure": {
+            "cluster_user": "",
+            "cluster_size": "user_provided",
+            "cluster_type": "standard",
+            "region": "us-west-2",
+            "placement": "us-west-2a",
+            "axsys_node_type": "m3.large",
+            "axuser_node_type": "c3.2xlarge",
+            "min_node_count": 0,
+            "max_node_count": 9223372036854775800,
+            "axsys_node_count": 0,
+            "node_tiers": "",
+            "ax_vol_size": 100,
+            "axuser_on_demand_nodes": 0
+        }
+    }
+}

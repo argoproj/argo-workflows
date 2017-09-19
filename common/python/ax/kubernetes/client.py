@@ -317,7 +317,7 @@ class KubernetesApiClient(object):
                         kube_config = yaml.load(f)
                     cred_info = self._parse_config(kube_config)
                     self.host = cred_info['host']
-                    self.token = 'Bearer ' + cred_info['token']
+                    self.token = cred_info['token']
 
             self.url = 'https://{}:{}'.format(self.host, self.port)
             # NOTE: options set on the configuration singleton (e.g. verify_ssl),
@@ -488,7 +488,11 @@ class KubernetesApiClient(object):
         # user info
         context_user = next(c['user'] for c in kube_config['users'] if c['name'] == context['user'])
         if Cloud().target_cloud_aws():
-            cred_info['token'] = context_user['token']
+            if 'token' in context_user:
+                cred_info['token'] = "Bearer " + context_user['token']
+            else:
+                cred_info['token'] = urllib3.util.make_headers(basic_auth=context_user['username'] + \
+                                                               ':' + context_user['password']).get('authorization')
         elif Cloud().target_cloud_gcp():
             cred_info['token'] = GCPToken().token
         return cred_info

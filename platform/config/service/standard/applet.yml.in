@@ -34,6 +34,8 @@ spec:
                 env:
                    - name: LOGMOUNT_PATH
                      value: /logs
+                   - name: ARGO_DATA_BUCKET_NAME
+                     value: "{ARGO_DATA_BUCKET_NAME}"
                 volumeMounts:
                    - name: handshake-socket
                      mountPath: /var/run

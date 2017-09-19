@@ -51,6 +51,8 @@ spec:
               - name: gateway
                 image: ${REGISTRY}/${NAMESPACE}/gateway:${VERSION}
                 env:
+                  - name: ARGO_DATA_BUCKET_NAME
+                    value: "${ARGO_DATA_BUCKET_NAME}"
                   - name: AX_CLUSTER
                     value: "${AX_CLUSTER_NAME_ID}"
                   - name: AXOPS_EXT_DNS

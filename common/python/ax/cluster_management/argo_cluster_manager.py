@@ -11,12 +11,18 @@ import uuid
 
 from ax.cloud import Cloud
 from ax.cloud.aws import SecurityToken
+from ax.platform.cluster_config import ClusterProvider
 from ax.util.const import COLOR_NORM, COLOR_RED
+from bunch import bunchify
+from kubernetes import client, config
+
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
     CommonClusterOperations
-from .app.options import add_install_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
+from .app.options import add_install_flags, add_platform_only_flags, \
+    PlatformOnlyInstallConfig, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
     add_restart_flags, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
     add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +60,10 @@ class ArgoClusterManager(object):
         download_cred_parser = main_subparser.add_parser("download-cluster-credentials", help="Download Argo cluster credentials")
         add_misc_flags(download_cred_parser)
 
+        # Install on existing cluster
+        platform_only_installer = main_subparser.add_parser("install-platform-only", help="Install platform only")
+        add_platform_only_flags(platform_only_installer)
+
     def parse_args_and_run(self):
         assert isinstance(self._parser, argparse.ArgumentParser), "Please call add_flags() to initialize parser"
         args = self._parser.parse_args()
@@ -76,7 +86,10 @@ class ArgoClusterManager(object):
         err = install_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(install_config.cloud_profile)
-        ClusterInstaller(install_config).start()
+        ci = ClusterInstaller(install_config)
+        # TODO(shri): We can do better than this!
+        ci._cluster_config.set_cluster_provider(ClusterProvider.USER)
+        ci.start()
 
     def pause(self, args):
         pause_config = ClusterPauseConfig(cfg=args)
@@ -101,6 +114,41 @@ class ArgoClusterManager(object):
         self._continue_or_die(err)
         self._ensure_customer_id(uninstall_config.cloud_profile)
         ClusterUninstaller(uninstall_config).start()
+
+    def install_platform_only(self, args):
+        os.environ["AX_CUSTOMER_ID"] = "user-customer-id"
+        os.environ["ARGO_LOG_BUCKET_NAME"] = args.cluster_bucket
+        os.environ["ARGO_DATA_BUCKET_NAME"] = args.cluster_bucket
+        os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
+
+        logger.info("Using customer id: %s", os.environ["AX_CUSTOMER_ID"])
+
+        args.silent = True
+        # 1. Create the platform install config first.
+        platform_install_config = PlatformOnlyInstallConfig(cfg=args)
+
+        # 2. Ask the user for any other options
+        config.load_kube_config(config_file=args.kubeconfig)
+        v1 = client.CoreV1Api()
+        ret = v1.list_node(watch=False)
+        instance = bunchify(ret.items[0])
+        platform_install_config.region = instance.metadata.labels["failure-domain.beta.kubernetes.io/region"]
+        platform_install_config.cloud_placement = instance.metadata.labels["failure-domain.beta.kubernetes.io/zone"]
+
+        platform_install_config.default_or_wizard()
+
+        Cloud(target_cloud=args.cloud_provider)
+
+        platform_install_config.validate()
+
+        ci = ClusterInstaller(cfg=platform_install_config)
+        ci.update_and_save_config(cluster_bucket=args.cluster_bucket)
+
+        cluster_dns, username, password = ci.install_and_run_platform()
+        ci.post_install()
+        ci.persist_username_password_locally(username, password, cluster_dns)
+
+        return
 
     def download_cluster_credentials(self, args):
         config = ClusterMiscOperationConfig(cfg=args)
