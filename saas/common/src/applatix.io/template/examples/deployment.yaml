@@ -156,3 +156,32 @@ inputs:
     echo:
       default: "hello world"
     sleep:
+
+---
+type: deployment
+version: 1
+name: paramaterize-deployment-fields
+inputs:
+  parameters:
+    MYVAR:
+      default: "hello"
+    PORT:
+      default: "1234"
+    SCALE:
+      default: "2"
+application_name: "%%inputs.parameters.MYVAR%%-world"
+deployment_name: "%%inputs.parameters.MYVAR%%-world"
+internal_routes:
+- name: "%%inputs.parameters.MYVAR%%-world"
+  ports:
+  - port:  "%%inputs.parameters.PORT%%"
+    target_port: "%%inputs.parameters.PORT%%"
+external_routes:
+- dns_prefix: "%%inputs.parameters.MYVAR%%-world"
+  dns_domain: "%%inputs.parameters.MYVAR%%-world"
+  target_port: "%%inputs.parameters.PORT%%"
+  ip_white_list:
+  - 0.0.0.0/0
+containers:
+  NGINX:
+    image: nginx:latest

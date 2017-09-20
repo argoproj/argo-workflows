@@ -47,6 +47,11 @@ func IsParam(s string) bool {
 	return varRegexExact.MatchString(s)
 }
 
+// HasParam returns whether or not the supplied string contains a parameter, of the form %%param%%
+func HasParam(s string) bool {
+	return VarRegex.MatchString(s)
+}
+
 // HasGlobalScope returns if the parameter is accessible anywhere because it belongs in the global scope
 func HasGlobalScope(s string) bool {
 	if !strings.HasPrefix(s, "%%") {
