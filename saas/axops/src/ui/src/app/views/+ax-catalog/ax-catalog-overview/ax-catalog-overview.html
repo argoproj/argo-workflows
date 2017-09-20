@@ -18,7 +18,7 @@
                 <div *ngFor="let item of allProjects" class="ax-catalog-overview__project">
                     <ax-project-icon [project]="item"></ax-project-icon>
                 </div>
-                <div class="ax-table-list ax-table-list--clickable projects-list" *ngIf="!projects?.length">
+                <div class="ax-table-list ax-table-list--clickable projects-list" *ngIf="!allProjects?.length">
                     <div class="ax-table-list__row">
                         <div class="row">
                             <div class="columns small-12">There are no projects to display for selected filter.</div>

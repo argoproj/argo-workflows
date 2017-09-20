@@ -5,13 +5,13 @@
     max-width: 100%;
 
     .ax-button {
-        z-index: 2;
         padding-left: 3em;
         padding-right: 3em;
     }
 
     &__dropdown-caret {
         position: absolute;
+        z-index: 2;
         right: 1em;
         top: 50%;
         transform: translateY(-50%);
