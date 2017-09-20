@@ -11,6 +11,7 @@ import json
 import logging
 import time
 import os
+import re
 
 from future.utils import iteritems
 from pyparsing import Word, nums, alphanums
@@ -20,6 +21,7 @@ from ax.kubernetes import swagger_client
 from ax.kubernetes.kube_object import KubeObject
 from ax.kubernetes.client import KubernetesApiClient, retry_unless
 from ax.meta import AXLogPath, AXClusterDataPath, AXClusterId, AXCustomerId
+from ax.devops.axdb.axops_client import AxopsClient
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.exceptions import AXPlatformException, AXVolumeOwnershipException
 from ax.platform.operations import Operation
@@ -35,6 +37,7 @@ from .container import Container
 from argo.services.service import Service
 
 logger = logging.getLogger(__name__)
+axops_client = AxopsClient()
 
 DELETE_TASK_GRACE_PERIOD = 2
 
@@ -292,7 +295,7 @@ class Task(object):
         c.add_env("AX_CLUSTER_META_URL_V1", value=CLUSTER_META_URL_V1)
 
         for env in container.env:
-            c.add_env(env.name, value=env.value)
+            c.add_env(env.name, value=self._decript_env(env.value, container.repo))
 
         return c
 
@@ -359,6 +362,8 @@ class Task(object):
         if self.service.service_context:
             service_env["container"]["service_context"] = self.service.service_context.to_dict()
             service_env["container"]["service_context"]["name"] = self.service.name
+        if container.repo:
+            service_env["container"]["repo"] = container.repo
 
         # use base64 encode then decode to accommodate all chars in json
         # xxx todo: which unicode encode to use?
@@ -397,3 +402,15 @@ class Task(object):
         else:
             conf["template"]["name"] = string_to_dns_label(conf["template"]["name"])
         return conf
+
+    @staticmethod
+    def _decript_env(env_value, repo):
+        match_obj = re.match("%%secrets.(.*)%%", env_value)
+
+        if match_obj is not None:
+            try:
+                env_value = axops_client.decrypt(token=match_obj.group(1), repo_name=repo)
+            except Exception:
+                logger.exception("Failed to decrypt env variable %s", env_value)
+
+        return env_value
