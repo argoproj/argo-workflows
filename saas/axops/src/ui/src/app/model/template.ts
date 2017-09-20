@@ -218,6 +218,7 @@ export const TEMPLATE_TYPES = {
 };
 
 export const TemplateFieldNames = {
+    id: 'id',
     type: 'type',
     version: 'version',
     name: 'name',
