@@ -88,6 +88,7 @@ export class TemplatesListComponent implements OnChanges, OnDestroy {
             branches: null,
             username: null,
             fields: [
+                TemplateFieldNames.id,
                 TemplateFieldNames.name,
                 TemplateFieldNames.description,
                 TemplateFieldNames.repo,
