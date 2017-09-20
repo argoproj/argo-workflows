@@ -286,21 +286,27 @@ func (ir *InternalRoute) Validate() *axerror.AXError {
 		return axerror.ERR_API_INVALID_PARAM.NewWithMessage("'name' is required")
 	}
 
-	if !common.ValidateKubeObjName(ir.Name) {
-		return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'name' %v is not valid", ir.Name)
+	if !HasParam(ir.Name) {
+		if !common.ValidateKubeObjName(ir.Name) {
+			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'name' %v is not valid", ir.Name)
+		}
 	}
 
 	if len(ir.Ports) == 0 {
-		return axerror.ERR_API_INVALID_PARAM.NewWithMessage("no 'ports' provided")
+		return axerror.ERR_API_INVALID_PARAM.NewWithMessage("'ports' is required")
 	}
 
 	for _, port := range ir.Ports {
-		if _, err := strconv.ParseInt(port.Port, 0, 64); err != nil {
-			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'port' %v is not valid: %v", port.Port, err.Error())
+		if !HasParam(port.Port) {
+			if _, err := strconv.ParseInt(port.Port, 0, 64); err != nil {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'port' %v is not valid: %v", port.Port, err.Error())
+			}
 		}
 
-		if _, err := strconv.ParseInt(port.TargetPort, 0, 64); err != nil {
-			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'target_port' %v is not valid: %v", port.TargetPort, err.Error())
+		if !HasParam(port.TargetPort) {
+			if _, err := strconv.ParseInt(port.TargetPort, 0, 64); err != nil {
+				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'target_port' %v is not valid: %v", port.TargetPort, err.Error())
+			}
 		}
 	}
 
@@ -325,8 +331,10 @@ func (ers ExternalRoutes) Validate() *axerror.AXError {
 }
 
 func (er *ExternalRoute) Validate() *axerror.AXError {
-	if _, err := strconv.ParseInt(er.TargetPort, 0, 64); err != nil {
-		return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'port' %v is not valid: %v", er.TargetPort, err.Error())
+	if !HasParam(er.TargetPort) {
+		if _, err := strconv.ParseInt(er.TargetPort, 0, 64); err != nil {
+			return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("'port' %v is not valid: %v", er.TargetPort, err.Error())
+		}
 	}
 
 	if er.IPWhiteList == nil || len(er.IPWhiteList) == 0 {

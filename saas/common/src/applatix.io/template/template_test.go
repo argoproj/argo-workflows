@@ -367,6 +367,36 @@ func TestArgumentSubstitution(t *testing.T) {
 	assert.Nil(t, axErr)
 	_, axErr = eTmpl.SubstituteArguments(nil)
 	assert.Nil(t, axErr)
+
+	// test substitution of various deployment fields
+	tmpl = ctx.Results["paramaterize-deployment-fields"].Template
+	log.Println(tmpl)
+	eTmpl, axErr = service.EmbedServiceTemplate(tmpl, ctx)
+	assert.Nil(t, axErr)
+	eTmpl, axErr = eTmpl.SubstituteArguments(nil)
+	logTemplate(t, eTmpl)
+	assert.Nil(t, axErr)
+	dTmpl := eTmpl.(*service.EmbeddedDeploymentTemplate)
+	assert.Equal(t, dTmpl.ApplicationName, "hello-world")
+	assert.Equal(t, dTmpl.DeploymentName, "hello-world")
+	assert.Equal(t, dTmpl.ExternalRoutes[0].TargetPort, "1234")
+	assert.Equal(t, dTmpl.InternalRoutes[0].Ports[0].Port, "1234")
+	assert.Equal(t, dTmpl.InternalRoutes[0].Ports[0].TargetPort, "1234")
+	assert.Equal(t, dTmpl.InternalRoutes[0].Ports[0].TargetPort, "1234")
+	axErr = dTmpl.Validate(true)
+	assert.Nil(t, axErr)
+
+	// test validate method still catches errors after invalid substitution by user
+	tmpl = ctx.Results["paramaterize-deployment-fields"].Template
+	log.Println(tmpl)
+	eTmpl, axErr = service.EmbedServiceTemplate(tmpl, ctx)
+	assert.Nil(t, axErr)
+	abc := "abc"
+	eTmpl, axErr = eTmpl.SubstituteArguments(template.Arguments{"parameters.PORT": &abc})
+	assert.Nil(t, axErr)
+	dTmpl = eTmpl.(*service.EmbeddedDeploymentTemplate)
+	axErr = dTmpl.Validate(true)
+	assert.NotNil(t, axErr)
 }
 
 func logTemplate(t *testing.T, tmpl service.EmbeddedTemplateIf) {
