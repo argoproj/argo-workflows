@@ -11,11 +11,11 @@ import re
 from netaddr import IPAddress
 
 from ax.cloud import Cloud
-from ax.cloud.aws import EC2, AWS_DEFAULT_PROFILE
+from ax.cloud.aws import EC2
 from ax.platform.cluster_config import AXClusterSize, AXClusterType, SpotInstanceOption
 from ax.platform.component_config import SoftwareInfo
 from .common import add_common_flags, add_software_info_flags, validate_software_info, \
-    ClusterManagementOperationConfigBase, typed_raw_input_with_default
+    ClusterManagementOperationConfigBase, typed_raw_input_with_default, AWS_NO_PROFILE
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class ClusterInstallDefaults:
     CLUSTER_SIZE = "small"
     CLUSTER_TYPE = "standard"
     CLOUD_REGION = "us-west-2"
-    CLOUD_PROFILE = AWS_DEFAULT_PROFILE
+    CLOUD_PROFILE = AWS_NO_PROFILE
     CLOUD_PLACEMENT = "us-west-2a"
     VPC_CIDR_BASE = "172.20"
     SUBNET_MASK_SIZE = 22
@@ -121,7 +121,7 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
             if self.cloud_profile is None:
                 self.cloud_profile = typed_raw_input_with_default(
                     prompt="Please enter your cloud provider profile. If you don't provide one, we are going to use the default you configured on host.",
-                    default=AWS_DEFAULT_PROFILE,
+                    default=AWS_NO_PROFILE,
                     type_converter=str
                 )
 
@@ -192,8 +192,12 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
             confirmation += "Trusted CIDRs:         {}\n".format(self.trusted_cidrs)
             confirmation += "Spot Instance Option:  {}\n".format(self.spot_instances_option)
             confirmation += "User On-Demand Nodes:  {}\n".format(self.user_on_demand_nodes)
-            confirmation += "\n\nPlease press ENTER to continue or press Ctrl-C to terminate the program if these configurations are not what you want:\n"
+            confirmation += "\n\nPlease press ENTER to continue or press Ctrl-C to terminate the program if these configurations are not what you want:"
             raw_input(confirmation)
+
+        # TODO: revise this once we bring GCP into picture
+        if self.cloud_profile == AWS_NO_PROFILE:
+            self.cloud_profile = None
 
 
 

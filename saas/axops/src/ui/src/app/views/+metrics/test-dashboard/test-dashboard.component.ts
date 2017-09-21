@@ -1,14 +1,16 @@
 import * as _ from 'lodash';
 import { Observable } from 'rxjs';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, NgZone } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { LayoutSettings, HasLayoutSettings } from '../../layout';
 import { TaskStatus, LABEL_TYPES, CustomView, CustomViewInfo, CUSTOM_VIEW_TYPES } from '../../../model';
 import { TaskService, CustomViewService, ModalService } from '../../../services';
 import { SortOperations } from '../../../common/sortOperations/sortOperations';
+import { TASK_STATUSES } from '../../../pipes/statusToNumber.pipe';
 
-import { BranchesFiltersComponent, LabelsFiltersComponent, TemplatesFiltersComponent } from '../../../common';
+import { BranchesFiltersComponent, LabelsFiltersComponent, TemplatesFiltersComponent, GlobalSearchFilters } from '../../../common';
 import { NotificationsService, DateRange } from 'argo-ui-lib/src/components';
 
 declare let d3: any;
@@ -41,7 +43,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     selectedRepo: string = null;
     selectedBranch: string = null;
     selectedLabels: string = null;
-    selectedTemplateIds: string = null;
+    selectedTemplateNames: string = null;
     selectedCustomView: CustomView = null;
     selectedCustomViewName: string = null;
     filterInfo: string = '';
@@ -61,6 +63,8 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     templatesFilter: TemplatesFiltersComponent;
 
     constructor(private router: Router,
+                private zone: NgZone,
+                private location: Location,
                 private activatedRoute: ActivatedRoute,
                 private taskService: TaskService,
                 private customViewService: CustomViewService,
@@ -102,6 +106,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     }
 
     ngOnInit() {
+        let that = this;
         this.chartOptions = {
             chart: {
                 type: 'pieChart',
@@ -115,7 +120,17 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
                 donut: true,
                 donutRatio: 0.54,
                 tooltip: { enabled: false },
-                color: ['#18BE94', '#E96D76', '#FBB465', '#0DADEA', '#ccc']
+                color: ['#18BE94', '#E96D76', '#FC9820', '#0DADEA', '#ccc'],
+                pie: {
+                    dispatch: {
+                        elementClick: (e) => {
+                            that.zone.run(() => {
+                                let chartIndex = $(e.element).closest('.chart-index').prop('id');
+                                that.navitageToGlobalSearch(chartIndex, e.index);
+                            });
+                        }
+                    }
+                }
             }
         };
     }
@@ -134,7 +149,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
 
     get isFiltered(): boolean {
         return (this.selectedBranch != null || this.selectedRepo != null ||
-            this.selectedLabels != null || this.selectedTemplateIds != null);
+            this.selectedLabels != null || this.selectedTemplateNames != null);
     }
 
     byName(info: TemplateInfo) {
@@ -154,7 +169,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = this.branchesFilter.selectedRepo ? encodeURIComponent(this.branchesFilter.selectedRepo) : null;
         params.branch = this.branchesFilter.selectedBranch ? encodeURIComponent(this.branchesFilter.selectedBranch) : null;
         params.labels = this.labelsFilter.selectedLabels ? encodeURIComponent(this.labelsFilter.selectedLabels) : null;
-        params.template = this.templatesFilter.selectedTemplateIds ? encodeURIComponent(this.templatesFilter.selectedTemplateIds) : null;
+        params.template_name = this.templatesFilter.selectedTemplateNames ? encodeURIComponent(this.templatesFilter.selectedTemplateNames) : null;
         this.navigate(params);
     }
 
@@ -165,7 +180,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = customViewInfo.repo ? encodeURIComponent(customViewInfo.repo) : null;
         params.branch = customViewInfo.branch ? encodeURIComponent(customViewInfo.branch) : null;
         params.labels = customViewInfo.labels ? encodeURIComponent(customViewInfo.labels) : null;
-        params.template = customViewInfo.template ? encodeURIComponent(customViewInfo.template) : null;
+        params.template_name = customViewInfo.template_name ? encodeURIComponent(customViewInfo.template_name) : null;
         params.custom_view = customView.name ? encodeURIComponent(customView.name) : null;
         this.navigate(params);
     }
@@ -189,7 +204,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
     onFilterTabChange(event: any) {
         if (event.selectedTab.tabKey === 'service-templates') {
             if (!this.templatesFilter.templates.length) {
-                this.templatesFilter.loadTemplates(0);
+                this.templatesFilter.loadTemplates();
             }
         }
     }
@@ -207,7 +222,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         info.repo = this.selectedRepo;
         info.branch = this.selectedBranch;
         info.labels = this.selectedLabels;
-        info.template = this.selectedTemplateIds;
+        info.template_name = this.selectedTemplateNames;
         this.selectedCustomView.info = JSON.stringify(info);
         this.showCustomViewPopup = true;
     }
@@ -217,7 +232,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         params.repo = null;
         params.branch = null;
         params.labels = null;
-        params.template = null;
+        params.template_name = null;
         params.custom_view = null;
         this.navigate(params);
     }
@@ -252,6 +267,32 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             });
     }
 
+    private navitageToGlobalSearch(pieChartPartIndex: number, piecePieIndex: 0 | 1 | 2 | 3 | 4 ) { // Success, Failed, Init, Running, Waiting
+        let filters = new GlobalSearchFilters();
+        switch (piecePieIndex) {
+            case 0:
+                filters.jobs.statuses = [ TASK_STATUSES.SUCCESSFUL ];
+                break;
+            case 1:
+                filters.jobs.statuses = [ TASK_STATUSES.FAILED ];
+                break;
+            case 2:
+                filters.jobs.statuses = [ TASK_STATUSES.IN_PROGRESS ];
+                break;
+            case 3:
+                filters.jobs.statuses = [ TASK_STATUSES.IN_PROGRESS ];
+                break;
+            case 4:
+                filters.jobs.statuses = [ TASK_STATUSES.QUEUED ];
+                break;
+        }
+
+        filters.jobs.templates = [ this.templatesInfo[pieChartPartIndex].name ];
+        filters.jobs.repo = [ this.templatesInfo[pieChartPartIndex].repo ];
+
+        this.router.navigate(['/app/search', { category: 'jobs', backRoute: this.location.path(), filters: JSON.stringify(filters)}]);
+    }
+
     private navigate(params: any) {
         let routeParams = <any>{};
         _.extend(routeParams, this.activatedRoute.snapshot.params, params);
@@ -275,7 +316,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             repo: this.selectedRepo,
             // Note: backend api only expects ';' to be encoded not the ':'
             labels: labelsQ,
-            templateIds: this.selectedTemplateIds,
+            template_name: this.selectedTemplateNames,
             fields: ['commit', 'template', 'status']
         }, false).map(res => {
             let templateToInfo = new Map<string, TemplateInfo>();
@@ -322,7 +363,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         let selectedBranch = params['branch'] ? decodeURIComponent(params['branch']) : null;
         let selectedRepo = params['repo'] ? decodeURIComponent(params['repo']) : null;
         let selectedLabels = params['labels'] ? decodeURIComponent(params['labels']) : null;
-        let selectedTemplateIds = params['template'] ? decodeURIComponent(params['template']) : null;
+        let selectedTemplateNames = params['template_name'] ? decodeURIComponent(params['template_name']) : null;
         let selectedCustomViewName = params['custom_view'] ? decodeURIComponent(params['custom_view']) : null;
         let sortBy = params['sort_by'] ? decodeURIComponent(params['sort_by']) : SORT_BY.spending;
 
@@ -330,7 +371,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
             selectedBranch !== this.selectedBranch ||
             selectedRepo !== this.selectedRepo ||
             selectedLabels !== this.selectedLabels ||
-            selectedTemplateIds !== this.selectedTemplateIds ||
+            selectedTemplateNames !== this.selectedTemplateNames ||
             selectedCustomViewName !== this.selectedCustomViewName ||
             sortBy !== this.sortBy
         ) {
@@ -340,7 +381,7 @@ export class TestDashboardComponent implements HasLayoutSettings, OnInit {
         this.selectedBranch = selectedBranch;
         this.selectedRepo = selectedRepo;
         this.selectedLabels = selectedLabels;
-        this.selectedTemplateIds = selectedTemplateIds;
+        this.selectedTemplateNames = selectedTemplateNames;
         this.range = range;
         this.selectedCustomViewName = selectedCustomViewName;
         this.sortBy = sortBy;

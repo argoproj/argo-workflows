@@ -106,21 +106,24 @@ class AXUpgradeConfigPath(with_metaclass(Singleton, AXConfigBase)):
 
 class AXClusterConfigPath(with_metaclass(Singleton, AXConfigBase)):
 
-    CLUSTER_S3_KUBE_CONFIG_KEY = "{name}/{id}/kube_config"
-    CLUSTER_S3_KUBE_SSH_KEY = "{name}/{id}/kube_ssh"
-    CLUSTER_S3_CLUSTER_CONFIG_KEY = "{name}/{id}/cluster_config"
+    CLUSTER_S3_OBJECT_COMMON_PREFIX = "{name}/{id}"
+    CLUSTER_S3_KUBE_CONFIG_KEY = "{}/kube_config".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_KUBE_SSH_KEY = "{}/kube_ssh".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_CLUSTER_CONFIG_KEY = "{}/cluster_config".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
     CLUSTER_S3_INSTALL_STAGE_0_KEY = CLUSTER_S3_CLUSTER_CONFIG_KEY
-    CLUSTER_S3_INSTALL_STAGE_1_KEY = "{name}/{id}/stage1"
-    CLUSTER_S3_INSTALL_STAGE_2_KEY = "{name}/{id}/stage2"
-    CLUSTER_S3_VERSIONS_KEY = "{name}/{id}/current_versions"
-    CLUSTER_S3_MASTER_CONFIG_DIR = "{name}/{id}/master_config/"     # The trailing / is required.
+    CLUSTER_S3_INSTALL_STAGE_1_KEY = "{}/stage1".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_INSTALL_STAGE_2_KEY = "{}/stage2".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_VERSIONS_KEY = "{}/current_versions".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_MASTER_CONFIG_DIR = "{}/master_config/".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)     # The trailing / is required.
     CLUSTER_S3_MASTER_ATTRIBUTES = CLUSTER_S3_MASTER_CONFIG_DIR + "attributes"
     CLUSTER_S3_MASTER_USER_DATA = CLUSTER_S3_MASTER_CONFIG_DIR + "user-data"
-    CLUSTER_S3_STATE_BEFORE_PAUSE = "{name}/{id}/state_before_pause"
-    CLUSTER_S3_METADATA = "{name}/{id}/metadata/v1/metadata.yaml"
-    CLUSTER_TERRAFORM_DIR = "{name}/{id}/terraform/"
-    CLUSTER_S3_PLATFORM_MANIFEST_DIR = "{name}/{id}/platform/manifests/"
-    CLUSTER_S3_PLATFORM_CONFIG = "{name}/{id}/platform/config"
+    CLUSTER_S3_STATE_BEFORE_PAUSE = "{}/state_before_pause".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_METADATA = "{}/metadata/v1/metadata.yaml".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_TERRAFORM_DIR = "{}/terraform/".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_PLATFORM_MANIFEST_DIR = "{}/platform/manifests/".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_PLATFORM_CONFIG = "{}/platform/config".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_CURRENT_STATE = "{}/current_state".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
+    CLUSTER_S3_PORTAL_SUPPORT = "{}/portal_support".format(CLUSTER_S3_OBJECT_COMMON_PREFIX)
 
     def __init__(self, name_id):
         super(AXClusterConfigPath, self).__init__(name_id)
@@ -173,6 +176,12 @@ class AXClusterConfigPath(with_metaclass(Singleton, AXConfigBase)):
 
     def platform_config(self):
         return self.CLUSTER_S3_PLATFORM_CONFIG.format(name=self._cluster_name, id=self._cluster_id)
+
+    def current_state(self):
+        return self.CLUSTER_S3_CURRENT_STATE.format(name=self._cluster_name, id=self._cluster_id)
+
+    def portal_support(self):
+        return self.CLUSTER_S3_PORTAL_SUPPORT.format(name=self._cluster_name, id=self._cluster_id)
 
 
 class AXClusterDataPath(with_metaclass(Singleton, AXConfigBase)):

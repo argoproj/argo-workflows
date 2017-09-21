@@ -4,9 +4,9 @@ import { Subscription } from 'rxjs';
 import { TASK_STATUSES } from '../../../pipes/statusToNumber.pipe';
 
 import { FilterMultiSelect } from 'argo-ui-lib/src/components';
-import { APPLICATION_STATUSES } from '../../../model';
-import { GlobalSearchFilters } from '../../../common';
-import { UsersService, ArtifactsService, BranchService, RepoService, ApplicationsService } from '../../../services';
+import { APPLICATION_STATUSES, Template } from '../../../model';
+import { GlobalSearchFilters, SortOperations } from '../../../common';
+import { UsersService, ArtifactsService, BranchService, RepoService, ApplicationsService, TemplateService } from '../../../services';
 
 const GLOBAL_SEARCH_FILTERS = {
     REPOS: 'repo',
@@ -17,6 +17,7 @@ const GLOBAL_SEARCH_FILTERS = {
     ARTIFACT_TAGS: 'artifact_tags',
     APPLICATION_STATUSES: 'application_statuses',
     APP_NAME: 'app_name',
+    TEMPLATES: 'templates',
 };
 
 const GLOBAL_SEARCH_FILTER_CONFIG = {
@@ -26,6 +27,7 @@ const GLOBAL_SEARCH_FILTER_CONFIG = {
         GLOBAL_SEARCH_FILTERS.STATUSES,
         GLOBAL_SEARCH_FILTERS.AUTHORS,
         GLOBAL_SEARCH_FILTERS.ARTIFACT_TAGS,
+        GLOBAL_SEARCH_FILTERS.TEMPLATES,
     ],
     COMMITS: [
         GLOBAL_SEARCH_FILTERS.REPOS,
@@ -153,6 +155,17 @@ export class GlobalSearchFilterComponent implements OnChanges, OnDestroy {
         isStaticList: true
     };
 
+    public templateFilter: FilterMultiSelect = {
+        items: [],
+        messages: {
+            name: 'Template',
+            emptyInput: 'Enter template name',
+            notEmptyInput: 'Continue typing to refine further'
+        },
+        isVisible: false,
+        isStaticList: true
+    };
+
     @Input()
     public filters: GlobalSearchFilters;
 
@@ -171,7 +184,8 @@ export class GlobalSearchFilterComponent implements OnChanges, OnDestroy {
                 private artifactsService: ArtifactsService,
                 private branchServices: BranchService,
                 private applicationsService: ApplicationsService,
-                private repoService: RepoService) {
+                private repoService: RepoService,
+                private templateService: TemplateService) {
     }
 
     public ngOnChanges() {
@@ -180,6 +194,7 @@ export class GlobalSearchFilterComponent implements OnChanges, OnDestroy {
         this.committerFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.COMMITTERS);
         this.repoFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.REPOS);
         this.branchFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.BRANCHES);
+        this.templateFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.TEMPLATES);
         this.applicationStatusFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.APPLICATION_STATUSES);
         this.artifactTagFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.ARTIFACT_TAGS);
         this.appNameFilter.isVisible = this.isFilterVissible(GLOBAL_SEARCH_FILTERS.APP_NAME);
@@ -363,6 +378,27 @@ export class GlobalSearchFilterComponent implements OnChanges, OnDestroy {
                 });
             }, error => {
                 this.repoFilter.items = [];
+            });
+        }
+    }
+
+    public onTemplateChange(templates: string[]) {
+        this.filters[this.category].templates = templates;
+
+        this.onFilterChange.emit(this.filters);
+    }
+
+    public onTemplateQuery() {
+        if (this.templateFilter.isVisible && this.templateFilter.items.length === 0) {
+            this.templateService.getTemplatesAsync({ dedup: true, fields: ['name'], sort: 'name'}, false).toPromise().then((res: { data: Template[]}) => {
+                let templatesList = res.data.map(template => {
+                    return { name: template.name, value: template.name, checked: false };
+                });
+
+                this.templateFilter.items =
+                    SortOperations.sortBy(templatesList, 'name', true).filter((value, index, array) => (index === 0) || (value.name !== array[index - 1].name));
+            }, error => {
+                this.templateFilter.items = [];
             });
         }
     }

@@ -13,6 +13,22 @@ set -ex
     exit 1
 fi
 
+if [ -e /prometheus/crash_flag ]
+then
+    value=`cat /prometheus/crash_flag`
+    cur=$(date +%s)
+    difference=$(($cur-$value))
+    threshold=300  # threshold is set to 5 min
+    if [ $difference -le $threshold ]
+    then
+        # Clear previous data in the directory
+        rm -rf /prometheus/data
+    fi
+fi
+
+# Reset the time flag
+echo $(date +%s) > /prometheus/crash_flag
+
 # memory_persist is memory and should be small. Use 1/3 of memory_chunks.
 #memory_chunks=`awk 'BEGIN{print int(60000*'$MEM_MULT');}'`
 #memory_persist=`awk 'BEGIN{print int(20000*'$MEM_MULT');}'`

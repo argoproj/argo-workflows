@@ -342,6 +342,7 @@ class AXS3Bucket(object):
         except Exception as e:
             if "NoSuchKey" not in str(e):
                 raise
+        return None
 
     def get_object_url_from_key(self, key):
         if self._region == "us-east-1":

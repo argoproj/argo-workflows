@@ -58,16 +58,18 @@ export class FixtureClassesComponent implements HasLayoutSettings, OnInit {
     }
 
     public getGroupMenu(templateGroup: TemplateGroup) {
+        let dropdownMenuList = [{
+            title: 'Reassign Template',
+            action: () => {
+                this.classIdToReassing = templateGroup.enabledClass.id;
+                this.selectTemplateGroup(templateGroup);
+            },
+            iconName: 'ax-icon-connect'
+        }];
+
         if (templateGroup.enabledClass) {
-            return new DropdownMenuSettings([{
-                title: 'Reassign',
-                action: () => {
-                    this.classIdToReassing = templateGroup.enabledClass.id;
-                    this.selectTemplateGroup(templateGroup);
-                },
-                iconName: 'ax-icon-connect'
-            }, {
-                title: 'Delete',
+            dropdownMenuList.push({
+                title: 'Delete Class',
                 action: () => {
                     this.modalService.showModal(
                         'Delete fixture class?', `Are you sure you want to delete fixture class '${templateGroup.enabledClass.name}'?`).subscribe(async confirmed => {
@@ -78,14 +80,16 @@ export class FixtureClassesComponent implements HasLayoutSettings, OnInit {
                         });
                 },
                 iconName: 'ax-icon-stop'
-            }]);
+            });
         } else {
-            return new DropdownMenuSettings([{
+            dropdownMenuList.push({
                 title: 'Enable',
                 action: () => this.selectTemplateGroup(templateGroup),
                 iconName: 'ax-icon-play-2'
-            }]);
+            });
         }
+
+        return new DropdownMenuSettings(dropdownMenuList);
     }
 
     private async loadFixtures() {

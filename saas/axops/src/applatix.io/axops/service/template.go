@@ -31,7 +31,6 @@ func GetTemplates(params map[string]interface{}) ([]EmbeddedTemplateIf, *axerror
 
 	if params != nil && params[axdb.AXDBSelectColumns] != nil {
 		fields := params[axdb.AXDBSelectColumns].([]string)
-		fields = append(fields, TemplateId)
 		fields = append(fields, TemplateType)
 		fields = utils.DedupStringList(fields)
 		params[axdb.AXDBSelectColumns] = fields

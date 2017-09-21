@@ -39,7 +39,7 @@ ensure-aws-envs () {
         echo "Setting AWS profile to ${ARGO_AWS_PROFILE}"
         export AWS_DEFAULT_PROFILE="${ARGO_AWS_PROFILE}"
     else
-        export AWS_DEFAULT_PROFILE="default"
+        echo "Not setting AWS profile"
     fi
     echo "Setting AWS region to ${ARGO_AWS_REGION}"
     aws configure set region ${ARGO_AWS_REGION}
@@ -209,14 +209,18 @@ get-instance-counts() {
 
 upgrade-launch-config() {
     echo "Upgrading launch configurations ..."
+    local aws_profile_arg=""
+    if [[ ! -z ${AWS_DEFAULT_PROFILE+x} ]]; then
+        aws_profile_arg="--profile ${AWS_DEFAULT_PROFILE}"
+    fi
     /ax/bin/minion_upgrade --new-kube-version ${NEW_KUBE_VERSION} \
                            --new-kube-server-hash ${NEW_KUBE_SERVER_SHA1} \
                            --new-cluster-install-version ${NEW_CLUSTER_INSTALL_VERSION} \
                            --new-kube-salt-hash ${NEW_KUBE_SALT_SHA1} \
-                           --profile ${AWS_DEFAULT_PROFILE} \
                            --region ${ARGO_AWS_REGION} \
                            --ax-vol-disk-type ${AX_VOL_DISK_TYPE} \
-                           --cluster-name-id ${CLUSTER_NAME_ID}
+                           --cluster-name-id ${CLUSTER_NAME_ID} \
+                           ${aws_profile_arg}
 }
 
 
@@ -226,7 +230,13 @@ upgrade-master () {
     echo
     echo "=== Step 2. Configure Kubernetes master."
     echo
-    /ax/bin/master_manager ${CLUSTER_NAME_ID} upgrade --region ${ARGO_AWS_REGION} --profile ${AWS_DEFAULT_PROFILE}
+
+    local aws_profile_arg=""
+    if [[ ! -z ${AWS_DEFAULT_PROFILE+x} ]]; then
+        aws_profile_arg="--profile ${AWS_DEFAULT_PROFILE}"
+    fi
+
+    /ax/bin/master_manager ${CLUSTER_NAME_ID} upgrade --region ${ARGO_AWS_REGION} ${aws_profile_arg}
     rm -f ~/.ssh/known_hosts
 }
 

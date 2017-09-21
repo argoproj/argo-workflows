@@ -41,7 +41,8 @@ class ClusterUninstaller(ClusterOperationBase):
         super(ClusterUninstaller, self).__init__(
             cluster_name=self._cfg.cluster_name,
             cluster_id=self._cfg.cluster_id,
-            cloud_profile=self._cfg.cloud_profile
+            cloud_profile=self._cfg.cloud_profile,
+            dry_run=self._cfg.dry_run
         )
 
         # This will raise exception if name/id mapping cannot be found
@@ -59,13 +60,22 @@ class ClusterUninstaller(ClusterOperationBase):
         self._total_nodes = 1
         self._cidr = str(get_public_ip()) + "/32"
 
-    def run(self):
+    def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
         # Abort operation if cluster is not successfully installed
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2") and not self._cfg.force_uninstall:
             raise RuntimeError("Cluster is not successfully installed or has already been half deleted. If you really want to uninstall the cluster, please add '--force-uninstall' flag to finish uninstalling cluster. e.g. 'argocluster uninstall --force-uninstall --cluster-name xxx'")
-
+        if not self._csm.is_running() and not self._cfg.force_uninstall:
+            raise RuntimeError("Cluster is not in Running state. If you really want to uninstall the cluster, please add '--force-uninstall' flag to finish uninstalling cluster. e.g. 'argocluster uninstall --force-uninstall --cluster-name xxx'")
+        self._csm.do_uninstall()
         self._ensure_critical_information()
+        self._persist_cluster_state_if_needed()
 
+    def post_run(self):
+        return
+
+    def run(self):
         if self._cfg.dry_run:
             logger.info("DRY RUN: Uninstalling cluster %s", self._name_id)
             return
@@ -172,8 +182,6 @@ class ClusterUninstaller(ClusterOperationBase):
 
         if self._cfg.cloud_profile:
             env["AWS_DEFAULT_PROFILE"] = self._cfg.cloud_profile
-        else:
-            env["AWS_DEFAULT_PROFILE"] = AWS_DEFAULT_PROFILE
 
         logger.info("\n\n%sCalling kube-down ...%s\n", COLOR_GREEN, COLOR_NORM)
         AXKubeUpDown(cluster_name_id=self._name_id, env=env, aws_profile=self._cfg.cloud_profile).down()

@@ -28,4 +28,5 @@ export class CustomViewInfo {
     labels: string;
     branch: string;
     template: string;
+    template_name?: string;
 }

@@ -47,7 +47,6 @@ if __name__ == "__main__":
     if args.ensure_aws_iam or args.delete_aws_iam:
         from ax.platform.cluster_instance_profile import AXClusterInstanceProfile
         assert args.cluster_name_id, "Missing cluster name id to ensure aws iam"
-        assert args.aws_region, "Missing AWS region to ensure aws iam"
         if args.ensure_aws_iam:
             AXClusterInstanceProfile(args.cluster_name_id, args.aws_region, aws_profile=args.aws_profile).update()
         elif args.delete_aws_iam:
@@ -58,10 +57,8 @@ if __name__ == "__main__":
         name_id = args.cluster_name_id
         aws_profile = args.aws_profile
         aws_region = args.aws_region
-        assert name_id and aws_profile and aws_region, \
-            "Missing parameters to ensure s3. name_id: {}, aws_profile: {}, aws_region: {}".format(name_id,
-                                                                                                   aws_profile,
-                                                                                                   aws_region)
+        assert name_id and aws_region, \
+            "Missing parameters to ensure s3. name_id: {}, aws_region: {}".format(name_id, aws_region)
 
         AXClusterBuckets(name_id, aws_profile, aws_region).update()
 

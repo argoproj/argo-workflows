@@ -11,6 +11,7 @@ Module for pausing an Argo cluster
 
 import logging
 import yaml
+import sys
 import time
 
 from ax.cloud.aws import EC2InstanceState
@@ -38,7 +39,8 @@ class ClusterPauser(ClusterOperationBase):
         super(ClusterPauser, self).__init__(
             cluster_name=self._cfg.cluster_name,
             cluster_id=self._cfg.cluster_id,
-            cloud_profile=self._cfg.cloud_profile
+            cloud_profile=self._cfg.cloud_profile,
+            dry_run=self._cfg.dry_run
         )
 
         # This will raise exception if name/id mapping cannot be found
@@ -63,11 +65,20 @@ class ClusterPauser(ClusterOperationBase):
         )
         self._cidr = str(get_public_ip()) + "/32"
 
-    def run(self):
-        # Abort operation if cluster is not successfully installed
+    def pre_run(self):
+        if self._cluster_info.is_cluster_supported_by_portal():
+            raise RuntimeError("Cluster is currently supported by portal. Please login to portal to perform cluster management operations.")
+        if self._csm.is_paused():
+            logger.info("Cluster is already paused.")
+            sys.exit(0)
+
+        # This is for backward compatibility
         if not check_cluster_staging(cluster_info_obj=self._cluster_info, stage="stage2"):
             raise RuntimeError("Cluster is not successfully installed: Stage2 information missing! Operation aborted.")
+        self._csm.do_pause()
+        self._persist_cluster_state_if_needed()
 
+    def run(self):
         if self._cfg.dry_run:
             logger.info("DRY RUN: pausing cluster %s", self._name_id)
             return
@@ -97,6 +108,10 @@ class ClusterPauser(ClusterOperationBase):
             raise RuntimeError(e)
         finally:
             self._disallow_pauser_access_if_needed()
+
+    def post_run(self):
+        self._csm.done_pause()
+        self._persist_cluster_state_if_needed()
 
     def _wait_for_deregistering_minions(self):
         """

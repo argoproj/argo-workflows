@@ -76,7 +76,7 @@ class ArgoClusterManager(object):
         err = install_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(install_config.cloud_profile)
-        ClusterInstaller(install_config).run()
+        ClusterInstaller(install_config).start()
 
     def pause(self, args):
         pause_config = ClusterPauseConfig(cfg=args)
@@ -84,7 +84,7 @@ class ArgoClusterManager(object):
         err = pause_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(pause_config.cloud_profile)
-        ClusterPauser(pause_config).run()
+        ClusterPauser(pause_config).start()
 
     def resume(self, args):
         resume_config = ClusterRestartConfig(cfg=args)
@@ -92,7 +92,7 @@ class ArgoClusterManager(object):
         err = resume_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(resume_config.cloud_profile)
-        ClusterResumer(resume_config).run()
+        ClusterResumer(resume_config).start()
 
     def uninstall(self, args):
         uninstall_config = ClusterUninstallConfig(cfg=args)
@@ -100,7 +100,7 @@ class ArgoClusterManager(object):
         err = uninstall_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(uninstall_config.cloud_profile)
-        ClusterUninstaller(uninstall_config).run()
+        ClusterUninstaller(uninstall_config).start()
 
     def download_cluster_credentials(self, args):
         config = ClusterMiscOperationConfig(cfg=args)
@@ -124,7 +124,7 @@ class ArgoClusterManager(object):
         err = upgrade_config.validate()
         self._continue_or_die(err)
         self._ensure_customer_id(upgrade_config.cloud_profile)
-        ClusterUpgrader(upgrade_config).run()
+        ClusterUpgrader(upgrade_config).start()
 
     @staticmethod
     def _ensure_customer_id(cloud_profile):

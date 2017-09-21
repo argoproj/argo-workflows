@@ -37,11 +37,11 @@ class EventTranslator(object):
         :param headers:
         :return:
         """
-        if headers.get('HTTP_USER_AGENT', '').startswith('Bitbucket'):
+        if headers.get('User-Agent', '').startswith('Bitbucket'):
             return ScmVendors.BITBUCKET
-        elif headers.get('HTTP_USER_AGENT', '').startswith('GitHub'):
+        elif headers.get('User-Agent', '').startswith('GitHub'):
             return ScmVendors.GITHUB
-        elif headers.get('HTTP_X_GITLAB_EVENT') is not None:
+        elif headers.get('X-Gitlab-Event') is not None:
             return ScmVendors.GITLAB
         else:
             raise UnrecognizableVendor('Unrecognizable vendor')
