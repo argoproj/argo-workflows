@@ -1,8 +1,18 @@
 <div class="row white-box">
-    <div class="columns small-12 large-7">
+    <div class="columns small-12">
         <h6>{{ 'Spot Instance Configuration' | translate }}</h6>
-        <button axButtonWave class="ax-button ax-button--base-o spot-instance__btn" (click)="onChangeOption('none')" [disabled]="spotInstancesOption === 'none'">{{ 'None' | translate | uppercase }}</button>
-        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('partial')" [disabled]="spotInstancesOption === 'partial'">{{ 'Partial' | translate| uppercase }}</button>
-        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('all')" [disabled]="spotInstancesOption === 'all'">{{ 'Full' | translate | uppercase }}</button>
+    </div>
+    <div class="columns small-12">
+        <div class="ax-checkbox-slide">
+            <input type="checkbox" id="checkbox-spot-instances" [ngModel]="isSpotInstanceEnabled" [disabled]="!dataLoaded || statusChangeLoader" (change)="onChangeStatus($event)">
+            <span></span>
+        </div>
+        <label for="checkbox-spot-instances">Spot Instances: {{ isSpotInstanceEnabled ? 'enabled' : 'disabled' }}</label>
+    </div>
+    <div class="columns small-12">
+        <span class="spot-instance__label">{{ 'Spot Instance Option' | translate }}:</span>
+        <button axButtonWave class="ax-button ax-button--base-o spot-instance__btn" (click)="onChangeOption('none')" [disabled]="spotInstancesOption === 'none' || optionChangeLoader || !isSpotInstanceEnabled">{{ 'None' | translate | uppercase }}</button>
+        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('partial')" [disabled]="spotInstancesOption === 'partial' || optionChangeLoader || !isSpotInstanceEnabled">{{ 'Partial' | translate| uppercase }}</button>
+        <button axButtonWave class="ax-button ax-button--base-o margin-left-medium spot-instance__btn" (click)="onChangeOption('all')" [disabled]="spotInstancesOption === 'all' || optionChangeLoader || !isSpotInstanceEnabled">{{ 'Full' | translate | uppercase }}</button>
     </div>
 </div>

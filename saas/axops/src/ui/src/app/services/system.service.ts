@@ -31,7 +31,7 @@ export class SystemService {
             .map(res => res.json());
     }
 
-    updateSpotInstanceConfig(option: { 'asgs': 'none' | 'partial' | 'all'}, hideLoader?: boolean) {
+    updateSpotInstanceConfig(option: { 'spot_instances_option': 'none' | 'partial' | 'all', enabled: boolean}, hideLoader = true) {
         let customHeader = new Headers();
         if (hideLoader) {
             customHeader.append('isUpdated', hideLoader.toString());
