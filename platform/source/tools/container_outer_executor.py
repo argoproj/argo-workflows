@@ -513,25 +513,31 @@ class ContainerOuterExecutor(object):
             return False
 
         # Adding encrypted strings into a set if there is any in cmd_options or entry point
-        # logger.info("Start decrypting.")
-        # if self._cmd_options is not None or self._entrypoint is not None:
-        #     entry_word_list = list()
-        #     if self._cmd_options is not None:
-        #         entry_word_list.extend(self._cmd_options.split())
-        #     if self._entrypoint is not None:
-        #         entry_word_list.extend(self._entrypoint.split())
-        #     for entry_word in entry_word_list:
-        #         match_obj = re.match("%%secrets.(.*)%%", entry_word)
-        #         if match_obj is not None:
-        #             token = match_obj.group(1)
-        #             if token and token not in self._encrypted_strings:
-        #                 try:
-        #                     self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
-        #                 except Exception as e:
-        #                     logger.exception("Failed to decrypt %s", token)
-        #                     self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
-        #                     self._write_executor_sh()
-        #                     return False
+        logger.info("Start decrypting.")
+        try:
+            if self._commands is not None or self._args is not None:
+                entry_word_list = list()
+                if self._commands is not None:
+                    for command in self._commands:
+                        entry_word_list.extend(command.split())
+                if self._args is not None:
+                    for arg in self._args:
+                        entry_word_list.extend(arg.split())
+
+                for entry_word in entry_word_list:
+                    match_obj = re.match("%%secrets.(.*)%%", entry_word)
+                    if match_obj is not None:
+                        token = match_obj.group(1)
+                        if token and token not in self._encrypted_strings:
+                            try:
+                                self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
+                            except Exception as e:
+                                logger.exception("Failed to decrypt %s", token)
+                                self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
+                                self._write_executor_sh()
+                                return False
+        except Exception:
+            logger.exception("Failed to decrypt the command and args")
 
         self._gen_user_command()
         bad_artifacts4, _ = self._do_save_artifacts(dry_run_mode=True)

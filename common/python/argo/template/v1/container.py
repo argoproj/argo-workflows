@@ -52,6 +52,7 @@ class ContainerTemplate(BaseTemplate):
 
         # these fields need to be moved out
         self.once = True
+        self.repo = None
 
         fields = {
             "inputs": Inputs.fqcn(),
@@ -66,6 +67,7 @@ class ContainerTemplate(BaseTemplate):
             "image_pull_policy": None,
             "name": None,
             "annotations": None,
+            "repo": None,
 
             # these fields need to be moved out
             "once": None
