@@ -8,7 +8,7 @@ export class ConfigsService {
     constructor(private http: Http) {
     }
 
-    public getConfigurations(params: { user?: string, name?: string } = {}, noLoader = false): Promise<Configuration[]> {
+    public getConfigurations(params: { user?: string, name?: string } = {}, noLoader = true): Promise<Configuration[]> {
         let url = 'v1/configurations';
 
         let search = new URLSearchParams();
@@ -19,7 +19,7 @@ export class ConfigsService {
         if (params.name) {
             search.set('name', params.name);
         }
-        return this.http.get(url, { search, headers: new AxHeaders({ noLoader }) }).toPromise().then(res => <Configuration[]>res.json());
+        return this.http.get(url, { search, headers: new AxHeaders({ noLoader: noLoader }) }).toPromise().then(res => <Configuration[]>res.json());
     }
 
     public createConfiguration(config: Configuration): Promise<any> {
