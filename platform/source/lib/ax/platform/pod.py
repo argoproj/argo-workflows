@@ -15,7 +15,7 @@ from retrying import retry
 
 from ax.cloud import Cloud
 from ax.kubernetes import swagger_client
-from ax.kubernetes.client import KubernetesApiClient, parse_kubernetes_exception
+from ax.kubernetes.client import KubernetesApiClient, parse_kubernetes_exception, retry_unless
 from ax.kubernetes.kube_object import KubeObject
 from ax.meta import AXClusterId, AXClusterDataPath
 from ax.platform.exceptions import AXPlatformException
@@ -184,7 +184,7 @@ class Pod(KubeObject):
                                    jobname, self.name, count)
                     return False
                 try:
-                    status = self.client.api.read_namespaced_pod_status(self.namespace, self.name).status
+                    status = self._get_status_obj().status
                     assert isinstance(status, swagger_client.V1PodStatus)
                     status_dict = swagger_client.ApiClient().sanitize_for_serialization(status)
                     break
@@ -285,6 +285,7 @@ class Pod(KubeObject):
 
         raise AXPlatformException("Pod for a task needs to have a non-wait container")
 
+    @retry_unless(status_code=[404, 409, 422])
     def _get_status_obj(self):
         status = self.client.api.read_namespaced_pod_status(self.namespace, self.name)
         assert isinstance(status, swagger_client.V1Pod), "Status object should be of type V1Pod"
