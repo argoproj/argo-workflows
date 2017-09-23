@@ -9,24 +9,22 @@ Code for creating executing a step in a workflow
 import base64
 import json
 import logging
+import re
 import time
 import os
 
 from future.utils import iteritems
-from pyparsing import Word, nums, alphanums
-from dateutil import parser
 
 from ax.kubernetes import swagger_client
-from ax.kubernetes.kube_object import KubeObject
 from ax.kubernetes.client import KubernetesApiClient, retry_unless
 from ax.meta import AXLogPath, AXClusterDataPath, AXClusterId, AXCustomerId
 from ax.platform.component_config import SoftwareInfo
-from ax.platform.exceptions import AXPlatformException, AXVolumeOwnershipException
+from ax.platform.exceptions import AXPlatformException
 from ax.platform.operations import Operation
-from ax.platform.volumes import VolumeManager
 from ax.platform.container import ContainerVolume
 from ax.platform.cluster_config import AXClusterConfig
-from ax.util.ax_random import random_string
+from ax.platform.resources import AXResources
+from ax.platform.secrets import SecretResource
 from ax.util.converter import string_to_dns_label, string_to_k8s_label
 from .pod import Pod, PodSpec
 from .container_specs import SidecarTask
@@ -84,7 +82,7 @@ class Task(object):
         self._s3_key_prefix = AXClusterDataPath(self._name_id).artifact()
 
         self.software_info = SoftwareInfo()
-        self._ax_resources = {}
+        self._resources = AXResources()
 
     def create(self, conf):
         """
@@ -111,6 +109,9 @@ class Task(object):
         pod_spec = swagger_client.V1Pod()
         pod_spec.metadata = template_spec.metadata
         pod_spec.spec = template_spec.spec
+        self._resources.finalize(pod_spec)
+
+        logger.debug("pod_spec {}".format(json.dumps(pod_spec.to_dict())))
         return pod_spec
 
     def start(self, spec):
@@ -200,20 +201,23 @@ class Task(object):
         """
         logger.debug("Task delete for {}".format(self.name))
         with TaskOperation(self):
-            status = self.status()
+            status_obj = Pod(self.name, self.namespace)._get_status_obj()
+            status = self.status(status_obj=status_obj)
             p = Pod(self.name, self.namespace)
             if not force:
                 p.stop()
+
+            # delete dependents
+            resources = AXResources(existing=status_obj)
+            resources.delete_all()
+
+            # finally delete pod
             p.delete()
             return status
 
     def get_log_endpoint(self):
         url_run, _ =  Pod(self.name, self.namespace).get_log_urls()
         return url_run
-
-    def _get_ax_resources(self, status):
-        ax_str = status.spec.template.metadata.annotations.get("ax_resources", "{}")
-        return json.loads(ax_str)
 
     def stop(self):
         Pod(self.name, self.namespace).stop()
@@ -253,6 +257,8 @@ class Task(object):
         # TODO: This function calls ax_artifact and needs to be rewritten. Ugly code.
         artifacts_container = pod_spec.enable_artifacts(self.software_info.image_namespace, self.software_info.image_version, self_sid, self.service.template.to_dict())
         artifacts_container.add_env("AX_JOB_NAME", value=self.name)
+        secret_resources = artifacts_container.add_configs_as_vols(self.service.template.get_all_configs(), self.name, self.namespace)
+        self._resources.insert_all(secret_resources)
 
         if self.service.template.docker_spec:
             dind_c = pod_spec.enable_docker(self.service.template.docker_spec.graph_storage_size_mib)
@@ -265,7 +271,6 @@ class Task(object):
             service_id = self.service.service_context.service_instance_id
         pod_spec.add_annotation("ax_serviceid", service_id)
         pod_spec.add_annotation("ax_costid", json.dumps(self.service.costid))
-        pod_spec.add_annotation("ax_resources", json.dumps(self._ax_resources))
         pod_spec.add_annotation("AX_SERVICE_ENV", self._gen_service_env())
 
         for k in labels or []:
@@ -292,7 +297,14 @@ class Task(object):
         c.add_env("AX_CLUSTER_META_URL_V1", value=CLUSTER_META_URL_V1)
 
         for env in container.env:
-            c.add_env(env.name, value=env.value)
+            (cfg_ns, cfg_name, cfg_key) = env.get_config()
+            if cfg_ns is not None: # checking one of them is enough
+                res = SecretResource(cfg_ns, cfg_name, self.name, self.namespace)
+                res.create()
+                self._resources.insert(res)
+                c.add_env(env.name, value_from_secret=(res.get_resource_name(), cfg_key))
+            else:
+                c.add_env(env.name, value=env.value)
 
         return c
 

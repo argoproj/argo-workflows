@@ -130,6 +130,10 @@ class AXResources(object):
             "resource": val
         }
 
+    def insert_all(self, objs):
+        for obj in objs:
+            self.insert(obj)
+
     def remove(self, name):
         res = self._resources.pop(name)
 
@@ -140,6 +144,12 @@ class AXResources(object):
         for _, val in self._resources.iteritems():
             yield val["resource"]
         return
+
+    def exists(self, obj):
+        name = obj.get_resource_name()
+        restype = obj.get_resource_type()
+        key = "{}/{}".format(restype, name)
+        return self._resources.get(key, None) is not None
 
     def finalize(self, obj):
         """

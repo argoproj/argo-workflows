@@ -5,6 +5,7 @@
 #
 
 import json
+import re
 
 from .base import BaseTemplate
 from .common import Inputs, Outputs, DockerSpec, ExecutorSpec, GraphStorageVolumeSpec
@@ -24,6 +25,16 @@ class EnvVar(ObjectParser):
             "value": OD()
         }
         super(EnvVar, self).__init__()
+
+    def get_config(self):
+        secret = re.match(r"^%%config\.(.+?)\.([A-Za-z0-9-]+)\.([A-Za-z0-9-]+)%%$", self.value)
+        if secret:
+            cfg_ns = secret.group(1)
+            cfg_name = secret.group(2)
+            cfg_key = secret.group(3)
+            return cfg_ns, cfg_name, cfg_key
+        else:
+            return None, None, None
 
 
 class ContainerTemplate(BaseTemplate):
@@ -131,6 +142,16 @@ class ContainerTemplate(BaseTemplate):
 
     def get_resources(self):
         return self.resources
+
+    def get_all_configs(self):
+        configs = []
+        for cmd in self.command or []:
+            matches = re.findall(r"%%config\.(.+?)\.([A-Za-z0-9-]+)\.[A-Za-z0-9-]+%%", cmd)
+            configs.extend(matches)
+        for arg in self.args or []:
+            matches = re.findall(r"%%config\.(.+?)\.([A-Za-z0-9-]+)\.[A-Za-z0-9-]+%%", arg)
+            configs.extend(matches)
+        return configs
 
 
 class ContainerResources(ObjectParser):
