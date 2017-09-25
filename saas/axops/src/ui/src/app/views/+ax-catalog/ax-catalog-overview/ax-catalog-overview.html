@@ -1,7 +1,8 @@
 <div class="ax-catalog-overview">
     <div class="content" *ngIf="!searchString">
         <ax-tabs [selectedTabKey]="selectedCategory" [fixedWidth]="true">
-            <ax-tab *ngFor="let category of categories" [tabKey]="category.name" [tabTitle]="category.name">
+            <ax-tab *ngFor="let category of categories" [tabKey]="category.name" [tabTitle]="category.name"
+                    [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
                 <div class="ax-container">
                     <div class="ax-catalog-overview__list">
                         <div *ngFor="let item of category.projects" class="ax-catalog-overview__project">
