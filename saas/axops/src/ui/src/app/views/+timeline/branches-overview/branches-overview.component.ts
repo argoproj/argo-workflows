@@ -3,7 +3,7 @@ import { Component, OnDestroy, ViewChildren, QueryList, Input, OnChanges, Simple
 import { Subscription } from 'rxjs';
 
 import { BranchTasks, TaskStatus, Branch, Task } from '../../../model';
-import { TaskService, ViewPreferencesService } from '../../../services';
+import { TaskService } from '../../../services';
 import { BranchInfo, JobFilter, NowLine } from '../branches.view-models';
 import { JobsTimelineComponent } from '../jobs-timeline/jobs-timeline.component';
 import { DateRange } from 'argo-ui-lib/src/components';
@@ -41,7 +41,7 @@ export class BranchesOverviewComponent implements OnChanges, OnDestroy {
     private eventsSubscription: Subscription;
     private loadTasksSubscription: Subscription;
 
-    constructor(private taskService: TaskService, private viewPreferencesService: ViewPreferencesService, private zone: NgZone) {
+    constructor(private taskService: TaskService, private zone: NgZone) {
     }
 
     public ngOnChanges(changes: SimpleChanges) {
