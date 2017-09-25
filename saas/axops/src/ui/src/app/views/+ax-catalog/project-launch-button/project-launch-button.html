@@ -1,5 +1,5 @@
 <div class="project-launch-button">
-    <button class="ax-button ax-button--base" (click)="launchProject(actions[0])">
+    <button class="ax-button ax-button--base-o ax-button--full-width" (click)="launchProject(actions[0])">
         <ax-loader-custom class="project-launch-button__loader" [size]="12" *ngIf="loading"></ax-loader-custom>
         {{actions[0]?.name}}
         <div class="project-launch-button__dropdown-caret" (click)="$event.stopPropagation(); actionsDropDown.open();">

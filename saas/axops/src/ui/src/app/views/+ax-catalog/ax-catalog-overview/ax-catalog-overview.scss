@@ -14,12 +14,22 @@
         text-align: center;
     }
 
-    .content {
-        margin-top: $toolbar-height - 5em;
+    &__list,
+    &__search-list {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    &__search-list {
+        padding-top: 60px;
+    }
+
+    &__project {
+        width: 25%;
+        padding: 10px;
     }
 
     &__project .ax-project-icon {
-        cursor: pointer;
         margin-left: auto;
         margin-right: auto;
     }
@@ -69,10 +79,6 @@
         &--right {
             right: -2em;
         }
-    }
-
-    .tabs__nav {
-        text-transform: uppercase;
     }
 
     &__project-info {

@@ -4,7 +4,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import { Project, PROMOTED_CATEGORY_NAME } from '../../../model';
 import { ProjectService } from '../../../services';
-import { LayoutSettings, HasLayoutSettings } from '../../layout/layout.component';
+import { LayoutSettings, HasLayoutSettings } from '../../layout';
 import { ViewUtils, GlobalSearchSetting, LOCAL_SEARCH_CATEGORIES, BranchesFiltersComponent } from '../../../common';
 
 @Component({
@@ -15,12 +15,9 @@ import { ViewUtils, GlobalSearchSetting, LOCAL_SEARCH_CATEGORIES, BranchesFilter
 export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, LayoutSettings {
 
     public allProjects: Project[] = [];
-    public promotedProjects: Project[] = [];
     public selectedProject: Project;
-    public categories: {name: string; projectRows: Project[][] }[] = [];
+    public categories: {name: string; projects: Project[] }[] = [];
     public selectedCategory: string;
-    public firstVisibleItemIndex: number = 0;
-    public selectedProjectIndex: number = 0;
     public branch: string;
     public repo: string;
     public searchString: string;
@@ -53,23 +50,12 @@ export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, La
                     branch: this.branch,
                     published: this.branch && this.repo ? null : true,
                 }).then(categoryToProject => {
-                    this.promotedProjects = categoryToProject.get(PROMOTED_CATEGORY_NAME) || [];
                     this.categories = Array.from(categoryToProject.entries())
                         .filter(([category]) => category !== PROMOTED_CATEGORY_NAME)
                         .map(([category, projects]) => {
-                            let rowSize = 5;
-                            let projectRows: Project[][] = [];
-                            while (projects.length > 0) {
-                                let row = projects.splice(0, rowSize);
-                                projectRows.push(row);
-                                while (row.length < rowSize) {
-                                    row.push(null);
-                                }
-                            }
-                            return { name: category, projectRows };
+                            return { name: category, projects };
                         });
                     this.selectedCategory = this.categories.length > 0 && this.categories[0].name;
-                    this.selectProject(this.promotedProjects.length > 0 && this.promotedProjects[0]);
                 });
             }
         });
@@ -80,7 +66,8 @@ export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, La
             pageTitle: 'Catalog',
             branchNavPanelUrl: '/app/ax-catalog',
             breadcrumb: this.breadcrumb,
-            globalSearch: this.globalSearch
+            globalSearch: this.globalSearch,
+            hasTabs: true,
         };
     }
 
@@ -116,32 +103,6 @@ export class AxCatalogOverviewComponent implements OnInit, HasLayoutSettings, La
         }
 
         return arr;
-    }
-
-    public selectProject(project: Project) {
-        this.selectedProject = project;
-        if (this.selectedProject) {
-            this.selectedProjectIndex = this.promotedProjects.indexOf(this.selectedProject);
-        } else {
-            this.selectedProjectIndex = -1;
-        }
-    }
-
-    public onCarouselChange(e) {
-        this.firstVisibleItemIndex = e.item.index;
-        let lastVisibleItemIndex = this.firstVisibleItemIndex + e.page.size;
-        if (this.selectedProjectIndex < this.firstVisibleItemIndex) {
-            this.selectProject(this.promotedProjects[this.firstVisibleItemIndex]);
-        } else if (this.selectedProjectIndex > lastVisibleItemIndex) {
-            this.selectProject(this.promotedProjects[lastVisibleItemIndex]);
-        }
-    }
-
-    public get pointerLeft(): string {
-        let itemsDistance = 12.5;
-        let padding = 9.8;
-        let visibleOffset = (this.selectedProjectIndex - this.firstVisibleItemIndex);
-        return (visibleOffset * itemsDistance + padding) + 'em';
     }
 
     private getRouteParams() {

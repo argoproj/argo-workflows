@@ -12,9 +12,6 @@ export class ProjectDetailsPanelComponent {
     @Input()
     public project: Project;
 
-    @Input()
-    public showBackButton: boolean;
-
     get pageTitle(): string {
         return this.project && this.project.name;
     }
