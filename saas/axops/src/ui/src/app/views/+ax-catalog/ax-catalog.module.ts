@@ -10,6 +10,7 @@ import { ProjectIconComponent } from './project-icon/project-icon.component';
 import { ProjectLaunchButtonComponent } from './project-launch-button/project-launch-button.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
 import { ProjectDetailsPanelComponent } from './project-details-panel/project-details-panel.component';
+import { PipesModule } from '../../pipes';
 
 export const routes = [
     {
@@ -32,6 +33,7 @@ export const routes = [
         CommonModule,
         ComponentsModule,
         RouterModule,
+        PipesModule,
     ],
     exports: [
         AxCatalogOverviewComponent,

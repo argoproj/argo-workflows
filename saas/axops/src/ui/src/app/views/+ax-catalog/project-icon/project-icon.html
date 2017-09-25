@@ -1,5 +1,6 @@
 <div class="ax-project-icon">
-    <div class="ax-project-icon__header ax-project-icon__header--1" [routerLink]="[project?.id]">
+    <div class="ax-project-icon__header" [routerLink]="[project?.id]"
+         [style.background]="'linear-gradient(135deg, ' + (project?.name | catalogAppBg)[0] + ', ' + (project?.name | catalogAppBg)[1] + ')'">
         <i class="ax-project-icon__axlogo ax-icon-axlogo"></i>
         <div class="ax-project-icon__img">
             <img *ngIf="project?.assets?.icon" [src]="project?.assets?.icon" [alt]="[project?.name]">

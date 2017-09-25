@@ -1,6 +1,7 @@
 <div class="project-details-panel">
     <div class="content">
-        <div class="project-details-panel__header">
+        <div class="project-details-panel__header"
+             [style.background]="'linear-gradient(to right, ' + (project?.name | catalogAppBg)[0] + ', ' + (project?.name | catalogAppBg)[1] + ')'">
             <div class="ax-container">
                 <div class="row">
                     <div class="columns small-8">

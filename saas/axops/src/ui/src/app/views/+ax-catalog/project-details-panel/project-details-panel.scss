@@ -8,7 +8,7 @@ $toolbar-height: 120px;
         height: $toolbar-height;
         line-height: $toolbar-height;
         margin-left: -4em;
-        background: linear-gradient(to right, #31a0cb, #4fc09f);
+        background: linear-gradient(to right, $ax-color-gray-4, $ax-color-gray-6);
 
         h1 {
             font-size: 2em;
