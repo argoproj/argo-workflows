@@ -361,7 +361,7 @@ please contact your administrator for more information to configure your argo CL
         """
         # TODO: a less hacky way of getting initial credentials?
         ns_conf = "--namespace axsys --kubeconfig {config}".format(config=self._cluster_info.get_kube_config_file_path())
-        cmd = "kubectl " + ns_conf + " exec $(kubectl " + ns_conf + " get pods | grep axops | awk '{print $1}') /axops/bin/axpassword -c axops"
+        cmd = "kubectl " + ns_conf + " exec $(kubectl " + ns_conf + " get pods -l app=axops-deployment | grep axops | awk '{print $1}') /axops/bin/axpassword -c axops"
         ret = subprocess.check_output(cmd, shell=True)
         username = None
         password = None
