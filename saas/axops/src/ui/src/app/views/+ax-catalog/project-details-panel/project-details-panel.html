@@ -7,12 +7,12 @@
                         <h1>{{ project?.name }}</h1>
                     </div>
                     <div class="columns small-4">
-                        <ax-project-launch-button [project]="project"></ax-project-launch-button>
+                        <ax-project-launch-button [project]="project" *ngIf="project"></ax-project-launch-button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="project-details-panel__body">
+        <div class="project-details-panel__body" *ngIf="project">
             <div class="ax-container">
                 <div class="row">
                     <div class="columns small-8">
@@ -48,7 +48,7 @@
                         </div>
                     </div>
                     <div class="columns small-4">
-                        <div class="project-details-panel__labels-title">LABELS:</div>
+                        <div class="project-details-panel__labels-title" *ngIf="tags?.length">LABELS:</div>
                         <div *ngFor="let tag of tags">
                             <div class="project-details-panel__tag">{{ tag }}</div>
                         </div>
