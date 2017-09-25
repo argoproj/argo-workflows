@@ -17,22 +17,11 @@ Argo is an open source container-native workflow engine for developing and runni
 
 ## Getting started
 
-### Step 1: Download the argo binary
+### Step 1: Download and install Argo
 
-**Mac:** `curl -sSL -O https://s3-us-west-1.amazonaws.com/ax-public/argocli/latest/darwin_amd64/argo`
+https://argoproj.github.io/argo-site/get-started/installation
 
-**Linux:** `curl -sSL -O https://s3-us-west-1.amazonaws.com/ax-public/argocli/latest/linux_amd64/argo`
-
-```
-chmod a+x ./argo
-cp ./argo /usr/local/bin
-```
-
-### Step 2: Install argo
-
-`argo cluster`
-
-### Step 3: Create and submit jobs
+### Step 2: Create and submit jobs
 
 https://blog.argoproj.io/argo-workflow-demo-at-the-kubernetes-community-meeting-c428c3c93f9d
 
