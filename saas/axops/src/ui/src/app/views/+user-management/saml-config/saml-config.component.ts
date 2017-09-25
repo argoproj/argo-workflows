@@ -1,6 +1,5 @@
 import * as _ from 'lodash';
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormControl, Validators, ValidatorFn } from '@angular/forms';
 import { ToolService, NotificationService, ModalService } from '../../../services';
 import { SamlConfigTool, SamlInfo } from '../../../model';
@@ -32,14 +31,13 @@ export class SamlConfigComponent implements OnInit {
 
     constructor(private toolsService: ToolService,
         private notificationService: NotificationService,
-        private modalService: ModalService,
-        private activatedRoute: ActivatedRoute) {
+        private modalService: ModalService) {
     }
 
     public ngOnInit() {
         Promise.all([
             this.toolsService.getSAMLInfo().toPromise(),
-            this.toolsService.getToolsAsync({category: 'authentication'}).toPromise()
+            this.toolsService.getToolsAsync({category: 'authentication'}, true).toPromise()
                 .then(res => res.data)]).then(([samlInfo, samlConfigs]: [SamlInfo, SamlConfigTool[]]) => {
 
             this.samlInfo = samlInfo;
