@@ -31,13 +31,13 @@ export class SystemService {
             .map(res => res.json());
     }
 
-    updateSpotInstanceConfig(enabled: { 'enabled': boolean}, hideLoader?: boolean) {
+    updateSpotInstanceConfig(option: { 'spot_instances_option': 'none' | 'partial' | 'all', enabled: boolean}, hideLoader = true) {
         let customHeader = new Headers();
         if (hideLoader) {
             customHeader.append('isUpdated', hideLoader.toString());
         }
         return this.http.put(`v1/system/settings/spot_instance_config`,
-            JSON.stringify(enabled), { headers: customHeader })
+            JSON.stringify(option), { headers: customHeader })
             .map(res => res.json());
     }
 
