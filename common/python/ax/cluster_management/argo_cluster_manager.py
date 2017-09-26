@@ -14,7 +14,7 @@ from ax.cloud.aws import SecurityToken
 from ax.util.const import COLOR_NORM, COLOR_RED
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
     CommonClusterOperations
-from .app.options import add_install_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
+from .app.options import add_install_flags, add_platform_only_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
     add_restart_flags, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
     add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
 
@@ -53,6 +53,10 @@ class ArgoClusterManager(object):
         # Add download credential flags
         download_cred_parser = main_subparser.add_parser("download-cluster-credentials", help="Download Argo cluster credentials")
         add_misc_flags(download_cred_parser)
+
+        # Install on existing cluster
+        platform_only_installer = main_subparser.add_parser("install-platform-only", help="Install platform only")
+        add_platform_only_flags(platform_only_installer)
 
     def parse_args_and_run(self):
         assert isinstance(self._parser, argparse.ArgumentParser), "Please call add_flags() to initialize parser"
@@ -125,6 +129,11 @@ class ArgoClusterManager(object):
         self._continue_or_die(err)
         self._ensure_customer_id(upgrade_config.cloud_profile)
         ClusterUpgrader(upgrade_config).start()
+
+    def install_platform_only(self, args):
+        # TODO(shri): Add more meat!
+        logger.info("Installing platform only using args: %s", args)
+        return
 
     @staticmethod
     def _ensure_customer_id(cloud_profile):

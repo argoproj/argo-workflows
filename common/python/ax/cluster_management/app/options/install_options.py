@@ -368,3 +368,18 @@ def add_install_flags(parser):
 
     # TODO: consider removing --enable-sandbox due to open source
     parser.add_argument("--enable-sandbox", default=False, action="store_true", help="Install this cluster as a sandbox")
+
+def add_platform_only_flags(parser):
+    assert isinstance(parser, argparse.ArgumentParser)
+
+    add_common_flags(parser)
+    add_software_info_flags(parser)
+
+    # Cloud information
+    parser.add_argument("--cloud-region", default=None, help="A valid cloud region")
+    parser.add_argument("--cloud-placement", default=None, help="A valid cloud placement")
+
+    # Add bucket
+    parser.add_argument("--cluster-bucket", default=None, required=True, help="S3 complaint bucket to use")
+    # Add kubeconfig
+    parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")
