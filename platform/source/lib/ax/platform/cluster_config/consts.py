@@ -17,9 +17,10 @@ class AXClusterSize:
     CLUSTER_MEDIUM = "medium"
     CLUSTER_LARGE = "large"
     CLUSTER_XLARGE = "xlarge"
+    CLUSTER_USER_PROVIDED = "user_provided"
 
     # TODO (#36): mvc is currently broken so mark it as not valid
-    VALID_CLUSTER_SIZES = [CLUSTER_SMALL, CLUSTER_MEDIUM, CLUSTER_LARGE, CLUSTER_XLARGE]
+    VALID_CLUSTER_SIZES = [CLUSTER_SMALL, CLUSTER_MEDIUM, CLUSTER_LARGE, CLUSTER_XLARGE, CLUSTER_USER_PROVIDED]
 
 
 class SpotInstanceOption:

@@ -1,0 +1,14 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+    name: kdata-1
+    annotations:
+        volume.alpha.kubernetes.io/storage-class: anything
+    labels:
+        app: kafka-zk-1
+spec:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+        requests:
+            storage: 10Gi

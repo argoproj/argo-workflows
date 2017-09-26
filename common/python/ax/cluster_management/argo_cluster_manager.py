@@ -15,7 +15,7 @@ from ax.util.const import COLOR_NORM, COLOR_RED
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
     CommonClusterOperations
 from .app.options import add_install_flags, add_platform_only_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
-    add_restart_flags, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
+    add_restart_flags, PlatformOnlyInstallConfig, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
     add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
 
 logger = logging.getLogger(__name__)
@@ -131,8 +131,9 @@ class ArgoClusterManager(object):
         ClusterUpgrader(upgrade_config).start()
 
     def install_platform_only(self, args):
-        # TODO(shri): Add more meat!
-        logger.info("Installing platform only using args: %s", args)
+        logger.info("Installing platform only ...")
+        platform_install_config = PlatformOnlyInstallConfig(cfg=args)
+        # TODO(shri): Do more with platform_install_config!
         return
 
     @staticmethod
