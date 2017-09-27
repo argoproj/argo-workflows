@@ -4,11 +4,11 @@ import (
 	"applatix.io/axerror"
 	"applatix.io/axops/configuration"
 	"applatix.io/axops/user"
-	"applatix.io/axops/utils"
 	"applatix.io/common"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"regexp"
-	"time"
 )
 
 const (
@@ -101,34 +101,41 @@ func GetConfigurationsByUserName() gin.HandlerFunc {
 // @Title CreateConfiguration
 // @Description Create configuration
 // @Accept  json
-// @Param   user             path    string   true        "user"
-// @Param   name             path    string   true        "configuration name"
-// @Param   value            body    MapType   true        "configuration value (key value paired)"
-// @Param   description      query   string   False       "configuration description"
+// @Param   configuration    body    configuration.ConfigurationData   true   "configuration object"
 // @Success 200 {object} MapType
 // @Failure 400 {object} axerror.AXError "Invalid request"
 // @Failure 500 {object} axerror.AXError "Internal server error"
 // @Resource /configurations
-// @Router /configurations/{user}/{name} [POST]
+// @Router /configurations [POST]
 func CreateConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username := c.Param("user")
-		name := c.Param("name")
-		description := c.Request.URL.Query().Get("description")
+		body, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Failed to read request body, err: "+err.Error()))
+			return
+		}
+		var config configuration.ConfigurationData
+		err = json.Unmarshal(body, &config)
+
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Request body doesn't contain a valid configuration object, err: "+err.Error()))
+			return
+		}
 
 		//Verify user exists in the system
-		u, axErr := user.GetUserByName(username)
+		u, axErr := user.GetUserByName(config.ConfigurationUser)
 		if axErr != nil {
 			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessage("Fail to retrieve users from db"))
 			return
 		}
+
 		if u == nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("User %s does not exist", username))
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("User %s does not exist", config.ConfigurationUser))
 			return
 		}
 
 		//Verify name
-		pass, err := verifyInput(name)
+		pass, err := verifyInput(config.ConfigurationName)
 		if err != nil {
 			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
 			return
@@ -138,16 +145,8 @@ func CreateConfiguration() gin.HandlerFunc {
 			return
 		}
 
-		var v map[string]string
-		jsonErr := utils.GetUnmarshalledBody(c, &v)
-
-		if jsonErr != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Cannot marshall configuration value into map, %v", jsonErr))
-			return
-		}
-
 		//Verify key
-		for k := range v {
+		for k := range config.ConfigurationValue {
 			pass, err := verifyInput(k)
 			if err != nil {
 				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
@@ -158,16 +157,20 @@ func CreateConfiguration() gin.HandlerFunc {
 				return
 			}
 		}
-		config := &configuration.ConfigurationData{
-			ConfigurationUser:        username,
-			ConfigurationName:        name,
-			ConfigurationDesc:        description,
-			ConfigurationValue:       v,
-			ConfigurationDateCreated: time.Now().Unix(),
-			ConfigurationLastUpdated: time.Now().Unix(),
+
+		//Verify if config already exists
+		configList, axErr := configuration.GetConfigurationsByUserName(config.ConfigurationUser, config.ConfigurationName)
+		if axErr != nil {
+			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
+			return
+		}
+		if len(configList) != 0 {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Failed to create as configuration with namespace %v and name %v already exists.",
+				config.ConfigurationUser, config.ConfigurationName))
+			return
 		}
 
-		axErr = configuration.CreateConfiguration(config)
+		axErr = configuration.CreateConfiguration(&config)
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
@@ -181,10 +184,7 @@ func CreateConfiguration() gin.HandlerFunc {
 // @Title ModifyConfiguration
 // @Description Modify configuration
 // @Accept  json
-// @Param   user             path    string   true        "user"
-// @Param   name             path    string   true        "configuration name"
-// @Param   value            body    MapType  true        "configuration value (key value paired)"
-// @Param   description      query   string   False       "configuration description"
+// @Param   configuration    body    configuration.ConfigurationData   true   "configuration object"
 // @Success 200 {object} MapType
 // @Failure 400 {object} axerror.AXError "Invalid request"
 // @Failure 500 {object} axerror.AXError "Internal server error"
@@ -192,24 +192,32 @@ func CreateConfiguration() gin.HandlerFunc {
 // @Router /configurations/{user}/{name} [PUT]
 func ModifyConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		username := c.Param("user")
-		name := c.Param("name")
-		description := c.Request.URL.Query().Get("description")
+		body, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Failed to read request body, err: "+err.Error()))
+			return
+		}
+		var config configuration.ConfigurationData
+		err = json.Unmarshal(body, &config)
 
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Request body doesn't contain a valid configuration object, err: "+err.Error()))
+			return
+		}
 		//Verify user exists in the system
-		u, axErr := user.GetUserByName(username)
+		u, axErr := user.GetUserByName(config.ConfigurationUser)
 		if axErr != nil {
 			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessage("Fail to retrieve users from db"))
 			return
 		}
 
 		if u == nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("User %s does not exist", username))
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("User %s does not exist", config.ConfigurationUser))
 			return
 		}
 
 		//Verify name
-		pass, err := verifyInput(name)
+		pass, err := verifyInput(config.ConfigurationName)
 		if err != nil {
 			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
 			return
@@ -219,16 +227,8 @@ func ModifyConfiguration() gin.HandlerFunc {
 			return
 		}
 
-		var v map[string]string
-		jsonErr := utils.GetUnmarshalledBody(c, &v)
-
-		if jsonErr != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessage("Cannot marshall configuration value into map"))
-			return
-		}
-
 		//Verify key
-		for k := range v {
+		for k := range config.ConfigurationValue {
 			pass, err := verifyInput(k)
 			if err != nil {
 				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
@@ -239,16 +239,27 @@ func ModifyConfiguration() gin.HandlerFunc {
 				return
 			}
 		}
-		config := &configuration.ConfigurationData{
-			ConfigurationUser:        username,
-			ConfigurationName:        name,
-			ConfigurationDesc:        description,
-			ConfigurationValue:       v,
-			ConfigurationLastUpdated: time.Now().Unix(),
-			ConfigurationDateCreated: 0,
+
+		//Verify if config already exists
+		configList, axErr := configuration.GetConfigurationsByUserName(config.ConfigurationUser, config.ConfigurationName)
+		if axErr != nil {
+			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
+			return
+		}
+		if len(configList) > 1 {
+			c.JSON(axerror.REST_INTERNAL_ERR, axerror.ERR_API_INVALID_REQ.NewWithMessagef("More than one configurations with namespace %v and name %v.",
+				config.ConfigurationUser, config.ConfigurationName))
+			return
+		}
+		if len(configList) == 1 {
+			if configList[0].ConfigurationIsSecrets != config.ConfigurationIsSecrets {
+				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Converting between secret and configurations is not allowed for %v/%v.",
+					config.ConfigurationUser, config.ConfigurationName))
+				return
+			}
 		}
 
-		axErr = configuration.UpdateConfiguration(config)
+		axErr = configuration.UpdateConfiguration(&config)
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
