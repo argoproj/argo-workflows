@@ -3,19 +3,17 @@
 package axops
 
 import (
-	"io"
-	"io/ioutil"
-	"net/http"
-	"strings"
-
 	"applatix.io/axerror"
 	"applatix.io/axops/project"
 	"applatix.io/axops/utils"
 	"applatix.io/common"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"applatix.io/s3cl"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"strings"
 )
 
 type ProjectsData struct {
@@ -202,7 +200,7 @@ func GetProjectIcon() gin.HandlerFunc {
 			return
 		}
 
-		if p.Assets != nil && p.Assets.Icon != nil && strings.HasSuffix(p.Assets.Icon.Path, ".png") {
+		if p.Assets != nil && p.Assets.Icon != nil {
 			err := writeIcon(c, p.Assets.Icon)
 			if err == nil {
 				c.Status(axerror.REST_STATUS_OK)
@@ -266,7 +264,7 @@ func writeIcon(c *gin.Context, assetDetail *project.AssetDetail) error {
 		utils.ErrorLog.Printf("Unable to read project icon %v from s3 due to %v", assetDetail, err)
 		return err
 	}
-	c.Header("Content-Type", "image/png")
+	c.Header("Content-Type", *output.ContentType)
 	c.Header("ETag", project.GetETag())
 	_, err = io.Copy(c.Writer, output.Body)
 	output.Body.Close()
@@ -274,47 +272,10 @@ func writeIcon(c *gin.Context, assetDetail *project.AssetDetail) error {
 }
 
 func getAssetFromS3(assetDetail *project.AssetDetail) (*s3.GetObjectOutput, error) {
+	bucket := assetDetail.S3Bucket
+	key := assetDetail.S3Key
+	return s3cl.GetObjectFromS3(&bucket, &key)
 
-	myRegion := aws.String(utils.GetRegion())
-	tr := &http.Transport{
-		DisableCompression: true,
-	}
-
-	client := &http.Client{
-		Transport: tr,
-	}
-
-	svc := s3.New(session.New(&aws.Config{
-		Region:     myRegion,
-		HTTPClient: client,
-	}))
-
-	bucket := aws.String(assetDetail.S3Bucket)
-	key := aws.String(assetDetail.S3Key)
-	resp, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket})
-	if err != nil {
-		utils.InfoLog.Printf("Unable to get s3 bucket location due to error:%v\n", err)
-		return nil, err
-	}
-
-	var bucketRegion string
-	if resp.LocationConstraint == nil {
-		bucketRegion = "us-east-1"
-	} else {
-		bucketRegion = *resp.LocationConstraint
-	}
-	utils.InfoLog.Printf("bucket region: %s\n", bucketRegion)
-	if bucketRegion != *myRegion {
-		svc = s3.New(session.New(&aws.Config{
-			Region:     &bucketRegion,
-			HTTPClient: client,
-		}))
-	}
-
-	return svc.GetObject(&s3.GetObjectInput{
-		Bucket: bucket,
-		Key:    key,
-	})
 }
 
 func readAsset(assetDetail *project.AssetDetail) string {
