@@ -25,6 +25,12 @@
                         <a [routerLink]="['/app/service-catalog/history', deployment.template.id || '']">{{ deployment.template.name }}</a>
                     </div>
                 </div>
+                <div class="row deployment-history-cell__row" *ngIf="deployment.template?.version">
+                    <div class="columns small-3 deployment-history-cell__revision-details-part--label">{{ 'Template Version' | translate | uppercase }}</div>
+                    <div class="columns small-9">
+                        <a [routerLink]="['/app/service-catalog/history', deployment.template.id || '']">{{ deployment.template.version }}</a>
+                    </div>
+                </div>
                 <div class="row deployment-history-cell__row">
                     <div class="columns small-3 deployment-history-cell__revision-details-part--label">{{ 'Job ID' | translate | uppercase }}</div>
                     <div class="columns small-9">
