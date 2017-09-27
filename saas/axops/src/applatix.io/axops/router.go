@@ -469,8 +469,8 @@ func GetRounter(internal bool) *gin.Engine {
 			configuration.GET("", ListConfigurations())
 			configuration.GET("/:user", GetConfigurationsByUser())
 			configuration.GET("/:user/:name", GetConfigurationsByUserName())
-			configuration.POST("/:user/:name", CreateConfiguration())
-			configuration.PUT("/:user/:name", ModifyConfiguration())
+			configuration.POST("", CreateConfiguration())
+			configuration.PUT("", ModifyConfiguration())
 			configuration.DELETE("/:user/:name", DeleteConfiguration())
 		}
 

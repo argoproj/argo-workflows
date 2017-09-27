@@ -5,13 +5,17 @@ import (
 	"applatix.io/axdb"
 	"applatix.io/axerror"
 	"applatix.io/axops/utils"
+	"applatix.io/restcl"
+	"fmt"
 	"regexp"
+	"time"
 )
 
 type ConfigurationData struct {
 	ConfigurationUser        string            `json:"user"`
 	ConfigurationName        string            `json:"name"`
 	ConfigurationDesc        string            `json:"description,omitempty"`
+	ConfigurationIsSecrets   bool              `json:"is_secret"`
 	ConfigurationValue       map[string]string `json:"value,omitempty"`
 	ConfigurationDateCreated int64             `json:"ctime,omitempty"`
 	ConfigurationLastUpdated int64             `json:"mtime,omitempty"`
@@ -23,15 +27,41 @@ type ConfigurationContext struct {
 	Key  string
 }
 
+type SecretResult struct {
+	SecretData     map[string]string `json:"data"`
+	SecretMetadata map[string]string `json:"metadata"`
+}
+
 const (
 	ConfigurationStrRegex = "^%%config\\.([^ ]*)\\.([-0-9A-Za-z_]+)\\.([-0-9A-Za-z_]+)%%$"
 )
+
+var MaxRetryDuration time.Duration = 60 * time.Second
+
+var retryConfig *restcl.RetryConfig = &restcl.RetryConfig{
+	Timeout: MaxRetryDuration,
+}
 
 func GetConfigurations(params map[string]interface{}) ([]ConfigurationData, *axerror.AXError) {
 	configs := []ConfigurationData{}
 	axErr := utils.Dbcl.Get(axdb.AXDBAppAXOPS, ConfigurationTableName, params, &configs)
 	if axErr != nil {
 		return nil, axErr
+	}
+	for idx, config := range configs {
+		if config.ConfigurationIsSecrets {
+			// Make sure log not printing out the secret content
+			utils.InfoLog.Println("[AXMON] Getting kube secret")
+			get_secret_url := fmt.Sprintf("secret/%v/%v", config.ConfigurationUser, config.ConfigurationName)
+
+			var result SecretResult
+			axErr, _ := utils.AxmonCl.GetWithTimeRetry(get_secret_url, nil, &result, retryConfig)
+
+			if axErr != nil {
+				return nil, axErr
+			}
+			configs[idx].ConfigurationValue = result.SecretData
+		}
 	}
 	return configs, nil
 }
@@ -58,6 +88,18 @@ func GetConfigurationsByUserName(user string, name string) ([]ConfigurationData,
 }
 
 func CreateConfiguration(config *ConfigurationData) *axerror.AXError {
+	//Check whether this is configured as Kubernetes secrets
+	if config.ConfigurationIsSecrets {
+		axErr := CreateKubernetesSecret(config)
+		if axErr != nil {
+			return axErr
+		}
+		// Set value to nil so that database does not have record for Kubernetes secrets
+		config.ConfigurationValue = nil
+	}
+	// Update timestamp
+	config.ConfigurationDateCreated = time.Now().Unix()
+	config.ConfigurationLastUpdated = time.Now().Unix()
 	_, axErr := utils.Dbcl.Post(axdb.AXDBAppAXOPS, ConfigurationTableName, config)
 	if axErr != nil {
 		return axErr
@@ -66,6 +108,16 @@ func CreateConfiguration(config *ConfigurationData) *axerror.AXError {
 }
 
 func UpdateConfiguration(config *ConfigurationData) *axerror.AXError {
+	//Check whether this is configured as Kubernetes secrets
+	if config.ConfigurationIsSecrets {
+		axErr := CreateKubernetesSecret(config)
+		if axErr != nil {
+			return axErr
+		}
+		// Set value to nil so that database does not have record for Kubernetes secrets
+		config.ConfigurationValue = nil
+	}
+	config.ConfigurationLastUpdated = time.Now().Unix()
 	_, axErr := utils.Dbcl.Put(axdb.AXDBAppAXOPS, ConfigurationTableName, config)
 	if axErr != nil {
 		return axErr
@@ -74,6 +126,15 @@ func UpdateConfiguration(config *ConfigurationData) *axerror.AXError {
 }
 
 func DeleteConfiguration(config *ConfigurationData) *axerror.AXError {
+	//Check whether this is configured as Kubernetes secrets
+	if config.ConfigurationIsSecrets {
+		axErr := DeleteKubernetesSecret(config)
+		if axErr != nil {
+			return axErr
+		}
+		// Set value to nil so that database does not have record for Kubernetes secrets
+		config.ConfigurationValue = nil
+	}
 	_, axErr := utils.Dbcl.Delete(axdb.AXDBAppAXOPS, ConfigurationTableName, []*ConfigurationData{config})
 	if axErr != nil {
 		return axErr
@@ -132,4 +193,34 @@ func ProcessConfigurationStr(configStr string) (string, *axerror.AXError) {
 		return "", axErr
 	}
 	return configValue, nil
+}
+
+func CreateKubernetesSecret(config *ConfigurationData) *axerror.AXError {
+	// Make sure log not printing out the secret content
+	utils.InfoLog.Println("[AXMON] Creating kube secret")
+	secret := map[string]interface{}{
+		"namespace": config.ConfigurationUser,
+		"name":      config.ConfigurationName,
+		"data":      config.ConfigurationValue,
+	}
+
+	axErr, _ := utils.AxmonCl.PostWithTimeRetry("secret", nil, secret, nil, retryConfig)
+
+	if axErr != nil {
+		return axErr
+	}
+	return nil
+}
+
+func DeleteKubernetesSecret(config *ConfigurationData) *axerror.AXError {
+	// Make sure log not printing out the secret content
+	utils.InfoLog.Println("[AXMON] Deleting kube secret")
+	del_secret_url := fmt.Sprintf("secret/%s/%s", config.ConfigurationUser, config.ConfigurationName)
+
+	axErr, _ := utils.AxmonCl.DeleteWithTimeRetry(del_secret_url, nil, nil, nil, retryConfig)
+
+	if axErr != nil {
+		return axErr
+	}
+	return nil
 }

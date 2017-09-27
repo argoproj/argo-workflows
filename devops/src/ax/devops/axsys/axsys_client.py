@@ -569,3 +569,7 @@ class AxsysClient(object):
         """
         logger.info('Delete ingress policy for endpoint: %s', dnsname)
         return self.axmon_client.delete(INGRESS_METHOD + '/' + dnsname, value_only=True)
+
+    def get_secret(self, namespace, name):
+        logger.info('Get Kubernetes secret for namespace %s and name %s', namespace, name)
+        return self.axmon_client.get('/secret/{}/{}'.format(namespace, name), value_only=True)
