@@ -225,7 +225,6 @@ class ContainerOuterExecutor(object):
         self._amclient = ApplicationManagerClient()
         self._appname = self._job_name
         self._dep_id = ax_ids["deployment_id"]
-        self._encrypted_strings = dict()
         self._repo = ""
 
     def _generate_globals_task(self, data):
@@ -233,7 +232,6 @@ class ContainerOuterExecutor(object):
 
         self._docker_enable = data.get('docker_enable', False)
         self._container = data['container']
-        self._encrypted_strings = dict()
         self._repo = self._container.get("repo", "")
 
         if "docker" in self._container:
@@ -519,27 +517,6 @@ class ContainerOuterExecutor(object):
             self._gen_user_command_with_failed_load_artifact(bad_artifacts3, error_messages)
             self._write_executor_sh()
             return False
-
-        # Adding encrypted strings into a set if there is any in cmd_options or entry point
-        logger.info("Start decrypting.")
-        if self._cmd_options is not None or self._entrypoint is not None:
-            entry_word_list = list()
-            if self._cmd_options is not None:
-                entry_word_list.extend(self._cmd_options.split())
-            if self._entrypoint is not None:
-                entry_word_list.extend(self._entrypoint.split())
-            for entry_word in entry_word_list:
-                match_obj = re.match("%%secrets.(.*)%%", entry_word)
-                if match_obj is not None:
-                    token = match_obj.group(1)
-                    if token and token not in self._encrypted_strings:
-                        try:
-                            self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
-                        except Exception as e:
-                            logger.exception("Failed to decrypt %s", token)
-                            self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
-                            self._write_executor_sh()
-                            return False
 
         self._gen_user_command()
         bad_artifacts4, _ = self._do_save_artifacts(dry_run_mode=True)
@@ -841,6 +818,10 @@ class ContainerOuterExecutor(object):
         if set_x:
             self._generated_executor_sh.append("set -x")
 
+    def _get_secret_from_file(self, namespace, name, key):
+        with open("/ax_secrets/{}/{}/{}".format(namespace, name, key)) as f:
+            return f.read()
+
     def _gen_user_command(self):
         real_cmd = self._get_real_command_for_container()
         logger.info("<env>: real_cmd: %s", real_cmd)
@@ -848,12 +829,15 @@ class ContainerOuterExecutor(object):
         if isinstance(real_cmd, list):
             real_cmd_show = "\n".join(real_cmd)
             real_cmd_show_replaced = real_cmd_show
+
             # replace secrets in the commands
-            for token in self._encrypted_strings.keys():
-                logger.info("Replacing encrypted string, %s", token)
-                decrypted_value = self._encrypted_strings[token]
-                if "%%secrets.{}%%".format(token) in real_cmd_show_replaced:
-                    real_cmd_show_replaced = real_cmd_show_replaced.replace("%%secrets.{}%%".format(token), decrypted_value)
+            matches = re.findall(r"%%config\.(.+?)\.([A-Za-z0-9-]+)\.([A-Za-z0-9-]+)%%", real_cmd_show_replaced)
+            logger.info("Found the following secrets {}".format(matches))
+            for (cfg_ns, cfg_name, cfg_key) in matches:
+                logger.info("Looking for secret {} {} {}".format(cfg_ns, cfg_name, cfg_key))
+                secret_val = self._get_secret_from_file(cfg_ns, cfg_name, cfg_key)
+                logger.info("Replacing secret {} {} {}".format(cfg_ns, cfg_name, cfg_key))
+                real_cmd_show_replaced = re.sub(r"%%config\..+?\.[A-Za-z0-9-]+\.[A-Za-z0-9-]+%%", secret_val, real_cmd_show_replaced)
 
             with open(self._container_command_list_file, "w+", encoding="utf8") as the_file:
                 the_file.write(real_cmd_show_replaced)
@@ -875,8 +859,9 @@ class ContainerOuterExecutor(object):
                                  "trap _term_{sig} {sig}".format(sig=sig)]
         self._generated_executor_sh += trap_signal_cmds
 
-        if not self._encrypted_strings:  # Disable so that we do not print password
-            self._generated_executor_sh.append("set -x")
+        # It is time to not do this anymore....
+        #if not self._encrypted_strings:  # Disable so that we do not print password
+        #    self._generated_executor_sh.append("set -x")
 
         # wait for docker sidecar container if needed
         if self._docker_enable:
