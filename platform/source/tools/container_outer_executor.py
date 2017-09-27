@@ -42,7 +42,6 @@ from ax.axdb.axsys import artifacts_table_path
 from ax.devops.redis.redis_client import RedisClient, REDIS_HOST, DB_RESULT
 from ax.devops.axsys.axsys_client import AxsysClient
 from ax.devops.axdb.axdb_client import AxdbClient
-from ax.devops.axdb.axops_client import AxopsClient
 from ax.devops.client.artifact_client import AxArtifactManagerClient
 from ax.devops.workflow.ax_workflow import AXWorkflow
 from ax.devops.artifact.constants import RETENTION_TAG_DEFAULT, RETENTION_TAG_AX_LOG, RETENTION_TAG_AX_LOG_EXTERNAL, RETENTION_TAG_USER_LOG, \
@@ -62,7 +61,8 @@ from argo.template.v1.deployment import DeploymentTemplate
 logger = logging.getLogger("ax.container_outer_executor")
 # logging.getLogger("botocore").setLevel(logging.DEBUG)
 axdb_client = AxdbClient()
-axops_client = AxopsClient()
+axsys_client = AxsysClient()
+
 artifact_client = AxArtifactManagerClient()
 
 
@@ -513,25 +513,39 @@ class ContainerOuterExecutor(object):
             return False
 
         # Adding encrypted strings into a set if there is any in cmd_options or entry point
-        # logger.info("Start decrypting.")
-        # if self._cmd_options is not None or self._entrypoint is not None:
-        #     entry_word_list = list()
-        #     if self._cmd_options is not None:
-        #         entry_word_list.extend(self._cmd_options.split())
-        #     if self._entrypoint is not None:
-        #         entry_word_list.extend(self._entrypoint.split())
-        #     for entry_word in entry_word_list:
-        #         match_obj = re.match("%%secrets.(.*)%%", entry_word)
-        #         if match_obj is not None:
-        #             token = match_obj.group(1)
-        #             if token and token not in self._encrypted_strings:
-        #                 try:
-        #                     self._encrypted_strings[token] = axops_client.decrypt(token=token, repo_name=self._repo)
-        #                 except Exception as e:
-        #                     logger.exception("Failed to decrypt %s", token)
-        #                     self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
-        #                     self._write_executor_sh()
-        #                     return False
+        logger.info("Start decrypting.")
+        try:
+            if self._commands is not None or self._args is not None:
+                entry_word_list = list()
+                if self._commands is not None:
+                    for command in self._commands:
+                        entry_word_list.extend(command.split())
+                if self._args is not None:
+                    for arg in self._args:
+                        entry_word_list.extend(arg.split())
+
+                # For each word in the command, check if there is %%secret%% within
+                for entry_word in entry_word_list:
+                    match_obj = re.search(r"%%secrets\.(.+?)\.([A-Za-z0-9-]+)\.([A-Za-z0-9-]+)%%", entry_word)
+                    if match_obj is not None:
+                        token = match_obj.group(0)
+                        namespace = match_obj.group(1)
+                        name = match_obj.group(2)
+                        key = match_obj.group(3)
+                        if token and token not in self._encrypted_strings:
+                            try:
+                                result = axsys_client.get_secret(namespace=namespace, name=name)
+                                if key in result.get('data', dict()):
+                                    self._encrypted_strings[token] = result['data'][key]
+                                else:
+                                    logger.warning("Failed to retrieve secret %s", token)
+                            except Exception as e:
+                                logger.exception("Failed to decrypt %s", token)
+                                self._gen_user_command_with_failed_decryption(token, error_messages=str(e))
+                                self._write_executor_sh()
+                                return False
+        except Exception:
+            logger.exception("Failed to decrypt the command and args")
 
         self._gen_user_command()
         bad_artifacts4, _ = self._do_save_artifacts(dry_run_mode=True)
@@ -578,7 +592,6 @@ class ContainerOuterExecutor(object):
                         logger.exception("cannot makedirs %s", d)
         finally:
             os.umask(omask)
-
 
     def _upload_container_logs(self):
         docker_ids = {}
@@ -851,8 +864,8 @@ class ContainerOuterExecutor(object):
             for token in self._encrypted_strings.keys():
                 logger.info("Replacing encrypted string, %s", token)
                 decrypted_value = self._encrypted_strings[token]
-                if "%%secrets.{}%%".format(token) in real_cmd_show_replaced:
-                    real_cmd_show_replaced = real_cmd_show_replaced.replace("%%secrets.{}%%".format(token), decrypted_value)
+                if token in real_cmd_show_replaced:
+                    real_cmd_show_replaced = real_cmd_show_replaced.replace(token, decrypted_value)
 
             with open(self._container_command_list_file, "w+", encoding="utf8") as the_file:
                 the_file.write(real_cmd_show_replaced)
