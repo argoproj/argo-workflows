@@ -47,8 +47,13 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             this.currentView = params['view'] || 'commit';
             this.showMyOnly = params['showMyOnly'] === 'true';
             this.jobFilter = new JobFilter();
-            this.layoutDateRange.isAllDates = this.currentView !== 'overview';
 
+            // hide "all" option in date range if it's a "overview" tab
+            this.layoutDateRange.isAllDates = this.currentView !== 'overview';
+            // "overview" tab doesn't have "all" date range, so if we navigate to this tab and the time range is set to "all", we need to change it to "today"
+            if (this.currentView === 'overview' && this.layoutDateRange.data.isAllDates) {
+                this.layoutDateRange.data = DateRange.fromRouteParams(DateRange.today().toRouteParams(), -1);
+            }
 
             this.updateFiltersByView(this.currentView);
             this.toolbarFilters.model = [];
@@ -70,9 +75,6 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
                 searchCategory: this.getCategoryByView(this.currentView),
             });
 
-            if (this.currentView === 'overview' && this.layoutDateRange.data.isAllDates) {
-                this.router.navigate(['/app/timeline', this.getRouteParams( DateRange.today().toRouteParams())]);
-            }
             this.branchesContext = this.viewPreferences.filterState.branches === 'my' ? this.viewPreferences.favouriteBranches : null;
             this.viewPreferencesService.updateViewPreferences(v => Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo }));
         });
