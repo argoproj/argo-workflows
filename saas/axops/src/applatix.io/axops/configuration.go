@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	"applatix.io/axerror"
 	"applatix.io/axops/configuration"
@@ -86,7 +87,16 @@ func GetConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username := c.Param("user")
 		name := c.Param("name")
-		config, axErr := configuration.GetConfiguration(username, name)
+		showSecrets := strings.ToLower(c.Request.URL.Query().Get("show_secrets")) == "true"
+		if showSecrets {
+			user := GetContextUser(c)
+			if !user.IsSuperAdmin() && !user.IsAdmin() {
+				c.JSON(axerror.REST_FORBIDDEN, axerror.ERR_API_AUTH_PERMISSION_DENIED.NewWithMessage("You don't have enough privilege to perform this operation."))
+				c.Abort()
+				return
+			}
+		}
+		config, axErr := configuration.GetConfiguration(username, name, showSecrets)
 		if axErr != nil {
 			httpCode := axerror.REST_INTERNAL_ERR
 			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
@@ -241,7 +251,7 @@ func ModifyConfiguration() gin.HandlerFunc {
 		}
 
 		//Verify if config already exists
-		prevConfig, axErr := configuration.GetConfiguration(config.ConfigurationUser, config.ConfigurationName)
+		prevConfig, axErr := configuration.GetConfiguration(config.ConfigurationUser, config.ConfigurationName, false)
 		if axErr != nil {
 			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
 				c.JSON(axerror.REST_NOT_FOUND, axErr)
@@ -280,7 +290,7 @@ func DeleteConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username := c.Param("user")
 		name := c.Param("name")
-		config, axErr := configuration.GetConfiguration(username, name)
+		config, axErr := configuration.GetConfiguration(username, name, false)
 		if axErr != nil {
 			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
 				c.JSON(axerror.REST_STATUS_OK, common.NullMap)
