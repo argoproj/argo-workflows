@@ -73,7 +73,8 @@ func GetConfigurationsByUserName(user string, name string) ([]ConfigurationData,
 	return configs, nil
 }
 
-func GetConfiguration(user string, name string) (*ConfigurationData, *axerror.AXError) {
+// GetConfiguration returns a configuration based on namespace and name. Optionally retrieve the secret values from kubernetes
+func GetConfiguration(user string, name string, showSecrets bool) (*ConfigurationData, *axerror.AXError) {
 	configs, axErr := GetConfigurationsByUserName(user, name)
 	if axErr != nil {
 		return nil, axErr
@@ -84,7 +85,15 @@ func GetConfiguration(user string, name string) (*ConfigurationData, *axerror.AX
 	if len(configs) != 1 {
 		return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("More than one configuration exist with user %s, name %s", user, name)
 	}
-	return &configs[0], nil
+	config := configs[0]
+	if config.ConfigurationIsSecrets && showSecrets {
+		secretValues, axErr := GetKubernetesSecretData(&config)
+		if axErr != nil {
+			return nil, axErr
+		}
+		config.ConfigurationValue = secretValues
+	}
+	return &config, nil
 }
 
 // redactSecretValues is a helper to return a new map where all config values are empty strings
@@ -169,7 +178,7 @@ func ProcessConfigurationStr(configStr string) (*string, *axerror.AXError) {
 	if axErr != nil {
 		return nil, axErr
 	}
-	config, axErr := GetConfiguration(configCtx.User, configCtx.Name)
+	config, axErr := GetConfiguration(configCtx.User, configCtx.Name, false)
 	if axErr != nil {
 		return nil, axErr
 	}
@@ -192,22 +201,30 @@ func CreateKubernetesSecret(config *ConfigurationData) *axerror.AXError {
 		"name":      config.ConfigurationName,
 		"data":      config.ConfigurationValue,
 	}
-
 	axErr, _ := utils.AxmonCl.PostWithTimeRetry("secret", nil, secret, nil, retryConfig)
-
 	if axErr != nil {
 		return axErr
 	}
 	return nil
 }
 
+// GetKubernetesSecretData retrieves the kubernetes secret values map for a config
+func GetKubernetesSecretData(config *ConfigurationData) (map[string]string, *axerror.AXError) {
+	utils.InfoLog.Println("[AXMON] Getting kube secret")
+	axmonURL := fmt.Sprintf("secret/%v/%v", config.ConfigurationUser, config.ConfigurationName)
+	var result SecretResult
+	axErr, _ := utils.AxmonCl.GetWithTimeRetry(axmonURL, nil, &result, retryConfig)
+	if axErr != nil {
+		return nil, axErr
+	}
+	return result.SecretData, nil
+}
+
 func DeleteKubernetesSecret(config *ConfigurationData) *axerror.AXError {
 	// Make sure log not printing out the secret content
 	utils.InfoLog.Println("[AXMON] Deleting kube secret")
-	del_secret_url := fmt.Sprintf("secret/%s/%s", config.ConfigurationUser, config.ConfigurationName)
-
-	axErr, _ := utils.AxmonCl.DeleteWithTimeRetry(del_secret_url, nil, nil, nil, retryConfig)
-
+	axmonURL := fmt.Sprintf("secret/%s/%s", config.ConfigurationUser, config.ConfigurationName)
+	axErr, _ := utils.AxmonCl.DeleteWithTimeRetry(axmonURL, nil, nil, nil, retryConfig)
 	if axErr != nil {
 		return axErr
 	}
