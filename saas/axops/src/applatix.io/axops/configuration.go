@@ -1,14 +1,15 @@
 package axops
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"regexp"
+
 	"applatix.io/axerror"
 	"applatix.io/axops/configuration"
 	"applatix.io/axops/user"
 	"applatix.io/common"
-	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
-	"regexp"
 )
 
 const (
@@ -43,10 +44,9 @@ func ListConfigurations() gin.HandlerFunc {
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
-		} else {
-			c.JSON(axerror.REST_STATUS_OK, configList)
-			return
 		}
+		c.JSON(axerror.REST_STATUS_OK, configList)
+		return
 	}
 }
 
@@ -66,14 +66,13 @@ func GetConfigurationsByUser() gin.HandlerFunc {
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
-		} else {
-			c.JSON(axerror.REST_STATUS_OK, configList)
-			return
 		}
+		c.JSON(axerror.REST_STATUS_OK, configList)
+		return
 	}
 }
 
-// @Title GetConfigurationsByUser
+// @Title GetConfiguration
 // @Description Get configurations by user
 // @Accept  json
 // @Param   user       path    string   true        "user"
@@ -83,18 +82,20 @@ func GetConfigurationsByUser() gin.HandlerFunc {
 // @Failure 500 {object} axerror.AXError "Internal server error"
 // @Resource /configurations
 // @Router /configurations/{user}/{name} [GET]
-func GetConfigurationsByUserName() gin.HandlerFunc {
+func GetConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username := c.Param("user")
 		name := c.Param("name")
-		configList, axErr := configuration.GetConfigurationsByUserName(username, name)
+		config, axErr := configuration.GetConfiguration(username, name)
 		if axErr != nil {
-			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
-			return
-		} else {
-			c.JSON(axerror.REST_STATUS_OK, configList)
+			httpCode := axerror.REST_INTERNAL_ERR
+			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
+				httpCode = axerror.REST_NOT_FOUND
+			}
+			c.JSON(httpCode, axErr)
 			return
 		}
+		c.JSON(axerror.REST_STATUS_OK, config)
 	}
 }
 
@@ -174,10 +175,9 @@ func CreateConfiguration() gin.HandlerFunc {
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
-		} else {
-			c.JSON(axerror.REST_CREATE_OK, common.NullMap)
-			return
 		}
+		c.JSON(axerror.REST_CREATE_OK, common.NullMap)
+		return
 	}
 }
 
@@ -241,32 +241,28 @@ func ModifyConfiguration() gin.HandlerFunc {
 		}
 
 		//Verify if config already exists
-		configList, axErr := configuration.GetConfigurationsByUserName(config.ConfigurationUser, config.ConfigurationName)
+		prevConfig, axErr := configuration.GetConfiguration(config.ConfigurationUser, config.ConfigurationName)
 		if axErr != nil {
-			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
+			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
+				c.JSON(axerror.REST_NOT_FOUND, axErr)
+			} else {
+				c.JSON(axerror.REST_INTERNAL_ERR, axErr)
+			}
 			return
 		}
-		if len(configList) > 1 {
-			c.JSON(axerror.REST_INTERNAL_ERR, axerror.ERR_API_INVALID_REQ.NewWithMessagef("More than one configurations with namespace %v and name %v.",
+		if prevConfig.ConfigurationIsSecrets != config.ConfigurationIsSecrets {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Converting between secret and configurations is not allowed for %v/%v.",
 				config.ConfigurationUser, config.ConfigurationName))
 			return
-		}
-		if len(configList) == 1 {
-			if configList[0].ConfigurationIsSecrets != config.ConfigurationIsSecrets {
-				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Converting between secret and configurations is not allowed for %v/%v.",
-					config.ConfigurationUser, config.ConfigurationName))
-				return
-			}
 		}
 
 		axErr = configuration.UpdateConfiguration(&config)
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
-		} else {
-			c.JSON(axerror.REST_STATUS_OK, common.NullMap)
-			return
 		}
+		c.JSON(axerror.REST_STATUS_OK, common.NullMap)
+		return
 	}
 }
 
@@ -284,28 +280,20 @@ func DeleteConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		username := c.Param("user")
 		name := c.Param("name")
-		configs, axErr := configuration.GetConfigurationsByUserName(username, name)
+		config, axErr := configuration.GetConfiguration(username, name)
+		if axErr != nil {
+			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
+				c.JSON(axerror.REST_STATUS_OK, common.NullMap)
+			} else {
+				c.JSON(axerror.REST_INTERNAL_ERR, axErr)
+			}
+			return
+		}
+		axErr = configuration.DeleteConfiguration(config)
 		if axErr != nil {
 			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
 			return
 		}
-
-		if configs == nil || len(configs) == 0 {
-			c.JSON(axerror.REST_STATUS_OK, common.NullMap)
-			return
-		}
-
-		if len(configs) > 1 {
-			c.JSON(axerror.REST_INTERNAL_ERR, axerror.ERR_API_INVALID_REQ.NewWithMessage("More than one configurations with the user and name"))
-			return
-		}
-
-		axErr = configuration.DeleteConfiguration(&configs[0])
-		if axErr != nil {
-			c.JSON(axerror.REST_INTERNAL_ERR, axErr)
-			return
-		}
-
 		c.JSON(axerror.REST_STATUS_OK, common.NullMap)
 		return
 	}
