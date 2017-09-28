@@ -25,8 +25,8 @@ export class VolumesService {
             .then(res => <Volume[]> res.json().data.map(item => this.deserializeVolume(item)));
     }
 
-    public getStorageClasses(): Promise<StorageClass[]> {
-        return this.http.get('v1/storage/classes').toPromise().then(res => res.json().data);
+    public getStorageClasses(hideLoader: boolean = true): Promise<StorageClass[]> {
+        return this.http.get('v1/storage/classes', {headers: new AxHeaders({noLoader: hideLoader}) }).toPromise().then(res => res.json().data);
     }
 
     public createVolume(name: string, sizeGb: number, storageClass: StorageClass): Promise<Volume> {
@@ -40,8 +40,8 @@ export class VolumesService {
         )).toPromise().then(res => this.deserializeVolume(res.json()));
     }
 
-    public async getVolumeById(id: string): Promise<Volume> {
-        return this.http.get(`v1/storage/volumes/${id}`).toPromise().then(res => this.deserializeVolume(res.json()));
+    public async getVolumeById(id: string, hideLoader: boolean = true): Promise<Volume> {
+        return this.http.get(`v1/storage/volumes/${id}`, {headers: new AxHeaders({noLoader: hideLoader}) }).toPromise().then(res => this.deserializeVolume(res.json()));
     }
 
     public async deleteVolume(id: string) {

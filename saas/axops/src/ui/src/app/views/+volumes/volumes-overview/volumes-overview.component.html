@@ -5,14 +5,17 @@
 
 <div class="content content--with-padding-top content--internal-scroll">
     <div class="ax-container">
-        <div class="volumes-overview__storage-class" *ngFor="let provider of providers">
-            <div class="volumes-overview__provider-title">
-                <i class="fa ax-icon-stop-property"></i>
-                Storage Class: <span>{{provider.type}}</span>
+        <div *ngIf="!isLoadingVolumes">
+            <div class="volumes-overview__storage-class" *ngFor="let provider of providers">
+                <div class="volumes-overview__provider-title">
+                    <i class="fa ax-icon-stop-property"></i>
+                    Storage Class: <span>{{provider.type}}</span>
+                </div>
+                <ax-volumes-list [volumes]="provider.volumes" (onDeletedVolume)="onDeletedVolume()" (onEditVolume)="onEditVolume($event)"></ax-volumes-list>
             </div>
-            <ax-volumes-list [volumes]="provider.volumes" (onDeletedVolume)="onDeletedVolume()" (onEditVolume)="onEditVolume($event)"></ax-volumes-list>
         </div>
-        <div *ngIf="!providers?.length" class="no-data-panel">
+        <ax-loader-list-mockup [itemHeight]="200" *ngIf="isLoadingVolumes"></ax-loader-list-mockup>
+        <div *ngIf="!providers?.length && !isLoadingVolumes" class="no-data-panel">
             <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
         </div>
     </div>

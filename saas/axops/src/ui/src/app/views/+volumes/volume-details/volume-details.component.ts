@@ -15,6 +15,7 @@ import { DateRange, DropdownMenuSettings, NotificationsService } from 'argo-ui-l
 export class VolumeDetailsComponent implements OnInit, HasLayoutSettings, LayoutSettings {
     public showEditPanel = false;
     public showChartLoader: boolean = true;
+    public volumeLoader: boolean = false;
     public volume: Volume = new Volume();
     public editedVolume: Volume;
     public dateRange = DateRange.today();
@@ -32,10 +33,13 @@ export class VolumeDetailsComponent implements OnInit, HasLayoutSettings, Layout
     public ngOnInit() {
         this.route.params.subscribe(async params => {
             this.showEditPanel = params['edit'] === 'true';
+            this.layoutDateRange.data = params['date'] ? DateRange.fromRouteParams(params, -1) : DateRange.today();
 
             let volumeChanged = this.volume.id !== params['id'];
             if (volumeChanged) {
+                this.volumeLoader = true;
                 this.volume = await this.volumesService.getVolumeById(params['id']);
+                this.volumeLoader = false;
                 this.editedVolume = this.volume.clone();
 
                 let appIds = new Set<string>();
@@ -57,9 +61,13 @@ export class VolumeDetailsComponent implements OnInit, HasLayoutSettings, Layout
         });
     }
 
-    public onDateRangeChanged(dateRange: DateRange) {
-        this.router.navigate(['.', dateRange.toRouteParams()], { relativeTo: this.route } );
-    }
+    public layoutDateRange = {
+        data: DateRange.today(),
+        onApplySelection: (date) => {
+            this.router.navigate(['.', date.toRouteParams()], { relativeTo: this.route } );
+        },
+        isAllDates: false
+    };
 
     public get layoutSettings(): LayoutSettings {
         return this;

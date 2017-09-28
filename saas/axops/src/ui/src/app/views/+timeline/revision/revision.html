@@ -10,7 +10,7 @@
                              [commit]="commit" (onPlusAction)="openServiceTemplatePanel($event)"
                              *ngIf="!commitLoading">
             </ax-commit-panel>
-            <ax-loader-list-mockup [itemsLength]=1 [itemHeight]="200" *ngIf="commitLoading"></ax-loader-list-mockup>
+            <ax-loader-list-mockup [itemsLength]="1" [itemHeight]="200" *ngIf="commitLoading"></ax-loader-list-mockup>
             <div class="stream revision-overview__stream" *ngIf="!taskLoading">
                 <div class="job" *ngFor="let task of tasks">
                     <ax-job [task]="task" [extendedCommiterInfo]="false"></ax-job>
