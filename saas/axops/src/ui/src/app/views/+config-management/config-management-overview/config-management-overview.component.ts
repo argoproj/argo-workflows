@@ -94,7 +94,7 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
         this.loading = true;
         this.configurations = await this.configsService.getConfigurations({ user: this.showMyOnly ? this.currentUser : null });
         this.configurations.sort( (a, b) => {
-           if ((a.user === this.currentUser) && (b.user !== this.currentUser)) {
+            if ((a.user === this.currentUser) && (b.user !== this.currentUser)) {
                return -1;
             } else if ((a.user !== this.currentUser) && (b.user === this.currentUser)) {
                 return 1;

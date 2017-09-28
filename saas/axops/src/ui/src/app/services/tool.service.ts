@@ -71,8 +71,8 @@ export class ToolService {
      * The admin will use this data to configure the Argo app
      * in the org SSO solution like OKTA
      */
-    getSAMLInfo() {
-        return this._http.get(`v1/auth/saml/info`)
+    getSAMLInfo(hideLoader = true) {
+        return this._http.get(`v1/auth/saml/info`, { headers: new AxHeaders({noLoader: hideLoader}) })
             .map(res => res.json());
     }
 

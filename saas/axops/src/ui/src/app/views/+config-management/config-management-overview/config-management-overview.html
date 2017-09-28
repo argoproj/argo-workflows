@@ -1,4 +1,4 @@
- <div class="content content--with-padding-top">        
+<div class="content content--with-padding-top">
     <div class="ax-container">
         <div class="config-management-overview__intro" *ngIf="!configurations.length && !loading">
             <div class="config-management-overview__intro-ico">
@@ -40,7 +40,8 @@
 
                         <div class="columns small-1">
                             <ax-dropdown-menu [settings]="getDropdownMenu(config)">
-                                <button axButtonWave class="ax-button ax-button--default ax-button--lg ax-button--short">
+                                <button axButtonWave
+                                        class="ax-button ax-button--default ax-button--lg ax-button--short">
                                     <i class="fa fa-ellipsis-v" aria-hidden="true"></i>
                                 </button>
                             </ax-dropdown-menu>
@@ -48,7 +49,10 @@
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div class="config-management-overview__mockup-loader-adjust" *ngIf="loading">
+            <ax-loader-list-mockup [itemHeight]="60"></ax-loader-list-mockup>
         </div>
     </div>
 </div> 
