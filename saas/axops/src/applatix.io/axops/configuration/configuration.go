@@ -2,13 +2,14 @@
 package configuration
 
 import (
+	"fmt"
+	"regexp"
+	"time"
+
 	"applatix.io/axdb"
 	"applatix.io/axerror"
 	"applatix.io/axops/utils"
 	"applatix.io/restcl"
-	"fmt"
-	"regexp"
-	"time"
 )
 
 type ConfigurationData struct {
@@ -32,8 +33,8 @@ type SecretResult struct {
 	SecretMetadata map[string]string `json:"metadata"`
 }
 
-const (
-	ConfigurationStrRegex = "^%%config\\.([^ ]*)\\.([-0-9A-Za-z_]+)\\.([-0-9A-Za-z_]+)%%$"
+var (
+	ConfigurationStrRegex = regexp.MustCompile("^%%config\\.([^ ]*)\\.([-0-9A-Za-z_]+)\\.([-0-9A-Za-z_]+)%%$")
 )
 
 var MaxRetryDuration time.Duration = 60 * time.Second
@@ -47,21 +48,6 @@ func GetConfigurations(params map[string]interface{}) ([]ConfigurationData, *axe
 	axErr := utils.Dbcl.Get(axdb.AXDBAppAXOPS, ConfigurationTableName, params, &configs)
 	if axErr != nil {
 		return nil, axErr
-	}
-	for idx, config := range configs {
-		if config.ConfigurationIsSecrets {
-			// Make sure log not printing out the secret content
-			utils.InfoLog.Println("[AXMON] Getting kube secret")
-			get_secret_url := fmt.Sprintf("secret/%v/%v", config.ConfigurationUser, config.ConfigurationName)
-
-			var result SecretResult
-			axErr, _ := utils.AxmonCl.GetWithTimeRetry(get_secret_url, nil, &result, retryConfig)
-
-			if axErr != nil {
-				return nil, axErr
-			}
-			configs[idx].ConfigurationValue = result.SecretData
-		}
 	}
 	return configs, nil
 }
@@ -87,6 +73,30 @@ func GetConfigurationsByUserName(user string, name string) ([]ConfigurationData,
 	return configs, nil
 }
 
+func GetConfiguration(user string, name string) (*ConfigurationData, *axerror.AXError) {
+	configs, axErr := GetConfigurationsByUserName(user, name)
+	if axErr != nil {
+		return nil, axErr
+	}
+	if len(configs) == 0 {
+		return nil, axerror.ERR_API_RESOURCE_NOT_FOUND.NewWithMessagef("Configuration does not exist with user %s, name %s", user, name)
+	}
+	if len(configs) != 1 {
+		return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("More than one configuration exist with user %s, name %s", user, name)
+	}
+	return &configs[0], nil
+}
+
+// redactSecretValues is a helper to return a new map where all config values are empty strings
+// This is used to ensure we do not store any config secret in axdb, but can still indicate the available keys in the API/UI
+func redactSecretValues(strMap map[string]string) map[string]string {
+	emptyValues := make(map[string]string)
+	for key := range strMap {
+		emptyValues[key] = ""
+	}
+	return emptyValues
+}
+
 func CreateConfiguration(config *ConfigurationData) *axerror.AXError {
 	//Check whether this is configured as Kubernetes secrets
 	if config.ConfigurationIsSecrets {
@@ -94,12 +104,11 @@ func CreateConfiguration(config *ConfigurationData) *axerror.AXError {
 		if axErr != nil {
 			return axErr
 		}
-		// Set value to nil so that database does not have record for Kubernetes secrets
-		config.ConfigurationValue = nil
+		config.ConfigurationValue = redactSecretValues(config.ConfigurationValue)
 	}
 	// Update timestamp
 	config.ConfigurationDateCreated = time.Now().Unix()
-	config.ConfigurationLastUpdated = time.Now().Unix()
+	config.ConfigurationLastUpdated = config.ConfigurationDateCreated
 	_, axErr := utils.Dbcl.Post(axdb.AXDBAppAXOPS, ConfigurationTableName, config)
 	if axErr != nil {
 		return axErr
@@ -114,8 +123,7 @@ func UpdateConfiguration(config *ConfigurationData) *axerror.AXError {
 		if axErr != nil {
 			return axErr
 		}
-		// Set value to nil so that database does not have record for Kubernetes secrets
-		config.ConfigurationValue = nil
+		config.ConfigurationValue = redactSecretValues(config.ConfigurationValue)
 	}
 	config.ConfigurationLastUpdated = time.Now().Unix()
 	_, axErr := utils.Dbcl.Put(axdb.AXDBAppAXOPS, ConfigurationTableName, config)
@@ -132,8 +140,6 @@ func DeleteConfiguration(config *ConfigurationData) *axerror.AXError {
 		if axErr != nil {
 			return axErr
 		}
-		// Set value to nil so that database does not have record for Kubernetes secrets
-		config.ConfigurationValue = nil
 	}
 	_, axErr := utils.Dbcl.Delete(axdb.AXDBAppAXOPS, ConfigurationTableName, []*ConfigurationData{config})
 	if axErr != nil {
@@ -142,57 +148,40 @@ func DeleteConfiguration(config *ConfigurationData) *axerror.AXError {
 	return nil
 }
 
-// Validate if a string is a valid configuration string. e.g. %%config.joe@example.com.sql.username%%
-func ValidateConfigurationStr(config string) (matched bool, err error) {
-	matched, err = regexp.MatchString(ConfigurationStrRegex, config)
-	return matched, err
+// ConfigStringToContext converts a config string (e.g. %%config.joe@example.com.sql.username%%) to a ConfigurationContext instance
+func ConfigStringToContext(configStr string) (*ConfigurationContext, *axerror.AXError) {
+	matched := ConfigurationStrRegex.FindStringSubmatch(configStr)
+	if len(matched) != 4 {
+		return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("%s is an invalid configuration variable expression", configStr)
+	}
+	configCtx := ConfigurationContext{
+		User: matched[1],
+		Name: matched[2],
+		Key:  matched[3],
+	}
+	return &configCtx, nil
 }
 
-func RetrieveConfigurationValue(configContext ConfigurationContext) (string, *axerror.AXError) {
-	configs, axErr := GetConfigurationsByUserName(configContext.User, configContext.Name)
+// ProcessConfigurationStr takes a configuration string (e.g. %%config.mynamespace.password%%), and returns the value
+// If the configuration is a secret, returns nil
+func ProcessConfigurationStr(configStr string) (*string, *axerror.AXError) {
+	configCtx, axErr := ConfigStringToContext(configStr)
 	if axErr != nil {
-		return "", axErr
+		return nil, axErr
 	}
-	if len(configs) == 0 {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Configuration does not exist with user %s, name %s and key %s", configContext.User, configContext.Name, configContext.Key)
+	config, axErr := GetConfiguration(configCtx.User, configCtx.Name)
+	if axErr != nil {
+		return nil, axErr
 	}
-	if len(configs) != 1 {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("More than one configuration exist with user %s, name %s and key %s", configContext.User, configContext.Name, configContext.Key)
-	}
-	value := configs[0].ConfigurationValue
-	configValue, ok := value[configContext.Key]
+	configVal, ok := config.ConfigurationValue[configCtx.Key]
 	if !ok {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Configuration exists under user %s, name %s but does not have key %s", configContext.User, configContext.Name, configContext.Key)
+		return nil, axerror.ERR_API_RESOURCE_NOT_FOUND.NewWithMessagef("Configuration exists under user %s, name %s but does not have key %s", configCtx.User, configCtx.Name, configCtx.Key)
 	}
-	return configValue, nil
-}
-
-func ProcessConfigurationStr(configStr string) (string, *axerror.AXError) {
-	matched, err := ValidateConfigurationStr(configStr)
-	if err != nil {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("Failed to validate if %s is a valid configuration variable: %v", configStr, err)
+	if config.ConfigurationIsSecrets {
+		// Secret substitution is handled at platform
+		return nil, nil
 	}
-	if matched == false {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("%s is an invalid configuration variable expression", configStr)
-	}
-
-	re := regexp.MustCompile(ConfigurationStrRegex)
-	matched_string := re.FindStringSubmatch(configStr)
-
-	if len(matched_string) != 4 {
-		return "", axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("%s is an invalid configuration variable expression", configStr)
-	}
-	config := ConfigurationContext{
-		User: matched_string[1],
-		Name: matched_string[2],
-		Key:  matched_string[3],
-	}
-
-	configValue, axErr := RetrieveConfigurationValue(config)
-	if axErr != nil {
-		return "", axErr
-	}
-	return configValue, nil
+	return &configVal, nil
 }
 
 func CreateKubernetesSecret(config *ConfigurationData) *axerror.AXError {
