@@ -3,7 +3,6 @@ package axops
 import (
 	"encoding/json"
 	"io/ioutil"
-	"regexp"
 	"strings"
 
 	"applatix.io/axerror"
@@ -11,10 +10,6 @@ import (
 	"applatix.io/axops/user"
 	"applatix.io/common"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	InputStringRegex = "^[-0-9A-Za-z_]+$"
 )
 
 // @Title GetConfigurations
@@ -76,8 +71,9 @@ func GetConfigurationsByUser() gin.HandlerFunc {
 // @Title GetConfiguration
 // @Description Get configurations by user
 // @Accept  json
-// @Param   user       path    string   true        "user"
-// @Param   name       path    string   true        "configuration name"
+// @Param   user          path    string   true        "user"
+// @Param   name          path    string   true        "configuration name"
+// @Param   show_secrets  query   bool     false       "show secret values"
 // @Success 200 {object} configuration.ConfigurationData
 // @Failure 400 {object} axerror.AXError "Invalid request"
 // @Failure 500 {object} axerror.AXError "Internal server error"
@@ -88,14 +84,6 @@ func GetConfiguration() gin.HandlerFunc {
 		username := c.Param("user")
 		name := c.Param("name")
 		showSecrets := strings.ToLower(c.Request.URL.Query().Get("show_secrets")) == "true"
-		if showSecrets {
-			user := GetContextUser(c)
-			if !user.IsSuperAdmin() && !user.IsAdmin() {
-				c.JSON(axerror.REST_FORBIDDEN, axerror.ERR_API_AUTH_PERMISSION_DENIED.NewWithMessage("You don't have enough privilege to perform this operation."))
-				c.Abort()
-				return
-			}
-		}
 		config, axErr := configuration.GetConfiguration(username, name, showSecrets)
 		if axErr != nil {
 			httpCode := axerror.REST_INTERNAL_ERR
@@ -145,28 +133,10 @@ func CreateConfiguration() gin.HandlerFunc {
 			return
 		}
 
-		//Verify name
-		pass, err := verifyInput(config.ConfigurationName)
-		if err != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
+		axErr = config.Validate()
+		if axErr != nil {
+			c.JSON(axerror.REST_BAD_REQ, axErr)
 			return
-		}
-		if !pass {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Name is not valid, as it has to comply with %v", InputStringRegex))
-			return
-		}
-
-		//Verify key
-		for k := range config.ConfigurationValue {
-			pass, err := verifyInput(k)
-			if err != nil {
-				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
-				return
-			}
-			if !pass {
-				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Configuration key %s is not valid, as it has to comply with %v", k, InputStringRegex))
-				return
-			}
 		}
 
 		//Verify if config already exists
@@ -202,56 +172,9 @@ func CreateConfiguration() gin.HandlerFunc {
 // @Router /configurations/{user}/{name} [PUT]
 func ModifyConfiguration() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		body, err := ioutil.ReadAll(c.Request.Body)
-		if err != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Failed to read request body, err: "+err.Error()))
-			return
-		}
-		var config configuration.ConfigurationData
-		err = json.Unmarshal(body, &config)
-
-		if err != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Request body doesn't contain a valid configuration object, err: "+err.Error()))
-			return
-		}
-		//Verify user exists in the system
-		u, axErr := user.GetUserByName(config.ConfigurationUser)
-		if axErr != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessage("Fail to retrieve users from db"))
-			return
-		}
-
-		if u == nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("User %s does not exist", config.ConfigurationUser))
-			return
-		}
-
-		//Verify name
-		pass, err := verifyInput(config.ConfigurationName)
-		if err != nil {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
-			return
-		}
-		if !pass {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Name is not valid, as it has to comply with %v", InputStringRegex))
-			return
-		}
-
-		//Verify key
-		for k := range config.ConfigurationValue {
-			pass, err := verifyInput(k)
-			if err != nil {
-				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Fail to verify name of configuration, %v", err))
-				return
-			}
-			if !pass {
-				c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Configuration key %s is not valid, as it has to comply with %v", k, InputStringRegex))
-				return
-			}
-		}
-
-		//Verify if config already exists
-		prevConfig, axErr := configuration.GetConfiguration(config.ConfigurationUser, config.ConfigurationName, false)
+		username := c.Param("user")
+		name := c.Param("name")
+		prevConfig, axErr := configuration.GetConfiguration(username, name, false)
 		if axErr != nil {
 			if axErr.Code == axerror.ERR_API_RESOURCE_NOT_FOUND.Code {
 				c.JSON(axerror.REST_NOT_FOUND, axErr)
@@ -260,9 +183,42 @@ func ModifyConfiguration() gin.HandlerFunc {
 			}
 			return
 		}
+
+		body, err := ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Failed to read request body, err: "+err.Error()))
+			return
+		}
+		var config configuration.ConfigurationData
+		err = json.Unmarshal(body, &config)
+		if err != nil {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_PARAM.NewWithMessage("Request body doesn't contain a valid configuration object, err: "+err.Error()))
+			return
+		}
+
+		// Disallow changing of namespace, name, or secret status
+		if config.ConfigurationUser == "" {
+			config.ConfigurationUser = username
+		}
+		if prevConfig.ConfigurationUser != config.ConfigurationUser {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Changing config namespace is not allowed."))
+			return
+		}
+		if config.ConfigurationName == "" {
+			config.ConfigurationName = name
+		}
+		if prevConfig.ConfigurationName != config.ConfigurationName {
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Changing config name is not allowed."))
+			return
+		}
 		if prevConfig.ConfigurationIsSecrets != config.ConfigurationIsSecrets {
-			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Converting between secret and configurations is not allowed for %v/%v.",
-				config.ConfigurationUser, config.ConfigurationName))
+			c.JSON(axerror.REST_BAD_REQ, axerror.ERR_API_INVALID_REQ.NewWithMessagef("Changing secret status is not allowed."))
+			return
+		}
+
+		axErr = config.Validate()
+		if axErr != nil {
+			c.JSON(axerror.REST_BAD_REQ, axErr)
 			return
 		}
 
@@ -307,9 +263,4 @@ func DeleteConfiguration() gin.HandlerFunc {
 		c.JSON(axerror.REST_STATUS_OK, common.NullMap)
 		return
 	}
-}
-
-func verifyInput(s string) (matched bool, err error) {
-	matched, err = regexp.MatchString(InputStringRegex, s)
-	return matched, err
 }
