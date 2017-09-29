@@ -10,6 +10,15 @@ import (
 	"applatix.io/axerror"
 	"applatix.io/axops/utils"
 	"applatix.io/restcl"
+	"applatix.io/template"
+)
+
+const (
+	inputStringRegexStr = "^[-0-9A-Za-z]+$"
+)
+
+var (
+	inputStringRegex = regexp.MustCompile(inputStringRegexStr)
 )
 
 type ConfigurationData struct {
@@ -33,14 +42,23 @@ type SecretResult struct {
 	SecretMetadata map[string]string `json:"metadata"`
 }
 
-var (
-	ConfigurationStrRegex = regexp.MustCompile("^%%config\\.([^ ]*)\\.([-0-9A-Za-z_]+)\\.([-0-9A-Za-z_]+)%%$")
-)
-
 var MaxRetryDuration time.Duration = 60 * time.Second
 
 var retryConfig *restcl.RetryConfig = &restcl.RetryConfig{
 	Timeout: MaxRetryDuration,
+}
+
+func (c *ConfigurationData) Validate() *axerror.AXError {
+	if !inputStringRegex.MatchString(c.ConfigurationName) {
+		return axerror.ERR_API_INVALID_REQ.NewWithMessagef("configuration name '%s' invalid: does not comply with %v", c.ConfigurationName, inputStringRegexStr)
+	}
+	//Verify keys
+	for k := range c.ConfigurationValue {
+		if !inputStringRegex.MatchString(k) {
+			return axerror.ERR_API_INVALID_REQ.NewWithMessagef("configuration key '%s' invalid: does not comply with %v", k, inputStringRegexStr)
+		}
+	}
+	return nil
 }
 
 func GetConfigurations(params map[string]interface{}) ([]ConfigurationData, *axerror.AXError) {
@@ -159,7 +177,7 @@ func DeleteConfiguration(config *ConfigurationData) *axerror.AXError {
 
 // ConfigStringToContext converts a config string (e.g. %%config.joe@example.com.sql.username%%) to a ConfigurationContext instance
 func ConfigStringToContext(configStr string) (*ConfigurationContext, *axerror.AXError) {
-	matched := ConfigurationStrRegex.FindStringSubmatch(configStr)
+	matched := template.ConfigVarRegex.FindStringSubmatch(configStr)
 	if len(matched) != 4 {
 		return nil, axerror.ERR_API_INTERNAL_ERROR.NewWithMessagef("%s is an invalid configuration variable expression", configStr)
 	}
