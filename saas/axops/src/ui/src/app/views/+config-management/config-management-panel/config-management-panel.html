@@ -53,13 +53,13 @@
                     </div>
                     <div class="columns small-5 class">
                         <div class="ax-form-row">
-                            <input [attr.type]="isShown(i) ? 'text' : 'password'" class="ax-field" [attr.id]="'value'+i" formControlName="value" ax-label-placeholder ax-autocomplete-off>
+                            <input [attr.type]="isShown(i) || !config.is_secret ? 'text' : 'password'" class="ax-field" [attr.id]="'value'+i" formControlName="value" ax-label-placeholder ax-autocomplete-off>
                             <label [attr.for]="'value'+i" class="ax-label-placeholder">Value</label>
                             <div class="ax-form-row__error-msg"
                                 *ngIf="!configForm.get('values').controls[i].get('value').valid && configForm.get('values').controls[i].get('value').touched">
                                 Value is required.
                             </div>
-                            <i class="fa fa-eye config-management-panel__reveal-secret" aria-hidden="true" (click)="showValue(i)"></i>
+                            <i *ngIf="config?.is_secret" class="fa fa-eye config-management-panel__reveal-secret" aria-hidden="true" (click)="showValue(i)"></i>
                             <i class="fa ax-icon-cancel config-management-panel__remove-key" aria-hidden="true" (click)="removeKey(i)"></i>
                         </div>
                     </div>

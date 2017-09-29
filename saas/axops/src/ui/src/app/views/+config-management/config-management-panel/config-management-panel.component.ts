@@ -106,6 +106,7 @@ export class ConfigManagementPanelComponent {
         this.onSave.emit({
             name: formValue.name || this.config.name,
             description: formValue.description || ' ',
+            is_secret: this.config.is_secret,
             value: configValue
         });
     }
@@ -147,7 +148,7 @@ export class ConfigManagementPanelComponent {
         this.instructText = 'Please enter data that you want to save as Configuration';
         switch (this.panelMode) {
             case 'create':
-                this.title = 'Add New Config';
+                this.title = this.config && this.config.is_secret ? 'Add New Config as Kubernetes Secret' : 'Add New Public Config';
                 break;
             case 'edit':
                 this.title = this.config && this.config.name;
