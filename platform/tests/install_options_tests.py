@@ -22,6 +22,9 @@ class InstallOptionsTest(unittest.TestCase):
         cfg.silent = False
         cfg.dry_run = False
 
+        cfg.cloud_region = "us-west-2"
+        cfg.cloud_placement = "us-west-2a"
+
     def test_platform_only_install_basic(self):
         cfg = argparse.ArgumentParser()
         self.add_default_options(cfg)

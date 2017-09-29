@@ -28,3 +28,8 @@ class SpotInstanceOption:
     PARTIAL_SPOT = "partial"
     ALL_SPOT = "all"
     VALID_SPOT_INSTANCE_OPTIONS = [NO_SPOT, PARTIAL_SPOT, ALL_SPOT]
+
+class ClusterProvider:
+    ARGO = "argo"
+    USER = "user"
+    VALID_CLUSTER_PROVIDERS = [ARGO, USER]

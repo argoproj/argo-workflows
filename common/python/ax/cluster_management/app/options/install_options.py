@@ -279,7 +279,7 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
             ))
 
         cidr_base_validator = re.compile(self.VPC_CIDR_BASE_REGEX)
-        if not cidr_base_validator.match(self.vpc_cidr_base):
+        if self.vpc_cidr_base and not cidr_base_validator.match(self.vpc_cidr_base):
             all_errs.append("Invalid VPC CIDR base {}. VPC CIDR base should match regex {}".format(
                 self.vpc_cidr_base, self.VPC_CIDR_BASE_REGEX
             ))
@@ -339,7 +339,18 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
 class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
     def __init__(self, cfg):
         cfg.cluster_size = AXClusterSize.CLUSTER_USER_PROVIDED
-        super(PlatformOnlyInstallConfig, self).__init__(cfg)
+        cfg.cloud_profile = "default"
+        cfg.cluster_type = "standard"
+        cfg.vpc_id = None
+        cfg.vpc_cidr_base = None
+        cfg.subnet_mask_size = None
+        cfg.trusted_cidrs = None
+        cfg.user_on_demand_nodes = None
+        cfg.spot_instances_option = "none"
+        cfg.cluster_autoscaling_scan_interval = None
+        cfg.support_object_store_name = ""
+        cfg.enable_sandbox = None
+        cfg.software_version_info = None
 
         self.cluster_size = cfg.cluster_size
         if cfg.cloud_provider == "minikube":
@@ -349,11 +360,30 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
             self.service_manifest_root = cfg.service_manifest_root
             self.platform_bootstrap_config = cfg.platform_bootstrap_config
 
+        super(PlatformOnlyInstallConfig, self).__init__(cfg)
+        self.install_config = ClusterInstallConfig(cfg=cfg)
+        self.install_config.validate()
+
+        self.cluster_bucket = cfg.cluster_bucket
+        self.kube_config = cfg.kubeconfig
+        try:
+            self.bucket_endpoint = cfg.endpoint
+            self.access_key = cfg.access_key
+            self.secret_key = cfg.secret_key
+        except Exception as ae:
+            self.bucket_endpoint = None
+            self.access_key = None
+            self.secret_key = None
         return
 
     def validate(self):
         return None
 
+    def get_cluster_bucket(self):
+        return self.cluster_bucket
+
+    def get_install_config(self):
+        return self.install_config
 
 def add_install_flags(parser):
     assert isinstance(parser, argparse.ArgumentParser)

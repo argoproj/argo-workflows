@@ -4,7 +4,7 @@
 #
 
 from .common import CommonClusterOperations
-from .cluster_installer import ClusterInstaller
+from .cluster_installer import ClusterInstaller, PlatformOnlyInstaller
 from .cluster_pauser import ClusterPauser
 from .cluster_restarter import ClusterResumer
 from .cluster_uninstaller import ClusterUninstaller

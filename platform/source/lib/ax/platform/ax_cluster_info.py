@@ -374,3 +374,8 @@ class AXClusterInfo(with_metaclass(Singleton, object)):
                 }
             }
         }
+
+    def set_kube_config(self, kube_config):
+        self._kube_config = kube_config
+        logger.info("Setting kube_config to %s", kube_config)
+
