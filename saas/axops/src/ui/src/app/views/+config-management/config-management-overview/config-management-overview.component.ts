@@ -38,10 +38,9 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
             this.create = false;
             if (edit) {
                 let [user, name]: [string, string] = edit.split(':');
-                let configs = await this.configsService.getConfigurations({ user, name }, true);
-                this.selectedConfig = configs[0];
-            } else if (params['createNew'] === 'true') {
-                this.selectedConfig = {};
+                this.selectedConfig = await this.configsService.getUserConfiguration(user, name, true);
+            } else if (params['createNew'] === 'true' || params['createNew'] === 'secret' ) {
+                this.selectedConfig = { is_secret: params['createNew'] === 'secret' };
                 this.create = true;
             } else {
                 this.selectedConfig = null;
@@ -62,10 +61,22 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
 
     public pageTitle = 'Configurations';
 
-    public get globalAddAction() {
-        return () => {
-            this.router.navigate(['/app/config-management', ViewUtils.sanitizeRouteParams(this.getRouteParams(), { createNew: 'true' })], { relativeTo: this.activatedRoute });
-        };
+    public get globalAddActionMenu(): DropdownMenuSettings {
+        return new DropdownMenuSettings([{
+            title: 'Add New Config as Kubernetes Secret',
+            action: () => {
+                this.router.navigate(
+                    ['/app/config-management', ViewUtils.sanitizeRouteParams(this.getRouteParams(), { createNew: 'secret' })], { relativeTo: this.activatedRoute });
+            },
+            iconName: '',
+        }, {
+            title: 'Add New Public Config',
+            action: () => {
+                this.router.navigate(
+                    ['/app/config-management', ViewUtils.sanitizeRouteParams(this.getRouteParams(), { createNew: 'true' })], { relativeTo: this.activatedRoute });
+            },
+            iconName: '',
+        }], 'fa fa-plus');
     }
 
     public getPanelMode(config: Configuration) {
