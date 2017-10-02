@@ -61,9 +61,6 @@ MINION_MANAGER_PORT = "6000"
 
 kubectl = KubernetesApiClient(use_proxy=True)
 cluster_name_id = os.getenv("AX_CLUSTER_NAME_ID", None)
-asg_manager = AXUserASGManager(os.getenv("AX_CLUSTER_NAME_ID"),
-                               AXClusterConfig().get_region())
-
 # Need a lock to serialize cluster config operation
 cfg_lock = RLock()
 
@@ -203,6 +200,8 @@ def put_spot_instance_config():
     else:
         raise ValueError("enabled must be string or boolean")
     payload = {'enabled': enabled_str}
+
+    asg_manager = AXUserASGManager(cluster_name_id, AXClusterConfig().get_region())
 
     # Get "spot_instances_option" option
     (option,) = _get_optional_arguments('spot_instances_option')

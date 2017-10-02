@@ -98,7 +98,6 @@ class AXS3Bucket(object):
         self._name = bucket_name
         self._aws_profile = aws_profile
         self._region = region if region else self._get_bucket_region_from_aws()
-        assert self._region, "Please make sure bucket {} is created, or provide a region name to create bucket".format(self._name)
         logger.info("Using region %s for bucket %s", self._region, self._name)
 
         session = boto3.Session(profile_name=aws_profile, region_name=self._region)

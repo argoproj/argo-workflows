@@ -61,11 +61,11 @@ spec:
                   - containerPort: 8889
                 resources:
                     requests:
-                        cpu: 75m
-                        memory: 200Mi
+                        cpu: 200m
+                        memory: 300Mi
                     limits:
-                        cpu: 100m
-                        memory: 200Mi
+                        cpu: 800m
+                        memory: 600Mi
                 volumeMounts:
                   - mountPath: /ax/data
                     name: gateway-persistent-storage
@@ -75,8 +75,6 @@ spec:
                         port: 8889
                     initialDelaySeconds: 600
                     periodSeconds: 120
-            nodeSelector:
-                ax.tier: applatix
             imagePullSecrets:
                 - name: applatix-registry
             volumes:

@@ -104,10 +104,7 @@ class SidecarTask(WaitContainer):
 
         # Sidecar needs to manage logs so add the log path here
         logpath = ContainerVolume("containerlogs", "/logs")
-        if Cloud().in_cloud_aws():
-            logpath.set_type("HOSTPATH", "/mnt/ephemeral/docker/containers")
-        elif Cloud().in_cloud_gcp():
-            logpath.set_type("HOSTPATH", "/var/lib/docker/containers")
+        logpath.set_type("HOSTPATH", "/var/lib/docker/containers")
         self.add_volume(logpath)
         self.add_env("LOGMOUNT_PATH", "/logs")
         self.add_env("AX_CLUSTER_NAME_ID", os.getenv("AX_CLUSTER_NAME_ID"))

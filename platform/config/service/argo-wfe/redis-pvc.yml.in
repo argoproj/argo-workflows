@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+    name: redis-pvc
+    annotations:
+        # Current 1.2 alpha feature. Key is needed but value doesn't matter.
+        volume.alpha.kubernetes.io/storage-class: foo
+    labels:
+        app: redis
+spec:
+    accessModes:
+        ["ReadWriteOnce"]
+    resources:
+        requests:
+            storage: 1Gi

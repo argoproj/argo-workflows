@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: axops-bootstrap-pod
+    labels:
+        app: axops-bootstrap
+        tier: platform
+        role: axcritical
+
+    annotations:
+        pod.alpha.kubernetes.io/init-containers: '[
+            {
+                "name": "pre",
+                "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                "command": ["timeout", "1200", "sh", "-c", "wait_http http://axmon:8901/v1/axmon/ping http://axdb:8083/v1/axdb/version"]
+            }
+        ]'
+spec:
+    containers:
+      - name: axops-bootstrap
+        image: ${REGISTRY}/${NAMESPACE}/axops:${VERSION}
+        command: ["/axops/bin/axops_initializer", "http://axdb:8083/v1", "http://axmon:8901/v1/axmon"]
+        env:
+          - name: AX_CLUSTER
+            value: "${AX_CLUSTER_NAME_ID}"
+          - name: AXOPS_EXT_DNS
+            value: "${AXOPS_EXT_DNS}"
+          - name: AX_REGION
+            value: "${AX_AWS_REGION}"
+          - name: AX_NAMESPACE
+            value: "${NAMESPACE}"
+          - name: AX_VERSION
+            value: "${VERSION}"
+    restartPolicy: Never
+    imagePullSecrets:
+      - name: applatix-registry

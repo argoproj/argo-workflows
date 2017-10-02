@@ -354,11 +354,11 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
 
         self.cluster_size = cfg.cluster_size
         if cfg.cloud_provider == "minikube":
-            self.service_manifest_root = "/ax/config/service/basic"
-            self.platform_bootstrap_config = "/ax/config/service/config/basic-platform-bootstrap.cfg"
+            self.service_manifest_root = "/ax/config/service/argo-wfe"
+            self.platform_bootstrap_config = "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
         else:
-            self.service_manifest_root = cfg.service_manifest_root
-            self.platform_bootstrap_config = cfg.platform_bootstrap_config
+            self.service_manifest_root = "/ax/config/service/argo-all"
+            self.platform_bootstrap_config = "/ax/config/service/config/argo-all-platform-bootstrap.cfg"
 
         super(PlatformOnlyInstallConfig, self).__init__(cfg)
         self.install_config = ClusterInstallConfig(cfg=cfg)
@@ -374,6 +374,11 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
             self.bucket_endpoint = None
             self.access_key = None
             self.secret_key = None
+
+        # Overwrite the manifest_root and bootstrap_config.
+        self.install_config.manifest_root = self.service_manifest_root
+        self.install_config.bootstrap_config = self.platform_bootstrap_config
+
         return
 
     def validate(self):
