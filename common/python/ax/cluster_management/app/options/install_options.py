@@ -15,7 +15,7 @@ from ax.cloud.aws import EC2
 from ax.platform.cluster_config import AXClusterSize, AXClusterType, SpotInstanceOption
 from ax.platform.component_config import SoftwareInfo
 from .common import add_common_flags, add_software_info_flags, validate_software_info, \
-    ClusterManagementOperationConfigBase, typed_raw_input_with_default, AWS_NO_PROFILE
+    ClusterOperationDefaults, ClusterManagementOperationConfigBase, typed_raw_input_with_default, AWS_NO_PROFILE
 
 
 logger = logging.getLogger(__name__)
@@ -334,6 +334,25 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
             ))
 
         return all_errs
+
+
+class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
+    def __init__(self, cfg):
+        cfg.cluster_size = AXClusterSize.CLUSTER_USER_PROVIDED
+        super(PlatformOnlyInstallConfig, self).__init__(cfg)
+
+        self.cluster_size = cfg.cluster_size
+        if cfg.cloud_provider == "minikube":
+            self.service_manifest_root = "/ax/config/service/basic"
+            self.platform_bootstrap_config = "/ax/config/service/config/basic-platform-bootstrap.cfg"
+        else:
+            self.service_manifest_root = cfg.service_manifest_root
+            self.platform_bootstrap_config = cfg.platform_bootstrap_config
+
+        return
+
+    def validate(self):
+        return None
 
 
 def add_install_flags(parser):

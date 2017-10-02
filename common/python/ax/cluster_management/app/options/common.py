@@ -118,7 +118,7 @@ def add_common_flags(parser):
     assert isinstance(parser, argparse.ArgumentParser)
     parser.add_argument("--cluster-name", default=None, help="Target Argo cluster name")
     parser.add_argument("--cluster-id", default=None, help="A pre-generated cluster id")
-    parser.add_argument("--cloud-provider", default=ClusterOperationDefaults.CLOUD_PROVIDER, help="Cloud type: aws or gcp")
+    parser.add_argument("--cloud-provider", default=ClusterOperationDefaults.CLOUD_PROVIDER, help="Cloud type: aws or minikube")
     parser.add_argument("--cloud-profile", default=None, help="Cloud profile name (e.g. aws profile)")
     parser.add_argument("--dry-run", default=False, action="store_true", help="Dry run operation")
     parser.add_argument("--silent", "-s", default=False, action="store_true", help="Perform cluster management operation using silent mode (automatically fill in defaults)")
