@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HasLayoutSettings, LayoutSettings } from '../../layout';
-import { Configuration } from '../../../model';
-import { AuthenticationService, ConfigsService, ModalService } from '../../../services';
+import { Configuration, ViewPreferences } from '../../../model';
+import { AuthenticationService, ConfigsService, ModalService, ViewPreferencesService } from '../../../services';
 import { ViewUtils } from '../../../common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { DropdownMenuSettings, NotificationsService } from 'argo-ui-lib/src/components';
@@ -20,6 +20,7 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
     public currentUser: string;
     public create: boolean;
 
+    private viewPreferences: ViewPreferences;
     private showMyOnly: boolean;
 
     constructor(
@@ -29,11 +30,14 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
         private configsService: ConfigsService,
         private modalService: ModalService,
         private notificationsService: NotificationsService,
+        private viewPreferencesService: ViewPreferencesService,
     ) {}
 
-    public ngOnInit() {
+    public async ngOnInit() {
         this.currentUser = this.authenticationService.getUsername();
+        this.viewPreferences = await this.viewPreferencesService.getViewPreferences();
         this.activatedRoute.params.subscribe(async params => {
+            let viewPreferencesFilterState = this.viewPreferences.filterStateInPages['/app/config-management'] || {};
             let edit = params['edit'] || '';
             this.create = false;
             if (edit) {
@@ -47,11 +51,18 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
                 this.selectedConfig = null;
             }
 
-            let showMyOnly = params['showMyOnly'] === 'true' ? true : false;
+            let showMyOnly = params['showMyOnly'] ?
+                params['showMyOnly'] === 'true' : viewPreferencesFilterState.filters.indexOf('myown') > -1;
             if (this.showMyOnly !== showMyOnly) {
-                this.toolbarFilters.model = params['showMyOnly'] === 'true' ? ['myown'] : [];
+                this.toolbarFilters.model = showMyOnly ? ['myown'] : [];
                 this.showMyOnly = showMyOnly;
                 this.loadConfigurations();
+
+                this.viewPreferencesService.updateViewPreferences(v => {
+                    v.filterStateInPages['/app/config-management'] = {
+                        filters: this.toolbarFilters.model,
+                    };
+                });
             }
         });
     }

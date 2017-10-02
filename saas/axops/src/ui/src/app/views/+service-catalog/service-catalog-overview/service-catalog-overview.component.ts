@@ -72,16 +72,21 @@ export class ServiceCatalogOverviewComponent implements OnInit, OnDestroy, Layou
     public async ngOnInit() {
         this.viewPreferences = await this.viewPreferencesService.getViewPreferences();
         this.activatedRoute.params.subscribe(params => {
+            let viewPreferencesFilterState = this.viewPreferences.filterStateInPages['/app/applications'] || {};
             this.serviceCatalog = [];
             [this.selectedRepo, this.selectedBranch] = ViewUtils.getSelectedRepoBranch(params, this.viewPreferences);
             this.branchesFormattedSelection = BranchesFiltersComponent.formatSelection(this.selectedRepo, this.selectedBranch, 'templates');
             this.loading = true;
-            if (params['filters']) {
-                this.toolbarFilters.model = decodeURIComponent(params['filters']).split(',');
-            }
+            this.toolbarFilters.model = params['filters'] ?
+                decodeURIComponent(params['filters']).split(',') : viewPreferencesFilterState.filters || [];
             this.loading = true;
             this.loadTemplates(0);
-            this.viewPreferencesService.updateViewPreferences(v => Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo }));
+            this.viewPreferencesService.updateViewPreferences(v => {
+                Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo });
+                v.filterStateInPages['/app/applications'] = {
+                    filters: this.toolbarFilters.model,
+                };
+            });
         });
 
         this.subscriptions.push(this.viewPreferencesService.getViewPreferencesObservable().subscribe(viewPreferences => {
