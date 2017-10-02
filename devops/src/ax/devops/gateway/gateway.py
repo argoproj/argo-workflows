@@ -47,7 +47,7 @@ class Gateway(object):
 
     CLUSTER_NAME_ID = os.environ.get('AX_CLUSTER')
     CUSTOMER_ID = os.environ.get('AX_CUSTOMER_ID')
-    S3_BUCKET_NAME = 'applatix-cluster-{account}-{seq}'.format(account=CUSTOMER_ID, seq=0)
+    S3_BUCKET_NAME = os.getenv("ARGO_DATA_BUCKET_NAME") or 'applatix-cluster-{account}-{seq}'.format(account=CUSTOMER_ID, seq=0)
     s3_bucket = boto3.resource('s3').Bucket(S3_BUCKET_NAME)
 
     def __init__(self):
