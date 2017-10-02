@@ -47,7 +47,7 @@ class AXClusterId(with_metaclass(Singleton, object)):
 
         # Set bucket
         self._customer_id = AXCustomerId().get_customer_id()
-        self._bucket_name = self._bucket_template.format(account=self._customer_id, seq=0)
+        self._bucket_name = os.getenv("ARGO_DATA_BUCKET_NAME") or self._bucket_template.format(account=self._customer_id, seq=0)
         self._bucket = None
 
         # These values will be set when user calls get/create cluster name id

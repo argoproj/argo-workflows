@@ -90,7 +90,7 @@ class AXUpgradeConfigPath(with_metaclass(Singleton, AXConfigBase)):
     def __init__(self, name_id):
         super(AXUpgradeConfigPath, self).__init__(name_id)
         self._bucket_template = "applatix-upgrade-{account}-{seq}"
-        self._bucket_name = self._bucket_template.format(account=self._account, seq=0)
+        self._bucket_name = os.getenv("ARGO_DATA_BUCKET_NAME") or self._bucket_template.format(account=self._account, seq=0)
         self._external = True
         logger.info("Using AX upgrade config path %s", self._bucket_name)
 
@@ -128,7 +128,7 @@ class AXClusterConfigPath(with_metaclass(Singleton, AXConfigBase)):
     def __init__(self, name_id):
         super(AXClusterConfigPath, self).__init__(name_id)
         self._bucket_template = "applatix-cluster-{account}-{seq}"
-        self._bucket_name = self._bucket_template.format(account=self._account, seq=0)
+        self._bucket_name = os.getenv("ARGO_DATA_BUCKET_NAME") or self._bucket_template.format(account=self._account, seq=0)
         self._external = False
         logger.info("Using AX cluster config path %s", self._bucket_name)
 
@@ -188,7 +188,7 @@ class AXClusterDataPath(with_metaclass(Singleton, AXConfigBase)):
     def __init__(self, name_id):
         super(AXClusterDataPath, self).__init__(name_id)
         self._bucket_template = "applatix-data-{account}-{seq}"
-        self._bucket_name = self._bucket_template.format(account=self._account, seq=0)
+        self._bucket_name = os.getenv("ARGO_DATA_BUCKET_NAME") or self._bucket_template.format(account=self._account, seq=0)
         self._external = False
         logger.info("Using AX cluster data path %s", self._bucket_name)
 
