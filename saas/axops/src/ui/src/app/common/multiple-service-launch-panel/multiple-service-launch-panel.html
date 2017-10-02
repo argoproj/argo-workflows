@@ -167,9 +167,9 @@
                             <h3 *ngIf="!templateLoader && allFormsHtml.length > 0">
                                 <i class="fa fa-window-maximize" aria-hidden="true"></i>{{ templatesToSubmit[activeElementId]?.name }}
                             </h3>
-                            <h4 *ngIf="!templateLoader && allFormsHtml.length === 0">
-                                There is no parameters.
-                            </h4>
+                            <h3 *ngIf="!templateLoader && isActiveFormEmpty">
+                                There are no parameters.
+                            </h3>
                             <ax-loader-custom [size]="20" *ngIf="templateLoader"></ax-loader-custom>
 
                             <div class="forms">

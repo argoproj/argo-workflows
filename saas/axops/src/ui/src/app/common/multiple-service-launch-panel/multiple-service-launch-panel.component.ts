@@ -290,6 +290,10 @@ export class MultipleServiceLaunchPanelComponent {
         }
     }
 
+    get isActiveFormEmpty(): boolean {
+        return this.allForms.controls[this.activeElementId] && Object.keys(this.allForms.controls[this.activeElementId]['controls']).length === 0;
+    }
+
     listParameters(formControl: FormControl) {
         let parameters: any = {};
         _.forOwn(formControl, (value, key) => {
