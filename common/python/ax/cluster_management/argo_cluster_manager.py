@@ -13,7 +13,7 @@ from ax.cloud import Cloud
 from ax.cloud.aws import SecurityToken
 from ax.util.const import COLOR_NORM, COLOR_RED
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
-    CommonClusterOperations
+    CommonClusterOperations, PlatformOnlyInstaller
 from .app.options import add_install_flags, add_platform_only_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
     add_restart_flags, PlatformOnlyInstallConfig, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
     add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
@@ -133,7 +133,7 @@ class ArgoClusterManager(object):
     def install_platform_only(self, args):
         logger.info("Installing platform only ...")
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)
-        # TODO(shri): Do more with platform_install_config!
+        PlatformOnlyInstaller(platform_install_config).run()
         return
 
     @staticmethod
