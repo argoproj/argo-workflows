@@ -28,8 +28,6 @@ def validate_usr_args(usr_args):
     Validates the arguments provided by the user.
     """
     assert usr_args.cloud.lower() == Cloud.CLOUD_AWS, "Only AWS is currently supported."
-    assert usr_args.scaling_groups is not None and len(usr_args.scaling_groups) > 0, \
-        "At least 1 scaling group is needed"
 
 def set_missing_params(usr_args):
     if not usr_args.region:

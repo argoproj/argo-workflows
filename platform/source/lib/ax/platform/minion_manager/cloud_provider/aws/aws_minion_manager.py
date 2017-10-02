@@ -546,7 +546,8 @@ class AWSMinionManager(MinionManagerBase):
         """Entrypoint for the AWS specific minion-manager."""
         logger.info("Running AWS Minion Manager")
 
-        self.start()
+        if self._scaling_groups and len(self._scaling_groups) > 0:
+            self.start()
 
         self.bid_advisor.run()
 
