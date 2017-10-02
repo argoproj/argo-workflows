@@ -46,7 +46,6 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             [this.selectedRepo, this.selectedBranch] = ViewUtils.getSelectedRepoBranch(params, this.viewPreferences);
             this.currentView = params['view'] || viewPreferencesFilterState.currentView || 'commit';
             this.jobFilter = new JobFilter();
-            this.layoutDateRange.isAllDates = this.currentView !== 'overview';
 
             let date = {};
             if (params['days'] && params['date']) {
@@ -56,7 +55,12 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
                 date = viewPreferencesFilterState.date;
             }
 
-            this.layoutDateRange.data = DateRange.fromRouteParams(date, -1);
+            // hide "all" option in date range if it's a "overview" tab
+            this.layoutDateRange.isAllDates = this.currentView !== 'overview';
+            // "overview" tab doesn't have "all" date range, so if we navigate to this tab and the time range is set to "all", we need to change it to "today"
+            if (this.currentView === 'overview' && this.layoutDateRange.data.isAllDates) {
+                this.layoutDateRange.data = DateRange.fromRouteParams(DateRange.today().toRouteParams(), -1);
+            }
 
             this.updateFiltersByView(this.currentView);
             this.toolbarFilters.model = [];
@@ -70,7 +74,6 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             if (this.showMyOnly) {
                 this.toolbarFilters.model.push('showMyOnly');
             }
-
             for (let status of Object.keys(this.jobFilter)) {
                 if (params.hasOwnProperty(status)) {
                     this.jobFilter[status] = params[status] === 'true';
@@ -82,16 +85,12 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
                     this.toolbarFilters.model.push(status);
                 }
             }
-
             this.globalSearch.next({
                 suppressBackRoute: false,
                 keepOpen: false,
                 searchCategory: this.getCategoryByView(this.currentView),
             });
 
-            if (this.currentView === 'overview' && this.layoutDateRange.data.isAllDates) {
-                this.router.navigate(['/app/timeline', this.getRouteParams( DateRange.today().toRouteParams())]);
-            }
             this.branchesContext = this.viewPreferences.filterState.branches === 'my' ? this.viewPreferences.favouriteBranches : null;
             this.viewPreferencesService.updateViewPreferences(v => {
                 Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo });

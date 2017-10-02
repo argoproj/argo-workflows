@@ -27,15 +27,16 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
     @Input()
     public jobFilter: JobFilter = new JobFilter();
     @Input()
-    public branchesContext: Branch[];
 
+    public branchesContext: Branch[];
     public hideLabels: boolean = true;
-    private tasks: Task[];
+    public dataLoaded: boolean = false;
+    public showLoaderMockup: boolean = false;
+    public tasks: Task[];
     private tasksBuffer: Task[] = [];
     private idToTask: Map<string, Task> = new Map<string, Task>();
     private canScroll: boolean = false;
     private offset: number = 0;
-    private dataLoaded: boolean = false;
     private eventsSubscription: Subscription;
     private getTasksSubscription: Subscription;
 
@@ -75,6 +76,7 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
             this.tasksBuffer = [];
             this.tasks = [];
             this.offset = 0;
+            this.showLoaderMockup = true;
         }
         let tasksObservable: Observable<Task[]>;
         // Client side pagination for active tasks. This is required since backend does not support active tasks pagination.
@@ -135,6 +137,7 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
             this.idToTask = new Map<string, Task>();
             (this.tasks || []).forEach(task => this.idToTask.set(task.id, task));
             this.dataLoaded = true;
+            this.showLoaderMockup = false;
         });
     }
 

@@ -26,6 +26,7 @@ from ax.platform.operations import Operation
 from ax.platform.pod import PodSpec, Pod
 from ax.platform.resources import AXResources
 from ax.platform.routes import InternalRoute, ExternalRoute, ExternalRouteVisibility
+from ax.platform.secrets import SecretResource
 from ax.platform.volumes import AXNamedVolumeResource
 from ax.util.converter import string_to_dns_label
 
@@ -76,6 +77,7 @@ class Deployment(object):
 
         self._app_obj = Application(application)
 
+        self._resources = AXResources()
         self.spec = None
 
     def create(self, spec):
@@ -106,13 +108,13 @@ class Deployment(object):
             self._template_checks()
 
             # First create supplemental resources such as routes, ingress rules etc
-            resources = self._create_deployment_resources()
+            self._create_deployment_resources()
 
             # Now create the deployment spec
             d_spec = self._create_deployment_spec()
 
             # Store the resources in the deployment spec
-            resources.finalize(d_spec)
+            self._resources.finalize(d_spec)
 
             # Create the deployment object in kubernetes
             create_in_provider(d_spec)
@@ -294,6 +296,8 @@ class Deployment(object):
 
         artifacts_container = pod_spec.enable_artifacts(self._software_info.image_namespace, self._software_info.image_version,
                                                         None, main_container.to_dict())
+        secret_resources = artifacts_container.add_configs_as_vols(main_container.get_all_configs(), self.name, self.application)
+        self._resources.insert_all(secret_resources)
 
         # Set up special circumstances based on annotations
         # Check if we need to circumvent the executor script. This is needed for containers that run
@@ -356,8 +360,7 @@ class Deployment(object):
         logger.info("Generated Kubernetes spec for deployment %s", self.name)
         return k8s_spec
 
-    @staticmethod
-    def _create_main_container_spec(container_template):
+    def _create_main_container_spec(self, container_template):
         """
         :type container_template: argo.template.v1.container.ContainerTemplate
         :rtype Container
@@ -380,7 +383,14 @@ class Deployment(object):
 
         # envs from user spec
         for env in container_template.env:
-            container_spec.add_env(env.name, value=env.value)
+            (cfg_ns, cfg_name, cfg_key) = env.get_config()
+            if cfg_ns is not None:
+                secret = SecretResource(cfg_ns, cfg_name, self.name, self.application)
+                secret.create()
+                self._resources.insert(secret)
+                container_spec.add_env(env.name, value_from_secret=(secret.get_resource_name(), cfg_key))
+            else:
+                container_spec.add_env(env.name, value=env.value)
 
         # Unix socket for applet
         applet_sock = ContainerVolume("applet", "/tmp/applatix.io/")
@@ -448,7 +458,6 @@ class Deployment(object):
         return deployment_obj
 
     def _create_deployment_resources(self):
-        res = AXResources()
 
         for route in self.spec.template.internal_routes:
             # ignore empty port spec
@@ -457,7 +466,7 @@ class Deployment(object):
                 continue
             ir = InternalRoute(route.name, self.application)
             ir.create(route.to_dict()["ports"], selector={"deployment": self.name}, owner=self.name)
-            res.insert(ir)
+            self._resources.insert(ir)
             logger.debug("Created route {}".format(ir))
 
         for route in self.spec.template.external_routes:
@@ -478,7 +487,7 @@ class Deployment(object):
                     raise AXNotFoundException("Please create a private ELB using the template named 'ax_private_elb_creator_workflow' before using 'visibility=organization'")
 
             name = r.create(elb_addr,elb_name=elb_name)
-            res.insert(r)
+            self._resources.insert(r)
             logger.debug("Created external route {} for {}/{}/{}".format(name, self.application, self.name, dns_name))
 
         main_container = self.spec.template.get_main_container()
@@ -489,10 +498,8 @@ class Deployment(object):
             assert name is not None and resource_id is not None, "axrn and resource_id are required details for volume {}".format(key_name)
             nv_res = AXNamedVolumeResource(name, resource_id)
             nv_res.create()
-            res.insert(nv_res)
+            self._resources.insert(nv_res)
             logger.debug("Using named volume resource {} in application {}".format(name, self.application))
-
-        return res
 
     @retry_unless(status_code=[422], swallow_code=[400, 404])
     def _scale_to(self, replicas):

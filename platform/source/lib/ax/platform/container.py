@@ -83,6 +83,11 @@ class ContainerVolume(object):
         volume_spec.name = volume_name
         self.vol.aws_elastic_block_store = volume_spec
 
+    def _secret(self, secret_name):
+        volume_spec = swagger_client.V1SecretVolumeSource()
+        volume_spec.secret_name = secret_name
+        self.vol.secret = volume_spec
+
     def __init__(self, name, mount_path):
         self.name = name
         self.vol = swagger_client.V1Volume()
@@ -100,6 +105,7 @@ class ContainerVolume(object):
             "DOCKERGRAPHSTORAGE": self._docker_graph_storage,
             "PVC": self._pvc,
             "AWS_EBS": self._aws_ebs,
+            "SECRET": self._secret,
         }
         self.set_type("UNSET")
 
@@ -229,18 +235,25 @@ class Container(KubeObject):
     def get_volume(self, name):
         return self.vmap.get(name, None)
 
-    def add_env(self, name, value=None, value_from=None):
+    def add_env(self, name, value=None, value_from=None, value_from_secret=None):
         env = swagger_client.V1EnvVar()
         env.name = name
         if value is not None:
             env.value = value
-        else:
-            assert value_from is not None, "value and value_from both cannot be None for env {}".format(name)
+        elif value_from is not None:
             env.value_from = swagger_client.V1EnvVarSource()
             env.value_from.field_ref = swagger_client.V1ObjectFieldSelector()
             env.value_from.field_ref.field_path = value_from
             # Some 1.5 requires this. https://github.com/kubernetes/kubernetes/issues/39189
             env.value_from.field_ref.api_version = "v1"
+        elif value_from_secret is not None:
+            value_from = swagger_client.V1EnvVarSource()
+            value_from.secret_key_ref = swagger_client.V1SecretKeySelector()
+            value_from.secret_key_ref.name = value_from_secret[0]
+            value_from.secret_key_ref.key = value_from_secret[1]
+            env.value_from = value_from
+        else:
+            raise ValueError("Environment {} in container {} needs to have a valid value/value_from/value_from_secret".format(name, self.name))
 
         self.env_map[name] = env
 

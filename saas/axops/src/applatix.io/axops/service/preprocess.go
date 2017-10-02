@@ -295,7 +295,6 @@ func buildReplaceMap(tmpl EmbeddedTemplateIf, arguments template.Arguments) (map
 		unresolved := template.VarRegex.FindAllString(*val, -1)
 		for _, varName := range unresolved {
 			if template.HasGlobalScope(varName) {
-				// We should never get here since global variables replacement should have happened by now
 				utils.DebugLog.Printf("Found unresolved global variable: %s", varName)
 			} else {
 				utils.DebugLog.Printf("Found unresolved variable: %s", varName)
@@ -442,12 +441,16 @@ func SubstituteGlobalVariables(tmpl EmbeddedTemplateIf, arguments template.Argum
 	// Create a replace map with all the configuration variables
 	for _, varName := range configVars {
 		if _, ok := replaceMap[varName]; !ok {
-			// Check whether configuration is valid
-			configContext, axErr := configuration.ProcessConfigurationStr(varName)
+			configVal, axErr := configuration.ProcessConfigurationStr(varName)
 			if axErr != nil {
 				return nil, axErr
 			}
-			replaceMap[varName] = &configContext
+			if configVal == nil {
+				// nil value indicates config is a secret
+				// skip, since secret substitution is handled at platform
+				continue
+			}
+			replaceMap[varName] = configVal
 		}
 	}
 

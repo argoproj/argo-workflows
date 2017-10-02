@@ -42,6 +42,8 @@ from ax.platform.volumes import VolumeManager
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.cloudprovider.aws import Route53, Route53HostedZone
 from ax.platform.routes import ExternalRoute
+from ax.platform.secrets import ConfigToSecret
+
 import requests
 from ax.cloud.aws.elb import ManagedElb, visibility_to_elb_addr
 from werkzeug.exceptions import BadRequest
@@ -529,6 +531,38 @@ def task_logs(task_id):
     Get the log endpoint for a running task
     """
     return jsonify(result=axmon.task_log(task_id))
+
+
+@_app.route("/v1/axmon/secret", methods=['POST'])
+def secret_create():
+    """
+    Create a secret from a config. Post data should have the following keys:
+    namespace: the config namespace
+    name: the config name
+    data: a dict of key:val pairs
+    metadata: a dict of key:val pairs (optional)
+    """
+    (namespace, name, data, ) = _get_required_arguments("namespace", "name", "data")
+    (metadata, ) = _get_optional_arguments("metadata")
+    secret = ConfigToSecret(namespace, name)
+    secret.create(data, metadata=metadata)
+    return jsonify(result="ok")
+
+
+@_app.route("/v1/axmon/secret/<namespace>/<name>", methods=['DELETE'])
+def secret_delete(namespace, name):
+    secret = ConfigToSecret(namespace, name)
+    secret.delete()
+    return jsonify(result="ok")
+
+
+@_app.route("/v1/axmon/secret/<namespace>/<name>", methods=['GET'])
+def secret_get(namespace, name):
+    secret = ConfigToSecret(namespace, name)
+    (data, metadata) = secret.get()
+    data = data or {}
+    metadata = metadata or {}
+    return jsonify(data=data, metadata=metadata)
 
 
 @_app.route("/v1/axmon/volume/<volume_id>", methods=['POST'])

@@ -9,6 +9,7 @@ from ax.cloud import Cloud
 from ax.meta import AXClusterId, AXCustomerId
 from ax.platform.container import Container, ContainerVolume
 from ax.platform.component_config import SoftwareInfo
+from ax.platform.secrets import SecretResource
 
 AX_DOCKER_GRAPH_STORAGE_THRESHOLD_DEFAULT = "0.5"
 
@@ -133,6 +134,23 @@ class InitContainerTask(ArtifactsContainer):
 
         # set the arguments
         self.args = ["pre"]
+
+    def add_configs_as_vols(self, configs, step_name, step_ns):
+        """
+        Some configs will be passed as secrets and these need to be loaded
+        into the init container so that init container can convert the params
+        in command and args to the necessary secret
+        :param configs: A list of tuples of (config_namespace, config_name)
+        """
+        res_list = []
+        for (cfg_ns, cfg_name) in configs or []:
+            res = SecretResource(cfg_ns, cfg_name, step_name, step_ns)
+            res.create()
+            vol = ContainerVolume(res.get_resource_name(), "/ax_secrets/{}/{}".format(cfg_ns, cfg_name))
+            vol.set_type("SECRET", res.get_resource_name())
+            self.add_volume(vol)
+            res_list.append(res)
+        return res_list
 
 
 class InitContainerSetup(Container):

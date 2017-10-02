@@ -10,16 +10,16 @@
                 <ax-job [task]="task" [hideLabels]="hideLabels" [extendedCommiterInfo]="!!task.commit.author"></ax-job>
             </div>
 
-            <ax-loader-custom [size]="20" *ngIf="!dataLoaded" class="jobs-overview__loader"></ax-loader-custom>
-            <div *ngIf="dataLoaded && !tasks.length" class="no-data-panel">
+            <ax-loader-custom [size]="20" *ngIf="!dataLoaded && !showLoaderMockup" class="jobs-overview__loader"></ax-loader-custom>
+            <div *ngIf="dataLoaded && !tasks.length && !showLoaderMockup" class="no-data-panel">
                 <strong><i class="fa fa-info-circle"></i>{{ 'No data to display' | translate }}</strong>
             </div>
         </div>
     </div>
 
-    <div class="ax-container" *ngIf="!tasks">
+    <div class="ax-container jobs-overview__loader-adjust" *ngIf="showLoaderMockup">
         <div class="stream">
-            <ax-loader-list-mockup [itemHeight]="150"></ax-loader-list-mockup>
+            <ax-loader-list-mockup [itemHeight]="168" [itemGap]="56" [itemsLength]="10"></ax-loader-list-mockup>
         </div>
     </div>
 </div>
