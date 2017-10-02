@@ -94,7 +94,8 @@ export class ViewPreferencesService {
             isIntroductionCompleted: false,
             playgroundTask: null,
             mostRecentNotificationsViewTime: 0,
-            filterState: { branches: <'all' | 'my'> 'all'}
+            filterState: { branches: <'all' | 'my'> 'all'},
+            filterStateInPages: {},
         };
         let userPrefs = view_preferences || {};
         for (let key in view_preferences) {
