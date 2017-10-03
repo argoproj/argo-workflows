@@ -836,7 +836,7 @@ class ContainerOuterExecutor(object):
                 logger.info("Looking for secret {} {} {}".format(cfg_ns, cfg_name, cfg_key))
                 secret_val = self._get_secret_from_file(cfg_ns, cfg_name, cfg_key)
                 logger.info("Replacing secret {} {} {}".format(cfg_ns, cfg_name, cfg_key))
-                real_cmd_show_replaced = re.sub(r"%%config\..+?\.[A-Za-z0-9-]+\.[A-Za-z0-9-]+%%", secret_val, real_cmd_show_replaced)
+                real_cmd_show_replaced = re.sub(r"%%config\.{}\.{}\.{}%%".format(cfg_ns, cfg_name, cfg_key), secret_val, real_cmd_show_replaced)
 
             with open(self._container_command_list_file, "w+", encoding="utf8") as the_file:
                 the_file.write(real_cmd_show_replaced)
