@@ -39,7 +39,6 @@ export { ServicesModule } from './services.module';
 export { ArtifactsService } from './artifacts.service';
 export { ContentService, DocUrls } from './content.service';
 export { GlobalSearchService } from './global-search.service'
-export { SecretService } from './secret.service';
 export { SlackService } from './slack.service';
 export * from './playground-info.service';
 export * from './system-request.service';

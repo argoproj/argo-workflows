@@ -10,7 +10,6 @@ import {
     NotificationService,
     PlaygroundInfoService,
     PlaygroundTaskInfo,
-    SecretService,
     ViewPreferencesService,
     AuthenticationService,
     SharedService
@@ -90,7 +89,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
             private launchPanelService: LaunchPanelService,
             private slidingPanelService: SlidingPanelService,
             private jiraService: JiraService,
-            private secretService: SecretService,
             private playgroundInfoService: PlaygroundInfoService,
             private notificationService: NotificationService,
             private viewPreferencesService: ViewPreferencesService,

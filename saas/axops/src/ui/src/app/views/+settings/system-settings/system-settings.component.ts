@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormArray, FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
-import { SystemService, NotificationService, ToolService, ModalService, SecretService, AuthenticationService } from '../../../services';
+import { SystemService, NotificationService, ToolService, ModalService, AuthenticationService } from '../../../services';
 import { CertificateTool } from '../../../model';
 import { LayoutSettings, HasLayoutSettings } from '../../layout/layout.component';
 import { CustomRegex } from '../../../common';
@@ -16,7 +16,6 @@ import { ToasterService } from 'angular2-toaster/angular2-toaster';
 export class SystemSettingsComponent implements OnInit, HasLayoutSettings, LayoutSettings {
     public systemSettingsEditSubmitted: boolean;
     public certEditSubmitted: boolean;
-    public secretManagementSubmitted: boolean;
     public loginSubmitted: boolean;
     public encryptionKey: string;
     public needRelogin: boolean = false;
@@ -27,13 +26,10 @@ export class SystemSettingsComponent implements OnInit, HasLayoutSettings, Layou
     private accessSettingsForm: FormGroup;
     private systemSettingsEditForm: FormGroup;
     private certEditForm: FormGroup;
-    private secretManagementForm: FormGroup;
-    private loginForm: FormGroup;
     private dnsName: string;
     private cert: CertificateTool = new CertificateTool();
     private isEdit: boolean = false;
     private category: string = 'certificate';
-    private showEncryptionKeyPopup = false;
 
     constructor(
             private systemService: SystemService,
@@ -41,31 +37,8 @@ export class SystemSettingsComponent implements OnInit, HasLayoutSettings, Layou
             private toolService: ToolService,
             private modalService: ModalService,
             private activatedRoute: ActivatedRoute,
-            private secretService: SecretService,
             private authenticationService: AuthenticationService,
             private toasterService: ToasterService) {
-
-        this.activatedRoute.params.subscribe(async params => {
-            let showEncryptionKeyPopup = params['encryptionKey'] === 'true';
-            if (this.showEncryptionKeyPopup !== showEncryptionKeyPopup) {
-                if (showEncryptionKeyPopup) {
-                    await this.loadEncryptionKey();
-                    this.showEncryptionKeyPopup = true;
-                } else {
-                    this.showEncryptionKeyPopup = false;
-                }
-            }
-        });
-    }
-
-    async loadEncryptionKey() {
-        try {
-            this.encryptionKey = await this.secretService.getKey();
-            this.needRelogin = false;
-        } catch (e) {
-            this.encryptionKey = '';
-            this.needRelogin = true;
-        }
     }
 
     async ngOnInit() {
@@ -77,13 +50,6 @@ export class SystemSettingsComponent implements OnInit, HasLayoutSettings, Layou
             });
         });
         this.getCertificate();
-        this.secretManagementForm = new FormGroup({
-            key: new FormControl(this.dnsName, Validators.required),
-        });
-        this.loginForm = new FormGroup({
-            username: new FormControl('', Validators.required),
-            password: new FormControl('', Validators.required),
-        });
 
         let settings = await this.systemService.getAccessSettings();
         this.accessSettingsForm = new FormGroup({
@@ -143,15 +109,6 @@ export class SystemSettingsComponent implements OnInit, HasLayoutSettings, Layou
     }, {
         title: `System Settings`,
     }];
-
-    async saveSecretManagementSettings() {
-        this.secretManagementSubmitted = true;
-        if (this.secretManagementForm.valid) {
-            await this.secretService.updateKey(this.secretManagementForm.controls['key'].value);
-            this.notificationService.showNotification.emit(
-                    { message: `Encryption key was successfully updated.` });
-        }
-    }
 
     /**
      * Do save/edit action for system settings
@@ -242,20 +199,5 @@ export class SystemSettingsComponent implements OnInit, HasLayoutSettings, Layou
                 this.certEditForm.updateValueAndValidity();
             }
         );
-    }
-
-    async relogin(useSaml: boolean) {
-        if (useSaml) {
-            await this.authenticationService.triggerSAMLLogin().toPromise();
-        } else {
-            try {
-                await this.authenticationService.login(
-                    this.loginForm.controls['username'].value,
-                    this.loginForm.controls['password'].value).toPromise();
-                await this.loadEncryptionKey();
-            } catch (e) {
-                this.toasterService.pop('error', 'Wrong credentials.');
-            }
-        }
     }
 }
