@@ -2,7 +2,6 @@ import * as moment from 'moment';
 import { Component, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { Subject, Subscription, Observable } from 'rxjs';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
 
 import { DropdownMenuSettings, SlidingPanelService, DateRange } from 'argo-ui-lib/src/components';
 import { GlobalSearchSetting, LaunchPanelService, MultipleServiceLaunchPanelComponent, JiraIssueCreatorPanelComponent, JiraIssuesPanelComponent } from '../../common';
@@ -11,7 +10,6 @@ import {
     NotificationService,
     PlaygroundInfoService,
     PlaygroundTaskInfo,
-    RepoService,
     SecretService,
     ViewPreferencesService,
     AuthenticationService,
@@ -75,16 +73,12 @@ export class LayoutComponent implements OnInit, OnDestroy {
     public hiddenScrollbar: boolean;
     public openedPanelOffCanvas: boolean;
     public tutorialVisible: boolean;
-    public encryptionToolVisible: boolean = false;
-    public encryptedSecret: string = '';
     public repos: string[] = [];
     public reposLoaded: boolean;
     public playgroundTask: PlaygroundTaskInfo = null;
     public showNotificationsCenter: boolean;
     public mostRecentEventTime: moment.Moment = moment.unix(0);
     public mostRecentNotificationsViewTime: moment.Moment = moment.unix(0);
-    public encryptForm: FormGroup;
-    public encryptFormSubmitted: boolean;
     public openedNav: boolean;
     public branchNavPanelOpened = false;
 
@@ -97,17 +91,11 @@ export class LayoutComponent implements OnInit, OnDestroy {
             private slidingPanelService: SlidingPanelService,
             private jiraService: JiraService,
             private secretService: SecretService,
-            private repoService: RepoService,
             private playgroundInfoService: PlaygroundInfoService,
             private notificationService: NotificationService,
             private viewPreferencesService: ViewPreferencesService,
             private authenticationService: AuthenticationService,
             private sharedService: SharedService) {
-
-        this.encryptForm = new FormGroup({
-            repo: new FormControl('', Validators.required),
-            secret: new FormControl('', Validators.required),
-        });
 
         this.subscriptions.push(router.events.subscribe(event => {
             if (event instanceof NavigationEnd) {
@@ -125,19 +113,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
         this.subscriptions.push(route.queryParams.subscribe(async queryParams => {
             this.tutorialVisible = queryParams['tutorial'] === 'true';
-            let encryptionToolVisible = queryParams['encryptionTool'] === 'true';
-            if (this.encryptionToolVisible !== encryptionToolVisible) {
-                this.encryptionToolVisible = encryptionToolVisible;
-                this.encryptedSecret = '';
-                if (this.encryptionToolVisible) {
-                    this.encryptForm.reset();
-                    this.encryptFormSubmitted = false;
-                    this.reposLoaded = false;
-                    let res = await this.repoService.getReposAsync(true).toPromise();
-                    this.repos = res.data;
-                    this.reposLoaded = true;
-                }
-            }
         }));
 
         this.subscriptions.push(playgroundInfoService.getPlaygroundTaskInfo().subscribe(info => {
@@ -200,21 +175,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
         this.subscriptions = [];
     }
 
-    public getReposMenu(): DropdownMenuSettings {
-        let items = this.repos.map(repo => ({
-            title: repo,
-            action: async () => {
-                this.encryptForm.controls['repo'].setValue(repo);
-            },
-            iconName: 'ax-icon-branch',
-        }));
-        return new DropdownMenuSettings(items);
-    }
-
-    public closeEncryptionTool() {
-        this.router.navigate([], { queryParams: { encryptionTool: 'false' } });
-    }
-
     public openBranchNavPanel() {
         this.branchNavPanelOpened = true;
     }
@@ -238,12 +198,5 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
     public get animateNotificationIcon(): boolean {
         return this.mostRecentEventTime.isAfter(this.mostRecentNotificationsViewTime);
-    }
-
-    public async onEncryptFormSubmit(form: FormGroup) {
-        this.encryptFormSubmitted = true;
-        if (form.valid) {
-            this.encryptedSecret = await this.secretService.encrypt(form.value.secret, form.value.repo);
-        }
     }
 }
