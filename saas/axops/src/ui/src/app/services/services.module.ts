@@ -45,7 +45,6 @@ import { RetentionPolicyService } from './retention-policy.service';
 import { ContentService } from './content.service';
 import { VolumesService } from './volumes.service';
 import { GlobalSearchService } from './global-search.service';
-import { SecretService } from './secret.service';
 import { PlaygroundInfoService } from './playground-info.service';
 import { TrackingService } from './tracking.service';
 import { SlackService } from './slack.service';
@@ -95,7 +94,6 @@ import { SystemRequestService } from './system-request.service';
         RetentionPolicyService,
         VolumesService,
         GlobalSearchService,
-        SecretService,
         TrackingService,
         PlaygroundInfoService,
         {
