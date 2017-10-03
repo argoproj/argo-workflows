@@ -18,43 +18,7 @@
 <ax-tutorial *ngIf="tutorialVisible"></ax-tutorial>
 <ax-jira-issues-panel></ax-jira-issues-panel>
 <ax-jira-issue-creator-panel></ax-jira-issue-creator-panel>
-<ax-sliding-panel [show]="encryptionToolVisible" (closePanel)="closeEncryptionTool()">
-    <sliding-panel-body>
-        <form role="form" [formGroup]="encryptForm" (ngSubmit)="onEncryptFormSubmit(encryptForm)">
-            <h2>Encrypt Secret</h2>
-            <div class="ax-form-row">
-                <label>Repository</label>
-                <div class="ax-field">
-                    <ax-dropdown-menu [settings]="getReposMenu()" *ngIf="reposLoaded">
-                        {{ encryptForm.value.repo ? encryptForm.value.repo : 'Select repository' }}
-                        <i class="fa fa-caret-down" aria-hidden="true"></i>
-                    </ax-dropdown-menu>
-                    <ax-loader-custom [size]="22" [position]="'unspecified'" *ngIf="!reposLoaded"></ax-loader-custom>
-                </div>
-                <div class="ax-form-row__error-msg"
-                     *ngIf="!encryptForm.controls['repo'].valid && (encryptForm.controls['repo'].touched || encryptFormSubmitted)">
-                    Repository is required<i class="fa fa-warning"></i>
-                </div>
-            </div>
-            <div class="ax-form-row">
-                <label for="name">Secret</label>
-                <input id="name" type="text" class="ax-field" formControlName="secret" autocomplete="off">
-                <div class="ax-form-row__error-msg"
-                     *ngIf="!encryptForm.controls['secret'].valid && (encryptForm.controls['secret'].touched || encryptFormSubmitted)">
-                    Secret is required<i class="fa fa-warning"></i>
-                </div>
-            </div>
-            <div *ngIf="encryptedSecret" class="layout__secret">
-                <span>{{encryptedSecret}}</span>
-                <button type="button" axButtonWave class="ax-button ax-button--base copy-button" [attr.data-clipboard-text]="encryptedSecret" ax-copy-btn>Copy</button>
-            </div>
-            <div class="ax-form-row margin-top-large">
-                <button type="button" axButtonWave class="ax-button" (click)="closeEncryptionTool()">Done</button>
-                <button type="submit" axButtonWave class="ax-button ax-button--base">Encrypt</button>
-            </div>
-        </form>
-    </sliding-panel-body>
-</ax-sliding-panel>
+
 <div *ngIf="playgroundTask" class="layout__playground-info">
     <ax-playground-info [taskInfo]="playgroundTask"></ax-playground-info>
 </div>
