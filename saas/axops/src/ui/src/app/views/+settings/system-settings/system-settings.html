@@ -44,58 +44,6 @@
 
        <div class="row white-box">
            <div class="columns small-12 large-7">
-               <h6>Secret Management</h6>
-               <form role="form" [formGroup]="secretManagementForm" *ngIf="secretManagementForm">
-                   <div class="ax-form-row">
-                       <textarea id="encryptionKey" type="text" class="ax-field" formControlName="key" autocomplete="off" autocomplete="off" rows="13" ax-label-placeholder></textarea>
-                       <label for="encryptionKey" class="ax-label-placeholder">Encryption Key</label>
-                       <div class="ax-form-row__error-msg" *ngIf="!secretManagementForm.controls['key'].valid && (secretManagementForm.controls['key'].touched || secretManagementSubmitted)">Key is required<i class="fa fa-warning"></i></div>
-                   </div>
-                   <div class="ax-form-row margin-top-large">
-                       <button type="button" class="ax-button ax-button--base disabled" ax-tooltip="Only super admin user may see encryption key" *ngIf="!isSuperAdmin">View</button>
-                       <button type="button" axButtonWave class="ax-button ax-button--base" [routerLink]="['.', {encryptionKey: 'true'}]" *ngIf="isSuperAdmin">View</button>
-                       <button type="button" axButtonWave class="ax-button ax-button--base" (click)="saveSecretManagementSettings()">Update</button>
-                   </div>
-               </form>
-           </div>
-       </div>
-
-       <ax-popup [show]="showEncryptionKeyPopup" [width]="500">
-           <div class="system-settings__popup">
-               <div *ngIf="samlLogin && needRelogin">
-                   <button axButtonWave class="ax-button ax-button--base ax-button--full-width" (click)="relogin(true)">{{samlButtonLabel}}</button>
-                   <p class="system-settings__saml-separator">or</p>
-               </div>
-               <form [formGroup]="loginForm" *ngIf="loginForm && needRelogin">
-                   <div class="ax-form-row">
-                       <input id="username" type="text" class="ax-field" formControlName="username" autocomplete="off"
-                              ax-label-placeholder>
-                       <label for="username" class="ax-label-placeholder">Username</label>
-                       <div class="ax-form-row__error-msg" *ngIf="!loginForm.controls['username'].valid && (loginForm.controls['username'].touched || loginSubmitted)">Username is required<i class="fa fa-warning"></i></div>
-                   </div>
-                   <div class="ax-form-row">
-                       <input id="password" type="password" class="ax-field" formControlName="password" autocomplete="off"
-                              ax-label-placeholder>
-                       <label for="password" class="ax-label-placeholder">Password</label>
-                       <div class="ax-form-row__error-msg" *ngIf="!loginForm.controls['password'].valid && (loginForm.controls['password'].touched || loginSubmitted)">Password is required<i class="fa fa-warning"></i></div>
-                   </div>
-               </form>
-               <div class="ax-form-row margin-top-large" *ngIf="needRelogin">
-                   <button type="submit" axButtonWave class="ax-button ax-button--base" [routerLink]="['.', {encryptionKey: 'false'}]">Cancel</button>
-                   <button type="submit" axButtonWave class="ax-button ax-button--base" (click)="relogin(false)">Login</button>
-               </div>
-               <div class="ax-form-row margin-top-large system-settings__encryption-key" *ngIf="!needRelogin">
-                   {{encryptionKey}}
-               </div>
-               <div class="ax-form-row margin-top-large" *ngIf="!needRelogin">
-                   <button type="submit" axButtonWave class="ax-button ax-button--base" [routerLink]="['.', {encryptionKey: 'false'}]">Done</button>
-                   <button axButtonWave class="ax-button ax-button--base" [attr.data-clipboard-text]="encryptionKey" ax-copy-btn>Copy</button>
-               </div>
-           </div>
-       </ax-popup>
-
-       <div class="row white-box">
-           <div class="columns small-12 large-7">
                <h6>Set certificate</h6>
            </div>
            <div class="columns small-12 large-7">
