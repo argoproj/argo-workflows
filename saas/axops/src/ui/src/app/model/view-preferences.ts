@@ -11,4 +11,5 @@ export interface ViewPreferences {
     isIntroductionCompleted: boolean;
     playgroundTask: { jobId: string, projectId: string };
     mostRecentNotificationsViewTime: number;
+    filterStateInPages: { [key: string]: any };
 }

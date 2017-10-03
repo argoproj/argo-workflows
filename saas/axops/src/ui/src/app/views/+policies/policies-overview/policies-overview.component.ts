@@ -56,6 +56,7 @@ export class PoliciesOverviewComponent implements OnInit, OnDestroy, LayoutSetti
     public async ngOnInit() {
         this.viewPreferences = await this.viewPreferencesService.getViewPreferences();
         this.activatedRoute.params.subscribe(async params => {
+            let viewPreferencesFilterState = this.viewPreferences.filterStateInPages['/app/policies/overview'] || {};
             this.policies = [];
             this.showInvalidPanel = params['invalid'] ? false : true;
             this.invalidOnly = params['invalid'] ? true : false;
@@ -72,7 +73,7 @@ export class PoliciesOverviewComponent implements OnInit, OnDestroy, LayoutSetti
                     this.toolbarFilters = this.resetToolbarFilters();
                 }
                 this.toolbarFilters.model = params['filters'] ?
-                    decodeURIComponent(params['filters']).split(',') : [];
+                    decodeURIComponent(params['filters']).split(',') : viewPreferencesFilterState.filters || [];
                 [this.selectedRepo, this.selectedBranch] = ViewUtils.getSelectedRepoBranch(params, this.viewPreferences);
             }
 
@@ -84,7 +85,12 @@ export class PoliciesOverviewComponent implements OnInit, OnDestroy, LayoutSetti
 
             this.loading = true;
             this.getPolicies(0);
-            this.viewPreferencesService.updateViewPreferences(v => Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo }));
+            this.viewPreferencesService.updateViewPreferences(v => {
+                Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo });
+                v.filterStateInPages['/app/policies/overview'] = {
+                    filters: this.toolbarFilters.model,
+                };
+            });
 
             if (!this.invalidOnly || (this.toolbarFilters && !(this.toolbarFilters.model.length === 1 &&
                 this.toolbarFilters.model.indexOf('enabled') > -1))) {

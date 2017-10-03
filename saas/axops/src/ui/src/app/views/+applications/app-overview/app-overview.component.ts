@@ -6,9 +6,9 @@ import { ReplaySubject, Subscription } from 'rxjs';
 import { LayoutSettings } from '../../layout';
 import { DropdownMenuSettings, NotificationsService } from 'argo-ui-lib/src/components';
 
-import { Application, ACTIONS_BY_STATUS } from '../../../model';
+import { Application, ACTIONS_BY_STATUS, ViewPreferences } from '../../../model';
 import { ViewUtils, GLOBAL_SEARCH_TABS, GlobalSearchSetting } from '../../../common';
-import { ApplicationsService, ModalService } from '../../../services';
+import { ApplicationsService, ModalService, ViewPreferencesService } from '../../../services';
 
 @Component({
     selector: 'ax-app-overview',
@@ -18,6 +18,7 @@ import { ApplicationsService, ModalService } from '../../../services';
 export class AppOverviewComponent implements LayoutSettings, OnInit, OnDestroy {
     public searchString: string = null;
     public globalSearch: ReplaySubject<GlobalSearchSetting> = new ReplaySubject<GlobalSearchSetting>();
+    private viewPreferences: ViewPreferences;
 
     public toolbarFilters = {
         data: [{
@@ -56,17 +57,26 @@ export class AppOverviewComponent implements LayoutSettings, OnInit, OnDestroy {
                 private location: Location,
                 private modalService: ModalService,
                 private notificationsService: NotificationsService,
-                private applicationsService: ApplicationsService) {
-    }
+                private applicationsService: ApplicationsService,
+                private viewPreferencesService: ViewPreferencesService,
+    ) {}
 
-    public ngOnInit() {
+    public async ngOnInit() {
+        this.viewPreferences = await this.viewPreferencesService.getViewPreferences();
         this.route.params.subscribe(params => {
-            this.toolbarFilters.model = params['filters'] && params['filters'].split(',') || [];
+            let viewPreferencesFilterState = this.viewPreferences.filterStateInPages['/app/applications'] || {};
+            this.toolbarFilters.model = params['filters'] ? params['filters'].split(',') : viewPreferencesFilterState.filters || [];
 
             this.globalSearch.next({
                 suppressBackRoute: false,
                 keepOpen: false,
                 searchCategory: GLOBAL_SEARCH_TABS.APPLICATIONS.name,
+            });
+
+            this.viewPreferencesService.updateViewPreferences(v => {
+                v.filterStateInPages['/app/applications'] = {
+                    filters: this.toolbarFilters.model,
+                };
             });
 
             this.reset();

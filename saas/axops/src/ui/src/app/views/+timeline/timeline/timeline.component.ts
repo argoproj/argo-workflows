@@ -42,11 +42,19 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
     public async ngOnInit() {
         this.viewPreferences = await this.viewPreferencesService.getViewPreferences();
         this.route.params.subscribe(params => {
-            this.layoutDateRange.data = DateRange.fromRouteParams(params, -1);
+            let viewPreferencesFilterState = this.viewPreferences.filterStateInPages['/app/timeline'] || {};
             [this.selectedRepo, this.selectedBranch] = ViewUtils.getSelectedRepoBranch(params, this.viewPreferences);
-            this.currentView = params['view'] || 'commit';
-            this.showMyOnly = params['showMyOnly'] === 'true';
+            this.currentView = params['view'] || viewPreferencesFilterState.currentView || 'commit';
             this.jobFilter = new JobFilter();
+
+            let date = {};
+            if (params['days'] && params['date']) {
+                date['days'] = params['days'];
+                date['date'] = params['date'];
+            } else if (viewPreferencesFilterState.date) {
+                date = viewPreferencesFilterState.date;
+            }
+            this.layoutDateRange.data = DateRange.fromRouteParams(date, -1);
 
             // hide "all" option in date range if it's a "overview" tab
             this.layoutDateRange.isAllDates = this.currentView !== 'overview';
@@ -58,15 +66,24 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             this.updateFiltersByView(this.currentView);
             this.toolbarFilters.model = [];
 
-            if (this.showMyOnly ) {
+            if (params['showMyOnly']) {
+                this.showMyOnly = params['showMyOnly'] === 'true';
+            } else if (viewPreferencesFilterState.filters) {
+                this.showMyOnly = viewPreferencesFilterState.filters.indexOf('showMyOnly') > -1;
+            }
+
+            if (this.showMyOnly) {
                 this.toolbarFilters.model.push('showMyOnly');
             }
             for (let status of Object.keys(this.jobFilter)) {
                 if (params.hasOwnProperty(status)) {
                     this.jobFilter[status] = params[status] === 'true';
-                    if (this.jobFilter[status]) {
-                        this.toolbarFilters.model.push(status);
-                    }
+                } else if (viewPreferencesFilterState.filters) {
+                    this.jobFilter[status] = viewPreferencesFilterState.filters.indexOf(status) > -1;
+                }
+
+                if (this.jobFilter[status]) {
+                    this.toolbarFilters.model.push(status);
                 }
             }
             this.globalSearch.next({
@@ -76,7 +93,17 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             });
 
             this.branchesContext = this.viewPreferences.filterState.branches === 'my' ? this.viewPreferences.favouriteBranches : null;
-            this.viewPreferencesService.updateViewPreferences(v => Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo }));
+            this.viewPreferencesService.updateViewPreferences(v => {
+                Object.assign(v.filterState, { selectedBranch: this.selectedBranch, selectedRepo: this.selectedRepo });
+                v.filterStateInPages['/app/timeline'] = {
+                    date: {
+                        days: this.layoutDateRange.data.durationDays.toString(),
+                        date: this.layoutDateRange.data.endDate.unix().toString(),
+                    },
+                    filters: this.toolbarFilters.model,
+                    currentView: this.currentView,
+                };
+            });
         });
         this.subscriptions.push(this.viewPreferencesService.getViewPreferencesObservable().subscribe(viewPreferences => {
             this.branchesContext = viewPreferences.filterState.branches === 'my' ? viewPreferences.favouriteBranches : null;
