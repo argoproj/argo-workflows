@@ -54,6 +54,7 @@ export class TimelineComponent implements HasLayoutSettings, LayoutSettings, OnI
             } else if (viewPreferencesFilterState.date) {
                 date = viewPreferencesFilterState.date;
             }
+            this.layoutDateRange.data = DateRange.fromRouteParams(date, -1);
 
             // hide "all" option in date range if it's a "overview" tab
             this.layoutDateRange.isAllDates = this.currentView !== 'overview';
