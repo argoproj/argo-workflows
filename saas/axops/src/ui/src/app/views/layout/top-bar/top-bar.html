@@ -11,18 +11,6 @@
         </div>
         <div class="columns small-3 ax-top-bar__right-side">
             <div class="ax-top-bar__tools">
-                <div class="ax-top-bar__tool">
-                    <ax-dropdown #toolsDropDown isMenu="true">
-                        <ax-dropdown-anchor>
-                            <a><i class="ax-icon-manage"></i></a>
-                        </ax-dropdown-anchor>
-                        <ax-dropdown-content>
-                            <ul>
-                                <li [routerLink] [queryParams]="{encryptionTool: 'true'}" (click)="toolsDropDown.close()">Encryption Tool</li>
-                            </ul>
-                        </ax-dropdown-content>
-                    </ax-dropdown>
-                </div>
                 <div class="ax-top-bar__tool ax-top-bar__tool--notifications-center"
                      [class.ax-top-bar__tool--has-alert]="animateNotificationIcon"
                      [class.active]="openedNotificationsCenter" *axIfAuthenticated>
