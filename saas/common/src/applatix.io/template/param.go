@@ -24,7 +24,7 @@ var (
 	VarRegex                = regexp.MustCompile("%%[-0-9A-Za-z_]+(\\.[-0-9A-Za-z_]+)*%%")
 	varRegexExact           = regexp.MustCompile("^%%[-0-9A-Za-z_]+(\\.[-0-9A-Za-z_]+)*%%$")
 	listExpansionParamRegex = regexp.MustCompile("\\$\\$\\[(.*)\\]\\$\\$")
-	ConfigVarRegex          = regexp.MustCompile("%%config\\.([^ ,:]+)\\.([-0-9A-Za-z]+)\\.([-0-9A-Za-z]+)%%")
+	ConfigVarRegex          = regexp.MustCompile("%%config\\.([^ %,:]+)\\.([-0-9A-Za-z]+)\\.([-0-9A-Za-z]+)%%")
 	ArtifactTagRegex        = regexp.MustCompile("%%artifacts\\.tag\\.[-0-9A-Za-z_]+\\.[-0-9A-Za-z_]+%%")
 	ServiceOutputRegex      = regexp.MustCompile("%%service\\.[-0-9A-Za-z_]+\\.outputs\\.[-0-9A-Za-z_]+\\.[-0-9A-Za-z_]+%%")
 )
