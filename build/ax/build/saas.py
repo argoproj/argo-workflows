@@ -50,6 +50,8 @@ class SaasBuilder(ProdBuilder):
             build_script = os.path.join(path, "build.sh")
         if not os.path.isfile(build_script):
             build_script = None
+        if self.debug and build_script:
+            build_script += " --debug"
         ret = super(SaasBuilder, self).build_one(container, build_script=build_script, **kwargs)
         shutil.rmtree(build_dir, ignore_errors=True)
         return ret
