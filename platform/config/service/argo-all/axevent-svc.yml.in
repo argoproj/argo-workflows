@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: axevent
+    labels:
+        app: axevent
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: axevent-deployment
+    ports:
+      - port: 8084
+        targetPort: 8082
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: axevent-deployment
+spec:
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: axevent-deployment
+                tier: platform
+                role: axcritical
+            annotations:
+                # Add axnotification.
+                pod.alpha.kubernetes.io/init-containers: '[
+                    {
+                        "name": "pre",
+                        "image": "${REGISTRY}/${NAMESPACE}/kube-init:${VERSION}",
+                        "command": ["timeout", "1200", "sh", "-c", "wait_http http://axdb:8083/v1/axdb/version"]
+                    }
+                ]'
+        spec:
+            containers:
+              - name: axevent
+                image: ${REGISTRY}/${NAMESPACE}/axevent:${VERSION}
+                env:
+                  - name: AXDB
+                    value: "http://axdb:8083/v1"
+                  - name: AXNOTIFIER
+                    value: "http://axnotification:9889/v1/notifications"
+                resources:
+                    requests:
+                        cpu: 100m
+                        memory: 50Mi
+                    limits:
+                        cpu: 200m
+                        memory: 75Mi
+            imagePullSecrets:
+              - name: applatix-registry

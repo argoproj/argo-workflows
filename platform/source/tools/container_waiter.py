@@ -415,7 +415,8 @@ if __name__ == "__main__":
     logging.getLogger("ax").setLevel(logging.DEBUG)
     logging.getLogger("ax.kubernetes.kubelet").setLevel(logging.INFO)
 
-    Cloud().set_target_cloud(Cloud().own_cloud())
+    target_cloud = os.environ.get("AX_TARGET_CLOUD", Cloud().own_cloud())
+    Cloud().set_target_cloud(target_cloud)
 
     try:
         wait_for_container(jobname=args[0],

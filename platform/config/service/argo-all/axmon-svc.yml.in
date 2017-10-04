@@ -70,9 +70,9 @@ spec:
                 resources:
                     requests:
                         cpu: 50m
-                        memory: 50Mi
+                        memory: 150Mi
                     limits:
-                        memory: 100Mi
+                        memory: 600Mi
                 livenessProbe:
                     httpGet:
                         path: /v1/axmon/ping
@@ -88,8 +88,6 @@ spec:
                         memory: 20Mi
                     limits:
                         memory: 80Mi
-            nodeSelector:
-                ax.tier: applatix
             imagePullSecrets:
                 - name: applatix-registry
             volumes:

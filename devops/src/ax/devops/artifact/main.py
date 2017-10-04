@@ -6,6 +6,7 @@ monkey.patch_all()
 from ax.util.az_patch import az_patch
 az_patch()
 
+import os
 import argparse
 import logging
 import signal
@@ -51,7 +52,8 @@ def main():
     signal.signal(signal.SIGUSR1, signal_debugger)
 
     try:
-        Cloud().set_target_cloud(Cloud().own_cloud())
+        target_cloud = os.environ.get("AX_TARGET_CLOUD", Cloud().own_cloud())
+        Cloud().set_target_cloud(target_cloud)
         rest.artifact_manager = ArtifactManager()
         rest.artifact_manager.init()
         rest.artifact_manager.start_background_process()  # start retention thread

@@ -35,6 +35,8 @@ mkdir -p $ROOT/ax/config/cloud/standard
 
 mkdir -p $ROOT/ax/config/service/standard
 mkdir -p $ROOT/ax/config/service/mvc
+mkdir -p $ROOT/ax/config/service/argo-wfe
+mkdir -p $ROOT/ax/config/service/argo-all
 mkdir -p $ROOT/ax/config/service/config
 
 mkdir -p $ROOT/ax/config/builtin-templates
@@ -50,6 +52,8 @@ cp $PLATFORM_SRC/config/cloud/standard/* $ROOT/ax/config/cloud/standard/
 # Copy applatix services
 cp $PLATFORM_SRC/config/service/standard/* $ROOT/ax/config/service/standard/
 cp $PLATFORM_SRC/config/service/mvc/* $ROOT/ax/config/service/mvc/
+cp $PLATFORM_SRC/config/service/argo-wfe/* $ROOT/ax/config/service/argo-wfe/
+cp $PLATFORM_SRC/config/service/argo-all/* $ROOT/ax/config/service/argo-all/
 cp $PLATFORM_SRC/config/service/config/* $ROOT/ax/config/service/config/
 
 # Copy builtin templates

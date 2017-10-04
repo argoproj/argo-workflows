@@ -35,7 +35,5 @@ spec:
                     value: test
                 ports:
                   - containerPort: 443
-            nodeSelector:
-                ax.tier: applatix
             imagePullSecrets:
               - name: applatix-registry

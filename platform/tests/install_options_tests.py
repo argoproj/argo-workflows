@@ -17,7 +17,7 @@ class InstallOptionsTest(unittest.TestCase):
         cfg.kubeconfig = "/tmp/kconfig"
         cfg.cloud_provider = "minikube"
         cfg.cloud_profile = "default"
-        cfg.service_manifest_root = "/tmp/service_manifest_root"
+        cfg.service_manifest_root = "/tmp/manifest_root"
         cfg.platform_bootstrap_config = cfg.service_manifest_root + "/platform-bootstrap.cfg"
         cfg.silent = False
         cfg.dry_run = False
@@ -33,12 +33,12 @@ class InstallOptionsTest(unittest.TestCase):
         # correctly.
         cfg.cloud_provider = "aws"
         p1 = PlatformOnlyInstallConfig(cfg)
-        assert p1.service_manifest_root == "/tmp/service_manifest_root"
-        assert p1.platform_bootstrap_config == p1.service_manifest_root + "/platform-bootstrap.cfg"
+        assert p1.service_manifest_root == "/ax/config/service/argo-all"
+        assert p1.platform_bootstrap_config == "/ax/config/service/config/argo-all-platform-bootstrap.cfg"
 
         # Same as above but with minikube
         cfg.cloud_provider = "minikube"
         p2 = PlatformOnlyInstallConfig(cfg)
-        assert p2.service_manifest_root == "/ax/config/service/basic"
-        assert p2.platform_bootstrap_config == "/ax/config/service/config/basic-platform-bootstrap.cfg"
+        assert p2.service_manifest_root == "/ax/config/service/argo-wfe"
+        assert p2.platform_bootstrap_config == "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
 

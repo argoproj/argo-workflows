@@ -1,0 +1,20 @@
+#
+# Copyright 2015-2016 Applatix, Inc. All rights reserved.
+#
+
+apiVersion: v1
+kind: Pod
+metadata:
+    name: axplatform-bootstrap
+    labels:
+        app: axplatform-bootstrap
+        tier: platform
+        role: axcritical
+spec:
+    containers:
+      - name: axplatform-bootstrap
+        image: ${REGISTRY}/${NAMESPACE}/axclustermanager:${VERSION}
+        command: ["/ax/bin/axplatform", "start", "${NAMESPACE}", "${VERSION}"]
+    restartPolicy: Never
+    imagePullSecrets:
+      - name: applatix-registry

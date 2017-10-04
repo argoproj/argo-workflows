@@ -4,6 +4,7 @@
 # Copyright 2015-2016 Applatix, Inc. All rights reserved.
 #
 
+import os
 import requests
 from retrying import retry
 
@@ -27,6 +28,8 @@ class AWSMetaData(object):
         return requests.get(self._meta_url + "security-groups").text.strip()
 
     def get_region(self):
+        if os.environ.get("AX_AWS_REGION", None):
+            return os.environ.get("AX_AWS_REGION")
         url = self._meta_url + "placement/availability-zone"
         retry = AXRetry(retry_exception=(Exception,))
         r = ax_retry(requests.get, retry, url, timeout=10)

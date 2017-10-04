@@ -12,6 +12,7 @@ from ax.exceptions import AXTimeoutException
 from ax.kubernetes import swagger_client
 from ax.kubernetes.client import KubernetesApiClient, retry_not_exists, retry_unless_not_found, retry_unless
 from ax.kubernetes.kube_object import KubeObjectConfigFile
+from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.component_config import AXPlatformConfigDefaults, SoftwareInfo
 from ax.platform.routes import InternalRoute
@@ -52,14 +53,23 @@ class Application(object):
         if not elb_status:
             raise AXPlatformException("Could not get axops elb address {}".format(elb_status))
 
-        k = KubeObjectConfigFile(DEFAULT_AM_YAML_PATH,
-                                 {
-                                     "NAMESPACE": self._software_info.image_namespace,
-                                     "VERSION": self._software_info.image_version,
-                                     "REGISTRY": self._software_info.registry,
-                                     "APPLICATION_NAME": self.name,
-                                     "AXOPS_EXT_DNS": elb_status
-                                 })
+        replacements = {"NAMESPACE": self._software_info.image_namespace,
+                        "VERSION": self._software_info.image_version,
+                        "REGISTRY": self._software_info.registry,
+                        "APPLICATION_NAME": self.name,
+                        "AXOPS_EXT_DNS": elb_status}
+        cluster_name_id = os.getenv("AX_CLUSTER_NAME_ID", None)
+        assert cluster_name_id, "Cluster name id is None!"
+        cluster_config = AXClusterConfig(cluster_name_id=cluster_name_id)
+        if cluster_config.get_cluster_provider() != ClusterProvider.USER:
+            axam_path = DEFAULT_AM_YAML_PATH
+        else:
+            axam_path = "/ax/config/service/argo-all/axam-svc.yml.in"
+            replacements["ARGO_DATA_BUCKET_NAME"] = os.getenv("ARGO_DATA_BUCKET_NAME")
+
+        logger.info("Using replacements: %s", replacements)
+
+        k = KubeObjectConfigFile(axam_path, replacements)
         for obj in k.get_swagger_objects():
             if isinstance(obj, swagger_client.V1Service):
                 self._am_service_spec = obj

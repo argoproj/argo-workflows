@@ -15,6 +15,7 @@ import os
 
 from future.utils import iteritems
 
+from ax.cloud import Cloud
 from ax.kubernetes import swagger_client
 from ax.kubernetes.client import KubernetesApiClient, retry_unless
 from ax.meta import AXLogPath, AXClusterDataPath, AXClusterId, AXCustomerId
@@ -243,6 +244,8 @@ class Task(object):
 
         pod_spec.add_main_container(main_container)
         wait_container = self._generate_wait_container_spec()
+        target_cloud = os.environ.get("AX_TARGET_CLOUD", Cloud().own_cloud())
+        wait_container.add_env("AX_TARGET_CLOUD", target_cloud)
         pod_spec.add_wait_container(wait_container)
 
         (cpu, mem, d_cpu, d_mem) = self._container_resources()
@@ -257,6 +260,9 @@ class Task(object):
         # TODO: This function calls ax_artifact and needs to be rewritten. Ugly code.
         artifacts_container = pod_spec.enable_artifacts(self.software_info.image_namespace, self.software_info.image_version, self_sid, self.service.template.to_dict())
         artifacts_container.add_env("AX_JOB_NAME", value=self.name)
+        artifacts_container.add_env("AX_TARGET_CLOUD", target_cloud)
+        artifacts_container.add_env("ARGO_LOG_BUCKET_NAME", os.environ.get("ARGO_LOG_BUCKET_NAME"))
+        artifacts_container.add_env("ARGO_DATA_BUCKET_NAME", self._s3_bucket)
         secret_resources = artifacts_container.add_configs_as_vols(self.service.template.get_all_configs(), self.name, self.namespace)
         self._resources.insert_all(secret_resources)
 

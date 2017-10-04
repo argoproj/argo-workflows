@@ -136,6 +136,12 @@ class ArgoClusterManager(object):
         os.environ["AX_CUSTOMER_ID"] = "user-customer-id"
         os.environ["ARGO_LOG_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_DATA_BUCKET_NAME"] = args.cluster_bucket
+        os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
+
+        try:
+            os.environ["AX_AWS_REGION"] = args.cloud_region
+        except Exception:
+            pass
 
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)
         PlatformOnlyInstaller(platform_install_config).run()

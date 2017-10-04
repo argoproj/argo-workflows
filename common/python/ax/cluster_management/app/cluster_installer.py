@@ -25,7 +25,7 @@ from ax.cloud import Cloud
 from ax.cloud.aws import AMI, EC2IPPermission
 from ax.platform.bootstrap import AXBootstrap
 from ax.platform.cluster_buckets import AXClusterBuckets
-from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption, AXClusterSize
+from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption, AXClusterSize, ClusterProvider
 from ax.platform.ax_cluster_info import AXClusterInfo
 from ax.platform.ax_kube_up_down import AXKubeUpDown
 from ax.platform.kube_env_config import prepare_kube_install_config
@@ -369,7 +369,7 @@ please contact your administrator for more information to configure your argo CL
                 action_name="disallow-creator"
             )
 
-        return cluster_dns_name, username, password
+        return cluster_dns, username, password
 
     @retry(wait_fixed=5, stop_max_attempt_number=10)
     def _get_initial_cluster_credentials(self):
@@ -518,5 +518,9 @@ class PlatformOnlyInstaller(ClusterOperationBase):
         return
 
     def run(self):
-        # TODO(shri): Install platform here!
+        self._ci_installer.update_and_save_config(cluster_bucket=self._cfg.get_cluster_bucket())
+
+        cluster_dns, username, password = self._ci_installer.install_and_run_platform()
+        self._ci_installer.post_install()
+        self._ci_installer.persist_username_password_locally(username, password, cluster_dns)
         return
