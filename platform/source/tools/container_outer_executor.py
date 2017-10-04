@@ -176,7 +176,10 @@ class ContainerOuterExecutor(object):
         logger.info("<env>: docker_enable: %s", self._docker_enable)
 
         if Cloud().in_cloud_aws():
-            self._s3 = boto3.Session().resource('s3')
+            self._s3 = boto3.Session().resource('s3',
+                    aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                    aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                    endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
         elif Cloud().in_cloud_gcp():
             # TODO: Don't need it. Clean it.
             self._s3 = None

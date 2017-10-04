@@ -490,7 +490,7 @@ please contact your administrator for more information to configure your argo CL
         config["cloud"]["trusted_cidr"] = self._cfg.trusted_cidrs
         return config
 
-    def update_and_save_config(self, cluster_bucket=None):
+    def update_and_save_config(self, cluster_bucket=None, bucket_endpoint=None):
         """
         Update the config to use the given bucket and upload cluster_config and kubeconfig
         to the given bucket.
@@ -499,6 +499,7 @@ please contact your administrator for more information to configure your argo CL
         self._cluster_config.set_config(raw_cluster_config_dict)
         self._cluster_config.set_cluster_provider(ClusterProvider.USER)
         self._cluster_config.set_support_object_store_name(cluster_bucket)
+        self._cluster_config.set_bucket_endpoint(bucket_endpoint)
 
         # Save config file to s3.
         self._cluster_config.save_config()
@@ -518,7 +519,7 @@ class PlatformOnlyInstaller(ClusterOperationBase):
         return
 
     def run(self):
-        self._ci_installer.update_and_save_config(cluster_bucket=self._cfg.get_cluster_bucket())
+        self._ci_installer.update_and_save_config(cluster_bucket=self._cfg.get_cluster_bucket(), bucket_endpoint=self._cfg.bucket_endpoint)
 
         cluster_dns, username, password = self._ci_installer.install_and_run_platform()
         self._ci_installer.post_install()

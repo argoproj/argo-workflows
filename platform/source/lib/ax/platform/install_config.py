@@ -82,7 +82,10 @@ class AXInstallConfig(with_metaclass(Singleton, object)):
 
     def _get_install_config(self):
         try:
-            s3 = boto3.Session(profile_name=self._aws_profile).client("s3")
+            s3 = boto3.Session(profile_name=self._aws_profile).client("s3",
+                    aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                    aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                    endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
             data = s3.get_object(Bucket=self._bucket, Key="{}/version".format(self._path))["Body"].read()
             self._namespace = json.loads(data)["namespace"]
             self._version = json.loads(data)["version"]
