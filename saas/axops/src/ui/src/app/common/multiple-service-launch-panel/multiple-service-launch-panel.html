@@ -1,8 +1,10 @@
 <ax-sliding-panel [show]="isVisibleSelectServiceTemplatesPanel" [hasCloseButton]="false" [hasNoPadding]="true" (closePanel)="closePanel()">
     <sliding-panel-header>
-        <button  *ngIf="selectingScreen" class="ax-button ax-button--base" [ngClass]="{'disabled': !isAnyTemplateSelected()}"
-                 type="button" (click)="next()" [disabled]="!isAnyTemplateSelected()" axButtonWave>Next</button>
-        <button *ngIf="!selectingScreen" class="ax-button ax-button--base" [ngClass]="{'disabled': summaryErrorMessage}"
+        <button  *ngIf="stepNumber === 1" class="ax-button ax-button--base" [ngClass]="{'disabled': !isAnyTemplateSelected()}"
+                 type="button" (click)="goToNextStep()" [disabled]="!isAnyTemplateSelected()" axButtonWave>Next</button>
+        <button  *ngIf="stepNumber === 2" class="ax-button ax-button--base"
+                 type="button" (click)="goToNextStep()" [disabled]="false" axButtonWave>Next</button>
+        <button *ngIf="stepNumber === 3" class="ax-button ax-button--base" [ngClass]="{'disabled': summaryErrorMessage}"
                 type="button" (click)="submit()" [disabled]="summaryErrorMessage || templateLoader"
                 axButtonWave>SUBMIT<span *ngIf="templatesToSubmit?.length > 1"> ALL</span></button>
         <button class="ax-button" type="button" (click)="closePanel()" axButtonWave>Cancel</button>
@@ -14,7 +16,7 @@
         </ul>
     </sliding-panel-header>
     <sliding-panel-body>
-        <div class="panel-box" *ngIf="selectingScreen">
+        <div class="panel-box" *ngIf="stepNumber === 1">
             <div class="panel-box__content">
                 <div class="panel-box__title">
                     Select templates to create jobs
@@ -105,7 +107,7 @@
             </div>
         </div>
 
-        <div class="panel-box" *ngIf="!selectingScreen">
+        <div class="panel-box" *ngIf="stepNumber === 2">
             <div class="panel-box__summary-error" *ngIf="summaryErrorMessage">
                 Please enter the required parameters and submit again.
             </div>
@@ -194,6 +196,9 @@
 
                 </div>
             </div>
+        </div>
+        <div class="panel-box" *ngIf="stepNumber === 3">
+            <ax-setup-job-notifications (onChange)="setNotifications($event)"></ax-setup-job-notifications>
         </div>
     </sliding-panel-body>
 </ax-sliding-panel>

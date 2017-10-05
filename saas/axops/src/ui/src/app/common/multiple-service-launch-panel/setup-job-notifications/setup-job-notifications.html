@@ -1,0 +1,33 @@
+<div class="panel-box__content">
+    <div class="panel-box__title">
+        Set Up Job Notifications
+    </div>
+    <div class="panel-box__subtitle">
+        Set up notifications for job events.
+    </div>
+    <div class="panel-box__space">
+        <div class="shaded-box">
+            <div class="shaded-box__top">
+                <span>Criteria:</span>
+            </div>
+            <div class="shaded-box__content">
+                <div class="notification-row">
+                    <label>{{ 'Selected Job Events:' | uppercase }}</label>
+
+                    <div>
+                        <ax-filter-multi-select
+                                [brightStyle]="true"
+                                [texts]="eventTypes.messages"
+                                [items]="eventTypes.items"
+                                [isStaticList]="eventTypes.isStaticList"
+                                [isDisplayedInline]="eventTypes.isDisplayedInline"
+                                [selectedItems]="[]"
+                                (onChange)="onEventTypeChange($event)">
+                        </ax-filter-multi-select>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

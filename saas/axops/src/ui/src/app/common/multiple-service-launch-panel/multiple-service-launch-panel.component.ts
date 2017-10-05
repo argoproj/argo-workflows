@@ -25,7 +25,7 @@ export class MultipleServiceLaunchPanelComponent {
     public templateLoader: boolean = false;
     public commit: Commit = new Commit();
     public isVisibleSelectServiceTemplatesPanel: boolean = false;
-    public selectingScreen: boolean = true;
+    public stepNumber: 1 | 2 | 3 = 1;
     public activeElementId: number = 0;
     public isSubmitClicked: boolean = false;
     public summaryErrorMessage: boolean = false;
@@ -82,7 +82,7 @@ export class MultipleServiceLaunchPanelComponent {
         this.task = null;
         this.projectInfo = null;
         this.resubmit = resubmit;
-        this.selectingScreen = true;
+        this.stepNumber = 1;
 
         this.withCommitOnly = withCommitOnly;
         if (options) {
@@ -95,11 +95,11 @@ export class MultipleServiceLaunchPanelComponent {
                 this.isVisibleSelectServiceTemplatesPanel = true;
                 this.next();
             }
-            this.selectingScreen = false;
+            this.stepNumber = 2;
         } else {
             this.task = null;
             this.projectInfo = null;
-            this.selectingScreen = true;
+            this.stepNumber = 1;
         }
 
         if (commit) {
@@ -133,7 +133,7 @@ export class MultipleServiceLaunchPanelComponent {
         this.session = new Session();
         this.templates = [];
         this.templatesToSubmit = [];
-        this.selectingScreen = true;
+        this.stepNumber = 1;
         this.activeElementId = 0;
         this.allSelected = false;
         this.allForms.reset();
@@ -250,8 +250,12 @@ export class MultipleServiceLaunchPanelComponent {
         }) !== undefined;
     }
 
+    goToNextStep() {
+        this.stepNumber += 1;
+        this.next();
+    }
+
     next() {
-        this.selectingScreen = false;
         this.templatesToSubmit = this.templates.filter(item => item.selected);
 
         this.prepareForms(this.templatesToSubmit);
@@ -323,6 +327,9 @@ export class MultipleServiceLaunchPanelComponent {
         this.getTemplates(branch.repo);
     }
 
+    public setNotifications(event) {
+        console.log('notifications', event);
+    }
 
     private prepareForms(templates: Template[], resubmitFailedParameters?: any) {
         templates.forEach((template, index) => {
