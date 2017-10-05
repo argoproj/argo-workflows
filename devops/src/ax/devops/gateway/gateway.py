@@ -48,7 +48,9 @@ class Gateway(object):
     CLUSTER_NAME_ID = os.environ.get('AX_CLUSTER')
     CUSTOMER_ID = os.environ.get('AX_CUSTOMER_ID')
     S3_BUCKET_NAME = os.getenv("ARGO_DATA_BUCKET_NAME") or 'applatix-cluster-{account}-{seq}'.format(account=CUSTOMER_ID, seq=0)
-    s3_bucket = boto3.resource('s3').Bucket(S3_BUCKET_NAME)
+    s3_bucket = boto3.resource('s3', aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None)).Bucket(S3_BUCKET_NAME)
 
     def __init__(self):
         self.axdb_client = AxdbClient()

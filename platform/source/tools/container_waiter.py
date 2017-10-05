@@ -258,6 +258,21 @@ def wait_for_container(jobname,
 
         return main_container_status, dind_container_status, docker_ids
 
+    def get_host_ip():
+        """
+        Get's the IP address of the host in the cluster.
+        """
+        k8s = KubernetesApiClient()
+        resp = k8s.api.list_node()
+        assert len(resp.items) == 1, "Need 1 node in the cluster"
+        for n in resp.items:
+            for addr in n.status.addresses:
+                addr_dict = addr.to_dict()
+                if addr_dict['type'] == 'InternalIP':
+                    return addr_dict['address']
+
+        return None
+
     def check_pod_status(pod_status):
         status = pod_status.status
         assert isinstance(status, swagger_client.V1PodStatus), "Expect to see an object of type V1PodStatus"
@@ -311,9 +326,18 @@ def wait_for_container(jobname,
         return False
 
     logger.info("jobname=%s podname=%s containername=%s", jobname, podname, containername)
-    node_instance_id = Cloud().meta_data().get_instance_id()
+    node_instance_id = "user-node"
+    try:
+        node_instance_id = Cloud().meta_data().get_instance_id()
+    except Exception:
+        pass
     logger.info("Using node instance id %s, namespace %s", node_instance_id, NAMESPACE)
-    kubelet_cli = KubeletClient()
+
+    try:
+        kubelet_cli = KubeletClient()
+    except Exception as e:
+        host_ip = get_host_ip()
+        kubelet_cli = KubeletClient(host_ip)
 
     # have to match with conainer_outer_executor.py
     container_done_flag_postfix = "_ax_container_done_flag"
