@@ -356,6 +356,7 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
         if cfg.cloud_provider == "minikube":
             self.service_manifest_root = "/ax/config/service/argo-wfe"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
+            Cloud(target_cloud="aws")
         else:
             self.service_manifest_root = "/ax/config/service/argo-all"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-all-platform-bootstrap.cfg"

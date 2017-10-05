@@ -341,11 +341,11 @@ class AXS3Bucket(object):
                        http://boto3.readthedocs.org/en/latest/reference/services/s3.html#S3.Object.get
         :return: actual object or None
         """
-        if not self.exists():
-            return None
         try:
             return self._s3.Object(self._name, key).get(**kwargs)["Body"].read().decode("utf-8")
         except Exception as e:
+            if not self.exists():
+                return None
             if "NoSuchKey" not in str(e):
                 raise
         return None

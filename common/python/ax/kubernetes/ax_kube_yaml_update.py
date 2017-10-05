@@ -292,13 +292,11 @@ class AXSYSKubeYamlUpdater(object):
         if aws_region != "":
             default_envs.append({"name": "AX_AWS_REGION", "value": aws_region})
 
-        s3_endpoint = self._cluster_config.get_bucket_endpoint()
-        if s3_endpoint and s3_endpoint != "":
-            default_envs.append({"name": "ARGO_S3_ENDPOINT", "value": s3_endpoint})
         if os.getenv("ARGO_S3_ACCESS_KEY_ID", "") != "":
             # Secrets
             default_envs.append({"name": "ARGO_S3_ACCESS_KEY_ID", "secret": "argo-access-key"})
             default_envs.append({"name": "ARGO_S3_ACCESS_KEY_SECRET", "secret": "argo-secret-key"})
+            default_envs.append({"name": "ARGO_S3_ENDPOINT", "value": os.getenv("ARGO_S3_ENDPOINT", None)})
 
         # Special cases for daemons
         if is_daemon:

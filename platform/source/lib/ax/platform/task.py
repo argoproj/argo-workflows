@@ -350,6 +350,12 @@ class Task(object):
         c.add_env("AX_REGION", AXClusterConfig().get_region())
         c.add_env("AX_CLUSTER_NAME_ID", self._name_id)
 
+        c.add_env("ARGO_LOG_BUCKET_NAME", os.environ.get("ARGO_LOG_BUCKET_NAME"))
+        c.add_env("ARGO_DATA_BUCKET_NAME", self._s3_bucket)
+        c.add_env("ARGO_S3_ACCESS_KEY_ID", os.environ.get("ARGO_S3_ACCESS_KEY_ID"))
+        c.add_env("ARGO_S3_ACCESS_KEY_SECRET", os.environ.get("ARGO_S3_ACCESS_KEY_SECRET"))
+        c.add_env("ARGO_S3_ENDPOINT", os.environ.get("ARGO_S3_ENDPOINT"))
+
         return c
 
     def _gen_service_env(self):

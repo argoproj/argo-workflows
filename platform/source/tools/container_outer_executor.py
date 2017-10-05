@@ -175,7 +175,7 @@ class ContainerOuterExecutor(object):
         logger.info("<env>: artifact_tags: %s", self._artifacts_tags)
         logger.info("<env>: docker_enable: %s", self._docker_enable)
 
-        if Cloud().in_cloud_aws():
+        if Cloud().in_cloud_aws() or os.environ.get("AX_TARGET_CLOUD", None) == "aws":
             self._s3 = boto3.Session().resource('s3',
                     aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
                     aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
