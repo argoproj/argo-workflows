@@ -10,7 +10,6 @@
   },
   "scripts": {
     "build:prod": "npm run tslint && webpack --config config/webpack.prod.js  --progress --profile --bail",
-    "build:dev": "webpack --config config/webpack.dev.js  --progress --profile --bail",
     "test-e2e": "PATH_LOCATION_STRATEGY=true npm-run-all -p -r server:prod test-e2e:only",
     "test-e2e:only": "protractor",
     "server:prod": " node ./scripts/http-server.js",
