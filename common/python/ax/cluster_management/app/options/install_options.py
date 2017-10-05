@@ -344,7 +344,7 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
         cfg.vpc_id = None
         cfg.vpc_cidr_base = None
         cfg.subnet_mask_size = None
-        cfg.trusted_cidrs = None
+        cfg.trusted_cidrs = ClusterInstallDefaults.TRUSTED_CIDR
         cfg.user_on_demand_nodes = None
         cfg.spot_instances_option = "none"
         cfg.cluster_autoscaling_scan_interval = None
