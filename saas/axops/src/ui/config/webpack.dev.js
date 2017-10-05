@@ -69,7 +69,7 @@ module.exports = function () {
       },
       proxy: {
         '/v1': {
-            target: process.env.AX_CLUSTER_URL || 'https://' + (process.env.AX_CLUSTER_HOST || 'dev.applatix.net'),
+            target: 'https://' + (process.env.AX_CLUSTER_HOST || 'dev.applatix.net'),
             secure: false
         }
       },
