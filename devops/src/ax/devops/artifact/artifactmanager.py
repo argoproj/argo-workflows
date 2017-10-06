@@ -17,6 +17,8 @@ from ax.devops.artifact.constants import DEFAULT_PROCESS_INTERVAL, MILLISECONDS_
 from ax.devops.utility.utilities import aggregate_numeric_dictionaries, ax_profiler, get_epoch_time_in_ms, get_error_code, retry_on_errors
 from ax.exceptions import AXApiInvalidParam, AXApiInternalError
 
+from ax.cloud.aws import AXS3Bucket
+
 logger = logging.getLogger(__name__)
 logging.getLogger('ax.devops.axrequests').setLevel(logging.CRITICAL)
 logging.getLogger('ax.devops.utility.utilities').setLevel(logging.ERROR)
@@ -1118,7 +1120,11 @@ class ArtifactManager(object):
             try:
                 s3_path = artifact['storage_path']
                 bucket, key = s3_path['bucket'], s3_path['key']
-                location = Cloud().get_bucket(bucket).generate_signed_url(key)
+                s3_bucket = Cloud().get_bucket(bucket)
+                location = s3_bucket.generate_signed_url(key) if AXS3Bucket.supports_signed_url() else "/v1/s3object" \
+                                                                                                      "?bucket=" + \
+                                                                                                      bucket + "&key=" \
+                                                                                                      + key
                 logger.info("redirect to %s", location)
                 return location, None
             except Exception as e:

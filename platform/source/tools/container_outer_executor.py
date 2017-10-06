@@ -1128,13 +1128,15 @@ class ContainerOuterExecutor(object):
 
                 data = open(file_path, 'rb')
                 params = {
-                    'ACL': 'bucket-owner-full-control',
                     'Metadata': meta_data,
-                    'ServerSideEncryption': 'AES256',
                     'StorageClass': 'STANDARD',
                     'ContentDisposition': content_disposition,
                     'ContentLength': source_size
                 }
+                if AXS3Bucket.supports_encryption():
+                    params["ACL"] = "bucket-owner-full-control"
+                    params["ServerSideEncryption"] = "AES256"
+
                 if content_md5:
                     params['ContentMD5'] = content_md5
 
@@ -1157,10 +1159,12 @@ class ContainerOuterExecutor(object):
                 try:
                     data = file_structure.encode('utf-8')
                     structure_params = {
-                        'ACL': 'bucket-owner-full-control',
-                        'ServerSideEncryption': 'AES256',
                         'StorageClass': 'STANDARD'
                     }
+                    if AXS3Bucket.supports_encryption():
+                        structure_params["ACL"] = "bucket-owner-full-control"
+                        structure_params["ServerSideEncryption"] = "AES256"
+
                     if not s3_bucket.put_object(key=structure_key, data=data, **structure_params):
                         raise Exception("Failed to put object")
                     upload_structure = True
