@@ -189,9 +189,9 @@ class SidecarDockerDaemon(Container):
 
         # Add per node dgs to sidecar
         dgs_vol = ContainerVolume("docker-graph-storage", "/var/lib/docker")
-        if Cloud().target_cloud_aws():
+        if Cloud().own_cloud() == Cloud.CLOUD_AWS:
             dgs_vol.set_type("DOCKERGRAPHSTORAGE", size_in_mb)
-        elif Cloud().target_cloud_gcp():
+        else:
             dgs_vol.set_type("EMPTYDIR")
         self.add_volume(dgs_vol)
 
