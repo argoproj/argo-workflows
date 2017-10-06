@@ -12,9 +12,6 @@ spec:
     ports:
       - name: http
         port: 80
-        targetPort: 8081
-      - name: https
-        port: 443
-        targetPort: 8086
+        targetPort: 8082
     type: ${LOAD_BALANCER_TYPE}
     loadBalancerSourceRanges: ${TRUSTED_CIDR}

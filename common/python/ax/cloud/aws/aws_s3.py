@@ -117,6 +117,20 @@ class AXS3Bucket(object):
     def get_bucket_name(self):
         return self._name
 
+    @staticmethod
+    def supports_encryption():
+        # only s3proxy doesn't support encryption
+        # TODO: replace with check for cloud != minikube
+        return not os.environ.get("ARGO_S3_ENDPOINT", None)
+
+    @staticmethod
+    def supports_signed_url():
+        # use signed url for aws s3 only
+        # aws s3 is assumed when s3 endpoint is not specified
+        # TODO: replace with check for cloud == aws
+        return not os.environ.get("ARGO_S3_ENDPOINT", None)
+
+
     @retry(
         retry_on_exception=head_bucket_retry,
         wait_exponential_multiplier=1000,
