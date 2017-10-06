@@ -8,26 +8,80 @@
     <div class="panel-box__space">
         <div class="shaded-box">
             <div class="shaded-box__top">
-                <span>Criteria:</span>
+                <a class="fr" (click)="addNotificationRule()">
+                    <span class="notification-row__plus-icon">+</span> {{ 'Add Notification Rule' | translate | uppercase }}
+                </a>
             </div>
-            <div class="shaded-box__content">
-                <div class="notification-row">
-                    <label>{{ 'Selected Job Events:' | uppercase }}</label>
+            <div *ngFor="let eventType of eventTypesList; let i = index">
+                <div class="shaded-box__content margin-bottom-medium">
+                    <a class="fr" (click)="removeNotificationRule(i)"><i class="ax-icon-close"></i></a>
+                    <div class="notification-row">
+                        <h5>{{ 'Selected Job Events:' | uppercase }}</h5>
+                        <hr>
 
-                    <div>
-                        <ax-filter-multi-select
-                                [brightStyle]="true"
-                                [texts]="eventTypes.messages"
-                                [items]="eventTypes.items"
-                                [isStaticList]="eventTypes.isStaticList"
-                                [isDisplayedInline]="eventTypes.isDisplayedInline"
-                                [selectedItems]="[]"
-                                (onChange)="onEventTypeChange($event)">
-                        </ax-filter-multi-select>
+                        <div class="notification-row__events-selector">
+                            <ax-filter-multi-select
+                                    [brightStyle]="true"
+                                    [texts]="eventType.messages"
+                                    [items]="eventType.items"
+                                    [isStaticList]="eventType.isStaticList"
+                                    [isDisplayedInline]="eventType.isDisplayedInline"
+                                    [selectedItems]="[]"
+                                    (onChange)="onEventTypeChange($event, i)">
+                            </ax-filter-multi-select>
+                        </div>
+
+                        <h5>{{ 'Select Recipients:' | uppercase }}</h5>
+                        <hr>
+
+                        <div>
+                            <div class="">
+                                <div class="ax-checkbox">
+                                    <input type="checkbox" id="users_and_groups_{{ i }}" [(ngModel)]="eventType.isArgoUsersAndGroupsVisible">
+                                    <span><i class="fa fa-check"></i></span>
+                                </div>
+                                <label for="users_and_groups_{{ i }}">{{ 'Argo Users and Groups' | translate }}</label>
+
+                                <div [hidden]="!eventType.isArgoUsersAndGroupsVisible">
+                                    <div class="labels-horizontal-list">
+                                        <div class="labels-horizontal-list__top">
+                                            <div class="labels-horizontal-list__add">
+                                                <a (click)="openUserSelectorPanel(i)"><span>+</span> add users</a>
+                                            </div>
+                                        </div>
+                                        <div class="labels-horizontal-list__content">
+                                            <div class="labels-horizontal-list__white-panel clickable" (click)="openUserSelectorPanel(i)">
+                                                <template ngFor let-user [ngForOf]="notificationRules[i].whom ? notificationRules[i].whom : []">
+                                                    <span>{{ user }}</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="">
+                                <div class="ax-checkbox">
+                                    <input type="checkbox" id="email">
+                                    <span><i class="fa fa-check"></i></span>
+                                </div>
+                                <label for="email">{{ 'Email' | translate }}</label>
+                            </div>
+
+                            <div class="">
+                                <div class="ax-checkbox">
+                                    <input type="checkbox" id="slack_channels">
+                                    <span><i class="fa fa-check"></i></span>
+                                </div>
+                                <label for="slack_channels">{{ 'Slack Channels' | translate }}</label>
+                            </div>
+                        </div>
+
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="notificationRules[selectedId].whom ? notificationRules[selectedId].whom : []" (onChange)="updateUsersList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
