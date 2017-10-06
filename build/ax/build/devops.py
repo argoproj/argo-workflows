@@ -111,12 +111,13 @@ class DevOpsBuilder(ProdBuilder):
         run_cmd('cp -LR {} {}/src'.format(PYTHON_COMMON_PATH, docker_build_dir))
         run_cmd('cp -LR {}/devops/requirements {}'.format(SRC_PATH, docker_build_dir))
 
-        if not re.search('devopsbuilder', container_build_path):
-            # DevOps source code is not protected (for the time being). Platform code is.
-            # Do not copy platform code into devops containers to maintain this protection
-            # and prevent exposure of our platform source to customers.
-            shutil.rmtree("{}/src/ax/platform".format(docker_build_dir))
-            shutil.rmtree("{}/src/ax/platform_client".format(docker_build_dir))
+        # Issue #306 devops component requires platform_client. This is only needed from release 1.0.1
+        # if not re.search('devopsbuilder', container_build_path):
+        #     # DevOps source code is not protected (for the time being). Platform code is.
+        #     # Do not copy platform code into devops containers to maintain this protection
+        #     # and prevent exposure of our platform source to customers.
+        #     shutil.rmtree("{}/src/ax/platform".format(docker_build_dir))
+        #     shutil.rmtree("{}/src/ax/platform_client".format(docker_build_dir))
 
     def build_one(self, container, **kwargs):
         path = self.get_container_build_path(container)
