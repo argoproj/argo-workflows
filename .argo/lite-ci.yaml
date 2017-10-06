@@ -1,0 +1,48 @@
+---
+type: workflow
+version: 1
+name: lite-ci
+
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+steps:
+-
+  checkout:
+    template: git-checkout
+-
+  build:
+    template: lite-build
+    arguments:
+      artifacts.CODE: "%%steps.checkout.outputs.artifacts.CODE%%"
+
+outputs:
+  artifacts:
+    CODE:
+      from: "%%steps.build.outputs.artifacts.CODE%%"
+
+---
+type: container
+version: 1
+name: lite-build
+
+inputs:
+  artifacts:
+    CODE:
+      path: /app/src
+
+outputs:
+  artifacts:
+    CODE:
+      path: /app/src
+
+image: node:6.3.1
+resources:
+  mem_mib: 256
+  cpu_cores: 0.1
+command: ["sh", "-c"]
+args: [cd /app/src/lite && npm install -g yarn && yarn install && npm run build]
