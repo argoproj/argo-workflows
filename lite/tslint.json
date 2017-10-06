@@ -1,0 +1,32 @@
+{
+    "extends": "tslint:latest",
+    "rules": {
+        "quotemark": [
+            true,
+            "single"
+        ],
+        "no-string-literal": false,
+        "interface-name": [
+            false,
+            "always-prefix"
+        ],
+        "interface-over-type-literal": false,
+        "no-var-requires": false,
+        "object-literal-sort-keys": false,
+        "max-line-length": [
+            true,
+            180
+        ],
+        "ordered-imports": [
+            false
+        ],
+        "arrow-parens": false,
+        "array-type": [false],
+        "prefer-const": false,
+        "no-angle-bracket-type-assertion": false,
+        "no-unused-variable": [true],
+        "no-empty-interface": false,
+        "no-console": false
+    },
+    "defaultSeverity": "warning"
+}
