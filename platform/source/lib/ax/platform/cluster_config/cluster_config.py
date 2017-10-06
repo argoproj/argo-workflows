@@ -12,7 +12,7 @@ from ax.meta import AXClusterId, AXClusterConfigPath
 from ax.platform.exceptions import AXPlatformException
 from ax.util.singleton import Singleton
 from future.utils import with_metaclass
-from . import AXClusterType
+from . import AXClusterType, ClusterProvider
 
 logger = logging.getLogger(__name__)
 
@@ -201,7 +201,12 @@ class AXClusterConfig(with_metaclass(Singleton, object)):
         return self._conf["cloud"]["kube_installer_config"]
 
     def get_cluster_provider(self):
-        return self._conf["cloud"].get("cluster_provider", None)
+        if self._conf and self._conf["cloud"]:
+            return self._conf["cloud"].get("cluster_provider", None)
+        return ClusterProvider.USER
+
+    def get_bucket_endpoint(self):
+        return self._conf["cloud"]["configure"].get("bucket_endpoint", None)
 
     # Setters. Currently only a very limited items is mutable
     def set_ax_cluster_user(self, user):
@@ -239,6 +244,9 @@ class AXClusterConfig(with_metaclass(Singleton, object)):
 
     def set_cluster_provider(self, cluster_provider):
         self._conf["cloud"]["cluster_provider"] = cluster_provider
+
+    def set_bucket_endpoint(self, bucket_endpoint):
+        self._conf["cloud"]["configure"]["bucket_endpoint"] = bucket_endpoint
 
     def reload_config(self):
         """

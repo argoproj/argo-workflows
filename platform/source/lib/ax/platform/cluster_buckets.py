@@ -11,6 +11,7 @@ from ax.aws.profiles import AWSAccountInfo
 from ax.cloud import Cloud
 from ax.cloud.aws import get_aws_partition_from_region
 from ax.meta import AXClusterId, AXClusterConfigPath, AXClusterDataPath, AXSupportConfigPath, AXUpgradeConfigPath
+from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
 
 from ax.platform.exceptions import AXPlatformException
 
@@ -76,6 +77,7 @@ class AXClusterBuckets(object):
         self._name_id = name_id
         self._aws_profile = aws_profile
         self._aws_region = aws_region
+        self.cluster_config = AXClusterConfig(cluster_name_id=self._name_id)
 
     def update(self):
         logger.info("Creating and updating all cluster buckets ...")
@@ -103,9 +105,11 @@ class AXClusterBuckets(object):
 
         if not data_bucket.create():
             raise AXPlatformException("Failed to create S3 bucket {}".format(data_bucket.get_bucket_name()))
-        # Update CORS config for data bucket too.
-        logger.info("Checking CORS config for %s.", data_bucket.get_bucket_name())
-        data_bucket.put_cors(DATA_CORS_CONFIG)
+
+        if self.cluster_config.get_cluster_provider() != ClusterProvider.USER:
+            # Update CORS config for data bucket too.
+            logger.info("Checking CORS config for %s.", data_bucket.get_bucket_name())
+            data_bucket.put_cors(DATA_CORS_CONFIG)
 
         logger.info("Created %s bucket ... DONE", data_bucket.get_bucket_name())
 

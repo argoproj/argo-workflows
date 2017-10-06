@@ -17,6 +17,7 @@ from ax.meta import AXClusterId, AXCustomerId
 from ax.kubernetes.ax_kube_dict import KubeKindToV1KubeSwaggerObject
 from ax.kubernetes.swagger_client import ApiClient, V1Pod, V1beta1StatefulSet, V1beta1Deployment, V1beta1DaemonSet, \
     V1PersistentVolumeClaim, V1Container, V1Service, V1EnvVar, V1EnvVarSource, V1ObjectFieldSelector
+from ax.kubernetes.swagger_client.models.v1_secret_key_selector import V1SecretKeySelector
 from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.resource import AXSYSResourceConfig
@@ -284,8 +285,20 @@ class AXSYSKubeYamlUpdater(object):
             {"name": "AX_TARGET_CLOUD", "value": Cloud().target_cloud()},
             {"name": "AX_CLUSTER_NAME_ID", "value": self._cluster_name_id},
             {"name": "AX_CUSTOMER_ID", "value": AXCustomerId().get_customer_id()},
-            {"name": "AX_AWS_REGION", "value": os.environ.get("AX_AWS_REGION", None)},
         ]
+
+
+        aws_region = os.environ.get("AX_AWS_REGION", "")
+        if aws_region != "":
+            default_envs.append({"name": "AX_AWS_REGION", "value": aws_region})
+
+        s3_endpoint = self._cluster_config.get_bucket_endpoint()
+        if s3_endpoint and s3_endpoint != "":
+            default_envs.append({"name": "ARGO_S3_ENDPOINT", "value": s3_endpoint})
+        if os.getenv("ARGO_S3_ACCESS_KEY_ID", "") != "":
+            # Secrets
+            default_envs.append({"name": "ARGO_S3_ACCESS_KEY_ID", "secret": "argo-access-key"})
+            default_envs.append({"name": "ARGO_S3_ACCESS_KEY_SECRET", "secret": "argo-secret-key"})
 
         # Special cases for daemons
         if is_daemon:
@@ -316,6 +329,13 @@ class AXSYSKubeYamlUpdater(object):
                 field.field_path = d["path"]
                 src = V1EnvVarSource()
                 src.field_ref = field
+                var.value_from = src
+            elif d.get("secret", None):
+                secret = V1SecretKeySelector()
+                secret.key = d["secret"]
+                secret.name = d["secret"]
+                src = V1EnvVarSource()
+                src.secret_key_ref = secret
                 var.value_from = src
             else:
                 var.value = d["value"]

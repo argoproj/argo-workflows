@@ -89,7 +89,9 @@ class AXCron(with_metaclass(Singleton, object)):
                 subprocess.call(["kubectl", "get", "pvc", "--all-namespaces", "-o", "yaml"], stdout=f)
             with open(os.path.join(tmp, "volumes.txt"), "w") as f:
                 subprocess.call(["kubectl", "get", "pv", "-o", "yaml"], stdout=f)
-            s3 = boto3.Session().client("s3")
+            s3 = boto3.Session().client("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
             prefix = AXSupportConfigPath(self._cluster_name_id).support() + "/" + time.strftime("%Y-%m-%d/%H.%M.%S")
             for dir, _, names in os.walk(tmp):
                 for f in names:

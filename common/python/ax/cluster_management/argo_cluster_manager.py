@@ -130,6 +130,27 @@ class ArgoClusterManager(object):
         self._ensure_customer_id(upgrade_config.cloud_profile)
         ClusterUpgrader(upgrade_config).start()
 
+    def _set_env_if_present(self, args):
+        try:
+            os.environ["AX_AWS_REGION"] = args.cloud_region
+        except Exception:
+            pass
+
+        try:
+            os.environ["ARGO_S3_ACCESS_KEY_ID"] = args.access_key
+        except Exception:
+            pass
+
+        try:
+            os.environ["ARGO_S3_ACCESS_KEY_SECRET"] = args.secret_key
+        except Exception:
+            pass
+
+        try:
+            os.environ["ARGO_S3_ENDPOINT"] = args.bucket_endpoint
+        except Exception:
+            pass
+
     def install_platform_only(self, args):
         logger.info("Installing platform only ...")
 
@@ -138,11 +159,7 @@ class ArgoClusterManager(object):
         os.environ["ARGO_DATA_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
 
-        try:
-            os.environ["AX_AWS_REGION"] = args.cloud_region
-        except Exception:
-            pass
-
+        self._set_env_if_present(args)
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)
         PlatformOnlyInstaller(platform_install_config).run()
         return

@@ -10,6 +10,7 @@ Library for accessing AWS S3.
 This is organized at bucket level.
 """
 
+import os
 import logging
 import json
 import time
@@ -101,8 +102,12 @@ class AXS3Bucket(object):
         logger.info("Using region %s for bucket %s", self._region, self._name)
 
         session = boto3.Session(profile_name=aws_profile, region_name=self._region)
-        self._s3 = session.resource("s3")
-        self._s3_client = session.client("s3")
+        self._s3 = session.resource("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
+        self._s3_client = session.client("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
         self._bucket = self._s3.Bucket(self._name)
         self._policy = self._s3.BucketPolicy(self._name)
 
@@ -123,8 +128,10 @@ class AXS3Bucket(object):
             s3 = boto3.Session(
                 profile_name=self._aws_profile,
                 region_name=start_region
-            ).client("s3", config=Config(signature_version='s3v4'))
-
+            ).client("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                    aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                    endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None),
+                    config=Config(signature_version='s3v4'))
             logger.debug("Finding region for bucket %s from with initial region %s", self._name, start_region)
             try:
                 response = s3.head_bucket(Bucket=self._name)
