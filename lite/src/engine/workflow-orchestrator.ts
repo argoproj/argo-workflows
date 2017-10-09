@@ -21,7 +21,7 @@ export class WorkflowOrchestrator {
                     {parameters: task.arguments, artifacts: {}, fixtures: {}});
                 this.logger.debug(`Task has been processed: id: '${task.id}'`);
             } catch (e) {
-                this.logger.error('An internal error during task processing', task, e);
+                this.logger.error('An internal error during task processing', e);
                 this.stepResultsQueue.next({id: task.id, taskId: task.id, result: { status: model.TaskStatus.Failed, internalError: e }});
             }
         });
