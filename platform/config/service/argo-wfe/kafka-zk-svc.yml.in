@@ -25,6 +25,7 @@ metadata:
         app: kafka-zk-1-svc
         service: kafka-zk
 spec:
+    clusterIP: None
     ports:
       - name: broker
         port: 9092
