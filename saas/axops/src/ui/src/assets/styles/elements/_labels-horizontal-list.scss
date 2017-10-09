@@ -25,6 +25,14 @@
             line-height: 20px;
             vertical-align: middle;
         }
+
+        &--no-padding {
+            padding: 0;
+
+            i {
+                font-size: 38px;
+            }
+        }
     }
 
     &__content {
@@ -63,6 +71,10 @@
             margin: 5px 0 0 5px;
             padding: 1px 10px;
             border-radius: $border-radius;
+        }
+
+        &--small {
+            min-height: 36px;
         }
     }
 }

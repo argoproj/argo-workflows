@@ -35,7 +35,7 @@
                         <hr>
 
                         <div>
-                            <div class="">
+                            <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
                                     <input type="checkbox" id="users_and_groups_{{ i }}" [(ngModel)]="eventType.isArgoUsersAndGroupsVisible">
                                     <span><i class="fa fa-check"></i></span>
@@ -45,22 +45,24 @@
                                 <div [hidden]="!eventType.isArgoUsersAndGroupsVisible">
                                     <div class="labels-horizontal-list">
                                         <div class="labels-horizontal-list__top">
-                                            <div class="labels-horizontal-list__add">
-                                                <a (click)="openUserSelectorPanel(i)"><span>+</span> add users</a>
+                                            <div class="labels-horizontal-list__add labels-horizontal-list__add--no-padding">
+                                                <a (click)="openUserSelectorPanel(i)"><i class="ax-icon-new"></i></a>
                                             </div>
                                         </div>
                                         <div class="labels-horizontal-list__content">
-                                            <div class="labels-horizontal-list__white-panel clickable" (click)="openUserSelectorPanel(i)">
-                                                <template ngFor let-user [ngForOf]="notificationRules[i].whom ? notificationRules[i].whom : []">
-                                                    <span>{{ user }}</span>
-                                                </template>
+                                            <div class="notification-row__input-adjustment">
+                                                <div class="labels-horizontal-list__white-panel labels-horizontal-list__white-panel--small clickable" (click)="openUserSelectorPanel(i)">
+                                                    <template ngFor let-user [ngForOf]="eventTypesList[i].notificationRules.whom ? getOnlyUsersAndGroups(i) : []">
+                                                        <span>{{ user }}</span>
+                                                    </template>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="">
+                            <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
                                     <input type="checkbox" id="email">
                                     <span><i class="fa fa-check"></i></span>
@@ -68,12 +70,31 @@
                                 <label for="email">{{ 'Email' | translate }}</label>
                             </div>
 
-                            <div class="">
+                            <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="slack_channels">
+                                    <input type="checkbox" id="slack_channels_{{ i }}" [(ngModel)]="eventType.isSlackChannelsVisible">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
-                                <label for="slack_channels">{{ 'Slack Channels' | translate }}</label>
+                                <label for="slack_channels_{{ i }}">{{ 'Slack Channels' | translate }}</label>
+
+                                <div [hidden]="!eventType.isSlackChannelsVisible">
+                                    <div class="labels-horizontal-list">
+                                        <div class="labels-horizontal-list__top">
+                                            <div class="labels-horizontal-list__add labels-horizontal-list__add--no-padding">
+                                                <a (click)="openSlackChannelPanel(i)"><i class="ax-icon-new"></i></a>
+                                            </div>
+                                        </div>
+                                        <div class="labels-horizontal-list__content">
+                                            <div class="notification-row__input-adjustment">
+                                                <div class="labels-horizontal-list__white-panel labels-horizontal-list__white-panel--small clickable" (click)="openSlackChannelPanel(i)">
+                                                    <template ngFor let-channel [ngForOf]="eventTypesList[i].notificationRules.whom ? getOnlySlackChannels(i) : []">
+                                                        <span>{{ channel }}</span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -84,4 +105,5 @@
     </div>
 </div>
 
-<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="notificationRules[selectedId].whom ? notificationRules[selectedId].whom : []" (onChange)="updateUsersList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
+<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="[]" (onChange)="updateUsersList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
+<ax-slack-channels-panel [show]="isVisibleSlackPanel" [selectedChannels]="[]" (onChange)="updateSlackChannelsList($event)" (onClose)="closeSlackChannelPalen()"></ax-slack-channels-panel>

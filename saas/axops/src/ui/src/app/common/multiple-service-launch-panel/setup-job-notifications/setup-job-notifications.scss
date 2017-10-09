@@ -26,5 +26,19 @@
 
     &__events-selector {
         margin-top: 20px;
+        width: 50%;
+    }
+
+    &__input-adjustment {
+        margin-left: 30px;
+        margin-right: 60px;
+    }
+
+    &__list-item {
+        margin-bottom: 15px;
+
+        label {
+            font-size: 14px;
+        }
     }
 }

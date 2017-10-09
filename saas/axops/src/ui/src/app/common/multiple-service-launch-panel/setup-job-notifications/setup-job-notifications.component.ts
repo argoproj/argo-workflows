@@ -11,7 +11,6 @@ export class SetupJobNotificationsComponent implements OnInit {
     @Output()
     public onChange: EventEmitter<any> = new EventEmitter();
 
-    public notificationRules: PolicyNotification[] = [];
 
     public eventTypes: any = {
         items: [
@@ -30,12 +29,20 @@ export class SetupJobNotificationsComponent implements OnInit {
         isVisible: false,
         isStaticList: true,
         isDisplayedInline: true,
-        isArgoUsersAndGroupsVisible: false
+        isArgoUsersAndGroupsVisible: false,
+        isSlackChannelsVisible: false,
+        notificationRules: {
+            whom: [],
+            when: []
+        }
     };
 
+    public notificationRules: PolicyNotification[] = [];
     public eventTypesList: any[] = [];
     public isVisibleUserSelectorPanel: boolean = false;
+    public isVisibleSlackPanel: boolean = false;
     public axUsersAndGroupsList: string[] = [];
+    public axSlackChannelsList: string[] = [];
     public selectedId: number = 0;
 
 
@@ -46,18 +53,14 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public onEventTypeChange(when: string[], index) {
-        console.log('onEventTypeChange', event, index);
-        this.notificationRules[index].when = when;
-        console.log('this.notificationRules', this.notificationRules);
+        this.eventTypes[index].notificationRules.when = when;
     }
 
     public addNotificationRule() {
         this.eventTypesList.push(JSON.parse(JSON.stringify(this.eventTypes)));
-        this.notificationRules.push({ whom: [], when: []});
     }
 
     public removeNotificationRule(index) {
-        this.notificationRules.splice(index, 1);
         this.eventTypesList.splice(index, 1);
     }
 
@@ -70,8 +73,38 @@ export class SetupJobNotificationsComponent implements OnInit {
         this.isVisibleUserSelectorPanel = false;
     }
 
-    public updateUsersList(whom: string[]) {
-        console.log('updateUsersList', whom, this.selectedId, this. notificationRules);
-        this.notificationRules[this.selectedId].whom = whom;
+    public openSlackChannelPanel(index) {
+        this.isVisibleSlackPanel = true;
+        this.selectedId = index;
+    }
+
+    public closeSlackChannelPalen() {
+        this.isVisibleSlackPanel = false;
+    }
+
+    public getOutsideUsers(index) {
+        return this.eventTypesList[index].notificationRules.whom.filter(recipient => recipient.indexOf('@user') !== -1).sort();
+    }
+
+    public getOnlyUsersAndGroups(index) {
+        return this.eventTypesList[index].notificationRules.whom.filter(recipient => recipient.indexOf('@slack') === -1 && recipient.indexOf('@user') === -1).sort();
+    }
+
+    public getOnlySlackChannels(index) {
+        return this.eventTypesList[index].notificationRules.whom.filter(recipient => recipient.indexOf('@slack') !== -1).sort();
+    }
+
+    public updateUsersList(users: string[]) {
+        this.updateNotificationWhomList(users);
+    }
+
+    public updateSlackChannelsList(channels: string[]) {
+        let axSlackChannelsList = channels.map(channel => `${channel}@slack`);
+        this.updateNotificationWhomList(axSlackChannelsList);
+    }
+
+    public updateNotificationWhomList(list: string[]) {
+        this.eventTypesList[this.selectedId].notificationRules.whom =
+            this.eventTypesList[this.selectedId].notificationRules.whom.concat(list).filter((value, index, self) => self.indexOf(value) === index );
     }
 }
