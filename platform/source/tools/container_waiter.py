@@ -27,6 +27,7 @@ from ax.kubernetes.client import KubernetesApiClient, swagger_client, retry_unle
 from ax.kubernetes.kubelet import KubeletClient
 from ax.kubernetes.pod_status import PodStatus
 from ax.meta import AXClusterId, AXClusterDataPath
+from ax.platform.cluster_infra import get_host_ip
 from ax.platform.exceptions import AXPlatformException, AXVolumeOwnershipException
 from ax.platform.stats import post_start_container_event
 from ax.platform.routes import ServiceEndpoint
@@ -257,21 +258,6 @@ def wait_for_container(jobname,
                 docker_ids[name] = docker_id
 
         return main_container_status, dind_container_status, docker_ids
-
-    def get_host_ip():
-        """
-        Get's the IP address of the host in the cluster.
-        """
-        k8s = KubernetesApiClient()
-        resp = k8s.api.list_node()
-        assert len(resp.items) == 1, "Need 1 node in the cluster"
-        for n in resp.items:
-            for addr in n.status.addresses:
-                addr_dict = addr.to_dict()
-                if addr_dict['type'] == 'InternalIP':
-                    return addr_dict['address']
-
-        return None
 
     def check_pod_status(pod_status):
         status = pod_status.status
