@@ -85,7 +85,7 @@ spec:
                         memory: 300Mi
                 env:
                   - name: KAFKA_MEM_SIZE
-                    value: "500"
+                    value: "275"
                   - name: BROKER_ID
                     value: "1"
                   - name: NUM_PARTITIONS
@@ -109,10 +109,10 @@ spec:
                 resources:
                     limits:
                         cpu: 200m
-                        memory: 550Mi
+                        memory: 100Mi
                     requests:
                         cpu: 100m
-                        memory: 550Mi
+                        memory: 100Mi
                 env:
                   - name: ZK_SERVER_HEAP
                     value: "64"
