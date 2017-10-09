@@ -6,15 +6,15 @@ import { Docker } from 'node-docker-api';
 
 import * as model from './model';
 import * as utils from './utils';
-import { Executor, StepResult, WorkflowContext, Logger } from './common';
+import { Executor, StepResult, WorkflowContext, Logger, ContainerStepInput } from './common';
 
 export class DockerExecutor implements Executor {
 
     private docker: Docker;
     private emptyDir: string;
 
-    constructor(private logger: Logger) {
-        this.docker = new Docker({ socketPath: '/var/run/docker.sock' });
+    constructor(private logger: Logger, private socketPath = '/var/run/docker.sock') {
+        this.docker = new Docker({ socketPath });
         this.emptyDir = path.join(shell.tempdir(), 'empty');
         shell.mkdir('-p', this.emptyDir);
     }
@@ -38,7 +38,7 @@ export class DockerExecutor implements Executor {
         await network.remove();
     }
 
-    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, inputArtifacts: {[name: string]: string}, networkId: string): Observable<StepResult> {
+    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput): Observable<StepResult> {
         return new Observable<StepResult>((observer: Observer<StepResult>) => {
             let container = null;
             let result: StepResult = { status: model.TaskStatus.Waiting };
@@ -58,10 +58,10 @@ export class DockerExecutor implements Executor {
                 try {
                     await this.ensureImageExists(step.template.image);
 
-                    container = await this.docker.container.create({ image: step.template.image, cmd: step.template.command.concat(step.template.args)});
+                    container = await this.createContainer(step, input);
 
-                    if (networkId) {
-                        await this.docker.network.get(networkId).connect({ container: container.id, endpointConfig: { aliases: [ step.id ] }});
+                    if (input.networkId) {
+                        await this.docker.network.get(input.networkId).connect({ container: container.id, endpointConfig: { aliases: [ step.id ] }});
                     }
 
                     let tempDir = path.join(shell.tempdir(), 'argo', step.id);
@@ -69,7 +69,7 @@ export class DockerExecutor implements Executor {
                     shell.mkdir('-p', artifactsDir);
 
                     await Promise.all(Object.keys((step.template.inputs || {}).artifacts || {}).map(async artifactName => {
-                        let inputArtifactPath = inputArtifacts[artifactName];
+                        let inputArtifactPath = input.artifacts[artifactName];
                         let artifact = step.template.inputs.artifacts[artifactName];
                         await this.dockerMakeDir(container, artifact.path);
                         await utils.exec(['docker', 'cp', inputArtifactPath, `${container.id}:${artifact.path}`], false);
@@ -110,6 +110,14 @@ export class DockerExecutor implements Executor {
 
     public getLiveLogs(containerId: string): Observable<string> {
         return this.getContainerLogs(this.docker.container.get(containerId));
+    }
+
+    private createContainer(step: model.WorkflowStep, input: ContainerStepInput) {
+        let hostConfig = null;
+        if (input.dockerParams) {
+            hostConfig = { binds: [`${this.socketPath}:/var/run/docker.sock`] };
+        }
+        return this.docker.container.create({ image: step.template.image, cmd: step.template.command.concat(step.template.args), hostConfig});
     }
 
     private async removeContainerSafe(container): Promise<any> {
