@@ -223,6 +223,19 @@ class Task(object):
     def stop(self):
         Pod(self.name, self.namespace).stop()
 
+    def _add_optional_envs(self, container):
+        s3_endpoint = os.getenv("ARGO_S3_ENDPOINT", None)
+        if s3_endpoint:
+            container.add_env("ARGO_S3_ENDPOINT", value=s3_endpoint)
+
+        access_key = os.getenv("ARGO_S3_ACCESS_KEY_ID", None)
+        if access_key:
+            container.add_env("ARGO_S3_ACCESS_KEY_ID", value_from_secret=("argo-access-key", "argo-access-key"))
+            container.add_env("ARGO_S3_ACCESS_KEY_SECRET", value_from_secret=("argo-secret-key", "argo-secret-key"))
+        aws_region = os.getenv("AX_AWS_REGION", None)
+        if aws_region:
+            container.add_env("AX_AWS_REGION", aws_region)
+
     def _container_to_pod(self, labels):
 
         # generate the service environment
@@ -263,6 +276,8 @@ class Task(object):
         artifacts_container.add_env("AX_TARGET_CLOUD", target_cloud)
         artifacts_container.add_env("ARGO_LOG_BUCKET_NAME", os.environ.get("ARGO_LOG_BUCKET_NAME"))
         artifacts_container.add_env("ARGO_DATA_BUCKET_NAME", self._s3_bucket)
+        self._add_optional_envs(artifacts_container)
+
         secret_resources = artifacts_container.add_configs_as_vols(self.service.template.get_all_configs(), self.name, self.namespace)
         self._resources.insert_all(secret_resources)
 
@@ -352,10 +367,7 @@ class Task(object):
 
         c.add_env("ARGO_LOG_BUCKET_NAME", os.environ.get("ARGO_LOG_BUCKET_NAME"))
         c.add_env("ARGO_DATA_BUCKET_NAME", self._s3_bucket)
-        c.add_env("ARGO_S3_ACCESS_KEY_ID", os.environ.get("ARGO_S3_ACCESS_KEY_ID"))
-        c.add_env("ARGO_S3_ACCESS_KEY_SECRET", os.environ.get("ARGO_S3_ACCESS_KEY_SECRET"))
-        c.add_env("ARGO_S3_ENDPOINT", os.environ.get("ARGO_S3_ENDPOINT"))
-
+        self._add_optional_envs(c)
         return c
 
     def _gen_service_env(self):
