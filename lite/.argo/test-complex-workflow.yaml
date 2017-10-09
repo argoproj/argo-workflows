@@ -1,0 +1,86 @@
+---
+type: workflow
+version: 1
+name: test-complex-workflow
+
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+
+steps:
+- STEP1:
+    image: ruby
+    command: ["sh", "-c"]
+    args: ["mkdir /src && echo hello > /src/index.html"]
+    outputs:
+      artifacts:
+        CODE:
+          path: /src
+- STEP2_1:
+    template: text-nested-workflow
+    arguments:
+      artifacts.CODE: "%%steps.STEP1.outputs.artifacts.CODE%%"
+      parameters.VAL: "STEP2_1"
+
+---
+type: workflow
+version: 1
+name: text-nested-workflow
+inputs:
+  artifacts:
+    CODE:
+  parameters:
+    VAL:
+fixtures:
+- WEB:
+    template: web
+steps:
+- NESTED_STEP1:
+    template: test-step
+  NESTED_STEP2:
+    image: ruby
+    command: ["sh", "-c"]
+    args: ["sleep 2 && curl http://%%fixtures.WEB.ip%%:5000"]
+    outputs:
+      artifacts:
+        CODE:
+          path: /src
+
+---
+type: container
+version: 1
+name: test-step
+resources:
+  mem_mib: 100
+  cpu_cores: 0.1
+image: busybox
+command: ["sh", "-c"]
+args: ["echo 'hello %%inputs.parameters.VAL%%' > /src/test"]
+inputs:
+  parameters:
+    VAL:
+  artifacts:
+    CODE:
+      path: /src
+outputs:
+  artifacts:
+    CODE:
+      path: /src
+
+---
+type: container
+version: 1
+name: web
+resources:
+  mem_mib: 100
+  cpu_cores: 0.1
+image: ruby
+inputs:
+  artifacts:
+    CODE:
+      path: /src
+command: ["sh", "-c"]
+args: ["cd /src && ruby -run -e httpd . -p 5000"]

@@ -164,13 +164,32 @@ export class WorkflowOrchestrator {
             .last().toPromise();
     }
 
+    private getDockerParams(container: model.WorkflowStep) {
+        try {
+            if (container.template.annotations['ax_ea_docker_enable']) {
+                let params = JSON.parse(container.template.annotations['ax_ea_docker_enable']);
+                return {
+                    graphStorageSize: params['graph-storage-size'],
+                    cpuCores: params['cpu_cores'],
+                    memMib: params['mem_mib'],
+                };
+            }
+        } catch (e) {
+            return null;
+        }
+    }
+
     private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Observable<StepResult> {
         input = this.processStepInput(container, parentContext, input);
         container.template.command = container.template.command.map(item => this.substituteInputParams(item, input));
         container.template.args = container.template.args.map(item => this.substituteInputParams(item, input));
         container.template.image = this.substituteInputParams(container.template.image, input);
 
-        return this.executor.executeContainerStep(container, parentContext, input.artifacts, input.networkId);
+        return this.executor.executeContainerStep(container, parentContext, {
+            artifacts: input.artifacts,
+            networkId: input.networkId,
+            dockerParams: this.getDockerParams(container),
+        });
     }
 
     private processStepInput(step: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): StepInput {

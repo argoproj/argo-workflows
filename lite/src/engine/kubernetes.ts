@@ -6,7 +6,7 @@ import * as shellEscape from 'shell-escape';
 import * as fs from 'fs';
 
 import * as model from './model';
-import { Executor, StepResult, WorkflowContext, Logger } from './common';
+import { Executor, StepResult, WorkflowContext, Logger, ContainerStepInput } from './common';
 import * as utils from './utils';
 
 export class KubernetesExecutor implements Executor {
@@ -41,7 +41,7 @@ export class KubernetesExecutor implements Executor {
         // do nothing, pods are running in same network
     }
 
-    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, inputArtifacts: {[name: string]: string}, networkId: string): Observable<StepResult> {
+    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput): Observable<StepResult> {
         return new Observable<StepResult>((observer: Observer<StepResult>) => {
             let stepPod = null;
 
@@ -96,7 +96,7 @@ export class KubernetesExecutor implements Executor {
                     let startedPod = await this.podUpdates.filter(pod => pod.metadata.name === step.id && pod.status.phase !== 'Pending').first().toPromise();
 
                     await Promise.all(Object.keys(step.template.inputs && step.template.inputs.artifacts || {}).map(async artifactName => {
-                        let inputArtifactPath = inputArtifacts[artifactName];
+                        let inputArtifactPath = input.artifacts[artifactName];
                         let artifact = step.template.inputs.artifacts[artifactName];
                         this.logger.debug(`Uploading artifacts to '${artifact.path}' for step id ${step.id}`);
                         await this.runKubeCtl(['cp', inputArtifactPath, `${stepPod.metadata.name}:/__argo/`, '-c', 'step'], true);

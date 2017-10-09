@@ -26,8 +26,14 @@ export interface StepInput {
     networkId?: string;
 }
 
+export interface ContainerStepInput {
+    artifacts: {[name: string]: string};
+    networkId: string;
+    dockerParams?: { graphStorageSize: string, cpuCores: number, memMib: number };
+}
+
 export interface Executor {
-    executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, inputArtifacts: {[name: string]: string}, networkdId: string): Observable<StepResult>;
+    executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput): Observable<StepResult>;
     getLiveLogs(containerId: string): Observable<string>;
     createNetwork(name: string): Promise<string>;
     deleteNetwork(name: string): Promise<any>;
