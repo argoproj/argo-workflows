@@ -11,8 +11,8 @@ Several features of the full Argo workflow engine are not yet supported by Argo-
 - [x] ~~Kubernetes integration~~
 - [x] ~~API to access artifacts~~
 - [x] ~~[Dynamic fixtures](https://argoproj.github.io/argo-site/docs/yaml/fixture_template.html)~~
-- [ ] Add Argo UI into Argo-lite distribution
-- [x] [Docker-in-Docker](https://argoproj.github.io/argo-site/docs/yaml/argo_tutorial_2_create_docker_image_build_workflow.html)
+- [x] ~~Add Argo UI into Argo-lite distribution~~
+- [x] ~~[Docker-in-Docker](https://argoproj.github.io/argo-site/docs/yaml/argo_tutorial_2_create_docker_image_build_workflow.html)~~
 - [ ] No unit or e2e tests
 
 ## Why?
@@ -26,13 +26,13 @@ Three ways of running  Argo-lite.
 1. Run everything using locally installed Docker
 
 ```
-docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js
+docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui
 ```
 
 2. Run argo-lite locally but use an existing kubernetes cluster as the backend container engine
 
 ```
-docker run --rm -p 8080:8080 -v <path-to-your-kube-config>:/cluster.conf -it argoproj/argo-lite node /app/dist/main.js --engine kubernetes --config /cluster.conf
+docker run --rm -p 8080:8080 -v <path-to-your-kube-config>:/cluster.conf -it argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui --engine kubernetes --config /cluster.conf
 ```
 
 3. Run everything on an existing kubernetes cluster
@@ -43,13 +43,18 @@ git clone git@github.com:argoproj/argo-lite.git && cd argo-lite && kubectl creat
 
 ## Try it:
 
-Install and configure the [Argo CLI](https://argoproj.github.io/argo-site/docs/dev-cli-reference.html).
+1. Install [Argo CLI](https://argoproj.github.io/argo-site/docs/dev-cli-reference.html).
+2. Configure Argo CLI to talk to your Argo-lite instance:
 
-Build argo-lite using argo-lite :-)
+```
+argo login --config argo-lite http://localhost:8080 --username test --password test
+```
+
+3. Build argo-lite using argo-lite :-)
 
 ```
 cd argo-lite/.argo
-argo job submit checkout-build --config mini --local
+argo job submit lite-build --config argo-lite --local
 ```
 
 ![alt text](./demo.gif "Logo Title Text 1")

@@ -37,6 +37,7 @@ export class WorkflowOrchestrator {
 
     private processStep(taskId: string, step: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Promise<StepResult> {
         try {
+            this.populateDefaultArgs(step, input);
             switch (step.template.type) {
                 case 'workflow':
                     return this.processWorkflow(taskId, step, parentContext, input);
@@ -49,6 +50,16 @@ export class WorkflowOrchestrator {
             this.stepResultsQueue.next({ id: step.id, taskId, result: { status: model.TaskStatus.Failed, internalError: e } });
             throw e;
         }
+    }
+
+    private populateDefaultArgs(step: model.WorkflowStep, input: StepInput) {
+        input.parameters = input.parameters || {};
+        Object.keys(step.template.inputs && step.template.inputs.parameters || {}).forEach(paramKey => {
+            let defaultVal = step.template.inputs.parameters[paramKey] && step.template.inputs.parameters[paramKey].default;
+            if (defaultVal && !input.parameters.hasOwnProperty(`parameters.${paramKey}`)) {
+                input.parameters[`parameters.${paramKey}`] = defaultVal;
+            }
+        });
     }
 
     private async processWorkflow(taskId: string, workflow: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Promise<StepResult> {
@@ -224,10 +235,10 @@ export class WorkflowOrchestrator {
 
     private substituteInputParams(src: string, input: StepInput) {
         Object.keys(input.parameters).filter(key => key.startsWith('parameters.')).forEach(key => {
-            src = src.replace(`%%inputs.${key}%%`, input.parameters[key]);
+            src = src.replace(new RegExp(`%%inputs.${key}%%`, 'g'), input.parameters[key]);
         });
         Object.keys(input.fixtures).forEach(key => {
-            src = src.replace(`%%fixtures.${key}.ip%%`, input.fixtures[key]);
+            src = src.replace(new RegExp(`%%fixtures.${key}.ip%%`, 'g'), input.fixtures[key]);
         });
         return src;
     }

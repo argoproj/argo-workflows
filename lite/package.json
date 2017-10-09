@@ -5,8 +5,8 @@
   "author": "Alexander Matyushentsev <alexander@applatix.com>",
   "license": "MIT",
   "scripts": {
-    "server:dev": "nodemon --nolazy --inspect -r ts-node/register src/main.ts | bunyan",
-    "server:dev:kubernetes": "nodemon --nolazy --inspect -r ts-node/register src/main.ts --engine kubernetes -c ${KUBECONFIG} | bunyan",
+    "server:dev": "nodemon --nolazy --inspect -r ts-node/register src/main.ts -u ../saas/axops/src/ui/dist | bunyan",
+    "server:dev:kubernetes": "nodemon --nolazy --inspect -r ts-node/register src/main.ts -u ../saas/axops/src/ui/dist --engine kubernetes -c ${KUBECONFIG} | bunyan",
     "lint": "tslint -c tslint.json --project tsconfig.json",
     "build": "tsc"
   },
@@ -22,6 +22,7 @@
     "body-parser": "^1.18.2",
     "bunyan": "^1.8.12",
     "express": "^4.15.4",
+    "express-history-api-fallback": "^2.2.1",
     "json-stream": "^1.0.0",
     "kubernetes-client": "^3.16.0",
     "moment": "^2.18.1",

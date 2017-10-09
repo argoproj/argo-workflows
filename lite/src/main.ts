@@ -4,6 +4,7 @@ import * as yargs from 'yargs';
 import * as bunyan from 'bunyan';
 import * as bodyParser from 'body-parser';
 import * as engine from './engine';
+import * as fallback from 'express-history-api-fallback';
 
 let logger = new engine.Logger(bunyan.createLogger({
     name: 'argo-lite',
@@ -18,24 +19,27 @@ let logger = new engine.Logger(bunyan.createLogger({
 
 let executor: engine.Executor = null;
 
-let argv = yargs
+let args = yargs
     .option('e', {
         alias: 'engine',
         describe: 'Container executor engine',
         choices: ['docker', 'kubernetes', 'kubernetes-in-cluster'],
         default: 'docker',
+    }).option('u', {
+        alias: 'uiResourcesPath',
+        describe: 'Path to UI static resources',
     }).argv;
 
-if (argv.engine === 'docker') {
+if (args.engine === 'docker') {
     console.info('Using docker as container executor');
     executor = new engine.DockerExecutor(logger);
-} else if (argv.engine === 'kubernetes') {
-    argv = yargs
+} else if (args.engine === 'kubernetes') {
+    let argv = yargs
         .option('c', {alias: 'config', describe: 'Kubernetes config file path', demand: true })
         .option('n', {alias: 'namespace', describe: 'Existing kubernetes namespace', default: 'default'}).argv;
     console.info(`Using kubernetes as container executor: config path: ${argv.config}, namespace ${argv.namespace}`);
     executor = engine.KubernetesExecutor.fromConfigFile(logger, argv.config, argv.namespace);
-} else if (argv.engine === 'kubernetes-in-cluster') {
+} else if (args.engine === 'kubernetes-in-cluster') {
     console.info('Using kubernetes as container executor assuming argo is running inside the cluster');
     executor = engine.KubernetesExecutor.inCluster(logger);
 }
@@ -113,5 +117,10 @@ app.get('/v1/services/:id/outputs/:name', (req, res) => {
     res.setHeader('Content-disposition', `attachment; filename=${req.params.name}.tar`);
     workflowEngine.getStepArtifact(req.params.id, req.params.name).subscribe(chunk => res.write(chunk), err => res.send(err), () => res.status(200).send());
 });
+
+if (args.uiResourcesPath) {
+    app.use(express.static(args.uiResourcesPath));
+    app.use(fallback('index.html', { root: args.uiResourcesPath }));
+}
 
 app.listen(8080);

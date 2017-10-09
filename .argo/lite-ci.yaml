@@ -1,7 +1,37 @@
 ---
 type: workflow
 version: 1
-name: lite-ci
+name: Argo Lite Release
+
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+    IMAGE_URL:
+      default: "argoproj/argo-lite:staging"
+    REG_USER:
+      default: "%%config.amatyushentsev@gmail.com.dockerhub.user%%"
+    REG_PASSWORD:
+      default: "%%config.amatyushentsev@gmail.com.dockerhub.password%%"
+
+steps:
+- build:
+    template: Argo Lite CI
+- publish:
+    template: lite-publish
+    arguments:
+      artifacts.API: "%%steps.build.outputs.artifacts.API%%"
+      artifacts.UI: "%%steps.build.outputs.artifacts.UI%%"
+      parameters.IMAGE_URL: "%%inputs.parameters.IMAGE_URL%%"
+      parameters.REG_USER: "%%inputs.parameters.REG_USER%%"
+      parameters.REG_PASSWORD: "%%inputs.parameters.REG_PASSWORD%%"
+
+---
+type: workflow
+version: 1
+name: Argo Lite CI
 
 inputs:
   parameters:
@@ -11,38 +41,71 @@ inputs:
       default: "%%session.repo%%"
 
 steps:
--
-  checkout:
+- checkout:
     template: git-checkout
--
-  build:
-    template: lite-build
+- build-api:
+    template: lite-build-api
+    arguments:
+      artifacts.CODE: "%%steps.checkout.outputs.artifacts.CODE%%"
+  build-ui:
+    template: gui-build
     arguments:
       artifacts.CODE: "%%steps.checkout.outputs.artifacts.CODE%%"
 
 outputs:
   artifacts:
-    CODE:
-      from: "%%steps.build.outputs.artifacts.CODE%%"
+    UI:
+      from: "%%steps.build-ui.outputs.artifacts.CODE%%"
+    API:
+      from: "%%steps.build-api.outputs.artifacts.CODE%%"
+
 
 ---
 type: container
 version: 1
-name: lite-build
+name: lite-build-api
 
 inputs:
   artifacts:
     CODE:
-      path: /app/src
+      path: /src
 
 outputs:
   artifacts:
     CODE:
-      path: /app/src
+      path: /src
 
 image: node:6.3.1
 resources:
-  mem_mib: 256
+  mem_mib: 1024
   cpu_cores: 0.1
 command: ["sh", "-c"]
-args: [cd /app/src/lite && npm install -g yarn && yarn install && npm run build]
+args: [cd /src/lite && npm install -g yarn && yarn install && npm run build]
+
+---
+type: container
+version: 1
+name: lite-publish
+
+inputs:
+  parameters:
+    IMAGE_URL:
+    REG_USER:
+    REG_PASSWORD:
+  artifacts:
+    UI:
+      path: /ui
+    API:
+      path: /api
+
+image: docker
+resources:
+  mem_mib: 512
+  cpu_cores: 0.1
+command: ["sh", "-c"]
+args: [
+  docker login -u %%inputs.parameters.REG_USER%% -p %%inputs.parameters.REG_PASSWORD%% $REGISTRY &&
+  cd /api/lite && cp -r /ui/saas/axops/src/ui/dist/ ./dist/ui && docker build -t %%inputs.parameters.IMAGE_URL%% . && docker push %%inputs.parameters.IMAGE_URL%%
+]
+annotations:
+  ax_ea_docker_enable: '{"graph-storage-size": "10Gi", "cpu_cores":0.1, "mem_mib":200}'
