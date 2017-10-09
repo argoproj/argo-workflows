@@ -11,6 +11,7 @@ import uuid
 
 from ax.cloud import Cloud
 from ax.cloud.aws import SecurityToken
+from ax.platform.cluster_infra import get_host_ip
 from ax.util.const import COLOR_NORM, COLOR_RED
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
     CommonClusterOperations, PlatformOnlyInstaller
@@ -151,6 +152,20 @@ class ArgoClusterManager(object):
         except Exception:
             pass
 
+    def _get_s3_proxy_port(self, kubeconfig):
+        k8s = KubernetesApiClient(config_file=args.kubeconfig)
+        resp = k8s.api.list_namespaced_service("default")
+        for i in resp.items:
+            if i.metadata.name == "s3proxy":
+                return i.spec.ports[0].node_port
+
+        return None
+
+    def _get_s3_proxy_endpoint(self, kubeconfig):
+        host = get_host_ip(kubeconfig)
+        port = self._get_s3_proxy_port(kubeconfig)
+        return "http://" + host + ":" + port
+
     def install_platform_only(self, args):
         logger.info("Installing platform only ...")
 
@@ -158,6 +173,14 @@ class ArgoClusterManager(object):
         os.environ["ARGO_LOG_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_DATA_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
+        os.environ["AX_TARGET_CLOUD"] = Cloud.CLOUD_AWS
+
+        if args.cloud_provider == "minikube":
+            s3_proxy_present = self._get_s3_proxy_port(args.kubeconfig) != None
+            if not s3_proxy_present:
+                # Install s3_proxy
+                args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
+                # Create bucket
 
         self._set_env_if_present(args)
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)
