@@ -33,8 +33,8 @@ func GetS3Object() gin.HandlerFunc {
 		c.Header("Content-Type", *output.ContentType)
 		if output.ContentDisposition != nil {
 			c.Header("Content-Disposition", *output.ContentDisposition)
-		}else {
-			c.Header("Content-Disposition", "attachment; filename=" + key)
+		} else {
+			c.Header("Content-Disposition", "attachment; filename="+key)
 		}
 		_, err = io.Copy(c.Writer, output.Body)
 		output.Body.Close()
