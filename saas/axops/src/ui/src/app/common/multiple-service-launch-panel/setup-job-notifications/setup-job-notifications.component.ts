@@ -2,6 +2,7 @@ import { Component, Output, EventEmitter, OnInit } from '@angular/core';
 
 import { PolicyNotification } from '../../../model';
 import { CustomRegex } from '../../customValidators/CustomRegex';
+import { AuthenticationService } from '../../../services';
 
 @Component({
     selector: 'ax-setup-job-notifications',
@@ -13,7 +14,7 @@ export class SetupJobNotificationsComponent implements OnInit {
     public onChange: EventEmitter<any> = new EventEmitter();
 
     public notification: any = {
-        eventType: {
+        jobEvents: {
             items: [
                 {name: 'on_change', value: 'on_change', checked: false},
                 {name: 'on_cron', value: 'on_cron', checked: false},
@@ -42,7 +43,7 @@ export class SetupJobNotificationsComponent implements OnInit {
         outsideUsers: [],
         filteredOutsideUsers: [],
         validationMessages: {
-            eventType: { show: false, text: 'You have to choose at least one Event Type' },
+            jobEvents: { show: false, text: 'You have to choose at least one Event Type' },
             wrongFormatRecipients: { show: false, text: 'Recipients have to be an email format' }
         }
     };
@@ -53,16 +54,18 @@ export class SetupJobNotificationsComponent implements OnInit {
     public isVisibleSlackPanel: boolean = false;
     public selectedId: number = 0;
 
+    constructor(private authenticationService: AuthenticationService) {
+    }
 
     ngOnInit() {
         if (!this.rules.length) {
-            this.addNotificationRule();
+            this.addDefaultNotificationRule();
         }
     }
 
     public onRuleChange(when: string[], index) {
         this.notificationsList[index].rules.when = when;
-        this.notificationsList[index].validationMessages.eventType.show = false;
+        this.notificationsList[index].validationMessages.jobEvents.show = false;
     }
 
     public addNotificationRule() {
@@ -106,11 +109,15 @@ export class SetupJobNotificationsComponent implements OnInit {
         return this.notificationsList[index].rules.whom.filter(recipient => recipient.indexOf('@slack') !== -1).sort();
     }
 
-    public updateUsersList(users: string[]) {
+    public updateOnlyUsersAndGroupsList(users: string[]) {
+        this.notificationsList[this.selectedId].rules.whom =
+            this.notificationsList[this.selectedId].rules.whom.filter(recipient => (recipient.indexOf('@slack') !== -1 || recipient.indexOf('@user') !== -1)).sort();
         this.updateNotificationWhomList(users);
     }
 
     public updateSlackChannelsList(channels: string[]) {
+        this.notificationsList[this.selectedId].rules.whom =
+            this.notificationsList[this.selectedId].rules.whom.filter(recipient => (recipient.indexOf('@slack') === -1)).sort();
         let axSlackChannelsList = channels.map(channel => `${channel}@slack`);
         this.updateNotificationWhomList(axSlackChannelsList);
     }
@@ -121,7 +128,6 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public updateOutsideUsers(users: string, index) {
-        // i moved scope up, to be able to validate on click submit btn
         this.notificationsList[index].outsideUsers = users.split(',');
         this.notificationsList[index].filteredOutsideUsers =
             this.notificationsList[index].outsideUsers.filter(user => CustomRegex.emailPattern.test(user.trim())).map(user => `${user}@user`);
@@ -155,7 +161,7 @@ export class SetupJobNotificationsComponent implements OnInit {
         let isAnyError = false;
         this.notificationsList.forEach(notification => {
             if (!notification.rules.when.length) {
-                notification.validationMessages.eventType.show = true;
+                notification.validationMessages.jobEvents.show = true;
                 isAnyError = true;
             }
 
@@ -179,5 +185,16 @@ export class SetupJobNotificationsComponent implements OnInit {
         });
 
         console.log('notificationsList', notifications, this.notificationsList);
+    }
+
+    private addDefaultNotificationRule() {
+        let notification = JSON.parse(JSON.stringify(this.notification));
+        notification.rules = {
+            whom: [this.authenticationService.getUsername()],
+            when: ['on_success', 'on_failure']
+        };
+        notification.isArgoUsersAndGroupsVisible = true;
+
+        this.notificationsList.push(notification);
     }
 }

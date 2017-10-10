@@ -23,14 +23,14 @@
                         <div class="notification-row__events-selector">
                             <ax-filter-multi-select
                                     [brightStyle]="true"
-                                    [texts]="notification.eventType.messages"
-                                    [items]="notification.eventType.items"
-                                    [isStaticList]="notification.eventType.isStaticList"
-                                    [isDisplayedInline]="notification.eventType.isDisplayedInline"
-                                    [selectedItems]="[]"
+                                    [texts]="notification.jobEvents.messages"
+                                    [items]="notification.jobEvents.items"
+                                    [isStaticList]="notification.jobEvents.isStaticList"
+                                    [isDisplayedInline]="notification.jobEvents.isDisplayedInline"
+                                    [selectedItems]="notification.rules.when"
                                     (onChange)="onRuleChange($event, i)">
                             </ax-filter-multi-select>
-                            <span class="error-msg" *ngIf="notification.validationMessages.eventType.show">{{ notification.validationMessages.eventType.text }}</span>
+                            <span class="error-msg" *ngIf="notification.validationMessages.jobEvents.show">{{ notification.validationMessages.jobEvents.text }}</span>
                         </div>
 
                         <h5>{{ 'Select Recipients:' | uppercase }}</h5>
@@ -39,7 +39,11 @@
                         <div>
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="users_and_groups_{{ i }}" (change)="argoUsersAndGroupsCheckboxChange(notification)">
+                                    <input
+                                        type="checkbox"
+                                        id="users_and_groups_{{ i }}"
+                                        [checked]="notification.isArgoUsersAndGroupsVisible"
+                                        (change)="argoUsersAndGroupsCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="users_and_groups_{{ i }}">{{ 'Argo Users and Groups' | translate }}</label>
@@ -66,7 +70,7 @@
 
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="email_{{ i }}" (change)="emailCheckboxChange(notification)">
+                                    <input type="checkbox" id="email_{{ i }}" [checked]="notification.isEmailVisible" (change)="emailCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="email_{{ i }}">{{ 'Email' | translate }}</label>
@@ -85,7 +89,7 @@
 
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="slack_channels_{{ i }}" (change)="slackChannelsCheckboxChange(notification)">
+                                    <input type="checkbox" id="slack_channels_{{ i }}" [checked]="notification.isSlackChannelsVisible" (change)="slackChannelsCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="slack_channels_{{ i }}">{{ 'Slack Channels' | translate }}</label>
@@ -118,5 +122,5 @@
     </div>
 </div>
 
-<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="[]" (onChange)="updateUsersList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
-<ax-slack-channels-panel [show]="isVisibleSlackPanel" [selectedChannels]="[]" (onChange)="updateSlackChannelsList($event)" (onClose)="closeSlackChannelPalen()"></ax-slack-channels-panel>
+<ax-users-selector-panel [show]="isVisibleUserSelectorPanel" [selectedUsers]="getOnlyUsersAndGroups(selectedId)" (onChange)="updateOnlyUsersAndGroupsList($event)" (onClose)="closeUserSelectorPanel()"></ax-users-selector-panel>
+<ax-slack-channels-panel [show]="isVisibleSlackPanel" [selectedChannels]="getOnlySlackChannels(selectedId)" (onChange)="updateSlackChannelsList($event)" (onClose)="closeSlackChannelPalen()"></ax-slack-channels-panel>
