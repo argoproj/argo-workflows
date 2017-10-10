@@ -3,6 +3,7 @@ import * as moment from 'moment';
 import * as uuid from 'uuid';
 import * as fs from 'fs';
 import * as tar from 'tar-fs';
+import { Docker } from 'node-docker-api';
 
 import { WorkflowOrchestrator } from './workflow-orchestrator';
 import { Executor, StepResult, Logger } from './common';
@@ -14,8 +15,8 @@ export class WorkflowEngine {
     private taskResultsById = new Map<string, { task: model.Task; stepResults: { [id: string]: StepResult }}>();
     private stepResultsById = new Map<string, StepResult>();
 
-    constructor(private executor: Executor, private logger: Logger) {
-        this.orchestrator = new WorkflowOrchestrator(executor, logger);
+    constructor(private executor: Executor, private logger: Logger, private docker: Docker) {
+        this.orchestrator = new WorkflowOrchestrator(executor, logger, docker);
         this.orchestrator.getStepResults().subscribe(res => {
             this.stepResultsById.set(res.id, res.result);
             let taskResult = this.taskResultsById.get(res.taskId);

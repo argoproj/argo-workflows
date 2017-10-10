@@ -13,7 +13,7 @@ export class DockerExecutor implements Executor {
     private docker: Docker;
     private emptyDir: string;
 
-    constructor(private logger: Logger, private socketPath = '/var/run/docker.sock') {
+    constructor(private logger: Logger, private socketPath: string) {
         this.docker = new Docker({ socketPath });
         this.emptyDir = path.join(shell.tempdir(), 'empty');
         shell.mkdir('-p', this.emptyDir);
@@ -56,7 +56,7 @@ export class DockerExecutor implements Executor {
 
             let execute = async () => {
                 try {
-                    await this.ensureImageExists(step.template.image);
+                    await utils.ensureImageExists(this.docker, step.template.image);
 
                     container = await this.createContainer(step, input);
 
@@ -132,13 +132,6 @@ export class DockerExecutor implements Executor {
 
     private getContainerLogs(container): Observable<string> {
         return Observable.fromPromise(container.logs({ stdout: true, stderr: true, follow: true })).flatMap(stream => utils.reactifyStringStream(stream));
-    }
-
-    private async ensureImageExists(imageUrl: string): Promise<any> {
-        let res = await await this.docker.image.list({filter: imageUrl});
-        if (res.length === 0) {
-            await utils.exec(['docker', 'pull', imageUrl]);
-        }
     }
 
     private async dockerMakeDir(container: any, dirPath: string) {
