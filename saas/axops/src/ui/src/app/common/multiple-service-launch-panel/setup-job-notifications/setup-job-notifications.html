@@ -1,7 +1,6 @@
 <div class="panel-box__content">
     <div class="panel-box__title">
         Set Up Job Notifications
-        <button class="ax-button ax-button--base" (click)="test()">TEST</button>
     </div>
     <div class="panel-box__subtitle">
         Set up notifications for job events.
@@ -19,6 +18,7 @@
                     <div class="notification-row">
                         <h5>{{ 'Selected Job Events:' | uppercase }}</h5>
                         <hr>
+                        <span class="error-msg" *ngIf="notification.validationMessages.jobEvents.show">{{ notification.validationMessages.jobEvents.text }}</span>
 
                         <div class="notification-row__events-selector">
                             <ax-filter-multi-select
@@ -30,11 +30,11 @@
                                     [selectedItems]="notification.rules.when"
                                     (onChange)="onRuleChange($event, i)">
                             </ax-filter-multi-select>
-                            <span class="error-msg" *ngIf="notification.validationMessages.jobEvents.show">{{ notification.validationMessages.jobEvents.text }}</span>
                         </div>
 
                         <h5>{{ 'Select Recipients:' | uppercase }}</h5>
                         <hr>
+                        <span class="error-msg" *ngIf="notification.validationMessages.missingRecipients.show">{{ notification.validationMessages.missingRecipients.text }}</span>
 
                         <div>
                             <div class="notification-row__list-item">
@@ -78,7 +78,11 @@
                                 <div [hidden]="!notification.isEmailVisible">
                                     <div class="labels-horizontal-list">
                                         <div class="labels-horizontal-list__content notification-row__input-adjustment">
-                                            <textarea [ngModel]="notification.outsideUsers" (ngModelChange)='updateOutsideUsers($event, i)' placeholder="jondoe@mail.com, johnsmith@mail.com"></textarea>
+                                            <textarea
+                                                    [ngModel]="notification.outsideUsers"
+                                                    (ngModelChange)="updateOutsideUsers($event, i)"
+                                                    placeholder="jondoe@mail.com, johnsmith@mail.com">
+                                            </textarea>
                                             <span class="error-msg" *ngIf="notification.validationMessages.wrongFormatRecipients.show">
                                                 {{ notification.validationMessages.wrongFormatRecipients.text }}
                                             </span>

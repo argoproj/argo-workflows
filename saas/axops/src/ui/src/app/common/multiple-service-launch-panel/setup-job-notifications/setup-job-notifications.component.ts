@@ -1,8 +1,21 @@
-import { Component, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+
+import { FilterMultiSelect } from 'argo-ui-lib/src/components';
 
 import { PolicyNotification } from '../../../model';
 import { CustomRegex } from '../../customValidators/CustomRegex';
 import { AuthenticationService } from '../../../services';
+
+interface NotificationObject {
+    jobEvents: FilterMultiSelect;
+    isArgoUsersAndGroupsVisible: boolean;
+    isSlackChannelsVisible: boolean;
+    isEmailVisible: boolean;
+    rules: PolicyNotification;
+    outsideUsers: string[];
+    filteredOutsideUsers: string[];
+    validationMessages: any;
+}
 
 @Component({
     selector: 'ax-setup-job-notifications',
@@ -10,10 +23,8 @@ import { AuthenticationService } from '../../../services';
     styles: [ require('./setup-job-notifications.scss') ],
 })
 export class SetupJobNotificationsComponent implements OnInit {
-    @Output()
-    public onChange: EventEmitter<any> = new EventEmitter();
 
-    public notification: any = {
+    public notification: NotificationObject = {
         jobEvents: {
             items: [
                 {name: 'on_change', value: 'on_change', checked: false},
@@ -25,6 +36,7 @@ export class SetupJobNotificationsComponent implements OnInit {
                 {name: 'on_start', value: 'on_start', checked: false},
                 {name: 'on_success', value: 'on_success', checked: false},
             ],
+            selectedItems: [],
             messages: {
                 name: 'JOB EVENTS',
             },
@@ -43,8 +55,9 @@ export class SetupJobNotificationsComponent implements OnInit {
         outsideUsers: [],
         filteredOutsideUsers: [],
         validationMessages: {
-            jobEvents: { show: false, text: 'You have to choose at least one Event Type' },
-            wrongFormatRecipients: { show: false, text: 'Recipients have to be an email format' }
+            jobEvents: { show: false, text: 'You have to choose at least one Job Event' },
+            wrongFormatRecipients: { show: false, text: 'Recipients have to be an email format' },
+            missingRecipients: { show: false, text: 'You have to choose at least one recipient from any of the groups' },
         }
     };
 
@@ -73,12 +86,14 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public removeNotificationRule(index) {
+        // this.selectedId = 0;
         this.notificationsList.splice(index, 1);
     }
 
     public openUserSelectorPanel(index) {
         this.isVisibleUserSelectorPanel = true;
         this.selectedId = index;
+        this.notificationsList[index].validationMessages.missingRecipients.show = false;
     }
 
     public closeUserSelectorPanel() {
@@ -88,6 +103,7 @@ export class SetupJobNotificationsComponent implements OnInit {
     public openSlackChannelPanel(index) {
         this.isVisibleSlackPanel = true;
         this.selectedId = index;
+        this.notificationsList[index].validationMessages.missingRecipients.show = false;
     }
 
     public closeSlackChannelPalen() {
@@ -102,11 +118,13 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public getOnlyUsersAndGroups(index) {
-        return this.notificationsList[index].rules.whom.filter(recipient => recipient.indexOf('@slack') === -1 && recipient.indexOf('@user') === -1).sort();
+        return this.notificationsList.length ?
+            this.notificationsList[index].rules.whom.filter(recipient => recipient.indexOf('@slack') === -1 && recipient.indexOf('@user') === -1).sort() : [];
     }
 
     public getOnlySlackChannels(index) {
-        return this.notificationsList[index].rules.whom.filter(recipient => recipient.indexOf('@slack') !== -1).sort();
+        return this.notificationsList.length ?
+            this.notificationsList[index].rules.whom.filter(recipient => recipient.indexOf('@slack') !== -1).sort() : [];
     }
 
     public updateOnlyUsersAndGroupsList(users: string[]) {
@@ -128,10 +146,12 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public updateOutsideUsers(users: string, index) {
+        this.selectedId = index;
         this.notificationsList[index].outsideUsers = users.split(',');
         this.notificationsList[index].filteredOutsideUsers =
             this.notificationsList[index].outsideUsers.filter(user => CustomRegex.emailPattern.test(user.trim())).map(user => `${user}@user`);
         this.notificationsList[index].validationMessages.wrongFormatRecipients.show = false;
+        this.notificationsList[index].validationMessages.missingRecipients.show = false;
     }
 
     public argoUsersAndGroupsCheckboxChange(notification) {
@@ -157,7 +177,7 @@ export class SetupJobNotificationsComponent implements OnInit {
         }
     }
 
-    test() {
+    public getNotifications() {
         let isAnyError = false;
         this.notificationsList.forEach(notification => {
             if (!notification.rules.when.length) {
@@ -173,6 +193,11 @@ export class SetupJobNotificationsComponent implements OnInit {
                 notification.rules.whom = notification.rules.whom.filter(item => item.indexOf('@user') === -1);
                 this.updateNotificationWhomList(notification.filteredOutsideUsers);
             }
+
+            if (!notification.rules.whom.length) {
+                notification.validationMessages.missingRecipients.show = true;
+                isAnyError = true;
+            }
         });
 
         // if there is error in any notification rule, don't allow to submit
@@ -180,11 +205,11 @@ export class SetupJobNotificationsComponent implements OnInit {
             return;
         }
 
-        let notifications = this.notificationsList.map(notification => {
+        this.rules = this.notificationsList.map(notification => {
             return notification.rules;
         });
 
-        console.log('notificationsList', notifications, this.notificationsList);
+        return this.rules;
     }
 
     private addDefaultNotificationRule() {

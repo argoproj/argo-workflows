@@ -1,14 +1,15 @@
 import * as _ from 'lodash';
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 
-import {Artifact, Commit, Template, Task, Project, ProjectAction, Branch } from '../../model';
+import { Artifact, Commit, Template, Task, Project, ProjectAction, Branch } from '../../model';
 import { TemplateService, TaskService, CommitsService } from '../../services';
 import { NotificationsService } from 'argo-ui-lib/src/components';
 import { Session, HtmlForm, MULTIPLE_SERVICE_LAUNCH_PANEL_TABS } from './multiple-service-launch-panel.view-models';
+import { SetupJobNotificationsComponent } from './setup-job-notifications/setup-job-notifications.component';
 
 @Component({
     selector: 'ax-multiple-service-launch-panel',
@@ -17,6 +18,9 @@ import { Session, HtmlForm, MULTIPLE_SERVICE_LAUNCH_PANEL_TABS } from './multipl
 })
 export class MultipleServiceLaunchPanelComponent {
     @Output() submitted: EventEmitter<any> = new EventEmitter();
+
+    @ViewChild(SetupJobNotificationsComponent)
+    private setupJobNotifications: SetupJobNotificationsComponent;
 
     public templates: Template[] = [];
     public templatesToSubmit: Template[] = [];
@@ -262,10 +266,11 @@ export class MultipleServiceLaunchPanelComponent {
     }
 
     submit() {
+        let notifications = this.setupJobNotifications.getNotifications();
         this.isSubmitClicked = true;
         this.summaryErrorMessage = this.allForms.invalid;
 
-        if (this.allForms.valid) {
+        if (this.allForms.valid && notifications) {
             if (this.resubmit) {
                 this.resubmitTask(this.task, this.resubmit);
             } else {
@@ -325,10 +330,6 @@ export class MultipleServiceLaunchPanelComponent {
         this.selcetedRepo = branch.repo;
         this.selectedBranch = branch.name;
         this.getTemplates(branch.repo);
-    }
-
-    public setNotifications(event) {
-        console.log('notifications', event);
     }
 
     private prepareForms(templates: Template[], resubmitFailedParameters?: any) {
