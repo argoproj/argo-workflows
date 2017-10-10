@@ -5,6 +5,7 @@ import * as bunyan from 'bunyan';
 import * as bodyParser from 'body-parser';
 import * as engine from './engine';
 import * as fallback from 'express-history-api-fallback';
+import { Docker } from 'node-docker-api';
 
 let logger = new engine.Logger(bunyan.createLogger({
     name: 'argo-lite',
@@ -30,9 +31,11 @@ let args = yargs
         describe: 'Path to UI static resources',
     }).argv;
 
+let dockerSocketPath = '/var/run/docker.sock';
+
 if (args.engine === 'docker') {
     console.info('Using docker as container executor');
-    executor = new engine.DockerExecutor(logger);
+    executor = new engine.DockerExecutor(logger, dockerSocketPath);
 } else if (args.engine === 'kubernetes') {
     let argv = yargs
         .option('c', {alias: 'config', describe: 'Kubernetes config file path', demand: true })
@@ -44,7 +47,7 @@ if (args.engine === 'docker') {
     executor = engine.KubernetesExecutor.inCluster(logger);
 }
 
-let workflowEngine = new engine.WorkflowEngine(executor, logger);
+let workflowEngine = new engine.WorkflowEngine(executor, logger, new Docker({ socketPath: dockerSocketPath }));
 
 let app = express();
 app.use(bodyParser.json());

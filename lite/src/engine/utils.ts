@@ -2,6 +2,7 @@ import { Observable, Observer } from 'rxjs';
 import * as JSONStream from 'json-stream';
 import * as shell from 'shelljs';
 import * as shellEscape from 'shell-escape';
+import { Docker } from 'node-docker-api';
 
 export function reactifyStream(stream, converter = item => item) {
     return new Observable((observer: Observer<any>) => {
@@ -59,4 +60,11 @@ export async function execute(action: () => Promise<any>, retryCount: number, re
 
 export async function executeSafe(action: () => Promise<any>, retryCount: number, retryTimeoutMs: number, doNotFail = true) {
     return execute(action, retryCount, retryTimeoutMs, true);
+}
+
+export async function ensureImageExists(docker: Docker, imageUrl: string): Promise<any> {
+    let res = await docker.image.list({filter: imageUrl});
+    if (res.length === 0) {
+        await exec(['docker', 'pull', imageUrl]);
+    }
 }

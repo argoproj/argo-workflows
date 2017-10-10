@@ -1,4 +1,5 @@
 import { Subject, Observable, Subscription } from 'rxjs';
+import { Docker } from 'node-docker-api';
 
 import * as model from './model';
 import * as utils from './utils';
@@ -10,7 +11,7 @@ export class WorkflowOrchestrator {
     private readonly stepResultsQueue = new Subject<{id: string, taskId: string, result: StepResult}>();
     private readonly tasksProcessingQueue = new Subject<model.Task>();
 
-    constructor(private executor: Executor, private logger: Logger) {
+    constructor(private executor: Executor, private logger: Logger, private docker: Docker) {
         this.tasksProcessingQueue.subscribe(async task => {
             try {
                 this.logger.debug(`New task received: id: '${task.id}'`);
@@ -190,17 +191,28 @@ export class WorkflowOrchestrator {
         }
     }
 
-    private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Observable<StepResult> {
-        input = this.processStepInput(container, parentContext, input);
-        container.template.command = container.template.command.map(item => this.substituteInputParams(item, input));
-        container.template.args = container.template.args.map(item => this.substituteInputParams(item, input));
-        container.template.image = this.substituteInputParams(container.template.image, input);
-
-        return this.executor.executeContainerStep(container, parentContext, {
+    private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Observable<StepResult> {
+        return Observable.fromPromise((async () => {
+            input = this.processStepInput(container, parentContext, input);
+            if (!container.template.command) {
+                let imageEntryPoint = await this.getImageEntryPoint(container.template.image);
+                container.template.command = imageEntryPoint;
+                container.template.args = [];
+            }
+            container.template.command = container.template.command.map(item => this.substituteInputParams(item, input));
+            container.template.args = (container.template.args || []).map(item => this.substituteInputParams(item, input));
+            container.template.image = this.substituteInputParams(container.template.image, input);
+        })()).first().flatMap(() => this.executor.executeContainerStep(container, parentContext, {
             artifacts: input.artifacts,
             networkId: input.networkId,
             dockerParams: this.getDockerParams(container),
-        });
+        }));
+    }
+
+    private async getImageEntryPoint(imageUrl: string) {
+        await utils.ensureImageExists(this.docker, imageUrl);
+        let status = await this.docker.image.get(imageUrl).status();
+        return status.data['ContainerConfig'].Entrypoint;
     }
 
     private processStepInput(step: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): StepInput {

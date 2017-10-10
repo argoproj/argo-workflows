@@ -15,10 +15,18 @@ spec:
     spec:
       containers:
       - name: argo-lite
-        image: alexmt/argo-lite:latest
-        command: ["node", "/app/dist/main.js", "--engine", "kubernetes-in-cluster"]
+        image: argoproj/argo-lite:latest
+        command: ["node", "/app/dist/main.js", "--engine", "kubernetes-in-cluster", "-u", "/app/dist/ui"]
         ports:
         - containerPort: 8080
+        volumeMounts:
+          - name: docker-volume
+            mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-volume
+          hostPath:
+            path: /var/run/docker.sock
+
 ---
 apiVersion: v1
 kind: Service
