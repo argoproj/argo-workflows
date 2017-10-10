@@ -8,6 +8,7 @@ import os
 import requests
 from retrying import retry
 
+from ax.cloud import Cloud
 from ax.platform_client.env import AXEnv
 from ax.util.retry_exception import AXRetry, ax_retry
 
@@ -30,6 +31,9 @@ class AWSMetaData(object):
     def get_region(self):
         if os.environ.get("AX_AWS_REGION", None):
             return os.environ.get("AX_AWS_REGION")
+        if Cloud().own_cloud() != Cloud.CLOUD_AWS:
+            return "unknown-region"
+
         url = self._meta_url + "placement/availability-zone"
         retry = AXRetry(retry_exception=(Exception,))
         r = ax_retry(requests.get, retry, url, timeout=10)
