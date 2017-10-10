@@ -87,19 +87,23 @@ export class NotificationCreationPanelComponent implements OnInit {
         messages: {
             name: 'Event Type',
         },
+        selectedItems: [],
         isVisible: false,
         isStaticList: true,
         isDisplayedInline: true
     };
+
     private eventSeverity: FilterMultiSelect = {
         items: [],
         messages: {
             name: 'Event Severity',
         },
+        selectedItems: [],
         isVisible: false,
         isStaticList: true,
         isDisplayedInline: true
     };
+
     private isNotificationCriteriaPanelVisible: boolean = false;
 
     constructor(private notificationService: NotificationService,
