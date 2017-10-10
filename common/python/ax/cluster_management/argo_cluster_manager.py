@@ -19,6 +19,12 @@ from .app.options import add_install_flags, add_platform_only_flags, ClusterInst
     add_restart_flags, PlatformOnlyInstallConfig, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
     add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
 
+import subprocess
+import requests
+import time
+
+from ax.kubernetes.client import KubernetesApiClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -153,7 +159,7 @@ class ArgoClusterManager(object):
             pass
 
     def _get_s3_proxy_port(self, kubeconfig):
-        k8s = KubernetesApiClient(config_file=args.kubeconfig)
+        k8s = KubernetesApiClient(config_file=kubeconfig)
         resp = k8s.api.list_namespaced_service("default")
         for i in resp.items:
             if i.metadata.name == "s3proxy":
