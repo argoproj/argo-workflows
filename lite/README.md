@@ -38,12 +38,12 @@ docker run --rm -p 8080:8080 -v <path-to-your-kube-config>:/cluster.conf -it arg
 3. Run everything on an existing kubernetes cluster
 
 ```
-git clone git@github.com:argoproj/argo-lite.git && cd argo-lite && kubectl create -f argo-lite.yaml
+git clone https://github.com/argoproj/argo.git && cd argo/lite && kubectl create -f argo-lite.yaml
 ```
 
 ## Try it:
 
-1. Install [Argo CLI](https://argoproj.github.io/argo-site/docs/dev-cli-reference.html).
+1. Install [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html).
 2. Configure Argo CLI to talk to your Argo-lite instance:
 
 ```
