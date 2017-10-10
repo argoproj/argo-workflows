@@ -6,9 +6,11 @@ import (
 	"applatix.io/axops/utils"
 	"encoding/json"
 	"fmt"
+	"sync"
 )
 
 var IsSystemInitialized bool = false
+var mutex = &sync.Mutex{}
 
 var (
 	ErrToolMissingID            = axerror.ERR_API_INVALID_PARAM.NewWithMessage("id is required.")
@@ -52,6 +54,8 @@ func (t *ToolBase) GenerateUUID() {
 
 func Create(t Tool) (*axerror.AXError, int) {
 	t.GenerateUUID()
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if err, code := t.pre(); err != nil {
 		return err, code
@@ -77,6 +81,9 @@ func Create(t Tool) (*axerror.AXError, int) {
 }
 
 func Update(t Tool) (*axerror.AXError, int) {
+
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if err, code := t.pre(); err != nil {
 		return err, code
@@ -117,6 +124,9 @@ func Update(t Tool) (*axerror.AXError, int) {
 }
 
 func Delete(t Tool) (*axerror.AXError, int) {
+
+	mutex.Lock()
+	defer mutex.Unlock()
 
 	if err, code := t.pushDelete(); err != nil {
 		return err, code
