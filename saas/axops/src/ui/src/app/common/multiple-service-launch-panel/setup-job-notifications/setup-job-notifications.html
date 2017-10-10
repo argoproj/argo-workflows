@@ -1,6 +1,7 @@
 <div class="panel-box__content">
     <div class="panel-box__title">
         Set Up Job Notifications
+        <button class="ax-button ax-button--base" (click)="test()">TEST</button>
     </div>
     <div class="panel-box__subtitle">
         Set up notifications for job events.
@@ -12,7 +13,7 @@
                     <span class="notification-row__plus-icon">+</span> {{ 'Add Notification Rule' | translate | uppercase }}
                 </a>
             </div>
-            <div *ngFor="let eventType of eventTypesList; let i = index">
+            <div *ngFor="let notification of notificationsList; let i = index">
                 <div class="shaded-box__content margin-bottom-medium">
                     <a class="fr" (click)="removeNotificationRule(i)"><i class="ax-icon-close"></i></a>
                     <div class="notification-row">
@@ -22,13 +23,14 @@
                         <div class="notification-row__events-selector">
                             <ax-filter-multi-select
                                     [brightStyle]="true"
-                                    [texts]="eventType.messages"
-                                    [items]="eventType.items"
-                                    [isStaticList]="eventType.isStaticList"
-                                    [isDisplayedInline]="eventType.isDisplayedInline"
+                                    [texts]="notification.eventType.messages"
+                                    [items]="notification.eventType.items"
+                                    [isStaticList]="notification.eventType.isStaticList"
+                                    [isDisplayedInline]="notification.eventType.isDisplayedInline"
                                     [selectedItems]="[]"
-                                    (onChange)="onEventTypeChange($event, i)">
+                                    (onChange)="onRuleChange($event, i)">
                             </ax-filter-multi-select>
+                            <span class="error-msg" *ngIf="notification.validationMessages.eventType.show">{{ notification.validationMessages.eventType.text }}</span>
                         </div>
 
                         <h5>{{ 'Select Recipients:' | uppercase }}</h5>
@@ -37,12 +39,12 @@
                         <div>
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="users_and_groups_{{ i }}" [(ngModel)]="eventType.isArgoUsersAndGroupsVisible">
+                                    <input type="checkbox" id="users_and_groups_{{ i }}" (change)="argoUsersAndGroupsCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="users_and_groups_{{ i }}">{{ 'Argo Users and Groups' | translate }}</label>
 
-                                <div [hidden]="!eventType.isArgoUsersAndGroupsVisible">
+                                <div [hidden]="!notification.isArgoUsersAndGroupsVisible">
                                     <div class="labels-horizontal-list">
                                         <div class="labels-horizontal-list__top">
                                             <div class="labels-horizontal-list__add labels-horizontal-list__add--no-padding">
@@ -52,7 +54,7 @@
                                         <div class="labels-horizontal-list__content">
                                             <div class="notification-row__input-adjustment">
                                                 <div class="labels-horizontal-list__white-panel labels-horizontal-list__white-panel--small clickable" (click)="openUserSelectorPanel(i)">
-                                                    <template ngFor let-user [ngForOf]="eventTypesList[i].notificationRules.whom ? getOnlyUsersAndGroups(i) : []">
+                                                    <template ngFor let-user [ngForOf]="notification.rules.whom ? getOnlyUsersAndGroups(i) : []">
                                                         <span>{{ user }}</span>
                                                     </template>
                                                 </div>
@@ -64,20 +66,31 @@
 
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="email">
+                                    <input type="checkbox" id="email_{{ i }}" (change)="emailCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
-                                <label for="email">{{ 'Email' | translate }}</label>
+                                <label for="email_{{ i }}">{{ 'Email' | translate }}</label>
+
+                                <div [hidden]="!notification.isEmailVisible">
+                                    <div class="labels-horizontal-list">
+                                        <div class="labels-horizontal-list__content notification-row__input-adjustment">
+                                            <textarea [ngModel]="notification.outsideUsers" (ngModelChange)='updateOutsideUsers($event, i)' placeholder="jondoe@mail.com, johnsmith@mail.com"></textarea>
+                                            <span class="error-msg" *ngIf="notification.validationMessages.wrongFormatRecipients.show">
+                                                {{ notification.validationMessages.wrongFormatRecipients.text }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="slack_channels_{{ i }}" [(ngModel)]="eventType.isSlackChannelsVisible">
+                                    <input type="checkbox" id="slack_channels_{{ i }}" (change)="slackChannelsCheckboxChange(notification)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="slack_channels_{{ i }}">{{ 'Slack Channels' | translate }}</label>
 
-                                <div [hidden]="!eventType.isSlackChannelsVisible">
+                                <div [hidden]="!notification.isSlackChannelsVisible">
                                     <div class="labels-horizontal-list">
                                         <div class="labels-horizontal-list__top">
                                             <div class="labels-horizontal-list__add labels-horizontal-list__add--no-padding">
@@ -87,7 +100,7 @@
                                         <div class="labels-horizontal-list__content">
                                             <div class="notification-row__input-adjustment">
                                                 <div class="labels-horizontal-list__white-panel labels-horizontal-list__white-panel--small clickable" (click)="openSlackChannelPanel(i)">
-                                                    <template ngFor let-channel [ngForOf]="eventTypesList[i].notificationRules.whom ? getOnlySlackChannels(i) : []">
+                                                    <template ngFor let-channel [ngForOf]="notification.rules.whom ? getOnlySlackChannels(i) : []">
                                                         <span>{{ channel }}</span>
                                                     </template>
                                                 </div>
