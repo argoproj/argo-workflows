@@ -51,7 +51,7 @@ export class ConfigManagementOverviewComponent implements OnInit, HasLayoutSetti
             }
 
             let showMyOnly = params['showMyOnly'] ?
-                params['showMyOnly'] === 'true' : viewPreferencesFilterState.filters.indexOf('myown') > -1;
+                params['showMyOnly'] === 'true' : (viewPreferencesFilterState.filters || []).indexOf('myown') > -1;
             if (this.showMyOnly !== showMyOnly) {
                 this.toolbarFilters.model = showMyOnly ? ['myown'] : [];
                 this.showMyOnly = showMyOnly;
