@@ -6,6 +6,8 @@ Argo-lite is a lightweight workflow engine that executes container-native workfl
 
 Argo-lite is not yet fully tested and may crash under load. Early testing/contributions are very welcome.
 
+Known issues: https://github.com/argoproj/argo/labels/argo-lite
+
 ## Why?
 
 Argo-lite may be used to quicky experience [Argo](https://github.com/argoproj/argo) workflows without deploying a complete Kubernetes cluster or to debug Argo workflows locally on your laptop.
