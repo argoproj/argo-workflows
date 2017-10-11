@@ -31,7 +31,7 @@ argo login --config argo-lite http://localhost:8080 --username test --password t
 ```
 curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
 ```
-or using helm:
+or using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
 ```
 helm repo add argo https://argoproj.github.io/argo-helm
