@@ -29,8 +29,10 @@ argo login --config argo-lite http://localhost:8080 --username test --password t
 1. Create Argo-lite deployment manually:
 
 ```
+# Argo Lite UI is available at http://localhost:8080
 curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
 ```
+
 or using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
 ```
@@ -41,6 +43,7 @@ helm install argo/argo-lite
 2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo-lite instance:
 
 ```
+# Argo Lite UI is available at http://<deployed argo-lite service URL>
 argo login --config argo-lite-kube <deployed argo-lite service URL> --username test --password test
 ```
 
