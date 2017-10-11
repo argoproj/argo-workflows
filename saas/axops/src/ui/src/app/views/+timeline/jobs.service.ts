@@ -221,10 +221,15 @@ export class JobsService {
     public resubmitTask(rootTask, runPartial = false): any {
         this.taskService.getTask(rootTask.id).subscribe(task => {
             if (!runPartial) {
-                this.taskService.launchTask({
+                let args = {
                     arguments: task.arguments,
-                    template_id: task.template_id,
-                }).subscribe(newTask => {
+                };
+                if (task.hasOwnProperty('template_id')) {
+                    args['template_id'] = task.template_id;
+                } else {
+                    args['template'] = task.template;
+                }
+                this.taskService.launchTask(args).subscribe(newTask => {
                     this.updateJobsList.emit({});
                     let jobUrl = this.locationStrategy.prepareExternalUrl(`app/timeline/jobs/${newTask.id}`);
                     this.notificationsService.success(
