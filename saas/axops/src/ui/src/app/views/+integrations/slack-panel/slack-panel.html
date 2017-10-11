@@ -5,7 +5,7 @@
                 <div class="ax-form-row">
                     <input id="oauth_token" type="text" class="ax-field" formControlName="oauth_token" ax-label-placeholder>
                     <label for="oauth_token" class="ax-label-placeholder">Enter OAuth Token</label>
-                    <div class="ax-form-row__error-msg" *ngIf="!slackForm.controls['oauth_token'].valid && (slackForm.controls['oauth_token'].touched || submitted)">Nickname is incorrect<i class="fa fa-warning"></i></div>
+                    <div class="ax-form-row__error-msg" *ngIf="!slackForm.controls['oauth_token'].valid && (slackForm.controls['oauth_token'].touched || submitted)">Token is incorrect<i class="fa fa-warning"></i></div>
                 </div>
             </div>
         </div>

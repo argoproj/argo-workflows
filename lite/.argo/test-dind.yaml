@@ -1,0 +1,20 @@
+---
+type: workflow
+version: 1
+name: test-dind-workflow
+steps:
+- run-dind:
+    template: test-dind
+
+---
+type: container
+version: 1
+name: test-dind
+resources:
+  mem_mib: 100
+  cpu_cores: 0.1
+image: docker
+command: ["sh", "-c"]
+args: ["docker run --rm -t busybox echo test"]
+annotations:
+  ax_ea_docker_enable: '{"graph-storage-size": "10Gi", "cpu_cores":0.1, "mem_mib":200}'

@@ -344,7 +344,7 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
         cfg.vpc_id = None
         cfg.vpc_cidr_base = None
         cfg.subnet_mask_size = None
-        cfg.trusted_cidrs = None
+        cfg.trusted_cidrs = ClusterInstallDefaults.TRUSTED_CIDR
         cfg.user_on_demand_nodes = None
         cfg.spot_instances_option = "none"
         cfg.cluster_autoscaling_scan_interval = None
@@ -356,6 +356,7 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
         if cfg.cloud_provider == "minikube":
             self.service_manifest_root = "/ax/config/service/argo-wfe"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
+            Cloud(target_cloud="aws")
         else:
             self.service_manifest_root = "/ax/config/service/argo-all"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-all-platform-bootstrap.cfg"
@@ -435,5 +436,9 @@ def add_platform_only_flags(parser):
 
     # Add bucket
     parser.add_argument("--cluster-bucket", default=None, required=True, help="S3 complaint bucket to use")
+    parser.add_argument("--bucket-endpoint", default=None, help="HTTP Endpoint for the cluster-bucket")
+    parser.add_argument("--access-key", default=None, help="Access key for accessing the bucket")
+    parser.add_argument("--secret-key", default=None, help="Secret key for accessing the bucket")
+
     # Add kubeconfig
     parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")

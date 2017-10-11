@@ -65,14 +65,14 @@ func main() {
 
 	if axErr := axops.CreateDomainManagementTool(); axErr != nil {
 		utils.ErrorLog.Println("Failed to load domain configuartions:", axErr)
-		os.Exit(1)
+		//os.Exit(1)
 	} else {
 		utils.InfoLog.Println("Loaded the domain configurations.")
 	}
 
 	if axErr := cluster.InitClusterSettings(); axErr != nil {
 		utils.ErrorLog.Println("Failed to load cluster settings:", axErr)
-		os.Exit(1)
+		//os.Exit(1)
 	} else {
 		utils.InfoLog.Println("Loaded the cluster settings.")
 	}

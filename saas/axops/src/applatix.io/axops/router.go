@@ -382,6 +382,11 @@ func GetRounter(internal bool) *gin.Engine {
 			sandbox.GET("/status", getSandboxStatus())
 		}
 
+		s3 := v1.Group("s3object")
+		{
+			s3.GET("", GetS3Object())
+		}
+
 		tools_get := v1.Group("/tools")
 		{
 			tools_get.GET("", GetToolList(internal))

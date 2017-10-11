@@ -1,0 +1,42 @@
+{
+  "name": "mini-argo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Alexander Matyushentsev <alexander@applatix.com>",
+  "license": "MIT",
+  "scripts": {
+    "server:dev": "nodemon --nolazy --inspect -r ts-node/register src/main.ts -u ../saas/axops/src/ui/dist | bunyan",
+    "server:dev:kubernetes": "nodemon --nolazy --inspect -r ts-node/register src/main.ts -u ../saas/axops/src/ui/dist --engine kubernetes -c ${KUBECONFIG} | bunyan",
+    "lint": "tslint -c tslint.json --project tsconfig.json",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@types/bunyan": "^1.8.3",
+    "@types/express": "^4.0.37",
+    "@types/node": "^8.0.32",
+    "@types/request": "^2.0.3",
+    "@types/shell-escape": "^0.2.0",
+    "@types/shelljs": "^0.7.4",
+    "@types/uuid": "^3.4.2",
+    "@types/yargs": "^8.0.2",
+    "body-parser": "^1.18.2",
+    "bunyan": "^1.8.12",
+    "express": "^4.15.4",
+    "express-history-api-fallback": "^2.2.1",
+    "json-stream": "^1.0.0",
+    "kubernetes-client": "^3.16.0",
+    "moment": "^2.18.1",
+    "node-docker-api": "^1.1.16",
+    "nodemon": "^1.12.0",
+    "request": "^2.81.0",
+    "rxjs": "^5.4.3",
+    "shell-escape": "^0.2.0",
+    "shelljs": "^0.7.8",
+    "tar-fs": "^1.15.3",
+    "ts-node": "^3.3.0",
+    "tslint": "4.5.1",
+    "typescript": "^2.5.2",
+    "uuid": "^3.1.0",
+    "yargs": "^9.0.1"
+  }
+}

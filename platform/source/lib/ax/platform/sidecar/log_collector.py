@@ -22,6 +22,7 @@ from ax.platform.container_specs import is_ax_aux_container
 from ax.platform.exceptions import AXPlatformException
 from ax.util.ax_artifact import AXArtifacts
 from ax.cloud import Cloud
+from ax.cloud.aws import AXS3Bucket
 
 from inotify.calls import InotifyError
 from retrying import retry
@@ -319,11 +320,13 @@ class ContainerLogCollector(Thread):
             #     determined, but as we upload .gz files after IN_CLOSE_WRITE, we
             #     don't need to set it
             extra_args = {
-                "ACL": "bucket-owner-full-control",
-                "ServerSideEncryption": "AES256",
                 "Metadata": meta_data,
                 "ContentDisposition": "attachment; filename={}".format(full_name)
             }
+            if AXS3Bucket.supports_encryption():
+                extra_args["ACL"] = "bucket-owner-full-control"
+                extra_args["ServerSideEncryption"] = "AES256"
+
             logger.info("about to upload log %s to %s (%s) to s3", s, d, artifact_uuid)
             if not bucket.put_file(local_file_name=s, s3_key=d, ExtraArgs=extra_args):
                 raise AXPlatformException("Failed to put object {} to s3 {}".format(s, d))

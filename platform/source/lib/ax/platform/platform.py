@@ -8,6 +8,7 @@
 Module to start/stop AX platform by managing kubernetes objects
 """
 
+import base64
 import logging
 import os
 import random
@@ -189,6 +190,8 @@ class AXPlatform(object):
             "DNS_SERVER_IP": os.getenv("DNS_SERVER_IP", default_kube_up_env["DNS_SERVER_IP"]),
             "ARGO_DATA_BUCKET_NAME": AXClusterConfigPath(self._cluster_name_id).bucket(),
             "LOAD_BALANCER_TYPE": "LoadBalancer",
+            "ARGO_S3_ACCESS_KEY_ID": base64.b64encode(os.getenv("ARGO_S3_ACCESS_KEY_ID", "")),
+            "ARGO_S3_ACCESS_KEY_SECRET": base64.b64encode(os.getenv("ARGO_S3_ACCESS_KEY_SECRET", "")),
         }
 
 
@@ -301,6 +304,8 @@ class AXPlatform(object):
         else:
             self._replacing = self._generate_replacing_for_user_provisioned_cluster()
 
+        logger.debug("Replacing ENVs: %s", self._replacing)
+
         # TODO: remove component's dependencies to AXOPS_EXT_DNS env (#32)
         # At this moment, we MUST separate first step due to the above dependency
         assert len(steps) >= 2, "Should have at least 1 step to create axops"
@@ -309,9 +314,8 @@ class AXPlatform(object):
         self.create_objects(steps[2])
 
         # Prepare axops_eip
-        self._set_ext_dns()
-
-        logger.debug("Replacing ENVs: %s", self._replacing)
+        if self._cluster_config.get_provider() != "minikube":
+            self._set_ext_dns()
 
         info_bound = "=======================================================\n"
         img_namespace = "Image Namespace: {}\n".format(self._software_info.image_namespace)

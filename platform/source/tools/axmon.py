@@ -13,6 +13,7 @@ monkey.patch_all()
 from ax.util.az_patch import az_patch
 az_patch()
 
+import os
 import argparse
 import logging
 import signal
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     logging.getLogger("botocore").setLevel(logging.WARNING)
     logging.getLogger("boto3").setLevel(logging.WARNING)
 
-    Cloud().set_target_cloud(Cloud().own_cloud())
+    Cloud().set_target_cloud(os.getenv("AX_TARGET_CLOUD", Cloud().own_cloud()))
     signal.signal(signal.SIGUSR1, debug)
     axmon_rest_start(port=args.port)
     AXMon().run()

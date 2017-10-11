@@ -10,6 +10,7 @@ Library for accessing AWS S3.
 This is organized at bucket level.
 """
 
+import os
 import logging
 import json
 import time
@@ -101,8 +102,12 @@ class AXS3Bucket(object):
         logger.info("Using region %s for bucket %s", self._region, self._name)
 
         session = boto3.Session(profile_name=aws_profile, region_name=self._region)
-        self._s3 = session.resource("s3")
-        self._s3_client = session.client("s3")
+        self._s3 = session.resource("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
+        self._s3_client = session.client("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
         self._bucket = self._s3.Bucket(self._name)
         self._policy = self._s3.BucketPolicy(self._name)
 
@@ -111,6 +116,20 @@ class AXS3Bucket(object):
 
     def get_bucket_name(self):
         return self._name
+
+    @staticmethod
+    def supports_encryption():
+        # only s3proxy doesn't support encryption
+        # TODO: replace with check for cloud != minikube
+        return not os.environ.get("ARGO_S3_ENDPOINT", None)
+
+    @staticmethod
+    def supports_signed_url():
+        # use signed url for aws s3 only
+        # aws s3 is assumed when s3 endpoint is not specified
+        # TODO: replace with check for cloud == aws
+        return not os.environ.get("ARGO_S3_ENDPOINT", None)
+
 
     @retry(
         retry_on_exception=head_bucket_retry,
@@ -123,8 +142,10 @@ class AXS3Bucket(object):
             s3 = boto3.Session(
                 profile_name=self._aws_profile,
                 region_name=start_region
-            ).client("s3", config=Config(signature_version='s3v4'))
-
+            ).client("s3", aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                    aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                    endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None),
+                    config=Config(signature_version='s3v4'))
             logger.debug("Finding region for bucket %s from with initial region %s", self._name, start_region)
             try:
                 response = s3.head_bucket(Bucket=self._name)
@@ -334,11 +355,11 @@ class AXS3Bucket(object):
                        http://boto3.readthedocs.org/en/latest/reference/services/s3.html#S3.Object.get
         :return: actual object or None
         """
-        if not self.exists():
-            return None
         try:
             return self._s3.Object(self._name, key).get(**kwargs)["Body"].read().decode("utf-8")
         except Exception as e:
+            if not self.exists():
+                return None
             if "NoSuchKey" not in str(e):
                 raise
         return None

@@ -27,6 +27,7 @@ from ax.kubernetes.client import KubernetesApiClient, swagger_client, retry_unle
 from ax.kubernetes.kubelet import KubeletClient
 from ax.kubernetes.pod_status import PodStatus
 from ax.meta import AXClusterId, AXClusterDataPath
+from ax.platform.cluster_infra import get_host_ip
 from ax.platform.exceptions import AXPlatformException, AXVolumeOwnershipException
 from ax.platform.stats import post_start_container_event
 from ax.platform.routes import ServiceEndpoint
@@ -311,9 +312,18 @@ def wait_for_container(jobname,
         return False
 
     logger.info("jobname=%s podname=%s containername=%s", jobname, podname, containername)
-    node_instance_id = Cloud().meta_data().get_instance_id()
+    node_instance_id = "user-node"
+    try:
+        node_instance_id = Cloud().meta_data().get_instance_id()
+    except Exception:
+        pass
     logger.info("Using node instance id %s, namespace %s", node_instance_id, NAMESPACE)
-    kubelet_cli = KubeletClient()
+
+    try:
+        kubelet_cli = KubeletClient()
+    except Exception as e:
+        host_ip = get_host_ip()
+        kubelet_cli = KubeletClient(host_ip)
 
     # have to match with conainer_outer_executor.py
     container_done_flag_postfix = "_ax_container_done_flag"

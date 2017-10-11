@@ -175,8 +175,11 @@ class ContainerOuterExecutor(object):
         logger.info("<env>: artifact_tags: %s", self._artifacts_tags)
         logger.info("<env>: docker_enable: %s", self._docker_enable)
 
-        if Cloud().in_cloud_aws():
-            self._s3 = boto3.Session().resource('s3')
+        if Cloud().in_cloud_aws() or os.environ.get("AX_TARGET_CLOUD", None) == "aws":
+            self._s3 = boto3.Session().resource('s3',
+                    aws_access_key_id=os.environ.get("ARGO_S3_ACCESS_KEY_ID", None),
+                    aws_secret_access_key=os.environ.get("ARGO_S3_ACCESS_KEY_SECRET", None),
+                    endpoint_url=os.environ.get("ARGO_S3_ENDPOINT", None))
         elif Cloud().in_cloud_gcp():
             # TODO: Don't need it. Clean it.
             self._s3 = None
@@ -1125,13 +1128,15 @@ class ContainerOuterExecutor(object):
 
                 data = open(file_path, 'rb')
                 params = {
-                    'ACL': 'bucket-owner-full-control',
                     'Metadata': meta_data,
-                    'ServerSideEncryption': 'AES256',
                     'StorageClass': 'STANDARD',
                     'ContentDisposition': content_disposition,
                     'ContentLength': source_size
                 }
+                if AXS3Bucket.supports_encryption():
+                    params["ACL"] = "bucket-owner-full-control"
+                    params["ServerSideEncryption"] = "AES256"
+
                 if content_md5:
                     params['ContentMD5'] = content_md5
 
@@ -1154,10 +1159,12 @@ class ContainerOuterExecutor(object):
                 try:
                     data = file_structure.encode('utf-8')
                     structure_params = {
-                        'ACL': 'bucket-owner-full-control',
-                        'ServerSideEncryption': 'AES256',
                         'StorageClass': 'STANDARD'
                     }
+                    if AXS3Bucket.supports_encryption():
+                        structure_params["ACL"] = "bucket-owner-full-control"
+                        structure_params["ServerSideEncryption"] = "AES256"
+
                     if not s3_bucket.put_object(key=structure_key, data=data, **structure_params):
                         raise Exception("Failed to put object")
                     upload_structure = True
