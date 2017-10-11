@@ -31,7 +31,9 @@ export class TaskService {
     }
 
     public launchTask(args: TaskCreationArgs, runPartial = false) {
-        args = Object.assign({}, args, { notifications: DEFAULT_NOTIFICATIONS });
+        if (!args.hasOwnProperty('notifications') && !args.notifications) {
+            args = Object.assign({}, args, { notifications: DEFAULT_NOTIFICATIONS });
+        }
         return this.http.post(`v1/services?run_partial=${runPartial}`, JSON.stringify(args))
             .map(res => res.json());
     }

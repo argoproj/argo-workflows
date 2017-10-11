@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import { Component, OnInit } from '@angular/core';
 
 import { FilterMultiSelect } from 'argo-ui-lib/src/components';
@@ -177,7 +178,7 @@ export class SetupJobNotificationsComponent implements OnInit {
         }
     }
 
-    public getNotifications() {
+    public getNotifications(): PolicyNotification[] {
         let isAnyError = false;
         this.notificationsList.forEach(notification => {
             if (!notification.rules.when.length) {
@@ -209,14 +210,14 @@ export class SetupJobNotificationsComponent implements OnInit {
             return notification.rules;
         });
 
-        return this.rules;
+        return _.uniqBy(this.rules, v => [v.whom, v.when].join());
     }
 
     private addDefaultNotificationRule() {
         let notification = JSON.parse(JSON.stringify(this.notification));
         notification.rules = {
             whom: [this.authenticationService.getUsername()],
-            when: ['on_success', 'on_failure']
+            when: ['on_failure', 'on_success']
         };
         notification.isArgoUsersAndGroupsVisible = true;
 

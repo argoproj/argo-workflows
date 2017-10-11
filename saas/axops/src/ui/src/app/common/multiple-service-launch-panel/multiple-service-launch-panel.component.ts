@@ -280,6 +280,7 @@ export class MultipleServiceLaunchPanelComponent {
                     observableList.push(this.taskService.launchTask({
                         template_id: this.templatesToSubmit[index].id,
                         arguments: this.listParameters(this.allForms.controls[index.toString()]['controls']),
+                        notifications: notifications
                     }));
                 });
 
