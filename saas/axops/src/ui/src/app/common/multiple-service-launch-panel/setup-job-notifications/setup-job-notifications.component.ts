@@ -87,7 +87,6 @@ export class SetupJobNotificationsComponent implements OnInit {
     }
 
     public removeNotificationRule(index) {
-        // this.selectedId = 0;
         this.notificationsList.splice(index, 1);
     }
 
