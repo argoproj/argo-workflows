@@ -6,55 +6,46 @@ Argo-lite is a lightweight workflow engine that executes container-native workfl
 
 Argo-lite is not yet fully tested and may crash under load. Early testing/contributions are very welcome.
 
-Several features of the full Argo workflow engine are not yet supported by Argo-lite.
-
-- [x] ~~Kubernetes integration~~
-- [x] ~~API to access artifacts~~
-- [x] ~~[Dynamic fixtures](https://argoproj.github.io/argo-site/docs/yaml/fixture_template.html)~~
-- [x] ~~Add Argo UI into Argo-lite distribution~~
-- [x] ~~[Docker-in-Docker](https://argoproj.github.io/argo-site/docs/yaml/argo_tutorial_2_create_docker_image_build_workflow.html)~~
-- [ ] No unit or e2e tests
-
 ## Why?
 
 Argo-lite may be used to quicky experience [Argo](https://github.com/argoproj/argo) workflows without deploying a complete Kubernetes cluster or to debug Argo workflows locally on your laptop.
 
-## Deploy it:
+## Try it
 
-Three ways of running  Argo-lite.
+### On your laptop:
 
-1. Run everything using locally installed Docker
-
+1. Run argo-lite server:
 ```
 docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui
 ```
-
-2. Run argo-lite locally but use an existing kubernetes cluster as the backend container engine
-
-```
-docker run --rm -p 8080:8080 -v <path-to-your-kube-config>:/cluster.conf -it argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui --engine kubernetes --config /cluster.conf
-```
-
-3. Run everything on an existing kubernetes cluster
-
-```
-git clone https://github.com/argoproj/argo.git && cd argo/lite && kubectl create -f argo-lite.yaml
-```
-
-## Try it:
-
-1. Install [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html).
-2. Configure Argo CLI to talk to your Argo-lite instance:
+2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo-lite instance:
 
 ```
 argo login --config argo-lite http://localhost:8080 --username test --password test
 ```
 
-3. Build argo-lite using argo-lite :-)
+### On your kubernetes cluster:
+
+1. Create Argo-lite deployment manually:
 
 ```
-cd argo-lite/.argo
-argo job submit lite-build --config argo-lite --local
+curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
 ```
+or using helm:
+
+```
+helm repo add argo https://argoproj.github.io/argo-helm
+helm install argo/argo-lite
+```
+
+2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo-lite instance:
+
+```
+argo login --config argo-lite-kube <deployed argo-lite service URL> --username test --password test
+```
+
+### Sample sample workflows
+
+Build argo-lite using argo-lite :-) ```git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local```
 
 ![alt text](./demo.gif "Logo Title Text 1")
