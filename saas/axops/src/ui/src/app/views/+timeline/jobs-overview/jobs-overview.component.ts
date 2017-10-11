@@ -151,7 +151,7 @@ export class JobsOverviewComponent implements OnChanges, OnDestroy {
         }
         this.eventsSubscription = this.taskService.getTasksEvents(this.selectedRepo, this.selectedBranch).subscribe(eventInfo => {
             // handle only root workflow events
-            if (this.tasks && eventInfo.repo && eventInfo.id === eventInfo.task_id) {
+            if (this.tasks && eventInfo.id === eventInfo.task_id) {
                 let tasks = this.tasks;
                 let task = this.idToTask.get(eventInfo.id);
                 if (task) {
