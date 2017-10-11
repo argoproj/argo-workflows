@@ -43,7 +43,7 @@
                                         type="checkbox"
                                         id="users_and_groups_{{ i }}"
                                         [checked]="notification.isArgoUsersAndGroupsVisible"
-                                        (change)="argoUsersAndGroupsCheckboxChange(notification)">
+                                        (change)="argoUsersAndGroupsCheckboxChange(notification, i)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="users_and_groups_{{ i }}">{{ 'Argo Users and Groups' | translate }}</label>
@@ -93,7 +93,7 @@
 
                             <div class="notification-row__list-item">
                                 <div class="ax-checkbox">
-                                    <input type="checkbox" id="slack_channels_{{ i }}" [checked]="notification.isSlackChannelsVisible" (change)="slackChannelsCheckboxChange(notification)">
+                                    <input type="checkbox" id="slack_channels_{{ i }}" [checked]="notification.isSlackChannelsVisible" (change)="slackChannelsCheckboxChange(notification, i)">
                                     <span><i class="fa fa-check"></i></span>
                                 </div>
                                 <label for="slack_channels_{{ i }}">{{ 'Slack Channels' | translate }}</label>

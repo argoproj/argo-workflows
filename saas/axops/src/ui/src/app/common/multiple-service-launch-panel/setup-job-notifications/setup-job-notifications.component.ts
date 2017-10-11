@@ -155,10 +155,12 @@ export class SetupJobNotificationsComponent implements OnInit {
         this.notificationsList[index].validationMessages.missingRecipients.show = false;
     }
 
-    public argoUsersAndGroupsCheckboxChange(notification) {
+    public argoUsersAndGroupsCheckboxChange(notification, index) {
         notification.isArgoUsersAndGroupsVisible = !notification.isArgoUsersAndGroupsVisible;
         if (!notification.isArgoUsersAndGroupsVisible) {
             notification.rules.whom = notification.rules.whom.filter(recipient => (recipient.indexOf('@slack') !== -1 || recipient.indexOf('@user') !== -1)).sort();
+        } else {
+            this.openUserSelectorPanel(index);
         }
     }
 
@@ -171,10 +173,12 @@ export class SetupJobNotificationsComponent implements OnInit {
         }
     }
 
-    public slackChannelsCheckboxChange(notification) {
+    public slackChannelsCheckboxChange(notification, index) {
         notification.isSlackChannelsVisible = !notification.isSlackChannelsVisible;
         if (!notification.isSlackChannelsVisible) {
             notification.rules.whom = notification.rules.whom.filter(recipient => (recipient.indexOf('@slack') === -1)).sort();
+        } else {
+            this.openSlackChannelPanel(index);
         }
     }
 
