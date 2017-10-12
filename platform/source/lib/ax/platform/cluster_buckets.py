@@ -106,7 +106,7 @@ class AXClusterBuckets(object):
         if not data_bucket.create():
             raise AXPlatformException("Failed to create S3 bucket {}".format(data_bucket.get_bucket_name()))
 
-        if self.cluster_config.get_cluster_provider() != ClusterProvider.USER:
+        if not self.cluster_config.get_cluster_provider().is_user_cluster():
             # Update CORS config for data bucket too.
             logger.info("Checking CORS config for %s.", data_bucket.get_bucket_name())
             data_bucket.put_cors(DATA_CORS_CONFIG)

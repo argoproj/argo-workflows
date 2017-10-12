@@ -31,7 +31,7 @@ from ax.platform.ax_asg import AXUserASGManager
 from ax.platform.ax_cluster_info import AXClusterInfo
 from ax.platform.ax_monitor import AXKubeMonitor
 from ax.platform.ax_monitor_helper import KubeObjStatusCode, KubeObjWaiter
-from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption, ClusterProvider
+from ax.platform.cluster_config import AXClusterConfig, SpotInstanceOption
 from ax.platform.cluster_version import AXVersion
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.exceptions import AXPlatformException
@@ -299,7 +299,7 @@ class AXPlatform(object):
         steps = self._config.steps
         self._load_kube_objects_from_steps(steps)
 
-        if self._cluster_config.get_cluster_provider() != ClusterProvider.USER:
+        if not self._cluster_config.get_cluster_provider().is_user_cluster():
             self._replacing = self._generate_replacing()
         else:
             self._replacing = self._generate_replacing_for_user_provisioned_cluster()

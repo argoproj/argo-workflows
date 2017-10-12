@@ -29,7 +29,18 @@ class SpotInstanceOption:
     ALL_SPOT = "all"
     VALID_SPOT_INSTANCE_OPTIONS = [NO_SPOT, PARTIAL_SPOT, ALL_SPOT]
 
-class ClusterProvider:
+
+class ClusterProvider(object):
     ARGO = "argo"
     USER = "user"
     VALID_CLUSTER_PROVIDERS = [ARGO, USER]
+
+    def __init__(self, provider):
+        assert provider == self.ARGO or provider == self.USER, '"argo" or "user" are only acceptable values'
+        self.provider = provider
+
+    def is_user_cluster(self):
+        return True if self.USER == self.provider else False
+
+    def is_argo_cluster(self):
+        return True if self.ARGO == self.provider else False

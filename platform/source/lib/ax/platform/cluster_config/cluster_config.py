@@ -202,8 +202,8 @@ class AXClusterConfig(with_metaclass(Singleton, object)):
 
     def get_cluster_provider(self):
         if self._conf and self._conf["cloud"]:
-            return self._conf["cloud"].get("cluster_provider", None)
-        return ClusterProvider.USER
+            return ClusterProvider(self._conf["cloud"].get("cluster_provider", None))
+        return ClusterProvider(ClusterProvider.USER)
 
     def get_bucket_endpoint(self):
         return self._conf["cloud"]["configure"].get("bucket_endpoint", None)

@@ -742,7 +742,11 @@ class ExternalRoute(AXResource):
         target_port = info["target_port"]
         whitelist = info["whitelist"]
         visibility = info["visibility"]
-        return ExternalRoute(dns_name, application, deployment_selector, target_port, whitelist=whitelist, visibility=visibility)
+        eroute = ExternalRoute(dns_name, application, deployment_selector, target_port, whitelist=whitelist, visibility=visibility)
+        elb_addr = info.get("elb_addr", None)
+        if elb_addr:
+            eroute.ax_meta["elb_addr"] = elb_addr
+        return eroute
 
     def __init__(self, dns_name, application, deployment_selector, target_port, whitelist=["0.0.0.0/0"], visibility=ExternalRouteVisibility.VISIBILITY_WORLD, name=None):
         self._object_name = name
@@ -768,7 +772,7 @@ class ExternalRoute(AXResource):
         }
         self.ingress_target = IngressProvider.EXTERNAL if self.visibility == ExternalRouteVisibility.VISIBILITY_WORLD else IngressProvider.INTERNAL
 
-    def create(self, elb_addr, elb_name=None):
+    def create(self, elb_addr=None, elb_name=None):
 
         # create an internal route to deployment using selector
         ir = InternalRoute(self._object_name, self.application)
@@ -777,12 +781,13 @@ class ExternalRoute(AXResource):
 
         # create ingress rule
         ing = IngressRules(self._object_name, self.ingress_target, namespace=self.application)
-        ing_port_spec = {"urlPath": "/", "port": self.target_port}
         ing.create(self._object_name, [{"urlPath": "/", "port": self.target_port}], self.dns_name, whitelist_cidrs=self.whitelist)
 
-        # create dns record
-        dns = DnsObject(self.dns_name)
-        dns.create_alias(elb_addr, elb_name=elb_name)
+        if elb_addr:
+            self.ax_meta["elb_addr"] = elb_addr
+            # create dns record
+            dns = DnsObject(self.dns_name)
+            dns.create_alias(elb_addr, elb_name=elb_name)
 
         return self._object_name
 
@@ -793,8 +798,9 @@ class ExternalRoute(AXResource):
         ing = IngressRules(self._object_name, self.ingress_target, namespace=self.application)
         ing.delete()
 
-        dns = DnsObject(self.dns_name)
-        dns.delete()
+        if self.ax_meta.get("elb_addr", None) is not None:
+            dns = DnsObject(self.dns_name)
+            dns.delete()
 
     def exists(self):
         assert False, "exists() is not implemented for ExternalRoute"
