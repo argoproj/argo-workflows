@@ -114,6 +114,7 @@ class Application(object):
             namespace = swagger_client.V1Namespace()
             namespace.metadata = swagger_client.V1ObjectMeta()
             namespace.metadata.name = self.name
+            namespace.metadata.labels = {"creator": "argo-application", "app": self.name}
             self._client.api.create_namespace(namespace)
 
         # NOTE: 403 is not retried as application is getting deleted in parallel
@@ -299,11 +300,10 @@ class Applications(object):
             self.client = KubernetesApiClient(use_proxy=True)
         else:
             self.client = client
-        self.ignored_namespaces = frozenset(["kube-system", "default", "axsys", "axuser", "kube-public", "axs3"])
 
     def list(self):
-        return [x.metadata.name for x in self._get_namespaces().items if x.metadata.name not in self.ignored_namespaces]
+        return [x.metadata.name for x in self._get_namespaces().items]
 
     @retry_unless()
     def _get_namespaces(self):
-        return self.client.api.list_namespace()
+        return self.client.api.list_namespace(label_selector="creator=argo-application")
