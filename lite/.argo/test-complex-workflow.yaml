@@ -44,10 +44,6 @@ steps:
     image: ruby
     command: ["sh", "-c"]
     args: ["sleep 2 && curl http://%%fixtures.WEB.ip%%:5000"]
-    outputs:
-      artifacts:
-        CODE:
-          path: /src
 
 ---
 type: container

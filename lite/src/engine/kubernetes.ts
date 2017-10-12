@@ -97,16 +97,19 @@ export class KubernetesExecutor implements Executor {
                 try {
                     let tempDir = path.join(shell.tempdir(), 'argo', step.id);
 
-                    notify({ status: model.TaskStatus.Waiting });
+                    notify({ status: model.TaskStatus.Waiting, statusCode: model.TASK_STATUS_CODES.TASK_WAITING });
                     stepPod = await this.createPod(step, input);
 
                     let startedPod = await this.podUpdates.filter(pod => pod.name === step.id && pod.status !== 'Pending').first().toPromise();
 
+                    notify({ statusCode: model.TASK_STATUS_CODES.LOADING_ARTIFACTS});
                     await this.uploadArtifacts(step, stepPod, input);
 
                     await this.kubeCtlExec(stepPod, ['echo done > /__argo/artifacts_in']);
 
-                    notify({ status: model.TaskStatus.Running, stepId: stepPod.metadata.name, networkName: startedPod.podIP });
+                    notify({
+                        status: model.TaskStatus.Running, stepId: stepPod.metadata.name, networkName: startedPod.podIP, statusCode: model.TASK_STATUS_CODES.CONTAINER_RUNNING,
+                    });
 
                     this.logger.debug(`Running user script for for step id ${step.id}`);
                     let stepIsDone = false;
@@ -116,6 +119,7 @@ export class KubernetesExecutor implements Executor {
                     } while (!stepIsDone);
                     this.logger.debug(`User script for for step id ${step.id} has been completed`);
 
+                    notify({ statusCode: model.TASK_STATUS_CODES.SAVING_ARTIFACTS});
                     let artifactsMap = await this.downloadArtifacts(step, stepPod, input, tempDir);
 
                     await this.kubeCtlExec(stepPod, ['echo done > /__argo/artifacts_out']);
@@ -128,6 +132,7 @@ export class KubernetesExecutor implements Executor {
 
                     notify({
                         status: completedPod.status === 'Succeeded' ? model.TaskStatus.Success : model.TaskStatus.Failed,
+                        statusCode: completedPod.status === 'Succeeded' ? model.TASK_STATUS_CODES.TASK_SUCCEED : model.TASK_STATUS_CODES.TASK_FAILED,
                         artifacts: artifactsMap,
                     });
                 } catch (e) {

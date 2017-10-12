@@ -69,7 +69,7 @@ export class WorkflowOrchestrator {
         let fixtures: LaunchedFixture[] = [];
         let networkId;
         try {
-            let result: StepResult = { status: model.TaskStatus.Running, artifacts: {} };
+            let result: StepResult = { status: model.TaskStatus.Running, artifacts: {}, statusCode: model.TASK_STATUS_CODES.TASK_WAITING };
             this.stepResultsQueue.next({ result, id: workflow.id, taskId });
 
             if (workflow.template.fixtures && workflow.template.fixtures.length > 0) {
@@ -77,7 +77,14 @@ export class WorkflowOrchestrator {
                 input.networkId = networkId;
             }
 
+            if (workflow.template.fixtures) {
+                result.statusCode = model.TASK_STATUS_CODES.SETUP_FIXTURE;
+                this.stepResultsQueue.next({ result, id: workflow.id, taskId });
+            }
             fixtures = await this.startFixtures(taskId, workflow, parentContext, input);
+
+            result.statusCode = model.TASK_STATUS_CODES.CONTAINER_RUNNING;
+            this.stepResultsQueue.next({ result, id: workflow.id, taskId });
 
             let context: WorkflowContext = { workflow, results: {}, input };
             for (let parallelStepsGroup of workflow.template.steps) {
@@ -105,6 +112,7 @@ export class WorkflowOrchestrator {
                     });
                     if (stepResult.status === model.TaskStatus.Failed) {
                         result.status = model.TaskStatus.Failed;
+                        result.statusCode = model.TASK_STATUS_CODES.TASK_FAILED;
                         this.stepResultsQueue.next({ result, id: workflow.id, taskId });
                     }
                 }
@@ -114,6 +122,7 @@ export class WorkflowOrchestrator {
             }
             if (result.status === model.TaskStatus.Running) {
                 result.status = model.TaskStatus.Success;
+                result.statusCode = model.TASK_STATUS_CODES.TASK_SUCCEED;
                 this.stepResultsQueue.next({ result, id: workflow.id, taskId });
             }
             return result;

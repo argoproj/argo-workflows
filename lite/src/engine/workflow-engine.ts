@@ -155,6 +155,7 @@ export class WorkflowEngine {
                     wait_time: 0,
                     create_time: moment().unix(),
                     status: model.TaskStatus.Init,
+                    arguments: step.arguments,
                 };
                 task.children.push(stepTask);
                 if (step.template.steps) {
@@ -187,21 +188,21 @@ export class WorkflowEngine {
             message = stepResult.internalError instanceof Error ? stepResult.internalError.message : JSON.stringify(stepResult.internalError);
         }
         task['status_detail'] = {
-            code: this.getStatusCode(stepResult.status),
+            code: stepResult.statusCode || this.getStatusCode(stepResult.status),
             message,
         };
     }
 
     private getStatusCode(status: model.TaskStatus): string {
         switch (status) {
-            case model.TaskStatus.Skipped: return 'Skipped';
-            case model.TaskStatus.Cancelled: return 'Cancelled';
-            case model.TaskStatus.Failed: return 'Failed';
-            case model.TaskStatus.Success: return 'Success';
-            case model.TaskStatus.Waiting: return 'Waiting';
-            case model.TaskStatus.Running: return 'Running';
-            case model.TaskStatus.Canceling: return 'Canceling';
-            case model.TaskStatus.Init: return 'Init';
+            case model.TaskStatus.Skipped: return model.TASK_STATUS_CODES.TASK_SKIPPED;
+            case model.TaskStatus.Cancelled: return model.TASK_STATUS_CODES.TASK_CANCELLED;
+            case model.TaskStatus.Failed: return model.TASK_STATUS_CODES.TASK_FAILED;
+            case model.TaskStatus.Success: return model.TASK_STATUS_CODES.TASK_SUCCEED;
+            case model.TaskStatus.Waiting: return model.TASK_STATUS_CODES.TASK_WAITING;
+            case model.TaskStatus.Running: return model.TASK_STATUS_CODES.CONTAINER_RUNNING;
+            case model.TaskStatus.Canceling: return model.TASK_STATUS_CODES.TASK_CANCELING;
+            case model.TaskStatus.Init: return model.TASK_STATUS_CODES.TASK_WAITING;
             default: return '';
         }
     }

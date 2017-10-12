@@ -11,6 +11,7 @@ export interface StepResult {
     // Executor specific step id.
     stepId?: string;
     status?: model.TaskStatus;
+    statusCode?: string;
     // Path to file with logs. Should be available after step is completed.
     logsPath?: string;
     // Artifacts paths by name
