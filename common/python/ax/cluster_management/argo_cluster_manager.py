@@ -21,11 +21,13 @@ from .app.options import add_install_flags, add_platform_only_flags, ClusterInst
 
 import subprocess
 import requests
-import time
+from retrying import retry
 
 from ax.kubernetes.client import KubernetesApiClient
 
 logger = logging.getLogger(__name__)
+
+S3PROXY_NAMESPACE = "axs3"
 
 
 class ArgoClusterManager(object):
@@ -160,33 +162,86 @@ class ArgoClusterManager(object):
 
     def _get_s3_proxy_port(self, kubeconfig):
         k8s = KubernetesApiClient(config_file=kubeconfig)
-        resp = k8s.api.list_namespaced_service("default")
+        resp = k8s.api.list_namespaced_service(S3PROXY_NAMESPACE)
         for i in resp.items:
             if i.metadata.name == "s3proxy":
                 return i.spec.ports[0].node_port
-
         return None
 
     def _get_s3_proxy_endpoint(self, kubeconfig):
         host = get_host_ip(kubeconfig)
         port = self._get_s3_proxy_port(kubeconfig)
-        return "http://" + host + ":" + port
+        return "http://" + host + ":" + str(port)
+
+    def _install_s3_proxy(self, kube_config):
+        logger.info("Installing s3 proxy ...")
+        self._install_s3_proxy_namespace(kube_config)
+        self._install_s3_proxy_pvc(kube_config)
+        self._install_s3_proxy_service(kube_config)
+        self._install_s3_proxy_pod(kube_config)
+
+    def _install_s3_proxy_namespace(self,kube_config):
+        k8s = KubernetesApiClient(config_file=kube_config)
+        resp = k8s.api.list_namespace()
+        for i in resp.items:
+            if i.metadata.name == S3PROXY_NAMESPACE:
+                return None
+        subprocess.check_call(["kubectl", "--kubeconfig", kube_config, "create", "-f", "/ax/config/service/argo-wfe/axs3-namespace.yml"])
+
+
+    def _install_s3_proxy_pvc(self,kube_config):
+        k8s = KubernetesApiClient(config_file=kube_config)
+        resp = k8s.api.list_namespaced_persistent_volume_claim(S3PROXY_NAMESPACE)
+        for i in resp.items:
+            if i.metadata.name == "s3proxy-pvc":
+                return None
+        subprocess.check_call(["kubectl", "--kubeconfig", kube_config, "create", "--namespace", S3PROXY_NAMESPACE, "-f", "/ax/config/service/argo-wfe/s3proxy-pvc.yml"])
+
+    def _install_s3_proxy_service(self,kube_config):
+        k8s = KubernetesApiClient(config_file=kube_config)
+        resp = k8s.api.list_namespaced_service(S3PROXY_NAMESPACE)
+        for i in resp.items:
+            if i.metadata.name == "s3proxy":
+                return None
+        subprocess.check_call(["kubectl", "--kubeconfig", kube_config, "create", "--namespace", S3PROXY_NAMESPACE, "-f", "/ax/config/service/argo-wfe/s3proxy-svc.yml"])
+
+    def _install_s3_proxy_pod(self,kube_config):
+        k8s = KubernetesApiClient(config_file=kube_config)
+        resp = k8s.api.list_namespaced_pod(S3PROXY_NAMESPACE)
+        for i in resp.items:
+            if str(i.metadata.name).startswith("s3proxy-deployment"):
+                return None
+        subprocess.check_call(["kubectl", "--kubeconfig", kube_config, "create", "--namespace", S3PROXY_NAMESPACE, "-f",
+                                       "/ax/config/service/argo-wfe/s3proxy.yml"])
+
+    @retry(wait_exponential_multiplier=3000, stop_max_attempt_number=5)
+    def _create_s3_proxy_bucket(self, endpoint, bucket_name):
+        location = endpoint + "/" + bucket_name
+        logger.info("Creating s3 bucket using location: %s", location)
+        requests.put(location)
 
     def install_platform_only(self, args):
         logger.info("Installing platform only ...")
+
+        if args.cloud_provider == "minikube" and not args.bucket_endpoint:
+            args.cluster_bucket = "argo"
+            # TODO:revisit
+            # access key and secret is required by code in aws_s3
+            # use dummy access key and secret for s3proxy
+            args.access_key = "abc"
+            args.secret_key = "abc"
+            self._install_s3_proxy(args.kubeconfig)
+            args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
+            # Create bucket
+            self._create_s3_proxy_bucket(args.bucket_endpoint, args.cluster_bucket)
+
+        logger.info("s3 bucket endpoint: %s", args.bucket_endpoint)
 
         os.environ["AX_CUSTOMER_ID"] = "user-customer-id"
         os.environ["ARGO_LOG_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_DATA_BUCKET_NAME"] = args.cluster_bucket
         os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
         os.environ["AX_TARGET_CLOUD"] = Cloud.CLOUD_AWS
-
-        # if args.cloud_provider == "minikube":
-        #    s3_proxy_present = self._get_s3_proxy_port(args.kubeconfig) != None
-        #    if not s3_proxy_present:
-                # Install s3_proxy
-        #        args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
-                # Create bucket
 
         self._set_env_if_present(args)
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)

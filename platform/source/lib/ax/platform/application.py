@@ -299,7 +299,7 @@ class Applications(object):
             self.client = KubernetesApiClient(use_proxy=True)
         else:
             self.client = client
-        self.ignored_namespaces = frozenset(["kube-system", "default", "axsys", "axuser", "kube-public"])
+        self.ignored_namespaces = frozenset(["kube-system", "default", "axsys", "axuser", "kube-public", "axs3"])
 
     def list(self):
         return [x.metadata.name for x in self._get_namespaces().items if x.metadata.name not in self.ignored_namespaces]
