@@ -51,7 +51,7 @@ argo login --config argo-lite-kube <deployed argo-lite service URL> --username t
 
 ### Execute sample workflows
 
-Build argo-lite using argo-lite :-)  **Argo Lite CI** yaml is defined in [.argo folder] (https://github.com/argoproj/argo/blob/master/.argo/lite-ci.yaml)
+Build argo-lite using argo-lite :-)  **Argo Lite CI** yaml is defined in [.argo folder](https://github.com/argoproj/argo/blob/master/.argo/lite-ci.yaml)
 ```git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local```
 
 ![alt text](./demo.gif "Logo Title Text 1")
