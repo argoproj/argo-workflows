@@ -1,6 +1,6 @@
-# argo-lite
+# Argo-lite
 
-Argo-lite is a lightweight workflow engine that executes container-native workflows defined using [Argo YAML](https://argoproj.github.io/argo-site/docs/yaml/dsl_reference_intro.html).  Argo-lite implements the same APIs as [Argo](https://github.com/argoproj/argo) and is therefore compatible with the [Argo CLI](https://argoproj.github.io/argo-site/docs/dev-cli-reference.html) and Argo UI.  Argo-lite currently supports Docker and  Kubernetes as the backend container execution engines but should be easy to modify to work with nearly any container engine.  
+Argo-lite is a lightweight workflow engine that executes container-native workflows defined using [Argo YAML](https://argoproj.github.io/docs/yaml/dsl_reference_intro.html).  Argo-lite implements the same APIs as [Argo](https://github.com/argoproj/argo) and is therefore compatible with the [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) and Argo UI.  Argo-lite currently supports Docker and  Kubernetes as the backend container execution engines but should be easy to modify to work with nearly any container engine.  
 
 ## Argo-lite will be released in mid October.
 
@@ -8,7 +8,7 @@ Argo-lite is not yet fully tested and may crash under load. Early testing/contri
 
 ## Why?
 
-Argo-lite may be used to quicky experience [Argo](https://github.com/argoproj/argo) workflows without deploying a complete Kubernetes cluster or to debug Argo workflows locally on your laptop.
+Argo-lite may be used to quickly experience [Argo](https://github.com/argoproj/argo) workflows without deploying a complete Kubernetes cluster or to debug Argo workflows locally on your laptop.
 
 ## Try it
 
@@ -37,7 +37,7 @@ or using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
 ```
 helm repo add argo https://argoproj.github.io/argo-helm
-helm install argo/argo-lite
+kubectl config view
 ```
 
 2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo-lite instance:
@@ -47,8 +47,9 @@ helm install argo/argo-lite
 argo login --config argo-lite-kube <deployed argo-lite service URL> --username test --password test
 ```
 
-### Sample sample workflows
+### Execute sample workflows
 
-Build argo-lite using argo-lite :-) ```git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local```
+Build argo-lite using argo-lite :-)  **Argo Lite CI** yaml is defined in [.argo folder] (https://github.com/argoproj/argo/blob/master/.argo/lite-ci.yaml)
+```git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local```
 
 ![alt text](./demo.gif "Logo Title Text 1")
