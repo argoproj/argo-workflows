@@ -181,11 +181,11 @@ class ArgoClusterManager(object):
         os.environ["ARGO_KUBE_CONFIG_PATH"] = args.kubeconfig
         os.environ["AX_TARGET_CLOUD"] = Cloud.CLOUD_AWS
 
-        if args.cloud_provider == "minikube":
-            s3_proxy_present = self._get_s3_proxy_port(args.kubeconfig) != None
-            if not s3_proxy_present:
+        # if args.cloud_provider == "minikube":
+        #    s3_proxy_present = self._get_s3_proxy_port(args.kubeconfig) != None
+        #    if not s3_proxy_present:
                 # Install s3_proxy
-                args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
+        #        args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
                 # Create bucket
 
         self._set_env_if_present(args)

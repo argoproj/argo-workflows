@@ -241,8 +241,8 @@ export interface Task {
     ctime?: number;
     mtime?: number;
     wtime?: number;
-    run_time?: number;
-    average_runtime?: number;
+    run_time: number;
+    average_runtime: number;
     status?: TaskStatus;
     container_id?: string;
     log?: string;
