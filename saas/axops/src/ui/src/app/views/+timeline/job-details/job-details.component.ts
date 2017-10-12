@@ -353,7 +353,7 @@ export class JobDetailsComponent implements OnInit, AfterViewInit, OnDestroy, La
 
     get breadcrumb(): { title: string, routerLink: any[] }[] {
         return this.task ? ViewUtils.getBranchBreadcrumb(
-            this.task.repo, this.task.branch, {url: '/app/timeline', params: { view: 'job' }}, this.viewPreferences,  `Job ID: ${this.task.id}`) : null;
+            this.task.repo, this.task.branch, {url: '/app/timeline', params: { view: 'job' }}, this.viewPreferences,  `Job ID: ${this.task.id}`, true) : null;
     }
 
     public showNodeDetails(node: NodeInfo, tab: string) {
