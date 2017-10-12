@@ -248,14 +248,18 @@ export class JobDetailsComponent implements OnInit, AfterViewInit, OnDestroy, La
             success => {
                 this.task = autoRefresh && this.task ? this.mergeTasks(this.task, success) : success;
                 if (!this.taskOriginalTemplate || this.taskOriginalTemplate.id !== this.task.template_id) {
-                    // try to load template and fallback to task template if original has been deleted
-                    this.templateService.getTemplateByIdAsync(this.task.template_id, true).subscribe(
-                        res => this.taskOriginalTemplate = res, err => this.taskOriginalTemplate = this.task.template, () => {
-                            if (this.isJobHistoryVisible) {
-                                this.jobsHistoryComponent.template = this.taskOriginalTemplate;
-                                this.jobsHistoryComponent.loadJobsHistory();
-                            }
-                        });
+                    if (this.task.template_id) {
+                        // try to load template and fallback to task template if original has been deleted
+                        this.templateService.getTemplateByIdAsync(this.task.template_id, true).subscribe(
+                            res => this.taskOriginalTemplate = res, err => this.taskOriginalTemplate = this.task.template, () => {
+                                if (this.isJobHistoryVisible) {
+                                    this.jobsHistoryComponent.template = this.taskOriginalTemplate;
+                                    this.jobsHistoryComponent.loadJobsHistory();
+                                }
+                            });
+                    } else {
+                        this.taskOriginalTemplate = this.task.template;
+                    }
                 }
                 this.artifactTags = this.task.artifact_tags !== '' ? JSON.parse(this.task.artifact_tags) : [];
                 this.taskMenuItems = [{
