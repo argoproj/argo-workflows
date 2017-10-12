@@ -22,12 +22,12 @@ export class WorkflowEngine {
             let taskResult = this.taskResultsById.get(res.taskId);
             let rootTask = taskResult.task;
             if (res.id === res.taskId) {
-                 this.updateTaskStatus(rootTask, res.result);
-             } else {
-                 let childStep = rootTask.children.find(child => child.id === res.id);
-                 this.updateTaskStatus(childStep, res.result);
-                 taskResult.stepResults[res.id] = res.result;
-             }
+                this.updateTaskStatus(rootTask, res.result);
+            } else {
+                let childStep = rootTask.children.find(child => child.id === res.id);
+                this.updateTaskStatus(childStep, res.result);
+                taskResult.stepResults[res.id] = res.result;
+            }
         });
     }
 
@@ -47,8 +47,18 @@ export class WorkflowEngine {
     }
 
     public getTaskById(id: string) {
+        function updateRuntime(task: model.Task) {
+            if (task.status === model.TaskStatus.Running) {
+                task.run_time = moment().unix() - task.launch_time;
+            }
+        }
         let result = this.taskResultsById.get(id);
-        return result && result.task || null;
+        if (result) {
+            updateRuntime(result.task);
+            result.task.children.forEach(updateRuntime);
+            return result.task;
+        }
+        return null;
     }
 
     public getTasks(): model.Task[] {
@@ -95,7 +105,18 @@ export class WorkflowEngine {
     private constructTask(template: model.Template, args: {[name: string]: string}): model.Task {
         let id = uuid();
         let task: model.Task = {
-            id, name: template.name, template, arguments: args, launch_time: 0, create_time: moment().unix(), task_id: id, commit: {}, artifact_tags: '' };
+            id, name: template.name,
+            template,
+            arguments: args,
+            run_time: 0,
+            average_runtime: 0,
+            wait_time: 0,
+            launch_time: 0,
+            create_time: moment().unix(),
+            task_id: id,
+            commit: {},
+            artifact_tags: '',
+        };
         task.children = [];
 
         function addFixtureTasks(step: model.WorkflowStep) {
@@ -103,7 +124,16 @@ export class WorkflowEngine {
                 Object.keys(fixtureGroup).forEach(fixtureName => {
                     let fixture = fixtureGroup[fixtureName];
                     fixture['id'] = uuid();
-                    let fixtureTask = { id: fixture['id'], template: fixture.template, launch_time: 0, create_time: moment().unix(), status: model.TaskStatus.Init };
+                    let fixtureTask = {
+                        id: fixture['id'],
+                        template: fixture.template,
+                        launch_time: 0,
+                        run_time: 0,
+                        average_runtime: 0,
+                        wait_time: 0,
+                        create_time: moment().unix(),
+                        status: model.TaskStatus.Init,
+                    };
                     task.children.push(fixtureTask);
                 });
             }
@@ -116,7 +146,16 @@ export class WorkflowEngine {
             Object.keys(group).forEach(stepName => {
                 let step = group[stepName];
                 step.id = uuid();
-                let stepTask: model.Task = { id: step.id, template: step.template, launch_time: 0, create_time: moment().unix(), status: model.TaskStatus.Init };
+                let stepTask: model.Task = {
+                    id: step.id,
+                    template: step.template,
+                    run_time: 0,
+                    average_runtime: 0,
+                    launch_time: 0,
+                    wait_time: 0,
+                    create_time: moment().unix(),
+                    status: model.TaskStatus.Init,
+                };
                 task.children.push(stepTask);
                 if (step.template.steps) {
                     childGroups = childGroups.concat(step.template.steps);
@@ -124,29 +163,33 @@ export class WorkflowEngine {
                 addFixtureTasks(step);
             });
         }
+        if (task.template.steps) {
+            task.failure_path = [];
+            for (let group of task.template.steps) {
+                let stepName = Object.keys(group)[0];
+                task.failure_path.push(stepName);
+            }
+        }
+
         return task;
     }
 
     private updateTaskStatus(task: model.Task, stepResult: StepResult) {
-        task.status = stepResult.status;
-        if (task.status === stepResult.status) {
-            switch (stepResult.status) {
-                case model.TaskStatus.Running:
-                    task.launch_time = moment().unix();
-                    break;
-                default:
-                    task.run_time = moment().unix() - (task.launch_time || task.create_time);
-                    break;
-            }
-            let message = '';
-            if (stepResult.internalError) {
-                message = stepResult.internalError instanceof Error ? stepResult.internalError.message : JSON.stringify(stepResult.internalError);
-            }
-            task['status_detail'] = {
-                code: this.getStatusCode(stepResult.status),
-                message,
-            };
+        if (task.status !== model.TaskStatus.Running && stepResult.status === model.TaskStatus.Running) {
+            task.launch_time = moment().unix();
         }
+        if (task.status === model.TaskStatus.Running && stepResult.status !== model.TaskStatus.Running) {
+            task.run_time = moment().unix() - task.launch_time;
+        }
+        task.status = stepResult.status;
+        let message = '';
+        if (stepResult.internalError) {
+            message = stepResult.internalError instanceof Error ? stepResult.internalError.message : JSON.stringify(stepResult.internalError);
+        }
+        task['status_detail'] = {
+            code: this.getStatusCode(stepResult.status),
+            message,
+        };
     }
 
     private getStatusCode(status: model.TaskStatus): string {

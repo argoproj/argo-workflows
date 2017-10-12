@@ -50,7 +50,7 @@ if (args.engine === 'docker') {
 let workflowEngine = new engine.WorkflowEngine(executor, logger, new Docker({ socketPath: dockerSocketPath }));
 
 let app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json({type: () => true}));
 
 function streamServerEvents<T>(req: express.Request, res: express.Response, source: Observable<T>, formatter: (input: T) => string) {
     res.setHeader('Content-Type', 'text/event-stream');

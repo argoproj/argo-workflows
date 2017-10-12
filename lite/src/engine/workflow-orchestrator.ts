@@ -1,5 +1,6 @@
 import { Subject, Observable, Subscription } from 'rxjs';
 import { Docker } from 'node-docker-api';
+import * as deepcopy from 'deepcopy';
 
 import * as model from './model';
 import * as utils from './utils';
@@ -192,6 +193,7 @@ export class WorkflowOrchestrator {
     }
 
     private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Observable<StepResult> {
+        container = deepcopy(container);
         return Observable.fromPromise((async () => {
             input = this.processStepInput(container, parentContext, input);
             if (!container.template.command) {
