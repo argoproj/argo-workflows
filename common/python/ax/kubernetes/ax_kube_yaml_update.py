@@ -18,7 +18,7 @@ from ax.kubernetes.ax_kube_dict import KubeKindToV1KubeSwaggerObject
 from ax.kubernetes.swagger_client import ApiClient, V1Pod, V1beta1StatefulSet, V1beta1Deployment, V1beta1DaemonSet, \
     V1PersistentVolumeClaim, V1Container, V1Service, V1EnvVar, V1EnvVarSource, V1ObjectFieldSelector
 from ax.kubernetes.swagger_client.models.v1_secret_key_selector import V1SecretKeySelector
-from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
+from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.resource import AXSYSResourceConfig
 from ax.util.resource import ResourceValueConverter
@@ -38,7 +38,7 @@ class AXSYSKubeYamlUpdater(object):
         self._config_file = config_file_path
         self._cluster_name_id = AXClusterId().get_cluster_name_id()
         self._cluster_config = AXClusterConfig(cluster_name_id=self._cluster_name_id)
-        if self._cluster_config.get_cluster_provider() != ClusterProvider.USER:
+        if not self._cluster_config.get_cluster_provider().is_user_cluster():
             self.cpu_mult, self.mem_mult, self.disk_mult, \
                 self.daemon_cpu_mult, self.daemon_mem_mult = self._get_resource_multipliers()
         else:

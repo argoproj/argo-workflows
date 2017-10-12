@@ -12,7 +12,7 @@ from ax.exceptions import AXTimeoutException
 from ax.kubernetes import swagger_client
 from ax.kubernetes.client import KubernetesApiClient, retry_not_exists, retry_unless_not_found, retry_unless
 from ax.kubernetes.kube_object import KubeObjectConfigFile
-from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
+from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.component_config import AXPlatformConfigDefaults, SoftwareInfo
 from ax.platform.routes import InternalRoute
@@ -61,7 +61,7 @@ class Application(object):
         cluster_name_id = os.getenv("AX_CLUSTER_NAME_ID", None)
         assert cluster_name_id, "Cluster name id is None!"
         cluster_config = AXClusterConfig(cluster_name_id=cluster_name_id)
-        if cluster_config.get_cluster_provider() != ClusterProvider.USER:
+        if not cluster_config.get_cluster_provider().is_user_cluster():
             axam_path = DEFAULT_AM_YAML_PATH
         else:
             axam_path = "/ax/config/service/argo-all/axam-svc.yml.in"

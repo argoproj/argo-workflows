@@ -20,6 +20,7 @@ from ax.kubernetes.kube_object import KubeObject
 from ax.meta import AXClusterId
 from ax.platform.applet import CUR_RECORD_VERSION
 from ax.platform.application import Application
+from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.container import Container, ContainerVolume
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.operations import Operation
@@ -79,6 +80,8 @@ class Deployment(object):
 
         self._resources = AXResources()
         self.spec = None
+
+        self._cluster_config = AXClusterConfig()
 
     def create(self, spec):
         """
@@ -476,15 +479,20 @@ class Deployment(object):
                 dns_name = dns_name[:-1]
 
             r = ExternalRoute(dns_name, self.application, {"deployment": self.name}, route.target_port, route.ip_white_list, route.visibility)
-            try:
-                elb_addr = visibility_to_elb_addr(route.visibility)
-                elb_name = visibility_to_elb_name(route.visibility)
-            except AXNotFoundException:
-                if route.visibility == ExternalRouteVisibility.VISIBILITY_WORLD:
-                    raise AXNotFoundException("Could not find the public ELB. Please report this error to Applatix Support at support@applatix.com")
-                else:
-                    assert route.visibility == ExternalRouteVisibility.VISIBILITY_ORGANIZATION, "Only world and organization are currently supported as visibility attributes"
-                    raise AXNotFoundException("Please create a private ELB using the template named 'ax_private_elb_creator_workflow' before using 'visibility=organization'")
+
+            elb_addr = None
+            elb_name = None
+
+            if not self._cluster_config.get_cluster_provider().is_user_cluster():
+                try:
+                    elb_addr = visibility_to_elb_addr(route.visibility)
+                    elb_name = visibility_to_elb_name(route.visibility)
+                except AXNotFoundException:
+                    if route.visibility == ExternalRouteVisibility.VISIBILITY_WORLD:
+                        raise AXNotFoundException("Could not find the public ELB. Please report this error to Applatix Support at support@applatix.com")
+                    else:
+                        assert route.visibility == ExternalRouteVisibility.VISIBILITY_ORGANIZATION, "Only world and organization are currently supported as visibility attributes"
+                        raise AXNotFoundException("Please create a private ELB using the template named 'ax_private_elb_creator_workflow' before using 'visibility=organization'")
 
             name = r.create(elb_addr,elb_name=elb_name)
             self._resources.insert(r)

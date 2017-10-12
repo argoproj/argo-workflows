@@ -21,7 +21,7 @@ from ax.meta import AXClusterId, AXClusterDataPath
 from ax.platform.exceptions import AXPlatformException
 from ax.platform.ax_monitor import AXKubeMonitor
 from ax.platform.ax_monitor_helper import KubeObjWaiter, KubeObjStatusCode
-from ax.platform.cluster_config import AXClusterConfig, ClusterProvider
+from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.container import ContainerVolume
 from ax.platform.container_specs import InitContainerPullImage, InitContainerTask, SidecarDockerDaemon, InitContainerSetup
 from ax.platform.container_specs import SIDEKICK_WAIT_CONTAINER_NAME, DIND_CONTAINER_NAME
@@ -492,7 +492,7 @@ class PodSpec(object):
         cluster_name_id = os.getenv("AX_CLUSTER_NAME_ID", None)
         assert cluster_name_id, "Cluster name id is None!"
         cluster_config = AXClusterConfig(cluster_name_id=cluster_name_id)
-        if cluster_config.get_cluster_provider() != ClusterProvider.USER:
+        if not cluster_config.get_cluster_provider().is_user_cluster():
             pspec.node_selector = {
                 "ax.tier": self._tier
             }
