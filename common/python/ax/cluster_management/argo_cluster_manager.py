@@ -15,15 +15,18 @@ from ax.platform.cluster_infra import get_host_ip
 from ax.util.const import COLOR_NORM, COLOR_RED
 from .app import ClusterInstaller, ClusterPauser, ClusterResumer, ClusterUninstaller, ClusterUpgrader, \
     CommonClusterOperations, PlatformOnlyInstaller
-from .app.options import add_install_flags, add_platform_only_flags, ClusterInstallConfig, add_pause_flags, ClusterPauseConfig, \
-    add_restart_flags, PlatformOnlyInstallConfig, ClusterRestartConfig, add_uninstall_flags, ClusterUninstallConfig, \
-    add_upgrade_flags, ClusterUpgradeConfig, add_misc_flags, ClusterMiscOperationConfig
+from .app.options import add_install_flags, add_platform_only_flags, add_platform_only_uninstall_flags, ClusterInstallConfig, \
+    add_pause_flags, ClusterPauseConfig, add_restart_flags, PlatformOnlyInstallConfig, ClusterRestartConfig, \
+    add_uninstall_flags, ClusterUninstallConfig, add_upgrade_flags, ClusterUpgradeConfig, \
+    add_misc_flags, ClusterMiscOperationConfig
 
 import subprocess
 import requests
 import time
 
+from kubernetes import client, config
 from ax.kubernetes.client import KubernetesApiClient
+from kubernetes.client.rest import ApiException
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +67,10 @@ class ArgoClusterManager(object):
         # Install on existing cluster
         platform_only_installer = main_subparser.add_parser("install-platform-only", help="Install platform only")
         add_platform_only_flags(platform_only_installer)
+
+        # Uninstall on existing cluster
+        platform_only_uninstaller = main_subparser.add_parser("uninstall-platform-only", help="Uninstall Argo services")
+        add_platform_only_uninstall_flags(platform_only_uninstaller)
 
     def parse_args_and_run(self):
         assert isinstance(self._parser, argparse.ArgumentParser), "Please call add_flags() to initialize parser"
@@ -173,7 +180,7 @@ class ArgoClusterManager(object):
         return "http://" + host + ":" + port
 
     def install_platform_only(self, args):
-        logger.info("Installing platform only ...")
+        logger.info("Installing Argo platform ...")
 
         os.environ["AX_CUSTOMER_ID"] = "user-customer-id"
         os.environ["ARGO_LOG_BUCKET_NAME"] = args.cluster_bucket
@@ -191,6 +198,22 @@ class ArgoClusterManager(object):
         self._set_env_if_present(args)
         platform_install_config = PlatformOnlyInstallConfig(cfg=args)
         PlatformOnlyInstaller(platform_install_config).run()
+        return
+
+    def uninstall_platform_only(self, args):
+        logger.info("Uninstalling Argo platform ...")
+        config.load_kube_config(args.kubeconfig)
+        api = client.CoreV1Api()
+        for namespace in ["axuser", "axsys", "axs3"]:
+            try:
+                api.delete_namespace(namespace, client.V1DeleteOptions())
+            except ApiException as ae:
+                if ae.status == 404:
+                    pass
+                else:
+                    raise
+
+        logger.info("Done!")
         return
 
     @staticmethod
