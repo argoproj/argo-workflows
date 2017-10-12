@@ -63,7 +63,7 @@ export class DockerExecutor implements Executor {
                     if (input.networkId) {
                         await this.docker.network.get(input.networkId).connect({ container: container.id, endpointConfig: { aliases: [ step.id ] }});
                     }
-
+                    notify({ statusCode: model.TASK_STATUS_CODES.LOADING_ARTIFACTS });
                     let tempDir = path.join(shell.tempdir(), 'argo', step.id);
                     let artifactsDir = path.join(tempDir, 'artifacts');
                     shell.mkdir('-p', artifactsDir);
@@ -76,7 +76,7 @@ export class DockerExecutor implements Executor {
                     }));
 
                     await container.start();
-                    notify({ status: model.TaskStatus.Running, stepId: container.id, networkName: step.id });
+                    notify({ status: model.TaskStatus.Running, stepId: container.id, networkName: step.id, statusCode: model.TASK_STATUS_CODES.CONTAINER_RUNNING });
 
                     let status = await container.wait();
 
@@ -85,6 +85,7 @@ export class DockerExecutor implements Executor {
                     fs.writeFileSync(logsPath, logLines.join(''));
 
                     notify({ logsPath });
+                    notify({ statusCode: model.TASK_STATUS_CODES.SAVING_ARTIFACTS});
 
                     let artifacts = step.template.outputs && step.template.outputs.artifacts && await Promise.all(Object.keys(step.template.outputs.artifacts).map(async key => {
                         let artifact = step.template.outputs.artifacts[key];
@@ -94,9 +95,12 @@ export class DockerExecutor implements Executor {
                     })) || [];
                     let artifactsMap = {};
                     artifacts.forEach(item => artifactsMap[item.name] = item.artifactPath);
-                    notify({ status: status.StatusCode === 0 ? model.TaskStatus.Success : model.TaskStatus.Failed, artifacts: artifactsMap });
+                    notify({
+                        status: status.StatusCode === 0 ? model.TaskStatus.Success : model.TaskStatus.Failed,
+                        artifacts: artifactsMap,
+                        statusCode: status.StatusCode === 0 ? model.TASK_STATUS_CODES.TASK_SUCCEED : model.TASK_STATUS_CODES.TASK_FAILED });
                 } catch (e) {
-                    notify({ status: model.TaskStatus.Failed, internalError: e });
+                    notify({ status: model.TaskStatus.Failed, internalError: e, statusCode: model.TASK_STATUS_CODES.INTERNAL_ERROR });
                 } finally {
                     await cleanUpContainer();
                     observer.complete();
