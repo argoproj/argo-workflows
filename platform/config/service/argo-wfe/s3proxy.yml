@@ -1,37 +1,4 @@
 ---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-    name: s3proxy-pvc
-    annotations:
-        # Current 1.2 alpha feature. Key is needed but value doesn't matter.
-        volume.alpha.kubernetes.io/storage-class: foo
-    labels:
-        app: s3proxy
-spec:
-    accessModes:
-        ["ReadWriteOnce"]
-    resources:
-        requests:
-            storage: 2Gi
-
----
-apiVersion: v1
-kind: Service
-metadata:
-    name: s3proxy
-    labels:
-        app: s3proxy
-        tier: platform
-        role: axcritical
-spec:
-    selector:
-        app: s3proxy-deployment
-    ports:
-      - port: 9000
-        targetPort: 80
-    type: LoadBalancer
----
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -70,4 +37,3 @@ spec:
               - name: s3proxy-data
                 persistentVolumeClaim:
                     claimName: s3proxy-pvc
-
