@@ -442,3 +442,8 @@ def add_platform_only_flags(parser):
 
     # Add kubeconfig
     parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")
+
+def add_platform_only_uninstall_flags(parser):
+    assert isinstance(parser, argparse.ArgumentParser)
+    # Add kubeconfig
+    parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")

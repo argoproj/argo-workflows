@@ -3,7 +3,7 @@
 # Copyright 2015-2017 Applatix, Inc. All rights reserved.
 #
 
-from .install_options import add_install_flags, add_platform_only_flags, PlatformOnlyInstallConfig, ClusterInstallConfig, ClusterInstallDefaults
+from .install_options import add_install_flags, add_platform_only_flags, add_platform_only_uninstall_flags, PlatformOnlyInstallConfig, ClusterInstallConfig, ClusterInstallDefaults
 from .misc_operation_config import add_misc_flags, ClusterMiscOperationConfig
 from .pause_options import add_pause_flags, ClusterPauseConfig
 from .restart_options import add_restart_flags, ClusterRestartConfig
