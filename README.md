@@ -19,7 +19,7 @@ Argo is an open source container-native workflow engine for developing and runni
 
 ### Step 1: Download and install Argo
 
-https://argoproj.github.io/get-started/installation
+https://applatix.com/open-source/argo/get-started/installation
 
 ### Step 2: Create and submit jobs
 
