@@ -225,22 +225,35 @@ class ArgoClusterManager(object):
     def _create_s3_proxy_bucket(self, endpoint, bucket_name):
         location = endpoint + "/" + bucket_name
         logger.info("Creating s3 bucket using location: %s", location)
-        requests.put(location)
+        response = None
+        try:
+            response = requests.put(location)
+        except Exception as e:
+            if response and response.status_code == 409:
+                logger.info("Bucket %s already exists ...", bucket_name)
+            else:
+                raise e
 
     def install_platform_only(self, args):
         logger.info("Installing Argo platform ...")
 
-        if args.cloud_provider == "minikube" and not args.bucket_endpoint:
+        try:
+            assert args.cluster_name
+        except Exception:
+            print("--cluster-name needs to be specified")
+            sys.exit(1)
+
+        if args.cloud_provider == "minikube":
+            Cloud(target_cloud="aws")
             args.cluster_bucket = "argo"
-            # TODO:revisit
-            # access key and secret is required by code in aws_s3
-            # use dummy access key and secret for s3proxy
-            args.access_key = "abc"
-            args.secret_key = "abc"
-            self._install_s3_proxy(args.kubeconfig)
+            if not args.bucket_endpoint:
+                self._install_s3_proxy(args.kubeconfig)
             args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
             # Create bucket
             self._create_s3_proxy_bucket(args.bucket_endpoint, args.cluster_bucket)
+        elif args.cloud_provider == "aws":
+            assert args.cluster_bucket, "--cluster-bucket is required"
+            assert args.cloud_region, "--cloud-region is required"
 
         logger.info("s3 bucket endpoint: %s", args.bucket_endpoint)
 
