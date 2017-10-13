@@ -435,7 +435,7 @@ def add_platform_only_flags(parser):
     parser.add_argument("--cloud-placement", default=None, help="A valid cloud placement")
 
     # Add bucket
-    parser.add_argument("--cluster-bucket", default=None, required=True, help="S3 complaint bucket to use")
+    parser.add_argument("--cluster-bucket", default=None, help="S3 complaint bucket to use")
     parser.add_argument("--bucket-endpoint", default=None, help="HTTP Endpoint for the cluster-bucket")
     parser.add_argument("--access-key", default=None, help="Access key for accessing the bucket")
     parser.add_argument("--secret-key", default=None, help="Secret key for accessing the bucket")
