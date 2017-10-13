@@ -58,7 +58,7 @@ export async function execute(action: () => Promise<any>, retryCount: number, re
     }
 }
 
-export async function executeSafe(action: () => Promise<any>, retryCount: number, retryTimeoutMs: number, doNotFail = true) {
+export async function executeSafe(action: () => Promise<any>, retryCount: number = 1, retryTimeoutMs: number = 0, doNotFail = true) {
     return execute(action, retryCount, retryTimeoutMs, true);
 }
 

@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import * as model from './model';
 
 export interface WorkflowContext {
@@ -34,7 +34,7 @@ export interface ContainerStepInput {
 }
 
 export interface Executor {
-    executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput): Observable<StepResult>;
+    executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput, cancelRequested?: Subject<any>): Observable<StepResult>;
     getLiveLogs(containerId: string): Observable<string>;
     createNetwork(name: string): Promise<string>;
     deleteNetwork(name: string): Promise<any>;

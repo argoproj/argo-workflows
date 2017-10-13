@@ -1,4 +1,4 @@
-import { Subject, Observable, Subscription } from 'rxjs';
+import { Subject, Observable } from 'rxjs';
 import { Docker } from 'node-docker-api';
 import * as deepcopy from 'deepcopy';
 
@@ -6,7 +6,7 @@ import * as model from './model';
 import * as utils from './utils';
 import { Executor, StepResult, WorkflowContext, StepInput, Logger } from './common';
 
-interface LaunchedFixture { name: string; networkName: string; subscription: Subscription; }
+interface LaunchedFixture { name: string; networkName: string; stopper: () => Promise<StepResult>; }
 
 export class WorkflowOrchestrator {
     private readonly stepResultsQueue = new Subject<{id: string, taskId: string, result: StepResult}>();
@@ -68,8 +68,10 @@ export class WorkflowOrchestrator {
         input = this.processStepInput(workflow, parentContext, input);
         let fixtures: LaunchedFixture[] = [];
         let networkId;
+        let context: WorkflowContext = { workflow, results: {}, input };
+        let result: StepResult = { status: model.TaskStatus.Running, artifacts: {}, statusCode: model.TASK_STATUS_CODES.TASK_WAITING };
+
         try {
-            let result: StepResult = { status: model.TaskStatus.Running, artifacts: {}, statusCode: model.TASK_STATUS_CODES.TASK_WAITING };
             this.stepResultsQueue.next({ result, id: workflow.id, taskId });
 
             if (workflow.template.fixtures && workflow.template.fixtures.length > 0) {
@@ -81,12 +83,11 @@ export class WorkflowOrchestrator {
                 result.statusCode = model.TASK_STATUS_CODES.SETUP_FIXTURE;
                 this.stepResultsQueue.next({ result, id: workflow.id, taskId });
             }
-            fixtures = await this.startFixtures(taskId, workflow, parentContext, input);
+            fixtures = await this.startFixtures(taskId, workflow, parentContext, input, result);
 
             result.statusCode = model.TASK_STATUS_CODES.CONTAINER_RUNNING;
             this.stepResultsQueue.next({ result, id: workflow.id, taskId });
 
-            let context: WorkflowContext = { workflow, results: {}, input };
             for (let parallelStepsGroup of workflow.template.steps) {
                 let results = await Promise.all(
                     Object.keys(parallelStepsGroup)
@@ -101,15 +102,7 @@ export class WorkflowOrchestrator {
                 );
 
                 for (let stepResult of results) {
-                    context.results[stepResult.name] = stepResult;
-
-                    Object.keys(stepResult.artifacts || {}).forEach(artifactName => {
-                        let matchingArtifactName = Object.keys((workflow.template.outputs || {}).artifacts || {}).find(key =>
-                            workflow.template.outputs.artifacts[key].from === `%%steps.${stepResult.name}.outputs.artifacts.${artifactName}%%`);
-                        if (matchingArtifactName) {
-                            result.artifacts[matchingArtifactName] = stepResult.artifacts[artifactName];
-                        }
-                    });
+                    this.collectWorkflowStepResult(stepResult, workflow, context, result);
                     if (stepResult.status === model.TaskStatus.Failed) {
                         result.status = model.TaskStatus.Failed;
                         result.statusCode = model.TASK_STATUS_CODES.TASK_FAILED;
@@ -127,9 +120,12 @@ export class WorkflowOrchestrator {
             }
             return result;
         } finally {
-            for (let fixture of fixtures) {
-                await fixture.subscription.unsubscribe();
-            }
+            await Promise.all(fixtures.map(async fixture => {
+                this.logger.debug(`Stopping fixtures '${fixture.name}'`);
+                let fixtureResult = await fixture.stopper();
+                this.collectWorkflowStepResult(Object.assign(fixtureResult, { name: fixture.name }),  workflow, context, result );
+                this.logger.debug(`Fixtures '${fixture.name}' has been stopped`);
+            }));
             if (networkId) {
                 await this.deleteNetworkSafe(networkId);
             }
@@ -149,27 +145,59 @@ export class WorkflowOrchestrator {
         }, 5, 300);
     }
 
+    private collectWorkflowStepResult(stepResult: StepResult & { name: string }, workflow: model.WorkflowStep, context: WorkflowContext, result: StepResult) {
+        context.results[stepResult.name] = stepResult;
+
+        Object.keys(stepResult.artifacts || {}).forEach(artifactName => {
+            let matchingArtifactName = Object.keys((workflow.template.outputs || {}).artifacts || {}).find(key => {
+                return workflow.template.outputs.artifacts[key].from === `%%steps.${stepResult.name}.outputs.artifacts.${artifactName}%%` ||
+                       workflow.template.outputs.artifacts[key].from === `%%fixtures.${stepResult.name}.outputs.artifacts.${artifactName}%%`;
+            });
+            if (matchingArtifactName) {
+                result.artifacts[matchingArtifactName] = stepResult.artifacts[artifactName];
+            }
+        });
+    }
+
     private async startFixtures(
-            taskId: string, workflow: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Promise<LaunchedFixture[]> {
+            taskId: string, workflow: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput, workflowResult: StepResult): Promise<LaunchedFixture[]> {
+
         let results: LaunchedFixture[] = [];
         for (let group of workflow.template.fixtures || []) {
             let groupResultPromises = Object.keys(group).map(fixtureName => {
                 let fixture = group[fixtureName];
                 this.logger.debug(`Starting fixture '${fixtureName}': id: '${fixture['id']}'`);
+                let stoppedResolve;
+                let stoppedPromise = new Promise(resolve => stoppedResolve = resolve);
                 return new Promise((resolve, reject) => {
                     let started = false;
-                    let subscription = this.launchContainer(fixture, parentContext, input).subscribe(fixtureResult => {
+                    let cancelRequested = new Subject<any>();
+                    this.launchContainer(fixture, parentContext, input, cancelRequested).subscribe(fixtureResult => {
                         this.stepResultsQueue.next({ id: fixture['id'], taskId, result: fixtureResult });
                         if (!started && fixtureResult.status === model.TaskStatus.Running) {
                             if (!fixtureResult.networkName) {
                                 reject(new Error(`Fixture '${fixtureName}' had been started by network name/IP is unknown: ${JSON.stringify(fixtureResult)}`));
                             }
                             this.logger.debug(`Fixture '${fixtureName}' has been started and available at '${fixtureResult.networkName}'`);
-                            resolve({ name: fixtureName, subscription, networkName: fixtureResult.networkName });
+                            resolve({ name: fixtureName, networkName: fixtureResult.networkName, stopper: () => {
+                                cancelRequested.next();
+                                return stoppedPromise;
+                            }});
                             started = true;
                         } else if (!started && fixtureResult.status === model.TaskStatus.Failed) {
                             reject(new Error(`Unable to start fixture ${fixtureName}: ${JSON.stringify(fixtureResult)}`));
+                        } else if (started && fixtureResult.status !== model.TaskStatus.Running) {
+                            Object.keys(fixtureResult.artifacts || {}).forEach(artifactName => {
+                                let matchingArtifactName = Object.keys((workflow.template.outputs || {}).artifacts || {}).find(key =>
+                                    workflow.template.outputs.artifacts[key].from === `%%fixtures.${fixtureName}.outputs.artifacts.${artifactName}%%`);
+                                if (matchingArtifactName) {
+                                    workflowResult.artifacts[matchingArtifactName] = fixtureResult.artifacts[artifactName];
+                                }
+                            });
+                            stoppedResolve(fixtureResult);
                         }
+                    }, err => {
+                        reject(new Error(`Error while starting fixture '${fixtureName}': ${err}`));
                     });
                 });
             });
@@ -201,10 +229,12 @@ export class WorkflowOrchestrator {
         }
     }
 
-    private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): Observable<StepResult> {
+    private launchContainer(container: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput, cancelRequested?: Subject<any>): Observable<StepResult> {
         container = deepcopy(container);
         return Observable.fromPromise((async () => {
             input = this.processStepInput(container, parentContext, input);
+            container.template.image = this.substituteInputParams(container.template.image, input);
+
             if (!container.template.command) {
                 let imageEntryPoint = await this.getImageEntryPoint(container.template.image);
                 container.template.command = imageEntryPoint;
@@ -212,18 +242,27 @@ export class WorkflowOrchestrator {
             }
             container.template.command = container.template.command.map(item => this.substituteInputParams(item, input));
             container.template.args = (container.template.args || []).map(item => this.substituteInputParams(item, input));
-            container.template.image = this.substituteInputParams(container.template.image, input);
+            container.template.env = (container.template.env || []).map(item => ({
+                name: this.substituteInputParams(item.name, input),
+                value: this.substituteInputParams(item.value, input),
+             }));
+            Object.keys(container.template.inputs && container.template.inputs.artifacts || {}).forEach(name => {
+                container.template.inputs.artifacts[name].path = this.substituteInputParams(container.template.inputs.artifacts[name].path, input);
+            });
+            Object.keys(container.template.outputs && container.template.outputs.artifacts || {}).forEach(name => {
+                container.template.outputs.artifacts[name].path = this.substituteInputParams(container.template.outputs.artifacts[name].path, input);
+            });
         })()).first().flatMap(() => this.executor.executeContainerStep(container, parentContext, {
             artifacts: input.artifacts,
             networkId: input.networkId,
             dockerParams: this.getDockerParams(container),
-        }));
+        }, cancelRequested));
     }
 
     private async getImageEntryPoint(imageUrl: string) {
         await utils.ensureImageExists(this.docker, imageUrl);
         let status = await this.docker.image.get(imageUrl).status();
-        return status.data['ContainerConfig'].Entrypoint;
+        return status.data['Config'].Entrypoint || status.data['Config'].Cmd;
     }
 
     private processStepInput(step: model.WorkflowStep, parentContext: WorkflowContext, input: StepInput): StepInput {
@@ -233,6 +272,7 @@ export class WorkflowOrchestrator {
         });
         let artifacts = {};
         Object.keys(step.arguments || {}).filter(name => name.startsWith('artifacts.')).forEach(name => {
+            let inputArtifactName = name.substring('artifacts.'.length);
             let stepsArtifactMatch = step.arguments[name].match(/%%steps\.([^\.]*)\.outputs\.artifacts\.([^%.]*)%%/);
             let inputsArtifactsMatch = step.arguments[name].match(/%%inputs\.artifacts\.([^%.]*)%%/);
             if (stepsArtifactMatch) {
@@ -241,14 +281,14 @@ export class WorkflowOrchestrator {
                 if (!stepResult) {
                     throw new Error(`Step requires output artifact of step '${stepName}', but step result is not available`);
                 }
-                artifacts[artifactName] = (stepResult.artifacts || {})[artifactName];
+                artifacts[inputArtifactName] = (stepResult.artifacts || {})[artifactName];
             } else if (inputsArtifactsMatch) {
                 let [, artifactName] = inputsArtifactsMatch;
                 let artifact = input.artifacts[artifactName];
                 if (!artifact) {
                     throw new Error(`Step requires input artifact'${artifactName}', but artifact is not available`);
                 }
-                artifacts[artifactName] = artifact;
+                artifacts[inputArtifactName] = artifact;
             } else {
                 throw new Error(`Unable to parse artifacts input: '${step.arguments[name]}'`);
             }
