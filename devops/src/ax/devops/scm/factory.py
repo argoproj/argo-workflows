@@ -34,9 +34,13 @@ def _find_axops_tool_config(repo):
     try:
         tools = axops_client.get_tools(category='scm')
     except Exception as e:
-        logger.warning("Cannot get tools from axops-internal. Your cluster needs upgrade. Error: %s", e)
-        logger.info("Getting tools from axops instead of axops-internal")
-        tools = axops_client_old.get_tools(category='scm')
+        try:
+            logger.warning("Cannot get tools from axops-internal. Your cluster needs upgrade. Error: %s", e)
+            logger.info("Getting tools from axops instead of axops-internal")
+            tools = axops_client_old.get_tools(category='scm')
+        except Exception as e:
+            logger.warning("Cannot get tools from axops. Error: %s", e)
+            tools = []
 
     for tool in tools:
         if repo in tool.get('repos', []):
