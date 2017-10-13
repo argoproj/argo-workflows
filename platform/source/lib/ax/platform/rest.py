@@ -190,6 +190,11 @@ def cluster_node_config():
     return jsonify(AXClusterConfig().get_node_config())
 
 
+@_app.route("/v1/axmon/cluster/config", methods=["GET"])
+def cluster_config():
+    return jsonify(AXClusterConfig().get_raw_config())
+
+
 @_app.route("/v1/axmon/cluster/spot_instance_config", methods=['PUT'])
 def put_spot_instance_config():
     (data,) = _get_optional_arguments('enabled')
