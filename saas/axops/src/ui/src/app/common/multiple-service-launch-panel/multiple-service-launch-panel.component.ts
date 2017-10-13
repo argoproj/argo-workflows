@@ -1,14 +1,15 @@
 import * as _ from 'lodash';
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 
-import {Artifact, Commit, Template, Task, Project, ProjectAction, Branch } from '../../model';
+import { Artifact, Commit, Template, Task, Project, ProjectAction, Branch } from '../../model';
 import { TemplateService, TaskService, CommitsService } from '../../services';
 import { NotificationsService } from 'argo-ui-lib/src/components';
 import { Session, HtmlForm, MULTIPLE_SERVICE_LAUNCH_PANEL_TABS } from './multiple-service-launch-panel.view-models';
+import { SetupJobNotificationsComponent } from './setup-job-notifications/setup-job-notifications.component';
 
 @Component({
     selector: 'ax-multiple-service-launch-panel',
@@ -18,6 +19,9 @@ import { Session, HtmlForm, MULTIPLE_SERVICE_LAUNCH_PANEL_TABS } from './multipl
 export class MultipleServiceLaunchPanelComponent {
     @Output() submitted: EventEmitter<any> = new EventEmitter();
 
+    @ViewChild(SetupJobNotificationsComponent)
+    private setupJobNotifications: SetupJobNotificationsComponent;
+
     public templates: Template[] = [];
     public templatesToSubmit: Template[] = [];
     public allSelected: boolean = false;
@@ -25,7 +29,7 @@ export class MultipleServiceLaunchPanelComponent {
     public templateLoader: boolean = false;
     public commit: Commit = new Commit();
     public isVisibleSelectServiceTemplatesPanel: boolean = false;
-    public selectingScreen: boolean = true;
+    public stepNumber: 1 | 2 | 3 = 1;
     public activeElementId: number = 0;
     public isSubmitClicked: boolean = false;
     public summaryErrorMessage: boolean = false;
@@ -82,7 +86,7 @@ export class MultipleServiceLaunchPanelComponent {
         this.task = null;
         this.projectInfo = null;
         this.resubmit = resubmit;
-        this.selectingScreen = true;
+        this.stepNumber = 1;
 
         this.withCommitOnly = withCommitOnly;
         if (options) {
@@ -95,11 +99,11 @@ export class MultipleServiceLaunchPanelComponent {
                 this.isVisibleSelectServiceTemplatesPanel = true;
                 this.next();
             }
-            this.selectingScreen = false;
+            this.stepNumber = 2;
         } else {
             this.task = null;
             this.projectInfo = null;
-            this.selectingScreen = true;
+            this.stepNumber = 1;
         }
 
         if (commit) {
@@ -133,7 +137,7 @@ export class MultipleServiceLaunchPanelComponent {
         this.session = new Session();
         this.templates = [];
         this.templatesToSubmit = [];
-        this.selectingScreen = true;
+        this.stepNumber = 1;
         this.activeElementId = 0;
         this.allSelected = false;
         this.allForms.reset();
@@ -250,18 +254,23 @@ export class MultipleServiceLaunchPanelComponent {
         }) !== undefined;
     }
 
+    goToNextStep() {
+        this.stepNumber += 1;
+        this.next();
+    }
+
     next() {
-        this.selectingScreen = false;
         this.templatesToSubmit = this.templates.filter(item => item.selected);
 
         this.prepareForms(this.templatesToSubmit);
     }
 
     submit() {
+        let notifications = this.setupJobNotifications.getNotifications();
         this.isSubmitClicked = true;
         this.summaryErrorMessage = this.allForms.invalid;
 
-        if (this.allForms.valid) {
+        if (this.allForms.valid && notifications) {
             if (this.resubmit) {
                 this.resubmitTask(this.task, this.resubmit);
             } else {
@@ -271,6 +280,7 @@ export class MultipleServiceLaunchPanelComponent {
                     observableList.push(this.taskService.launchTask({
                         template_id: this.templatesToSubmit[index].id,
                         arguments: this.listParameters(this.allForms.controls[index.toString()]['controls']),
+                        notifications: notifications
                     }));
                 });
 
@@ -322,7 +332,6 @@ export class MultipleServiceLaunchPanelComponent {
         this.selectedBranch = branch.name;
         this.getTemplates(branch.repo);
     }
-
 
     private prepareForms(templates: Template[], resubmitFailedParameters?: any) {
         templates.forEach((template, index) => {

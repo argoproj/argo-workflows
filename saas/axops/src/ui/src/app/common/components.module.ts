@@ -29,6 +29,7 @@ import { CommitPanelComponent } from './commit-panel/commit-panel.component';
 import { CommitAuthorComponent } from './commit-author/commit-author.component';
 import { CommitDescriptionComponent } from './commit-description/commit-description.component';
 import { MultipleServiceLaunchPanelComponent } from './multiple-service-launch-panel/multiple-service-launch-panel.component';
+import { SetupJobNotificationsComponent } from './multiple-service-launch-panel/setup-job-notifications/setup-job-notifications.component';
 import { LaunchPanelService } from './multiple-service-launch-panel/launch-panel.service';
 import { BranchesPanelComponent } from './branches-panel/branches-panel.component';
 import { BranchSelectorPanelComponent } from './branch-selector-panel/branch-selector-panel.component';
@@ -87,6 +88,7 @@ let components: any[] = [
     CommitAuthorComponent,
     CommitDescriptionComponent,
     MultipleServiceLaunchPanelComponent,
+    SetupJobNotificationsComponent,
     BranchesPanelComponent,
     BranchSelectorPanelComponent,
     CommitSelectorPanelComponent,

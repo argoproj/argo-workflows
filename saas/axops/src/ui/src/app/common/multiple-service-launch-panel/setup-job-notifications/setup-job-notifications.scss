@@ -1,0 +1,43 @@
+@import '../../../../assets/styles/config';
+
+.notification-row {
+    & > h5 {
+        margin-top: 30px;
+        margin-bottom: 2px;
+        font-size: 14px;
+        font-weight: bold;
+        color: $ax-color-gray-6;
+
+        &:first-child {
+            margin-top: 20px;
+        }
+    }
+
+    & > hr {
+        margin-top: 0;
+        border-color: $ax-color-gray-4;
+    }
+
+    &__plus-icon {
+        font-size: 25px;
+        vertical-align: middle;
+        font-weight: 300;
+    }
+
+    &__events-selector {
+        width: 50%;
+    }
+
+    &__input-adjustment {
+        margin-left: 30px;
+        margin-right: 60px;
+    }
+
+    &__list-item {
+        margin-bottom: 15px;
+
+        label {
+            font-size: 14px;
+        }
+    }
+}
