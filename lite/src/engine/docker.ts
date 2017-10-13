@@ -1,7 +1,7 @@
 import * as shell from 'shelljs';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Observable, Observer } from 'rxjs';
+import { Observable, Observer, Subject } from 'rxjs';
 import { Docker } from 'node-docker-api';
 
 import * as model from './model';
@@ -38,7 +38,7 @@ export class DockerExecutor implements Executor {
         await network.remove();
     }
 
-    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput): Observable<StepResult> {
+    public executeContainerStep(step: model.WorkflowStep, context: WorkflowContext, input: ContainerStepInput, cancelRequested?: Subject<any>): Observable<StepResult> {
         return new Observable<StepResult>((observer: Observer<StepResult>) => {
             let container = null;
             let result: StepResult = { status: model.TaskStatus.Waiting };
@@ -107,6 +107,15 @@ export class DockerExecutor implements Executor {
                 }
             };
 
+            if (cancelRequested) {
+                cancelRequested.subscribe(() => {
+                    if (container) {
+                        return utils.executeSafe(async () => {
+                            container.kill();
+                        });
+                    }
+                });
+            }
             execute();
             return cleanUpContainer;
         });
@@ -121,7 +130,12 @@ export class DockerExecutor implements Executor {
         if (input.dockerParams) {
             hostConfig = { binds: [`${this.socketPath}:/var/run/docker.sock`] };
         }
-        return this.docker.container.create({ image: step.template.image, cmd: step.template.command.concat(step.template.args), hostConfig});
+        return this.docker.container.create({
+            image: step.template.image,
+            cmd: step.template.command.concat(step.template.args),
+            hostConfig,
+            env: (step.template.env || []).map(item => `${item.name}=${item.value}`),
+        });
     }
 
     private async removeContainerSafe(container): Promise<any> {
