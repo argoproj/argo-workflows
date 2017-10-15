@@ -138,40 +138,46 @@ func (d *Deployment) PostProcess() *axerror.AXError {
 			return axErr
 		}
 
-		for _, route := range d.Template.ExternalRoutes {
-			route.DNSPrefix = strings.TrimSpace(route.DNSPrefix)
-			if route.DNSPrefix == "" {
-				route.DNSPrefix = fmt.Sprintf("%v-%v", strings.ToLower(d.ApplicationName), strings.ToLower(d.Name))
-			}
+		if len(domains.Data) > 0 && len(domains.Data[0].Domains) > 0 {
 
-			if len(domains.Data) == 0 || len(domains.Data[0].Domains) == 0 {
-				return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("No domain is available in cluster for external route, please configure the domain in configuration page.")
-			}
+			for _, route := range d.Template.ExternalRoutes {
+				route.DNSPrefix = strings.TrimSpace(route.DNSPrefix)
+				if route.DNSPrefix == "" {
+					route.DNSPrefix = fmt.Sprintf("%v-%v", strings.ToLower(d.ApplicationName), strings.ToLower(d.Name))
+				}
 
-			route.DNSDomain = strings.TrimSpace(route.DNSDomain)
-			if route.DNSDomain == "" {
-				// if user did not specify a DNSDomain in his template, we choose the first one returned in the list
-				route.DNSDomain = domains.Data[0].Domains[0].Name
-			} else {
-				found := false
-				common.DebugLog.Println("[Domain]", route.DNSDomain)
-				for _, domain := range domains.Data[0].Domains {
-					common.DebugLog.Println("[Domain]", domain)
-					if domain.Name == route.DNSDomain || domain.Name == route.DNSDomain+"." {
-						found = true
-						break
+				if len(domains.Data) == 0 || len(domains.Data[0].Domains) == 0 {
+
+					return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("No domain is available in cluster for external route, please configure the domain in configuration page.")
+				}
+
+				route.DNSDomain = strings.TrimSpace(route.DNSDomain)
+				if route.DNSDomain == "" {
+					// if user did not specify a DNSDomain in his template, we choose the first one returned in the list
+					route.DNSDomain = domains.Data[0].Domains[0].Name
+				} else {
+					found := false
+					common.DebugLog.Println("[Domain]", route.DNSDomain)
+					for _, domain := range domains.Data[0].Domains {
+						common.DebugLog.Println("[Domain]", domain)
+						if domain.Name == route.DNSDomain || domain.Name == route.DNSDomain+"." {
+							found = true
+							break
+						}
+					}
+					if !found {
+						return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("DNS domain %v is not configured in this cluster, please configure it in Domain Management or use another domain.", route.DNSDomain)
 					}
 				}
-				if !found {
-					return axerror.ERR_API_INVALID_PARAM.NewWithMessagef("DNS domain %v is not configured in this cluster, please configure it in Domain Management or use another domain.", route.DNSDomain)
-				}
+				route.DNSName = route.DNSPrefix + "." + route.DNSDomain
+				d.Endpoints = append(d.Endpoints, route.DNSName)
 			}
-			route.DNSName = route.DNSPrefix + "." + route.DNSDomain
-			d.Endpoints = append(d.Endpoints, route.DNSName)
-		}
 
-		if axErr := d.Template.ExternalRoutes.Validate(); axErr != nil {
-			return axErr
+			if axErr := d.Template.ExternalRoutes.Validate(); axErr != nil {
+				return axErr
+			}
+		} else {
+			d.Template.ExternalRoutes = nil
 		}
 	}
 
