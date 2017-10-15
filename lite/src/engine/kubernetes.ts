@@ -66,6 +66,7 @@ export class KubernetesExecutor implements Executor {
             }).
             distinct(item => `${item.name} - ${item.status} - ${item.podIP}`).
             do(item => this.logger.debug(`Pod '${item.name}' has been updated: status: ${item.status}; podIp: ${item.podIP}`)).
+            repeat().
             retry().
             share();
         this.podUpdates.subscribe();
