@@ -67,11 +67,11 @@ class ArgoClusterManager(object):
         add_misc_flags(download_cred_parser)
 
         # Install on existing cluster
-        platform_only_installer = main_subparser.add_parser("install-platform-only", help="Install platform only")
+        platform_only_installer = main_subparser.add_parser("install-argo-only", help="Install Argo only")
         add_platform_only_flags(platform_only_installer)
 
         # Uninstall on existing cluster
-        platform_only_uninstaller = main_subparser.add_parser("uninstall-platform-only", help="Uninstall Argo services")
+        platform_only_uninstaller = main_subparser.add_parser("uninstall-argo-only", help="Uninstall Argo services")
         add_platform_only_uninstall_flags(platform_only_uninstaller)
 
     def parse_args_and_run(self):
@@ -227,7 +227,7 @@ class ArgoClusterManager(object):
         logger.info("Creating s3 bucket using location: %s", location)
         requests.put(location)
 
-    def install_platform_only(self, args):
+    def install_argo_only(self, args):
         logger.info("Installing Argo platform ...")
 
         try:
@@ -265,7 +265,7 @@ class ArgoClusterManager(object):
         PlatformOnlyInstaller(platform_install_config).run()
         return
 
-    def uninstall_platform_only(self, args):
+    def uninstall_argo_only(self, args):
         logger.info("Uninstalling Argo platform ...")
         config.load_kube_config(args.kubeconfig)
         api = client.CoreV1Api()
