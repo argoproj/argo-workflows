@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as shell from 'shelljs';
 import * as shellEscape from 'shell-escape';
 import * as fs from 'fs';
+import * as JSONStream from 'json-stream';
 
 import * as model from './model';
 import { Executor, StepResult, WorkflowContext, Logger, ContainerStepInput } from './common';
@@ -31,8 +32,7 @@ export class KubernetesExecutor implements Executor {
     private constructor(private logger: Logger, private configPath: string, private config: any) {
         this.core = new api.Core(Object.assign(config, {promises: true}));
 
-        this.podUpdates = utils.
-            reactifyJsonStream(this.core.ns.pods.getStream({ qs: { watch: true } })).
+        this.podUpdates = this.getPodUpdates().
             map(item => {
                 let object = item.object;
                 let name = object.metadata.name;
@@ -167,6 +167,17 @@ export class KubernetesExecutor implements Executor {
 
     public getLiveLogs(containerId: string): Observable<string> {
         return utils.reactifyStringStream(this.core.ns.po(containerId).log.getStream({ qs: { follow: true, container: 'step' } }));
+    }
+
+    private getPodUpdates() {
+        return new Observable((observer: Observer<any>) => {
+            let stream = this.core.ns.pods.getStream({ qs: { watch: true } });
+            stream.on('end', () => observer.complete());
+            stream.on('error', e => observer.error(e));
+            stream.on('close', () => observer.complete());
+            stream = stream.pipe(new JSONStream());
+            stream.on('data', (d) => observer.next(d));
+        });
     }
 
     private getContainerExitCode(pod, containerName: string) {
