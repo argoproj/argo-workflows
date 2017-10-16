@@ -49,10 +49,12 @@ argo login --config argo-lite-kube <deployed argo-lite service URL> --username t
 
 ### Execute sample workflows
 
-Build argo-lite using argo-lite :-)  **Argo Lite CI** yaml is defined in [.argo folder](https://github.com/argoproj/argo/blob/master/.argo/lite-ci.yaml)
+In order to run example clone workflow repo and submit it using argo cli:
 
-```
-git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local
-```
+* InfluxDB build/test workflow ([repo](https://github.com/argoproj/influxdb)): `argo job submit 'InfluxDB CI' --config argo-lite-kube --local`
+* Selenium test workflow ([repo](https://github.com/argoproj/appstore)): `argo job submit 'Selenium Demo' --config argo-lite-kube --local`
+* Docker In Docker usage example ([repo](https://github.com/argoproj/example-dind)): `argo job submit 'example-build-using-dind' --config argo-lite-kube --local`
+* Argo-lite build workflow ([repo](https://github.com/argoproj/argo)): `argo job submit 'Argo Lite CI' --config argo-lite-kube --local`
+
 
 ![alt text](./demo.gif "Logo Title Text 1")
