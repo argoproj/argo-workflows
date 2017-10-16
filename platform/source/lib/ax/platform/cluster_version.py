@@ -44,17 +44,14 @@ class AXVersion(object):
         # Update current version in cluster bucket.
         cluster_version_key = AXClusterConfigPath(self._cluster_name_id).versions()
         self._cluster_bucket.put_object(cluster_version_key,
-                                        yaml.dump(new),
-                                        ACL="bucket-owner-full-control")
+                                        yaml.dump(new))
 
         # Update current version in support bucket.
         support_version_key = AXSupportConfigPath(self._cluster_name_id).current_versions()
         self._support_bucket.put_object(support_version_key,
-                                        yaml.dump(new),
-                                        ACL="bucket-owner-full-control")
+                                        yaml.dump(new))
 
         # Update version history in support bucket.
         support_version_history_key = AXSupportConfigPath(self._cluster_name_id).version_history()
         self._support_bucket.put_object(support_version_history_key,
-                                        yaml.dump(history),
-                                        ACL="bucket-owner-full-control")
+                                        yaml.dump(history))
