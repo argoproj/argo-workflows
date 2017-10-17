@@ -1,0 +1,34 @@
+FROM debian:9.1
+
+RUN apt-get update && apt-get install -y \
+    git \
+    make \
+    wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install go
+ENV GO_VERSION 1.8.3
+ENV GO_ARCH amd64
+ENV GOPATH /root/go
+ENV PATH ${GOPATH}/bin:/usr/local/go/bin:${PATH}
+RUN wget https://storage.googleapis.com/golang/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    tar -C /usr/local/ -xf /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    rm /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    # A dummy directory is created under $GOPATH/src/dummy so we are able to use dep
+    # to install all the packages of our dep lock file
+    mkdir -p ${GOPATH}/src/dummy
+
+# Install Go dependencies and some tooling
+COPY Gopkg.toml ${GOPATH}/src/dummy
+COPY Gopkg.lock ${GOPATH}/src/dummy
+RUN go get -u github.com/golang/dep/cmd/dep && \
+    rm -rf ${GOPATH}/src/github.com && \
+    cd ${GOPATH}/src/dummy && \
+    dep ensure -vendor-only && \
+    mv vendor/* ${GOPATH}/src/ && \
+    rmdir vendor && \
+    go get -u -v gopkg.in/alecthomas/gometalinter.v1 && \
+    cd ${GOPATH}/bin && \
+    ln -s gometalinter.v1 gometalinter && \
+    gometalinter --install

@@ -1,0 +1,5 @@
+FROM debian:9.1
+
+COPY dist/workflow-controller /bin/
+
+ENTRYPOINT [ "/bin/workflow-controller" ]
