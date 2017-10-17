@@ -67,11 +67,11 @@ class ArgoClusterManager(object):
         add_misc_flags(download_cred_parser)
 
         # Install on existing cluster
-        platform_only_installer = main_subparser.add_parser("install-platform-only", help="Install platform only")
+        platform_only_installer = main_subparser.add_parser("install-argo-only", help="Install Argo only")
         add_platform_only_flags(platform_only_installer)
 
         # Uninstall on existing cluster
-        platform_only_uninstaller = main_subparser.add_parser("uninstall-platform-only", help="Uninstall Argo services")
+        platform_only_uninstaller = main_subparser.add_parser("uninstall-argo-only", help="Uninstall Argo services")
         add_platform_only_uninstall_flags(platform_only_uninstaller)
 
     def parse_args_and_run(self):
@@ -227,20 +227,30 @@ class ArgoClusterManager(object):
         logger.info("Creating s3 bucket using location: %s", location)
         requests.put(location)
 
-    def install_platform_only(self, args):
+    def install_argo_only(self, args):
         logger.info("Installing Argo platform ...")
 
+        try:
+            assert args.cluster_name
+        except Exception:
+            print("--cluster-name needs to be specified")
+            sys.exit(1)
+
         if args.cloud_provider == "minikube" and not args.bucket_endpoint:
+            Cloud(target_cloud="aws")
             args.cluster_bucket = "argo"
             # TODO:revisit
             # access key and secret is required by code in aws_s3
             # use dummy access key and secret for s3proxy
-            args.access_key = "abc"
-            args.secret_key = "abc"
+            args.access_key = "fake-access-key"
+            args.secret_key = "fake-secret-key"
             self._install_s3_proxy(args.kubeconfig)
             args.bucket_endpoint = self._get_s3_proxy_endpoint(args.kubeconfig)
             # Create bucket
             self._create_s3_proxy_bucket(args.bucket_endpoint, args.cluster_bucket)
+        elif args.cloud_provider == "aws":
+            assert args.cluster_bucket, "--cluster-bucket is required"
+            assert args.cloud_region, "--cloud-region is required"
 
         logger.info("s3 bucket endpoint: %s", args.bucket_endpoint)
 
@@ -255,7 +265,7 @@ class ArgoClusterManager(object):
         PlatformOnlyInstaller(platform_install_config).run()
         return
 
-    def uninstall_platform_only(self, args):
+    def uninstall_argo_only(self, args):
         logger.info("Uninstalling Argo platform ...")
         config.load_kube_config(args.kubeconfig)
         api = client.CoreV1Api()

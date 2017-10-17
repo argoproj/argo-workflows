@@ -98,10 +98,11 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
 
 ### Run the Sample Workflows
 
-Build Argo Lite using Argo Lite :-) The YAML template file **Argo Lite CI** is defined in the [.argo folder](https://github.com/argoproj/argo/blob/master/.argo/lite-ci.yaml).
+You can run sample workflows on Argo Lite by cloning them from the Argo repo and submitting them using the Argo CLI commands:
 
-```
-git clone https://github.com/argoproj/argo.git && cd argo && argo job submit 'Argo Lite CI' --config argo-lite --local
-```
+* InfluxDB build/test workflow ([repo](https://github.com/argoproj/influxdb)): `argo job submit 'InfluxDB CI' --config argo-lite-kube --local`
+* Selenium test workflow ([repo](https://github.com/argoproj/appstore)): `argo job submit 'Selenium Demo' --config argo-lite-kube --local`
+* Docker In Docker usage example ([repo](https://github.com/argoproj/example-dind)): `argo job submit 'example-build-using-dind' --config argo-lite-kube --local`
+* Argo-lite build workflow ([repo](https://github.com/argoproj/argo)): `argo job submit 'Argo Lite CI' --config argo-lite-kube --local`
 
-![alt text](./demo.gif "Logo Title Text 1"
+![alt text](./demo.gif "Logo Title Text 1")

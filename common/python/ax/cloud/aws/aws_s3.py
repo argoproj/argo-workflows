@@ -166,7 +166,11 @@ class AXS3Bucket(object):
             # Assume we don't have AWS metadata server access
             for r in PARTITION_DEFAULT_REGIONS:
                 logger.debug("Trying partition default region %s to get bucket region.", r)
-                bucket_region = _do_get_region(r)
+                bucket_region = None
+                try:
+                    bucket_region = _do_get_region(r)
+                except ClientError as e:
+                    logger.info("Get region failed with: %s. Assuming region is None ...", e)
                 if bucket_region:
                     return bucket_region
         return None

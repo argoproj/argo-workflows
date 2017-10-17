@@ -1,5 +1,4 @@
 import { Observable, Observer } from 'rxjs';
-import * as JSONStream from 'json-stream';
 import * as shell from 'shelljs';
 import * as shellEscape from 'shell-escape';
 import { Docker } from 'node-docker-api';
@@ -14,10 +13,6 @@ export function reactifyStream(stream, converter = item => item) {
 
 export function reactifyStringStream(stream) {
     return reactifyStream(stream, item => item.toString());
-}
-
-export function reactifyJsonStream(stream) {
-    return reactifyStream(stream.pipe(new JSONStream()), item => item);
 }
 
 export function exec(cmd: string[], rejectOnFail = true): Promise<{code, stdout, stderr}> {

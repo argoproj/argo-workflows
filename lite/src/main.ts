@@ -76,6 +76,9 @@ app.get('/v1/tools', (req, res) => res.send({data: []}));
 app.get('/v1/notification_center/events', (req, res) => res.send({data: []}));
 app.get('/v1/commits', (req, res) => res.send({data: []}));
 app.get('/v1/templates', (req, res) => res.send({data: []}));
+app.get('/v1/applications', (req, res) => res.send({data: []}));
+app.get('/v1/fixture/templates', (req, res) => res.send({data: []}));
+app.get('/v1/fixture/classes', (req, res) => res.send({data: []}));
 app.get('/v1/templates/:id', (req, res) => res.send({}));
 
 app.post('/v1/services', async (req, res) => {
