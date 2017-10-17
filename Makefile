@@ -6,7 +6,6 @@ PACKAGE=github.com/argoproj/argo
 BUILD_DIR=${GOPATH}/src/${PACKAGE}
 DIST_DIR=${GOPATH}/src/${PACKAGE}/dist
 CURRENT_DIR=$(shell pwd)
-BUILD_DIR_LINK=$(shell readlink ${BUILD_DIR})
 
 VERSION=$(shell cat ${BUILD_DIR}/VERSION)
 COMMIT=$(shell git rev-parse HEAD)
@@ -14,52 +13,58 @@ BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
 LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${COMMIT} -X ${PACKAGE}.Branch=${BRANCH}"
 
+BUILDER_IMAGE=argo-builder
+BUILDER_CMD=docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
+
 # Build the project
-all: lint cli-linux cli-darwin workflow workflow-image
+all: lint cli-linux cli-darwin workflow workflow-image apiserver
 
 builder:
 	cd ${BUILD_DIR}; \
-	docker build -t argo-builder -f Dockerfile-builder . ; \
+	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder . ; \
 	cd - >/dev/null
 
 cli:
 	cd ${BUILD_DIR}; \
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cli ; \
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cli ; \
 	cd - >/dev/null
 
 cli-linux: builder
 	rm -f ${DIST_DIR}/argocli/linux-amd64/argo
-	docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} argo-builder make cli
+	${BUILDER_CMD} make cli
 	mkdir -p ${DIST_DIR}/argocli/linux-amd64
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/linux-amd64/argo
 
 cli-darwin:
 	cd ${BUILD_DIR}; \
-	GOOS=darwin GOARCH=${GOARCH} go build ${LDFLAGS} -o ${DIST_DIR}/argocli/darwin-amd64/argo ./cli ; \
+	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cli ; \
+	cd - >/dev/null
+
+apiserver:
+	cd ${BUILD_DIR}; \
+	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./apiserver ; \
+	cd - >/dev/null
+
+apiserver-linux: builder
+	${BUILDER_CMD} make apiserver
+
+apiserver-image: apiserver-linux
+	cd ${BUILD_DIR}; \
+	docker build -f Dockerfile-apiserver . ; \
 	cd - >/dev/null
 
 workflow:
 	cd ${BUILD_DIR}; \
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./workflow ; \
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./workflow ; \
 	cd - >/dev/null
 
 workflow-linux: builder
-	docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} argo-builder make workflow
+	${BUILDER_CMD} make workflow
 
-workflow-image: workflow
+workflow-image: workflow-linux
 	cd ${BUILD_DIR}; \
 	docker build -f Dockerfile-workflow-controller . ; \
 	cd - >/dev/null
-
-link:
-	BUILD_DIR=${BUILD_DIR}; \
-	BUILD_DIR_LINK=${BUILD_DIR_LINK}; \
-	CURRENT_DIR=${CURRENT_DIR}; \
-	if [ "$${BUILD_DIR_LINK}" != "$${CURRENT_DIR}" ]; then \
-	    echo "Fixing symlinks for build"; \
-	    rm -f $${BUILD_DIR}; \
-	    ln -s $${CURRENT_DIR} $${BUILD_DIR}; \
-	fi
 
 test:
 	if ! hash go2xunit 2>/dev/null; then go install github.com/tebeka/go2xunit; fi
@@ -80,4 +85,4 @@ fmt:
 clean:
 	-rm -rf ${BUILD_DIR}/dist
 
-.PHONY: builder cli cli-linux cli-darwin workflow workflow-image lint test fmt clean
+.PHONY: builder cli cli-linux cli-darwin workflow workflow-image apiserver lint test fmt clean
