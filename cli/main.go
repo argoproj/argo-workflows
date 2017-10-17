@@ -1,4 +1,3 @@
-// Copyright 2015-2017 Applatix, Inc. All rights reserved.
 package main
 
 import (
