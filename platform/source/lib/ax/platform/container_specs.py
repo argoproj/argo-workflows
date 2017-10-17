@@ -8,6 +8,7 @@ import os
 from ax.cloud import Cloud
 from ax.meta import AXClusterId, AXCustomerId
 from ax.platform.container import Container, ContainerVolume
+from ax.platform.cluster_config import AXClusterConfig
 from ax.platform.component_config import SoftwareInfo
 from ax.platform.secrets import SecretResource
 
@@ -189,7 +190,7 @@ class SidecarDockerDaemon(Container):
 
         # Add per node dgs to sidecar
         dgs_vol = ContainerVolume("docker-graph-storage", "/var/lib/docker")
-        if Cloud().own_cloud() == Cloud.CLOUD_AWS:
+        if Cloud().own_cloud() == Cloud.CLOUD_AWS and AXClusterConfig().get_cluster_provider().is_argo_cluster():
             dgs_vol.set_type("DOCKERGRAPHSTORAGE", size_in_mb)
         else:
             dgs_vol.set_type("EMPTYDIR")
