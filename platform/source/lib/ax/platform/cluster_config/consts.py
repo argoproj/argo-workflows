@@ -36,6 +36,9 @@ class ClusterProvider(object):
     VALID_CLUSTER_PROVIDERS = [ARGO, USER]
 
     def __init__(self, provider):
+        if not provider:
+            self.provider = self.ARGO
+            return
         assert provider == self.ARGO or provider == self.USER, '"argo" or "user" are only acceptable values'
         self.provider = provider
 
