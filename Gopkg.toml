@@ -13,3 +13,7 @@
 [[constraint]]
   name = "k8s.io/client-go"
   branch = "release-5.0"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.1.4"
