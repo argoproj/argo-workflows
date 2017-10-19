@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/argoproj/argo/cli/cmd"
+	"github.com/argoproj/argo/cmd/argo/cmd"
 )
 
 func main() {
