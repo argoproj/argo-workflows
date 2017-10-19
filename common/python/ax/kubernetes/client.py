@@ -286,6 +286,7 @@ class KubernetesApiClient(object):
         """
         self.in_pod = bool(os.getenv('KUBERNETES_SERVICE_HOST'))
         self.session = requests.Session()
+        self.cert = None
         if use_proxy:
             self.host = host or "127.0.0.1"
             self.port = port or "8001"
@@ -318,7 +319,9 @@ class KubernetesApiClient(object):
                         kube_config = yaml.load(f)
                     cred_info = self._parse_config(kube_config)
                     self.host = cred_info['host']
-                    self.token = cred_info['token']
+                    self.token = cred_info.get('token')
+                    if 'client-certificate' in cred_info:
+                        self.cert = (cred_info['client-certificate'], cred_info['client-key'])
 
             p = urlparse('https://{}'.format(self.host))
             if p.port:
@@ -330,6 +333,11 @@ class KubernetesApiClient(object):
             # must be set *before* instantiation of ApiClient for it to take effect.
             swagger_client.configuration.verify_ssl = verify_ssl
             self.session.verify = session_verify
+
+        if self.cert:
+            swagger_client.configuration.cert_file = self.cert[0]
+            swagger_client.configuration.key_file = self.cert[1]
+            self.session.cert = self.cert
 
         self.swag_client = swagger_client.ApiClient(self.url)
         if self.token:
@@ -490,15 +498,23 @@ class KubernetesApiClient(object):
         cred_info.update(context)
         context_cluster = next(c['cluster'] for c in kube_config['clusters'] if c['name'] == context['cluster'])
         cred_info['host'] = context_cluster['server'].split('/')[-1]
-        cred_info['certificate-authority-data'] = context_cluster['certificate-authority-data']
+        if 'certificate-authority-data' in context_cluster:
+            cred_info['certificate-authority-data'] = context_cluster['certificate-authority-data']
         # user info
         context_user = next(c['user'] for c in kube_config['users'] if c['name'] == context['user'])
         if Cloud().target_cloud_aws():
             if 'token' in context_user:
                 cred_info['token'] = "Bearer " + context_user['token']
             else:
-                cred_info['token'] = urllib3.util.make_headers(basic_auth=context_user['username'] + \
-                                                               ':' + context_user['password']).get('authorization')
+                if 'username' in context_user:
+                    cred_info['token'] = urllib3.util.make_headers(basic_auth=context_user['username'] + \
+                                                                   ':' + context_user['password']).get('authorization')
+                # minikube
+                if 'client-certificate' in context_user:
+                    cred_info['client-certificate'] = context_user['client-certificate']
+                if 'client-key' in context_user:
+                    cred_info['client-key'] = context_user['client-key']
+
         elif Cloud().target_cloud_gcp():
             cred_info['token'] = GCPToken().token
         return cred_info
