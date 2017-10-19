@@ -73,6 +73,9 @@ func clusterShell(cmd *cobra.Command, args []string) {
 	volKube := fmt.Sprintf("%s/.kube:/tmp/ax_kube", homePath)
 	volSSH := fmt.Sprintf("%s/.ssh:/root/.ssh", homePath)
 	volArgo := fmt.Sprintf("%s/.argo:/root/.argo", homePath)
+	// User's home dir is mounted to support configs that reference other files inside the users home
+	// (e.g. minikube CA certificates)
+	volHome := fmt.Sprintf("%s:%s", homePath, homePath)
 
 	envRegistry := fmt.Sprintf("ARGO_DIST_REGISTRY=%s", registry)
 	envNamespace := fmt.Sprintf("AX_NAMESPACE=%s", namespace)
@@ -81,7 +84,7 @@ func clusterShell(cmd *cobra.Command, args []string) {
 
 	runCmdTTY(dockerPath, "run",
 		"-it", "--net", "host",
-		"-v", volAWS, "-v", volKube, "-v", volSSH, "-v", volArgo, // map required volumes from home directory
+		"-v", volAWS, "-v", volKube, "-v", volSSH, "-v", volArgo, "-v", volHome, // map required volumes from home directory
 		"-e", envRegistry, "-e", envNamespace, "-e", envVersion, "-e", envRegistrySecrets, // Create env vars required for cluster manager
 		clusterManagerImage)
 }
