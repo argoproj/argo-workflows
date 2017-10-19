@@ -464,16 +464,16 @@ please contact your administrator for more information to configure your argo CL
                 config["cloud"]["configure"]["master_type"] = master_config.master_instance_type
             config["cloud"]["configure"]["master_config_env"] = master_config.kube_up_env
 
+            # Get AMI information
+            ami_name = self._cfg.software_info.ami_name
+            ami_id = AMI(
+                aws_profile=self._cfg.cloud_profile,
+                aws_region=self._cfg.cloud_region
+            ).get_ami_id_from_name(ami_name=ami_name)
+            config["cloud"]["configure"]["ami_id"] = ami_id
+
         # TODO (#121) Need to revise the relationship between user_on_demand_nodes and node minimum, system node count
         config["cloud"]["configure"]["axuser_on_demand_nodes"] = self._cfg.user_on_demand_nodes
-
-        # Get AMI information
-        ami_name = self._cfg.software_info.ami_name
-        ami_id = AMI(
-            aws_profile=self._cfg.cloud_profile,
-            aws_region=self._cfg.cloud_region
-        ).get_ami_id_from_name(ami_name=ami_name)
-        config["cloud"]["configure"]["ami_id"] = ami_id
 
         # Other configurations
         config["cloud"]["configure"]["autoscaler_scan_interval"] = str(self._cfg.autoscaling_interval) + "s"
