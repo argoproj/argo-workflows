@@ -339,7 +339,6 @@ class ClusterInstallConfig(ClusterManagementOperationConfigBase):
 class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
     def __init__(self, cfg):
         cfg.cluster_size = AXClusterSize.CLUSTER_USER_PROVIDED
-        cfg.cloud_profile = "default"
         cfg.cluster_type = "standard"
         cfg.vpc_id = None
         cfg.vpc_cidr_base = None
@@ -431,14 +430,14 @@ def add_platform_only_flags(parser):
     add_software_info_flags(parser)
 
     # Cloud information
-    parser.add_argument("--cloud-region", default=None, help="A valid cloud region")
-    parser.add_argument("--cloud-placement", default=None, help="A valid cloud placement")
+    parser.add_argument("--cloud-region", default=None, help="A valid cloud region (for AWS)")
+    parser.add_argument("--cloud-placement", default=None, help="A valid cloud placement (for AWS)")
 
     # Add bucket
     parser.add_argument("--cluster-bucket", default=None, help="S3 complaint bucket to use")
     parser.add_argument("--bucket-endpoint", default=None, help="HTTP Endpoint for the cluster-bucket")
-    parser.add_argument("--access-key", default=None, help="Access key for accessing the bucket")
-    parser.add_argument("--secret-key", default=None, help="Secret key for accessing the bucket")
+    parser.add_argument("--access-key", default=None, help="Access key for accessing the bucket (for AWS)")
+    parser.add_argument("--secret-key", default=None, help="Secret key for accessing the bucket (for AWS)")
 
     # Add kubeconfig
     parser.add_argument("--kubeconfig", default=None, required=True, help="Kubeconfig file for the cluster")
