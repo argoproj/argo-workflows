@@ -17,7 +17,7 @@ BUILDER_IMAGE=argo-builder
 BUILDER_CMD=docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
 # Build the project
-all: lint cli-linux cli-darwin workflow workflow-image apiserver
+all: lint cli-linux cli-darwin workflow-image apiserver-image executor-image
 
 builder:
 	cd ${BUILD_DIR}; \
@@ -26,7 +26,7 @@ builder:
 
 cli:
 	cd ${BUILD_DIR}; \
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cli ; \
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo ; \
 	cd - >/dev/null
 
 cli-linux: builder
@@ -37,12 +37,12 @@ cli-linux: builder
 
 cli-darwin:
 	cd ${BUILD_DIR}; \
-	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cli ; \
+	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cmd/argo ; \
 	cd - >/dev/null
 
 apiserver:
 	cd ${BUILD_DIR}; \
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./apiserver ; \
+	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver ; \
 	cd - >/dev/null
 
 apiserver-linux: builder
@@ -55,7 +55,7 @@ apiserver-image: apiserver-linux
 
 workflow:
 	cd ${BUILD_DIR}; \
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./workflow ; \
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller ; \
 	cd - >/dev/null
 
 workflow-linux: builder
@@ -64,6 +64,19 @@ workflow-linux: builder
 workflow-image: workflow-linux
 	cd ${BUILD_DIR}; \
 	docker build -f Dockerfile-workflow-controller . ; \
+	cd - >/dev/null
+
+executor:
+	cd ${BUILD_DIR}; \
+	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-executor ./cmd/argo-executor ; \
+	cd - >/dev/null
+
+executor-linux: builder
+	${BUILDER_CMD} make executor
+
+executor-image: executor-linux
+	cd ${BUILD_DIR}; \
+	docker build -f Dockerfile-executor . ; \
 	cd - >/dev/null
 
 test:
@@ -85,4 +98,9 @@ fmt:
 clean:
 	-rm -rf ${BUILD_DIR}/dist
 
-.PHONY: builder cli cli-linux cli-darwin workflow workflow-image apiserver lint test fmt clean
+.PHONY: builder \
+	cli cli-linux cli-darwin \
+	workflow workflow-linux workflow-image \
+	apiserver apiserver-linux apiserver-image \
+	executor executor-linux executor-image \
+	lint test fmt clean
