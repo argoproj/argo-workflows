@@ -41,13 +41,13 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
  1. Create Argo Lite deployment
 
     *Manually*
-
+    
+  -  Deploy Argo lite on Minikube
     ```
-
-    # Argo Lite UI is available at http://localhost:8080
-    curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
-
+    $ curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
     ```
+    
+  - 
 
     *Using [helm](https://docs.helm.sh/using_helm/#installing-helm):*
 
