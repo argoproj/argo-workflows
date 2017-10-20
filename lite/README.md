@@ -56,6 +56,12 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     ```
     $ argo login --config argo-lite-kube $ARGO_SVC_URL --username test --password test
     ```
+    
+  - Access the Argo's GUI 
+    
+    ```
+    $ minikube service argo-lite
+    ```
   
 ###### Using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
