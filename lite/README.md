@@ -43,10 +43,8 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     *Manually*
     
   -  Deploy Argo Lite on Minikube
-  
-    ```
+ 
     $ curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
-    ```
     
   - Get Argo Lite's serivce URL 
   
