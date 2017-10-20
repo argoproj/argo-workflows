@@ -26,7 +26,7 @@ from argo.services.service import DeploymentService
 
 from ax.aws.meta_data import AWSMetaData
 from ax.cloud import Cloud
-from ax.exceptions import AXException, AXNotFoundException, AXIllegalArgumentException
+from ax.exceptions import AXException, AXNotFoundException, AXIllegalArgumentException, AXIllegalOperationException
 from ax.kubernetes import swagger_client
 from ax.kubernetes.client import KubernetesApiClient, retry_unless
 from ax.kubernetes.swagger_client.rest import ApiException
@@ -197,6 +197,9 @@ def cluster_config():
 
 @_app.route("/v1/axmon/cluster/spot_instance_config", methods=['PUT'])
 def put_spot_instance_config():
+    if AXClusterConfig().get_cluster_provider().is_user_cluster():
+        raise AXIllegalOperationException("Spot instances not allowed on user provided K8S clusters.")
+
     (data,) = _get_optional_arguments('enabled')
     if isinstance(data, bool):
         enabled_str = str(data)
@@ -232,6 +235,9 @@ def put_spot_instance_config():
 
 @_app.route("/v1/axmon/cluster/spot_instance_config", methods=['GET'])
 def get_spot_instance_config():
+    if AXClusterConfig().get_cluster_provider().is_user_cluster():
+        return jsonify({"status": "ok"})
+
     response = requests.get(MINION_MANAGER_HOSTNAME + ":" + MINION_MANAGER_PORT + "/spot_instance_config")
     response.raise_for_status()
     details = response.json()
