@@ -16,32 +16,28 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
 
 ### On your laptop:
 
-* *Using Docker*
+#### Using Docker
 
- 1. Run Argo Lite server:
-
-    ```
-   
-    docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui
+ - Run Argo Lite server:
 
     ```
-
- 2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
-
+    $ docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui
     ```
 
-    argo login --config argo-lite http://localhost:8080 --username test --password test
+ - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
 
     ```
-
-* *Using Minikube*
+    $ argo login --config argo-lite http://localhost:8080 --username test --password test
+    ```
+    
+#### Using Minikube
 
   NOTE: Before you use Minikube, you must have installed a hypervisor, `kubectl` (command-line for a Kubernetes cluster), and minikube. For instructions, see [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
- 1. Create Argo Lite deployment
+##### Create Argo Lite deployment
 
-    *Manually*
-    
+###### Manually
+
   -  Deploy Argo Lite on Minikube
      
      ```
@@ -61,51 +57,56 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     $ argo login --config argo-lite-kube $ARGO_SVC_URL --username test --password test
     ```
   
-    *Using [helm](https://docs.helm.sh/using_helm/#installing-helm):*
+###### Using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
+  - Add the Argo's Helm repository 
     ```
-    helm repo add argo https://argoproj.github.io/argo-helm
-    kubectl config view
-
+    $ helm repo add argo https://argoproj.github.io/argo-helm
+    ```
+    
+  - Install *agro-lite* chart 
+    ```
+    $ helm install argo/argo-lite
     ```
 
- 2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
-
+ - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
     ```
-
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
-    argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
-
+    $ argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
     ```
 
 ### On your Kubernetes cluster:
 
- 1. Create Argo Lite deployment
+#### Manually
 
-    *Manually*
-
+   -  Create Argo Lite deployment
     ```
-
-    # Argo Lite UI is available at http://localhost:8080
-    curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
-
+    $ curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite.yaml && kubectl create -f /tmp/argo.yaml
     ```
-
-    *Using [helm](https://docs.helm.sh/using_helm/#installing-helm):*
-
+   
+  - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
     ```
-    helm repo add argo https://argoproj.github.io/argo-helm
-    kubectl config view
-
-    ```
-
- 2. Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
-
-    ```
-
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
-    argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
+    $ argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
+    ```
+    
+#### Using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
+   - Add the Argo's Helm repository 
+    ```
+    $ helm repo add argo https://argoproj.github.io/argo-helm
+    ```
+    
+  - Install *agro-lite* chart 
+    ```
+    $ helm install argo/argo-lite
+    ```
+
+ - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+
+    ```
+    # Argo Lite UI is available at http://<deployed Argo Lite service URL>
+    $ argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
     ```
 
 ### Run the Sample Workflows
