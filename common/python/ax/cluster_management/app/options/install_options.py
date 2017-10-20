@@ -356,6 +356,10 @@ class PlatformOnlyInstallConfig(ClusterManagementOperationConfigBase):
             self.service_manifest_root = "/ax/config/service/argo-wfe"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
             Cloud(target_cloud="aws")
+        elif cfg.cloud_provider == "gke":
+            self.service_manifest_root = "/ax/config/service/argo-gke"
+            self.platform_bootstrap_config = "/ax/config/service/config/argo-wfe-platform-bootstrap.cfg"
+            Cloud(target_cloud="aws")
         else:
             self.service_manifest_root = "/ax/config/service/argo-all"
             self.platform_bootstrap_config = "/ax/config/service/config/argo-all-platform-bootstrap.cfg"

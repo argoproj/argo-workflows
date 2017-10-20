@@ -886,7 +886,7 @@ def axmon_domains_list():
         { 'result': [list of domains] }
     """
     cluster_config = AXClusterConfig(cluster_name_id=cluster_name_id)
-    if Cloud().target_cloud_gcp() or cluster_config.get_provider() == "minikube":
+    if Cloud().target_cloud_gcp() or cluster_config.get_provider() in ["minikube", "gke"]:
         return jsonify([])
     else:
         r53client = Route53(boto3.client("route53"))

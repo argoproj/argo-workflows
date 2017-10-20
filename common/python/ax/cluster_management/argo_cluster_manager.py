@@ -251,6 +251,8 @@ class ArgoClusterManager(object):
         elif args.cloud_provider == "aws":
             assert args.cluster_bucket, "--cluster-bucket is required"
             assert args.cloud_region, "--cloud-region is required"
+        elif args.cloud_provider == "gke":
+            assert args.cluster_bucket, "--cluster-bucket is required"
 
         logger.info("s3 bucket endpoint: %s", args.bucket_endpoint)
 

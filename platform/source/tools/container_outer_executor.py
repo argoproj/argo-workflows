@@ -1015,9 +1015,6 @@ class ContainerOuterExecutor(object):
         logger.info("[%s]: download_file from s3: bucket=%s key=%s local_dst=%s size=%s",
                     artifact_name, bucketname, key, file_path, expected_size)
 
-        if Cloud().in_cloud_gcp():
-            return ContainerOuterExecutor._download_file_from_gcp(bucketname, key, file_path)
-
         # Using the aws_s3 object defined in platform
         s3_bucket = AXS3Bucket(bucket_name=bucketname)
         count = 0

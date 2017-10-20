@@ -15,6 +15,7 @@ from ax.platform.component_config import AXPlatformConfigDefaults, SoftwareInfo
 # to string first and then finally it to None
 AWS_NO_PROFILE = "None"
 
+CLOUD_PROVIDER_CHOICES = ["aws", "minikube", "gke"]
 
 def typed_raw_input_with_default(prompt, default, type_converter):
     real_prompt = prompt + " (Default: {}): ".format(default)
@@ -118,7 +119,7 @@ def add_common_flags(parser):
     assert isinstance(parser, argparse.ArgumentParser)
     parser.add_argument("--cluster-name", default=None, help="Target Argo cluster name")
     parser.add_argument("--cluster-id", default=None, help="A pre-generated cluster id")
-    parser.add_argument("--cloud-provider", default=ClusterOperationDefaults.CLOUD_PROVIDER, help="Cloud type: aws or minikube")
+    parser.add_argument("--cloud-provider", default=ClusterOperationDefaults.CLOUD_PROVIDER, help="Cloud type: "+str(CLOUD_PROVIDER_CHOICES), choices=CLOUD_PROVIDER_CHOICES)
     parser.add_argument("--cloud-profile", default=None, help="Cloud profile name (e.g. aws profile)")
     parser.add_argument("--dry-run", default=False, action="store_true", help="Dry run operation")
     parser.add_argument("--silent", "-s", default=False, action="store_true", help="Perform cluster management operation using silent mode (automatically fill in defaults)")

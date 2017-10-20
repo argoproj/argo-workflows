@@ -314,7 +314,7 @@ class AXPlatform(object):
         self.create_objects(steps[2])
 
         # Prepare axops_eip
-        if self._cluster_config.get_provider() != "minikube":
+        if self._cluster_config.get_provider() not in ["minikube", "gke"]:
             self._set_ext_dns()
 
         info_bound = "=======================================================\n"
