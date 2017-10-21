@@ -66,7 +66,7 @@ func (f *WorkflowClient) DeleteWorkflow(name string, options *metav1.DeleteOptio
 func (f *WorkflowClient) GetWorkflow(name string) (*wfv1.Workflow, error) {
 	var result wfv1.Workflow
 	err := f.cl.Get().
-		Namespace(apiv1.NamespaceAll).Resource(wfv1.CRDPlural).
+		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
 		Name(name).Do().Into(&result)
 	return &result, err
 }
@@ -74,7 +74,7 @@ func (f *WorkflowClient) GetWorkflow(name string) (*wfv1.Workflow, error) {
 func (f *WorkflowClient) ListWorkflows(opts metav1.ListOptions) (*wfv1.WorkflowList, error) {
 	var result wfv1.WorkflowList
 	err := f.cl.Get().
-		Namespace(apiv1.NamespaceAll).Resource(wfv1.CRDPlural).
+		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
 		//VersionedParams(&opts, f.codec).
 		Do().Into(&result)
 	return &result, err
@@ -84,6 +84,6 @@ func (f *WorkflowClient) NewListWatch() *cache.ListWatch {
 	return cache.NewListWatchFromClient(
 		f.cl,
 		wfv1.CRDPlural,
-		apiv1.NamespaceAll,
+		apiv1.NamespaceDefault,
 		fields.Everything())
 }

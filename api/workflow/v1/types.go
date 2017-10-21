@@ -38,11 +38,13 @@ var SchemeGroupVersion = schema.GroupVersion{Group: CRDGroup, Version: CRDVersio
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Templates         []Template             `json:"templates"`
-	Target            string                 `json:"target"`
-	Arguments         Arguments              `json:"arguments"`
-	Status            string                 `json:"status"`
-	Results           map[string]interface{} `json:"results"`
+	Spec              WorkflowSpec   `json:"spec"`
+	Status            WorkflowStatus `json:"status"`
+}
+
+type WorkflowSpec struct {
+	Templates  []Template `json:"templates"`
+	Entrypoint string     `json:"entrypoint"`
 }
 
 type Template struct {
@@ -102,3 +104,38 @@ type WorkflowStep struct {
 
 // Arguments to a template
 type Arguments map[string]*string
+
+type WorkflowStatus struct {
+	Phase string                `json:"phase"`
+	Tree  NodeTree              `json:"tree"`
+	Nodes map[string]NodeStatus `json:"nodes"`
+}
+
+type NodeTree struct {
+	Name     string     `json:"name"`
+	Children []NodeTree `json:"children"`
+}
+
+type NodeStatus struct {
+	ID      string                 `json:"id"`
+	Name    string                 `json:"name"`
+	Status  string                 `json:"status"`
+	Outputs map[string]interface{} `json:"outputs"`
+	//ReturnCode *int                    `json:"returnCode"`
+}
+
+const (
+	NodeStatusPending   = "Pending"
+	NodeStatusRunning   = "Running"
+	NodeStatusSucceeded = "Succeeded"
+	NodeStatusFailed    = "Failed"
+	NodeStatusError     = "Error"
+)
+
+func (n NodeStatus) Completed() bool {
+	return n.Status == NodeStatusSucceeded || n.Status == NodeStatusFailed || n.Status == NodeStatusError
+}
+
+func (n NodeStatus) Successful() bool {
+	return n.Status == NodeStatusSucceeded
+}
