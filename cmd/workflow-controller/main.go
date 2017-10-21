@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/controller"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -49,12 +47,12 @@ func main() {
 	ctx, _ := context.WithCancel(context.Background())
 	go wfController.Run(ctx)
 
-	// List all Workflow objects
-	items, err := wfController.WorkflowClient.ListWorkflows(metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("List:\n%s\n", items)
+	// // List all Workflow objects
+	// items, err := wfController.WorkflowClient.ListWorkflows(metav1.ListOptions{})
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("List:\n%s\n", items)
 
 	// Wait forever
 	select {}
