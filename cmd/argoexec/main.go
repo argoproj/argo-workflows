@@ -4,30 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/argoproj/argo/util/cmd"
-	"github.com/spf13/cobra"
+	"github.com/argoproj/argo/cmd/argoexec/commands"
 )
-
-const (
-	// CLIName is the name of the CLI
-	CLIName = "argoexec"
-)
-
-// RootCmd is the root level command
-var RootCmd = &cobra.Command{
-	Use:   CLIName,
-	Short: "Argo Executor",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.HelpFunc()(cmd, args)
-	},
-}
-
-func init() {
-	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
-}
 
 func main() {
-	if err := RootCmd.Execute(); err != nil {
+	if err := commands.RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

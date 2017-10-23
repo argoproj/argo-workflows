@@ -9,6 +9,7 @@ var (
 	Branch         = "unknown"
 	Tag            = ""
 	BuildDate      = "unknown"
-	FullVersion    = fmt.Sprintf("%s-%s", Version, Revision)
+	ShortRevision  = Revision[0:7]
+	FullVersion    = fmt.Sprintf("%s-%s", Version, ShortRevision)
 	DisplayVersion = fmt.Sprintf("%s (Build Date: %s)", FullVersion, BuildDate)
 )

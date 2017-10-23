@@ -8,12 +8,13 @@ import (
 
 // CRD constants
 const (
+	CRDKind      string = "Workflow"
 	CRDSingular  string = "workflow"
 	CRDPlural    string = "workflows"
 	CRDShortName string = "wf"
 	CRDGroup     string = "argoproj.io"
 	CRDVersion   string = "v1"
-	FullCRDName  string = CRDPlural + "." + CRDGroup
+	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 
 // Workflow types

@@ -64,8 +64,8 @@ func (wfc *WorkflowController) createWorkflowContainer(wf *wfv1.Workflow, nodeNa
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion:         "argoproj.io/v1",
-					Kind:               "Workflow",
+					APIVersion:         wfv1.CRDFullName,
+					Kind:               wfv1.CRDKind,
 					Name:               wf.ObjectMeta.Name,
 					UID:                wf.ObjectMeta.UID,
 					BlockOwnerDeletion: &t,
