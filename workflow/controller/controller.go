@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	apiv1 "k8s.io/api/core/v1"
@@ -23,7 +24,12 @@ type WorkflowController struct {
 	podClient      *rest.RESTClient
 	wfUpdates      chan *wfv1.Workflow
 	podUpdates     chan *apiv1.Pod
+	ArgoExecImage  string
 }
+
+var (
+	DefaultArgoExecImage = fmt.Sprintf("argoproj/argoexec:%s", argo.Version)
+)
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(config *rest.Config) *WorkflowController {
@@ -45,8 +51,9 @@ func NewWorkflowController(config *rest.Config) *WorkflowController {
 		WorkflowScheme: wfScheme,
 		podCl:          clientset.CoreV1().Pods(apiv1.NamespaceDefault),
 		//podClient:      newPodClient(config),
-		wfUpdates:  make(chan *wfv1.Workflow),
-		podUpdates: make(chan *apiv1.Pod),
+		wfUpdates:     make(chan *wfv1.Workflow),
+		podUpdates:    make(chan *apiv1.Pod),
+		ArgoExecImage: DefaultArgoExecImage,
 	}
 	return &wfc
 }

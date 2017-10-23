@@ -10,13 +10,13 @@ import (
 
 const (
 	// CLIName is the name of the CLI
-	CLIName = "argo-executor"
+	CLIName = "argoexec"
 )
 
 // RootCmd is the root level command
 var RootCmd = &cobra.Command{
 	Use:   CLIName,
-	Short: "Argo Container Executor",
+	Short: "Argo Executor",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.HelpFunc()(cmd, args)
 	},

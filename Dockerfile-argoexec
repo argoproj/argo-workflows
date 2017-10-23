@@ -1,0 +1,5 @@
+FROM debian:9.1
+
+COPY dist/argoexec /bin/
+
+ENTRYPOINT [ "/bin/argoexec" ]

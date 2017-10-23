@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,6 +47,11 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 
 func (wfc *WorkflowController) createWorkflowContainer(wf *wfv1.Workflow, nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
 	fmt.Printf("Creating Pod: %s\n", nodeName)
+	initCtr := wfc.newExecContainer("init", false)
+	sidekickCtr := wfc.newExecContainer("wait", false)
+	mainCtr := tmpl.Container.DeepCopy()
+	mainCtr.Name = "main"
+	t := true
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: wf.NodeID(nodeName),
@@ -58,16 +64,23 @@ func (wfc *WorkflowController) createWorkflowContainer(wf *wfv1.Workflow, nodeNa
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: "argoproj.io/v1",
-					Kind:       "Workflow",
-					Name:       wf.ObjectMeta.Name,
-					UID:        wf.ObjectMeta.UID,
+					APIVersion:         "argoproj.io/v1",
+					Kind:               "Workflow",
+					Name:               wf.ObjectMeta.Name,
+					UID:                wf.ObjectMeta.UID,
+					BlockOwnerDeletion: &t,
 				},
 			},
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
-			Containers:    []corev1.Container{*tmpl.Container},
+			InitContainers: []corev1.Container{
+				*initCtr,
+			},
+			Containers: []corev1.Container{
+				*sidekickCtr,
+				*mainCtr,
+			},
 		},
 	}
 	created, err := wfc.podCl.Create(&pod)
@@ -84,6 +97,52 @@ func (wfc *WorkflowController) createWorkflowContainer(wf *wfv1.Workflow, nodeNa
 	}
 	fmt.Printf("Created pod: %v\n", created)
 	return nil
+}
+
+func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *corev1.Container {
+	exec := corev1.Container{
+		Name:    name,
+		Image:   wfc.ArgoExecImage,
+		Command: []string{"sh", "-c"},
+		Args:    []string{"echo sleeping; sleep 60"},
+		//EnvFrom []EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
+		//Env []EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("0.5"),
+				corev1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("0.1"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+		},
+		// VolumeMounts: []corev1.VolumeMount{
+		// 	corev1.VolumeMount{
+		// 		// This must match the Name of a Volume.
+		// 		Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+		// 		// Mounted read-only if true, read-write otherwise (false or unspecified).
+		// 		// Defaults to false.
+		// 		// +optional
+		// 		ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,2,opt,name=readOnly"`
+		// 		// Path within the container at which the volume should be mounted.  Must
+		// 		// not contain ':'.
+		// 		MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
+		// 		// Path within the volume from which the container's volume should be mounted.
+		// 		// Defaults to "" (volume's root).
+		// 		// +optional
+		// 		SubPath string `json:"subPath,omitempty" protobuf:"bytes,4,opt,name=subPath"`
+		// 	}
+		// },
+		// Security options the pod should run with.
+		// More info: https://kubernetes.io/docs/concepts/policy/security-context/
+		// More info: https://git.k8s.io/community/contributors/design-proposals/security_context.md
+		// +optional
+		SecurityContext: &corev1.SecurityContext{
+			Privileged: &privileged,
+		},
+	}
+	return &exec
 }
 
 // Returns tuple of: (workflow was updated, node has completed, error)
