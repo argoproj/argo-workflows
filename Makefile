@@ -1,5 +1,3 @@
-VET_REPORT = vet.report
-TEST_REPORT = tests.xml
 GOARCH = amd64
 
 PACKAGE=github.com/argoproj/argo
@@ -8,26 +6,37 @@ DIST_DIR=${GOPATH}/src/${PACKAGE}/dist
 CURRENT_DIR=$(shell pwd)
 
 VERSION=$(shell cat ${BUILD_DIR}/VERSION)
-COMMIT=$(shell git rev-parse HEAD)
+REVISION=$(shell git rev-parse HEAD)
+REVISION_SHORT=$(shell git rev-parse --short=7 HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 
-LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${COMMIT} -X ${PACKAGE}.Branch=${BRANCH}"
+LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${REVISION} -X ${PACKAGE}.Branch=${BRANCH}"
 
 BUILDER_IMAGE=argo-builder
 BUILDER_CMD=docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
+# docker image publishing options
+DOCKER_PUSH=false
+IMAGE_TAG=${VERSION}-${REVISION_SHORT}
+
+ifeq (${DOCKER_PUSH},true)
+ifndef IMAGE_NAMESPACE
+$(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argoproj))
+endif
+endif
+
+ifneq ($(IMAGE_NAMESPACE),"")
+IMAGE_PREFIX=${IMAGE_NAMESPACE}/
+endif
+
 # Build the project
-all: lint cli-linux cli-darwin workflow-image apiserver-image executor-image
+all: lint cli-linux cli-darwin workflow-image apiserver-image argoexec-image
 
 builder:
-	cd ${BUILD_DIR}; \
-	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder . ; \
-	cd - >/dev/null
+	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
 
 cli:
-	cd ${BUILD_DIR}; \
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo ; \
-	cd - >/dev/null
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo
 
 cli-linux: builder
 	rm -f ${DIST_DIR}/argocli/linux-amd64/argo
@@ -36,59 +45,40 @@ cli-linux: builder
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/linux-amd64/argo
 
 cli-darwin:
-	cd ${BUILD_DIR}; \
-	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cmd/argo ; \
-	cd - >/dev/null
+	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cmd/argo
 
 apiserver:
-	cd ${BUILD_DIR}; \
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver ; \
-	cd - >/dev/null
+	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver
 
 apiserver-linux: builder
 	${BUILDER_CMD} make apiserver
 
 apiserver-image: apiserver-linux
-	cd ${BUILD_DIR}; \
-	docker build -f Dockerfile-apiserver . ; \
-	cd - >/dev/null
+	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
+	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
 workflow:
-	cd ${BUILD_DIR}; \
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller ; \
-	cd - >/dev/null
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 workflow-linux: builder
 	${BUILDER_CMD} make workflow
 
 workflow-image: workflow-linux
-	cd ${BUILD_DIR}; \
-	docker build -f Dockerfile-workflow-controller . ; \
-	cd - >/dev/null
+	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
+	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
-executor:
-	cd ${BUILD_DIR}; \
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-executor ./cmd/argo-executor ; \
-	cd - >/dev/null
+argoexec:
+	go build -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
-executor-linux: builder
-	${BUILDER_CMD} make executor
+argoexec-linux: builder
+	${BUILDER_CMD} make argoexec
 
-executor-image: executor-linux
-	cd ${BUILD_DIR}; \
-	docker build -f Dockerfile-executor . ; \
-	cd - >/dev/null
-
-test:
-	if ! hash go2xunit 2>/dev/null; then go install github.com/tebeka/go2xunit; fi
-	cd ${BUILD_DIR}; \
-	godep go test -v ./... 2>&1 | go2xunit -output ${TEST_REPORT} ; \
-	cd - >/dev/null
+argoexec-image: argoexec-linux
+	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
+	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 lint:
-	cd ${BUILD_DIR}; \
-	gometalinter --config gometalinter.json --deadline 2m --exclude=vendor ./.. ; \
-	cd - >/dev/null
+	gometalinter --config gometalinter.json --deadline 2m --exclude=vendor ./..
 
 fmt:
 	cd ${BUILD_DIR}; \
@@ -102,5 +92,5 @@ clean:
 	cli cli-linux cli-darwin \
 	workflow workflow-linux workflow-image \
 	apiserver apiserver-linux apiserver-image \
-	executor executor-linux executor-image \
+	argoexec argoexec-linux argoexec-image \
 	lint test fmt clean

@@ -1,0 +1,13 @@
+{
+    "DisableAll": true,
+    "Enable": [
+        "vet",
+        "deadcode",
+        "errcheck",
+        "varcheck",
+        "structcheck",
+        "ineffassign",
+        "aligncheck",
+        "unconvert"
+    ]
+}
