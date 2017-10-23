@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/argoproj/argo"
 	"github.com/spf13/cobra"
@@ -18,4 +19,14 @@ func NewVersionCmd(cliName string) *cobra.Command {
 			fmt.Printf("%s version %s\n", cliName, argo.FullVersion)
 		},
 	}
+}
+
+// MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
+func MustIsDir(filePath string) bool {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return fileInfo.IsDir()
 }

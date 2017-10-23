@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"reflect"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -19,7 +18,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 	fmt.Printf("Creating Workflow CRD\n")
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: wfv1.FullCRDName,
+			Name: wfv1.CRDFullName,
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 			Group:   wfv1.CRDGroup,
@@ -27,7 +26,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
 				Plural:     wfv1.CRDPlural,
-				Kind:       reflect.TypeOf(wfv1.Workflow{}).Name(),
+				Kind:       wfv1.CRDKind,
 				ShortNames: []string{wfv1.CRDShortName},
 			},
 		},
@@ -40,7 +39,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = clientset.Apiextensions().CustomResourceDefinitions().Get(wfv1.FullCRDName, metav1.GetOptions{})
+		crd, err = clientset.Apiextensions().CustomResourceDefinitions().Get(wfv1.CRDFullName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -59,7 +58,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 		return false, err
 	})
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(wfv1.FullCRDName, nil)
+		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(wfv1.CRDFullName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
