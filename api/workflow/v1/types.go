@@ -81,8 +81,8 @@ type InputParameter struct {
 
 // InputArtifact indicates a passed string parameter to a service template with an optional default value
 type InputArtifact struct {
-	From interface{} `json:"from,omitempty"`
-	Path string      `json:"path,omitempty"`
+	From string `json:"from,omitempty"`
+	Path string `json:"path,omitempty"`
 }
 
 type Outputs struct {

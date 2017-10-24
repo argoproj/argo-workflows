@@ -3,10 +3,10 @@ kind: Workflow
 metadata:
   generateName: argo-wf-
 spec:
-  entrypoint: hello-world
+  entrypoint: cowsay
   templates:
-  - name: hello-world
+  - name: cowsay
     type: container
-    image: alpine:latest
-    command: [sh, -c]
-    args: ["echo 'hello world'"]
+    image: docker/whalesay:latest
+    command: [cowsay]
+    args: ["hello world"]
