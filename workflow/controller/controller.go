@@ -144,7 +144,7 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 			UpdateFunc: func(old, new interface{}) {
 				//oldWf := old.(*wfv1.Workflow)
 				newWf := new.(*wfv1.Workflow)
-				fmt.Printf("[CONTROLLER] WF Update %s\n\n", newWf.ObjectMeta.SelfLink)
+				fmt.Printf("[CONTROLLER] WF Update %s\n", newWf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- newWf
 			},
 			DeleteFunc: func(obj interface{}) {

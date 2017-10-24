@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -132,6 +134,10 @@ const (
 	NodeStatusFailed    = "Failed"
 	NodeStatusError     = "Error"
 )
+
+func (n NodeStatus) String() string {
+	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
+}
 
 func (n NodeStatus) Completed() bool {
 	return n.Status == NodeStatusSucceeded || n.Status == NodeStatusFailed || n.Status == NodeStatusError

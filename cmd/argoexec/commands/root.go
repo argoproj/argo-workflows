@@ -1,13 +1,24 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/executor"
 	"github.com/spf13/cobra"
 )
 
 const (
 	// CLIName is the name of the CLI
 	CLIName = "argoexec"
+)
+
+var (
+	argoexec *executor.WorkflowExecutor
+
+	// Global CLI flags
+	globalArgs globalFlags
 )
 
 func init() {
@@ -21,4 +32,19 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.HelpFunc()(cmd, args)
 	},
+}
+
+type globalFlags struct {
+	hostIP             string // --host-ip
+	podAnnotationsPath string // --pod-annotations
+}
+
+func init() {
+	RootCmd.PersistentFlags().StringVar(&globalArgs.hostIP, "host-ip", common.EnvVarHostIP, fmt.Sprintf("IP of host. (Default: %s)", common.EnvVarHostIP))
+	RootCmd.PersistentFlags().StringVar(&globalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
+}
+
+// initExecutor is a helper to initialize the global argoexec instance
+func initExecutor() {
+	argoexec = &executor.WorkflowExecutor{}
 }

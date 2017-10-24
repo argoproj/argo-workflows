@@ -89,7 +89,7 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 		return err
 	}
 	mainCtr := tmpl.Container.DeepCopy()
-	mainCtr.Name = "main"
+	mainCtr.Name = common.MainContainerName
 	t := true
 
 	tmplBytes, err := json.Marshal(tmpl)
@@ -133,6 +133,10 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 			},
 		},
 	}
+	err = addInputArtifactVolumes(&pod, tmpl)
+	if err != nil {
+		return err
+	}
 
 	created, err := wfc.podCl.Create(&pod)
 	if err != nil {
@@ -151,9 +155,9 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 }
 
 func (wfc *WorkflowController) newInitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
-	ctr := wfc.newExecContainer("init", false)
+	ctr := wfc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
-	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
+	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; find /argo; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []corev1.VolumeMount{
 		volumeMountPodMetadata,
@@ -162,9 +166,9 @@ func (wfc *WorkflowController) newInitContainer(tmpl *wfv1.Template) (*corev1.Co
 }
 
 func (wfc *WorkflowController) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
-	ctr := wfc.newExecContainer("wait", true)
+	ctr := wfc.newExecContainer(common.WaitContainerName, true)
 	ctr.Command = []string{"sh", "-c"}
-	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 999999; echo done", common.PodMetadataAnnotationsPath)
+	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []corev1.VolumeMount{
 		volumeMountPodMetadata,
@@ -193,4 +197,67 @@ func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *c
 		},
 	}
 	return &exec
+}
+
+// addInputArtifactVolumes adds an artifacts volume to the pod if the template requires input artifacts
+func addInputArtifactVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
+	if len(tmpl.Inputs.Artifacts) == 0 {
+		return nil
+	}
+	volName := "input-artifacts"
+	artVol := corev1.Volume{
+		Name: volName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, artVol)
+
+	for i, initCtr := range pod.Spec.InitContainers {
+		if initCtr.Name == common.InitContainerName {
+			volMount := corev1.VolumeMount{
+				Name:      volName,
+				MountPath: common.ExecutorArtifactBaseDir,
+			}
+			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
+
+			// HACK: debug purposes. sleep to experiment with init container artifacts
+			initCtr.Command = []string{"sh", "-c"}
+			initCtr.Args = []string{"sleep 999999; echo done"}
+
+			pod.Spec.InitContainers[i] = initCtr
+			break
+		}
+	}
+
+	mainCtrIndex := 0
+	var mainCtr *corev1.Container
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.MainContainerName {
+			mainCtrIndex = i
+			mainCtr = &ctr
+			break
+		}
+	}
+	if mainCtr == nil {
+		errors.InternalError("Could not find main container in pod spec")
+	}
+	if mainCtr.VolumeMounts == nil {
+		mainCtr.VolumeMounts = []corev1.VolumeMount{}
+	}
+	// TODO: the order in which we construct the volume mounts may matter,
+	// especially if they are overlapping.
+	for artName, art := range tmpl.Inputs.Artifacts {
+		if art == nil {
+			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", artName)
+		}
+		volMount := corev1.VolumeMount{
+			Name:      volName,
+			MountPath: art.Path,
+			SubPath:   artName,
+		}
+		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volMount)
+	}
+	pod.Spec.Containers[mainCtrIndex] = *mainCtr
+	return nil
 }

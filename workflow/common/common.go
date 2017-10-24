@@ -5,6 +5,11 @@ import (
 )
 
 const (
+	// Container names used in the workflow pod
+	MainContainerName = "main"
+	InitContainerName = "init"
+	WaitContainerName = "wait"
+
 	// PodMetadataVolumeName is the volume name defined in a workflow pod spec to expose pod metadata via downward API
 	PodMetadataVolumeName = "podmetadata"
 

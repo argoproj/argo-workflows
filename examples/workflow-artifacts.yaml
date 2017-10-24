@@ -28,5 +28,5 @@ spec:
         MESSAGE:
           path: /tmp/message
     image: alpine:latest
-    command: [cat]
-    args: [/tmp/message]
+    command: [sh, -c]
+    args: ["cat /tmp/message; sleep 999999"]

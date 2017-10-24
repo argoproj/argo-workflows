@@ -66,9 +66,11 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 			if err != nil {
 				// TODO: may need to query pod status if we hit already exists error
 				status = wfv1.NodeStatusError
+				return false, err
 			}
-			wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
-			fmt.Printf("Initializing container node %s\n", nodeName)
+			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
+			wf.Status.Nodes[nodeID] = node
+			fmt.Printf("Initialized container node %v\n", node)
 			return true, nil
 		}
 		return false, nil
@@ -76,8 +78,8 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 	case wfv1.TypeWorkflow:
 		updates := false
 		if !ok {
-			fmt.Printf("Initializing workflow node %s\n", nodeName)
 			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusRunning}
+			fmt.Printf("Initialized workflow node %v\n", node)
 			wf.Status.Nodes[nodeID] = node
 			updates = true
 		}
@@ -92,11 +94,11 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 			updates = updates || sgUpdates
 			sgNodeID := wf.NodeID(sgNodeName)
 			if !wf.Status.Nodes[sgNodeID].Completed() {
-				fmt.Printf("Workflow step group %s not yet completed\n", sgNodeName)
+				fmt.Printf("Workflow step group node %v not yet completed\n", wf.Status.Nodes[sgNodeID])
 				return updates, nil
 			}
 			if !wf.Status.Nodes[sgNodeID].Successful() {
-				fmt.Printf("Workflow step group %s not successful\n", sgNodeName)
+				fmt.Printf("Workflow step group %v not successful\n", wf.Status.Nodes[sgNodeID])
 				node.Status = wfv1.NodeStatusFailed
 				wf.Status.Nodes[nodeID] = node
 				return true, nil
@@ -116,14 +118,14 @@ func (wfc *WorkflowController) executeStepGroup(wf *wfv1.Workflow, stepGroup map
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		fmt.Printf("Step group node %s already marked completed\n", nodeName)
+		fmt.Printf("Step group node %v already marked completed\n", node)
 		return false, nil
 	}
 	updates := false
 	if !ok {
-		fmt.Printf("Initializing step group node %s\n", nodeName)
 		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: "Running"}
 		wf.Status.Nodes[nodeID] = node
+		fmt.Printf("Initializing step group node %v\n", node)
 		updates = true
 	}
 	childNodeIDs := make([]string, 0)
