@@ -9,15 +9,15 @@ import (
 )
 
 type WorkflowExecutor struct {
+	Template       wfv1.Template
+	ArtifactDriver artifacts.ArtifactDriver
 	//kubeletCl
-	Template   wfv1.Template
-	ArtifactIf artifacts.ArtifactInterface
 }
 
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	for artName, art := range we.Template.Inputs.Artifacts {
 		artPath := path.Join(common.ExecutorArtifactBaseDir, artName)
-		we.ArtifactIf.Load(string(art.From), artPath)
+		we.ArtifactDriver.Load(string(art.From), artPath)
 	}
 
 	return nil
