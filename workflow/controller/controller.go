@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	workflowclient "github.com/argoproj/argo/workflow/client"
+	"github.com/argoproj/argo/workflow/common"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,7 +87,7 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 				continue
 			}
 			fmt.Printf("Processing completed pod: %v\n", pod.ObjectMeta.SelfLink)
-			workflowName, ok := pod.Labels["workflow"]
+			workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 			if !ok {
 				continue
 			}

@@ -5,10 +5,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
-	corev1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // operateWorkflow is the operator logic of a workflow
@@ -45,109 +41,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
-func (wfc *WorkflowController) createWorkflowContainer(wf *wfv1.Workflow, nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
-	fmt.Printf("Creating Pod: %s\n", nodeName)
-	initCtr := wfc.newExecContainer("init", false)
-	sidekickCtr := wfc.newExecContainer("wait", false)
-	mainCtr := tmpl.Container.DeepCopy()
-	mainCtr.Name = "main"
-	t := true
-	pod := corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: wf.NodeID(nodeName),
-			Labels: map[string]string{
-				"workflow":    wf.ObjectMeta.Name,
-				"argo-wf-pod": "true",
-			},
-			Annotations: map[string]string{
-				"nodeName": nodeName,
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
-					APIVersion:         wfv1.CRDFullName,
-					Kind:               wfv1.CRDKind,
-					Name:               wf.ObjectMeta.Name,
-					UID:                wf.ObjectMeta.UID,
-					BlockOwnerDeletion: &t,
-				},
-			},
-		},
-		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{
-				*initCtr,
-			},
-			Containers: []corev1.Container{
-				*sidekickCtr,
-				*mainCtr,
-			},
-		},
-	}
-	created, err := wfc.podCl.Create(&pod)
-	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if
-			// the controller crashes after creating the pod, but fails
-			// to store the update to etc, and controller retries creation
-			fmt.Printf("pod %s already exists\n", nodeName)
-			return nil
-		}
-		fmt.Printf("Failed to create pod %s: %v\n", nodeName, err)
-		return errors.InternalWrapError(err)
-	}
-	fmt.Printf("Created pod: %v\n", created)
-	return nil
-}
-
-func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *corev1.Container {
-	exec := corev1.Container{
-		Name:    name,
-		Image:   wfc.ArgoExecImage,
-		Command: []string{"sh", "-c"},
-		Args:    []string{"echo sleeping; sleep 60"},
-		//EnvFrom []EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,19,rep,name=envFrom"`
-		//Env []EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,7,rep,name=env"`
-		Resources: corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.5"),
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
-			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.1"),
-				corev1.ResourceMemory: resource.MustParse("64Mi"),
-			},
-		},
-		// VolumeMounts: []corev1.VolumeMount{
-		// 	corev1.VolumeMount{
-		// 		// This must match the Name of a Volume.
-		// 		Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
-		// 		// Mounted read-only if true, read-write otherwise (false or unspecified).
-		// 		// Defaults to false.
-		// 		// +optional
-		// 		ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,2,opt,name=readOnly"`
-		// 		// Path within the container at which the volume should be mounted.  Must
-		// 		// not contain ':'.
-		// 		MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
-		// 		// Path within the volume from which the container's volume should be mounted.
-		// 		// Defaults to "" (volume's root).
-		// 		// +optional
-		// 		SubPath string `json:"subPath,omitempty" protobuf:"bytes,4,opt,name=subPath"`
-		// 	}
-		// },
-		// Security options the pod should run with.
-		// More info: https://kubernetes.io/docs/concepts/policy/security-context/
-		// More info: https://git.k8s.io/community/contributors/design-proposals/security_context.md
-		// +optional
-		SecurityContext: &corev1.SecurityContext{
-			Privileged: &privileged,
-		},
-	}
-	return &exec
-}
-
-// Returns tuple of: (workflow was updated, node has completed, error)
+// Returns tuple of: (workflow was updated, error)
 func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName string, args *wfv1.Arguments, nodeName string) (bool, error) {
-	fmt.Printf("Executing %s: %v, args: %#v\n", nodeName, templateName, args)
+	fmt.Printf("Evaluating node %s: %v, args: %#v\n", nodeName, templateName, args)
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
@@ -157,7 +53,7 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 	tmpl := wf.GetTemplate(templateName)
 	if tmpl == nil {
 		err := errors.Errorf(errors.CodeBadRequest, "Node %s error: template '%s' undefined", nodeName, templateName)
-		wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: "Error"}
+		wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusError}
 		return true, err
 	}
 
@@ -166,7 +62,7 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 		if !ok {
 			// We have not yet created the pod
 			status := wfv1.NodeStatusRunning
-			err := wfc.createWorkflowContainer(wf, nodeName, tmpl, args)
+			err := wfc.createWorkflowPod(wf, nodeName, tmpl, args)
 			if err != nil {
 				// TODO: may need to query pod status if we hit already exists error
 				status = wfv1.NodeStatusError
@@ -211,7 +107,7 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 		return true, nil
 
 	default:
-		wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: "Error"}
+		wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusError}
 		return true, fmt.Errorf("Unknown type: %s", tmpl.Type)
 	}
 }
