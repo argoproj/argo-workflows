@@ -12,6 +12,8 @@ spec:
         template: cowsay
     - PRINT:
         template: print-message
+        arguments:
+          artifacts.MESSAGE: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
   - name: cowsay
     type: container
     image: docker/whalesay:latest
