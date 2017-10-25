@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: git-clone
+  templates:
+  - name: git-clone
+    type: container
+    inputs:
+      artifacts:
+        CODE:
+          path: /src
+          s3:
+            endpoint: https://storage.googleapis.com
+            bucket: my-bucket-name
+            key: path/in/bucket
+            accessKeySecret:
+              name: my-s3-credentials
+              key: accessKey
+            secretKeySecret:
+              name: my-s3-credentials
+              key: secretKey
+    image: golang:1.8
+    command: [sh, -c]
+    args: ["cd /src; git status"]

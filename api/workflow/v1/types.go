@@ -45,6 +45,12 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status"`
 }
 
+type WorkflowList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []Workflow `json:"items"`
+}
+
 type WorkflowSpec struct {
 	Templates  []Template `json:"templates"`
 	Entrypoint string     `json:"entrypoint"`
@@ -62,12 +68,6 @@ type Template struct {
 	*corev1.Container
 }
 
-type WorkflowList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-	Items           []Workflow `json:"items"`
-}
-
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	Parameters map[string]*InputParameter `json:"parameters,omitempty"`
@@ -76,26 +76,33 @@ type Inputs struct {
 
 // InputParameter indicate a passed string parameter to a service template with an optional default value
 type InputParameter struct {
-	Default *string       `json:"default,omitempty"`
-	Options []interface{} `json:"options,omitempty"` // TODO: implement validation
-	Regex   string        `json:"regex,omitempty"`   // TODO: implement validation
+	Default *string `json:"default,omitempty"`
 }
 
-// InputArtifact indicates a passed string parameter to a service template with an optional default value
+// InputArtifact indicates an artifact to place at a specified path
 type InputArtifact struct {
-	From string `json:"from,omitempty"`
-	Path string `json:"path,omitempty"`
+	Path string              `json:"path,omitempty"`
+	S3   *S3ArtifactSource   `json:"s3,omitempty"`
+	Git  *GitArtifactSource  `json:"git,omitempty"`
+	HTTP *HTTPArtifactSource `json:"http,omitempty"`
 }
 
 type Outputs struct {
-	Artifacts OutputArtifacts `json:"artifacts,omitempty"`
+	Artifacts  OutputArtifacts  `json:"artifacts,omitempty"`
+	Parameters OutputParameters `json:"parameters,omitempty"`
 }
 
 type OutputArtifacts map[string]OutputArtifact
 
 type OutputArtifact struct {
+	Path        string               `json:"path,omitempty"`
+	Destination *ArtifactDestination `json:"destination,omitempty"`
+}
+
+type OutputParameters map[string]OutputParameter
+
+type OutputParameter struct {
 	Path string `json:"path,omitempty"`
-	From string `json:"from,omitempty"`
 }
 
 // WorkflowStep is either a template ref, an inlined container, with added flags
@@ -120,10 +127,10 @@ type NodeTree struct {
 }
 
 type NodeStatus struct {
-	ID      string                 `json:"id"`
-	Name    string                 `json:"name"`
-	Status  string                 `json:"status"`
-	Outputs map[string]interface{} `json:"outputs"`
+	ID      string  `json:"id"`
+	Name    string  `json:"name"`
+	Status  string  `json:"status"`
+	Outputs Outputs `json:"outputs"`
 	//ReturnCode *int                    `json:"returnCode"`
 }
 
@@ -146,3 +153,27 @@ func (n NodeStatus) Completed() bool {
 func (n NodeStatus) Successful() bool {
 	return n.Status == NodeStatusSucceeded
 }
+
+type S3ArtifactSource struct {
+	Endpoint        string                   `json:"endpoint"`
+	Bucket          string                   `json:"bucket"`
+	Key             string                   `json:"key"`
+	AccessKeySecret corev1.SecretKeySelector `json:"accessKeySecret"`
+	SecretKey       corev1.SecretKeySelector `json:"secretKeySecret"`
+}
+
+type GitArtifactSource struct {
+	URL            string                    `json:"url"`
+	UsernameSecret *corev1.SecretKeySelector `json:"usernameSecret"`
+	PasswordSecret *corev1.SecretKeySelector `json:"passwordSecret"`
+}
+
+type HTTPArtifactSource struct {
+	URL string `json:"url"`
+}
+
+type ArtifactDestination struct {
+	S3 *S3ArtifactDestination `json:"s3,omitempty"`
+}
+
+type S3ArtifactDestination S3ArtifactSource
