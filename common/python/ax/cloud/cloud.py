@@ -39,7 +39,7 @@ class Cloud(with_metaclass(Singleton, object)):
     CLOUD_GCP = "gcp"
     CLOUD_UNKNOWN = "unknown"
 
-    VALID_TARGET_CLOUD_INPUT = [CLOUD_AWS, CLOUD_GCP]
+    VALID_TARGET_CLOUD_INPUT = [CLOUD_AWS]
 
     # Need these translations as env/cli input literals, i.e.
     # "aws" or "gcp" can be convenient for end users, but such
