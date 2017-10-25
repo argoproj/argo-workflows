@@ -166,7 +166,7 @@ func (wfc *WorkflowController) newInitContainer(tmpl *wfv1.Template) (*corev1.Co
 }
 
 func (wfc *WorkflowController) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
-	ctr := wfc.newExecContainer(common.WaitContainerName, true)
+	ctr := wfc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
@@ -237,6 +237,12 @@ func addInputArtifactVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 			mainCtrIndex = i
 			mainCtr = &ctr
 			break
+		}
+		if ctr.Name == common.WaitContainerName {
+			// HACK: debug purposes. sleep to experiment with wait container artifacts
+			ctr.Command = []string{"sh", "-c"}
+			ctr.Args = []string{"sleep 999999; echo done"}
+			pod.Spec.Containers[i] = ctr
 		}
 	}
 	if mainCtr == nil {

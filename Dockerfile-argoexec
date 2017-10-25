@@ -1,5 +1,9 @@
 FROM debian:9.1
 
+RUN apt-get update && \
+    apt-get install -y curl jq procps && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY dist/argoexec /bin/
 
 ENTRYPOINT [ "/bin/argoexec" ]
