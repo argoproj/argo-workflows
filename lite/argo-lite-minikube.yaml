@@ -1,0 +1,45 @@
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: argo-lite-deployment
+  labels:
+    app: argo-lite
+spec:
+  selector:
+    matchLabels:
+      app: argo-lite
+  template:
+    metadata:
+      labels:
+        app: argo-lite
+    spec:
+      containers:
+      - name: argo-lite
+        image: argoproj/argo-lite:latest
+        command: ["node", "/app/dist/main.js", "--engine", "kubernetes-in-cluster", "-u", "/app/dist/ui"]
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - name: docker-volume
+            mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-volume
+          hostPath:
+            path: /var/run/docker.sock
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: argo-lite
+  name: argo-lite
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: argo-lite
+  sessionAffinity: None
+  type: NodePort
