@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/argoproj/argo/util/cmd"
 	workflowclient "github.com/argoproj/argo/workflow/client"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -26,9 +28,8 @@ var RootCmd = &cobra.Command{
 }
 
 type rootFlags struct {
-	argoExecImage string // --argoexec-image
-	kubeConfig    string // --kubeconfig
-	configMap     string // --configmap
+	kubeConfig string // --kubeconfig
+	configMap  string // --configmap
 }
 
 var (
@@ -36,9 +37,10 @@ var (
 )
 
 func init() {
+	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
+
 	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
-	RootCmd.Flags().StringVar(&rootArgs.argoExecImage, "argoexec-image", "", "argoexec image to use as container sidecars")
-	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", "", "Name of K8s configmap to retrieve workflow controller configuration")
+	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", common.DefaultWorkflowControllerConfigMap, "Name of K8s configmap to retrieve workflow controller configuration")
 }
 
 // GetClientConfig return rest config, if path not specified, assume in cluster config
@@ -74,9 +76,10 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 
 	// start a controller on instances of our custom resource
-	wfController := controller.NewWorkflowController(config)
-	if rootArgs.argoExecImage != "" {
-		wfController.ArgoExecImage = rootArgs.argoExecImage
+	wfController := controller.NewWorkflowController(config, rootArgs.configMap)
+	err = wfController.ResyncConfig()
+	if err != nil {
+		panic(err)
 	}
 
 	ctx, _ := context.WithCancel(context.Background())

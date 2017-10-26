@@ -3,12 +3,16 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	"github.com/argoproj/argo/errors"
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/ghodss/yaml"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -18,32 +22,37 @@ import (
 )
 
 type WorkflowController struct {
-	clientset      *kubernetes.Clientset
+	// ConfigMap is the name of the config map in which to derive configuration of the controller from
+	ConfigMap      string
 	WorkflowClient *workflowclient.WorkflowClient
 	WorkflowScheme *runtime.Scheme
-	podCl          corev1.PodInterface
-	wfUpdates      chan *wfv1.Workflow
-	podUpdates     chan *apiv1.Pod
-	ArgoExecImage  string
 	Config         WorkflowControllerConfig
-}
 
-var (
-	DefaultArgoExecImage = fmt.Sprintf("argoproj/argoexec:%s", argo.Version)
-)
+	clientset  *kubernetes.Clientset
+	podCl      corev1.PodInterface
+	wfUpdates  chan *wfv1.Workflow
+	podUpdates chan *apiv1.Pod
+}
 
 type WorkflowControllerConfig struct {
 	ExecutorImage      string             `json:"executorImage,omitempty"`
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 }
 
+// ArtifactRepository represents a artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
-	S3 *wfv1.S3Bucket `json:"s3,omitempty"`
+	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Future artifact repository support here
+}
+type S3ArtifactRepository struct {
+	wfv1.S3Bucket `json:",inline"`
+
+	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
+	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(config *rest.Config) *WorkflowController {
+func NewWorkflowController(config *rest.Config, configMap string) *WorkflowController {
 	// make a new config for our extension's API group, using the first config as a baseline
 
 	wfClient, wfScheme, err := workflowclient.NewClient(config)
@@ -60,10 +69,10 @@ func NewWorkflowController(config *rest.Config) *WorkflowController {
 		clientset:      clientset,
 		WorkflowClient: wfClient,
 		WorkflowScheme: wfScheme,
+		ConfigMap:      configMap,
 		podCl:          clientset.CoreV1().Pods(apiv1.NamespaceDefault),
 		wfUpdates:      make(chan *wfv1.Workflow),
 		podUpdates:     make(chan *apiv1.Pod),
-		ArgoExecImage:  DefaultArgoExecImage,
 	}
 	return &wfc
 }
@@ -127,6 +136,51 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+// ResyncConfig reloads the controller config from the configmap
+func (wfc *WorkflowController) ResyncConfig() error {
+	cmClient := wfc.clientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault)
+	cm, err := cmClient.Get(wfc.ConfigMap, metav1.GetOptions{})
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
+	if !ok {
+		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have key '%s'", wfc.ConfigMap, common.WorkflowControllerConfigMapKey)
+	}
+	var config WorkflowControllerConfig
+	err = yaml.Unmarshal([]byte(configStr), &config)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	log.Printf("workflow controller configuration from %s:\n%s", wfc.ConfigMap, configStr)
+	if config.ArtifactRepository.S3 != nil {
+		err = wfc.validateS3Repository(*config.ArtifactRepository.S3)
+		if err != nil {
+			return err
+		}
+	}
+	wfc.Config = config
+	if wfc.Config.ExecutorImage == "" {
+		wfc.Config.ExecutorImage = "argoproj/argoexec:" + argo.Version
+	}
+	return nil
+}
+
+func (wfc *WorkflowController) validateS3Repository(s3repo S3ArtifactRepository) error {
+	secClient := wfc.clientset.CoreV1().Secrets(apiv1.NamespaceDefault)
+	for _, secSelector := range []apiv1.SecretKeySelector{s3repo.AccessKeySecret, s3repo.SecretKeySecret} {
+		s3bucketSecret, err := secClient.Get(secSelector.Name, metav1.GetOptions{})
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		secBytes := s3bucketSecret.Data[secSelector.Key]
+		if len(secBytes) == 0 {
+			return errors.Errorf(errors.CodeBadRequest, "secret '%s' key '%s' empty", secSelector.LocalObjectReference, secSelector.Key)
+		}
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Controller, error) {

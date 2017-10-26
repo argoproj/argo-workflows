@@ -5,6 +5,12 @@ import (
 )
 
 const (
+	// DefaultWorkflowControllerConfigMap is the default name of the configmap which the workflow controller will query its config from
+	DefaultWorkflowControllerConfigMap = "workflow-controller-configmap"
+	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
+	// Content encoding is expected to be YAML.
+	WorkflowControllerConfigMapKey = "config"
+
 	// Container names used in the workflow pod
 	MainContainerName = "main"
 	InitContainerName = "init"

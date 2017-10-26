@@ -9,7 +9,7 @@ import (
 )
 
 // Externally visible error codes
-var (
+const (
 	CodeUnauthorized = "ERR_UNAUTHORIZED"
 	CodeBadRequest   = "ERR_BAD_REQUEST"
 	CodeForbidden    = "ERR_FORBIDDEN"
