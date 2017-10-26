@@ -22,15 +22,25 @@ type WorkflowController struct {
 	WorkflowClient *workflowclient.WorkflowClient
 	WorkflowScheme *runtime.Scheme
 	podCl          corev1.PodInterface
-	podClient      *rest.RESTClient
 	wfUpdates      chan *wfv1.Workflow
 	podUpdates     chan *apiv1.Pod
 	ArgoExecImage  string
+	Config         WorkflowControllerConfig
 }
 
 var (
 	DefaultArgoExecImage = fmt.Sprintf("argoproj/argoexec:%s", argo.Version)
 )
+
+type WorkflowControllerConfig struct {
+	ExecutorImage      string             `json:"executorImage,omitempty"`
+	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
+}
+
+type ArtifactRepository struct {
+	S3 *wfv1.S3Bucket `json:"s3,omitempty"`
+	// Future artifact repository support here
+}
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(config *rest.Config) *WorkflowController {
@@ -51,10 +61,9 @@ func NewWorkflowController(config *rest.Config) *WorkflowController {
 		WorkflowClient: wfClient,
 		WorkflowScheme: wfScheme,
 		podCl:          clientset.CoreV1().Pods(apiv1.NamespaceDefault),
-		//podClient:      newPodClient(config),
-		wfUpdates:     make(chan *wfv1.Workflow),
-		podUpdates:    make(chan *apiv1.Pod),
-		ArgoExecImage: DefaultArgoExecImage,
+		wfUpdates:      make(chan *wfv1.Workflow),
+		podUpdates:     make(chan *apiv1.Pod),
+		ArgoExecImage:  DefaultArgoExecImage,
 	}
 	return &wfc
 }

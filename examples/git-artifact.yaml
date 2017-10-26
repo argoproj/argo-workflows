@@ -12,7 +12,7 @@ spec:
         CODE:
           path: /src
           git:
-            url: https://github.com/argoproj/argo
+            url: https://github.com/argoproj/argo.git
     image: golang:1.8
     command: [sh, -c]
     args: ["cd /src; git status"]
