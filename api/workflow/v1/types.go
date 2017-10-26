@@ -154,13 +154,19 @@ func (n NodeStatus) Successful() bool {
 	return n.Status == NodeStatusSucceeded
 }
 
-type S3ArtifactSource struct {
+type S3Bucket struct {
 	Endpoint        string                   `json:"endpoint"`
 	Bucket          string                   `json:"bucket"`
-	Key             string                   `json:"key"`
 	AccessKeySecret corev1.SecretKeySelector `json:"accessKeySecret"`
-	SecretKey       corev1.SecretKeySelector `json:"secretKeySecret"`
+	SecretKeySecret corev1.SecretKeySelector `json:"secretKeySecret"`
 }
+
+type S3ArtifactSource struct {
+	S3Bucket `json:",inline"`
+	Key      string `json:"key"`
+}
+
+type S3ArtifactDestination S3ArtifactSource
 
 type GitArtifactSource struct {
 	URL            string                    `json:"url"`
@@ -174,6 +180,6 @@ type HTTPArtifactSource struct {
 
 type ArtifactDestination struct {
 	S3 *S3ArtifactDestination `json:"s3,omitempty"`
+	// Future artifact destinations go here
+	// * artifactory, nexus
 }
-
-type S3ArtifactDestination S3ArtifactSource

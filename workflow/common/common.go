@@ -41,9 +41,6 @@ const (
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
 
-	// EnvVarHostIP is th environment variable in which the executor can obtain the IP of the node it is executing on.
-	// argoexec uses this to construct the kubelet client, in order to retrieve the main container's container id.
-
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarHostIP contains the host IP which the container is executing on.

@@ -28,6 +28,7 @@ var RootCmd = &cobra.Command{
 type rootFlags struct {
 	argoExecImage string // --argoexec-image
 	kubeConfig    string // --kubeconfig
+	configMap     string // --configmap
 }
 
 var (
@@ -35,11 +36,12 @@ var (
 )
 
 func init() {
-	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (outside of cluster)")
+	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
 	RootCmd.Flags().StringVar(&rootArgs.argoExecImage, "argoexec-image", "", "argoexec image to use as container sidecars")
+	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", "", "Name of K8s configmap to retrieve workflow controller configuration")
 }
 
-// return rest config, if path not specified assume in cluster config
+// GetClientConfig return rest config, if path not specified, assume in cluster config
 func GetClientConfig(kubeconfig string) (*rest.Config, error) {
 	if kubeconfig != "" {
 		return clientcmd.BuildConfigFromFlags("", kubeconfig)

@@ -13,7 +13,10 @@ BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${REVISION} -X ${PACKAGE}.Branch=${BRANCH}"
 
 BUILDER_IMAGE=argo-builder
-BUILDER_CMD=docker run --rm -v ${BUILD_DIR}:/root/go/src/${PACKAGE} -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
+BUILDER_CMD=docker run --rm \
+  -v ${BUILD_DIR}:/root/go/src/${PACKAGE} \
+  -v ${BUILD_DIR}/dist/cache:/root/go/pkg \
+  -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
 # docker image publishing options
 DOCKER_PUSH=false
@@ -25,7 +28,7 @@ $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argopro
 endif
 endif
 
-ifneq ($(IMAGE_NAMESPACE),"")
+ifdef IMAGE_NAMESPACE
 IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
