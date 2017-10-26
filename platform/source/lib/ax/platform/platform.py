@@ -89,7 +89,7 @@ class AXPlatform(object):
         self._cluster_info = AXClusterInfo(self._cluster_name_id, aws_profile=self._aws_profile)
 
         self._region = self._cluster_config.get_region()
-        if Cloud().target_cloud_aws() and self._cluster_config.get_provider() != "minikube":
+        if Cloud().target_cloud_aws() and self._cluster_config.get_provider() not in ["minikube", "gke"]:
             self._account = AWSAccountInfo(aws_profile=self._aws_profile).get_account_id()
         else:
             self._account = ""

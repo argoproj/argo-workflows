@@ -15,11 +15,12 @@ fi
 
 # read necessary information about current context
 current_context=`kubectl --kubeconfig=$1 config current-context`
-token=`kubectl --kubeconfig=$1 get secrets --namespace default -o custom-columns=:data.token | base64 --decode`
+secret_name=`kubectl --kubeconfig=$1 get serviceaccount default --namespace default  -o jsonpath="{.secrets[0].name}"`
+token=`kubectl --kubeconfig=$1 get secrets --namespace default ${secret_name} -o custom-columns=:data.token | base64 --decode`
 server_ip=`kubectl --kubeconfig=$1 config view -o jsonpath="{.clusters[?(@.name == \"${current_context}\")].cluster.server}"`
 temp_crt_file="/tmp/${current_context}_ca.crt"
 rm -f ${temp_crt_file}
-kubectl --kubeconfig=$1 get secrets --namespace default -o custom-columns=:data."ca\.crt" | base64 --decode > ${temp_crt_file}
+kubectl --kubeconfig=$1 get secrets --namespace default ${secret_name} -o custom-columns=:data."ca\.crt" | base64 --decode > ${temp_crt_file}
 
 # write the new kubeconfig
 kubectl config --kubeconfig=$2 set-cluster ${current_context} --server=${server_ip} --embed-certs=true --certificate-authority=${temp_crt_file}
