@@ -1,4 +1,5 @@
 {
+    "Vendor": true,
     "DisableAll": true,
     "Enable": [
         "vet",
@@ -7,7 +8,6 @@
         "varcheck",
         "structcheck",
         "ineffassign",
-        "aligncheck",
         "unconvert"
     ]
 }
