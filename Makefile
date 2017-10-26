@@ -52,7 +52,7 @@ cli-darwin:
 	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cmd/argo
 
 apiserver:
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver
 
 apiserver-linux: builder
 	${BUILDER_CMD} make apiserver
@@ -82,7 +82,7 @@ argoexec-image: argoexec-linux
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 lint:
-	gometalinter --config gometalinter.json --deadline 2m --exclude=vendor ./..
+	gometalinter --config gometalinter.json --vendor ./...
 
 fmt:
 	cd ${BUILD_DIR}; \
