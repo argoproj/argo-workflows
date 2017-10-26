@@ -54,6 +54,7 @@ var (
 	volumeMountDockerLib = corev1.VolumeMount{
 		Name:      volumeDockerLib.Name,
 		MountPath: volumeDockerLib.VolumeSource.HostPath.Path,
+		ReadOnly:  true,
 	}
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
@@ -180,7 +181,7 @@ func (wfc *WorkflowController) newWaitContainer(tmpl *wfv1.Template) (*corev1.Co
 func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *corev1.Container {
 	exec := corev1.Container{
 		Name:  name,
-		Image: wfc.ArgoExecImage,
+		Image: wfc.Config.ExecutorImage,
 		Env:   execEnvVars,
 		Resources: corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
