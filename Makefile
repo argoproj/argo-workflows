@@ -1,4 +1,5 @@
-GOARCH = amd64
+GOARCH=amd64
+GOPATH=$(shell go env GOPATH)
 
 PACKAGE=github.com/argoproj/argo
 BUILD_DIR=${GOPATH}/src/${PACKAGE}
@@ -15,7 +16,7 @@ LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${RE
 BUILDER_IMAGE=argo-builder
 BUILDER_CMD=docker run --rm \
   -v ${BUILD_DIR}:/root/go/src/${PACKAGE} \
-  -v ${BUILD_DIR}/dist/cache:/root/go/pkg \
+  -v ${GOPATH}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
 # docker image publishing options
