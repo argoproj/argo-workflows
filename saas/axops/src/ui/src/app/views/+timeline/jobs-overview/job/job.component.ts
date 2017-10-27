@@ -69,13 +69,14 @@ export class JobComponent implements OnInit, OnDestroy {
             action: () => this.jobsService.resubmitTask(rootTask)
         });
 
-        if (TaskStatus.Failed === rootTask.status) {
-            menuItems.push({
-                title: 'Resubmit Failed',
-                iconName: 'fa-refresh',
-                action: () => this.jobsService.resubmitTask(rootTask, true)
-            });
-        }
+        // TODO (alexander): Uncomment 'Resubmit Failed' once API support is fixed.
+        // if (TaskStatus.Failed === rootTask.status) {
+        //     menuItems.push({
+        //         title: 'Resubmit Failed',
+        //         iconName: 'fa-refresh',
+        //         action: () => this.jobsService.resubmitTask(rootTask, true)
+        //     });
+        // }
 
         if ([TaskStatus.Cancelled, TaskStatus.Canceling, TaskStatus.Failed, TaskStatus.Success].indexOf(rootTask.status) === -1) {
             menuItems.push({
