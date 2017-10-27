@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: cowsay
+  templates:
+  - name: cowsay
+    type: container
+    image: docker/whalesay:latest
+    command: [sh, -c]
+    args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+        MESSAGE:
+          path: /tmp/hello_world.txt

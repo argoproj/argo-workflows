@@ -59,3 +59,16 @@ func (wf *Workflow) NodeID(name string) string {
 	h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
 }
+
+func (t *Template) DeepCopy() *Template {
+	tBytes, err := json.Marshal(t)
+	if err != nil {
+		panic(err)
+	}
+	var copy Template
+	err = json.Unmarshal(tBytes, &copy)
+	if err != nil {
+		panic(err)
+	}
+	return &copy
+}
