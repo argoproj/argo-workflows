@@ -7,7 +7,6 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
-	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -80,13 +79,13 @@ func envFromField(envVarName, fieldPath string) corev1.EnvVar {
 	}
 }
 
-func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
-	log.Infof("Creating Pod: %s", nodeName)
-	initCtr, err := wfc.newInitContainer(tmpl)
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
+	woc.log.Infof("Creating Pod: %s", nodeName)
+	initCtr, err := woc.newInitContainer(tmpl)
 	if err != nil {
 		return err
 	}
-	waitCtr, err := wfc.newWaitContainer(tmpl)
+	waitCtr, err := woc.newWaitContainer(tmpl)
 	if err != nil {
 		return err
 	}
@@ -96,10 +95,10 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: wf.NodeID(nodeName),
+			Name: woc.wf.NodeID(nodeName),
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:     wf.ObjectMeta.Name, // Allow filtering by pods related to specific workflow
-				common.LabelKeyArgoWorkflow: "true",             // Allow filtering by only argo workflow related pods
+				common.LabelKeyWorkflow:     woc.wf.ObjectMeta.Name, // Allow filtering by pods related to specific workflow
+				common.LabelKeyArgoWorkflow: "true",                 // Allow filtering by only argo workflow related pods
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
@@ -108,8 +107,8 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 				metav1.OwnerReference{
 					APIVersion:         wfv1.CRDFullName,
 					Kind:               wfv1.CRDKind,
-					Name:               wf.ObjectMeta.Name,
-					UID:                wf.ObjectMeta.UID,
+					Name:               woc.wf.ObjectMeta.Name,
+					UID:                woc.wf.ObjectMeta.UID,
 					BlockOwnerDeletion: &t,
 				},
 			},
@@ -133,7 +132,7 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 	if err != nil {
 		return err
 	}
-	wfc.addOutputArtifactsRepoMetaData(&pod, mainCtrTmpl)
+	woc.addOutputArtifactsRepoMetaData(&pod, mainCtrTmpl)
 
 	// Set the container template JSON in pod annotations, which executor will look to for artifact
 	tmplBytes, err := json.Marshal(mainCtrTmpl)
@@ -142,24 +141,24 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 	}
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
-	created, err := wfc.podCl.Create(&pod)
+	created, err := woc.controller.podCl.Create(&pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if
 			// the controller crashes after creating the pod, but fails
 			// to store the update to etc, and controller retries creation
-			log.Infof("pod %s already exists\n", nodeName)
+			woc.log.Infof("pod %s already exists\n", nodeName)
 			return nil
 		}
-		log.Infof("Failed to create pod %s: %v\n", nodeName, err)
+		woc.log.Infof("Failed to create pod %s: %v\n", nodeName, err)
 		return errors.InternalWrapError(err)
 	}
-	log.Infof("Created pod: %v\n", created)
+	woc.log.Infof("Created pod: %v\n", created)
 	return nil
 }
 
-func (wfc *WorkflowController) newInitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
-	ctr := wfc.newExecContainer(common.InitContainerName, false)
+func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
+	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; find /argo; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
@@ -169,8 +168,8 @@ func (wfc *WorkflowController) newInitContainer(tmpl *wfv1.Template) (*corev1.Co
 	return ctr, nil
 }
 
-func (wfc *WorkflowController) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
-	ctr := wfc.newExecContainer(common.WaitContainerName, false)
+func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
+	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
@@ -181,10 +180,10 @@ func (wfc *WorkflowController) newWaitContainer(tmpl *wfv1.Template) (*corev1.Co
 	return ctr, nil
 }
 
-func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *corev1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *corev1.Container {
 	exec := corev1.Container{
 		Name:  name,
-		Image: wfc.Config.ExecutorImage,
+		Image: woc.controller.Config.ExecutorImage,
 		Env:   execEnvVars,
 		Resources: corev1.ResourceRequirements{
 			Limits: corev1.ResourceList{
@@ -277,26 +276,26 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 
 // addOutputArtifactsRepoMetaData updates the template with artifact repository information configured in the controller.
 // This is skipped for artifacts which have explicitly set an output artifact location in the template
-func (wfc *WorkflowController) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl *wfv1.Template) {
 	for artName, art := range tmpl.Outputs.Artifacts {
 		if art.Destination != nil {
 			// The artifact destination was explicitly set in the template. Skip
 			continue
 		}
-		if wfc.Config.ArtifactRepository.S3 != nil {
+		if woc.controller.Config.ArtifactRepository.S3 != nil {
 			// artifacts are stored in S3 using the following formula:
 			// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>
 			// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/CODE)
 			// TODO: will need to support more advanced organization of artifacts such as dated
 			// (e.g. myworkflowartifacts/2017/10/31/... )
 			keyPrefix := ""
-			if wfc.Config.ArtifactRepository.S3.KeyPrefix != "" {
-				keyPrefix = wfc.Config.ArtifactRepository.S3.KeyPrefix + "/"
+			if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
+				keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
 			}
 			artLocationKey := fmt.Sprintf("%s%s/%s/%s", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, artName)
 			art.Destination = &wfv1.ArtifactDestination{
 				S3: &wfv1.S3ArtifactDestination{
-					S3Bucket: wfc.Config.ArtifactRepository.S3.S3Bucket,
+					S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
 					Key:      artLocationKey,
 				},
 			}
