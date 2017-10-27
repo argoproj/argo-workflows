@@ -5,6 +5,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // operateWorkflow is the operator logic of a workflow
@@ -23,9 +24,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		if updated {
 			_, err := wfc.WorkflowClient.UpdateWorkflow(wfCopy)
 			if err != nil {
-				fmt.Printf("ERROR updating status: %v\n", err)
+				log.Errorf("ERROR updating status: %v", err)
 			} else {
-				fmt.Printf("UPDATED %s: %#v\n", wfCopy.ObjectMeta.Name, wfCopy.Status)
+				log.Infof("UPDATED %s: %#v", wfCopy.ObjectMeta.Name, wfCopy.Status)
 			}
 		}
 	}()
@@ -37,17 +38,17 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	tmplUpdates, err := wfc.executeTemplate(wfCopy, wfCopy.Spec.Entrypoint, nil, wfCopy.ObjectMeta.Name)
 	updated = updated || tmplUpdates
 	if err != nil {
-		fmt.Printf("%s error: %+v\n", wf.ObjectMeta.Name, err)
+		log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
 }
 
 // Returns tuple of: (workflow was updated, error)
 func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName string, args *wfv1.Arguments, nodeName string) (bool, error) {
-	fmt.Printf("Evaluating node %s: %v, args: %#v\n", nodeName, templateName, args)
+	log.Infof("Evaluating node %s: %v, args: %#v", nodeName, templateName, args)
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		fmt.Printf("Node %s already completed\n", nodeName)
+		log.Infof("Node %s already completed", nodeName)
 		return false, nil
 	}
 	tmpl := wf.GetTemplate(templateName)
@@ -70,7 +71,7 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 			}
 			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
 			wf.Status.Nodes[nodeID] = node
-			fmt.Printf("Initialized container node %v\n", node)
+			log.Infof("Initialized container node %v", node)
 			return true, nil
 		}
 		return false, nil
@@ -79,7 +80,7 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 		updates := false
 		if !ok {
 			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusRunning}
-			fmt.Printf("Initialized workflow node %v\n", node)
+			log.Infof("Initialized workflow node %v", node)
 			wf.Status.Nodes[nodeID] = node
 			updates = true
 		}
@@ -94,11 +95,11 @@ func (wfc *WorkflowController) executeTemplate(wf *wfv1.Workflow, templateName s
 			updates = updates || sgUpdates
 			sgNodeID := wf.NodeID(sgNodeName)
 			if !wf.Status.Nodes[sgNodeID].Completed() {
-				fmt.Printf("Workflow step group node %v not yet completed\n", wf.Status.Nodes[sgNodeID])
+				log.Infof("Workflow step group node %v not yet completed", wf.Status.Nodes[sgNodeID])
 				return updates, nil
 			}
 			if !wf.Status.Nodes[sgNodeID].Successful() {
-				fmt.Printf("Workflow step group %v not successful\n", wf.Status.Nodes[sgNodeID])
+				log.Infof("Workflow step group %v not successful", wf.Status.Nodes[sgNodeID])
 				node.Status = wfv1.NodeStatusFailed
 				wf.Status.Nodes[nodeID] = node
 				return true, nil
@@ -118,14 +119,14 @@ func (wfc *WorkflowController) executeStepGroup(wf *wfv1.Workflow, stepGroup map
 	nodeID := wf.NodeID(nodeName)
 	node, ok := wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		fmt.Printf("Step group node %v already marked completed\n", node)
+		log.Infof("Step group node %v already marked completed", node)
 		return false, nil
 	}
 	updates := false
 	if !ok {
 		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: "Running"}
 		wf.Status.Nodes[nodeID] = node
-		fmt.Printf("Initializing step group node %v\n", node)
+		log.Infof("Initializing step group node %v", node)
 		updates = true
 	}
 	childNodeIDs := make([]string, 0)
@@ -153,12 +154,12 @@ func (wfc *WorkflowController) executeStepGroup(wf *wfv1.Workflow, stepGroup map
 			node.Status = wfv1.NodeStatusFailed
 			wf.Status.Nodes[nodeID] = node
 			updates = true
-			fmt.Printf("Step group node %s deemed failed due to failure of %s\n", nodeID, childNodeID)
+			log.Infof("Step group node %s deemed failed due to failure of %s", nodeID, childNodeID)
 			return updates, nil
 		}
 	}
 	node.Status = wfv1.NodeStatusSucceeded
 	wf.Status.Nodes[nodeID] = node
-	fmt.Printf("Step group node %s successful\n", nodeID)
+	log.Infof("Step group node %s successful", nodeID)
 	return true, nil
 }

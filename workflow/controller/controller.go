@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"log"
 
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -11,6 +9,7 @@ import (
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -79,58 +78,58 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context) error {
-	fmt.Print("Watch Workflow objects\n")
+	log.Info("Watch Workflow objects")
 
 	// Watch Workflow objects
 	_, err := wfc.watchWorkflows(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Workflow resource: %v\n", err)
+		log.Errorf("Failed to register watch for Workflow resource: %v", err)
 		return err
 	}
 
 	// Watch pods related to workflows
 	_, err = wfc.watchWorkflowPods(ctx)
 	if err != nil {
-		fmt.Printf("Failed to register watch for Workflow resource: %v\n", err)
+		log.Errorf("Failed to register watch for Workflow resource: %v", err)
 		return err
 	}
 
 	for {
 		select {
 		case wf := <-wfc.wfUpdates:
-			fmt.Printf("Processing wf: %v\n", wf.ObjectMeta.SelfLink)
+			log.Infof("Processing wf: %v", wf.ObjectMeta.SelfLink)
 			wfc.operateWorkflow(wf)
 		case pod := <-wfc.podUpdates:
 			if pod.Status.Phase != "Succeeded" && pod.Status.Phase != "Failed" {
 				continue
 			}
-			fmt.Printf("Processing completed pod: %v\n", pod.ObjectMeta.SelfLink)
+			log.Infof("Processing completed pod: %v", pod.ObjectMeta.SelfLink)
 			workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 			if !ok {
 				continue
 			}
 			wf, err := wfc.WorkflowClient.GetWorkflow(workflowName)
 			if err != nil {
-				fmt.Printf("Failed to find workflow %s %+v\n", workflowName, err)
+				log.Warnf("Failed to find workflow %s %+v", workflowName, err)
 				continue
 			}
 			node, ok := wf.Status.Nodes[pod.Name]
 			if !ok {
-				fmt.Printf("pod %s unassociated with workflow %s", pod.Name, workflowName)
+				log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
 				continue
 			}
 			if string(pod.Status.Phase) == node.Status {
-				fmt.Printf("pod %s already marked %s\n", pod.Name, node.Status)
+				log.Infof("pod %s already marked %s", pod.Name, node.Status)
 				continue
 			}
-			fmt.Printf("Updating pod %s status %s -> %s\n", pod.Name, node.Status, pod.Status.Phase)
+			log.Infof("Updating pod %s status %s -> %s", pod.Name, node.Status, pod.Status.Phase)
 			node.Status = string(pod.Status.Phase)
 			wf.Status.Nodes[pod.Name] = node
 			_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
 			if err != nil {
-				fmt.Printf("Failed to update %s status: %+v\n", pod.Name, err)
+				log.Infof("Failed to update %s status: %+v", pod.Name, err)
 			}
-			fmt.Printf("Updated %v\n", wf.Status.Nodes)
+			log.Infof("Updated %v", wf.Status.Nodes)
 		}
 	}
 
@@ -201,18 +200,18 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				fmt.Printf("[CONTROLLER] WF Add %s\n", wf.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] WF Add %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldWf := old.(*wfv1.Workflow)
 				newWf := new.(*wfv1.Workflow)
-				fmt.Printf("[CONTROLLER] WF Update %s\n", newWf.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] WF Update %s", newWf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- newWf
 			},
 			DeleteFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				fmt.Printf("[CONTROLLER] WF Delete %s\n", wf.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] WF Delete %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 		})
@@ -244,18 +243,18 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				fmt.Printf("[CONTROLLER] Pod Added%s\n", pod.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] Pod Added%s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldPod := old.(*apiv1.Pod)
 				newPod := new.(*apiv1.Pod)
-				fmt.Printf("[CONTROLLER] Pod Updated %s\n", newPod.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] Pod Updated %s", newPod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- newPod
 			},
 			DeleteFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				fmt.Printf("[CONTROLLER] Pod Deleted%s\n", pod.ObjectMeta.SelfLink)
+				log.Infof("[CONTROLLER] Pod Deleted%s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 		})
