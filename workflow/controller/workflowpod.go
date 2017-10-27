@@ -7,6 +7,7 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -80,7 +81,7 @@ func envFromField(envVarName, fieldPath string) corev1.EnvVar {
 }
 
 func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
-	fmt.Printf("Creating Pod: %s\n", nodeName)
+	log.Infof("Creating Pod: %s", nodeName)
 	initCtr, err := wfc.newInitContainer(tmpl)
 	if err != nil {
 		return err
@@ -147,13 +148,13 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 			// workflow pod names are deterministic. We can get here if
 			// the controller crashes after creating the pod, but fails
 			// to store the update to etc, and controller retries creation
-			fmt.Printf("pod %s already exists\n", nodeName)
+			log.Infof("pod %s already exists\n", nodeName)
 			return nil
 		}
-		fmt.Printf("Failed to create pod %s: %v\n", nodeName, err)
+		log.Infof("Failed to create pod %s: %v\n", nodeName, err)
 		return errors.InternalWrapError(err)
 	}
-	fmt.Printf("Created pod: %v\n", created)
+	log.Infof("Created pod: %v\n", created)
 	return nil
 }
 

@@ -1,10 +1,10 @@
 package client
 
 import (
-	"fmt"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	log "github.com/sirupsen/logrus"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +15,7 @@ import (
 )
 
 func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
-	fmt.Printf("Creating Workflow CRD\n")
+	log.Infof("Creating Workflow CRD")
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: wfv1.CRDFullName,
@@ -51,7 +51,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 				}
 			case apiextensionsv1beta1.NamesAccepted:
 				if cond.Status == apiextensionsv1beta1.ConditionFalse {
-					fmt.Printf("Name conflict: %v\n", cond.Reason)
+					log.Errorf("Name conflict: %v", cond.Reason)
 				}
 			}
 		}
