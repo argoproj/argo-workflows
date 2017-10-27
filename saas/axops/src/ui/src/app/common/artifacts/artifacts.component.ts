@@ -1,5 +1,4 @@
 import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ViewChildren, QueryList, ElementRef } from '@angular/core';
-import { URLSearchParams } from '@angular/http';
 import { Subscription } from 'rxjs';
 
 import { Task, Deployment, Artifact, ARTIFACT_TYPES, DeletedStatus, TaskStatus } from '../../model';
