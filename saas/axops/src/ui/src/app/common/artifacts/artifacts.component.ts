@@ -224,10 +224,7 @@ export class ArtifactsComponent implements OnChanges, OnDestroy {
     }
 
     private getArtifactDownloadUrl(artifactId: string): string {
-        let filter = new URLSearchParams();
-        filter.set('action', 'download');
-        filter.append('artifact_id', artifactId);
-        return `v1/artifacts?${filter.toString()}`;
+        return this.artifactsService.getArtifactDownloadUrl(artifactId);
     }
 
     private artifactSubscriptionsCleanup() {
