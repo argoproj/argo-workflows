@@ -89,14 +89,9 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 	if err != nil {
 		return err
 	}
-	mainCtr := tmpl.Container.DeepCopy()
-	mainCtr.Name = common.MainContainerName
+	mainCtrTmpl := tmpl.DeepCopy()
+	mainCtrTmpl.Name = common.MainContainerName
 	t := true
-
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return err
-	}
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,7 +102,6 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
-				common.AnnotationKeyTemplate: string(tmplBytes),
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
@@ -126,7 +120,7 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 			},
 			Containers: []corev1.Container{
 				*waitCtr,
-				*mainCtr,
+				*mainCtrTmpl.Container,
 			},
 			Volumes: []corev1.Volume{
 				volumePodMetadata,
@@ -134,10 +128,18 @@ func (wfc *WorkflowController) createWorkflowPod(wf *wfv1.Workflow, nodeName str
 			},
 		},
 	}
-	err = addInputArtifactVolumes(&pod, tmpl)
+	err = addInputArtifactsVolumes(&pod, mainCtrTmpl)
 	if err != nil {
 		return err
 	}
+	wfc.addOutputArtifactsRepoMetaData(&pod, mainCtrTmpl)
+
+	// Set the container template JSON in pod annotations, which executor will look to for artifact
+	tmplBytes, err := json.Marshal(mainCtrTmpl)
+	if err != nil {
+		return err
+	}
+	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	created, err := wfc.podCl.Create(&pod)
 	if err != nil {
@@ -200,8 +202,11 @@ func (wfc *WorkflowController) newExecContainer(name string, privileged bool) *c
 	return &exec
 }
 
-// addInputArtifactVolumes adds an artifacts volume to the pod if the template requires input artifacts
-func addInputArtifactVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
+// addInputArtifactVolumes sets up the artifacts volume to the pod if the user's container requires input artifacts.
+// To support input artifacts, the init container shares a empty dir volume with the main container.
+// It is the responsibility of the init container to load all artifacts to the mounted emptydir location.
+// (e.g. /inputs/artifacts/CODE). The shared emptydir is mapped to the correspoding location in the main container.
+func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
@@ -267,4 +272,34 @@ func addInputArtifactVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 	}
 	pod.Spec.Containers[mainCtrIndex] = *mainCtr
 	return nil
+}
+
+// addOutputArtifactsRepoMetaData updates the template with artifact repository information configured in the controller.
+// This is skipped for artifacts which have explicitly set an output artifact location in the template
+func (wfc *WorkflowController) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl *wfv1.Template) {
+	for artName, art := range tmpl.Outputs.Artifacts {
+		if art.Destination != nil {
+			// The artifact destination was explicitly set in the template. Skip
+			continue
+		}
+		if wfc.Config.ArtifactRepository.S3 != nil {
+			// artifacts are stored in S3 using the following formula:
+			// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>
+			// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/CODE)
+			// TODO: will need to support more advanced organization of artifacts such as dated
+			// (e.g. myworkflowartifacts/2017/10/31/... )
+			keyPrefix := ""
+			if wfc.Config.ArtifactRepository.S3.KeyPrefix != "" {
+				keyPrefix = wfc.Config.ArtifactRepository.S3.KeyPrefix + "/"
+			}
+			artLocationKey := fmt.Sprintf("%s%s/%s/%s", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, artName)
+			art.Destination = &wfv1.ArtifactDestination{
+				S3: &wfv1.S3ArtifactDestination{
+					S3Bucket: wfc.Config.ArtifactRepository.S3.S3Bucket,
+					Key:      artLocationKey,
+				},
+			}
+		}
+		tmpl.Outputs.Artifacts[artName] = art
+	}
 }
