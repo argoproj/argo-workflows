@@ -1,1 +1,20 @@
-../argo-wfe/axops-svc.yml.in
+apiVersion: v1
+kind: Service
+metadata:
+    name: axops
+    labels:
+        app: axops
+        tier: platform
+        role: axcritical
+spec:
+    selector:
+        app: axops-deployment
+    ports:
+      - name: http
+        port: 80
+        targetPort: 8081
+      - name: https
+        port: 443
+        targetPort: 8086
+    type: ${LOAD_BALANCER_TYPE}
+    loadBalancerSourceRanges: ${TRUSTED_CIDR}
