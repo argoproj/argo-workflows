@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import { Inject, Injectable } from '@angular/core';
 import { Http, URLSearchParams, Headers } from '@angular/http';
 import { Artifact } from '../model';
@@ -7,13 +8,14 @@ export class ArtifactsService {
     constructor(@Inject(Http) private _http) {
     }
 
-    getArtifacts(params?: {
+    public getArtifacts(params?: {
         workflow_id?: string,
         service_instance_id?: string,
         tags?: string,
         retention_tags?: string,
-        artifact_type?: string
-    }, hideLoader?: boolean) {
+        artifact_type?: string,
+        name?: string,
+    }, hideLoader?: boolean): Observable<Artifact[]> {
         let filter = new URLSearchParams();
         let headers = new Headers();
 
@@ -34,6 +36,10 @@ export class ArtifactsService {
             filter.set('artifact_type', params.artifact_type.toString());
         }
 
+        if (params.name) {
+            filter.set('name', params.name.toString());
+        }
+
         if (hideLoader) {
             headers.append('isUpdated', hideLoader.toString());
         }
@@ -42,12 +48,12 @@ export class ArtifactsService {
             .map(res => res.json().data.map(item => new Artifact(item)));
     }
 
-    getArtifactById(artifactId) {
+    public getArtifactById(artifactId) {
         return this._http.get(`v1/artifacts/${artifactId}`)
             .map(res => res.json());
     }
 
-    browseArtifact(params: {
+    public browseArtifact(params: {
         artifact_id: string
     }, hideLoader?: boolean) {
         let headers = new Headers();
@@ -60,7 +66,7 @@ export class ArtifactsService {
             .map(res => res.json());
     }
 
-    getUsage(hideLoader?: boolean) {
+    public getUsage(hideLoader?: boolean) {
         let filter = new URLSearchParams();
         let headers = new Headers();
 
@@ -74,7 +80,7 @@ export class ArtifactsService {
             .map(res => res.json());
     }
 
-    getArtifactTags(params?: { search?: string }, hideLoader?: boolean) {
+    public getArtifactTags(params?: { search?: string }, hideLoader?: boolean) {
         let filter = new URLSearchParams();
         let headers = new Headers();
 
@@ -90,7 +96,7 @@ export class ArtifactsService {
             .map(res => res.json());
     }
 
-    tagOperation(action: 'tag' | 'untag', params: {
+    public tagOperation(action: 'tag' | 'untag', params: {
         workflow_ids: string,
         tag: string,
     }, hideLoader?: boolean) {
@@ -112,7 +118,7 @@ export class ArtifactsService {
             .map(res => res.json());
     }
 
-    cleanArtifacts(hideLoader?: boolean) {
+    public cleanArtifacts(hideLoader?: boolean) {
         let filter = new URLSearchParams();
         let headers = new Headers();
         filter.set('action', 'clean');
@@ -121,5 +127,20 @@ export class ArtifactsService {
         }
         return this._http.put(`v1/artifacts`, null, {headers: headers, search: filter.toString()})
             .map(res => res.json());
+    }
+
+    public getArtifactDownloadUrl(artifactId: string): string {
+        let filter = new URLSearchParams();
+        filter.set('action', 'download');
+        filter.append('artifact_id', artifactId);
+        return `v1/artifacts?${filter.toString()}`;
+    }
+
+    public async getArtifactDownloadUrlByName(serviceInstanceId: string, name: string): Promise<string> {
+        let artifacts = await this.getArtifacts({ service_instance_id: serviceInstanceId, name }).toPromise();
+        if (artifacts.length > 0) {
+            return this.getArtifactDownloadUrl(artifacts[0].artifact_id);
+        }
+        return null;
     }
 }

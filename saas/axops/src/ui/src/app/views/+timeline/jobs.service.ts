@@ -6,13 +6,12 @@ import { DomSanitizer } from '@angular/platform-browser';
 
 import { Task, TaskStatus } from '../../model';
 import { DropdownMenuSettings, MenuItem, NotificationsService } from 'argo-ui-lib/src/components';
-import { TaskService, ModalService, DeploymentsService, SystemService, AuthenticationService } from '../../services';
+import { TaskService, ModalService, DeploymentsService, SystemService, AuthenticationService, ArtifactsService } from '../../services';
 import { JobTreeNode } from '../../common/workflow-tree/workflow-tree.view-models';
 import { LaunchPanelService } from '../../common/multiple-service-launch-panel/launch-panel.service';
 
 export interface TaskArtifact {
     name: string;
-    downloadUrlPath: string;
     browsable: boolean;
 }
 
@@ -40,7 +39,8 @@ export class JobsService {
         private domSanitizer: DomSanitizer,
         private locationStrategy: LocationStrategy,
         private systemService: SystemService,
-        private authenticationService: AuthenticationService
+        private authenticationService: AuthenticationService,
+        private artifactsService: ArtifactsService,
     ) {
         this.systemService.isPlayground().then(isPlayground => this.isPlayground = isPlayground);
         this.authenticationService.getCurrentUser().then(user => this.isAdmin = user.isAdmin() || user.isSuperAdmin());
@@ -59,7 +59,6 @@ export class JobsService {
         _.forOwn(task.template.outputs.artifacts, (v, k) => {
             artifacts.push({
                 name: k,
-                downloadUrlPath: `/v1/services/${task.id}/outputs/${k}`,
                 browsable: v.meta_data && v.meta_data.indexOf('browsable') > -1
             });
         });
@@ -199,17 +198,17 @@ export class JobsService {
                 items.push({
                     title: 'Download artifact ' + item.name,
                     iconName: 'fa-download',
-                    action: () => {
-                        window.location.href = item.downloadUrlPath;
+                    action: async () => {
+                        window.location.href = await this.artifactsService.getArtifactDownloadUrlByName(step.value.id, item.name);
                     }
                 });
                 if (item.browsable) {
                     items.push({
                         title: 'Browse artifact ' + item.name,
                         iconName: 'fa-folder-open',
-                        action: () => this.router.navigate([`/app/jobs/job-details/${rootTask.task_id}`, {
+                        action: async () => this.router.navigate([`/app/jobs/job-details/${rootTask.task_id}`, {
                             tab: 'workflow',
-                            browseStepArtifact: encodeURIComponent(item.downloadUrlPath)
+                            browseStepArtifact: encodeURIComponent(await this.artifactsService.getArtifactDownloadUrlByName(step.value.id, item.name))
                         }])
                     });
                 }
