@@ -9,6 +9,7 @@ Module to start/stop AX platform by managing kubernetes objects
 """
 
 import base64
+import json
 import logging
 import os
 import random
@@ -314,7 +315,7 @@ class AXPlatform(object):
         self.create_objects(steps[2])
 
         # Prepare axops_eip
-        if self._cluster_config.get_provider() not in ["minikube", "gke"]:
+        if self._cluster_config.get_provider() not in ["minikube"]:
             self._set_ext_dns()
 
         info_bound = "=======================================================\n"
@@ -779,6 +780,24 @@ class AXPlatform(object):
             logger.error("Failed to get cluster dns name from config map.")
             return None
 
+    def _get_eip_from_service(self):
+        start_time = time.time()
+        logger.info("Polling service for axops IP")
+        while True:
+            try:
+                cmd = ["kubectl", "get", "service", "axops", "-o", "json",
+                       "--namespace", self.kube_axsys_namespace,
+                       "--kubeconfig", self._kube_config]
+                out = subprocess.check_output(cmd)
+                ip = json.loads(out)["status"]["loadBalancer"]["ingress"][0]["ip"]
+                logger.info("axops IP determined as %s", ip)
+                return ip
+            except Exception as err:
+                if time.time() - start_time > 60*5:
+                    logger.exception("Failed to get cluster dns name from service: %s", err)
+                    raise
+                time.sleep(10)
+
     @retry(wait_exponential_multiplier=1000, stop_max_attempt_number=5)
     def _get_svc_eip(self, svclabel, namespace):
         svc = self.kube_poll.poll_kubernetes_sync(KubeKind.SERVICE, namespace, svclabel)
@@ -792,6 +811,10 @@ class AXPlatform(object):
         return rst
 
     def _set_ext_dns(self):
+        if self._cluster_config.get_provider() == "gke":
+            self.cluster_dns_name = self._get_eip_from_service()
+            return
+
         axops_eip = self._get_eip_from_config_map() or self._get_svc_eip(svclabel="app=axops",
                                                                          namespace=AXNameSpaces.AXSYS)
 
