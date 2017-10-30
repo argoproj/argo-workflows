@@ -12,4 +12,5 @@ export interface ViewPreferences {
     playgroundTask: { jobId: string, projectId: string };
     mostRecentNotificationsViewTime: number;
     filterStateInPages: { [key: string]: any };
+    firstJobFeedbackStatus: 'need-feedback' | 'feedback-submitted';
 }

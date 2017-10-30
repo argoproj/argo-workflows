@@ -96,6 +96,7 @@ export class ViewPreferencesService {
             mostRecentNotificationsViewTime: 0,
             filterState: { branches: <'all' | 'my'> 'all'},
             filterStateInPages: {},
+            firstJobFeedbackStatus: null,
         };
         let userPrefs = view_preferences || {};
         for (let key in view_preferences) {

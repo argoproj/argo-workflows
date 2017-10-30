@@ -4,7 +4,7 @@
     </div>
     <div class="feedback-panel__options" [class.option-active]="selectedOption">
         <div class="feedback-panel__options-title">How was your overall experience?</div>
-        <div class="feedback-panel__option" (click)="close()">
+        <div class="feedback-panel__option" (click)="select('good')">
             <i class="fa fa-smile-o"></i>
         </div>
         <div class="feedback-panel__option" (click)="select('ok')" [class.active]="selectedOption === 'ok'">
@@ -27,8 +27,8 @@
                 <div class="feedback-panel__form-option" (click)="selectFormOption('workflows')"
                      [class.active]="formOption === 'workflows'">Sample Workflows</div>
             </div>
-            <textarea class="feedback-panel__form-comment" placeholder="Additional comments"></textarea>
+            <textarea [(ngModel)]="comments" class="feedback-panel__form-comment" placeholder="Additional comments"></textarea>
         </div>
-        <button class="feedback-panel__submit">Submit</button>
+        <button class="feedback-panel__submit" (click)="submitFeedback()">Submit</button>
     </div>
 </div>

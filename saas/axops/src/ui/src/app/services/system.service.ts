@@ -59,6 +59,10 @@ export class SystemService {
         });
     }
 
+    createClusterSetting(key: string, value: string): Promise<string> {
+        return this.http.post('v1/cluster/settings', { key, value }, { headers: new AxHeaders({ noErrorHandling: true }) }).toPromise().then(res => res.json());
+    }
+
     getAccessSettings(): Promise<{ trusted_cidrs: string[] }> {
         return this.http.get('v1/system/settings/security_groups_config').map(res => <{ trusted_cidrs: string[] }> res.json()).toPromise();
     }

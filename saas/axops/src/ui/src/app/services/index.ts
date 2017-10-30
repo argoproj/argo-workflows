@@ -34,6 +34,7 @@ export { ApplicationsService } from './applications.service';
 export { ProjectService } from './project.service';
 export { DeploymentsService } from './deployments.service';
 export { VolumesService } from './volumes.service';
+export { TrackingService } from './tracking.service';
 
 export { ServicesModule } from './services.module';
 export { ArtifactsService } from './artifacts.service';

@@ -3,6 +3,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { Observable, Observer, Subscription } from 'rxjs';
 import { Http, Headers, URLSearchParams } from '@angular/http';
 import { HttpService } from './http.service';
+import { ViewPreferencesService } from './view-preferences.service';
 import { AxHeaders } from './headers';
 import { DEFAULT_NOTIFICATIONS } from '../model';
 
@@ -13,7 +14,7 @@ export interface ServiceEvent { task_id: string; id: string; status: TaskStatus;
 @Injectable()
 export class TaskService {
 
-    constructor(private http: Http, private httpService: HttpService, private zone: NgZone) {
+    constructor(private http: Http, private httpService: HttpService, private zone: NgZone, private viewPreferencesService: ViewPreferencesService) {
     }
 
     public getTask(id: string, noLoader = false, noErrorHandling = false): Observable<Task> {
@@ -35,6 +36,13 @@ export class TaskService {
             args = Object.assign({}, args, { notifications: DEFAULT_NOTIFICATIONS });
         }
         return this.http.post(`v1/services?run_partial=${runPartial}`, JSON.stringify(args))
+            .do(res => {
+                this.viewPreferencesService.updateViewPreferences(preferences => {
+                    if (!preferences.firstJobFeedbackStatus) {
+                        preferences.firstJobFeedbackStatus = 'need-feedback';
+                    }
+                });
+            })
             .map(res => res.json());
     }
 
