@@ -1,0 +1,34 @@
+<div class="feedback-panel" [class.show]="show">
+    <div class="feedback-panel__intro" *ngIf="!selectedOption">
+        You just created your first workflow!
+    </div>
+    <div class="feedback-panel__options" [class.option-active]="selectedOption">
+        <div class="feedback-panel__options-title">How was your overall experience?</div>
+        <div class="feedback-panel__option" (click)="select('good')">
+            <i class="fa fa-smile-o"></i>
+        </div>
+        <div class="feedback-panel__option" (click)="select('ok')" [class.active]="selectedOption === 'ok'">
+            <i class="fa fa-smile-o"></i>
+            <div class="feedback-panel__option-name">OKAY</div>
+        </div>
+        <div class="feedback-panel__option" (click)="select('poor')" [class.active]="selectedOption === 'poor'">
+            <i class="fa fa-frown-o"></i>
+            <div class="feedback-panel__option-name">POOR</div>
+        </div>
+    </div>
+    <div *ngIf="selectedOption">
+        <div class="feedback-panel__form">
+            <div class="feedback-panel__form-title">What can be improved?</div>
+            <div class="feedback-panel__form-options">
+                <div class="feedback-panel__form-option" (click)="selectFormOption('documentation')"
+                     [class.active]="formOption === 'documentation'">Documentation</div>
+                <div class="feedback-panel__form-option" (click)="selectFormOption('installation')"
+                     [class.active]="formOption === 'installation'">Installation</div>
+                <div class="feedback-panel__form-option" (click)="selectFormOption('workflows')"
+                     [class.active]="formOption === 'workflows'">Sample Workflows</div>
+            </div>
+            <textarea [(ngModel)]="comments" class="feedback-panel__form-comment" placeholder="Additional comments"></textarea>
+        </div>
+        <button class="feedback-panel__submit" (click)="submitFeedback()">Submit</button>
+    </div>
+</div>

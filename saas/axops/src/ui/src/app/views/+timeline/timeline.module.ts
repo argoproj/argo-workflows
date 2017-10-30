@@ -30,6 +30,7 @@ import { CommitsOverviewComponent } from './commits-overview/commits-overview.co
 import { BranchesOverviewComponent } from './branches-overview/branches-overview.component';
 import { JobsTimelineComponent } from './jobs-timeline/jobs-timeline.component';
 import { TimelineComponentsModule } from './timeline-components.module';
+import { FeedbackPanelComponent } from './job-details/feedback-panel/feedback-panel.component';
 
 export const routes = [
     { path: '', component: TimelineComponent, terminal: true },
@@ -59,6 +60,7 @@ export const routes = [
         RevisionComponent,
         CommitsOverviewComponent,
         TimelineComponent,
+        FeedbackPanelComponent,
     ],
     imports: [
         CommonModule,
