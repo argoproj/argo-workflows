@@ -5,7 +5,8 @@ metadata:
 spec:
   entrypoint: artifact-example
   templates:
-  - name: artifact-example
+  - 
+    name: artifact-example
     type: workflow
     steps:
     - COWSAY:
@@ -14,7 +15,8 @@ spec:
         template: print-message
         arguments:
           artifacts.MESSAGE: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
-  - name: cowsay
+  - 
+    name: cowsay
     type: container
     image: docker/whalesay:latest
     command: [sh, -c]
@@ -23,7 +25,8 @@ spec:
       artifacts:
         MESSAGE:
           path: /tmp/hello_world.txt
-  - name: print-message
+  - 
+    name: print-message
     type: container
     inputs:
       artifacts:

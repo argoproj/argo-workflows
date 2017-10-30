@@ -195,6 +195,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/valyala/fasttemplate"
+  packages = ["."]
+  revision = "dcecefd839c4193db0d35b88ec65b4c12d360ab0"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
@@ -262,6 +274,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6463e126dc74d62f6780dccf731509efdbba28937c38b8a55e72cecc450ac882"
+  inputs-digest = "abd8f296d9c048a8c4d27477621ef053f1d40c21a5d77c518c723f8f4b97ea02"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: loop-example
+  templates:
+  - 
+    name: loop-example
+    type: workflow
+    steps:
+    - COWSAY:
+        template: cowsay
+        arguments:
+          parameters.MESSAGE: "{{item}}"
+        with_items:
+        - hello world
+        - goodbye world
+  - 
+    name: cowsay
+    type: container
+    inputs:
+      parameters:
+        MESSAGE:
+    image: docker/whalesay:latest
+    command: [cowsay]
+    args: ["{{inputs.parameters.MESSAGE}}"]

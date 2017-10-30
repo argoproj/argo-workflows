@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasttemplate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -58,13 +61,13 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		woc.updated = true
 	}
 
-	err := woc.executeTemplate(wf.Spec.Entrypoint, nil, wf.ObjectMeta.Name)
+	err := woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
 }
 
-func (woc *wfOperationCtx) executeTemplate(templateName string, args *wfv1.Arguments, nodeName string) error {
+func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
 	woc.log.Infof("Evaluating node %s: %v, args: %#v", nodeName, templateName, args)
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
@@ -75,29 +78,37 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args *wfv1.Argum
 	tmpl := woc.wf.GetTemplate(templateName)
 	if tmpl == nil {
 		err := errors.Errorf(errors.CodeBadRequest, "Node %s error: template '%s' undefined", nodeName, templateName)
-		woc.wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusError}
-		woc.updated = true
+		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 		return err
+	}
+	if len(args) > 0 {
+		var err error
+		tmpl, err = substituteArgs(tmpl, args)
+		if err != nil {
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			return err
+		}
 	}
 
 	switch tmpl.Type {
 	case wfv1.TypeContainer:
-		if !ok {
-			// We have not yet created the pod
-			status := wfv1.NodeStatusRunning
-			err := woc.createWorkflowPod(nodeName, tmpl, args)
-			if err != nil {
-				// TODO: may need to query pod status if we hit already exists error
-				status = wfv1.NodeStatusError
-				return err
-			}
-			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.log.Infof("Initialized container node %v", node)
-			woc.updated = true
+		if ok {
+			// There's already a node entry for the container. This means the container was already
+			// scheduled (or had a create pod error). Nothing to more to do with this node.
 			return nil
 		}
-		return nil
+		// We have not yet created the pod
+		status := wfv1.NodeStatusRunning
+		err := woc.createWorkflowPod(nodeName, tmpl, args)
+		if err != nil {
+			// TODO: may need to query pod status if we hit already exists error
+			status = wfv1.NodeStatusError
+		}
+		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
+		woc.wf.Status.Nodes[nodeID] = node
+		woc.log.Infof("Initialized container node %v", node)
+		woc.updated = true
+		return err
 
 	case wfv1.TypeWorkflow:
 		if !ok {
@@ -140,6 +151,19 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args *wfv1.Argum
 	}
 }
 
+// markNodeError marks a node with the given status, creating the node if necessary
+func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) {
+	nodeID := woc.wf.NodeID(nodeName)
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	if !ok {
+		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
+	} else {
+		node.Status = status
+	}
+	woc.wf.Status.Nodes[nodeID] = node
+	woc.updated = true
+}
+
 func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, nodeName string) error {
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
@@ -158,7 +182,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	for stepName, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", nodeName, stepName)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
-		err := woc.executeTemplate(step.Template, &step.Arguments, childNodeName)
+		err := woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
 			node.Status = wfv1.NodeStatusError
 			woc.wf.Status.Nodes[nodeID] = node
@@ -187,4 +211,27 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	woc.updated = true
 	woc.log.Infof("Step group node %s successful", nodeID)
 	return nil
+}
+
+// substituteArgs returns a new copy of the template with all input parameters substituted
+func substituteArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, error) {
+	tmplBytes, err := json.Marshal(tmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	replaceMap := make(map[string]interface{})
+	for argName, argVal := range args {
+		if strings.HasPrefix(argName, "parameters.") {
+			replaceMap["inputs."+argName] = argVal
+		}
+	}
+	s := fstTmpl.ExecuteString(replaceMap)
+
+	var newTmpl wfv1.Template
+	err = json.Unmarshal([]byte(s), &newTmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &newTmpl, nil
 }

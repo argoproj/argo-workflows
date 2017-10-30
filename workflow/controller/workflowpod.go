@@ -79,7 +79,7 @@ func envFromField(envVarName, fieldPath string) corev1.EnvVar {
 	}
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template, args *wfv1.Arguments) error {
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template, args wfv1.Arguments) error {
 	woc.log.Infof("Creating Pod: %s", nodeName)
 	initCtr, err := woc.newInitContainer(tmpl)
 	if err != nil {

@@ -54,6 +54,7 @@ type WorkflowList struct {
 type WorkflowSpec struct {
 	Templates  []Template `json:"templates"`
 	Entrypoint string     `json:"entrypoint"`
+	Arguments  Arguments  `json:"arguments,omitempty"`
 }
 
 type Template struct {
@@ -105,15 +106,18 @@ type OutputParameter struct {
 	Path string `json:"path,omitempty"`
 }
 
+type Item interface{}
+
 // WorkflowStep is either a template ref, an inlined container, with added flags
 type WorkflowStep struct {
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
 	Flags     []string  `json:"flags,omitempty"`
+	WithItems Item      `json:"withItems,omitempty"`
 }
 
 // Arguments to a template
-type Arguments map[string]*string
+type Arguments map[string]string
 
 type WorkflowStatus struct {
 	Phase string                `json:"phase"`
