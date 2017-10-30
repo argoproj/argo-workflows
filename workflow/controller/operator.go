@@ -177,6 +177,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		woc.log.Infof("Initializing step group node %v", node)
 		woc.updated = true
 	}
+	stepGroup, err := woc.expandStepGroup(stepGroup)
+	if err != nil {
+		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		return err
+	}
+
 	childNodeIDs := make([]string, 0)
 	// First kick off all parallel steps in the group
 	for stepName, step := range stepGroup {
@@ -206,11 +212,54 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 			return nil
 		}
 	}
-	node.Status = wfv1.NodeStatusSucceeded
-	woc.wf.Status.Nodes[nodeID] = node
-	woc.updated = true
+	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
 	woc.log.Infof("Step group node %s successful", nodeID)
 	return nil
+}
+
+func (woc *wfOperationCtx) expandStepGroup(stepGroup map[string]wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
+	newStepGroup := make(map[string]wfv1.WorkflowStep)
+	for stepName, step := range stepGroup {
+		if len(step.WithItems) == 0 {
+			newStepGroup[stepName] = step
+			continue
+		}
+		expandedStep, err := woc.expandStep(stepName, step)
+		if err != nil {
+			return nil, err
+		}
+		for newStepName, newStep := range expandedStep {
+			newStepGroup[newStepName] = newStep
+		}
+	}
+	return newStepGroup, nil
+}
+
+func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
+	stepBytes, err := json.Marshal(step)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
+
+	expandedStep := make(map[string]wfv1.WorkflowStep)
+	for _, item := range step.WithItems {
+		switch val := item.(type) {
+		case string:
+			replaceMap := map[string]interface{}{
+				"item": val,
+			}
+			newStepStr := fstTmpl.ExecuteString(replaceMap)
+			var newStep wfv1.WorkflowStep
+			err = json.Unmarshal([]byte(newStepStr), &newStep)
+			if err != nil {
+				return nil, errors.InternalWrapError(err)
+			}
+			newStepName := fmt.Sprintf("%s(%s)", stepName, val)
+			expandedStep[newStepName] = newStep
+		}
+	}
+	return expandedStep, nil
 }
 
 // substituteArgs returns a new copy of the template with all input parameters substituted
