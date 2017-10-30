@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: python-script-example
+  templates:
+  - 
+    name: python-script-example
+    steps:
+    - GENERATE:
+        template: gen-random-int
+    - PRINT:
+        template: print-message
+        arguments:
+          parameters.MESSAGE: "{{steps.GENERATE.outputs.result}}"
+  - 
+    name: gen-random-int
+    script:
+      image: python:3.6
+      command: [python3]
+      source: |
+        import random
+        import json
+        i = random.randint(1, 100)
+        print(json.dumps(i))
+  - 
+    name: print-message
+    inputs:
+      parameters:
+        MESSAGE:
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.MESSAGE}}"]
+

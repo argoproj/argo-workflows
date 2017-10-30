@@ -3,9 +3,9 @@ kind: Workflow
 metadata:
   generateName: argo-wf-
 spec:
-  entrypoint: git-clone
+  entrypoint: input-artifact-s3-example
   templates:
-  - name: git-clone
+  - name: input-artifact-s3-example
     type: container
     inputs:
       artifacts:
@@ -21,6 +21,6 @@ spec:
             secretKeySecret:
               name: my-s3-credentials
               key: secretKey
-    image: golang:1.8
+    image: debian:latest
     command: [sh, -c]
-    args: ["cd /src; git status"]
+    args: ["cd /src && ls -l"]
