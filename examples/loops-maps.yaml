@@ -13,7 +13,7 @@ spec:
         template: cowsay
         arguments:
           parameters.MESSAGE: "{{item.adjective}} {{item.noun}}"
-        with_items:
+        withItems:
         - { adjective: 'friendly', noun: 'dog' }
         - { adjective: 'sneaky', noun: 'cat' }
   - 

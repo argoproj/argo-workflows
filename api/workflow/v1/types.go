@@ -113,7 +113,7 @@ type WorkflowStep struct {
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
 	Flags     []string  `json:"flags,omitempty"`
-	WithItems Item      `json:"withItems,omitempty"`
+	WithItems []Item    `json:"withItems,omitempty"`
 }
 
 // Arguments to a template

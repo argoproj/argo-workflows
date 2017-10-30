@@ -13,7 +13,7 @@ spec:
         template: cowsay
         arguments:
           parameters.MESSAGE: "{{item}}"
-        with_items:
+        withItems:
         - hello world
         - goodbye world
   - 
