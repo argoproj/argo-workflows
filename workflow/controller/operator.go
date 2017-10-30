@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -243,21 +244,41 @@ func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (
 	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 
 	expandedStep := make(map[string]wfv1.WorkflowStep)
-	for _, item := range step.WithItems {
+	for i, item := range step.WithItems {
+		replaceMap := make(map[string]interface{})
+		var newStepName string
 		switch val := item.(type) {
 		case string:
-			replaceMap := map[string]interface{}{
-				"item": val,
+			replaceMap["item"] = val
+			newStepName = fmt.Sprintf("%s(%s)", stepName, val)
+		case map[string]interface{}:
+			// Handle the case when withItems is a list of maps.
+			// vals holds stringified versions of the map items which are incorporated as part of the step name.
+			// For example if the item is: {"name": "jesse","group":"developer"}
+			// the vals would be: ["name:jesse", "group:developer"]
+			// This would eventually be part of the step name (group:developer,name:jesse)
+			vals := make([]string, 0)
+			for itemKey, itemValIf := range val {
+				itemVal, ok := itemValIf.(string)
+				if !ok {
+					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string. received: %s", i, itemKey, itemVal)
+				}
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = itemVal
+				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 			}
-			newStepStr := fstTmpl.ExecuteString(replaceMap)
-			var newStep wfv1.WorkflowStep
-			err = json.Unmarshal([]byte(newStepStr), &newStep)
-			if err != nil {
-				return nil, errors.InternalWrapError(err)
-			}
-			newStepName := fmt.Sprintf("%s(%s)", stepName, val)
-			expandedStep[newStepName] = newStep
+			// sort the values so that the name is deterministic
+			sort.Strings(vals)
+			newStepName = fmt.Sprintf("%s(%s)", stepName, strings.Join(vals, ","))
+		default:
+			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string or map. received: %s", i, val)
 		}
+		newStepStr := fstTmpl.ExecuteString(replaceMap)
+		var newStep wfv1.WorkflowStep
+		err = json.Unmarshal([]byte(newStepStr), &newStep)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		expandedStep[newStepName] = newStep
 	}
 	return expandedStep, nil
 }
