@@ -7,7 +7,6 @@ spec:
   templates:
   - 
     name: artifact-example
-    type: workflow
     steps:
     - COWSAY:
         template: cowsay
@@ -17,21 +16,21 @@ spec:
           artifacts.MESSAGE: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
   - 
     name: cowsay
-    type: container
-    image: docker/whalesay:latest
-    command: [sh, -c]
-    args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
         MESSAGE:
           path: /tmp/hello_world.txt
   - 
     name: print-message
-    type: container
     inputs:
       artifacts:
         MESSAGE:
           path: /tmp/message
-    image: alpine:latest
-    command: [sh, -c]
-    args: ["cat /tmp/message; sleep 999999"]
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/message; sleep 999999"]
