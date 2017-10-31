@@ -25,15 +25,6 @@ const (
 	TypeContainer = "container"
 )
 
-// Workflow Status
-const (
-	WorkflowStatusCreated  = "Created"
-	WorkflowStatusRunning  = "Running"
-	WorkflowStatusSuccess  = "Success"
-	WorkflowStatusFailed   = "Failed"
-	WorkflowStatusCanceled = "Canceled"
-)
-
 // Create a Rest client with the new CRD Schema
 var SchemeGroupVersion = schema.GroupVersion{Group: CRDGroup, Version: CRDVersion}
 
@@ -111,12 +102,12 @@ type OutputParameter struct {
 
 type Item interface{}
 
-// WorkflowStep is either a template ref, an inlined container, with added flags
+// WorkflowStep is a template ref
 type WorkflowStep struct {
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
-	Flags     []string  `json:"flags,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`
+	When      string    `json:"when,omitempty"`
 }
 
 // Arguments to a template
@@ -145,6 +136,7 @@ const (
 	NodeStatusPending   = "Pending"
 	NodeStatusRunning   = "Running"
 	NodeStatusSucceeded = "Succeeded"
+	NodeStatusSkipped   = "Skipped"
 	NodeStatusFailed    = "Failed"
 	NodeStatusError     = "Error"
 )
@@ -154,11 +146,14 @@ func (n NodeStatus) String() string {
 }
 
 func (n NodeStatus) Completed() bool {
-	return n.Status == NodeStatusSucceeded || n.Status == NodeStatusFailed || n.Status == NodeStatusError
+	return n.Status == NodeStatusSucceeded ||
+		n.Status == NodeStatusFailed ||
+		n.Status == NodeStatusError ||
+		n.Status == NodeStatusSkipped
 }
 
 func (n NodeStatus) Successful() bool {
-	return n.Status == NodeStatusSucceeded
+	return n.Status == NodeStatusSucceeded || n.Status == NodeStatusSkipped
 }
 
 type S3Bucket struct {

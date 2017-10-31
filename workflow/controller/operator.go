@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -191,7 +192,17 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	for stepName, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", nodeName, stepName)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
-		err := woc.executeTemplate(step.Template, step.Arguments, childNodeName)
+
+		proceed, err := shouldExecute(step.When)
+		if err != nil {
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			return err
+		}
+		if !proceed {
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusSkipped)
+			continue
+		}
+		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
 			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 			return err
@@ -214,6 +225,27 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
 	woc.log.Infof("Step group node %s successful", nodeID)
 	return nil
+}
+
+var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
+
+// shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
+func shouldExecute(when string) (bool, error) {
+	parts := whenExpression.FindStringSubmatch(when)
+	if len(parts) == 0 {
+		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression %s", when)
+	}
+	var1 := strings.TrimSpace(parts[1])
+	operator := parts[2]
+	var2 := strings.TrimSpace(parts[3])
+	switch operator {
+	case "==":
+		return var1 == var2, nil
+	case "!=":
+		return var1 != var2, nil
+	default:
+		return false, errors.Errorf(errors.CodeBadRequest, "Unknown operator: %s", operator)
+	}
 }
 
 func (woc *wfOperationCtx) expandStepGroup(stepGroup map[string]wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {

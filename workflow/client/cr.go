@@ -66,20 +66,3 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 	}
 	return crd, nil
 }
-
-// func WaitWorkflowCompletion(wfClient *rest.RESTClient, name string) error {
-// 	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-// 		var wf wfv1.Workflow
-// 		err := wfClient.Get().
-// 			Resource(wfv1.CRDPlural).
-// 			Namespace(apiv1.NamespaceDefault).
-// 			Name(name).
-// 			Do().Into(&wf)
-
-// 		if err == nil && wf.Status == wfv1.WorkflowStatusFailed {
-// 			return true, nil
-// 		}
-
-// 		return false, err
-// 	})
-// }

@@ -9,10 +9,7 @@ import (
 )
 
 func (wf *Workflow) Completed() bool {
-	status := wf.Status.Nodes[wf.NodeID(wf.ObjectMeta.Name)].Status
-	return status == WorkflowStatusSuccess ||
-		status == WorkflowStatusFailed ||
-		status == WorkflowStatusCanceled
+	return wf.Status.Nodes[wf.NodeID(wf.ObjectMeta.Name)].Completed()
 }
 
 func (wf *Workflow) DeepCopyObject() runtime.Object {
