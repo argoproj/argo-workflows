@@ -28,6 +28,10 @@ type wfOperationCtx struct {
 	// (e.g. workflow failed in step 1 of 3 but has finalizer steps)
 }
 
+// wfScope contains the current scope of variables available when iterating steps in a workflow
+type wfScope struct {
+}
+
 // operateWorkflow is the operator logic of a workflow
 // It evaluates the current state of the workflow and decides how to proceed down the execution path
 func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
@@ -91,69 +95,32 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		}
 	}
 
-	switch tmpl.Type {
-	case wfv1.TypeContainer:
+	if tmpl.Container != nil {
 		if ok {
 			// There's already a node entry for the container. This means the container was already
 			// scheduled (or had a create pod error). Nothing to more to do with this node.
 			return nil
 		}
 		// We have not yet created the pod
-		status := wfv1.NodeStatusRunning
-		err := woc.createWorkflowPod(nodeName, tmpl, args)
-		if err != nil {
-			// TODO: may need to query pod status if we hit already exists error
-			status = wfv1.NodeStatusError
-		}
-		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
-		woc.wf.Status.Nodes[nodeID] = node
-		woc.log.Infof("Initialized container node %v", node)
-		woc.updated = true
-		return err
+		return woc.executeContainer(nodeName, tmpl)
 
-	case wfv1.TypeWorkflow:
+	} else if len(tmpl.Steps) > 0 {
 		if !ok {
-			node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusRunning}
+			node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
 			woc.log.Infof("Initialized workflow node %v", node)
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.updated = true
 		}
-		for i, stepGroup := range tmpl.Steps {
-			sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-			err := woc.executeStepGroup(stepGroup, sgNodeName)
-			if err != nil {
-				node.Status = wfv1.NodeStatusError
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
-				return err
-			}
-			sgNodeID := woc.wf.NodeID(sgNodeName)
-			if !woc.wf.Status.Nodes[sgNodeID].Completed() {
-				woc.log.Infof("Workflow step group node %v not yet completed", woc.wf.Status.Nodes[sgNodeID])
-				return nil
-			}
-			if !woc.wf.Status.Nodes[sgNodeID].Successful() {
-				woc.log.Infof("Workflow step group %v not successful", woc.wf.Status.Nodes[sgNodeID])
-				node.Status = wfv1.NodeStatusFailed
-				woc.wf.Status.Nodes[nodeID] = node
-				woc.updated = true
-				return nil
-			}
-		}
-		node.Status = wfv1.NodeStatusSucceeded
-		woc.wf.Status.Nodes[nodeID] = node
-		woc.updated = true
-		return nil
+		return woc.executeSteps(nodeName, tmpl.Steps)
 
-	default:
-		woc.wf.Status.Nodes[nodeID] = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: wfv1.NodeStatusError}
-		woc.updated = true
-		return errors.Errorf("Unknown type: %s", tmpl.Type)
+	} else if tmpl.Script != nil {
+		return woc.executeScript(nodeName, tmpl)
 	}
+
+	woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+	return errors.Errorf("Template '%s' missing specification", tmpl.Name)
 }
 
 // markNodeError marks a node with the given status, creating the node if necessary
-func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) {
+func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) *wfv1.NodeStatus {
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if !ok {
@@ -163,9 +130,46 @@ func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) {
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.updated = true
+	return &node
 }
 
-func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, nodeName string) error {
+func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
+	err := woc.createWorkflowPod(nodeName, tmpl)
+	if err != nil {
+		// TODO: may need to query pod status if we hit already exists error
+		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		return err
+	}
+	node := woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+	woc.log.Infof("Initialized container node %v", node)
+	return nil
+}
+
+func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1.WorkflowStep) error {
+	var scope wfScope
+	for i, stepGroup := range steps {
+		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
+		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
+		if err != nil {
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			return err
+		}
+		sgNodeID := woc.wf.NodeID(sgNodeName)
+		if !woc.wf.Status.Nodes[sgNodeID].Completed() {
+			woc.log.Infof("Workflow step group node %v not yet completed", woc.wf.Status.Nodes[sgNodeID])
+			return nil
+		}
+		if !woc.wf.Status.Nodes[sgNodeID].Successful() {
+			woc.log.Infof("Workflow step group %v not successful", woc.wf.Status.Nodes[sgNodeID])
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
+			return nil
+		}
+	}
+	woc.markNodeStatus(nodeName, wfv1.NodeStatusSucceeded)
+	return nil
+}
+
+func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, nodeName string, scope *wfScope) error {
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
@@ -173,10 +177,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		return nil
 	}
 	if !ok {
-		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: "Running"}
-		woc.wf.Status.Nodes[nodeID] = node
+		node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
 		woc.log.Infof("Initializing step group node %v", node)
-		woc.updated = true
 	}
 	stepGroup, err := woc.expandStepGroup(stepGroup)
 	if err != nil {
@@ -191,9 +193,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 		err := woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
-			node.Status = wfv1.NodeStatusError
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.updated = true
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 			return err
 		}
 	}
@@ -203,12 +203,10 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 			return nil
 		}
 	}
-	// All children completed. Determine status
+	// All children completed. Determine step group status
 	for _, childNodeID := range childNodeIDs {
 		if !woc.wf.Status.Nodes[childNodeID].Successful() {
-			node.Status = wfv1.NodeStatusFailed
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.updated = true
+			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
 			woc.log.Infof("Step group node %s deemed failed due to failure of %s", nodeID, childNodeID)
 			return nil
 		}
@@ -283,6 +281,18 @@ func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (
 	return expandedStep, nil
 }
 
+func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {
+	err := woc.createWorkflowPod(nodeName, tmpl)
+	if err != nil {
+		// TODO: may need to query pod status if we hit already exists error
+		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		return err
+	}
+	node := woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+	woc.log.Infof("Initialized container node %v", node)
+	return nil
+}
+
 // substituteArgs returns a new copy of the template with all input parameters substituted
 func substituteArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
@@ -293,6 +303,10 @@ func substituteArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, e
 	replaceMap := make(map[string]interface{})
 	for argName, argVal := range args {
 		if strings.HasPrefix(argName, "parameters.") {
+			_, ok := argVal.(string)
+			if !ok {
+				return nil, errors.Errorf("argument '%s' expected to be string. received: %s", argName, argVal)
+			}
 			replaceMap["inputs."+argName] = argVal
 		}
 	}

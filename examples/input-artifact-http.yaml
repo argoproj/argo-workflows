@@ -6,13 +6,13 @@ spec:
   entrypoint: http-artifact-example
   templates:
   - name: http-artifact-example
-    type: container
     inputs:
       artifacts:
         CODE:
           path: /bin/foo
           http:
             url: https://mycompany.com/files/foo
-    image: alpine:latest
-    command: [sh, -c]
-    args: ["/bin/foo"]
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["/bin/foo"]

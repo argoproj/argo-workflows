@@ -6,7 +6,7 @@ spec:
   entrypoint: cowsay
   templates:
   - name: cowsay
-    type: container
-    image: docker/whalesay:latest
-    command: [cowsay]
-    args: ["hello world"]
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]

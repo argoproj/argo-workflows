@@ -6,7 +6,6 @@ spec:
   entrypoint: input-artifact-s3-example
   templates:
   - name: input-artifact-s3-example
-    type: container
     inputs:
       artifacts:
         CODE:
@@ -21,6 +20,7 @@ spec:
             secretKeySecret:
               name: my-s3-credentials
               key: secretKey
-    image: debian:latest
-    command: [sh, -c]
-    args: ["cd /src && ls -l"]
+    container:
+      image: debian:latest
+      command: [sh, -c]
+      args: ["cd /src && ls -l"]

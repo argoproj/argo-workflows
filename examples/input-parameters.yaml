@@ -8,10 +8,10 @@ spec:
     parameters.MESSAGE: "hello world"
   templates:
   - name: cowsay
-    type: container
     inputs:
       parameters:
         MESSAGE:
-    image: docker/whalesay:latest
-    command: [cowsay]
-    args: ["{{inputs.parameters.MESSAGE}}"]
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.MESSAGE}}"]
