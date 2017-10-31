@@ -7,7 +7,6 @@ spec:
   templates:
   - 
     name: loop-example
-    type: workflow
     steps:
     - COWSAY:
         template: cowsay
@@ -18,10 +17,10 @@ spec:
         - goodbye world
   - 
     name: cowsay
-    type: container
     inputs:
       parameters:
         MESSAGE:
-    image: docker/whalesay:latest
-    command: [cowsay]
-    args: ["{{inputs.parameters.MESSAGE}}"]
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.MESSAGE}}"]

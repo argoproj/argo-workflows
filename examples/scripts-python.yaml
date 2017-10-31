@@ -33,4 +33,3 @@ spec:
       image: alpine:latest
       command: [sh, -c]
       args: ["echo {{inputs.parameters.MESSAGE}}"]
-

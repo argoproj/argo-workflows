@@ -79,7 +79,7 @@ func envFromField(envVarName, fieldPath string) corev1.EnvVar {
 	}
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template, args wfv1.Arguments) error {
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) error {
 	woc.log.Infof("Creating Pod: %s", nodeName)
 	initCtr, err := woc.newInitContainer(tmpl)
 	if err != nil {
@@ -90,7 +90,18 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		return err
 	}
 	mainCtrTmpl := tmpl.DeepCopy()
-	mainCtrTmpl.Name = common.MainContainerName
+	var mainCtr corev1.Container
+	if mainCtrTmpl.Container != nil {
+		mainCtr = *mainCtrTmpl.Container
+	} else {
+		// script case
+		mainCtr = corev1.Container{
+			Image:   mainCtrTmpl.Script.Image,
+			Command: mainCtrTmpl.Script.Command,
+			Args:    []string{common.ScriptTemplateSourcePath},
+		}
+	}
+	mainCtr.Name = common.MainContainerName
 	t := true
 
 	pod := corev1.Pod{
@@ -120,7 +131,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			},
 			Containers: []corev1.Container{
 				*waitCtr,
-				*mainCtrTmpl.Container,
+				mainCtr,
 			},
 			Volumes: []corev1.Volume{
 				volumePodMetadata,
@@ -133,6 +144,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		return err
 	}
 	woc.addOutputArtifactsRepoMetaData(&pod, mainCtrTmpl)
+
+	if tmpl.Script != nil {
+		addScriptVolume(&pod)
+	}
 
 	// Set the container template JSON in pod annotations, which executor will look to for artifact
 	tmplBytes, err := json.Marshal(mainCtrTmpl)
@@ -153,7 +168,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		woc.log.Infof("Failed to create pod %s: %v\n", nodeName, err)
 		return errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %v\n", created)
+	woc.log.Infof("Created pod: %s", created.Name)
 	return nil
 }
 
@@ -301,5 +316,61 @@ func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl 
 			}
 		}
 		tmpl.Outputs.Artifacts[artName] = art
+	}
+}
+
+// addScriptVolume sets up the shared volume between init container and main container
+// containing the template script source code
+func addScriptVolume(pod *corev1.Pod) {
+	volName := "script"
+	scriptVol := corev1.Volume{
+		Name: volName,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, scriptVol)
+
+	for i, initCtr := range pod.Spec.InitContainers {
+		if initCtr.Name == common.InitContainerName {
+			volMount := corev1.VolumeMount{
+				Name:      volName,
+				MountPath: common.ScriptTemplateEmptyDir,
+			}
+			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
+
+			// HACK: debug purposes. sleep to experiment with init container artifacts
+			initCtr.Command = []string{"sh", "-c"}
+			initCtr.Args = []string{"sleep 999999; echo done"}
+
+			pod.Spec.InitContainers[i] = initCtr
+			break
+		}
+	}
+	found := false
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.MainContainerName {
+			volMount := corev1.VolumeMount{
+				Name:      volName,
+				MountPath: common.ScriptTemplateEmptyDir,
+			}
+			if ctr.VolumeMounts == nil {
+				ctr.VolumeMounts = []corev1.VolumeMount{volMount}
+			} else {
+				ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
+			}
+			pod.Spec.Containers[i] = ctr
+			found = true
+			break
+		}
+		if ctr.Name == common.WaitContainerName {
+			// HACK: debug purposes. sleep to experiment with wait container artifacts
+			ctr.Command = []string{"sh", "-c"}
+			ctr.Args = []string{"sleep 999999; echo done"}
+			pod.Spec.Containers[i] = ctr
+		}
+	}
+	if !found {
+		panic("asdf")
 	}
 }

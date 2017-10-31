@@ -47,6 +47,11 @@ const (
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
 
+	// ScriptTemplateEmptyDir is the path of the emptydir which will be shared between init/main container for script templates
+	ScriptTemplateEmptyDir = "/argo/script"
+	// ScriptTemplateSourcePath is the path which init will write the source file to and the main container will execute
+	ScriptTemplateSourcePath = "/argo/script/source"
+
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarHostIP contains the host IP which the container is executing on.

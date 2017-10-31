@@ -58,15 +58,18 @@ type WorkflowSpec struct {
 }
 
 type Template struct {
-	Type    string  `json:"type,omitempty"`
+	Name    string  `json:"name"`
 	Inputs  Inputs  `json:"inputs,omitempty"`
 	Outputs Outputs `json:"outputs,omitempty"`
 
 	// Workflow fields
 	Steps []map[string]WorkflowStep `json:"steps,omitempty"`
 
-	// Container fields
-	*corev1.Container
+	// Container
+	Container *corev1.Container `json:"container,omitempty"`
+
+	// Script
+	Script *Script `json:"script,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -117,7 +120,7 @@ type WorkflowStep struct {
 }
 
 // Arguments to a template
-type Arguments map[string]string
+type Arguments map[string]interface{}
 
 type WorkflowStatus struct {
 	Phase string                `json:"phase"`
@@ -186,4 +189,10 @@ type ArtifactDestination struct {
 	S3 *S3ArtifactDestination `json:"s3,omitempty"`
 	// Future artifact destinations go here
 	// * artifactory, nexus
+}
+
+type Script struct {
+	Image   string   `json:"image"`
+	Command []string `json:"command"`
+	Source  string   `json:"source"`
 }
