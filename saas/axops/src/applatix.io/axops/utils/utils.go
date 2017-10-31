@@ -119,6 +119,7 @@ var NullMapArray = []axdb.AXMap{}
 
 var axClusterId, _ = os.LookupEnv("AX_CLUSTER")
 var axRegion, _ = os.LookupEnv("AX_REGION")
+var axFeaturesSet, _ = os.LookupEnv("ARGO_FEATURES_SET")
 
 //var axPublicIP, _ = os.LookupEnv("AX_CLUSTER_PUBLIC_IP")
 
@@ -128,6 +129,13 @@ func GetClusterId() string {
 
 func GetRegion() string {
 	return axRegion
+}
+
+func GetFeaturesSet() string {
+	if len(axFeaturesSet) == 0{
+		return "full"
+	}
+	return axFeaturesSet
 }
 
 func GetEntityID() string {
