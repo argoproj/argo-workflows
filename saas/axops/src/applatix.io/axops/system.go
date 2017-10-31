@@ -140,6 +140,7 @@ type SystemVersion struct {
 	Namespace string `json:"namespace"`
 	Version   string `json:"version"`
 	ClusterID string `json:"cluster_id"`
+	FeaturesSet string `json:"features_set"`
 }
 
 // @Title GetSystemVersion
@@ -153,6 +154,7 @@ func GetSystemVersion() gin.HandlerFunc {
 		Namespace: common.GetAxNameSpace(),
 		Version:   utils.Version,
 		ClusterID: utils.GetClusterId(),
+		FeaturesSet: utils.GetFeaturesSet(),
 	}
 	return func(c *gin.Context) {
 		c.JSON(axerror.REST_STATUS_OK, systemVersion)

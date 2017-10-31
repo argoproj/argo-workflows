@@ -11,6 +11,7 @@ import (
 
 	"applatix.io/axerror"
 	"applatix.io/common"
+	"applatix.io/axops/utils"
 )
 
 // TemplateBuildContext is a context for template building
@@ -194,6 +195,17 @@ func (ctx *TemplateBuildContext) ParseFile(body []byte, filePath string) *axerro
 		templateName := tmpl.GetName()
 		if _, exists := ctx.Templates[templateName]; exists {
 			axErr := axerror.ERR_API_INVALID_PARAM.NewWithMessagef("Duplicate template name: %s", templateName)
+			ctx.MarkProcessed(tmpl, axErr)
+			if !ctx.IgnoreErrors {
+				return axErr
+			}
+			if common.DebugLog != nil {
+				common.DebugLog.Println(axErr)
+			}
+			continue
+		}
+		if utils.GetFeaturesSet() == "limited" && tmpl.GetType() == "deployment"{
+			axErr := axerror.ERR_API_INVALID_PARAM.NewWithMessagef("Deployment feature is turned off")
 			ctx.MarkProcessed(tmpl, axErr)
 			if !ctx.IgnoreErrors {
 				return axErr

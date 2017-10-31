@@ -57,6 +57,8 @@ spec:
                     value: "1000"
                   - name: ARGO_DATA_BUCKET_NAME
                     value: "${ARGO_DATA_BUCKET_NAME}"
+                  - name: ARGO_FEATURES_SET
+                    value: "limited"
                 resources:
                     requests:
                         cpu: 100m
