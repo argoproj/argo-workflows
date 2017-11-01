@@ -46,9 +46,10 @@ type WorkflowList struct {
 }
 
 type WorkflowSpec struct {
-	Templates  []Template `json:"templates"`
-	Entrypoint string     `json:"entrypoint"`
-	Arguments  Arguments  `json:"arguments,omitempty"`
+	Templates  []Template      `json:"templates"`
+	Entrypoint string          `json:"entrypoint"`
+	Arguments  Arguments       `json:"arguments,omitempty"`
+	Volumes    []corev1.Volume `json:"volumes,omitempty"`
 }
 
 type Template struct {
