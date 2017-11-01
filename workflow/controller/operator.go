@@ -31,6 +31,7 @@ type wfOperationCtx struct {
 
 // wfScope contains the current scope of variables available when iterating steps in a workflow
 type wfScope struct {
+	scope map[string]interface{}
 }
 
 // operateWorkflow is the operator logic of a workflow
@@ -56,9 +57,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		if woc.updated {
 			_, err := wfc.WorkflowClient.UpdateWorkflow(woc.wf)
 			if err != nil {
-				woc.log.Errorf("ERROR updating status: %v", err)
+				woc.log.Errorf("Error updating %s status: %v", woc.wf.ObjectMeta.SelfLink, err)
 			} else {
-				woc.log.Infof("UPDATED: %#v", woc.wf.Status)
+				woc.log.Infof("Workflow %s updated", woc.wf.ObjectMeta.SelfLink)
 			}
 		}
 	}()
@@ -170,6 +171,9 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1
 	return nil
 }
 
+// executeStepGroup examines a map of parallel workflows steps and executes them in parallel.
+// It first expands any `withItem` clauses, then evaluates any `when` expressions for each step
+// to decide if execution is required.
 func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, nodeName string, scope *wfScope) error {
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
@@ -187,12 +191,15 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		return err
 	}
 
+	nodeIDtoStepName := make(map[string]string)
+
 	childNodeIDs := make([]string, 0)
 	// First kick off all parallel steps in the group
 	for stepName, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", nodeName, stepName)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 
+		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
 			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
@@ -214,12 +221,22 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 			return nil
 		}
 	}
-	// All children completed. Determine step group status
+	// All children completed. Determine step group status as a whole, and add any outputs to the scope
 	for _, childNodeID := range childNodeIDs {
-		if !woc.wf.Status.Nodes[childNodeID].Successful() {
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		if !childNode.Successful() {
 			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
 			woc.log.Infof("Step group node %s deemed failed due to failure of %s", nodeID, childNodeID)
 			return nil
+		}
+		stepName := nodeIDtoStepName[childNodeID]
+		for outName, outParam := range childNode.Outputs.Parameters {
+			key := fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, outName)
+			scope.addParamToScope(key, outParam.Value)
+		}
+		for outName, outArt := range childNode.Outputs.Artifacts {
+			key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", stepName, outName)
+			scope.addArtifactToScope(key, outArt)
 		}
 	}
 	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
@@ -231,9 +248,12 @@ var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
 
 // shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
 func shouldExecute(when string) (bool, error) {
+	if when == "" {
+		return true, nil
+	}
 	parts := whenExpression.FindStringSubmatch(when)
 	if len(parts) == 0 {
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression %s", when)
+		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression: %s", when)
 	}
 	var1 := strings.TrimSpace(parts[1])
 	operator := parts[2]
@@ -350,4 +370,32 @@ func substituteArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, e
 		return nil, errors.InternalWrapError(err)
 	}
 	return &newTmpl, nil
+}
+
+func (wfs *wfScope) addParamToScope(key, val string) {
+	wfs.scope[key] = val
+}
+
+func (wfs *wfScope) addArtifactToScope(key string, artifact wfv1.OutputArtifact) {
+	wfs.scope[key] = artifact
+}
+
+func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
+	val, ok := wfs.scope[v]
+	if !ok {
+		return nil, errors.Errorf("Unable to resolve: {{%s}}", v)
+	}
+	return val, nil
+}
+
+func (wfs *wfScope) resolveStringVar(v string) (string, error) {
+	val, err := wfs.resolveVar(v)
+	if err != nil {
+		return "", err
+	}
+	valStr, ok := val.(string)
+	if !ok {
+		return "", errors.Errorf("Variable {{%s}} is not a string", v)
+	}
+	return valStr, nil
 }

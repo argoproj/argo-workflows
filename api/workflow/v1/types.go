@@ -19,10 +19,13 @@ const (
 	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 
-// Workflow types
+// Workflow and node statuses
 const (
-	TypeWorkflow  = "workflow"
-	TypeContainer = "container"
+	NodeStatusRunning   = "Running"
+	NodeStatusSucceeded = "Succeeded"
+	NodeStatusSkipped   = "Skipped"
+	NodeStatusFailed    = "Failed"
+	NodeStatusError     = "Error"
 )
 
 // Create a Rest client with the new CRD Schema
@@ -85,6 +88,9 @@ type InputArtifact struct {
 type Outputs struct {
 	Artifacts  OutputArtifacts  `json:"artifacts,omitempty"`
 	Parameters OutputParameters `json:"parameters,omitempty"`
+	// TODO:
+	// - Result (output value from a script template)
+	// - Logs (log artifact(s) from the container)
 }
 
 type OutputArtifacts map[string]OutputArtifact
@@ -97,10 +103,9 @@ type OutputArtifact struct {
 type OutputParameters map[string]OutputParameter
 
 type OutputParameter struct {
-	Path string `json:"path,omitempty"`
+	Path  string `json:"path,omitempty"`
+	Value string `json:"value,omitempty"`
 }
-
-type Item interface{}
 
 // WorkflowStep is a template ref
 type WorkflowStep struct {
@@ -108,7 +113,11 @@ type WorkflowStep struct {
 	Arguments Arguments `json:"arguments,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`
 	When      string    `json:"when,omitempty"`
+	Timeout   string    `json:"timeout,omitempty"`
 }
+
+// Item expands a single workflow step into multiple parallel steps
+type Item interface{}
 
 // Arguments to a template
 type Arguments map[string]interface{}
@@ -125,26 +134,19 @@ type NodeTree struct {
 }
 
 type NodeStatus struct {
-	ID      string  `json:"id"`
-	Name    string  `json:"name"`
-	Status  string  `json:"status"`
-	Outputs Outputs `json:"outputs"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Status string `json:"status"`
+	// Outputs captures output parameter values and artifact locations
+	Outputs Outputs `json:"outputs,omitempty"`
 	//ReturnCode *int                    `json:"returnCode"`
 }
-
-const (
-	NodeStatusPending   = "Pending"
-	NodeStatusRunning   = "Running"
-	NodeStatusSucceeded = "Succeeded"
-	NodeStatusSkipped   = "Skipped"
-	NodeStatusFailed    = "Failed"
-	NodeStatusError     = "Error"
-)
 
 func (n NodeStatus) String() string {
 	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
 }
 
+// Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
 	return n.Status == NodeStatusSucceeded ||
 		n.Status == NodeStatusFailed ||
@@ -186,6 +188,7 @@ type ArtifactDestination struct {
 	// * artifactory, nexus
 }
 
+// Script is a template subtype to enable scripting through code steps
 type Script struct {
 	Image   string   `json:"image"`
 	Command []string `json:"command"`

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -100,36 +101,7 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 			log.Infof("Processing wf: %v", wf.ObjectMeta.SelfLink)
 			wfc.operateWorkflow(wf)
 		case pod := <-wfc.podUpdates:
-			if pod.Status.Phase != "Succeeded" && pod.Status.Phase != "Failed" {
-				continue
-			}
-			log.Infof("Processing completed pod: %v", pod.ObjectMeta.SelfLink)
-			workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
-			if !ok {
-				continue
-			}
-			wf, err := wfc.WorkflowClient.GetWorkflow(workflowName)
-			if err != nil {
-				log.Warnf("Failed to find workflow %s %+v", workflowName, err)
-				continue
-			}
-			node, ok := wf.Status.Nodes[pod.Name]
-			if !ok {
-				log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
-				continue
-			}
-			if string(pod.Status.Phase) == node.Status {
-				log.Infof("pod %s already marked %s", pod.Name, node.Status)
-				continue
-			}
-			log.Infof("Updating pod %s status %s -> %s", pod.Name, node.Status, pod.Status.Phase)
-			node.Status = string(pod.Status.Phase)
-			wf.Status.Nodes[pod.Name] = node
-			_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
-			if err != nil {
-				log.Infof("Failed to update %s status: %+v", pod.Name, err)
-			}
-			log.Infof("Updated %v", wf.Status.Nodes)
+			wfc.handlePodUpdate(pod)
 		}
 	}
 
@@ -200,18 +172,18 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				log.Infof("[CONTROLLER] WF Add %s", wf.ObjectMeta.SelfLink)
+				log.Infof("WF Add %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldWf := old.(*wfv1.Workflow)
 				newWf := new.(*wfv1.Workflow)
-				log.Infof("[CONTROLLER] WF Update %s", newWf.ObjectMeta.SelfLink)
+				log.Infof("WF Update %s", newWf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- newWf
 			},
 			DeleteFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				log.Infof("[CONTROLLER] WF Delete %s", wf.ObjectMeta.SelfLink)
+				log.Infof("WF Delete %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 		})
@@ -243,22 +215,76 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				log.Infof("[CONTROLLER] Pod Added%s", pod.ObjectMeta.SelfLink)
+				log.Infof("Pod Added %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldPod := old.(*apiv1.Pod)
 				newPod := new.(*apiv1.Pod)
-				log.Infof("[CONTROLLER] Pod Updated %s", newPod.ObjectMeta.SelfLink)
+				log.Infof("Pod Updated %s", newPod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- newPod
 			},
 			DeleteFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				log.Infof("[CONTROLLER] Pod Deleted%s", pod.ObjectMeta.SelfLink)
+				log.Infof("Pod Deleted %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 		})
 
 	go controller.Run(ctx.Done())
 	return controller, nil
+}
+
+func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
+	if pod.Status.Phase != apiv1.PodSucceeded && pod.Status.Phase != apiv1.PodFailed {
+		// Ignore pod updates for running pods
+		return
+	}
+	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
+	if !ok {
+		return
+	}
+	log.Infof("Processing completed pod: %v", pod.ObjectMeta.SelfLink)
+	wf, err := wfc.WorkflowClient.GetWorkflow(workflowName)
+	if err != nil {
+		log.Warnf("Failed to find workflow %s %+v", workflowName, err)
+		return
+	}
+	node, ok := wf.Status.Nodes[pod.Name]
+	if !ok {
+		log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
+		return
+	}
+	if node.Completed() {
+		log.Infof("node %v already marked completed (%s)", node, node.Status)
+		return
+	}
+	var newStatus string
+	switch pod.Status.Phase {
+	case apiv1.PodSucceeded:
+		newStatus = wfv1.NodeStatusSucceeded
+	case apiv1.PodFailed:
+		newStatus = wfv1.NodeStatusFailed
+	default:
+		newStatus = wfv1.NodeStatusError
+	}
+	tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
+	var tmpl wfv1.Template
+	err = json.Unmarshal([]byte(tmplStr), &tmpl)
+	if err != nil {
+		log.Errorf("Failed to unmarshal %s template from pod annotation: %v", pod.Name, err)
+		newStatus = wfv1.NodeStatusError
+	} else {
+		node.Outputs = tmpl.Outputs
+	}
+	log.Infof("Updating node %s status %s -> %s", node, node.Status, newStatus)
+	node.Status = newStatus
+	wf.Status.Nodes[pod.Name] = node
+	_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
+	if err != nil {
+		log.Errorf("Failed to update %s status: %+v", pod.Name, err)
+		// if we fail to update the CRD state, we will need to rely on resync to catch up
+		return
+	}
+	log.Infof("Updated %v", node)
 }
