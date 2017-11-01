@@ -81,10 +81,6 @@ func envFromField(envVarName, fieldPath string) corev1.EnvVar {
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) error {
 	woc.log.Infof("Creating Pod: %s", nodeName)
-	initCtr, err := woc.newInitContainer(tmpl)
-	if err != nil {
-		return err
-	}
 	waitCtr, err := woc.newWaitContainer(tmpl)
 	if err != nil {
 		return err
@@ -126,9 +122,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{
-				*initCtr,
-			},
 			Containers: []corev1.Container{
 				*waitCtr,
 				mainCtr,
@@ -139,6 +132,18 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			},
 		},
 	}
+
+	// Add init container only if it needs input artifacts
+	if len(mainCtrTmpl.Inputs.Artifacts) > 0 {
+		initCtr := woc.newInitContainer(tmpl)
+		pod.Spec.InitContainers = []corev1.Container{initCtr}
+	}
+
+	err = woc.addVolumeReferences(&pod, mainCtrTmpl)
+	if err != nil {
+		return err
+	}
+
 	err = addInputArtifactsVolumes(&pod, mainCtrTmpl)
 	if err != nil {
 		return err
@@ -172,7 +177,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	return nil
 }
 
-func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
+func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) corev1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; find /argo; echo done", common.PodMetadataAnnotationsPath)
@@ -180,7 +185,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) (*corev1.Contai
 	ctr.VolumeMounts = []corev1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	return ctr, nil
+	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
@@ -215,6 +220,30 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *corev
 		},
 	}
 	return &exec
+}
+
+// addVolumeReferences adds any volumeMounts that a container referencing, to the pod spec
+func (woc *wfOperationCtx) addVolumeReferences(pod *corev1.Pod, tmpl *wfv1.Template) error {
+	for _, volMnt := range tmpl.Container.VolumeMounts {
+		vol := getVolByName(volMnt.Name, woc.wf.Spec.Volumes)
+		if vol == nil {
+			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
+		}
+		if len(pod.Spec.Volumes) == 0 {
+			pod.Spec.Volumes = make([]corev1.Volume, 0)
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
+	}
+	return nil
+}
+
+func getVolByName(name string, vols []corev1.Volume) *corev1.Volume {
+	for _, vol := range vols {
+		if vol.Name == name {
+			return &vol
+		}
+	}
+	return nil
 }
 
 // addInputArtifactVolumes sets up the artifacts volume to the pod if the user's container requires input artifacts.
