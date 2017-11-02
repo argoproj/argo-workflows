@@ -26,19 +26,25 @@ export const permissions = [
      * If no '*' is added to the path - We will hard check for the exact path.
      */
     { path: '/app/timeline/*', permission: [] },
-    { path: '/app/policies/*', permission: ['super_admin', 'admin', 'developer'] },
+    { path: '/app/policies/*', permission: ['super_admin', 'admin', 'developer'], featuresSets: ['full', 'limited_aws', 'limited'] },
     { path: '/app/service-catalog/*', permission: ['super_admin', 'admin', 'developer'] },
-    { path: 'app/cashboard', permission: ['super_admin', 'admin', 'developer'] },
+    { path: 'app/cashboard', permission: ['super_admin', 'admin', 'developer'], featuresSets: ['full'] },
     { path: '/app/performance', permission: ['super_admin', 'admin', 'developer'] },
     { path: '/app/hosts', permission: ['super_admin', 'admin', 'developer'] },
     { path: '/app/metrics/*', permission: ['super_admin', 'admin', 'developer'] },
+    { path: '/app/applications/*', permission: [], featuresSets: ['full'] },
+    { path: '/app/volumes/*', permission: [], featuresSets: ['full', 'limited_aws'] },
+    { path: '/app/integrations/*', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
+    { path: '/app/config-management/*', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
+    { path: '/app/settings/system', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
+    { path: '/app/ax-catalog/*', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
     /**
      * Administrative workflows are only open to admin user group
      */
     { path: '/app/source-control/*', permission: ['super_admin', 'admin'] },
     { path: '/app/notification/*', permission: ['super_admin', 'admin'] },
     { path: '/app/container-registry/*', permission: ['super_admin', 'admin'] },
-    { path: '/app/user-management/*', permission: ['super_admin', 'admin'] },
+    { path: '/app/user-management/*', permission: ['super_admin', 'admin'], featuresSets: ['full', 'limited_aws', 'limited'] },
     { path: '/app/saml/*', permission: ['super_admin', 'admin'] },
-    { path: '/app/domain-management', permission: ['super_admin', 'admin'] }
+    { path: '/app/domain-management', permission: ['super_admin', 'admin'], featuresSets: ['full'] }
 ];

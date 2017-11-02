@@ -5,6 +5,7 @@ export { BranchService } from './branch.service';
 export { CommitsService } from './commit.service';
 export { CookieService } from './cookie.service';
 export { EventsService } from './events.service';
+export { FeaturesSetsAccessControl } from './features-sets.service';
 export { GroupService } from './group.service';
 export { HostService } from './host.service';
 export { ImageService } from './image.service';
