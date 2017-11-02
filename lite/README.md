@@ -1,10 +1,8 @@
 # Argo Lite
 
-Argo Lite is a lightweight workflow engine that executes container-native workflows defined using [Argo YAML Domain-Specific Language (DSL)](https://argoproj.github.io/docs/yaml/dsl_reference_intro.html).  Argo Lite implements the same APIs as [Argo](https://github.com/argoproj/argo). This allows you to execute Argo Lite with both [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) and Argo UI. Currently, Argo Lite supports Docker and Kubernetes as the backend container execution engines.
+Argo Lite is a lightweight workflow engine that executes container-native workflows defined using [Argo YAML Domain-Specific Language (DSL)](https://argoproj.github.io/docs/yaml/dsl_reference_intro.html).  
+Argo Lite implements the same APIs as [Argo](https://github.com/argoproj/argo). This allows you to execute Argo Lite with both [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) and Argo UI. Currently, Argo Lite supports Docker and Kubernetes as the backend container execution engines.
 
-## Argo Lite will be released in mid-October
-
-Argo Lite is not yet fully tested and may crash under load. Early testing/contributions are very welcome.
 
 ## Why?
 
@@ -38,17 +36,13 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
 
 ###### Manually
 
-  -  Deploy Argo Lite on Minikube
+  -  Deploy Argo Lite on Minikube and get it's service URL to access the web UI
      
      ```
      $ curl -o /tmp/argo.yaml https://raw.githubusercontent.com/argoproj/argo/master/lite/argo-lite-minikube.yaml && kubectl create -f /tmp/argo.yaml
+     $ export ARGO_SVC_URL=`minikube service --url argo-lite`
+     $ minikube service argo-lite
      ```
-     
-  - Get Argo Lite's service URL 
-  
-    ```
-    $ export ARGO_SVC_URL=`minikube service --url argo-lite`
-    ```
     
 
   - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
@@ -56,26 +50,19 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     ```
     $ argo login --config argo-lite-kube $ARGO_SVC_URL --username test --password test
     ```
-    
-  - Access the Argo's GUI 
-    
-    ```
-    $ minikube service argo-lite
-    ```
+  
   
 ###### Using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
-  - Add the Argo's Helm repository 
+  - Add the Argo's Helm repository and install *agro-lite* chart 
+
     ```
     $ helm repo add argo https://argoproj.github.io/argo-helm
-    ```
-    
-  - Install *agro-lite* chart 
-    ```
     $ helm install argo/argo-lite
     ```
-
+   
  - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+    
     ```
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
     $ argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
@@ -91,6 +78,7 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     ```
    
   - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+    
     ```
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
     $ argo login --config argo-lite-kube <deployed Argo Lite service URL> --username test --password test
@@ -98,15 +86,14 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     
 #### Using [helm](https://docs.helm.sh/using_helm/#installing-helm):
 
-   - Add the Argo's Helm repository 
+   - Add the Argo's Helm repository and install argo-lite chart
+    
     ```
     $ helm repo add argo https://argoproj.github.io/argo-helm
+    $ helm install argo/argo-lite
+    
     ```
     
-  - Install *agro-lite* chart 
-    ```
-    $ helm install argo/argo-lite
-    ```
 
  - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
 
