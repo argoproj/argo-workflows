@@ -11,6 +11,8 @@ import (
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -63,15 +65,107 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			}
 		}
 	}()
-	if woc.wf.Status.Nodes == nil {
-		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
-		woc.updated = true
+
+	err := woc.createPVCs()
+	if err != nil {
+		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		woc.markNodeStatus(wf.ObjectMeta.Name, wfv1.NodeStatusError)
+		return
 	}
 
-	err := woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
+	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
+
+	err = woc.deletePVCs()
+	if err != nil {
+		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		woc.markNodeStatus(wf.ObjectMeta.Name, wfv1.NodeStatusError)
+		return
+	}
+}
+
+func (woc *wfOperationCtx) createPVCs() error {
+	if len(woc.wf.Spec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
+		// If we have already created the PVCs, then there is nothing to do.
+		// This will also handle the case where workflow has no volumeClaimTemplates.
+		return nil
+	}
+	if woc.wf.Completed() {
+		return nil
+	}
+	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
+		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wf.Spec.VolumeClaimTemplates))
+	}
+	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(apiv1.NamespaceDefault)
+	t := true
+	for i, pvcTmpl := range woc.wf.Spec.VolumeClaimTemplates {
+		if pvcTmpl.ObjectMeta.Name == "" {
+			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
+		}
+		pvcTmpl = *pvcTmpl.DeepCopy()
+		// PVC name will be <workflowname>-<volumeclaimtemplatename>
+		refName := pvcTmpl.ObjectMeta.Name
+		pvcName := fmt.Sprintf("%s-%s", woc.wf.ObjectMeta.Name, pvcTmpl.ObjectMeta.Name)
+		woc.log.Infof("Creating pvc %s", pvcName)
+		pvcTmpl.ObjectMeta.Name = pvcName
+		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
+			metav1.OwnerReference{
+				APIVersion:         wfv1.CRDFullName,
+				Kind:               wfv1.CRDKind,
+				Name:               woc.wf.ObjectMeta.Name,
+				UID:                woc.wf.ObjectMeta.UID,
+				BlockOwnerDeletion: &t,
+			},
+		}
+		pvc, err := pvcClient.Create(&pvcTmpl)
+		if err != nil {
+			woc.markNodeStatus(woc.wf.ObjectMeta.Name, wfv1.NodeStatusError)
+			return err
+		}
+		vol := apiv1.Volume{
+			Name: refName,
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvc.ObjectMeta.Name,
+				},
+			},
+		}
+		woc.wf.Status.PersistentVolumeClaims[i] = vol
+		woc.updated = true
+	}
+	return nil
+}
+
+func (woc *wfOperationCtx) deletePVCs() error {
+	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
+	if !woc.wf.Completed() || totalPVCs == 0 {
+		// workflow is not yet completed or PVC list already empty. nothing to do
+		return nil
+	}
+	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(apiv1.NamespaceDefault)
+	newPVClist := make([]apiv1.Volume, 0)
+	// Attempt to delete all PVCs. Record first error encountered
+	var firstErr error
+	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+		woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
+		err := pvcClient.Delete(pvc.PersistentVolumeClaim.ClaimName, nil)
+		if err != nil {
+			woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
+			newPVClist = append(newPVClist, pvc)
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+	if len(newPVClist) != totalPVCs {
+		// we were successful in deleting one ore more PVCs
+		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
+		woc.wf.Status.PersistentVolumeClaims = newPVClist
+		woc.updated = true
+	}
+	return firstErr
 }
 
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
@@ -123,6 +217,9 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 // markNodeError marks a node with the given status, creating the node if necessary
 func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) *wfv1.NodeStatus {
+	if woc.wf.Status.Nodes == nil {
+		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	}
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if !ok {
@@ -174,20 +271,20 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1
 // executeStepGroup examines a map of parallel workflows steps and executes them in parallel.
 // It first expands any `withItem` clauses, then evaluates any `when` expressions for each step
 // to decide if execution is required.
-func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, nodeName string, scope *wfScope) error {
-	nodeID := woc.wf.NodeID(nodeName)
+func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
+	nodeID := woc.wf.NodeID(sgNodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
 		woc.log.Infof("Step group node %v already marked completed", node)
 		return nil
 	}
 	if !ok {
-		node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+		node = *woc.markNodeStatus(sgNodeName, wfv1.NodeStatusRunning)
 		woc.log.Infof("Initializing step group node %v", node)
 	}
 	stepGroup, err := woc.expandStepGroup(stepGroup)
 	if err != nil {
-		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
 		return err
 	}
 
@@ -196,22 +293,23 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	childNodeIDs := make([]string, 0)
 	// First kick off all parallel steps in the group
 	for stepName, step := range stepGroup {
-		childNodeName := fmt.Sprintf("%s.%s", nodeName, stepName)
+		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, stepName)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
 			return err
 		}
 		if !proceed {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusSkipped)
+			woc.log.Infof("Skipping %s: when '%s' false", childNodeName, step.When)
+			woc.markNodeStatus(childNodeName, wfv1.NodeStatusSkipped)
 			continue
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
 			return err
 		}
 	}
@@ -225,8 +323,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 	for _, childNodeID := range childNodeIDs {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		if !childNode.Successful() {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
-			woc.log.Infof("Step group node %s deemed failed due to failure of %s", nodeID, childNodeID)
+			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusFailed)
+			woc.log.Infof("Step group node %s deemed failed due to failure of %s", childNode, childNodeID)
 			return nil
 		}
 		stepName := nodeIDtoStepName[childNodeID]
@@ -240,7 +338,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		}
 	}
 	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
-	woc.log.Infof("Step group node %s successful", nodeID)
+	woc.log.Infof("Step group node %v successful", woc.wf.Status.Nodes[nodeID])
 	return nil
 }
 

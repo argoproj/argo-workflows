@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: coinflip
+  templates:
+  - 
+    name: coinflip
+    steps:
+    - FLIP-COIN:
+        template: flip-coin
+    - HEADS:
+        template: heads
+        when: "{{steps.FLIP-COIN.outputs.result}} == heads"
+      TAILS:
+        template: tails
+        when: "{{steps.FLIP-COIN.outputs.result}} == tails"
+  - 
+    name: flip-coin
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import random
+        result = "heads" if random.randint(0,1) == 0 else "tails"
+        print(result)
+  - 
+    name: heads
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo \"it was heads\""]
+
+  - name: tails
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo \"it was tails\""]

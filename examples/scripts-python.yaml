@@ -21,9 +21,8 @@ spec:
       command: [python3]
       source: |
         import random
-        import json
         i = random.randint(1, 100)
-        print(json.dumps(i))
+        print(i)
   - 
     name: print-message
     inputs:

@@ -1,27 +1,21 @@
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: workdir
-spec:
-  accessModes: [ "ReadWriteOnce" ]
-  resources:
-    requests:
-      storage: 1Gi
 
----
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
   generateName: argo-wf-
 spec:
-  entrypoint: volume-example
-  volumes:
-  - name: workdir
-    persistentVolumeClaim:
-      claimName: workdir
+  entrypoint: volume-pvc-example
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
   templates:
   - 
-    name: volume-example
+    name: volume-pvc-example
     steps:
     - COWSAY:
         template: cowsay
