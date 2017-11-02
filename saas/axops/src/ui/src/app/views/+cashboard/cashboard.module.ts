@@ -32,7 +32,7 @@ export const routes = [
         ComponentsModule,
         PipesModule,
         CommonModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class CashboardModule {

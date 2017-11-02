@@ -30,7 +30,7 @@ export const routes = [{
         PipesModule,
         ComponentsModule,
         CommonModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class ServiceCatalogModule {
