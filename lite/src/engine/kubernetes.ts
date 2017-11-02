@@ -247,15 +247,26 @@ export class KubernetesExecutor implements Executor {
         }});
     }
 
-    private uploadArtifacts(step: model.WorkflowStep, stepPod, input: ContainerStepInput) {
-        return Promise.all(Object.keys(step.template.inputs && step.template.inputs.artifacts || {}).map(async artifactName => {
-            let inputArtifactPath = input.artifacts[artifactName];
-            let artifact = step.template.inputs.artifacts[artifactName];
-            this.logger.debug(`Uploading artifacts to '${artifact.path}' for step id ${step.id}`);
-            await this.runKubeCtl(['cp', inputArtifactPath, `${stepPod.metadata.name}:/__argo/`, '-c', 'step'], true);
-            await this.kubeCtlExec(stepPod, [`mkdir -p ${path.dirname(artifact.path)} && mv /__argo/${path.basename(inputArtifactPath)} ${artifact.path}`], true);
-            this.logger.debug(`Successfully uploaded artifacts to '${artifact.path}' for step id ${step.id}`);
-        }));
+    private async uploadArtifacts(step: model.WorkflowStep, stepPod, input: ContainerStepInput) {
+        let artifacts = Object.keys(step.template.inputs && step.template.inputs.artifacts || {}).map(artifactName => ({
+            artifactName,
+            inputArtifactPath: input.artifacts[artifactName],
+            artifact: step.template.inputs.artifacts[artifactName],
+        })).sort((first, second) => {
+            if (first.artifact.path.startsWith(second.artifact.path)) {
+                return 1;
+            } else if (second.artifact.path.startsWith(first.artifact.path)) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+        for (let item of artifacts) {
+            this.logger.debug(`Uploading artifacts to '${item.artifact.path}' for step id ${step.id}`);
+            await this.runKubeCtl(['cp', item.inputArtifactPath, `${stepPod.metadata.name}:/__argo/`, '-c', 'step'], true);
+            await this.kubeCtlExec(stepPod, [`mkdir -p ${path.dirname(item.artifact.path)} && mv /__argo/${path.basename(item.inputArtifactPath)} ${item.artifact.path}`], true);
+            this.logger.debug(`Successfully uploaded artifacts to '${item.artifact.path}' for step id ${step.id}`);
+        }
     }
 
     private async downloadArtifacts(step: model.WorkflowStep, stepPod, input: ContainerStepInput, tempDir: string) {
