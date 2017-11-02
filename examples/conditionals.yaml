@@ -7,8 +7,7 @@ spec:
   arguments:
     parameters.DO-PRINT: "false"
   templates:
-  - 
-    name: conditional-example
+  - name: conditional-example
     inputs:
       parameters:
         DO-PRINT:
@@ -16,8 +15,8 @@ spec:
     - PRINT-HELLO:
         template: cowsay
         when: "{{inputs.parameters.DO-PRINT}} == true"
-  - 
-    name: cowsay
+
+  - name: cowsay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

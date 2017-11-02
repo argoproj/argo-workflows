@@ -245,7 +245,9 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1.WorkflowStep) error {
-	var scope wfScope
+	scope := wfScope{
+		scope: make(map[string]interface{}),
+	}
 	for i, stepGroup := range steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)

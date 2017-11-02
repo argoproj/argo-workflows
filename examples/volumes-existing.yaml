@@ -20,15 +20,14 @@ spec:
     persistentVolumeClaim:
       claimName: workdir
   templates:
-  - 
-    name: volume-example
+  - name: volume-example
     steps:
     - COWSAY:
         template: cowsay
     - PRINT:
         template: print-message
-  - 
-    name: cowsay
+
+  - name: cowsay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -36,8 +35,8 @@ spec:
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
-  - 
-    name: print-message
+
+  - name: print-message
     container:
       image: alpine:latest
       command: [sh, -c]

@@ -5,8 +5,7 @@ metadata:
 spec:
   entrypoint: loop-example
   templates:
-  - 
-    name: loop-example
+  - name: loop-example
     steps:
     - COWSAY:
         template: cowsay
@@ -15,8 +14,8 @@ spec:
         withItems:
         - hello world
         - goodbye world
-  - 
-    name: cowsay
+
+  - name: cowsay
     inputs:
       parameters:
         MESSAGE:

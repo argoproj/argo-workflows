@@ -5,22 +5,24 @@ metadata:
 spec:
   entrypoint: loop-map-example
   templates:
-  - 
-    name: loop-map-example
+  - name: loop-map-example
     steps:
-    - COWSAY:
-        template: cowsay
+    - PRINT-OS:
+        template: cat-os-release
         arguments:
-          parameters.MESSAGE: "{{item.adjective}} {{item.noun}}"
+          parameters.IMAGE: "{{item.image}}"
+          parameters.TAG: "{{item.tag}}"
         withItems:
-        - { adjective: 'friendly', noun: 'dog' }
-        - { adjective: 'sneaky', noun: 'cat' }
-  - 
-    name: cowsay
+        - { image: 'debian', tag: '9.1' }
+        - { image: 'debian', tag: '8.9' }
+        - { image: 'alpine', tag: '3.6' }
+
+  - name: cat-os-release
     inputs:
       parameters:
-        MESSAGE:
+        IMAGE:
+        TAG:
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["{{inputs.parameters.MESSAGE}}"]
+      image: "{{inputs.parameters.IMAGE}}:{{inputs.parameters.TAG}}"
+      command: [cat]
+      args: [/etc/os-release]

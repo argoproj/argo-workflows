@@ -5,8 +5,7 @@ metadata:
 spec:
   entrypoint: python-script-example
   templates:
-  - 
-    name: python-script-example
+  - name: python-script-example
     steps:
     - GENERATE:
         template: gen-random-int
@@ -14,8 +13,8 @@ spec:
         template: print-message
         arguments:
           parameters.MESSAGE: "{{steps.GENERATE.outputs.result}}"
-  - 
-    name: gen-random-int
+
+  - name: gen-random-int
     script:
       image: python:3.6
       command: [python3]
@@ -23,8 +22,8 @@ spec:
         import random
         i = random.randint(1, 100)
         print(i)
-  - 
-    name: print-message
+
+  - name: print-message
     inputs:
       parameters:
         MESSAGE:
