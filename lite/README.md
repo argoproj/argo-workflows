@@ -22,7 +22,7 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     $ docker run --rm -p 8080:8080  -v /var/run/docker.sock:/var/run/docker.sock -dt argoproj/argo-lite node /app/dist/main.js -u /app/dist/ui
     ```
 
- - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+ - Configure Argo CLI to talk to your Argo Lite instance:
 
     ```
     $ argo login --config argo-lite http://localhost:8080 --username test --password test
@@ -45,7 +45,7 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
      ```
     
 
-  - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+  - Configure Argo CLI to talk to your Argo Lite instance:
   
     ```
     $ argo login --config argo-lite-kube $ARGO_SVC_URL --username test --password test
@@ -61,7 +61,7 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     $ helm install argo/argo-lite
     ```
    
- - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+ - Configure Argo CLI to talk to your Argo Lite instance:
     
     ```
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
@@ -95,7 +95,7 @@ Prerequisite: The [Argo CLI](https://applatix.com/open-source/argo/get-started/i
     ```
     
 
- - Configure [Argo CLI](https://argoproj.github.io/docs/dev-cli-reference.html) to talk to your Argo Lite instance:
+ - Configure Argo CLI to talk to your Argo Lite instance:
 
     ```
     # Argo Lite UI is available at http://<deployed Argo Lite service URL>
