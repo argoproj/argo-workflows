@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: ci-example
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  templates:
+  - 
+    name: ci-example
+    steps:
+    - BUILD:
+        template: build
+    - TEST:
+        template: test
+  - 
+    name: build
+    inputs:
+      artifacts:
+      - name: CODE
+        path: /src
+        git:
+          url: https://github.com/argoproj/argo.git
+    container:
+      image: golang:1.8
+      command: [sh, -c]
+      args: ["cd /src && dep ensure && make"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+  - 
+    name: test
+    container:
+      image: debian:9.1
+      command: [sh, -c]
+      args: ["/src/dist/argo verison"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src

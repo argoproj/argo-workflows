@@ -134,7 +134,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	}
 
 	// Add init container only if it needs input artifacts
-	if len(mainCtrTmpl.Inputs.Artifacts) > 0 {
+	// or if it is a script template (which needs to populate the script)
+	if len(mainCtrTmpl.Inputs.Artifacts) > 0 || mainCtrTmpl.Script != nil {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []corev1.Container{initCtr}
 	}
@@ -167,10 +168,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			// workflow pod names are deterministic. We can get here if
 			// the controller crashes after creating the pod, but fails
 			// to store the update to etc, and controller retries creation
-			woc.log.Infof("pod %s already exists\n", nodeName)
+			woc.log.Infof("pod %s already exists", nodeName)
 			return nil
 		}
-		woc.log.Infof("Failed to create pod %s: %v\n", nodeName, err)
+		woc.log.Infof("Failed to create pod %s: %v", nodeName, err)
 		return errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s", created.Name)
@@ -222,10 +223,14 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *corev
 	return &exec
 }
 
-// addVolumeReferences adds any volumeMounts that a container referencing, to the pod spec
+// addVolumeReferences adds any volumeMounts that a container is referencing, to the pod spec.
+// These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func (woc *wfOperationCtx) addVolumeReferences(pod *corev1.Pod, tmpl *wfv1.Template) error {
+	if tmpl.Container == nil {
+		return nil
+	}
 	for _, volMnt := range tmpl.Container.VolumeMounts {
-		vol := getVolByName(volMnt.Name, woc.wf.Spec.Volumes)
+		vol := getVolByName(volMnt.Name, woc.wf)
 		if vol == nil {
 			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
 		}
@@ -237,10 +242,15 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *corev1.Pod, tmpl *wfv1.Templ
 	return nil
 }
 
-func getVolByName(name string, vols []corev1.Volume) *corev1.Volume {
-	for _, vol := range vols {
+func getVolByName(name string, wf *wfv1.Workflow) *corev1.Volume {
+	for _, vol := range wf.Spec.Volumes {
 		if vol.Name == name {
 			return &vol
+		}
+	}
+	for _, pvc := range wf.Status.PersistentVolumeClaims {
+		if pvc.Name == name {
+			return &pvc
 		}
 	}
 	return nil

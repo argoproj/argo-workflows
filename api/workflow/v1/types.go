@@ -46,10 +46,11 @@ type WorkflowList struct {
 }
 
 type WorkflowSpec struct {
-	Templates  []Template      `json:"templates"`
-	Entrypoint string          `json:"entrypoint"`
-	Arguments  Arguments       `json:"arguments,omitempty"`
-	Volumes    []corev1.Volume `json:"volumes,omitempty"`
+	Templates            []Template                     `json:"templates"`
+	Entrypoint           string                         `json:"entrypoint"`
+	Arguments            Arguments                      `json:"arguments,omitempty"`
+	Volumes              []corev1.Volume                `json:"volumes,omitempty"`
+	VolumeClaimTemplates []corev1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 }
 
 type Template struct {
@@ -124,9 +125,9 @@ type Item interface{}
 type Arguments map[string]interface{}
 
 type WorkflowStatus struct {
-	Phase string                `json:"phase"`
-	Tree  NodeTree              `json:"tree"`
-	Nodes map[string]NodeStatus `json:"nodes"`
+	Tree                   NodeTree              `json:"tree"`
+	Nodes                  map[string]NodeStatus `json:"nodes"`
+	PersistentVolumeClaims []corev1.Volume       `json:"persistentVolumeClaims,omitempty"`
 }
 
 type NodeTree struct {
