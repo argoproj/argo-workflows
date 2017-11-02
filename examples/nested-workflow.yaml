@@ -3,14 +3,14 @@ kind: Workflow
 metadata:
   generateName: argo-wf-
 spec:
-  entrypoint: artifact-example
+  entrypoint: nested-workflow-example
   templates:
-  - name: artifact-example
+  - name: nested-workflow-example
     steps:
     - COWSAY:
         template: cowsay
-    - PRINT:
-        template: print-message
+    - NESTED:
+        template: nested-wf
         arguments:
           artifacts.MESSAGE: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
 
@@ -23,6 +23,16 @@ spec:
       artifacts:
         MESSAGE:
           path: /tmp/hello_world.txt
+
+  - name: nested-wf
+    inputs:
+      artifacts:
+        MESSAGE:
+    steps:
+    - PRINT:
+        template: print-message
+        arguments:
+          artifacts.MESSAGE: "{{inputs.artifacts.MESSAGE}}"
 
   - name: print-message
     inputs:

@@ -1,4 +1,3 @@
-
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
@@ -14,15 +13,14 @@ spec:
         requests:
           storage: 1Gi
   templates:
-  - 
-    name: volume-pvc-example
+  - name: volume-pvc-example
     steps:
     - COWSAY:
         template: cowsay
     - PRINT:
         template: print-message
-  - 
-    name: cowsay
+
+  - name: cowsay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
@@ -30,8 +28,8 @@ spec:
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
-  - 
-    name: print-message
+
+  - name: print-message
     container:
       image: alpine:latest
       command: [sh, -c]

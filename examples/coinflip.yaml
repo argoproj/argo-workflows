@@ -5,8 +5,7 @@ metadata:
 spec:
   entrypoint: coinflip
   templates:
-  - 
-    name: coinflip
+  - name: coinflip
     steps:
     - FLIP-COIN:
         template: flip-coin
@@ -16,8 +15,8 @@ spec:
       TAILS:
         template: tails
         when: "{{steps.FLIP-COIN.outputs.result}} == tails"
-  - 
-    name: flip-coin
+
+  - name: flip-coin
     script:
       image: python:3.6
       command: [python]
@@ -25,8 +24,8 @@ spec:
         import random
         result = "heads" if random.randint(0,1) == 0 else "tails"
         print(result)
-  - 
-    name: heads
+
+  - name: heads
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
