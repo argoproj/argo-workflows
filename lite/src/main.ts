@@ -66,10 +66,7 @@ function streamServerEvents<T>(req: express.Request, res: express.Response, sour
 
 app.post('/v1/auth/login', (req, res) => res.send({session: 'test'}));
 app.get('/v1/auth/schemes', (req, res) => res.send({data: [{enabled: true, name: 'native'}]}));
-app.get('/v1/users/session', (req, res) => res.send(
-    {id: 'test', username: 'test', state: 2, auth_schemes: ['native'], groups: ['developer'], settings: null, view_preferences: {isIntroductionCompleted: 'true'}, labels: []},
-));
-app.get('/v1/system/version', (req, res) => res.send({namespace: 'axsys', version: '1.1.0', cluster_id: 'test'}));
+app.get('/v1/system/version', (req, res) => res.send({namespace: 'axsys', version: '1.1.0', cluster_id: 'argo-lite', features_set: 'lite'}));
 app.get('/v1/branches', (req, res) => res.send({data: []}));
 app.get('/v1/repos', (req, res) => res.send({data: []}));
 app.get('/v1/tools', (req, res) => res.send({data: []}));

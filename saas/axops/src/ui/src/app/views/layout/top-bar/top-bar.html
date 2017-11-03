@@ -16,14 +16,14 @@
                      [class.active]="openedNotificationsCenter" *axIfAuthenticated>
                     <a (click)="openNotificationsCenter()"><i class="ax-icon-notification"></i></a>
                 </div>
-                <div class="ax-top-bar__tool">
+                <div class="ax-top-bar__tool" *axIfFeatureSet="['full', 'limited_aws', 'limited']">
                     <ax-dropdown #helpDropDown isMenu="false">
                         <ax-dropdown-anchor [routerLink]="['/app/help']">
                             <a><i class="ax-icon-help"></i></a>
                         </ax-dropdown-anchor>
                     </ax-dropdown>
                 </div>
-                <div class="ax-top-bar__tool">
+                <div class="ax-top-bar__tool" *axIfAuthenticated>
                     <ax-dropdown #helpDropDown isMenu="true">
                         <ax-dropdown-anchor>
                             <ax-avatar [user]="userObj" [size]="30"></ax-avatar>

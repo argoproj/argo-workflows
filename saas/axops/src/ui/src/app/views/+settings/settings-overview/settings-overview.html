@@ -16,7 +16,7 @@
                                description="Manage artifact retention policies"
                                [route]="['/app/settings/artifact-retention-policy']"></ax-redirect-panel>
         </div>
-        <div class="settings-overview__redirect-panel">
+        <div class="settings-overview__redirect-panel" *axIfFeatureSet="'full'">
             <ax-redirect-panel title="Domain Management"
                                description="Manage domains for applications access"
                                [route]="['/app/settings/domain-management']"></ax-redirect-panel>
