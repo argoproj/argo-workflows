@@ -375,11 +375,8 @@ func addScriptVolume(pod *corev1.Pod) {
 				MountPath: common.ScriptTemplateEmptyDir,
 			}
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
-
-			// HACK: debug purposes. sleep to experiment with init container artifacts
 			initCtr.Command = []string{"sh", "-c"}
-			initCtr.Args = []string{"sleep 999999; echo done"}
-
+			initCtr.Args = []string{"grep template /argo/podmetadata/annotations | cut -d = -f 2- | jq -rM '.' | jq -rM '.script.source' > /argo/script/source"}
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
@@ -401,9 +398,14 @@ func addScriptVolume(pod *corev1.Pod) {
 			break
 		}
 		if ctr.Name == common.WaitContainerName {
-			// HACK: debug purposes. sleep to experiment with wait container artifacts
 			ctr.Command = []string{"sh", "-c"}
-			ctr.Args = []string{"sleep 999999; echo done"}
+			ctr.Args = []string{`
+				while true ; do kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[0].state.terminated 2>/dev/null; if [ $? -eq 0 ] ; then break; fi; echo waiting; sleep 5; done &&
+				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath='{.status.containerStatuses[0].containerID}' | cut -d / -f 3-) &&
+				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log') &&
+				outputjson={\"result\":\"$output\"} &&
+				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson}
+			`}
 			pod.Spec.Containers[i] = ctr
 		}
 	}

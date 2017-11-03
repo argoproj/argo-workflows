@@ -97,8 +97,8 @@ type Artifact struct {
 type Outputs struct {
 	Parameters []Parameter `json:"parameters,omitempty"`
 	Artifacts  []Artifact  `json:"artifacts,omitempty"`
+	Result     *string     `json:"result,omitempty"`
 	// TODO:
-	// - Result (output value from a script template)
 	// - Logs (log artifact(s) from the container)
 }
 
@@ -135,7 +135,7 @@ type NodeStatus struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
 	// Outputs captures output parameter values and artifact locations
-	Outputs Outputs `json:"outputs,omitempty"`
+	Outputs *Outputs `json:"outputs,omitempty"`
 	//ReturnCode *int                    `json:"returnCode"`
 }
 

@@ -268,14 +268,16 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	default:
 		newStatus = wfv1.NodeStatusError
 	}
-	tmplStr := pod.Annotations[common.AnnotationKeyTemplate]
-	var tmpl wfv1.Template
-	err = json.Unmarshal([]byte(tmplStr), &tmpl)
-	if err != nil {
-		log.Errorf("Failed to unmarshal %s template from pod annotation: %v", pod.Name, err)
-		newStatus = wfv1.NodeStatusError
-	} else {
-		node.Outputs = tmpl.Outputs
+	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
+	if ok {
+		var outputs wfv1.Outputs
+		err = json.Unmarshal([]byte(outputStr), &outputs)
+		if err != nil {
+			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
+			newStatus = wfv1.NodeStatusError
+		} else {
+			node.Outputs = &outputs
+		}
 	}
 	log.Infof("Updating node %s status %s -> %s", node, node.Status, newStatus)
 	node.Status = newStatus

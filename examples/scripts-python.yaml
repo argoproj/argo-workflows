@@ -32,4 +32,4 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{inputs.parameters.MESSAGE}}"]
+      args: ["echo result was: {{inputs.parameters.MESSAGE}}"]
