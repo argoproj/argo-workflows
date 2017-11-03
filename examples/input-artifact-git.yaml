@@ -8,10 +8,10 @@ spec:
   - name: git-clone
     inputs:
       artifacts:
-        CODE:
-          path: /src
-          git:
-            url: https://github.com/argoproj/argo.git
+      - name: CODE
+        path: /src
+        git:
+          url: https://github.com/argoproj/argo.git
     container:
       image: golang:1.8
       command: [sh, -c]

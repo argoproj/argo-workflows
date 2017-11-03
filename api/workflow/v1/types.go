@@ -51,6 +51,7 @@ type WorkflowSpec struct {
 	Arguments            Arguments                      `json:"arguments,omitempty"`
 	Volumes              []corev1.Volume                `json:"volumes,omitempty"`
 	VolumeClaimTemplates []corev1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
+	Timeout              string                         `json:"timeout,omitempty"`
 }
 
 type Template struct {
@@ -70,43 +71,35 @@ type Template struct {
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
-	Parameters map[string]*InputParameter `json:"parameters,omitempty"`
-	Artifacts  map[string]*InputArtifact  `json:"artifacts,omitempty"`
+	Parameters []Parameter `json:"parameters,omitempty"`
+	Artifacts  []Artifact  `json:"artifacts,omitempty"`
 }
 
-// InputParameter indicate a passed string parameter to a service template with an optional default value
-type InputParameter struct {
+// Parameter indicate a passed string parameter to a service template with an optional default value
+type Parameter struct {
+	Name    string  `json:"name"`
+	Value   *string `json:"value,omitempty"`
 	Default *string `json:"default,omitempty"`
 }
 
 // InputArtifact indicates an artifact to place at a specified path
-type InputArtifact struct {
-	Path string              `json:"path,omitempty"`
-	S3   *S3ArtifactSource   `json:"s3,omitempty"`
-	Git  *GitArtifactSource  `json:"git,omitempty"`
-	HTTP *HTTPArtifactSource `json:"http,omitempty"`
+type Artifact struct {
+	Name string `json:"name"`
+	// Path is the container path to the artifact
+	Path string `json:"path,omitempty"`
+	// From allows an artifact to reference an artifact from a previous step
+	From string        `json:"from,omitempty"`
+	S3   *S3Artifact   `json:"s3,omitempty"`
+	Git  *GitArtifact  `json:"git,omitempty"`
+	HTTP *HTTPArtifact `json:"http,omitempty"`
 }
 
 type Outputs struct {
-	Artifacts  OutputArtifacts  `json:"artifacts,omitempty"`
-	Parameters OutputParameters `json:"parameters,omitempty"`
+	Parameters []Parameter `json:"parameters,omitempty"`
+	Artifacts  []Artifact  `json:"artifacts,omitempty"`
 	// TODO:
 	// - Result (output value from a script template)
 	// - Logs (log artifact(s) from the container)
-}
-
-type OutputArtifacts map[string]OutputArtifact
-
-type OutputArtifact struct {
-	Path        string               `json:"path,omitempty"`
-	Destination *ArtifactDestination `json:"destination,omitempty"`
-}
-
-type OutputParameters map[string]OutputParameter
-
-type OutputParameter struct {
-	Path  string `json:"path,omitempty"`
-	Value string `json:"value,omitempty"`
 }
 
 // WorkflowStep is a template ref
@@ -115,14 +108,16 @@ type WorkflowStep struct {
 	Arguments Arguments `json:"arguments,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`
 	When      string    `json:"when,omitempty"`
-	Timeout   string    `json:"timeout,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
 type Item interface{}
 
 // Arguments to a template
-type Arguments map[string]interface{}
+type Arguments struct {
+	Parameters []Parameter `json:"parameters,omitempty"`
+	Artifacts  []Artifact  `json:"artifacts,omitempty"`
+}
 
 type WorkflowStatus struct {
 	Tree                   NodeTree              `json:"tree"`
@@ -167,27 +162,19 @@ type S3Bucket struct {
 	SecretKeySecret corev1.SecretKeySelector `json:"secretKeySecret"`
 }
 
-type S3ArtifactSource struct {
+type S3Artifact struct {
 	S3Bucket `json:",inline"`
 	Key      string `json:"key"`
 }
 
-type S3ArtifactDestination S3ArtifactSource
-
-type GitArtifactSource struct {
+type GitArtifact struct {
 	URL            string                    `json:"url"`
 	UsernameSecret *corev1.SecretKeySelector `json:"usernameSecret"`
 	PasswordSecret *corev1.SecretKeySelector `json:"passwordSecret"`
 }
 
-type HTTPArtifactSource struct {
+type HTTPArtifact struct {
 	URL string `json:"url"`
-}
-
-type ArtifactDestination struct {
-	S3 *S3ArtifactDestination `json:"s3,omitempty"`
-	// Future artifact destinations go here
-	// * artifactory, nexus
 }
 
 // Script is a template subtype to enable scripting through code steps
@@ -195,4 +182,45 @@ type Script struct {
 	Image   string   `json:"image"`
 	Command []string `json:"command"`
 	Source  string   `json:"source"`
+}
+
+func (in *Inputs) GetArtifactByName(name string) *Artifact {
+	for _, art := range in.Artifacts {
+		if art.Name == name {
+			return &art
+		}
+	}
+	return nil
+}
+
+func (in *Inputs) GetParameterByName(name string) *Parameter {
+	for _, param := range in.Parameters {
+		if param.Name == name {
+			return &param
+		}
+	}
+	return nil
+}
+
+func (args *Arguments) GetArtifactByName(name string) *Artifact {
+	for _, art := range args.Artifacts {
+		if art.Name == name {
+			return &art
+		}
+	}
+	return nil
+}
+
+func (args *Arguments) GetParameterByName(name string) *Parameter {
+	for _, param := range args.Parameters {
+		if param.Name == name {
+			return &param
+		}
+	}
+	return nil
+}
+
+// HasLocation whether or not an artifact has a location defined
+func (a *Artifact) HasLocation() bool {
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil
 }

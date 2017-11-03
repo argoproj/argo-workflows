@@ -8,18 +8,18 @@ spec:
   - name: input-artifact-s3-example
     inputs:
       artifacts:
-        CODE:
-          path: /src
-          s3:
-            endpoint: https://storage.googleapis.com
-            bucket: my-bucket-name
-            key: path/in/bucket
-            accessKeySecret:
-              name: my-s3-credentials
-              key: accessKey
-            secretKeySecret:
-              name: my-s3-credentials
-              key: secretKey
+      - name: CODE
+        path: /src
+        s3:
+          endpoint: https://storage.googleapis.com
+          bucket: my-bucket-name
+          key: path/in/bucket
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
     container:
       image: debian:latest
       command: [sh, -c]

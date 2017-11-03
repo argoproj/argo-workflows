@@ -33,6 +33,7 @@ type wfOperationCtx struct {
 
 // wfScope contains the current scope of variables available when iterating steps in a workflow
 type wfScope struct {
+	tmpl  *wfv1.Template
 	scope map[string]interface{}
 }
 
@@ -182,13 +183,11 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 		return err
 	}
-	if len(args) > 0 {
-		var err error
-		tmpl, err = substituteArgs(tmpl, args)
-		if err != nil {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
-			return err
-		}
+
+	tmpl, err := processArgs(tmpl, args)
+	if err != nil {
+		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		return err
 	}
 
 	if tmpl.Container != nil {
@@ -205,7 +204,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 			node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
 			woc.log.Infof("Initialized workflow node %v", node)
 		}
-		return woc.executeSteps(nodeName, tmpl.Steps)
+		return woc.executeSteps(nodeName, tmpl)
 
 	} else if tmpl.Script != nil {
 		return woc.executeScript(nodeName, tmpl)
@@ -213,6 +212,59 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 	woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 	return errors.Errorf("Template '%s' missing specification", tmpl.Name)
+}
+
+// processArgs sets in the inputs, the values either passed via arguments, or the hardwired values
+// It also substitutes parameters in the template from the arguments
+func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, error) {
+	// For each input parameter:
+	// 1) check if was supplied as argument. if so use the supplied value from arg
+	// 2) if not, use default value.
+	// 3) if no default value, it is an error
+	newInputParameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
+	for i, inParam := range tmpl.Inputs.Parameters {
+		argParam := args.GetParameterByName(inParam.Name)
+		if argParam != nil {
+			if argParam.Value == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "arguments.parameters.%s supplied no value", inParam.Name)
+			}
+			newInputParameters[i] = *argParam
+			continue
+		}
+		if inParam.Default != nil {
+			newInputParameters[i] = wfv1.Parameter{
+				Name:  inParam.Name,
+				Value: inParam.Default,
+			}
+			continue
+		}
+		return nil, errors.Errorf(errors.CodeBadRequest, "arguments.parameters.%s was not supplied", inParam.Name)
+	}
+	tmpl.Inputs.Parameters = newInputParameters
+	tmpl, err := substituteParams(tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
+	for i, inArt := range tmpl.Inputs.Artifacts {
+		// if artifact has hard-wired location, we prefer that
+		if inArt.HasLocation() {
+			newInputArtifacts[i] = inArt
+			continue
+		}
+		// artifact must be supplied
+		argArt := args.GetArtifactByName(inArt.Name)
+		if argArt == nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s was not supplied", inArt.Name)
+		}
+		if !argArt.HasLocation() {
+			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s missing location information", inArt.Name)
+		}
+		newInputArtifacts[i] = *argArt
+	}
+	tmpl.Inputs.Artifacts = newInputArtifacts
+	return tmpl, nil
 }
 
 // markNodeError marks a node with the given status, creating the node if necessary
@@ -244,11 +296,13 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	return nil
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1.WorkflowStep) error {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
 	scope := wfScope{
+		tmpl:  tmpl,
 		scope: make(map[string]interface{}),
+		//stepToNodeID
 	}
-	for i, stepGroup := range steps {
+	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
 		if err != nil {
@@ -260,19 +314,40 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, steps []map[string]wfv1
 			woc.log.Infof("Workflow step group node %v not yet completed", woc.wf.Status.Nodes[sgNodeID])
 			return nil
 		}
+
 		if !woc.wf.Status.Nodes[sgNodeID].Successful() {
 			woc.log.Infof("Workflow step group %v not successful", woc.wf.Status.Nodes[sgNodeID])
 			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
 			return nil
+		}
+
+		// HACK: need better way to add children to scope
+		for stepName := range stepGroup {
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, stepName)
+			childNodeID := woc.wf.NodeID(childNodeName)
+			childNode, ok := woc.wf.Status.Nodes[childNodeID]
+			if !ok {
+				// This can happen if there was `withItem` expansion
+				// it is okay to ignore this because these expanded steps
+				// are not easily referenceable by user.
+				continue
+			}
+			for _, outParam := range childNode.Outputs.Parameters {
+				key := fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, outParam.Name)
+				scope.addParamToScope(key, *outParam.Value)
+			}
+			for _, outArt := range childNode.Outputs.Artifacts {
+				key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", stepName, outArt.Name)
+				scope.addArtifactToScope(key, outArt)
+			}
 		}
 	}
 	woc.markNodeStatus(nodeName, wfv1.NodeStatusSucceeded)
 	return nil
 }
 
-// executeStepGroup examines a map of parallel workflows steps and executes them in parallel.
-// It first expands any `withItem` clauses, then evaluates any `when` expressions for each step
-// to decide if execution is required.
+// executeStepGroup examines a map of parallel steps and executes them in parallel.
+// Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
 func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
 	nodeID := woc.wf.NodeID(sgNodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
@@ -284,13 +359,20 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 		node = *woc.markNodeStatus(sgNodeName, wfv1.NodeStatusRunning)
 		woc.log.Infof("Initializing step group node %v", node)
 	}
-	stepGroup, err := woc.expandStepGroup(stepGroup)
+
+	// First, resolve any references to outputs from previous steps, and perform substitution
+	stepGroup, err := woc.resolveReferences(stepGroup, scope)
 	if err != nil {
 		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
 		return err
 	}
 
-	nodeIDtoStepName := make(map[string]string)
+	// Expand step's withItems
+	stepGroup, err = woc.expandStepGroup(stepGroup)
+	if err != nil {
+		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
+		return err
+	}
 
 	childNodeIDs := make([]string, 0)
 	// First kick off all parallel steps in the group
@@ -321,22 +403,13 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 			return nil
 		}
 	}
-	// All children completed. Determine step group status as a whole, and add any outputs to the scope
+	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range childNodeIDs {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		if !childNode.Successful() {
 			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusFailed)
 			woc.log.Infof("Step group node %s deemed failed due to failure of %s", childNode, childNodeID)
 			return nil
-		}
-		stepName := nodeIDtoStepName[childNodeID]
-		for outName, outParam := range childNode.Outputs.Parameters {
-			key := fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, outName)
-			scope.addParamToScope(key, outParam.Value)
-		}
-		for outName, outArt := range childNode.Outputs.Artifacts {
-			key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", stepName, outName)
-			scope.addArtifactToScope(key, outArt)
 		}
 	}
 	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
@@ -368,6 +441,53 @@ func shouldExecute(when string) (bool, error) {
 	}
 }
 
+// resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template, so we only
+// are concerned with:
+// 1) dereferencing parameters from previous steps
+// 2) dereferencing artifacts from previous steps
+// 3) dereferencing artifacts from inputs
+func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowStep, scope *wfScope) (map[string]wfv1.WorkflowStep, error) {
+	newStepGroup := make(map[string]wfv1.WorkflowStep)
+
+	for stepName, step := range stepGroup {
+		newStep := step.DeepCopy()
+
+		for i, param := range newStep.Arguments.Parameters {
+			if param.Value == nil {
+				return nil, errors.Errorf("arguments.parameters.%s value not supplied", param.Name)
+			}
+			// HACK: change use compiled regex to search
+			if !strings.HasPrefix(*param.Value, "{{") {
+				continue
+			}
+			val, err := scope.resolveParameter(*param.Value)
+			if err != nil {
+				return nil, err
+			}
+			newStep.Arguments.Parameters[i] = wfv1.Parameter{
+				Name:  param.Name,
+				Value: &val,
+			}
+		}
+
+		for i, art := range newStep.Arguments.Artifacts {
+			if art.From == "" {
+				continue
+			}
+			art, err := scope.resolveArtifact(art.From)
+			if err != nil {
+				return nil, err
+			}
+			newStep.Arguments.Artifacts[i] = *art
+		}
+
+		newStepGroup[stepName] = *newStep
+	}
+	return newStepGroup, nil
+}
+
+// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems
 func (woc *wfOperationCtx) expandStepGroup(stepGroup map[string]wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
 	newStepGroup := make(map[string]wfv1.WorkflowStep)
 	for stepName, step := range stepGroup {
@@ -386,6 +506,7 @@ func (woc *wfOperationCtx) expandStepGroup(stepGroup map[string]wfv1.WorkflowSte
 	return newStepGroup, nil
 }
 
+// expandStep expands a step containing withItems into multiple steps parallel steps
 func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
@@ -445,25 +566,22 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	return nil
 }
 
-// substituteArgs returns a new copy of the template with all input parameters substituted
-func substituteArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, error) {
+// substituteParams returns a new copy of the template with all input parameters substituted
+func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
 	replaceMap := make(map[string]interface{})
-	for argName, argVal := range args {
-		if strings.HasPrefix(argName, "parameters.") {
-			_, ok := argVal.(string)
-			if !ok {
-				return nil, errors.Errorf("argument '%s' expected to be string. received: %s", argName, argVal)
-			}
-			replaceMap["inputs."+argName] = argVal
+
+	for _, inParam := range tmpl.Inputs.Parameters {
+		if inParam.Value == nil {
+			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
+		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
 	s := fstTmpl.ExecuteString(replaceMap)
-
 	var newTmpl wfv1.Template
 	err = json.Unmarshal([]byte(s), &newTmpl)
 	if err != nil {
@@ -476,19 +594,30 @@ func (wfs *wfScope) addParamToScope(key, val string) {
 	wfs.scope[key] = val
 }
 
-func (wfs *wfScope) addArtifactToScope(key string, artifact wfv1.OutputArtifact) {
+func (wfs *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 	wfs.scope[key] = artifact
 }
 
 func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
-	val, ok := wfs.scope[v]
-	if !ok {
-		return nil, errors.Errorf("Unable to resolve: {{%s}}", v)
+	v = strings.TrimPrefix(v, "{{")
+	v = strings.TrimSuffix(v, "}}")
+	if strings.HasPrefix(v, "steps.") {
+		val, ok := wfs.scope[v]
+		if !ok {
+			return nil, errors.Errorf("Unable to resolve: {{%s}}", v)
+		}
+		return val, nil
 	}
-	return val, nil
+	parts := strings.Split(v, ".")
+	// HACK (assuming it is an input artifact)
+	art := wfs.tmpl.Inputs.GetArtifactByName(parts[2])
+	if art != nil {
+		return *art, nil
+	}
+	return nil, errors.Errorf("Unable to resolve input artifact: {{%s}}", v)
 }
 
-func (wfs *wfScope) resolveStringVar(v string) (string, error) {
+func (wfs *wfScope) resolveParameter(v string) (string, error) {
 	val, err := wfs.resolveVar(v)
 	if err != nil {
 		return "", err
@@ -498,4 +627,16 @@ func (wfs *wfScope) resolveStringVar(v string) (string, error) {
 		return "", errors.Errorf("Variable {{%s}} is not a string", v)
 	}
 	return valStr, nil
+}
+
+func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
+	val, err := wfs.resolveVar(v)
+	if err != nil {
+		return nil, err
+	}
+	valArt, ok := val.(wfv1.Artifact)
+	if !ok {
+		return nil, errors.Errorf("Variable {{%s}} is not an artifact", v)
+	}
+	return &valArt, nil
 }

@@ -19,6 +19,7 @@ spec:
   - name: workdir
     persistentVolumeClaim:
       claimName: workdir
+
   templates:
   - name: volume-example
     steps:

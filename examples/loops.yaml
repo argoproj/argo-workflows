@@ -10,7 +10,9 @@ spec:
     - COWSAY:
         template: cowsay
         arguments:
-          parameters.MESSAGE: "{{item}}"
+          parameters:
+          - name: MESSAGE
+            value: "{{item}}"
         withItems:
         - hello world
         - goodbye world
@@ -18,7 +20,7 @@ spec:
   - name: cowsay
     inputs:
       parameters:
-        MESSAGE:
+      - name: MESSAGE
     container:
       image: docker/whalesay:latest
       command: [cowsay]

@@ -10,7 +10,7 @@ spec:
   - name: conditional-example
     inputs:
       parameters:
-        DO-PRINT:
+      - name: DO-PRINT
     steps:
     - PRINT-HELLO:
         template: cowsay

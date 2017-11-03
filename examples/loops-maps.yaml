@@ -10,8 +10,11 @@ spec:
     - PRINT-OS:
         template: cat-os-release
         arguments:
-          parameters.IMAGE: "{{item.image}}"
-          parameters.TAG: "{{item.tag}}"
+          parameters:
+          - name: IMAGE
+            value: "{{item.image}}"
+          - name: TAG
+            value: "{{item.tag}}"
         withItems:
         - { image: 'debian', tag: '9.1' }
         - { image: 'debian', tag: '8.9' }
@@ -20,8 +23,8 @@ spec:
   - name: cat-os-release
     inputs:
       parameters:
-        IMAGE:
-        TAG:
+      - name: IMAGE
+      - name: TAG
     container:
       image: "{{inputs.parameters.IMAGE}}:{{inputs.parameters.TAG}}"
       command: [cat]

@@ -12,7 +12,9 @@ spec:
     - PRINT:
         template: print-message
         arguments:
-          parameters.MESSAGE: "{{steps.GENERATE.outputs.result}}"
+          parameters:
+          - name: MESSAGE
+            value: "{{steps.GENERATE.outputs.result}}"
 
   - name: gen-random-int
     script:
@@ -26,7 +28,7 @@ spec:
   - name: print-message
     inputs:
       parameters:
-        MESSAGE:
+      - name: MESSAGE
     container:
       image: alpine:latest
       command: [sh, -c]

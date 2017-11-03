@@ -12,6 +12,7 @@ spec:
       resources:
         requests:
           storage: 1Gi
+
   templates:
   - name: volume-pvc-example
     steps:

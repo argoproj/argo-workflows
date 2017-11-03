@@ -69,3 +69,16 @@ func (t *Template) DeepCopy() *Template {
 	}
 	return &copy
 }
+
+func (s *WorkflowStep) DeepCopy() *WorkflowStep {
+	bytes, err := json.Marshal(s)
+	if err != nil {
+		panic(err)
+	}
+	var copy WorkflowStep
+	err = json.Unmarshal(bytes, &copy)
+	if err != nil {
+		panic(err)
+	}
+	return &copy
+}

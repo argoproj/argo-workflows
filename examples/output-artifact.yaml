@@ -12,5 +12,5 @@ spec:
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
-        MESSAGE:
-          path: /tmp/hello_world.txt
+      - name: MESSAGE
+        path: /tmp/hello_world.txt
