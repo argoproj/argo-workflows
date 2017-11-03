@@ -12,7 +12,9 @@ spec:
     - PRINT:
         template: print-message
         arguments:
-          artifacts.MESSAGE: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
+          artifacts:
+          - name: MESSAGE
+            from: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
 
   - name: cowsay
     container:
@@ -21,14 +23,14 @@ spec:
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
-        MESSAGE:
-          path: /tmp/hello_world.txt
+      - name: MESSAGE
+        path: /tmp/hello_world.txt
 
   - name: print-message
     inputs:
       artifacts:
-        MESSAGE:
-          path: /tmp/message
+      - name: MESSAGE
+        path: /tmp/message
     container:
       image: alpine:latest
       command: [sh, -c]

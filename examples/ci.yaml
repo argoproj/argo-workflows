@@ -27,7 +27,7 @@ spec:
         # In the case where input artifacts are desired to be placed in a sub-directory
         # of a volume mount, the executor should place the artifact in the volume, as
         # opposed to the artifacts volume
-        CODE:
+        - name: CODE
           path: /go/src/github.com/golang/example
           git:
             url: https://github.com/golang/example.git

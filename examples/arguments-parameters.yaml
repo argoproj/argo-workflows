@@ -5,12 +5,15 @@ metadata:
 spec:
   entrypoint: cowsay
   arguments:
-    parameters.MESSAGE: "hello world"
+    parameters:
+    - name: MESSAGE
+      value: hello world
+
   templates:
   - name: cowsay
     inputs:
       parameters:
-        MESSAGE:
+      - name: MESSAGE
     container:
       image: docker/whalesay:latest
       command: [cowsay]

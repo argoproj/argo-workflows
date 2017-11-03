@@ -1,3 +1,4 @@
+# Example of using a hard-wired artifact location
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
@@ -8,10 +9,10 @@ spec:
   - name: http-artifact-example
     inputs:
       artifacts:
-        CODE:
-          path: /bin/foo
-          http:
-            url: https://mycompany.com/files/foo
+      - name: CODE
+        path: /bin/foo
+        http:
+          url: https://mycompany.com/files/foo
     container:
       image: alpine:latest
       command: [sh, -c]

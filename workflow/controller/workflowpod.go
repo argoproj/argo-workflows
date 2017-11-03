@@ -313,14 +313,14 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 	}
 	// TODO: the order in which we construct the volume mounts may matter,
 	// especially if they are overlapping.
-	for artName, art := range tmpl.Inputs.Artifacts {
-		if art == nil {
-			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", artName)
+	for _, art := range tmpl.Inputs.Artifacts {
+		if art.Path == "" {
+			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
 		volMount := corev1.VolumeMount{
 			Name:      volName,
 			MountPath: art.Path,
-			SubPath:   artName,
+			SubPath:   art.Name,
 		}
 		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volMount)
 	}
@@ -331,8 +331,8 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 // addOutputArtifactsRepoMetaData updates the template with artifact repository information configured in the controller.
 // This is skipped for artifacts which have explicitly set an output artifact location in the template
 func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl *wfv1.Template) {
-	for artName, art := range tmpl.Outputs.Artifacts {
-		if art.Destination != nil {
+	for i, art := range tmpl.Outputs.Artifacts {
+		if art.HasLocation() {
 			// The artifact destination was explicitly set in the template. Skip
 			continue
 		}
@@ -346,15 +346,13 @@ func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl 
 			if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
 				keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
 			}
-			artLocationKey := fmt.Sprintf("%s%s/%s/%s", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, artName)
-			art.Destination = &wfv1.ArtifactDestination{
-				S3: &wfv1.S3ArtifactDestination{
-					S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
-					Key:      artLocationKey,
-				},
+			artLocationKey := fmt.Sprintf("%s%s/%s/%s", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, art.Name)
+			art.S3 = &wfv1.S3Artifact{
+				S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
+				Key:      artLocationKey,
 			}
 		}
-		tmpl.Outputs.Artifacts[artName] = art
+		tmpl.Outputs.Artifacts[i] = art
 	}
 }
 
