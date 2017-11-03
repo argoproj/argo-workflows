@@ -37,6 +37,8 @@ const (
 	AnnotationKeyNodeName = wfv1.CRDFullName + "/node-name"
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
 	AnnotationKeyTemplate = wfv1.CRDFullName + "/template"
+	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
+	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
 
 	// LabelKeyArgoWorkflow is the pod metadata label to indidcate this pod is part of a workflow
 	LabelKeyArgoWorkflow = wfv1.CRDFullName + "/argo-workflow"

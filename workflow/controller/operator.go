@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -179,7 +180,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	}
 	tmpl := woc.wf.GetTemplate(templateName)
 	if tmpl == nil {
-		err := errors.Errorf(errors.CodeBadRequest, "Node %s error: template '%s' undefined", nodeName, templateName)
+		err := errors.Errorf(errors.CodeBadRequest, "Node %v error: template '%s' undefined", node, templateName)
 		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 		return err
 	}
@@ -221,26 +222,23 @@ func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, erro
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
-	newInputParameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
+	tmpl = tmpl.DeepCopy()
 	for i, inParam := range tmpl.Inputs.Parameters {
-		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil {
-			if argParam.Value == nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "arguments.parameters.%s supplied no value", inParam.Name)
-			}
-			newInputParameters[i] = *argParam
-			continue
-		}
 		if inParam.Default != nil {
-			newInputParameters[i] = wfv1.Parameter{
-				Name:  inParam.Name,
-				Value: inParam.Default,
-			}
-			continue
+			// first set to default value
+			inParam.Value = inParam.Default
 		}
-		return nil, errors.Errorf(errors.CodeBadRequest, "arguments.parameters.%s was not supplied", inParam.Name)
+		// overwrite value from argument (if supplied)
+		argParam := args.GetParameterByName(inParam.Name)
+		if argParam != nil && argParam.Value != nil {
+			newValue := *argParam.Value
+			inParam.Value = &newValue
+		}
+		if inParam.Value == nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not satisfied", inParam.Name)
+		}
+		tmpl.Inputs.Parameters[i] = inParam
 	}
-	tmpl.Inputs.Parameters = newInputParameters
 	tmpl, err := substituteParams(tmpl)
 	if err != nil {
 		return nil, err
@@ -261,6 +259,7 @@ func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, erro
 		if !argArt.HasLocation() {
 			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s missing location information", inArt.Name)
 		}
+		argArt.Path = inArt.Path
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
@@ -331,6 +330,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				// it is okay to ignore this because these expanded steps
 				// are not easily referenceable by user.
 				continue
+			}
+			if childNode.Outputs == nil {
+				continue
+			}
+			if childNode.Outputs.Result != nil {
+				key := fmt.Sprintf("steps.%s.outputs.result", stepName)
+				scope.addParamToScope(key, *childNode.Outputs.Result)
 			}
 			for _, outParam := range childNode.Outputs.Parameters {
 				key := fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, outParam.Name)
@@ -444,11 +450,16 @@ func shouldExecute(when string) (bool, error) {
 // resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
 // NOTE: by now, input parameters should have been substituted throughout the template, so we only
 // are concerned with:
-// 1) dereferencing parameters from previous steps
+// 1) dereferencing output.parameters from previous steps
+// 2) dereferencing output.result from previous steps
 // 2) dereferencing artifacts from previous steps
 // 3) dereferencing artifacts from inputs
 func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowStep, scope *wfScope) (map[string]wfv1.WorkflowStep, error) {
 	newStepGroup := make(map[string]wfv1.WorkflowStep)
+
+	if len(scope.scope) > 0 {
+		log.Printf("asdfsfd")
+	}
 
 	for stepName, step := range stepGroup {
 		newStep := step.DeepCopy()
@@ -516,7 +527,7 @@ func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (
 
 	expandedStep := make(map[string]wfv1.WorkflowStep)
 	for i, item := range step.WithItems {
-		replaceMap := make(map[string]interface{})
+		replaceMap := make(map[string]string)
 		var newStepName string
 		switch val := item.(type) {
 		case string:
@@ -543,7 +554,14 @@ func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string or map. received: %s", i, val)
 		}
-		newStepStr := fstTmpl.ExecuteString(replaceMap)
+		newStepStr := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+			replacement, ok := replaceMap[tag]
+			if !ok {
+				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+			}
+			return w.Write([]byte(replacement))
+		})
+
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
@@ -573,7 +591,7 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	replaceMap := make(map[string]interface{})
+	replaceMap := make(map[string]string)
 
 	for _, inParam := range tmpl.Inputs.Parameters {
 		if inParam.Value == nil {
@@ -581,7 +599,13 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
-	s := fstTmpl.ExecuteString(replaceMap)
+	s := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		replacement, ok := replaceMap[tag]
+		if !ok {
+			return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+		}
+		return w.Write([]byte(replacement))
+	})
 	var newTmpl wfv1.Template
 	err = json.Unmarshal([]byte(s), &newTmpl)
 	if err != nil {
