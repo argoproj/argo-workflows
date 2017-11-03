@@ -38,7 +38,7 @@ export const routes = [
         RouterModule,
         FormsModule,
         ReactiveFormsModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class UserManagementModule {

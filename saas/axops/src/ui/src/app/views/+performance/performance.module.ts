@@ -16,7 +16,7 @@ export const routes = [{
 
 @NgModule({
     declarations: [ BuildsLineChartComponent, BuildsBoxPlotChartComponent, PerformanceComponent ],
-    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes)), ],
+    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes, true)), ],
 })
 export default class PerformanceModule {
 

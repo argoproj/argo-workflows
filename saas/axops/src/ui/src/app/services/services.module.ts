@@ -49,6 +49,7 @@ import { PlaygroundInfoService } from './playground-info.service';
 import { TrackingService } from './tracking.service';
 import { SlackService } from './slack.service';
 import { SystemRequestService } from './system-request.service';
+import { FeaturesSetsAccessControl, FeaturesSetsService } from './features-sets.service';
 
 @NgModule({
     providers: [
@@ -86,6 +87,8 @@ import { SystemRequestService } from './system-request.service';
         HttpService,
         HasNoSession,
         UserAccessControl,
+        FeaturesSetsAccessControl,
+        FeaturesSetsService,
         ViewPreferencesService,
         ArtifactsService,
         ProjectService,

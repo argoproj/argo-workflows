@@ -19,7 +19,7 @@ export const routes = [{
 
 @NgModule({
     declarations: [ InfrastructureComponent, SpendingLineChartComponent, SpendingSquareChartComponent, TooltipDirective ],
-    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes)), ],
+    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes, true)), ],
 })
 export default class InfrastructureModule {
 }

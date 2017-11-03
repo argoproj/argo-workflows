@@ -53,7 +53,7 @@ export class IntegrationsComponentsModule {
 @NgModule({
     imports: [
         IntegrationsComponentsModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class IntegrationsModule {

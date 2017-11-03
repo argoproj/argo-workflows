@@ -14,7 +14,7 @@ export const routes = [{
 
 @NgModule({
     declarations: [ HostsComponent ],
-    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes)), ],
+    imports: [ PipesModule, CommonModule, RouterModule.forChild(decorateRouteDefs(routes, true)), ],
 })
 export default class HostsModule {
 }

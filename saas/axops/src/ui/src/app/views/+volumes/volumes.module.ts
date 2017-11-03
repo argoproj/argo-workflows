@@ -31,7 +31,7 @@ export const routes = [
         ComponentsModule,
         FormsModule,
         CustomFormsModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
         CommonModule,
         PipesModule,
     ]

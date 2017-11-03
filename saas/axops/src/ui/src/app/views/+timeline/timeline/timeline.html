@@ -1,4 +1,4 @@
-<ax-tabs [selectedTabKey]="currentView" (selected)="changeView($event.selectedTab.tabKey)" [fixedWidth]="true">
+<ax-tabs *axIfFeatureSet="['full', 'limited', 'limited_aws']" [selectedTabKey]="currentView" (selected)="changeView($event.selectedTab.tabKey)" [fixedWidth]="true">
     <ax-tab tabKey="overview" tabTitle="Overview" [noPadding]="true" [isOnlyContentScrollable]="true"
             [extraVerticalScrollPadding]="156">
         <ax-branches-overview *ngIf="currentView === 'overview'"
@@ -29,3 +29,11 @@
         </ax-jobs-overview>
     </ax-tab>
 </ax-tabs>
+<ax-jobs-overview *axIfFeatureSet="['lite']"
+    [dateRange]="layoutDateRange.data"
+    [selectedRepo]="selectedRepo"
+    [selectedBranch]="selectedBranch"
+    [selectedUsername]="usernameFilter"
+    [jobFilter]="jobFilter"
+    [branchesContext]="branchesContext">
+</ax-jobs-overview>

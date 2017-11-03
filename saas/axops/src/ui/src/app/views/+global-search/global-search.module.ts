@@ -35,7 +35,7 @@ export const routes = [
         CommonModule,
         PipesModule,
         FormsModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class GlobalSearchModule {

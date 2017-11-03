@@ -26,7 +26,7 @@ export const routes = [
         ComponentsModule,
         CommonModule,
         PipesModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class MetricsModule {

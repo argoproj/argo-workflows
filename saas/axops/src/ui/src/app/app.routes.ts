@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
-import { HasNoSession, UserAccessControl } from './services';
+import { HasNoSession, UserAccessControl, FeaturesSetsAccessControl } from './services';
 import { routes } from './routes';
 
-const accessChecks = [UserAccessControl];
+const accessChecks = [UserAccessControl, FeaturesSetsAccessControl];
 /**
  * All routes passing through this method get applied with accessChecks
  * As of now accessChecks comprise of session check and check for permissions.
@@ -29,12 +29,12 @@ function addAccessControlChecks(route) {
  * /app route has only session check added ('HasSession')
  * All child routes have accessChecks checks applied via addAccessControlChecks
  */
-export function decorateRouteDefs(routeDefs: Array<any>) {
+export function decorateRouteDefs(routeDefs: Array<any>, forceAddGuard?: boolean) {
     for (let i = 0; i < routeDefs.length; i++) {
-        if (routeDefs[i].path === 'app') {
+        if (routeDefs[i].path === 'app' || forceAddGuard) {
             routeDefs[i].canActivate = [];
 
-            if (routeDefs[i].children && routeDefs[i].children.length > 0) {
+            if (routeDefs[i].children && routeDefs[i].children.length > 0 || forceAddGuard) {
                 addAccessControlChecks(routeDefs[i]);
             }
         } else if (routeDefs[i].path === 'login/:fwd' || routeDefs[i].path === 'login' ) {

@@ -7,15 +7,15 @@
                 <i class="fa fa-circle" aria-hidden="true" [hidden]="!isAnyFilterSelected"></i>
             </button>
         </div>
-        <ax-tab tabKey="commits" tabTitle="Commits" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        <ax-tab *axIfFeatureSet="['full', 'limited_aws', 'limited']" tabKey="commits" tabTitle="Commits" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
         </ax-tab>
         <ax-tab tabKey="jobs" tabTitle="Jobs" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
         </ax-tab>
-        <ax-tab tabKey="templates" tabTitle="Templates" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        <ax-tab *axIfFeatureSet="['full', 'limited_aws', 'limited']" tabKey="templates" tabTitle="Templates" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
         </ax-tab>
-        <ax-tab tabKey="applications" tabTitle="Applications" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        <ax-tab *axIfFeatureSet="['full', 'limited_aws']" tabKey="applications" tabTitle="Applications" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
         </ax-tab>
-        <ax-tab tabKey="deployments" tabTitle="Deployments" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
+        <ax-tab *axIfFeatureSet="['full', 'limited_aws']" tabKey="deployments" tabTitle="Deployments" [noPadding]="true" [isOnlyContentScrollable]="true" [extraVerticalScrollPadding]="156">
         </ax-tab>
     </ax-tabs>
 </div>

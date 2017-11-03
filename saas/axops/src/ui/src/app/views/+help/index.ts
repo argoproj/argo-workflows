@@ -12,7 +12,7 @@ export const routes = [{
 @NgModule({
     declarations: [ HelpComponent ],
     imports: [
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ]
 })
 export default class HelpModule {

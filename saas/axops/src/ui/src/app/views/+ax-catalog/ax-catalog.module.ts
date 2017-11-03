@@ -48,7 +48,7 @@ export class AxCatalogComponentsModule {
 @NgModule({
     imports: [
         AxCatalogComponentsModule,
-        RouterModule.forChild(decorateRouteDefs(routes)),
+        RouterModule.forChild(decorateRouteDefs(routes, true)),
     ],
 })
 export default class AxCatalogModule {
