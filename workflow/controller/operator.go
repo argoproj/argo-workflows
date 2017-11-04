@@ -457,31 +457,35 @@ func shouldExecute(when string) (bool, error) {
 func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowStep, scope *wfScope) (map[string]wfv1.WorkflowStep, error) {
 	newStepGroup := make(map[string]wfv1.WorkflowStep)
 
-	if len(scope.scope) > 0 {
-		log.Printf("asdfsfd")
-	}
-
 	for stepName, step := range stepGroup {
-		newStep := step.DeepCopy()
-
-		for i, param := range newStep.Arguments.Parameters {
-			if param.Value == nil {
-				return nil, errors.Errorf("arguments.parameters.%s value not supplied", param.Name)
-			}
-			// HACK: change use compiled regex to search
-			if !strings.HasPrefix(*param.Value, "{{") {
-				continue
-			}
-			val, err := scope.resolveParameter(*param.Value)
-			if err != nil {
-				return nil, err
-			}
-			newStep.Arguments.Parameters[i] = wfv1.Parameter{
-				Name:  param.Name,
-				Value: &val,
+		// Step 1: replace all parameter scope references in the step
+		// TODO: improve this
+		stepBytes, err := json.Marshal(step)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
+		replaceMap := make(map[string]string)
+		for key, val := range scope.scope {
+			valStr, ok := val.(string)
+			if ok {
+				replaceMap[key] = valStr
 			}
 		}
+		newStepStr := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+			replacement, ok := replaceMap[tag]
+			if !ok {
+				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+			}
+			return w.Write([]byte(replacement))
+		})
+		var newStep wfv1.WorkflowStep
+		err = json.Unmarshal([]byte(newStepStr), &newStep)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
 
+		// Step 2: replace all artifact references
 		for i, art := range newStep.Arguments.Artifacts {
 			if art.From == "" {
 				continue
@@ -493,7 +497,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowS
 			newStep.Arguments.Artifacts[i] = *art
 		}
 
-		newStepGroup[stepName] = *newStep
+		newStepGroup[stepName] = newStep
 	}
 	return newStepGroup, nil
 }
