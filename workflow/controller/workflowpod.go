@@ -7,7 +7,7 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
-	corev1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,14 +18,14 @@ var (
 	// volumePodMetadata makes available the pod metadata available as a file
 	// to the argoexec init and sidekick containers. Specifically, the template
 	// of the pod is stored as an annotation
-	volumePodMetadata = corev1.Volume{
+	volumePodMetadata = apiv1.Volume{
 		Name: common.PodMetadataVolumeName,
-		VolumeSource: corev1.VolumeSource{
-			DownwardAPI: &corev1.DownwardAPIVolumeSource{
-				Items: []corev1.DownwardAPIVolumeFile{
-					corev1.DownwardAPIVolumeFile{
+		VolumeSource: apiv1.VolumeSource{
+			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
+				Items: []apiv1.DownwardAPIVolumeFile{
+					apiv1.DownwardAPIVolumeFile{
 						Path: common.PodMetadataAnnotationsVolumePath,
-						FieldRef: &corev1.ObjectFieldSelector{
+						FieldRef: &apiv1.ObjectFieldSelector{
 							APIVersion: "v1",
 							FieldPath:  "metadata.annotations",
 						},
@@ -34,31 +34,31 @@ var (
 			},
 		},
 	}
-	volumeMountPodMetadata = corev1.VolumeMount{
+	volumeMountPodMetadata = apiv1.VolumeMount{
 		Name:      volumePodMetadata.Name,
 		MountPath: common.PodMetadataMountPath,
 	}
 	// volumeDockerLib provides the argoexec sidekick container access to the minion's
 	// docker containers runtime files (e.g. /var/lib/docker/container). This is required
 	// for argoexec to access the main container's logs and storage to upload output artifacts
-	hostPathDir     = corev1.HostPathDirectory
-	volumeDockerLib = corev1.Volume{
+	hostPathDir     = apiv1.HostPathDirectory
+	volumeDockerLib = apiv1.Volume{
 		Name: common.DockerLibVolumeName,
-		VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{
+		VolumeSource: apiv1.VolumeSource{
+			HostPath: &apiv1.HostPathVolumeSource{
 				Path: common.DockerLibHostPath,
 				Type: &hostPathDir,
 			},
 		},
 	}
-	volumeMountDockerLib = corev1.VolumeMount{
+	volumeMountDockerLib = apiv1.VolumeMount{
 		Name:      volumeDockerLib.Name,
 		MountPath: volumeDockerLib.VolumeSource.HostPath.Path,
 		ReadOnly:  true,
 	}
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
-	execEnvVars = []corev1.EnvVar{
+	execEnvVars = []apiv1.EnvVar{
 		envFromField(common.EnvVarHostIP, "status.hostIP"),
 		envFromField(common.EnvVarPodIP, "status.podIP"),
 		envFromField(common.EnvVarPodName, "metadata.name"),
@@ -67,11 +67,11 @@ var (
 )
 
 // envFromField is a helper to return a EnvVar with the name and field
-func envFromField(envVarName, fieldPath string) corev1.EnvVar {
-	return corev1.EnvVar{
+func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
+	return apiv1.EnvVar{
 		Name: envVarName,
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
+		ValueFrom: &apiv1.EnvVarSource{
+			FieldRef: &apiv1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  fieldPath,
 			},
@@ -86,12 +86,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		return err
 	}
 	mainCtrTmpl := tmpl.DeepCopy()
-	var mainCtr corev1.Container
+	var mainCtr apiv1.Container
 	if mainCtrTmpl.Container != nil {
 		mainCtr = *mainCtrTmpl.Container
 	} else {
 		// script case
-		mainCtr = corev1.Container{
+		mainCtr = apiv1.Container{
 			Image:   mainCtrTmpl.Script.Image,
 			Command: mainCtrTmpl.Script.Command,
 			Args:    []string{common.ScriptTemplateSourcePath},
@@ -100,7 +100,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	mainCtr.Name = common.MainContainerName
 	t := true
 
-	pod := corev1.Pod{
+	pod := apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.NodeID(nodeName),
 			Labels: map[string]string{
@@ -120,13 +120,13 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 				},
 			},
 		},
-		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
+		Spec: apiv1.PodSpec{
+			RestartPolicy: apiv1.RestartPolicyNever,
+			Containers: []apiv1.Container{
 				*waitCtr,
 				mainCtr,
 			},
-			Volumes: []corev1.Volume{
+			Volumes: []apiv1.Volume{
 				volumePodMetadata,
 				volumeDockerLib,
 			},
@@ -137,7 +137,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	// or if it is a script template (which needs to populate the script)
 	if len(mainCtrTmpl.Inputs.Artifacts) > 0 || mainCtrTmpl.Script != nil {
 		initCtr := woc.newInitContainer(tmpl)
-		pod.Spec.InitContainers = []corev1.Container{initCtr}
+		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
 	err = woc.addVolumeReferences(&pod, mainCtrTmpl)
@@ -145,7 +145,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		return err
 	}
 
-	err = addInputArtifactsVolumes(&pod, mainCtrTmpl)
+	err = woc.addInputArtifactsVolumes(&pod, mainCtrTmpl)
 	if err != nil {
 		return err
 	}
@@ -166,8 +166,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if
-			// the controller crashes after creating the pod, but fails
-			// to store the update to etc, and controller retries creation
+			// the controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("pod %s already exists", nodeName)
 			return nil
 		}
@@ -178,54 +177,54 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	return nil
 }
 
-func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) corev1.Container {
+func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; find /argo; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
-	ctr.VolumeMounts = []corev1.VolumeMount{
+	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
 	return *ctr
 }
 
-func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*corev1.Container, error) {
+func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
 	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
 	ctr.Args = []string{argoExecCmd}
-	ctr.VolumeMounts = []corev1.VolumeMount{
+	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 		volumeMountDockerLib,
 	}
 	return ctr, nil
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *corev1.Container {
-	exec := corev1.Container{
+func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
+	exec := apiv1.Container{
 		Name:  name,
 		Image: woc.controller.Config.ExecutorImage,
 		Env:   execEnvVars,
-		Resources: corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.5"),
-				corev1.ResourceMemory: resource.MustParse("512Mi"),
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.5"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
 			},
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("0.1"),
-				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("64Mi"),
 			},
 		},
-		SecurityContext: &corev1.SecurityContext{
+		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
 		},
 	}
 	return &exec
 }
 
-// addVolumeReferences adds any volumeMounts that a container is referencing, to the pod spec.
+// addVolumeReferences adds any volumeMounts that a container is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func (woc *wfOperationCtx) addVolumeReferences(pod *corev1.Pod, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if tmpl.Container == nil {
 		return nil
 	}
@@ -235,14 +234,15 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *corev1.Pod, tmpl *wfv1.Templ
 			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
 		}
 		if len(pod.Spec.Volumes) == 0 {
-			pod.Spec.Volumes = make([]corev1.Volume, 0)
+			pod.Spec.Volumes = make([]apiv1.Volume, 0)
 		}
 		pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
 	}
 	return nil
 }
 
-func getVolByName(name string, wf *wfv1.Workflow) *corev1.Volume {
+// getVolByName is a helper to retreive a volume by its name, either from the volumes or claims section
+func getVolByName(name string, wf *wfv1.Workflow) *apiv1.Volume {
 	for _, vol := range wf.Spec.Volumes {
 		if vol.Name == name {
 			return &vol
@@ -256,30 +256,48 @@ func getVolByName(name string, wf *wfv1.Workflow) *corev1.Volume {
 	return nil
 }
 
-// addInputArtifactVolumes sets up the artifacts volume to the pod if the user's container requires input artifacts.
-// To support input artifacts, the init container shares a empty dir volume with the main container.
+// addInputArtifactVolumes sets up the artifacts volume to the pod to support input artifacts to containers.
+// In order support input artifacts, the init container shares a emptydir volume with the main container.
 // It is the responsibility of the init container to load all artifacts to the mounted emptydir location.
-// (e.g. /inputs/artifacts/CODE). The shared emptydir is mapped to the correspoding location in the main container.
-func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
+// (e.g. /inputs/artifacts/CODE). The shared emptydir is mapped to the user's desired location in the main
+// container.
+//
+// It is possible that a user specifies overlapping paths of an artifact path with a volume mount,
+// (e.g. user wants an external volume mounted at /src, while simultaneously wanting an input artifact
+// placed at /src/some/subdirectory). When this occurs, we need to prevent the duplicate bind mounting of
+// overlapping volumes, since the outer volume will not see the changes made in the artifact emptydir.
+//
+// To prevent overlapping bind mounts, both the controller and executor will recognize the overlap between
+// the explicit volume mount and the artifact emptydir and prevent all uses of the emptydir for purposes of
+// loading data. The controller will omit mounting the emptydir to the artifact path, and the executor
+// will load the artifact in the in user's volume (as opposed to the emptydir)
+func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.Inputs.Artifacts) == 0 {
 		return nil
 	}
-	volName := "input-artifacts"
-	artVol := corev1.Volume{
-		Name: volName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
+	artVol := apiv1.Volume{
+		Name: "input-artifacts",
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, artVol)
 
 	for i, initCtr := range pod.Spec.InitContainers {
 		if initCtr.Name == common.InitContainerName {
-			volMount := corev1.VolumeMount{
-				Name:      volName,
+			volMount := apiv1.VolumeMount{
+				Name:      artVol.Name,
 				MountPath: common.ExecutorArtifactBaseDir,
 			}
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
+
+			// We also add the user supplied mount paths to the init container,
+			// in case the executor needs to load artifacts to this volume
+			// instead of the artifacts volume
+			for _, mnt := range tmpl.Container.VolumeMounts {
+				mnt.MountPath = "/mainctrfs" + mnt.MountPath
+				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
+			}
 
 			// HACK: debug purposes. sleep to experiment with init container artifacts
 			initCtr.Command = []string{"sh", "-c"}
@@ -291,12 +309,11 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 	}
 
 	mainCtrIndex := 0
-	var mainCtr *corev1.Container
+	var mainCtr *apiv1.Container
 	for i, ctr := range pod.Spec.Containers {
 		if ctr.Name == common.MainContainerName {
 			mainCtrIndex = i
 			mainCtr = &ctr
-			break
 		}
 		if ctr.Name == common.WaitContainerName {
 			// HACK: debug purposes. sleep to experiment with wait container artifacts
@@ -306,10 +323,7 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 		}
 	}
 	if mainCtr == nil {
-		errors.InternalError("Could not find main container in pod spec")
-	}
-	if mainCtr.VolumeMounts == nil {
-		mainCtr.VolumeMounts = []corev1.VolumeMount{}
+		panic("Could not find main container in pod spec")
 	}
 	// TODO: the order in which we construct the volume mounts may matter,
 	// especially if they are overlapping.
@@ -317,10 +331,22 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 		if art.Path == "" {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
-		volMount := corev1.VolumeMount{
-			Name:      volName,
+		overlap := common.FindOverlappingVolume(tmpl, art.Path)
+		if overlap != nil {
+			// artifact path overlaps with a mounted volume. do not mount the
+			// artifacts emptydir to the main container. init would have copied
+			// the artifact to the user's volume instead
+			woc.log.Debugf("skip volume mount of %s (%s): overlaps with mount %s at %s",
+				art.Name, art.Path, overlap.Name, overlap.MountPath)
+			continue
+		}
+		volMount := apiv1.VolumeMount{
+			Name:      artVol.Name,
 			MountPath: art.Path,
 			SubPath:   art.Name,
+		}
+		if mainCtr.VolumeMounts == nil {
+			mainCtr.VolumeMounts = make([]apiv1.VolumeMount, 0)
 		}
 		mainCtr.VolumeMounts = append(mainCtr.VolumeMounts, volMount)
 	}
@@ -330,7 +356,7 @@ func addInputArtifactsVolumes(pod *corev1.Pod, tmpl *wfv1.Template) error {
 
 // addOutputArtifactsRepoMetaData updates the template with artifact repository information configured in the controller.
 // This is skipped for artifacts which have explicitly set an output artifact location in the template
-func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	for i, art := range tmpl.Outputs.Artifacts {
 		if art.HasLocation() {
 			// The artifact destination was explicitly set in the template. Skip
@@ -358,19 +384,19 @@ func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *corev1.Pod, tmpl 
 
 // addScriptVolume sets up the shared volume between init container and main container
 // containing the template script source code
-func addScriptVolume(pod *corev1.Pod) {
+func addScriptVolume(pod *apiv1.Pod) {
 	volName := "script"
-	scriptVol := corev1.Volume{
+	scriptVol := apiv1.Volume{
 		Name: volName,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		VolumeSource: apiv1.VolumeSource{
+			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
 	pod.Spec.Volumes = append(pod.Spec.Volumes, scriptVol)
 
 	for i, initCtr := range pod.Spec.InitContainers {
 		if initCtr.Name == common.InitContainerName {
-			volMount := corev1.VolumeMount{
+			volMount := apiv1.VolumeMount{
 				Name:      volName,
 				MountPath: common.ScriptTemplateEmptyDir,
 			}
@@ -384,12 +410,12 @@ func addScriptVolume(pod *corev1.Pod) {
 	found := false
 	for i, ctr := range pod.Spec.Containers {
 		if ctr.Name == common.MainContainerName {
-			volMount := corev1.VolumeMount{
+			volMount := apiv1.VolumeMount{
 				Name:      volName,
 				MountPath: common.ScriptTemplateEmptyDir,
 			}
 			if ctr.VolumeMounts == nil {
-				ctr.VolumeMounts = []corev1.VolumeMount{volMount}
+				ctr.VolumeMounts = []apiv1.VolumeMount{volMount}
 			} else {
 				ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
 			}
@@ -410,6 +436,6 @@ func addScriptVolume(pod *corev1.Pod) {
 		}
 	}
 	if !found {
-		panic("asdf")
+		panic("Unable to locate main container")
 	}
 }

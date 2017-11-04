@@ -3,7 +3,7 @@ package v1
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -46,12 +46,12 @@ type WorkflowList struct {
 }
 
 type WorkflowSpec struct {
-	Templates            []Template                     `json:"templates"`
-	Entrypoint           string                         `json:"entrypoint"`
-	Arguments            Arguments                      `json:"arguments,omitempty"`
-	Volumes              []corev1.Volume                `json:"volumes,omitempty"`
-	VolumeClaimTemplates []corev1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
-	Timeout              string                         `json:"timeout,omitempty"`
+	Templates            []Template                    `json:"templates"`
+	Entrypoint           string                        `json:"entrypoint"`
+	Arguments            Arguments                     `json:"arguments,omitempty"`
+	Volumes              []apiv1.Volume                `json:"volumes,omitempty"`
+	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
+	Timeout              string                        `json:"timeout,omitempty"`
 }
 
 type Template struct {
@@ -63,7 +63,7 @@ type Template struct {
 	Steps []map[string]WorkflowStep `json:"steps,omitempty"`
 
 	// Container
-	Container *corev1.Container `json:"container,omitempty"`
+	Container *apiv1.Container `json:"container,omitempty"`
 
 	// Script
 	Script *Script `json:"script,omitempty"`
@@ -122,7 +122,7 @@ type Arguments struct {
 type WorkflowStatus struct {
 	Tree                   NodeTree              `json:"tree"`
 	Nodes                  map[string]NodeStatus `json:"nodes"`
-	PersistentVolumeClaims []corev1.Volume       `json:"persistentVolumeClaims,omitempty"`
+	PersistentVolumeClaims []apiv1.Volume        `json:"persistentVolumeClaims,omitempty"`
 }
 
 type NodeTree struct {
@@ -156,10 +156,10 @@ func (n NodeStatus) Successful() bool {
 }
 
 type S3Bucket struct {
-	Endpoint        string                   `json:"endpoint"`
-	Bucket          string                   `json:"bucket"`
-	AccessKeySecret corev1.SecretKeySelector `json:"accessKeySecret"`
-	SecretKeySecret corev1.SecretKeySelector `json:"secretKeySecret"`
+	Endpoint        string                  `json:"endpoint"`
+	Bucket          string                  `json:"bucket"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
+	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
 }
 
 type S3Artifact struct {
@@ -168,9 +168,9 @@ type S3Artifact struct {
 }
 
 type GitArtifact struct {
-	URL            string                    `json:"url"`
-	UsernameSecret *corev1.SecretKeySelector `json:"usernameSecret"`
-	PasswordSecret *corev1.SecretKeySelector `json:"passwordSecret"`
+	URL            string                   `json:"url"`
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret"`
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret"`
 }
 
 type HTTPArtifact struct {
