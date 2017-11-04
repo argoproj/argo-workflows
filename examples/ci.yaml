@@ -23,10 +23,6 @@ spec:
   - name: build
     inputs:
       artifacts:
-        # NOTE: we need to handle overlapping input artifacts with volume mounts.
-        # In the case where input artifacts are desired to be placed in a sub-directory
-        # of a volume mount, the executor should place the artifact in the volume, as
-        # opposed to the artifacts volume
         - name: CODE
           path: /go/src/github.com/golang/example
           git:
