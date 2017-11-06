@@ -20,6 +20,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "6d15c0ae71e55ed645c21ac4945aaadbc0e9a590"
+
+[[projects]]
   name = "github.com/emicklei/go-restful"
   packages = [".","log"]
   revision = "5741799b275a3c4a5a9623a993576d7545cf7b5c"
@@ -36,6 +42,12 @@
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/go-ini/ini"
+  packages = ["."]
+  revision = "f280b3ba517bf5fc98922624f21fb0e7a92adaec"
+  version = "v1.30.3"
 
 [[projects]]
   branch = "master"
@@ -144,6 +156,18 @@
   name = "github.com/mailru/easyjson"
   packages = ["buffer","jlexer","jwriter"]
   revision = "2a92e673c9a6302dd05c3a691ae1f24aef46457d"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/minio/go-homedir"
+  packages = ["."]
+  revision = "21304a94172ae3a09dee2cd86a12fb6f842138c7"
+
+[[projects]]
+  name = "github.com/minio/minio-go"
+  packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
+  revision = "4e0f567303d4cc90ceb055a451959fb9fc391fb9"
+  version = "3.0.3"
 
 [[projects]]
   branch = "master"
@@ -274,6 +298,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "abd8f296d9c048a8c4d27477621ef053f1d40c21a5d77c518c723f8f4b97ea02"
+  inputs-digest = "2a5ae27eff19d3bff3edb4afc1fdd28ee3d4eaeda6fb5d03dd0053c0300e1a10"
   solver-name = "gps-cdcl"
   solver-version = 1
