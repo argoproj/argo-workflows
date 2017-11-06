@@ -305,6 +305,7 @@ class AXPlatform(object):
         else:
             self._replacing = self._generate_replacing_for_user_provisioned_cluster()
 
+        os.environ["AX_CLUSTER_NAME_ID"] = self._cluster_name_id
         logger.debug("Replacing ENVs: %s", self._replacing)
 
         # TODO: remove component's dependencies to AXOPS_EXT_DNS env (#32)
