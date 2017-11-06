@@ -18,7 +18,7 @@ var (
 	argoexec *executor.WorkflowExecutor
 
 	// Global CLI flags
-	globalArgs globalFlags
+	GlobalArgs globalFlags
 )
 
 func init() {
@@ -40,8 +40,8 @@ type globalFlags struct {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&globalArgs.hostIP, "host-ip", common.EnvVarHostIP, fmt.Sprintf("IP of host. (Default: %s)", common.EnvVarHostIP))
-	RootCmd.PersistentFlags().StringVar(&globalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
+	RootCmd.PersistentFlags().StringVar(&GlobalArgs.hostIP, "host-ip", common.EnvVarHostIP, fmt.Sprintf("IP of host. (Default: %s)", common.EnvVarHostIP))
+	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
 }
 
 // initExecutor is a helper to initialize the global argoexec instance

@@ -27,6 +27,8 @@ const (
 	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
 	//
 	PodStatusVolumePath = "podstatus"
+	// PodAnnotationsTemplatePropertyName is the property name for template in the annotation file
+	PodAnnotationsTemplatePropertyName = "workflows.argoproj.io/template"
 
 	// DockerLibVolumeName is the volume name for the /var/lib/docker host path volume
 	DockerLibVolumeName = "docker-lib"
