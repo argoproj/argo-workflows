@@ -21,7 +21,9 @@
         padding: 40px 20px;
         font-weight: 500;
         color: #145eb0;
+        background: url(assets/styles/icons/confetti.png) repeat;
         background-color: $ax-color-gray-1;
+        background-position: 0 50px;
     }
 
     &__options {

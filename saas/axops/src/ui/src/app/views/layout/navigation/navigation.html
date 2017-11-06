@@ -68,7 +68,7 @@
             <div class="nav__ico"><i class="ax-icon-cashboard"></i></div>
             <div class="nav__name">Cashboard</div>
         </a>
-        <a class="nav__item" routerLink="hosts" routerLinkActive="active" (click)="close()">
+        <a class="nav__item" routerLink="hosts" routerLinkActive="active" (click)="close()" *axIfFeatureSet="['full', 'limited_aws']">
             <div class="nav__ico"><i class="ax-icon-axcluster"></i></div>
             <div class="nav__name">Cluster</div>
         </a>
@@ -81,7 +81,7 @@
             <div class="nav__ico"><i class="ax-icon-appstore"></i></div>
             <div class="nav__name">Catalog</div>
         </a>
-        <a class="nav__item nav__item_tutorial" routerLink="fixtures" routerLinkActive="active" (click)="close()" data-tutorial="fixtures">
+        <a class="nav__item nav__item_tutorial" routerLink="fixtures" routerLinkActive="active" (click)="close()" data-tutorial="fixtures" *axIfFeatureSet="['full', 'limited_aws']">
             <div class="nav__ico"><i class="ax-icon-fixture"></i></div>
             <div class="nav__name">Fixtures</div>
         </a>

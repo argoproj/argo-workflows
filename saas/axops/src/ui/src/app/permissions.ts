@@ -34,6 +34,8 @@ export const permissions = [
     { path: '/app/metrics/*', permission: ['super_admin', 'admin', 'developer'] },
     { path: '/app/applications/*', permission: [], featuresSets: ['full'] },
     { path: '/app/volumes/*', permission: [], featuresSets: ['full', 'limited_aws'] },
+    { path: '/app/fixtures/*', permission: [], featuresSets: ['full', 'limited_aws'] },
+    { path: '/app/hosts/*', permission: [], featuresSets: ['full', 'limited_aws'] },
     { path: '/app/integrations/*', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
     { path: '/app/config-management/*', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },
     { path: '/app/settings/system', permission: [], featuresSets: ['full', 'limited_aws', 'limited'] },

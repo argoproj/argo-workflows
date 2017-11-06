@@ -7,11 +7,14 @@ import { SystemService } from './system.service';
 @Injectable()
 export class FeaturesSetsService {
 
-    constructor(private systemService: SystemService) {}
+    private featuresSet: Promise<string>;
+
+    constructor(private systemService: SystemService) {
+        this.featuresSet = this.systemService.getVersion().toPromise().then(info => info.features_set || 'limited');
+    }
 
     public async getFeaturesSet(): Promise<string> {
-        let info = await this.systemService.getVersion().toPromise();
-        return info.features_set || 'full';
+        return this.featuresSet;
     }
 
     public checkAccess(state: RouterStateSnapshot) {
@@ -28,7 +31,7 @@ export class FeaturesSetsService {
                 });
                 return observer.next(flag);
             });
-        }).delay(200).first().toPromise();
+        }).first().toPromise();
     }
 }
 
