@@ -82,22 +82,27 @@ export const GLOBAL_SEARCH_TABS = {
     COMMITS: {
         name: 'commits',
         description: 'Commits',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     APPLICATIONS: {
         name: 'applications',
         description: 'Applications',
+        featureSets: ['full', 'limited_aws'],
     },
     DEPLOYMENTS: {
         name: 'deployments',
         description: 'Deployments',
+        featureSets: ['full', 'limited_aws'],
     },
     ARTIFACT_TAGS: {
         name: 'artifact_tags',
         description: 'Artifact Tags',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     TEMPLATES: {
         name: 'templates',
         description: 'Templates',
+        featureSets: ['full', 'limited_aws', 'limited'],
     }
 };
 

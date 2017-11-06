@@ -10,7 +10,7 @@ import { Observable, Subject } from 'rxjs';
 
 import { ViewUtils } from '../view-utils';
 import { SearchIndex, SEARCH_INDEX_TYPE } from '../../model';
-import { GlobalSearchService } from '../../services';
+import { GlobalSearchService, FeaturesSetsService } from '../../services';
 import {
     GLOBAL_SEARCH_TABS, GLOBAL_SEARCH_SUGGESTION_FIELDS_CONFIG, GlobalSearchFilters, GlobalSearchSetting,
     SearchHistory, SearchHistoryItem, LOCAL_SEARCH_CATEGORIES
@@ -31,46 +31,55 @@ const NAVIGATION_SHORTCUTS = {
         name: 'application',
         icon: 'ax-icon-application',
         url: '/app/applications',
+        featureSets: ['full', 'limited_aws'],
     },
     TEMPLATES: {
         name: 'templates',
         icon: 'ax-icon-template',
         url: '/app/service-catalog/overview',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     POLICIES: {
         name: 'policies',
         icon: 'ax-icon-policies',
         url: '/app/policies/overview',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     APPSTORE: {
         name: 'appstore',
         icon: 'ax-icon-appstore',
         url: '/app/ax-catalog',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     CASHBOARD: {
         name: 'cashboard',
         icon: 'ax-icon-cashboard',
         url: '/app/cashboard',
+        featureSets: ['full'],
     },
     METRICS: {
         name: 'metrics',
         icon: 'ax-icon-metrics',
         url: '/app/metrics',
+        featureSets: ['full', 'limited_aws', 'limited'],
     },
     FIXTURES: {
         name: 'fixtures',
         icon: 'ax-icon-fixture',
         url: '/app/fixtures',
+        featureSets: ['full', 'limited_aws'],
     },
     VOLUMES: {
         name: 'volumes',
         icon: 'ax-icon-volume',
         url: '/app/volumes',
+        featureSets: ['full', 'limited_aws'],
     },
     HOSTS: {
         name: 'hosts',
         icon: 'ax-icon-axcluster',
         url: '/app/hosts',
+        featureSets: ['full', 'limited_aws'],
     }
 };
 
@@ -114,7 +123,7 @@ export class GlobalSearchInputComponent implements OnInit, OnChanges, OnDestroy 
     private currentStoreKey: string = '';
     private searchHistoryList: SearchHistory = new SearchHistory();
     private searchTerms = new Subject<SearchTerm>();
-    private dropdownNavigationShortcuts: { name: string, icon: string, url: string }[] = [
+    private dropdownNavigationShortcuts: { name: string, icon: string, url: string, featureSets?: string[] }[] = [
         NAVIGATION_SHORTCUTS.TIMELINE,
         NAVIGATION_SHORTCUTS.APPLICATION,
         NAVIGATION_SHORTCUTS.TEMPLATES,
@@ -138,7 +147,12 @@ export class GlobalSearchInputComponent implements OnInit, OnChanges, OnDestroy 
     constructor(private elementRef: ElementRef,
                 private location: Location,
                 private router: Router,
-                private globalSearchService: GlobalSearchService) {
+                private globalSearchService: GlobalSearchService,
+                private featuresSetsService: FeaturesSetsService) {
+        this.featuresSetsService.getFeaturesSet().then(featureSet => {
+            this.dropdownNavigationShortcuts = this.dropdownNavigationShortcuts.filter(item => !item.featureSets || item.featureSets.indexOf(featureSet) > -1);
+            this.searchInCategories = this.searchInCategories.filter(item => !item.featureSets || item.featureSets.indexOf(featureSet) > -1);
+        });
     }
 
     public ngOnInit() {
