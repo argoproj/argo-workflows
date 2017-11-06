@@ -308,6 +308,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 
 			// HACK: debug purposes. sleep to experiment with init container artifacts
 			initCtr.Command = []string{"sh", "-c"}
+			//initCtr.Args = []string{"argoexec artifacts load"}
 			initCtr.Args = []string{"sleep 999999; echo done"}
 
 			pod.Spec.InitContainers[i] = initCtr
