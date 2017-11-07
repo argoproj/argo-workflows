@@ -81,21 +81,23 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) error {
 	woc.log.Infof("Creating Pod: %s", nodeName)
+	tmpl = tmpl.DeepCopy()
 	waitCtr, err := woc.newWaitContainer(tmpl)
 	if err != nil {
 		return err
 	}
-	mainCtrTmpl := tmpl.DeepCopy()
 	var mainCtr apiv1.Container
-	if mainCtrTmpl.Container != nil {
-		mainCtr = *mainCtrTmpl.Container
-	} else {
+	if tmpl.Container != nil {
+		mainCtr = *tmpl.Container
+	} else if tmpl.Script != nil {
 		// script case
 		mainCtr = apiv1.Container{
-			Image:   mainCtrTmpl.Script.Image,
-			Command: mainCtrTmpl.Script.Command,
+			Image:   tmpl.Script.Image,
+			Command: tmpl.Script.Command,
 			Args:    []string{common.ScriptTemplateSourcePath},
 		}
+	} else {
+		return errors.InternalError("Cannot create container from non-container/script template")
 	}
 	mainCtr.Name = common.MainContainerName
 	t := true
@@ -135,28 +137,33 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 
 	// Add init container only if it needs input artifacts
 	// or if it is a script template (which needs to populate the script)
-	if len(mainCtrTmpl.Inputs.Artifacts) > 0 || mainCtrTmpl.Script != nil {
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.Script != nil {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
-	err = woc.addVolumeReferences(&pod, mainCtrTmpl)
+	err = woc.addVolumeReferences(&pod, tmpl)
 	if err != nil {
 		return err
 	}
 
-	err = woc.addInputArtifactsVolumes(&pod, mainCtrTmpl)
+	err = woc.addInputArtifactsVolumes(&pod, tmpl)
 	if err != nil {
 		return err
 	}
-	woc.addOutputArtifactsRepoMetaData(&pod, mainCtrTmpl)
+	woc.addOutputArtifactsRepoMetaData(&pod, tmpl)
 
 	if tmpl.Script != nil {
 		addScriptVolume(&pod)
 	}
 
+	err = addSidecars(&pod, tmpl)
+	if err != nil {
+		return err
+	}
+
 	// Set the container template JSON in pod annotations, which executor will look to for artifact
-	tmplBytes, err := json.Marshal(mainCtrTmpl)
+	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return err
 	}
@@ -438,4 +445,35 @@ func addScriptVolume(pod *apiv1.Pod) {
 	if !found {
 		panic("Unable to locate main container")
 	}
+}
+
+// addSidecars adds all sidecars to the pod spec of the step.
+// Optionally volume mounts from the main container to the sidecar
+func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if len(tmpl.Sidecars) == 0 {
+		return nil
+	}
+	var mainCtr *apiv1.Container
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name != common.MainContainerName {
+			continue
+		}
+		mainCtr = &ctr
+		break
+	}
+	if mainCtr == nil {
+		panic("Unable to locate main container")
+	}
+	for _, sidecar := range tmpl.Sidecars {
+		if sidecar.Options.VolumeMirroring != nil && *sidecar.Options.VolumeMirroring {
+			for _, volMnt := range mainCtr.VolumeMounts {
+				if sidecar.VolumeMounts == nil {
+					sidecar.VolumeMounts = make([]apiv1.VolumeMount, 0)
+				}
+				sidecar.VolumeMounts = append(sidecar.VolumeMounts, volMnt)
+			}
+		}
+		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
+	}
+	return nil
 }

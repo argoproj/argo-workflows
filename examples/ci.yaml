@@ -23,10 +23,10 @@ spec:
   - name: build
     inputs:
       artifacts:
-        - name: CODE
-          path: /go/src/github.com/golang/example
-          git:
-            url: https://github.com/golang/example.git
+      - name: CODE
+        path: /go/src/github.com/golang/example
+        git:
+          url: https://github.com/golang/example.git
     container:
       image: golang:1.8
       command: [sh, -c]
