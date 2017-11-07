@@ -67,6 +67,9 @@ type Template struct {
 
 	// Script
 	Script *Script `json:"script,omitempty"`
+
+	// Sidecar containers
+	Sidecars []Sidecar `json:"sidecars,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -82,7 +85,7 @@ type Parameter struct {
 	Default *string `json:"default,omitempty"`
 }
 
-// InputArtifact indicates an artifact to place at a specified path
+// Artifact indicates an artifact to place at a specified path
 type Artifact struct {
 	Name string `json:"name"`
 	// Path is the container path to the artifact
@@ -117,6 +120,28 @@ type Item interface{}
 type Arguments struct {
 	Parameters []Parameter `json:"parameters,omitempty"`
 	Artifacts  []Artifact  `json:"artifacts,omitempty"`
+}
+
+// Sidecar is a container which runs alongside the main container
+type Sidecar struct {
+	apiv1.Container `json:",inline"`
+
+	Options SidecarOptions `json:"options,omitempty"`
+}
+
+// SidecarOptions is a way to customize the behavior of a sidecar and how it
+// affects the main container.
+type SidecarOptions struct {
+
+	// volumeMirroring will mount the same volumes specified in the main container
+	// to the sidecar (including artifacts), at the same mountPaths. This enables
+	// dind daemon to partially see the same filesystem as the main container in
+	// order to use features such as docker volume binding
+	VolumeMirroring *bool `json:"volumeMirroring,omitempty"`
+
+	// Other side options to consider:
+	// * Lifespan - allow a sidecar to live longer/complete than the main container
+	// * PropogateFailure - if a sidecar fails, fail the step
 }
 
 type WorkflowStatus struct {

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: argo-wf-
+spec:
+  entrypoint: dind-sidecar-example
+  templates:
+  - name: dind-sidecar-example
+    container:
+      image: docker:17.10
+      command: [sh, -c]
+      args: ["sleep 5; docker run --rm debian:latest cat /etc/os-release"]
+      env:
+      - name: DOCKER_HOST
+        value: 127.0.0.1
+    sidecars:
+    - name: dind
+      image: docker:17.10-dind
+      securityContext:
+        privileged: true
+      sidecarOptions:
+        # volumeMirroring will mount the same volumes specified in the main container
+        # to the sidecar (including artifacts), at the same mountPaths. This enables
+        # dind daemon to partially see the same filesystem as the main container in
+        # order to use features such as docker volume binding
+        volumeMirroring: true
