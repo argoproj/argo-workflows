@@ -16,8 +16,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//"k8s.io/client-go/tools/clientcmd"
-	//b64 "encoding/base64"
 )
 
 func init() {
@@ -54,7 +52,7 @@ func GetTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 	reader := bufio.NewReader(file)
 
 	// Prefix of template property in the annotation file
-	prefix := fmt.Sprintf("%s=", common.PodAnnotationsTemplatePropertyName)
+	prefix := fmt.Sprintf("%s=", common.AnnotationKeyTemplate)
 
 	for {
 		// Read line-by-line
@@ -117,11 +115,7 @@ func GetTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 	}
 
 	// If reaching here, then no template prefix in the file
-	return errors.Errorf(errors.CodeInternal, "No template property found from annotation file: %s", annotationsPath)
-}
-
-func LoadInputArtifacts(template *wfv1.Template) error {
-	return nil
+	return errors.InternalErrorf("No template property found from annotation file: %s", annotationsPath)
 }
 
 func loadArtifacts(cmd *cobra.Command, args []string) {
@@ -143,10 +137,10 @@ func loadArtifacts(cmd *cobra.Command, args []string) {
 
 	// Initialize in-cluster Kubernetes client
 	config, err := rest.InClusterConfig()
-	//config, err := clientcmd.BuildConfigFromFlags("", "/Users/Tianhe/.kube/cluster_minikube.conf")
 	if err != nil {
 		panic(err.Error())
 	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
