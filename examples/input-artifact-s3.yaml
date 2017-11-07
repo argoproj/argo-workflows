@@ -12,8 +12,8 @@ spec:
         path: /src
         s3:
           endpoint: storage.googleapis.com
-          bucket: tianhe-test
-          key: testfile
+          bucket: my-bucket-name
+          key: path/in/bucket
           accessKeySecret:
             name: my-s3-credentials
             key: accessKey

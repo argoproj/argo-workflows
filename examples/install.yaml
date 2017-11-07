@@ -4,7 +4,7 @@ metadata:
   name: workflow-controller-configmap
 data:
   config: |
-    executorImage: sytianhe/argoexec:latest
+    executorImage: argoproj/argoexec:latest
     artifactRepository:
       s3:
         bucket: my-bucket
@@ -16,32 +16,32 @@ data:
           name: my-s3-credentials
           key: secretKey
 
-#
-#---
-#apiVersion: apps/v1beta1
-#kind: Deployment
-#metadata:
-#  name: workflow-controller-deployment
-#spec:
-#  selector:
-#    matchLabels:
-#      app: workflow-controller
-#  template:
-#    metadata:
-#      labels:
-#        app: workflow-controller
-#    spec:
-#      containers:
-#      - name: workflow-controller
-#        image: argoproj/workflow-controller:latest
-#        command: [/bin/workflow-controller]
-#        args: [--configmap, workflow-controller-configmap]
-#
-#---
-#apiVersion: v1
-#kind: Secret
-#metadata:
-#  name: artifacts-s3-credentials
-#data:
-#  accessKey: AAABBBCCC01234567890
-#  secretKey: abc123XYZ456ABC123aaabbbcccddd1112223334
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: workflow-controller-deployment
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      containers:
+      - name: workflow-controller
+        image: argoproj/workflow-controller:latest
+        command: [/bin/workflow-controller]
+        args: [--configmap, workflow-controller-configmap]
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: artifacts-s3-credentials
+data:
+  accessKey: AAABBBCCC01234567890
+  secretKey: abc123XYZ456ABC123aaabbbcccddd1112223334
