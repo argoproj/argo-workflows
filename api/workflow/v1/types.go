@@ -60,7 +60,7 @@ type Template struct {
 	Outputs Outputs `json:"outputs,omitempty"`
 
 	// Workflow fields
-	Steps []map[string]WorkflowStep `json:"steps,omitempty"`
+	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
 	// Container
 	Container *apiv1.Container `json:"container,omitempty"`
@@ -107,6 +107,7 @@ type Outputs struct {
 
 // WorkflowStep is a template ref
 type WorkflowStep struct {
+	Name      string    `json:"name,omitempty"`
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`

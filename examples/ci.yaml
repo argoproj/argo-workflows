@@ -15,9 +15,9 @@ spec:
   templates:
   - name: ci-example
     steps:
-    - BUILD:
+    - - name: build
         template: build
-    - TEST:
+    - - name: test
         template: test
 
   - name: build
