@@ -98,7 +98,7 @@ export class GitPanelComponent implements OnInit {
                     success => {
                         this.showLoader = false;
                         this.notificationService.showNotification.emit({
-                            message: `Git account: ${tool.username} was successfully connected.`});
+                            message: `Git repository: ${tool.url} was successfully connected.`});
                         this.created.emit(success);
                     }, () => {
                         this.showLoader = false;
@@ -121,7 +121,7 @@ export class GitPanelComponent implements OnInit {
             this.toolService.updateToolAsync(tool).subscribe(
                 success => {
                     this.created.emit(success);
-                    this.notificationService.showNotification.emit({message: `Git account: ${tool.username} was successfully updated.`});
+                    this.notificationService.showNotification.emit({message: `Git repository: ${tool.url} was successfully updated.`});
                 }
             );
         });
@@ -134,7 +134,7 @@ export class GitPanelComponent implements OnInit {
                     () => {
                         this.deleted.emit({});
                         this.notificationService.showNotification.emit(
-                            {message: `Git account: ${this.gitSource.username} was successfully disconnected.`});
+                            {message: `Git repository: ${this.gitSource.url} was successfully disconnected.`});
                     }
                 );
             }
