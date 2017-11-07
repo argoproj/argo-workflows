@@ -32,7 +32,7 @@ export const permissions = [
     { path: '/app/performance', permission: ['super_admin', 'admin', 'developer'] },
     { path: '/app/hosts', permission: ['super_admin', 'admin', 'developer'] },
     { path: '/app/metrics/*', permission: ['super_admin', 'admin', 'developer'] },
-    { path: '/app/applications/*', permission: [], featuresSets: ['full'] },
+    { path: '/app/applications/*', permission: [], featuresSets: ['full', 'limited_aws'] },
     { path: '/app/volumes/*', permission: [], featuresSets: ['full', 'limited_aws'] },
     { path: '/app/fixtures/*', permission: [], featuresSets: ['full', 'limited_aws'] },
     { path: '/app/hosts/*', permission: [], featuresSets: ['full', 'limited_aws'] },
