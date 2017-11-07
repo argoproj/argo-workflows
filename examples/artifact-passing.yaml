@@ -7,9 +7,9 @@ spec:
   templates:
   - name: artifact-example
     steps:
-    - COWSAY:
+    - - name: COWSAY
         template: cowsay
-    - PRINT:
+    - - name: PRINT
         template: print-message
         arguments:
           artifacts:

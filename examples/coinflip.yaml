@@ -7,14 +7,14 @@ spec:
   templates:
   - name: coinflip
     steps:
-    - FLIP-COIN:
+    - - name: flip-coin
         template: flip-coin
-    - HEADS:
+    - - name: heads
         template: heads
-        when: "{{steps.FLIP-COIN.outputs.result}} == heads"
-      TAILS:
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails
         template: tails
-        when: "{{steps.FLIP-COIN.outputs.result}} == tails"
+        when: "{{steps.flip-coin.outputs.result}} == tails"
 
   - name: flip-coin
     script:

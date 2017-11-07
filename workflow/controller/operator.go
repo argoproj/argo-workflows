@@ -321,8 +321,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 		}
 
 		// HACK: need better way to add children to scope
-		for stepName := range stepGroup {
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, stepName)
+		for _, step := range stepGroup {
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			childNodeID := woc.wf.NodeID(childNodeName)
 			childNode, ok := woc.wf.Status.Nodes[childNodeID]
 			if !ok {
@@ -335,15 +335,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				continue
 			}
 			if childNode.Outputs.Result != nil {
-				key := fmt.Sprintf("steps.%s.outputs.result", stepName)
+				key := fmt.Sprintf("steps.%s.outputs.result", step.Name)
 				scope.addParamToScope(key, *childNode.Outputs.Result)
 			}
 			for _, outParam := range childNode.Outputs.Parameters {
-				key := fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, outParam.Name)
+				key := fmt.Sprintf("steps.%s.outputs.parameters.%s", step.Name, outParam.Name)
 				scope.addParamToScope(key, *outParam.Value)
 			}
 			for _, outArt := range childNode.Outputs.Artifacts {
-				key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", stepName, outArt.Name)
+				key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", step.Name, outArt.Name)
 				scope.addArtifactToScope(key, outArt)
 			}
 		}
@@ -354,7 +354,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 
 // executeStepGroup examines a map of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
+func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
 	nodeID := woc.wf.NodeID(sgNodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
@@ -382,8 +382,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup map[string]wfv1.WorkflowSt
 
 	childNodeIDs := make([]string, 0)
 	// First kick off all parallel steps in the group
-	for stepName, step := range stepGroup {
-		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, stepName)
+	for _, step := range stepGroup {
+		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 
 		// Check the step's when clause to decide if it should execute
@@ -454,17 +454,16 @@ func shouldExecute(when string) (bool, error) {
 // 2) dereferencing output.result from previous steps
 // 2) dereferencing artifacts from previous steps
 // 3) dereferencing artifacts from inputs
-func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowStep, scope *wfScope) (map[string]wfv1.WorkflowStep, error) {
-	newStepGroup := make(map[string]wfv1.WorkflowStep)
+func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
+	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
-	for stepName, step := range stepGroup {
+	for i, step := range stepGroup {
 		// Step 1: replace all parameter scope references in the step
 		// TODO: improve this
 		stepBytes, err := json.Marshal(step)
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 		replaceMap := make(map[string]string)
 		for key, val := range scope.scope {
 			valStr, ok := val.(string)
@@ -472,13 +471,11 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowS
 				replaceMap[key] = valStr
 			}
 		}
-		newStepStr := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-			replacement, ok := replaceMap[tag]
-			if !ok {
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			return w.Write([]byte(replacement))
-		})
+		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
+		newStepStr, err := replace(fstTmpl, replaceMap, false)
+		if err != nil {
+			return nil, err
+		}
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
@@ -486,7 +483,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowS
 		}
 
 		// Step 2: replace all artifact references
-		for i, art := range newStep.Arguments.Artifacts {
+		for j, art := range newStep.Arguments.Artifacts {
 			if art.From == "" {
 				continue
 			}
@@ -494,49 +491,48 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup map[string]wfv1.WorkflowS
 			if err != nil {
 				return nil, err
 			}
-			newStep.Arguments.Artifacts[i] = *art
+			newStep.Arguments.Artifacts[j] = *art
 		}
 
-		newStepGroup[stepName] = newStep
+		newStepGroup[i] = newStep
 	}
 	return newStepGroup, nil
 }
 
 // expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems
-func (woc *wfOperationCtx) expandStepGroup(stepGroup map[string]wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
-	newStepGroup := make(map[string]wfv1.WorkflowStep)
-	for stepName, step := range stepGroup {
+func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
+	newStepGroup := make([]wfv1.WorkflowStep, 0)
+	for _, step := range stepGroup {
 		if len(step.WithItems) == 0 {
-			newStepGroup[stepName] = step
+			newStepGroup = append(newStepGroup, step)
 			continue
 		}
-		expandedStep, err := woc.expandStep(stepName, step)
+		expandedStep, err := woc.expandStep(step)
 		if err != nil {
 			return nil, err
 		}
-		for newStepName, newStep := range expandedStep {
-			newStepGroup[newStepName] = newStep
+		for _, newStep := range expandedStep {
+			newStepGroup = append(newStepGroup, newStep)
 		}
 	}
 	return newStepGroup, nil
 }
 
 // expandStep expands a step containing withItems into multiple steps parallel steps
-func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (map[string]wfv1.WorkflowStep, error) {
+func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-
-	expandedStep := make(map[string]wfv1.WorkflowStep)
+	expandedStep := make([]wfv1.WorkflowStep, 0)
 	for i, item := range step.WithItems {
 		replaceMap := make(map[string]string)
 		var newStepName string
 		switch val := item.(type) {
 		case string:
 			replaceMap["item"] = val
-			newStepName = fmt.Sprintf("%s(%s)", stepName, val)
+			newStepName = fmt.Sprintf("%s(%s)", step.Name, val)
 		case map[string]interface{}:
 			// Handle the case when withItems is a list of maps.
 			// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -554,24 +550,21 @@ func (woc *wfOperationCtx) expandStep(stepName string, step wfv1.WorkflowStep) (
 			}
 			// sort the values so that the name is deterministic
 			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%s)", stepName, strings.Join(vals, ","))
+			newStepName = fmt.Sprintf("%s(%s)", step.Name, strings.Join(vals, ","))
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string or map. received: %s", i, val)
 		}
-		newStepStr := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-			replacement, ok := replaceMap[tag]
-			if !ok {
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			return w.Write([]byte(replacement))
-		})
-
+		newStepStr, err := replace(fstTmpl, replaceMap, false)
+		if err != nil {
+			return nil, err
+		}
 		var newStep wfv1.WorkflowStep
 		err = json.Unmarshal([]byte(newStepStr), &newStep)
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		expandedStep[newStepName] = newStep
+		newStep.Name = newStepName
+		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
 }
@@ -594,22 +587,18 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
 	replaceMap := make(map[string]string)
-
 	for _, inParam := range tmpl.Inputs.Parameters {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
-	s := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[tag]
-		if !ok {
-			return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-		}
-		return w.Write([]byte(replacement))
-	})
+	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	s, err := replace(fstTmpl, replaceMap, true)
+	if err != nil {
+		return nil, err
+	}
 	var newTmpl wfv1.Template
 	err = json.Unmarshal([]byte(s), &newTmpl)
 	if err != nil {
@@ -667,4 +656,26 @@ func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 		return nil, errors.Errorf("Variable {{%s}} is not an artifact", v)
 	}
 	return &valArt, nil
+}
+
+// replace executes basic string substitution of a template with replacement values.
+// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
+// remaining in the substituted template.
+func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+	var unresolvedErr error
+	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		replacement, ok := replaceMap[tag]
+		if !ok {
+			if allowUnresolved {
+				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+			}
+			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "Failed to resolve {{%s}}", tag)
+			return 0, nil
+		}
+		return w.Write([]byte(replacement))
+	})
+	if unresolvedErr != nil {
+		return "", unresolvedErr
+	}
+	return replacedTmpl, nil
 }

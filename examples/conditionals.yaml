@@ -5,16 +5,18 @@ metadata:
 spec:
   entrypoint: conditional-example
   arguments:
-    parameters.DO-PRINT: "false"
+    parameters:
+    - name: should-print
+      value: "false"
   templates:
   - name: conditional-example
     inputs:
       parameters:
-      - name: DO-PRINT
+      - name: should-print
     steps:
-    - PRINT-HELLO:
+    - - name: print-hello
         template: cowsay
-        when: "{{inputs.parameters.DO-PRINT}} == true"
+        when: "{{inputs.parameters.should-print}} == true"
 
   - name: cowsay
     container:
