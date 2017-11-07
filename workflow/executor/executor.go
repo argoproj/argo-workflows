@@ -6,9 +6,10 @@ import (
 	"github.com/argoproj/argo/errors"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
-	apiv1 "k8s.io/api/core/v1"
+	"github.com/argoproj/argo/workflow/common"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"os"
 )
 
 // Executor implements the mechanisms within a single Kubernetes pod
@@ -25,14 +26,19 @@ func (we *WorkflowExecutor) getSecrets(namespace string, name string, key string
 		return "", errors.InternalWrapError(err)
 	}
 
-	return string(secrets.Data[key]), nil
+	val, ok := secrets.Data[key]
+	if !ok {
+		return "", errors.InternalErrorf("Key %s does not exists for secret %s", key, name)
+	}
+	return val, nil
 }
 
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	fmt.Println("Start loading input artifacts...")
 
-	// Todo get the current namespace from environment variable
-	namespace := apiv1.NamespaceDefault
+	// Getting Kubernetes namespace from the environment variables
+	namespace := os.Getenv(common.EnvVarNamespace)
+
 	for _, art := range we.Template.Inputs.Artifacts {
 		fmt.Printf("Downloading artifact, %s\n", art.Name)
 		var artDriver artifact.ArtifactDriver
