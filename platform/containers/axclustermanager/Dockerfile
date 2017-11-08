@@ -35,4 +35,4 @@ RUN pip install anytree==2.2.1 prompt-toolkit==1.0.15
 
 WORKDIR /ax/bin
 
-CMD ["/bin/bash","-c","cat /etc/motd && python -m clustercli.main_cli"]
+#CMD ["/bin/bash","-c","cat /etc/motd && python -m clustercli.main_cli"]
