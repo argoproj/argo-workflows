@@ -1,49 +1,49 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: nested-workflow-
 spec:
   entrypoint: nested-workflow-example
   templates:
   - name: nested-workflow-example
     steps:
-    - COWSAY:
-        template: cowsay
-    - NESTED:
+    - - name: generate
+        template: whalesay
+    - - name: 
         template: nested-wf
         arguments:
           artifacts:
-          - name: MESSAGE
-            from: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
+          - name: message
+            from: "{{steps.generate.outputs.artifacts.hello-artifact}}"
 
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
-      - name: MESSAGE
+      - name: hello-artifact
         path: /tmp/hello_world.txt
 
   - name: nested-wf
     inputs:
       artifacts:
-      - name: MESSAGE
+      - name: message
     steps:
     - PRINT:
         template: print-message
         arguments:
           artifacts:
-          - name: MESSAGE
-            from: "{{inputs.artifacts.MESSAGE}}"
+          - name: message
+            from: "{{inputs.artifacts.message}}"
 
   - name: print-message
     inputs:
       artifacts:
-      - name: MESSAGE
+      - name: message
         path: /tmp/message
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["cat /tmp/message; sleep 999999"]
+      args: ["cat /tmp/message"]

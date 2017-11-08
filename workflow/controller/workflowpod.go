@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
-	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; find /argo; echo done", common.PodMetadataAnnotationsPath)
+	argoExecCmd := fmt.Sprintf("argoexec artifacts load")
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
@@ -198,7 +198,23 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"sh", "-c"}
-	argoExecCmd := fmt.Sprintf("echo sleeping; cat %s; sleep 10; echo done", common.PodMetadataAnnotationsPath)
+	argoExecCmd := fmt.Sprintf(`
+		lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
+		index=$(($lineno-1))
+		while true ; do
+		  kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[$index].state.terminated 2>/dev/null;
+		  if [ $? -eq 0 ] ; then
+			break;
+		  fi;
+		  echo waiting;
+		  sleep 5;
+		done &&
+		ctrs=$(kubectl get pod $ARGO_POD_NAME -o custom-columns=:status.containerStatuses.*.name | tr "," "\n" | grep -v wait | grep -v main)
+		echo "sidecars: $ctrs"
+		for ctr in $ctrs ; do
+		  kubectl exec $ARGO_POD_NAME -c $ctr -- sh -c "kill 1"
+		done
+	`)
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
@@ -306,11 +322,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
 			}
 
-			// HACK: debug purposes. sleep to experiment with init container artifacts
-			initCtr.Command = []string{"sh", "-c"}
-			//initCtr.Args = []string{"argoexec artifacts load"}
-			initCtr.Args = []string{"sleep 999999; echo done"}
-
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
@@ -322,12 +333,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		if ctr.Name == common.MainContainerName {
 			mainCtrIndex = i
 			mainCtr = &ctr
-		}
-		if ctr.Name == common.WaitContainerName {
-			// HACK: debug purposes. sleep to experiment with wait container artifacts
-			ctr.Command = []string{"sh", "-c"}
-			ctr.Args = []string{"sleep 999999; echo done"}
-			pod.Spec.Containers[i] = ctr
 		}
 	}
 	if mainCtr == nil {
@@ -434,12 +439,26 @@ func addScriptVolume(pod *apiv1.Pod) {
 		if ctr.Name == common.WaitContainerName {
 			ctr.Command = []string{"sh", "-c"}
 			ctr.Args = []string{`
-				while true ; do kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[0].state.terminated 2>/dev/null; if [ $? -eq 0 ] ; then break; fi; echo waiting; sleep 5; done &&
-				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath='{.status.containerStatuses[0].containerID}' | cut -d / -f 3-) &&
+				lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
+				index=$(($lineno-1))
+				while true ; do
+				  kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[$index].state.terminated 2>/dev/null;
+				  if [ $? -eq 0 ] ; then
+					break;
+				  fi;
+				  echo waiting;
+				  sleep 5;
+				done &&
+				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-) &&
 				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log') &&
 				outputjson={\"result\":\"$output\"} &&
-				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson}
-			`}
+				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson} &&
+				ctrs=$(kubectl get pod $ARGO_POD_NAME -o custom-columns=:status.containerStatuses.*.name | tr "," "\n" | grep -v wait | grep -v main)
+				echo "sidecars: $ctrs"
+				for ctr in $ctrs ; do
+				  kubectl exec $ARGO_POD_NAME -c $ctr -- sh -c "kill 1"
+				done		
+				`}
 			pod.Spec.Containers[i] = ctr
 		}
 	}

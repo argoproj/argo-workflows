@@ -1,13 +1,14 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: conditional-
 spec:
   entrypoint: conditional-example
   arguments:
     parameters:
     - name: should-print
       value: "false"
+
   templates:
   - name: conditional-example
     inputs:
@@ -15,10 +16,10 @@ spec:
       - name: should-print
     steps:
     - - name: print-hello
-        template: cowsay
+        template: whalesay
         when: "{{inputs.parameters.should-print}} == true"
 
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

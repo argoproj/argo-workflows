@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: scripts-python-
+  generateName: scripts-bash-
 spec:
-  entrypoint: python-script-example
+  entrypoint: bash-script-example
   templates:
-  - name: python-script-example
+  - name: bash-script-example
     steps:
     - - name: generate
         template: gen-random-int
@@ -18,12 +18,10 @@ spec:
 
   - name: gen-random-int
     script:
-      image: python:3.6
-      command: [python]
+      image: debian:9.1
+      command: [bash]
       source: |
-        import random
-        i = random.randint(1, 100)
-        print(i)
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
 
   - name: print-message
     inputs:

@@ -1,37 +1,37 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: artifact-passing-
 spec:
   entrypoint: artifact-example
   templates:
   - name: artifact-example
     steps:
-    - - name: COWSAY
-        template: cowsay
-    - - name: PRINT
+    - - name: generate-artifact
+        template: whalesay
+    - - name: consume-artifact
         template: print-message
         arguments:
           artifacts:
-          - name: MESSAGE
-            from: "{{steps.COWSAY.outputs.artifacts.MESSAGE}}"
+          - name: message
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
 
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
-      - name: MESSAGE
+      - name: hello-art
         path: /tmp/hello_world.txt
 
   - name: print-message
     inputs:
       artifacts:
-      - name: MESSAGE
+      - name: message
         path: /tmp/message
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["cat /tmp/message; sleep 999999"]
+      args: ["cat /tmp/message"]

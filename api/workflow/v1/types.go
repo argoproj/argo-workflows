@@ -2,6 +2,7 @@ package v1
 
 import (
 	"fmt"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -89,6 +90,10 @@ type Artifact struct {
 	Name string `json:"name"`
 	// Path is the container path to the artifact
 	Path string `json:"path,omitempty"`
+
+	// mode bits to use on this file, must be a value between 0 and 0777
+	Mode *int32 `json:"mode,omitempty"`
+
 	// From allows an artifact to reference an artifact from a previous step
 	From string        `json:"from,omitempty"`
 	S3   *S3Artifact   `json:"s3,omitempty"`
@@ -193,9 +198,10 @@ type S3Artifact struct {
 }
 
 type GitArtifact struct {
-	URL            string                   `json:"url"`
-	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret"`
-	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret"`
+	Repo           string                   `json:"repo"`
+	Revision       string                   `json:"revision,omitempty"`
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 type HTTPArtifact struct {

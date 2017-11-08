@@ -1,31 +1,32 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: loops-maps-
 spec:
   entrypoint: loop-map-example
   templates:
   - name: loop-map-example
     steps:
-    - PRINT-OS:
+    - - name: test-linux
         template: cat-os-release
         arguments:
           parameters:
-          - name: IMAGE
+          - name: image
             value: "{{item.image}}"
-          - name: TAG
+          - name: tag
             value: "{{item.tag}}"
         withItems:
         - { image: 'debian', tag: '9.1' }
         - { image: 'debian', tag: '8.9' }
         - { image: 'alpine', tag: '3.6' }
+        - { image: 'ubuntu', tag: '17.10' }
 
   - name: cat-os-release
     inputs:
       parameters:
-      - name: IMAGE
-      - name: TAG
+      - name: image
+      - name: tag
     container:
-      image: "{{inputs.parameters.IMAGE}}:{{inputs.parameters.TAG}}"
+      image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
       command: [cat]
       args: [/etc/os-release]

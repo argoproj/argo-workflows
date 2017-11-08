@@ -1,20 +1,20 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: arguments-parameters-
 spec:
-  entrypoint: cowsay
+  entrypoint: whalesay
   arguments:
     parameters:
-    - name: MESSAGE
+    - name: message
       value: hello world
 
   templates:
-  - name: cowsay
+  - name: whalesay
     inputs:
       parameters:
-      - name: MESSAGE
+      - name: message
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["{{inputs.parameters.MESSAGE}}"]
+      args: ["{{inputs.parameters.message}}"]
