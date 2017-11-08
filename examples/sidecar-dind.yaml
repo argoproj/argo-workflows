@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: sidecar-dind-
 spec:
   entrypoint: dind-sidecar-example
   templates:

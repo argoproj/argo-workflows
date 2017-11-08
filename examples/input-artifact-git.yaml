@@ -1,18 +1,19 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: input-artifact-git-
 spec:
   entrypoint: git-clone
   templates:
   - name: git-clone
     inputs:
       artifacts:
-      - name: CODE
+      - name: argo-source
         path: /src
         git:
-          url: https://github.com/argoproj/argo.git
+          repo: https://github.com/argoproj/argo.git
+          revision: "2.0"
     container:
       image: golang:1.8
       command: [sh, -c]
-      args: ["cd /src; git status"]
+      args: ["cd /src && git status && ls -l"]

@@ -2,12 +2,10 @@ package s3
 
 import (
 	"fmt"
-	"path"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -16,11 +14,8 @@ type S3ArtifactDriver struct {
 	SecretKey string
 }
 
-// Download artifacts from S3 compliant storage using Minio Go SDK
-func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact) error {
-	// Todo: need to handle volumes if the container uses volumes
-	// File path to save the artifact
-	artPath := path.Join(common.ExecutorArtifactBaseDir, inputArtifact.Name)
+// Load downloads artifacts from S3 compliant storage using Minio Go SDK
+func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 
 	// Initialize minio client object.
 	minioClient, err := minio.New(inputArtifact.S3.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, true)
@@ -31,14 +26,14 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact) error {
 	}
 
 	// Download the file to a local file path
-	err = minioClient.FGetObject(inputArtifact.S3.Bucket, inputArtifact.S3.Key, artPath)
+	err = minioClient.FGetObject(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
 
 	if err != nil {
-		fmt.Printf("Failed to download input artifact, %s\n", artPath)
+		fmt.Printf("Failed to download input artifact, %s", path)
 		return errors.InternalWrapError(err)
 	}
 
-	fmt.Printf("Successfully download file, %s\n", artPath)
+	fmt.Printf("Successfully download file, %s", path)
 	return nil
 }
 

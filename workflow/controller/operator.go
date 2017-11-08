@@ -260,6 +260,7 @@ func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, erro
 			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s missing location information", inArt.Name)
 		}
 		argArt.Path = inArt.Path
+		argArt.Mode = inArt.Mode
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
@@ -373,7 +374,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return err
 	}
 
-	// Expand step's withItems
+	// Next, expand the step's withItems (if any)
 	stepGroup, err = woc.expandStepGroup(stepGroup)
 	if err != nil {
 		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
@@ -381,7 +382,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	}
 
 	childNodeIDs := make([]string, 0)
-	// First kick off all parallel steps in the group
+	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
@@ -472,7 +473,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := replace(fstTmpl, replaceMap, false)
+		newStepStr, err := replace(fstTmpl, replaceMap, true)
 		if err != nil {
 			return nil, err
 		}

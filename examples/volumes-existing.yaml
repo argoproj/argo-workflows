@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: workdir
+  name: my-existing-volume
 spec:
   accessModes: [ "ReadWriteOnce" ]
   resources:
@@ -12,23 +12,23 @@ spec:
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: volumes-existing-
 spec:
-  entrypoint: volume-example
+  entrypoint: volumes-existing-example
   volumes:
   - name: workdir
     persistentVolumeClaim:
-      claimName: workdir
+      claimName: my-existing-volume
 
   templates:
-  - name: volume-example
+  - name: volumes-existing-example
     steps:
-    - COWSAY:
-        template: cowsay
-    - PRINT:
+    - - name: generate
+        template: whalesay
+    - - name: print
         template: print-message
 
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

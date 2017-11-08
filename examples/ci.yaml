@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: ci-example-
 spec:
   entrypoint: ci-example
   volumeClaimTemplates:
@@ -16,17 +16,17 @@ spec:
   - name: ci-example
     steps:
     - - name: build
-        template: build
+        template: build-golang-example
     - - name: test
-        template: test
+        template: run-hello
 
-  - name: build
+  - name: build-golang-example
     inputs:
       artifacts:
       - name: CODE
         path: /go/src/github.com/golang/example
         git:
-          url: https://github.com/golang/example.git
+          repo: https://github.com/golang/example.git
     container:
       image: golang:1.8
       command: [sh, -c]
@@ -38,11 +38,11 @@ spec:
       - name: workdir
         mountPath: /go
 
-  - name: test
+  - name: run-hello
     container:
       image: debian:9.1
       command: [sh, -c]
-      args: ["/go/src/github.com/golang/example/hello/hello ; sleep 9999; echo done"]
+      args: ["/go/src/github.com/golang/example/hello/hello"]
       volumeMounts:
       - name: workdir
         mountPath: /go

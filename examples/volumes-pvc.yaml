@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: volumes-pvc-
 spec:
-  entrypoint: volume-pvc-example
+  entrypoint: volumes-pvc-example
   volumeClaimTemplates:
   - metadata:
       name: workdir
@@ -14,14 +14,14 @@ spec:
           storage: 1Gi
 
   templates:
-  - name: volume-pvc-example
+  - name: volumes-pvc-example
     steps:
-    - COWSAY:
-        template: cowsay
-    - PRINT:
+    - - name: generate
+        template: whalesay
+    - - name: print
         template: print-message
 
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]

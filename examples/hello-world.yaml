@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: hello-world-
 spec:
-  entrypoint: cowsay
+  entrypoint: whalesay
   templates:
-  - name: cowsay
+  - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [cowsay]

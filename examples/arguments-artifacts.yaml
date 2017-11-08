@@ -1,22 +1,23 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: argo-wf-
+  generateName: arguments-artifacts-
 spec:
-  entrypoint: artifact-argument-example
+  entrypoint: kubectl-input-artifact
   arguments:
     artifacts:
-    - name: CODE
+    - name: kubectl
       http:
-        url: https://mycompany.com/files/foo
+        url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
 
   templates:
-  - name: artifact-argument-example
+  - name: kubectl-input-artifact
     inputs:
       artifacts:
-      - name: CODE
-        path: /src
+      - name: kubectl
+        path: /usr/local/bin/kubectl
+        mode: 755
     container:
-      image: debian:latest
+      image: debian:9.1
       command: [sh, -c]
-      args: ["cd /src && ls -l"]
+      args: ["kubectl version"]

@@ -1,7 +1,7 @@
 FROM debian:9.1
 
 RUN apt-get update && \
-    apt-get install -y curl jq procps && \
+    apt-get install -y curl jq procps git && \
     rm -rf /var/lib/apt/lists/* && \
     curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && \
     chmod +x ./kubectl && \
