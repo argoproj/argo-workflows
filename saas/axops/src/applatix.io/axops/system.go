@@ -137,9 +137,9 @@ func SetSecurityGroupsConfig() gin.HandlerFunc {
 }
 
 type SystemVersion struct {
-	Namespace string `json:"namespace"`
-	Version   string `json:"version"`
-	ClusterID string `json:"cluster_id"`
+	Namespace   string `json:"namespace"`
+	Version     string `json:"version"`
+	ClusterID   string `json:"cluster_id"`
 	FeaturesSet string `json:"features_set"`
 }
 
@@ -151,9 +151,9 @@ type SystemVersion struct {
 // @Router /system/version [GET]
 func GetSystemVersion() gin.HandlerFunc {
 	systemVersion := SystemVersion{
-		Namespace: common.GetAxNameSpace(),
-		Version:   utils.Version,
-		ClusterID: utils.GetClusterId(),
+		Namespace:   common.GetAxNameSpace(),
+		Version:     utils.Version,
+		ClusterID:   utils.GetClusterId(),
 		FeaturesSet: utils.GetFeaturesSet(),
 	}
 	return func(c *gin.Context) {

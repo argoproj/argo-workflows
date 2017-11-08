@@ -206,7 +206,8 @@ func jobSubmit(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	templateName := args[0]
-	repo, branch := getRemoteAndBranch()
+	repo := getRepo()
+	branch := getBranch()
 	createParams := api.ServiceCreateParams{
 		Name:      jobSubmitArgs.name,
 		Arguments: parseArguments(),
@@ -557,13 +558,13 @@ func setSessionInfo(tmpl service.EmbeddedTemplateIf, args template.Arguments) {
 			if args == nil {
 				args = make(template.Arguments)
 			}
-			repo, _ := getRemoteAndBranch()
+			repo := getRepo()
 			args[fmt.Sprintf("parameters.%s", inParamName)] = &repo
 		case "%%session.commit%%":
 			if args == nil {
 				args = make(template.Arguments)
 			}
-			_, branch := getRemoteAndBranch()
+			branch := getBranch()
 			args[fmt.Sprintf("parameters.%s", inParamName)] = &branch
 		}
 	}

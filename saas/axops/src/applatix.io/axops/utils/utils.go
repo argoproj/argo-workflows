@@ -132,7 +132,7 @@ func GetRegion() string {
 }
 
 func GetFeaturesSet() string {
-	if len(axFeaturesSet) == 0{
+	if len(axFeaturesSet) == 0 {
 		return "full"
 	}
 	return axFeaturesSet

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"applatix.io/axamm/application"
@@ -37,20 +38,20 @@ func (c *ArgoClient) ApplicationList(params ApplicationListParams) ([]*applicati
 		queryArgs = append(queryArgs, fmt.Sprintf("fields=%s", strings.Join(params.Fields, ",")))
 	}
 	if params.Name != "" {
-		queryArgs = append(queryArgs, fmt.Sprintf("name=%s", params.Name))
+		queryArgs = append(queryArgs, fmt.Sprintf("name=%s", url.QueryEscape(params.Name)))
 	}
 	if params.Limit != 0 {
 		queryArgs = append(queryArgs, fmt.Sprintf("limit=%d", params.Limit))
 	}
-	url := fmt.Sprintf("applications")
+	uri := fmt.Sprintf("applications")
 	if len(queryArgs) > 0 {
-		url += fmt.Sprintf("?%s", strings.Join(queryArgs, "&"))
+		uri += fmt.Sprintf("?%s", strings.Join(queryArgs, "&"))
 	}
 	type ApplicationsData struct {
 		Data []*application.Application `json:"data"`
 	}
 	var appsData ApplicationsData
-	axErr := c.get(url, &appsData)
+	axErr := c.get(uri, &appsData)
 	if axErr != nil {
 		return nil, axErr
 	}

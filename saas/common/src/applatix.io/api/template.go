@@ -1,9 +1,9 @@
 package api
 
 import (
-	"fmt"
-
 	"encoding/json"
+	"fmt"
+	"net/url"
 
 	"applatix.io/axerror"
 	"applatix.io/axops/service"
@@ -40,8 +40,8 @@ func (td *TemplatesData) UnmarshalJSON(b []byte) error {
 
 func (c *ArgoClient) GetTemplateByName(name, repo, branch string) (service.EmbeddedTemplateIf, *axerror.AXError) {
 	var templatesData TemplatesData
-	url := fmt.Sprintf("templates?name=%s&repo=%s&branch=%s", name, repo, branch)
-	axErr := c.get(url, &templatesData)
+	uri := fmt.Sprintf("templates?name=%s&repo=%s&branch=%s", url.QueryEscape(name), url.QueryEscape(repo), url.QueryEscape(branch))
+	axErr := c.get(uri, &templatesData)
 	if axErr != nil {
 		return nil, axErr
 	}
