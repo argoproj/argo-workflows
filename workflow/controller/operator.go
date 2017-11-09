@@ -6,6 +6,7 @@ import (
 	"io"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -332,20 +333,23 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				// are not easily referenceable by user.
 				continue
 			}
-			if childNode.Outputs == nil {
-				continue
+			if childNode.PodIP != "" {
+				key := fmt.Sprintf("steps.%s.ip", step.Name)
+				scope.addParamToScope(key, childNode.PodIP)
 			}
-			if childNode.Outputs.Result != nil {
-				key := fmt.Sprintf("steps.%s.outputs.result", step.Name)
-				scope.addParamToScope(key, *childNode.Outputs.Result)
-			}
-			for _, outParam := range childNode.Outputs.Parameters {
-				key := fmt.Sprintf("steps.%s.outputs.parameters.%s", step.Name, outParam.Name)
-				scope.addParamToScope(key, *outParam.Value)
-			}
-			for _, outArt := range childNode.Outputs.Artifacts {
-				key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", step.Name, outArt.Name)
-				scope.addArtifactToScope(key, outArt)
+			if childNode.Outputs != nil {
+				if childNode.Outputs.Result != nil {
+					key := fmt.Sprintf("steps.%s.outputs.result", step.Name)
+					scope.addParamToScope(key, *childNode.Outputs.Result)
+				}
+				for _, outParam := range childNode.Outputs.Parameters {
+					key := fmt.Sprintf("steps.%s.outputs.parameters.%s", step.Name, outParam.Name)
+					scope.addParamToScope(key, *outParam.Value)
+				}
+				for _, outArt := range childNode.Outputs.Artifacts {
+					key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", step.Name, outArt.Name)
+					scope.addArtifactToScope(key, outArt)
+				}
 			}
 		}
 	}
@@ -668,11 +672,16 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		replacement, ok := replaceMap[tag]
 		if !ok {
 			if allowUnresolved {
+				// just write the same string back
 				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
 			}
 			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "Failed to resolve {{%s}}", tag)
 			return 0, nil
 		}
+		// The following escapes any special characters (e.g. newlines, tabs, etc...)
+		// in preparation for substitution
+		replacement = strconv.Quote(replacement)
+		replacement = replacement[1 : len(replacement)-1]
 		return w.Write([]byte(replacement))
 	})
 	if unresolvedErr != nil {
