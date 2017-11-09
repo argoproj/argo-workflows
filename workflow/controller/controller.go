@@ -236,15 +236,48 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 }
 
 func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
-	if pod.Status.Phase != apiv1.PodSucceeded && pod.Status.Phase != apiv1.PodFailed {
-		// Ignore pod updates for running pods
-		return
-	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
+		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return
 	}
-	log.Infof("Processing completed pod: %v", pod.ObjectMeta.SelfLink)
+	var newStatus string
+	switch pod.Status.Phase {
+	case apiv1.PodPending:
+		return
+	case apiv1.PodSucceeded:
+		newStatus = wfv1.NodeStatusSucceeded
+	case apiv1.PodFailed:
+		newStatus = wfv1.NodeStatusFailed
+	case apiv1.PodRunning:
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+			return
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+			return
+		}
+		if tmpl.Daemon == nil || !*tmpl.Daemon {
+			return
+		}
+		// pod is running and template is marked daemon. check if everything is ready
+		for _, ctrStatus := range pod.Status.ContainerStatuses {
+			if !ctrStatus.Ready {
+				return
+			}
+		}
+		// proceed to mark node status as completed
+		newStatus = wfv1.NodeStatusSucceeded
+		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+	default:
+		log.Infof("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+		newStatus = wfv1.NodeStatusError
+	}
+
 	wf, err := wfc.WorkflowClient.GetWorkflow(workflowName)
 	if err != nil {
 		log.Warnf("Failed to find workflow %s %+v", workflowName, err)
@@ -259,15 +292,6 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		log.Infof("node %v already marked completed (%s)", node, node.Status)
 		return
 	}
-	var newStatus string
-	switch pod.Status.Phase {
-	case apiv1.PodSucceeded:
-		newStatus = wfv1.NodeStatusSucceeded
-	case apiv1.PodFailed:
-		newStatus = wfv1.NodeStatusFailed
-	default:
-		newStatus = wfv1.NodeStatusError
-	}
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
 	if ok {
 		var outputs wfv1.Outputs
@@ -279,8 +303,9 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 			node.Outputs = &outputs
 		}
 	}
-	log.Infof("Updating node %s status %s -> %s", node, node.Status, newStatus)
+	log.Infof("Updating node %s status %s -> %s (IP: %s)", node, node.Status, newStatus, pod.Status.PodIP)
 	node.Status = newStatus
+	node.PodIP = pod.Status.PodIP
 	wf.Status.Nodes[pod.Name] = node
 	_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
 	if err != nil {

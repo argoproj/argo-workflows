@@ -3,10 +3,12 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -135,6 +137,19 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		},
 	}
 
+	// Set the container template JSON in pod annotations, which executor
+	// will examine for things like artifact location/path.
+	// Also ensures that all variables have been resolved
+	tmplBytes, err := json.Marshal(tmpl)
+	if err != nil {
+		return err
+	}
+	err = verifyResolvedVariables(string(tmplBytes))
+	if err != nil {
+		return err
+	}
+	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
+
 	// Add init container only if it needs input artifacts
 	// or if it is a script template (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.Script != nil {
@@ -161,13 +176,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	if err != nil {
 		return err
 	}
-
-	// Set the container template JSON in pod annotations, which executor will look to for artifact
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return err
-	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	created, err := woc.controller.podCl.Create(&pod)
 	if err != nil {
@@ -496,4 +504,15 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
 	return nil
+}
+
+// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved
+func verifyResolvedVariables(tmplStr string) error {
+	var unresolvedErr error
+	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
+	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "Failed to resolve {{%s}}", tag)
+		return 0, nil
+	})
+	return unresolvedErr
 }

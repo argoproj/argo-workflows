@@ -59,6 +59,9 @@ type Template struct {
 	Inputs  Inputs  `json:"inputs,omitempty"`
 	Outputs Outputs `json:"outputs,omitempty"`
 
+	// Deamon indicates will allow a workflow to proceed to the next step if the container reaches readiness
+	Daemon *bool `json:"daemon,omitempty"`
+
 	// Workflow fields
 	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
@@ -164,6 +167,7 @@ type NodeStatus struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
+	PodIP  string `json:"podIP,omitempty"`
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`
 	//ReturnCode *int                    `json:"returnCode"`
