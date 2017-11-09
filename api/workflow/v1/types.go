@@ -153,24 +153,22 @@ type SidecarOptions struct {
 }
 
 type WorkflowStatus struct {
-	Tree                   NodeTree              `json:"tree"`
 	Nodes                  map[string]NodeStatus `json:"nodes"`
 	PersistentVolumeClaims []apiv1.Volume        `json:"persistentVolumeClaims,omitempty"`
-}
-
-type NodeTree struct {
-	Name     string     `json:"name"`
-	Children []NodeTree `json:"children"`
 }
 
 type NodeStatus struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`
 	Status string `json:"status"`
-	PodIP  string `json:"podIP,omitempty"`
+	// PodIP captures the IP of the pod for deamoned steps
+	PodIP string `json:"podIP,omitempty"`
+	// Daemoned tracks whether or not this node was daemoned and need to be terminated
+	Daemoned *bool `json:"daemoned,omitempty"`
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`
-	//ReturnCode *int                    `json:"returnCode"`
+	// Children is a list of child node IDs
+	Children []string `json:"children,omitempty"`
 }
 
 func (n NodeStatus) String() string {

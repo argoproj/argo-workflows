@@ -242,6 +242,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		return
 	}
 	var newStatus string
+	var deamoned *bool
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		return
@@ -270,8 +271,10 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 				return
 			}
 		}
-		// proceed to mark node status as completed
+		// proceed to mark node status as completed (and daemoned)
 		newStatus = wfv1.NodeStatusSucceeded
+		t := true
+		deamoned = &t
 		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 	default:
 		log.Infof("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -306,6 +309,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	log.Infof("Updating node %s status %s -> %s (IP: %s)", node, node.Status, newStatus, pod.Status.PodIP)
 	node.Status = newStatus
 	node.PodIP = pod.Status.PodIP
+	node.Daemoned = deamoned
 	wf.Status.Nodes[pod.Name] = node
 	_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
 	if err != nil {

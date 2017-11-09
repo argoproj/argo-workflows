@@ -172,7 +172,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 }
 
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
-	woc.log.Infof("Evaluating node %s: %v, args: %#v", nodeName, templateName, args)
+	woc.log.Infof("Evaluating node %s: template: %s", nodeName, templateName)
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
@@ -301,10 +301,10 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 	scope := wfScope{
 		tmpl:  tmpl,
 		scope: make(map[string]interface{}),
-		//stepToNodeID
 	}
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
+		woc.addChildNode(nodeName, sgNodeName)
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
 		if err != nil {
 			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
@@ -389,6 +389,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+		woc.addChildNode(sgNodeName, childNodeName)
 		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 
 		// Check the step's when clause to decide if it should execute
@@ -577,7 +578,6 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {
 	err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
-		// TODO: may need to query pod status if we hit already exists error
 		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
 		return err
 	}
@@ -688,4 +688,26 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		return "", unresolvedErr
 	}
 	return replacedTmpl, nil
+}
+
+// addChildNode adds a nodeID as a child to a parent
+func (woc *wfOperationCtx) addChildNode(parent string, child string) {
+	parentID := woc.wf.NodeID(parent)
+	childID := woc.wf.NodeID(child)
+	node, ok := woc.wf.Status.Nodes[parentID]
+	if !ok {
+		panic(fmt.Sprintf("parent node %s not initialized", parent))
+	}
+	if node.Children == nil {
+		node.Children = make([]string, 0)
+	}
+	for _, nodeID := range node.Children {
+		if childID == nodeID {
+			// already exists
+			return
+		}
+	}
+	node.Children = append(node.Children, childID)
+	woc.wf.Status.Nodes[parentID] = node
+	woc.updated = true
 }
