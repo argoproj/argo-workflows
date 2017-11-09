@@ -28,6 +28,7 @@ type WorkflowController struct {
 	WorkflowScheme *runtime.Scheme
 	Config         WorkflowControllerConfig
 
+	restConfig *rest.Config
 	clientset  *kubernetes.Clientset
 	podCl      corev1.PodInterface
 	wfUpdates  chan *wfv1.Workflow
@@ -66,6 +67,7 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 	}
 
 	wfc := WorkflowController{
+		restConfig:     config,
 		clientset:      clientset,
 		WorkflowClient: wfClient,
 		WorkflowScheme: wfScheme,
@@ -235,6 +237,7 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 	return controller, nil
 }
 
+// handlePodUpdate receives an update from a pod, and updates the status of the node in the workflow object accordingly
 func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
@@ -242,14 +245,18 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		return
 	}
 	var newStatus string
-	var deamoned *bool
+	var newDaemonStatus *bool
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		return
 	case apiv1.PodSucceeded:
 		newStatus = wfv1.NodeStatusSucceeded
+		f := false
+		newDaemonStatus = &f
 	case apiv1.PodFailed:
 		newStatus = wfv1.NodeStatusFailed
+		f := false
+		newDaemonStatus = &f
 	case apiv1.PodRunning:
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
@@ -263,6 +270,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 			return
 		}
 		if tmpl.Daemon == nil || !*tmpl.Daemon {
+			// incidental state change of a running pod. No need to inspect further
 			return
 		}
 		// pod is running and template is marked daemon. check if everything is ready
@@ -271,10 +279,10 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 				return
 			}
 		}
-		// proceed to mark node status as completed (and daemoned)
+		// proceed to mark node status as succeeded (and daemoned)
 		newStatus = wfv1.NodeStatusSucceeded
 		t := true
-		deamoned = &t
+		newDaemonStatus = &t
 		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 	default:
 		log.Infof("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -291,25 +299,12 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
 		return
 	}
-	if node.Completed() {
-		log.Infof("node %v already marked completed (%s)", node, node.Status)
+	updateNeeded := applyUpdates(pod, &node, newStatus, newDaemonStatus)
+	if !updateNeeded {
+		log.Infof("No workflow updated needed for node %s", node)
 		return
 	}
-	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
-	if ok {
-		var outputs wfv1.Outputs
-		err = json.Unmarshal([]byte(outputStr), &outputs)
-		if err != nil {
-			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			newStatus = wfv1.NodeStatusError
-		} else {
-			node.Outputs = &outputs
-		}
-	}
-	log.Infof("Updating node %s status %s -> %s (IP: %s)", node, node.Status, newStatus, pod.Status.PodIP)
-	node.Status = newStatus
-	node.PodIP = pod.Status.PodIP
-	node.Daemoned = deamoned
+	//addOutputs(pod, &node)
 	wf.Status.Nodes[pod.Name] = node
 	_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
 	if err != nil {
@@ -317,5 +312,48 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		// if we fail to update the CRD state, we will need to rely on resync to catch up
 		return
 	}
-	log.Infof("Updated %v", node)
+	log.Infof("Updated %s", node)
+}
+
+// applyUpdates applies any new state information about a pod, to the current status of the workflow node
+// returns whether or not any updates were necessary (resulting in a update to the workflow)
+func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newStatus string, newDaemonStatus *bool) bool {
+	// Check various fields of the pods to see if we need to update the workflow
+	updateNeeded := false
+	if node.Status != newStatus {
+		log.Infof("Updating node %s status %s -> %s", node, node.Status, newStatus)
+		updateNeeded = true
+		node.Status = newStatus
+	}
+	if pod.Status.PodIP != node.PodIP {
+		log.Infof("Updating node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
+		updateNeeded = true
+		node.PodIP = pod.Status.PodIP
+	}
+	if newDaemonStatus != nil {
+		if *newDaemonStatus == false {
+			// if the daemon status switched to false, we prefer to just unset daemoned status field
+			// (as opposed to setting it to false)
+			newDaemonStatus = nil
+		}
+		if newDaemonStatus != nil && node.Daemoned == nil || newDaemonStatus == nil && node.Daemoned != nil {
+			log.Infof("Setting node %v daemoned: %v -> %v", node, node.Daemoned, newDaemonStatus)
+			node.Daemoned = newDaemonStatus
+			updateNeeded = true
+		}
+	}
+	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
+	if ok && node.Outputs == nil {
+		log.Infof("Setting node %v outputs", node)
+		updateNeeded = true
+		var outputs wfv1.Outputs
+		err := json.Unmarshal([]byte(outputStr), &outputs)
+		if err != nil {
+			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
+			node.Status = wfv1.NodeStatusError
+		} else {
+			node.Outputs = &outputs
+		}
+	}
+	return updateNeeded
 }

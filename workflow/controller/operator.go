@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -206,7 +207,11 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 			node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
 			woc.log.Infof("Initialized workflow node %v", node)
 		}
-		return woc.executeSteps(nodeName, tmpl)
+		err = woc.executeSteps(nodeName, tmpl)
+		if woc.wf.Status.Nodes[nodeID].Completed() {
+			woc.killDeamonedChildren(nodeID)
+		}
+		return err
 
 	} else if tmpl.Script != nil {
 		return woc.executeScript(nodeName, tmpl)
@@ -385,38 +390,40 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return err
 	}
 
-	childNodeIDs := make([]string, 0)
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 		woc.addChildNode(sgNodeName, childNodeName)
-		childNodeIDs = append(childNodeIDs, woc.wf.NodeID(childNodeName))
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
 			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
+			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
 			return err
 		}
 		if !proceed {
-			woc.log.Infof("Skipping %s: when '%s' false", childNodeName, step.When)
+			woc.log.Infof("Skipping %s: when '%s' evaluated false", childNodeName, step.When)
 			woc.markNodeStatus(childNodeName, wfv1.NodeStatusSkipped)
 			continue
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
 			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
+			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
 			return err
 		}
 	}
+
+	node = woc.wf.Status.Nodes[nodeID]
 	// Return if not all children completed
-	for _, childNodeID := range childNodeIDs {
+	for _, childNodeID := range node.Children {
 		if !woc.wf.Status.Nodes[childNodeID].Completed() {
 			return nil
 		}
 	}
 	// All children completed. Determine step group status as a whole
-	for _, childNodeID := range childNodeIDs {
+	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		if !childNode.Successful() {
 			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusFailed)
@@ -710,4 +717,29 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	node.Children = append(node.Children, childID)
 	woc.wf.Status.Nodes[parentID] = node
 	woc.updated = true
+}
+
+// killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
+// We only need to check grandchildren instead of children becuase the direct children of a step
+// template are actually stepGroups, which are nodes that cannot represent actual containers.
+// Returns the first error that occurs (if any)
+func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
+	log.Infof("Checking deamon children of %s", nodeID)
+	var firstErr error
+	for _, childNodeID := range woc.wf.Status.Nodes[nodeID].Children {
+		for _, grandChildID := range woc.wf.Status.Nodes[childNodeID].Children {
+			gcNode := woc.wf.Status.Nodes[grandChildID]
+			if gcNode.Daemoned == nil || !*gcNode.Daemoned {
+				continue
+			}
+			err := common.KillPodContainer(woc.controller.restConfig, apiv1.NamespaceDefault, gcNode.ID, common.MainContainerName)
+			if err != nil {
+				log.Errorf("Failed to kill %s: %+v", gcNode, err)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
+	}
+	return firstErr
 }
