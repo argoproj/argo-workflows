@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+data:
+  config: |
+    executorImage: argoproj/argoexec:latest
+    artifactRepository:
+      s3:
+        bucket: my-bucket
+        endpoint: argo-artifacts-minio-svc:9000
+        insecure: true
+        accessKeySecret:
+          name: argo-artifacts-minio-user
+          key: accesskey
+        secretKeySecret:
+          name: argo-artifacts-minio-user
+          key: secretkey

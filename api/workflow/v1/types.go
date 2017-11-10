@@ -190,6 +190,8 @@ func (n NodeStatus) Successful() bool {
 type S3Bucket struct {
 	Endpoint        string                  `json:"endpoint"`
 	Bucket          string                  `json:"bucket"`
+	Region          string                  `json:"region,omitempty"`
+	Insecure        *bool                   `json:"insecure,omitempty"`
 	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
 }

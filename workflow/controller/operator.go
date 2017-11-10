@@ -633,7 +633,7 @@ func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
 	if strings.HasPrefix(v, "steps.") {
 		val, ok := wfs.scope[v]
 		if !ok {
-			return nil, errors.Errorf("Unable to resolve: {{%s}}", v)
+			return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
 		}
 		return val, nil
 	}
@@ -643,7 +643,7 @@ func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
 	if art != nil {
 		return *art, nil
 	}
-	return nil, errors.Errorf("Unable to resolve input artifact: {{%s}}", v)
+	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve input artifact: {{%s}}", v)
 }
 
 func (wfs *wfScope) resolveParameter(v string) (string, error) {
@@ -653,7 +653,7 @@ func (wfs *wfScope) resolveParameter(v string) (string, error) {
 	}
 	valStr, ok := val.(string)
 	if !ok {
-		return "", errors.Errorf("Variable {{%s}} is not a string", v)
+		return "", errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not a string", v)
 	}
 	return valStr, nil
 }
@@ -665,7 +665,7 @@ func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 	}
 	valArt, ok := val.(wfv1.Artifact)
 	if !ok {
-		return nil, errors.Errorf("Variable {{%s}} is not an artifact", v)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
 	}
 	return &valArt, nil
 }

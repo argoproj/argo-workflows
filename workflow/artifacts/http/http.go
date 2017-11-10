@@ -25,7 +25,6 @@ func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) err
 	return nil
 }
 
-func (h *HTTPArtifactDriver) Save(path string, destURL string) (string, error) {
-
-	return destURL, nil
+func (h *HTTPArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "HTTP output artifacts unsupported")
 }

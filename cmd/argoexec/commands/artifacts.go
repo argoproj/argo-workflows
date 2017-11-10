@@ -12,15 +12,14 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/executor"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 func init() {
 	RootCmd.AddCommand(artifactsCmd)
 	artifactsCmd.AddCommand(artifactsLoadCmd)
+	artifactsCmd.AddCommand(artifactsSaveCmd)
 }
 
 var artifactsCmd = &cobra.Command{
@@ -32,9 +31,15 @@ var artifactsCmd = &cobra.Command{
 }
 
 var artifactsLoadCmd = &cobra.Command{
-	Use:   "load ARTIFACTS_JSON",
-	Short: "Load artifacts according to a json specification",
+	Use:   "load",
+	Short: "Load artifacts",
 	Run:   loadArtifacts,
+}
+
+var artifactsSaveCmd = &cobra.Command{
+	Use:   "save",
+	Short: "Save artifacts",
+	Run:   saveArtifacts,
 }
 
 // Open the Kubernetes downward api file and
@@ -119,45 +124,22 @@ func GetTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 }
 
 func loadArtifacts(cmd *cobra.Command, args []string) {
-	podAnnotationsPath := common.PodMetadataAnnotationsPath
-
-	// Use the path specified from the flag
-	if GlobalArgs.podAnnotationsPath != "" {
-		podAnnotationsPath = GlobalArgs.podAnnotationsPath
-	}
-
-	var wfTemplate wfv1.Template
-
-	// Read template
-	err := GetTemplateFromPodAnnotations(podAnnotationsPath, &wfTemplate)
-	if err != nil {
-		fmt.Printf("Error getting template %v\n", err)
-		os.Exit(1)
-	}
-
-	// Initialize in-cluster Kubernetes client
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Initialize workflow executor
-	wfExecutor := executor.WorkflowExecutor{
-		Template:  wfTemplate,
-		ClientSet: clientset,
-	}
-
+	wfExecutor := initExecutor()
 	// Download input artifacts
-	err = wfExecutor.LoadArtifacts()
+	err := wfExecutor.LoadArtifacts()
 	if err != nil {
-		fmt.Printf("Error downloading input artifacts, %v\n", err)
+		log.Errorf("Error downloading input artifacts, %v", err)
 		os.Exit(1)
 	}
+	os.Exit(0)
+}
 
+func saveArtifacts(cmd *cobra.Command, args []string) {
+	wfExecutor := initExecutor()
+	err := wfExecutor.SaveArtifacts()
+	if err != nil {
+		log.Errorf("Error saving output artifacts, %+v", err)
+		os.Exit(1)
+	}
 	os.Exit(0)
 }

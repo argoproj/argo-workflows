@@ -2,11 +2,17 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
+	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
+	"github.com/ghodss/yaml"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 const (
@@ -15,8 +21,6 @@ const (
 )
 
 var (
-	argoexec *executor.WorkflowExecutor
-
 	// Global CLI flags
 	GlobalArgs globalFlags
 )
@@ -44,7 +48,40 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
 }
 
-// initExecutor is a helper to initialize the global argoexec instance
-func initExecutor() {
-	argoexec = &executor.WorkflowExecutor{}
+func initExecutor() *executor.WorkflowExecutor {
+	podAnnotationsPath := common.PodMetadataAnnotationsPath
+
+	// Use the path specified from the flag
+	if GlobalArgs.podAnnotationsPath != "" {
+		podAnnotationsPath = GlobalArgs.podAnnotationsPath
+	}
+
+	var wfTemplate wfv1.Template
+
+	// Read template
+	err := GetTemplateFromPodAnnotations(podAnnotationsPath, &wfTemplate)
+	if err != nil {
+		log.Errorf("Error getting template %v", err)
+		os.Exit(1)
+	}
+
+	// Initialize in-cluster Kubernetes client
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Initialize workflow executor
+	wfExecutor := executor.WorkflowExecutor{
+		Template:  wfTemplate,
+		ClientSet: clientset,
+	}
+	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
+	log.Infof("Executor initialized with template:\n%s", string(yamlBytes))
+	return &wfExecutor
 }
