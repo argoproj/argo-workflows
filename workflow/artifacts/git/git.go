@@ -10,23 +10,20 @@ import (
 )
 
 // GitArtifactDriver is the artifact driver for a git repo
-type GitArtifactDriver struct {
-	Repo     string
-	Revision string
-}
+type GitArtifactDriver struct{}
 
 // Load download artifacts from an git URL
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	// Download the file to a local file path
-	cmd := exec.Command("git", "clone", g.Repo, path)
+	cmd := exec.Command("git", "clone", inputArtifact.Git.Repo, path)
 	err := cmd.Run()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
 		log.Errorf("`%s %s` failed: %s", cmd.Path, strings.Join(cmd.Args, " "), exErr.Stderr)
 		return errors.InternalWrapError(err)
 	}
-	if g.Revision != "" {
-		cmd = exec.Command("git", "-C", path, "checkout", g.Revision)
+	if inputArtifact.Git.Revision != "" {
+		cmd = exec.Command("git", "-C", path, "checkout", inputArtifact.Git.Revision)
 		err := cmd.Run()
 		if err != nil {
 			exErr := err.(*exec.ExitError)

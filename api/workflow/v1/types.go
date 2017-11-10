@@ -134,18 +134,18 @@ type Arguments struct {
 type Sidecar struct {
 	apiv1.Container `json:",inline"`
 
-	Options SidecarOptions `json:"options,omitempty"`
+	SidecarOptions `json:",inline"`
 }
 
-// SidecarOptions is a way to customize the behavior of a sidecar and how it
+// SidecarOptions provide a way to customize the behavior of a sidecar and how it
 // affects the main container.
 type SidecarOptions struct {
 
-	// volumeMirroring will mount the same volumes specified in the main container
+	// MirrorVolumeMounts will mount the same volumes specified in the main container
 	// to the sidecar (including artifacts), at the same mountPaths. This enables
 	// dind daemon to partially see the same filesystem as the main container in
 	// order to use features such as docker volume binding
-	VolumeMirroring *bool `json:"volumeMirroring,omitempty"`
+	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty"`
 
 	// Other side options to consider:
 	// * Lifespan - allow a sidecar to live longer/complete than the main container

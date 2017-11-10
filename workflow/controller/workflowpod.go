@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -326,7 +327,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
 			for _, mnt := range tmpl.Container.VolumeMounts {
-				mnt.MountPath = "/mainctrfs" + mnt.MountPath
+				mnt.MountPath = path.Join(common.InitContainerMainFilesystemDir, mnt.MountPath)
 				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
 			}
 
@@ -493,7 +494,7 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		panic("Unable to locate main container")
 	}
 	for _, sidecar := range tmpl.Sidecars {
-		if sidecar.Options.VolumeMirroring != nil && *sidecar.Options.VolumeMirroring {
+		if sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
 			for _, volMnt := range mainCtr.VolumeMounts {
 				if sidecar.VolumeMounts == nil {
 					sidecar.VolumeMounts = make([]apiv1.VolumeMount, 0)

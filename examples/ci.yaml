@@ -23,7 +23,7 @@ spec:
   - name: build-golang-example
     inputs:
       artifacts:
-      - name: CODE
+      - name: code
         path: /go/src/github.com/golang/example
         git:
           repo: https://github.com/golang/example.git

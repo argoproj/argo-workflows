@@ -49,6 +49,11 @@ const (
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
 
+	// InitContainerMainFilesystemDir is a path made available to the init container such that the init container
+	// can access the same volume mounts used in the main container. This is used for the purposes of artifact loading
+	// (when there is overlapping paths between artifacts and volume mounts)
+	InitContainerMainFilesystemDir = "/mainctrfs"
+
 	// ScriptTemplateEmptyDir is the path of the emptydir which will be shared between init/main container for script templates
 	ScriptTemplateEmptyDir = "/argo/script"
 	// ScriptTemplateSourcePath is the path which init will write the source file to and the main container will execute
