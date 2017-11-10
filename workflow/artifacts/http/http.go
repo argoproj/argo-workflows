@@ -10,9 +10,7 @@ import (
 )
 
 // HTTPArtifactDriver is the artifact driver for a HTTP URL
-type HTTPArtifactDriver struct {
-	URL string
-}
+type HTTPArtifactDriver struct{}
 
 // Load download artifacts from an HTTP URL
 func (h *HTTPArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {

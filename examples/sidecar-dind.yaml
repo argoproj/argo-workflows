@@ -18,9 +18,8 @@ spec:
       image: docker:17.10-dind
       securityContext:
         privileged: true
-      options:
-        # volumeMirroring will mount the same volumes specified in the main container
-        # to the sidecar (including artifacts), at the same mountPaths. This enables
-        # dind daemon to partially see the same filesystem as the main container in
-        # order to use features such as docker volume binding
-        volumeMirroring: true
+      # mirrorVolumeMounts will mount the same volumes specified in the main container
+      # to the sidecar (including artifacts), at the same mountPaths. This enables
+      # dind daemon to partially see the same filesystem as the main container in
+      # order to use features such as docker volume binding
+      mirrorVolumeMounts: true

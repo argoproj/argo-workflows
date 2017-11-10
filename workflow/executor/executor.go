@@ -46,9 +46,23 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		if err != nil {
 			return err
 		}
-		// File path to save the artifact
-		// TODO: need to choose a different path if the path overlaps with a volume mount
-		artPath := path.Join(common.ExecutorArtifactBaseDir, art.Name)
+		// Determine the file path of where to load the artifact
+		if art.Path == "" {
+			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
+		}
+		var artPath string
+		mnt := common.FindOverlappingVolume(&we.Template, art.Path)
+		if mnt == nil {
+			artPath = path.Join(common.ExecutorArtifactBaseDir, art.Name)
+		} else {
+			// If we get here, it means the input artifact path overlaps with an user specified
+			// volumeMount in the container. Because we also implement input artifacts as volume
+			// mounts, we need to load the artifact into the user specified volume mount,
+			// as opposed to the `input-artifacts` volume that is an implementation detail
+			// unbeknownst to the user.
+			log.Infof("Specified artifact path %s overlaps with volume mount at %s. Extracting to volume mount", art.Path, mnt.MountPath)
+			artPath = path.Join(common.InitContainerMainFilesystemDir, art.Path)
+		}
 
 		err = artDriver.Load(&art, artPath)
 		if err != nil {
@@ -85,10 +99,10 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &driver, nil
 	}
 	if art.HTTP != nil {
-		return &http.HTTPArtifactDriver{URL: art.HTTP.URL}, nil
+		return &http.HTTPArtifactDriver{}, nil
 	}
 	if art.Git != nil {
-		return &git.GitArtifactDriver{Repo: art.Git.Repo, Revision: art.Git.Revision}, nil
+		return &git.GitArtifactDriver{}, nil
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
