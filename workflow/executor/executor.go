@@ -86,23 +86,48 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 func (we *WorkflowExecutor) SaveArtifacts() error {
 	log.Infof("Saving output artifacts")
+	if len(we.Template.Outputs.Artifacts) == 0 {
+		log.Infof("No output artifacts, nothing to do")
+		return nil
+	}
 	mainCtrID, err := getMainContainerID()
 	if err != nil {
 		return err
 	}
 	log.Infof("Main container identified as: %s", mainCtrID)
+
+	// This directory temporarily stores the tarballs of the artifacts before uploading
+	tempOutArtDir := "/argo/outputs/artifacts"
+	err = os.MkdirAll(tempOutArtDir, os.ModePerm)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+
 	for _, art := range we.Template.Outputs.Artifacts {
 		log.Infof("Saving artifact: %s", art.Name)
 		// Determine the file path of where to find the artifact
 		if art.Path == "" {
 			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
 		}
-		err = os.MkdirAll("/argo/outputs/artifacts", os.ModePerm)
-		if err != nil {
-			return errors.InternalWrapError(err)
+
+		fileName := fmt.Sprintf("%s.tgz", art.Name)
+		if !art.HasLocation() {
+			// If user did not explicitly set an artifact destination location in the template,
+			// use the default archive location (appended with the filename).
+			if we.Template.ArchiveLocation == nil {
+				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
+			}
+			if we.Template.ArchiveLocation.S3 != nil {
+				shallowCopy := *we.Template.ArchiveLocation.S3
+				art.S3 = &shallowCopy
+				art.S3.Key = path.Join(art.S3.Key, fileName)
+			} else {
+				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+			}
 		}
-		artPath := fmt.Sprintf("/argo/outputs/artifacts/%s.tgz", art.Name)
-		err = archivePath(mainCtrID, art.Path, artPath)
+
+		tempArtPath := path.Join(tempOutArtDir, fileName)
+		err = archivePath(mainCtrID, art.Path, tempArtPath)
 		if err != nil {
 			return err
 		}
@@ -110,11 +135,17 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 		if err != nil {
 			return err
 		}
-		err = artDriver.Save(artPath, &art)
+		err = artDriver.Save(tempArtPath, &art)
 		if err != nil {
 			return err
 		}
-		log.Infof("Successfully saved file: %s", artPath)
+		// remove is best effort (the container will go away anyways). we just want reduce peak space usage
+		err = os.Remove(tempArtPath)
+		if err != nil {
+			log.Warn("Failed to remove %s", tempArtPath)
+		}
+
+		log.Infof("Successfully saved file: %s", tempArtPath)
 	}
 	return nil
 }

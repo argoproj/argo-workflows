@@ -73,6 +73,12 @@ type Template struct {
 
 	// Sidecar containers
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
+
+	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
+	// Can be overridden by individual items in Outputs. If omitted, will use the default
+	// artifact repository location configured in the controller, appended with the
+	// <workflowname>/<nodename> in the key.
+	ArchiveLocation *ArtifactLocation `json:"archiveLocation,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -90,15 +96,27 @@ type Parameter struct {
 
 // Artifact indicates an artifact to place at a specified path
 type Artifact struct {
+	// name of the artifact. must be unique within a template's inputs/outputs.
 	Name string `json:"name"`
+
 	// Path is the container path to the artifact
 	Path string `json:"path,omitempty"`
 
 	// mode bits to use on this file, must be a value between 0 and 0777
+	// set when loading input artifacts.
 	Mode *int32 `json:"mode,omitempty"`
 
 	// From allows an artifact to reference an artifact from a previous step
-	From string        `json:"from,omitempty"`
+	From string `json:"from,omitempty"`
+
+	ArtifactLocation `json:",inline"`
+}
+
+// ArtifactLocation describes a location for a single or multiple artifacts.
+// It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
+// It is also used to describe the location of multiple artifacts such as the archive location
+// of a single workflow step, which the executor will use as a default location to store its files.
+type ArtifactLocation struct {
 	S3   *S3Artifact   `json:"s3,omitempty"`
 	Git  *GitArtifact  `json:"git,omitempty"`
 	HTTP *HTTPArtifact `json:"http,omitempty"`
@@ -109,7 +127,7 @@ type Outputs struct {
 	Artifacts  []Artifact  `json:"artifacts,omitempty"`
 	Result     *string     `json:"result,omitempty"`
 	// TODO:
-	// - Logs (log artifact(s) from the container)
+	// - Logs (log artifact(s) from the container?)
 }
 
 // WorkflowStep is a template ref
@@ -147,9 +165,9 @@ type SidecarOptions struct {
 	// order to use features such as docker volume binding
 	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty"`
 
-	// Other side options to consider:
-	// * Lifespan - allow a sidecar to live longer/complete than the main container
-	// * PropogateFailure - if a sidecar fails, fail the step
+	// Other sidecar options to consider:
+	// * Lifespan - allow a sidecar to live longer than the main container and run to completion.
+	// * PropogateFailure - if a sidecar fails, also fail the step
 }
 
 type WorkflowStatus struct {
