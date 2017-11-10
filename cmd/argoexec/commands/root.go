@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
@@ -82,6 +83,6 @@ func initExecutor() *executor.WorkflowExecutor {
 		ClientSet: clientset,
 	}
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
-	log.Infof("Executor initialized with template:\n%s", string(yamlBytes))
+	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.FullVersion, string(yamlBytes))
 	return &wfExecutor
 }

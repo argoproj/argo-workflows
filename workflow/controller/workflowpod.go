@@ -178,7 +178,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	if err != nil {
 		return err
 	}
-	woc.addOutputArtifactsRepoMetaData(&pod, tmpl)
+	err = woc.addArchiveLocation(&pod, tmpl)
+	if err != nil {
+		return err
+	}
 
 	if tmpl.Script != nil {
 		addScriptVolume(&pod)
@@ -404,33 +407,33 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 	return nil
 }
 
-// addOutputArtifactsRepoMetaData updates the template with artifact repository information configured in the controller.
-// This is skipped for artifacts which have explicitly set an output artifact location in the template
-func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *apiv1.Pod, tmpl *wfv1.Template) {
-	for i, art := range tmpl.Outputs.Artifacts {
-		if art.HasLocation() {
-			// The artifact destination was explicitly set in the template. Skip
-			continue
-		}
-		if woc.controller.Config.ArtifactRepository.S3 != nil {
-			log.Debugf("Setting s3 artifact repository information")
-			// artifacts are stored in S3 using the following formula:
-			// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>.tgz
-			// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/CODE)
-			// TODO: will need to support more advanced organization of artifacts such as dated
-			// (e.g. myworkflowartifacts/2017/10/31/... )
-			keyPrefix := ""
-			if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
-				keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
-			}
-			artLocationKey := fmt.Sprintf("%s%s/%s/%s.tgz", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, art.Name)
-			art.S3 = &wfv1.S3Artifact{
-				S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
-				Key:      artLocationKey,
-			}
-		}
-		tmpl.Outputs.Artifacts[i] = art
+// addArchiveLocation updates the template with artifact repository information configured in the controller.
+// This is skipped for templates which have explicitly set an archive location in the template
+func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if tmpl.ArchiveLocation != nil {
+		return nil
 	}
+	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{}
+	// artifacts are stored in using the following formula:
+	// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>.tgz
+	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
+	// TODO: will need to support more advanced organization of artifacts such as dated
+	// (e.g. myworkflowartifacts/2017/10/31/... )
+	if woc.controller.Config.ArtifactRepository.S3 != nil {
+		log.Debugf("Setting s3 artifact repository information")
+		keyPrefix := ""
+		if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
+			keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
+		}
+		artLocationKey := fmt.Sprintf("%s%s/%s", keyPrefix, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
+		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{
+			S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
+			Key:      artLocationKey,
+		}
+	} else {
+		return errors.InternalErrorf("Unable to determine controller default archive location")
+	}
+	return nil
 }
 
 // addScriptVolume sets up the shared volume between init container and main container
