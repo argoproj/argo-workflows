@@ -32,6 +32,8 @@ const (
 	DockerLibVolumeName = "docker-lib"
 	// DockerLibHostPath is the host directory path containing docker runtime state
 	DockerLibHostPath = "/var/lib/docker"
+	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
+	DockerSockVolumeName = "docker-sock"
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = wfv1.CRDFullName + "/node-name"

@@ -41,10 +41,12 @@ var (
 		Name:      volumePodMetadata.Name,
 		MountPath: common.PodMetadataMountPath,
 	}
-	// volumeDockerLib provides the argoexec sidekick container access to the minion's
-	// docker containers runtime files (e.g. /var/lib/docker/container). This is required
-	// for argoexec to access the main container's logs and storage to upload output artifacts
-	hostPathDir     = apiv1.HostPathDirectory
+
+	hostPathDir = apiv1.HostPathDirectory
+
+	// volumeDockerLib provides the wait container access to the minion's host docker containers
+	// runtime files (e.g. /var/lib/docker/container). This is used by the executor to access
+	// the main container's logs (and potentially storage to upload output artifacts)
 	volumeDockerLib = apiv1.Volume{
 		Name: common.DockerLibVolumeName,
 		VolumeSource: apiv1.VolumeSource{
@@ -58,6 +60,26 @@ var (
 		Name:      volumeDockerLib.Name,
 		MountPath: volumeDockerLib.VolumeSource.HostPath.Path,
 		ReadOnly:  true,
+	}
+
+	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
+	// The primary purpose of this is to make available `docker cp` to collect an output artifact
+	// from a container. Alternatively, we could use `kubectl cp`, but `docker cp` avoids the extra
+	// hop to the kube api server.
+	volumeDockerSock = apiv1.Volume{
+		Name: common.DockerSockVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			HostPath: &apiv1.HostPathVolumeSource{
+				Path: "/var/run",
+				Type: &hostPathDir,
+			},
+		},
+	}
+	volumeMountDockerSock = apiv1.VolumeMount{
+		Name:      volumeDockerSock.Name,
+		MountPath: "/var/run/docker.sock",
+		ReadOnly:  true,
+		SubPath:   "docker.sock",
 	}
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
@@ -134,6 +156,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			Volumes: []apiv1.Volume{
 				volumePodMetadata,
 				volumeDockerLib,
+				volumeDockerSock,
 			},
 		},
 	}
@@ -210,14 +233,10 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	argoExecCmd := fmt.Sprintf(`
 		lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
 		index=$(($lineno-1))
-		while true ; do
-		  kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[$index].state.terminated 2>/dev/null;
-		  if [ $? -eq 0 ] ; then
-			break;
-		  fi;
-		  echo waiting;
-		  sleep 5;
-		done &&
+		container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
+		echo "main container_id: $container_id"
+		docker wait $container_id
+		echo "container completed"
 		ctrs=$(kubectl get pod $ARGO_POD_NAME -o custom-columns=:status.containerStatuses.*.name | tr "," "\n" | grep -v wait | grep -v main)
 		echo "sidecars: $ctrs"
 		for ctr in $ctrs ; do
@@ -228,6 +247,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 		volumeMountDockerLib,
+		volumeMountDockerSock,
 	}
 	return ctr, nil
 }
@@ -450,15 +470,10 @@ func addScriptVolume(pod *apiv1.Pod) {
 			ctr.Args = []string{`
 				lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
 				index=$(($lineno-1))
-				while true ; do
-				  kubectl get pod $ARGO_POD_NAME -o custom-columns=status:status.containerStatuses[$index].state.terminated 2>/dev/null;
-				  if [ $? -eq 0 ] ; then
-					break;
-				  fi;
-				  echo waiting;
-				  sleep 5;
-				done &&
-				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-) &&
+				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
+				echo "main container_id: $container_id"
+				docker wait $container_id
+				echo "container completed"
 				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log') &&
 				outputjson={\"result\":\"$output\"} &&
 				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson} &&
