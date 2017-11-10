@@ -25,8 +25,6 @@ const (
 	PodMetadataMountPath = "/argo/" + PodMetadataVolumeName
 	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by argoexec
 	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
-	//
-	PodStatusVolumePath = "podstatus"
 
 	// DockerLibVolumeName is the volume name for the /var/lib/docker host path volume
 	DockerLibVolumeName = "docker-lib"

@@ -1,8 +1,12 @@
 package executor
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -12,6 +16,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -76,7 +81,41 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			}
 		}
 	}
+	return nil
+}
 
+func (we *WorkflowExecutor) SaveArtifacts() error {
+	log.Infof("Saving output artifacts")
+	mainCtrID, err := getMainContainerID()
+	if err != nil {
+		return err
+	}
+	log.Infof("Main container identified as: %s", mainCtrID)
+	for _, art := range we.Template.Outputs.Artifacts {
+		log.Infof("Saving artifact: %s", art.Name)
+		// Determine the file path of where to find the artifact
+		if art.Path == "" {
+			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
+		}
+		err = os.MkdirAll("/argo/outputs/artifacts", os.ModePerm)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		artPath := fmt.Sprintf("/argo/outputs/artifacts/%s.tgz", art.Name)
+		err = archivePath(mainCtrID, art.Path, artPath)
+		if err != nil {
+			return err
+		}
+		artDriver, err := we.InitDriver(art)
+		if err != nil {
+			return err
+		}
+		err = artDriver.Save(artPath, &art)
+		if err != nil {
+			return err
+		}
+		log.Infof("Successfully saved file: %s", artPath)
+	}
 	return nil
 }
 
@@ -93,8 +132,10 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			return nil, err
 		}
 		driver := s3.S3ArtifactDriver{
+			Endpoint:  art.S3.Endpoint,
 			AccessKey: accessKey,
 			SecretKey: secretKey,
+			Secure:    art.S3.Insecure == nil || *art.S3.Insecure == false,
 		}
 		return &driver, nil
 	}
@@ -105,4 +146,54 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &git.GitArtifactDriver{}, nil
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
+}
+
+func getMainContainerID() (string, error) {
+	pod, err := getPod()
+	if err != nil {
+		return "", err
+	}
+	for _, ctrStatus := range pod.Status.ContainerStatuses {
+		if ctrStatus.Name == common.MainContainerName {
+			mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
+			return mainCtrID, nil
+		}
+	}
+	return "", errors.InternalErrorf("Main container not found")
+}
+
+func getPod() (*apiv1.Pod, error) {
+	podName, ok := os.LookupEnv(common.EnvVarPodName)
+	if !ok {
+		return nil, errors.InternalErrorf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
+	}
+	cmd := exec.Command("kubectl", "get", "pod", podName, "-o", "json")
+	outBytes, err := cmd.Output()
+	if err != nil {
+		if exErr, ok := err.(*exec.ExitError); ok {
+			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		}
+		return nil, errors.InternalWrapError(err)
+	}
+	var pod apiv1.Pod
+	err = json.Unmarshal(outBytes, &pod)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &pod, nil
+}
+
+func archivePath(containerID string, sourcePath string, destPath string) error {
+	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
+	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - > %s", containerID, sourcePath, destPath)
+	cmd := exec.Command("sh", "-c", dockerCpCmd)
+	err := cmd.Run()
+	if err != nil {
+		if exErr, ok := err.(*exec.ExitError); ok {
+			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		}
+		return errors.InternalWrapError(err)
+	}
+	log.Infof("Archiving completed")
+	return nil
 }

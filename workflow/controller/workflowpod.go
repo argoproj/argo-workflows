@@ -9,6 +9,7 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -161,19 +162,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		},
 	}
 
-	// Set the container template JSON in pod annotations, which executor
-	// will examine for things like artifact location/path.
-	// Also ensures that all variables have been resolved
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return err
-	}
-	err = verifyResolvedVariables(string(tmplBytes))
-	if err != nil {
-		return err
-	}
-	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
-
 	// Add init container only if it needs input artifacts
 	// or if it is a script template (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.Script != nil {
@@ -196,10 +184,26 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		addScriptVolume(&pod)
 	}
 
+	// addSidecars should be called after all volumes have been manipulated
+	// in the main container (in case sidecar requires volume mount mirroring)
 	err = addSidecars(&pod, tmpl)
 	if err != nil {
 		return err
 	}
+
+	// Set the container template JSON in pod annotations, which executor
+	// will examine for things like artifact location/path. Also ensures
+	// that all variables have been resolved. Do this last, after all
+	// template manipulations have been performed.
+	tmplBytes, err := json.Marshal(tmpl)
+	if err != nil {
+		return err
+	}
+	err = verifyResolvedVariables(string(tmplBytes))
+	if err != nil {
+		return err
+	}
+	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	created, err := woc.controller.podCl.Create(&pod)
 	if err != nil {
@@ -229,11 +233,14 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
-	ctr.Command = []string{"sh", "-c"}
+	ctr.Command = []string{"sh", "-xc"}
 	argoExecCmd := fmt.Sprintf(`
 		lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
 		index=$(($lineno-1))
-		container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
+		while [ -z "$container_id" ] ; do
+		  container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
+		  sleep 1
+		done
 		echo "main container_id: $container_id"
 		docker wait $container_id
 		echo "container completed"
@@ -242,6 +249,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 		for ctr in $ctrs ; do
 		  kubectl exec $ARGO_POD_NAME -c $ctr -- sh -c "kill 1"
 		done
+		argoexec artifacts save
 	`)
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
@@ -405,8 +413,9 @@ func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *apiv1.Pod, tmpl *
 			continue
 		}
 		if woc.controller.Config.ArtifactRepository.S3 != nil {
+			log.Debugf("Setting s3 artifact repository information")
 			// artifacts are stored in S3 using the following formula:
-			// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>
+			// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>.tgz
 			// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/CODE)
 			// TODO: will need to support more advanced organization of artifacts such as dated
 			// (e.g. myworkflowartifacts/2017/10/31/... )
@@ -414,7 +423,7 @@ func (woc *wfOperationCtx) addOutputArtifactsRepoMetaData(pod *apiv1.Pod, tmpl *
 			if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
 				keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
 			}
-			artLocationKey := fmt.Sprintf("%s%s/%s/%s", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, art.Name)
+			artLocationKey := fmt.Sprintf("%s%s/%s/%s.tgz", keyPrefix, pod.Labels[common.LabelKeyWorkflow], pod.ObjectMeta.Name, art.Name)
 			art.S3 = &wfv1.S3Artifact{
 				S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
 				Key:      artLocationKey,
@@ -466,22 +475,11 @@ func addScriptVolume(pod *apiv1.Pod) {
 			break
 		}
 		if ctr.Name == common.WaitContainerName {
-			ctr.Command = []string{"sh", "-c"}
-			ctr.Args = []string{`
-				lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
-				index=$(($lineno-1))
-				container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
-				echo "main container_id: $container_id"
-				docker wait $container_id
-				echo "container completed"
-				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log') &&
-				outputjson={\"result\":\"$output\"} &&
-				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson} &&
-				ctrs=$(kubectl get pod $ARGO_POD_NAME -o custom-columns=:status.containerStatuses.*.name | tr "," "\n" | grep -v wait | grep -v main)
-				echo "sidecars: $ctrs"
-				for ctr in $ctrs ; do
-				  kubectl exec $ARGO_POD_NAME -c $ctr -- sh -c "kill 1"
-				done		
+			// Also annotate the pod with output result
+			ctr.Args = []string{ctr.Args[0] + `
+				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log')
+				outputjson={\"result\":\"$output\"}
+				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson}
 				`}
 			pod.Spec.Containers[i] = ctr
 		}

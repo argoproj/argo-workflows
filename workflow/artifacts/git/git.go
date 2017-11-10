@@ -34,7 +34,6 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 	return nil
 }
 
-func (g *GitArtifactDriver) Save(path string, destURL string) (string, error) {
-
-	return destURL, nil
+func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
+	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
 }
