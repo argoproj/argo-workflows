@@ -4,6 +4,9 @@ metadata:
   generateName: ci-example-
 spec:
   entrypoint: ci-example
+  # a temporary volume, named workdir, will be used as a working
+  # directory for this workflow. This volume is passed around
+  # from step to step.
   volumeClaimTemplates:
   - metadata:
       name: workdir
@@ -12,13 +15,25 @@ spec:
       resources:
         requests:
           storage: 1Gi
+
   templates:
   - name: ci-example
     steps:
     - - name: build
         template: build-golang-example
+    # the test step expands into three parallel steps running
+    # different operating system images. each mounts the workdir
+    # and runs the compiled binary from the build step.
     - - name: test
         template: run-hello
+        arguments:
+          parameters:
+          - name: os-image
+            value: "{{item.image}}:{{item.tag}}"
+        withItems:
+        - { image: 'debian', tag: '9.1' }
+        - { image: 'alpine', tag: '3.6' }
+        - { image: 'ubuntu', tag: '17.10' }
 
   - name: build-golang-example
     inputs:
@@ -39,10 +54,17 @@ spec:
         mountPath: /go
 
   - name: run-hello
+    inputs:
+      parameters:
+      - name: os-image
     container:
-      image: debian:9.1
+      image: "{{inputs.parameters.os-image}}"
       command: [sh, -c]
-      args: ["/go/src/github.com/golang/example/hello/hello"]
+      args: ["
+        uname -a ;
+        cat /etc/os-release ;
+        /go/src/github.com/golang/example/hello/hello
+      "]
       volumeMounts:
       - name: workdir
         mountPath: /go

@@ -62,8 +62,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	// Read template
 	err := GetTemplateFromPodAnnotations(podAnnotationsPath, &wfTemplate)
 	if err != nil {
-		log.Errorf("Error getting template %v", err)
-		os.Exit(1)
+		log.Fatalf("Error getting template %v", err)
 	}
 
 	// Initialize in-cluster Kubernetes client
@@ -76,9 +75,14 @@ func initExecutor() *executor.WorkflowExecutor {
 	if err != nil {
 		panic(err.Error())
 	}
+	podName, ok := os.LookupEnv(common.EnvVarPodName)
+	if !ok {
+		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
+	}
 
 	// Initialize workflow executor
 	wfExecutor := executor.WorkflowExecutor{
+		PodName:   podName,
 		Template:  wfTemplate,
 		ClientSet: clientset,
 	}

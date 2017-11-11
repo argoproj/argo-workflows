@@ -20,6 +20,6 @@ spec:
         privileged: true
       # mirrorVolumeMounts will mount the same volumes specified in the main container
       # to the sidecar (including artifacts), at the same mountPaths. This enables
-      # dind daemon to partially see the same filesystem as the main container in
-      # order to use features such as docker volume binding
+      # dind daemon to (partially) see the same filesystem as the main container in
+      # order to use features such as docker volume binding.
       mirrorVolumeMounts: true

@@ -255,6 +255,19 @@ func (in *Inputs) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
+func (out *Outputs) HasOutputs() bool {
+	if out.Result != nil {
+		return true
+	}
+	if len(out.Artifacts) > 0 {
+		return true
+	}
+	if len(out.Parameters) > 0 {
+		return true
+	}
+	return false
+}
+
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
 	for _, art := range args.Artifacts {
 		if art.Name == name {
