@@ -31,17 +31,17 @@ spec:
       artifacts:
       - name: message
     steps:
-    - PRINT:
+    - - name: print
         template: print-message
         arguments:
           artifacts:
-          - name: message
+          - name: message2
             from: "{{inputs.artifacts.message}}"
 
   - name: print-message
     inputs:
       artifacts:
-      - name: message
+      - name: message2
         path: /tmp/message
     container:
       image: alpine:latest

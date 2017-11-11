@@ -477,15 +477,6 @@ func addScriptVolume(pod *apiv1.Pod) {
 			found = true
 			break
 		}
-		if ctr.Name == common.WaitContainerName {
-			// Also annotate the pod with output result
-			ctr.Args = []string{ctr.Args[0] + `
-				output=$(grep stdout /var/lib/docker/containers/$container_id/*.log | jq -r '.log')
-				outputjson={\"result\":\"$output\"}
-				kubectl annotate pods $ARGO_POD_NAME --overwrite workflows.argoproj.io/outputs=${outputjson}
-				`}
-			pod.Spec.Containers[i] = ctr
-		}
 	}
 	if !found {
 		panic("Unable to locate main container")

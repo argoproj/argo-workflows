@@ -3,6 +3,7 @@ package executor
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -23,8 +24,12 @@ import (
 
 // Executor implements the mechanisms within a single Kubernetes pod
 type WorkflowExecutor struct {
+	PodName   string
 	Template  wfv1.Template
 	ClientSet *kubernetes.Clientset
+
+	// memoized container ID to prevent multiple lookups
+	mainContainerID string
 }
 
 // Use Kubernetes client to retrieve the Kubernetes secrets
@@ -69,10 +74,24 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 			artPath = path.Join(common.InitContainerMainFilesystemDir, art.Path)
 		}
 
-		err = artDriver.Load(&art, artPath)
+		// The artifact is downloaded to a temporary location, after which we determine if
+		// the file is a tarball or not. If it is, it is first extracted then renamed to
+		// the desired location. If not, it is simply renamed to the location.
+		tempArtPath := artPath + ".tmp"
+		err = artDriver.Load(&art, tempArtPath)
 		if err != nil {
 			return err
 		}
+		if isTarball(tempArtPath) {
+			err = untar(tempArtPath, artPath)
+			_ = os.Remove(tempArtPath)
+		} else {
+			err = os.Rename(tempArtPath, artPath)
+		}
+		if err != nil {
+			return err
+		}
+
 		log.Infof("Successfully download file: %s", artPath)
 		if art.Mode != nil {
 			err = os.Chmod(artPath, os.FileMode(*art.Mode))
@@ -84,13 +103,14 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	return nil
 }
 
+// SaveArtifacts uploads artifacts to the archive location
 func (we *WorkflowExecutor) SaveArtifacts() error {
 	log.Infof("Saving output artifacts")
 	if len(we.Template.Outputs.Artifacts) == 0 {
 		log.Infof("No output artifacts, nothing to do")
 		return nil
 	}
-	mainCtrID, err := getMainContainerID()
+	mainCtrID, err := we.GetMainContainerID()
 	if err != nil {
 		return err
 	}
@@ -103,7 +123,7 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 		return errors.InternalWrapError(err)
 	}
 
-	for _, art := range we.Template.Outputs.Artifacts {
+	for i, art := range we.Template.Outputs.Artifacts {
 		log.Infof("Saving artifact: %s", art.Name)
 		// Determine the file path of where to find the artifact
 		if art.Path == "" {
@@ -139,12 +159,13 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 		if err != nil {
 			return err
 		}
-		// remove is best effort (the container will go away anyways). we just want reduce peak space usage
+		// remove is best effort (the container will go away anyways).
+		// we just want reduce peak space usage
 		err = os.Remove(tempArtPath)
 		if err != nil {
 			log.Warn("Failed to remove %s", tempArtPath)
 		}
-
+		we.Template.Outputs.Artifacts[i] = art
 		log.Infof("Successfully saved file: %s", tempArtPath)
 	}
 	return nil
@@ -179,45 +200,31 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
 
-func getMainContainerID() (string, error) {
-	pod, err := getPod()
+// GetMainContainerID returns the container id of the main container
+func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
+	if we.mainContainerID != "" {
+		return we.mainContainerID, nil
+	}
+	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
+	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
 	if err != nil {
-		return "", err
+		return "", errors.InternalWrapError(err)
 	}
 	for _, ctrStatus := range pod.Status.ContainerStatuses {
 		if ctrStatus.Name == common.MainContainerName {
 			mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
+			we.mainContainerID = mainCtrID
 			return mainCtrID, nil
 		}
 	}
 	return "", errors.InternalErrorf("Main container not found")
 }
 
-func getPod() (*apiv1.Pod, error) {
-	podName, ok := os.LookupEnv(common.EnvVarPodName)
-	if !ok {
-		return nil, errors.InternalErrorf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
-	}
-	cmd := exec.Command("kubectl", "get", "pod", podName, "-o", "json")
-	outBytes, err := cmd.Output()
-	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
-			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-		}
-		return nil, errors.InternalWrapError(err)
-	}
-	var pod apiv1.Pod
-	err = json.Unmarshal(outBytes, &pod)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &pod, nil
-}
-
 func archivePath(containerID string, sourcePath string, destPath string) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - > %s", containerID, sourcePath, destPath)
+	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
 	cmd := exec.Command("sh", "-c", dockerCpCmd)
+	log.Info(cmd.Args)
 	err := cmd.Run()
 	if err != nil {
 		if exErr, ok := err.(*exec.ExitError); ok {
@@ -226,5 +233,102 @@ func archivePath(containerID string, sourcePath string, destPath string) error {
 		return errors.InternalWrapError(err)
 	}
 	log.Infof("Archiving completed")
+	return nil
+}
+
+// CaptureScriptResult will add the stdout of a script template as output result
+func (we *WorkflowExecutor) CaptureScriptResult() error {
+	if we.Template.Script == nil {
+		return nil
+	}
+	log.Infof("Capturing script output")
+	mainContainerID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("docker", "logs", mainContainerID)
+	log.Info(cmd.Args)
+	outBytes, _ := cmd.Output()
+	outStr := strings.TrimSpace(string(outBytes))
+	we.Template.Outputs.Result = &outStr
+	return nil
+}
+
+// AnnotateOutputs annotation to the pod indicating all the outputs.
+func (we *WorkflowExecutor) AnnotateOutputs() error {
+	if !we.Template.Outputs.HasOutputs() {
+		return nil
+	}
+	log.Infof("Annotating pod with output")
+	// NOTE: this should eventually be improved to do what kubectl/cmd/annotate.go
+	// is doing during a `kubectl annotate pod`, which uses Patch instead of Update.
+	// For now, the easiest thing to do is to Get + Update and hope the pod
+	// resource version does not change from underneath us.
+	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
+	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	outputBytes, err := json.Marshal(we.Template.Outputs)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	pod.Annotations[common.AnnotationKeyOutputs] = string(outputBytes)
+	_, err = podIf.Update(pod)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return nil
+}
+
+// isTarball returns whether or not the file is a tarball
+func isTarball(filePath string) bool {
+	cmd := exec.Command("tar", "-tzf", filePath)
+	log.Info(cmd.Args)
+	err := cmd.Run()
+	return err == nil
+}
+
+// untar extracts a tarball to a temporary directory,
+// renaming it to the desired location
+func untar(tarPath string, destPath string) error {
+	// first extract the tar into a temporary dir
+	tmpDir := destPath + ".tmpdir"
+	err := os.MkdirAll(tmpDir, os.ModePerm)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	cmd := exec.Command("tar", "-xf", tarPath, "-C", tmpDir)
+	log.Info(cmd.Args)
+	err = cmd.Run()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	// next, decide how we wish to rename the file/dir
+	// to the destination path.
+	files, err := ioutil.ReadDir(tmpDir)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	if len(files) == 1 {
+		// if the tar is comprised of single file or directory,
+		// rename that file to the desired location
+		filePath := path.Join(tmpDir, files[0].Name())
+		err = os.Rename(filePath, destPath)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = os.Remove(tmpDir)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	} else {
+		// the tar extracted into multiple files. In this case,
+		// just rename the temp directory to the dest path
+		err = os.Rename(tmpDir, destPath)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	}
 	return nil
 }

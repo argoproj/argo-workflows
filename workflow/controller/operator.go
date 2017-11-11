@@ -500,11 +500,12 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			if art.From == "" {
 				continue
 			}
-			art, err := scope.resolveArtifact(art.From)
+			resolvedArt, err := scope.resolveArtifact(art.From)
 			if err != nil {
 				return nil, err
 			}
-			newStep.Arguments.Artifacts[j] = *art
+			resolvedArt.Name = art.Name
+			newStep.Arguments.Artifacts[j] = *resolvedArt
 		}
 
 		newStepGroup[i] = newStep
