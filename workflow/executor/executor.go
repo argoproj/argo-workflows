@@ -103,6 +103,20 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	return nil
 }
 
+// LoadScriptSource will create the script source file used in script containers
+func (we *WorkflowExecutor) LoadScriptSource() error {
+	if we.Template.Script == nil {
+		return nil
+	}
+	log.Infof("Loading script source to %s", common.ScriptTemplateSourcePath)
+	source := []byte(we.Template.Script.Source)
+	err := ioutil.WriteFile(common.ScriptTemplateSourcePath, source, 0644)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return nil
+}
+
 // SaveArtifacts uploads artifacts to the archive location
 func (we *WorkflowExecutor) SaveArtifacts() error {
 	log.Infof("Saving output artifacts")
