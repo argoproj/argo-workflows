@@ -126,10 +126,13 @@ func GetTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 func loadArtifacts(cmd *cobra.Command, args []string) {
 	wfExecutor := initExecutor()
 	// Download input artifacts
-	err := wfExecutor.LoadArtifacts()
+	err := wfExecutor.LoadScriptSource()
 	if err != nil {
-		log.Errorf("Error downloading input artifacts, %v", err)
-		os.Exit(1)
+		log.Fatalf("Error loading script: %+v", err)
+	}
+	err = wfExecutor.LoadArtifacts()
+	if err != nil {
+		log.Fatalf("Error downloading input artifacts: %+v", err)
 	}
 	os.Exit(0)
 }

@@ -455,8 +455,6 @@ func addScriptVolume(pod *apiv1.Pod) {
 				MountPath: common.ScriptTemplateEmptyDir,
 			}
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
-			initCtr.Command = []string{"sh", "-c"}
-			initCtr.Args = []string{"grep template /argo/podmetadata/annotations | cut -d = -f 2- | jq -rM '.' | jq -rM '.script.source' > /argo/script/source"}
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
