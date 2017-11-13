@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -214,24 +215,33 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
 
+// GetMainContainerStatus returns the container status of the main container
+func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, error) {
+	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
+	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	for _, ctrStatus := range pod.Status.ContainerStatuses {
+		if ctrStatus.Name == common.MainContainerName {
+			return &ctrStatus, nil
+		}
+	}
+	return nil, errors.InternalErrorf("Main container not found")
+}
+
 // GetMainContainerID returns the container id of the main container
 func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 	if we.mainContainerID != "" {
 		return we.mainContainerID, nil
 	}
-	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
-	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+	ctrStatus, err := we.GetMainContainerStatus()
 	if err != nil {
-		return "", errors.InternalWrapError(err)
+		return "", err
 	}
-	for _, ctrStatus := range pod.Status.ContainerStatuses {
-		if ctrStatus.Name == common.MainContainerName {
-			mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
-			we.mainContainerID = mainCtrID
-			return mainCtrID, nil
-		}
-	}
-	return "", errors.InternalErrorf("Main container not found")
+	mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
+	we.mainContainerID = mainCtrID
+	return mainCtrID, nil
 }
 
 func archivePath(containerID string, sourcePath string, destPath string) error {
@@ -344,5 +354,43 @@ func untar(tarPath string, destPath string) error {
 			return errors.InternalWrapError(err)
 		}
 	}
+	return nil
+}
+
+// WaitForReady is the sidecar container waits for the main container to be ready.
+func (we *WorkflowExecutor) WaitForReady() error {
+	log.Infof("Waiting on main container")
+	var mainContainerID string
+	for {
+		ctrStatus, err := we.GetMainContainerStatus()
+		if err != nil {
+			return err
+		}
+		log.Debug(ctrStatus)
+		if ctrStatus.ContainerID != "" {
+			mainContainerID = strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
+			break
+		} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
+			// status still not ready, wait
+			time.Sleep(5)
+		} else if ctrStatus.State.Waiting != nil {
+			// main container is still in waiting status
+			time.Sleep(5)
+		} else {
+			// main container in running or terminated state but missing container ID
+			return errors.InternalErrorf("Container ID cannot be found")
+		}
+	}
+
+	cmd := exec.Command("docker", "wait", mainContainerID)
+	log.Info(cmd.Args)
+	err := cmd.Run()
+	if err != nil {
+		if exErr, ok := err.(*exec.ExitError); ok {
+			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+		}
+		return errors.InternalWrapError(err)
+	}
+	log.Infof("Waiting completed")
 	return nil
 }

@@ -237,23 +237,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"sh", "-xc"}
-	argoExecCmd := fmt.Sprintf(`
-		lineno=$(kubectl get pod $ARGO_POD_NAME -o json | jq -r '.status.containerStatuses | .[] | .name' | grep -n main | awk -F: '{print $1}')
-		index=$(($lineno-1))
-		while [ -z "$container_id" ] ; do
-		  container_id=$(kubectl get pod $ARGO_POD_NAME -o jsonpath="{.status.containerStatuses[$index].containerID}" | cut -d / -f 3-)
-		  sleep 1
-		done
-		echo "main container_id: $container_id"
-		docker wait $container_id
-		echo "container completed"
-		ctrs=$(kubectl get pod $ARGO_POD_NAME -o custom-columns=:status.containerStatuses.*.name | tr "," "\n" | grep -v wait | grep -v main)
-		echo "sidecars: $ctrs"
-		for ctr in $ctrs ; do
-		  kubectl exec $ARGO_POD_NAME -c $ctr -- sh -c "kill 1"
-		done
-		argoexec artifacts save
-	`)
+	argoExecCmd := fmt.Sprintf("argoexec sidecar wait && argoexec artifacts save")
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
