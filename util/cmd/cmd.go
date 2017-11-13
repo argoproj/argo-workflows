@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"os/user"
 
 	"github.com/argoproj/argo"
 	"github.com/spf13/cobra"
@@ -25,8 +27,16 @@ func NewVersionCmd(cliName string) *cobra.Command {
 func MustIsDir(filePath string) bool {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	return fileInfo.IsDir()
+}
+
+// MustHomeDir returns the home directory of the user
+func MustHomeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return usr.HomeDir
 }

@@ -13,38 +13,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// CLI options
-var (
-	yamlValidateArgs yamlValidateFlags
-)
-
-type yamlValidateFlags struct {
-	failFast bool
-	strict   bool
-}
-
 func init() {
-	RootCmd.AddCommand(yamlCmd)
-	yamlCmd.AddCommand(yamlValidateCmd)
-	yamlValidateCmd.Flags().BoolVar(&yamlValidateArgs.failFast, "failfast", true, "Stop upon first validation error")
-	yamlValidateCmd.Flags().BoolVar(&yamlValidateArgs.strict, "strict", true, "Do not accept unknown keys during validation")
+	RootCmd.AddCommand(lintCmd)
 }
 
-var yamlCmd = &cobra.Command{
-	Use:   "yaml",
-	Short: "YAML commands",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.HelpFunc()(cmd, args)
-	},
+var lintCmd = &cobra.Command{
+	Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
+	Short: "lint a directory containing Workflow YAML files, or a list of multiple Workflow YAML files",
+	Run:   lintYAML,
 }
 
-var yamlValidateCmd = &cobra.Command{
-	Use:   "validate (DIRECTORY | FILE1 FILE2 FILE3...)",
-	Short: "Validate a directory containing Workflow YAML files, or a list of multiple Workflow YAML files",
-	Run:   validateYAML,
-}
-
-func validateYAML(cmd *cobra.Command, args []string) {
+func lintYAML(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		cmd.HelpFunc()(cmd, args)
 		os.Exit(1)
@@ -57,7 +36,7 @@ func validateYAML(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		fmt.Printf("Verifying all yaml files in directory: %s\n", args[0])
-		err = validateYAMLDir(args[0])
+		err = lintYAMLDir(args[0])
 	} else {
 		yamlFiles := make([]string, 0)
 		for _, filePath := range args {
@@ -68,7 +47,7 @@ func validateYAML(cmd *cobra.Command, args []string) {
 			yamlFiles = append(yamlFiles, filePath)
 		}
 		for _, yamlFile := range yamlFiles {
-			err = vaildateYAMLFile(yamlFile)
+			err = lintYAMLFile(yamlFile)
 			if err != nil {
 				break
 			}
@@ -82,7 +61,7 @@ func validateYAML(cmd *cobra.Command, args []string) {
 	os.Exit(0)
 }
 
-func validateYAMLDir(dirPath string) error {
+func lintYAMLDir(dirPath string) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -91,12 +70,12 @@ func validateYAMLDir(dirPath string) error {
 		if fileExt != ".yaml" && fileExt != ".yml" {
 			return nil
 		}
-		return vaildateYAMLFile(path)
+		return lintYAMLFile(path)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
-func vaildateYAMLFile(filePath string) error {
+func lintYAMLFile(filePath string) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v\n", filePath, err)
