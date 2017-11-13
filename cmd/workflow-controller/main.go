@@ -9,6 +9,7 @@ import (
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -61,25 +62,25 @@ func main() {
 func Run(cmd *cobra.Command, args []string) {
 	config, err := GetClientConfig(rootArgs.kubeConfig)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalf("%+v", err)
 	}
 
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalf("%+v", err)
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
 	_, err = workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		panic(err)
+		log.Fatalf("%+v", err)
 	}
 
 	// start a controller on instances of our custom resource
 	wfController := controller.NewWorkflowController(config, rootArgs.configMap)
 	err = wfController.ResyncConfig()
 	if err != nil {
-		panic(err)
+		log.Fatalf("%+v", err)
 	}
 
 	ctx, _ := context.WithCancel(context.Background())

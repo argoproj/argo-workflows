@@ -34,7 +34,7 @@ IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
-all: cli-linux cli-darwin workflow-image apiserver-image argoexec-image
+all: cli-linux cli-darwin workflow-image argoexec-image
 
 builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .

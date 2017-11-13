@@ -48,7 +48,7 @@ func worklowStatus(wf *wfv1.Workflow) string {
 		}
 	}
 	if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-		return "Created"
+		return "Pending"
 	}
 	return "Unknown"
 }

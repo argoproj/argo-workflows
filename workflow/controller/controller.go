@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	workflowclient "github.com/argoproj/argo/workflow/client"
@@ -136,7 +135,7 @@ func (wfc *WorkflowController) ResyncConfig() error {
 	}
 	wfc.Config = config
 	if wfc.Config.ExecutorImage == "" {
-		wfc.Config.ExecutorImage = "argoproj/argoexec:" + argo.Version
+		wfc.Config.ExecutorImage = common.DefaultExecutorImage
 	}
 	return nil
 }

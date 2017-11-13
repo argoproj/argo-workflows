@@ -1,7 +1,13 @@
 package common
 
 import (
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+)
+
+var (
+	DefaultControllerImage = "argoproj/workflow-controller:" + argo.Version
+	DefaultExecutorImage   = "argoproj/argoexec:" + argo.Version
 )
 
 const (

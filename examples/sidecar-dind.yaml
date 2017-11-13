@@ -9,7 +9,7 @@ spec:
     container:
       image: docker:17.10
       command: [sh, -c]
-      args: ["sleep 5; docker run --rm debian:latest cat /etc/os-release"]
+      args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
       env:
       - name: DOCKER_HOST
         value: 127.0.0.1
