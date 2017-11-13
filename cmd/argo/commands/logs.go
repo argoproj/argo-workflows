@@ -30,12 +30,12 @@ type logsFlags struct {
 var logsArgs logsFlags
 
 func init() {
-	RootCmd.PersistentFlags().StringVarP(&logsArgs.container, "container", "c", "main", "Print the logs of this container")
-	RootCmd.PersistentFlags().BoolVarP(&logsArgs.follow, "follow", "f", false, "Specify if the logs should be streamed.")
-	RootCmd.PersistentFlags().StringVar(&logsArgs.since, "since", "", "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
-	RootCmd.PersistentFlags().StringVar(&logsArgs.sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
-	RootCmd.PersistentFlags().IntVar(&logsArgs.tail, "tail", -1, "Lines of recent log file to display. Defaults to -1 with no selector, showing all log lines otherwise 10, if a selector is provided.")
-	RootCmd.PersistentFlags().BoolVar(&logsArgs.timestamps, "timestamps", false, "Include timestamps on each line in the log output")
+	logsCmd.Flags().StringVarP(&logsArgs.container, "container", "c", "main", "Print the logs of this container")
+	logsCmd.Flags().BoolVarP(&logsArgs.follow, "follow", "f", false, "Specify if the logs should be streamed.")
+	logsCmd.Flags().StringVar(&logsArgs.since, "since", "", "Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to all logs. Only one of since-time / since may be used.")
+	logsCmd.Flags().StringVar(&logsArgs.sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
+	logsCmd.Flags().IntVar(&logsArgs.tail, "tail", -1, "Lines of recent log file to display. Defaults to -1 with no selector, showing all log lines otherwise 10, if a selector is provided.")
+	logsCmd.Flags().BoolVar(&logsArgs.timestamps, "timestamps", false, "Include timestamps on each line in the log output")
 }
 
 func getLogs(cmd *cobra.Command, args []string) {
