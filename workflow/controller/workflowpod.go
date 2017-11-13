@@ -431,7 +431,11 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			Key:      artLocationKey,
 		}
 	} else {
-		return errors.InternalErrorf("Unable to determine controller default archive location")
+		for _, art := range tmpl.Outputs.Artifacts {
+			if !art.HasLocation() {
+				return errors.InternalError("Unable to determine controller default archive location")
+			}
+		}
 	}
 	return nil
 }

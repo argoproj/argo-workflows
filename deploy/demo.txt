@@ -1,0 +1,46 @@
+
+1) Install the controller
+$ argo install --controller-image jessesuen/workflow-controller:latest --executor-image jessesuen/argoexec:latest
+
+
+2) Submit some examples
+$ argo submit examples/hello-world.yaml
+$ argo submit examples/coinflip.yaml
+$ argo submit examples/loops-maps-phptd
+
+
+3) Install an artifact repository
+$ helm init
+$ helm install stable/minio --name argo-artifacts
+
+
+4) Login to minio and create a bucket (my-bucket)
+$ minikube service list
+Minio default credentials:
+AKIAIOSFODNN7EXAMPLE
+wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+
+5) Reconfigure controller to use artifact repository
+Look at minio created resources
+# kubectl get all -l release=argo-artifacts
+$ kubectl edit configmap workflow-controller-configmap
+
+    artifactRepository:
+      s3:
+        bucket: my-bucket
+        endpoint: argo-artifacts-minio-svc:9000
+        insecure: true
+        accessKeySecret:
+          name: argo-artifacts-minio-user
+          key: accesskey
+        secretKeySecret:
+          name: argo-artifacts-minio-user
+          key: secretkey
+    executorImage: jessesuen/argoexec:latest
+
+$ kubectl delete pod <controller-pod>
+
+
+6) Submit artifact workflow example
+$ argo submit examples/artifact-passing.yaml
