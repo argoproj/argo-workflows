@@ -10,8 +10,19 @@ const (
 	CLIName = "argo"
 )
 
+var (
+	// Global CLI flags
+	globalArgs globalFlags
+)
+
 func init() {
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
+	RootCmd.PersistentFlags().StringVar(&globalArgs.kubeConfig, "kubeconfig", "", "Kubernetes config")
+}
+
+type globalFlags struct {
+	kubeConfig string // --kubeconfig
+	noColor    bool   // --no-color
 }
 
 // RootCmd is the argo root level command

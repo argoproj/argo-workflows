@@ -9,7 +9,7 @@ spec:
     steps:
     - - name: generate
         template: whalesay
-    - - name: 
+    - - name: nested
         template: nested-wf
         arguments:
           artifacts:
