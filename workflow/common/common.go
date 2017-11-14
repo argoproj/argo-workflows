@@ -8,13 +8,13 @@ var (
 	// TODO: replace 'latest' tag with argo.Version when close to release
 	DefaultControllerImage = "argoproj/workflow-controller:latest"
 	DefaultExecutorImage   = "argoproj/argoexec:latest"
+	// DefaultWorkflowControllerDeploymentName is the default deployment name of the workflow controller
+	DefaultControllerDeploymentName = "workflow-controller"
+	// DefaultControllerNamespace is the default location where the workflow controller is installed
+	DefaultControllerNamespace = "kube-system"
 )
 
 const (
-	// DefaultControllerNamespace is the default location where the workflow controller is installed
-	DefaultControllerNamespace = "kube-system"
-	// DefaultWorkflowControllerConfigMap is the default name of the configmap which the workflow controller will query its config from
-	DefaultWorkflowControllerConfigMap = "workflow-controller-configmap"
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"

@@ -15,7 +15,6 @@ import (
 )
 
 func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
-	log.Infof("Creating Workflow CRD")
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: wfv1.CRDFullName,
@@ -58,11 +57,17 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 		return false, err
 	})
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(wfv1.CRDFullName, nil)
+		deleteErr := clientset.Apiextensions().CustomResourceDefinitions().Delete(wfv1.CRDFullName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
 		return nil, err
 	}
 	return crd, nil
+}
+
+// DeleteCustomResourceDefinition deletes the Workflow CRD
+func DeleteCustomResourceDefinition(clientset apiextensionsclient.Interface) error {
+	crdClient := clientset.Apiextensions().CustomResourceDefinitions()
+	return crdClient.Delete(wfv1.CRDFullName, nil)
 }
