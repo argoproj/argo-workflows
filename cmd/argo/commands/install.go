@@ -18,7 +18,7 @@ import (
 func init() {
 	RootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installArgs.name, "name", "workflow-controller", "name of deployment")
-	installCmd.Flags().StringVar(&installArgs.namespace, "namespace", apiv1.NamespaceDefault, "install into a specific namespace")
+	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", "kube-system", "install into a specific namespace")
 	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultWorkflowControllerConfigMap, "install controller using preconfigured configmap")
 	installCmd.Flags().StringVar(&installArgs.controllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
 	installCmd.Flags().StringVar(&installArgs.executorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
@@ -26,7 +26,7 @@ func init() {
 
 type installFlags struct {
 	name            string // --name
-	namespace       string // --namespace
+	namespace       string // --install-namespace
 	configMap       string // --configmap
 	controllerImage string // --controller-image
 	executorImage   string // --executor-image
@@ -47,20 +47,17 @@ func install(cmd *cobra.Command, args []string) {
 
 func installConfigMap() {
 	clientset = initKubeClient()
-
 	cmClient := clientset.CoreV1().ConfigMaps(installArgs.namespace)
-	var err error
-	var wfConfigMap *apiv1.ConfigMap
 	var wfConfig controller.WorkflowControllerConfig
 
 	// install configmap if non-existant
-	wfConfigMap, err = cmClient.Get(installArgs.configMap, metav1.GetOptions{})
+	wfConfigMap, err := cmClient.Get(installArgs.configMap, metav1.GetOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed lookup of configmap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
+			log.Fatalf("Failed lookup of ConfigMap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
 		}
 		// Create the config map
-		fmt.Printf("Creating '%s' config map in '%s'\n", installArgs.configMap, installArgs.namespace)
+		fmt.Printf("Creating '%s' ConfigMap in '%s'\n", installArgs.configMap, installArgs.namespace)
 		wfConfig.ExecutorImage = installArgs.executorImage
 		configBytes, err := yaml.Marshal(wfConfig)
 		if err != nil {
@@ -72,15 +69,15 @@ func installConfigMap() {
 		}
 		wfConfigMap, err = cmClient.Create(wfConfigMap)
 		if err != nil {
-			log.Fatalf("Failed to create configmap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
+			log.Fatalf("Failed to create ConfigMap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
 		}
-		fmt.Printf("Config map '%s' created\n", installArgs.configMap)
+		fmt.Printf("ConfigMap '%s' created\n", installArgs.configMap)
 	} else {
-		fmt.Printf("Found existing configmap '%s' in namespace '%s'. Skip configmap creation\n", installArgs.configMap, installArgs.namespace)
+		fmt.Printf("Found existing ConfigMap '%s' in namespace '%s'. Skip ConfigMap creation\n", installArgs.configMap, installArgs.namespace)
 	}
 	configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
-		log.Fatalf("Configmap '%s' missing key '%s'", installArgs.configMap, common.WorkflowControllerConfigMapKey)
+		log.Fatalf("ConfigMap '%s' missing key '%s'", installArgs.configMap, common.WorkflowControllerConfigMapKey)
 	}
 	err = yaml.Unmarshal([]byte(configStr), &wfConfig)
 	if err != nil {
@@ -114,6 +111,17 @@ func installController() {
 							Image:   installArgs.controllerImage,
 							Command: []string{"workflow-controller"},
 							Args:    []string{"--configmap", installArgs.configMap},
+							Env: []apiv1.EnvVar{
+								apiv1.EnvVar{
+									Name: common.EnvVarNamespace,
+									ValueFrom: &apiv1.EnvVarSource{
+										FieldRef: &apiv1.ObjectFieldSelector{
+											APIVersion: "v1",
+											FieldPath:  "metadata.namespace",
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -122,7 +130,7 @@ func installController() {
 	}
 
 	// Create Deployment
-	fmt.Printf("Creating '%s' deployment...\n", controllerDeployment.ObjectMeta.Name)
+	fmt.Printf("Creating '%s' deployment in '%s'\n", controllerDeployment.ObjectMeta.Name, installArgs.namespace)
 	var result *appsv1beta2.Deployment
 	var err error
 	result, err = deploymentsClient.Create(&controllerDeployment)
@@ -134,8 +142,8 @@ func installController() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Successfully updated existing '%s' deployment.\n", result.GetObjectMeta().GetName())
+		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
 	} else {
-		fmt.Printf("Successfully created '%s' deployment.\n", result.GetObjectMeta().GetName())
+		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
 	}
 }

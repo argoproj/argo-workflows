@@ -8,14 +8,23 @@ import (
 	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfclient "github.com/argoproj/argo/workflow/client"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
 	RootCmd.AddCommand(listCmd)
+	listCmd.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "show workflows from all namespaces")
 }
+
+type listFlags struct {
+	allNamespaces bool // --all-namespaces
+}
+
+var listArgs listFlags
 
 var listCmd = &cobra.Command{
 	Use:   "list",
@@ -24,7 +33,12 @@ var listCmd = &cobra.Command{
 }
 
 func listWorkflows(cmd *cobra.Command, args []string) {
-	wfClient := initWorkflowClient()
+	var wfClient *wfclient.WorkflowClient
+	if listArgs.allNamespaces {
+		wfClient = initWorkflowClient(apiv1.NamespaceAll)
+	} else {
+		wfClient = initWorkflowClient()
+	}
 	wfList, err := wfClient.ListWorkflows(metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)

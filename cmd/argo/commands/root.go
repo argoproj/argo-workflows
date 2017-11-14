@@ -1,8 +1,11 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -17,12 +20,22 @@ var (
 
 func init() {
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
-	RootCmd.PersistentFlags().StringVar(&globalArgs.kubeConfig, "kubeconfig", "", "Kubernetes config")
+	addKubectlFlagsToCmd(RootCmd)
+}
+
+func addKubectlFlagsToCmd(cmd *cobra.Command) {
+	// The "usual" clientcmd/kubectl flags
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := clientcmd.ConfigOverrides{}
+	kflags := clientcmd.RecommendedConfigOverrideFlags("")
+	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
+	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }
 
 type globalFlags struct {
-	kubeConfig string // --kubeconfig
-	noColor    bool   // --no-color
+	noColor bool // --no-color
 }
 
 // RootCmd is the argo root level command

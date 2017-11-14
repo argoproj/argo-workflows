@@ -1,16 +1,18 @@
 package common
 
 import (
-	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 )
 
 var (
-	DefaultControllerImage = "argoproj/workflow-controller:" + argo.Version
-	DefaultExecutorImage   = "argoproj/argoexec:" + argo.Version
+	// TODO: replace 'latest' tag with argo.Version when close to release
+	DefaultControllerImage = "argoproj/workflow-controller:latest"
+	DefaultExecutorImage   = "argoproj/argoexec:latest"
 )
 
 const (
+	// DefaultControllerNamespace is the default location where the workflow controller is installed
+	DefaultControllerNamespace = "kube-system"
 	// DefaultWorkflowControllerConfigMap is the default name of the configmap which the workflow controller will query its config from
 	DefaultWorkflowControllerConfigMap = "workflow-controller-configmap"
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.

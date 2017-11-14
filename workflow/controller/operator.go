@@ -11,6 +11,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
+	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -61,7 +62,8 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 	defer func() {
 		if woc.updated {
-			_, err := wfc.WorkflowClient.UpdateWorkflow(woc.wf)
+			wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wf.ObjectMeta.Namespace)
+			_, err := wfClient.UpdateWorkflow(woc.wf)
 			if err != nil {
 				woc.log.Errorf("Error updating %s status: %v", woc.wf.ObjectMeta.SelfLink, err)
 			} else {
@@ -102,7 +104,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
 		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wf.Spec.VolumeClaimTemplates))
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(apiv1.NamespaceDefault)
+	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	t := true
 	for i, pvcTmpl := range woc.wf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
@@ -148,7 +150,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// workflow is not yet completed or PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(apiv1.NamespaceDefault)
+	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -733,7 +735,7 @@ func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
 			if gcNode.Daemoned == nil || !*gcNode.Daemoned {
 				continue
 			}
-			err := common.KillPodContainer(woc.controller.restConfig, apiv1.NamespaceDefault, gcNode.ID, common.MainContainerName)
+			err := common.KillPodContainer(woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, gcNode.ID, common.MainContainerName)
 			if err != nil {
 				log.Errorf("Failed to kill %s: %+v", gcNode, err)
 				if firstErr == nil {

@@ -1,12 +1,12 @@
 
 1) Install the controller
-$ argo install --controller-image jessesuen/workflow-controller:latest --executor-image jessesuen/argoexec:latest
+$ argo install
 
 
 2) Submit some examples
 $ argo submit examples/hello-world.yaml
 $ argo submit examples/coinflip.yaml
-$ argo submit examples/loops-maps-phptd
+$ argo submit examples/loops-maps.yaml
 
 
 3) Install an artifact repository

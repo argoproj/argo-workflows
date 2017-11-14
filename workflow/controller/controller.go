@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -14,29 +15,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
 type WorkflowController struct {
 	// ConfigMap is the name of the config map in which to derive configuration of the controller from
-	ConfigMap      string
-	WorkflowClient *workflowclient.WorkflowClient
-	WorkflowScheme *runtime.Scheme
-	Config         WorkflowControllerConfig
+	ConfigMap string
+	//WorkflowClient *workflowclient.WorkflowClient
+	Config WorkflowControllerConfig
 
 	restConfig *rest.Config
+	restClient *rest.RESTClient
 	clientset  *kubernetes.Clientset
-	podCl      corev1.PodInterface
 	wfUpdates  chan *wfv1.Workflow
 	podUpdates chan *apiv1.Pod
 }
 
 type WorkflowControllerConfig struct {
-	ExecutorImage      string             `json:"executorImage,omitempty"`
-	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
+	ExecutorImage      string               `json:"executorImage,omitempty"`
+	ArtifactRepository ArtifactRepository   `json:"artifactRepository,omitempty"`
+	Namespace          string               `json:"namespace,omitempty"`
+	Selector           metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
@@ -54,26 +56,24 @@ type S3ArtifactRepository struct {
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(config *rest.Config, configMap string) *WorkflowController {
 	// make a new config for our extension's API group, using the first config as a baseline
-
-	wfClient, wfScheme, err := workflowclient.NewClient(config)
-	if err != nil {
-		panic(err)
-	}
-
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
 
+	restClient, _, err := workflowclient.NewRESTClient(config)
+	if err != nil {
+		panic(err)
+	}
+
 	wfc := WorkflowController{
-		restConfig:     config,
-		clientset:      clientset,
-		WorkflowClient: wfClient,
-		WorkflowScheme: wfScheme,
-		ConfigMap:      configMap,
-		podCl:          clientset.CoreV1().Pods(apiv1.NamespaceDefault),
-		wfUpdates:      make(chan *wfv1.Workflow),
-		podUpdates:     make(chan *apiv1.Pod),
+		restClient: restClient,
+		restConfig: config,
+		clientset:  clientset,
+		//WorkflowClient: wfClient,
+		ConfigMap:  configMap,
+		wfUpdates:  make(chan *wfv1.Workflow, 1024),
+		podUpdates: make(chan *apiv1.Pod, 1024),
 	}
 	return &wfc
 }
@@ -112,7 +112,11 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 
 // ResyncConfig reloads the controller config from the configmap
 func (wfc *WorkflowController) ResyncConfig() error {
-	cmClient := wfc.clientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault)
+	namespace, _ := os.LookupEnv(common.EnvVarNamespace)
+	if namespace == "" {
+		namespace = common.DefaultControllerNamespace
+	}
+	cmClient := wfc.clientset.CoreV1().ConfigMaps(namespace)
 	cm, err := cmClient.Get(wfc.ConfigMap, metav1.GetOptions{})
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -127,36 +131,49 @@ func (wfc *WorkflowController) ResyncConfig() error {
 		return errors.InternalWrapError(err)
 	}
 	log.Printf("workflow controller configuration from %s:\n%s", wfc.ConfigMap, configStr)
-	if config.ArtifactRepository.S3 != nil {
-		err = wfc.validateS3Repository(*config.ArtifactRepository.S3)
-		if err != nil {
-			return err
-		}
-	}
-	wfc.Config = config
+	// if wfc.WorkflowClient == nil || config.Namespace != wfc.Config.Namespace {
+	// 	wfClient := workflowclient.NewClient2(wfc.clientset.RESTClient(), config.Namespace)
+	// 	if err != nil {
+	// 		return errors.InternalWrapError(err)
+	// 	}
+	// 	wfc.WorkflowClient = wfClient
+	// }
 	if wfc.Config.ExecutorImage == "" {
 		wfc.Config.ExecutorImage = common.DefaultExecutorImage
 	}
+	wfc.Config = config
 	return nil
 }
 
-func (wfc *WorkflowController) validateS3Repository(s3repo S3ArtifactRepository) error {
-	secClient := wfc.clientset.CoreV1().Secrets(apiv1.NamespaceDefault)
-	for _, secSelector := range []apiv1.SecretKeySelector{s3repo.AccessKeySecret, s3repo.SecretKeySecret} {
-		s3bucketSecret, err := secClient.Get(secSelector.Name, metav1.GetOptions{})
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		secBytes := s3bucketSecret.Data[secSelector.Key]
-		if len(secBytes) == 0 {
-			return errors.Errorf(errors.CodeBadRequest, "secret '%s' key '%s' empty", secSelector.LocalObjectReference, secSelector.Key)
-		}
+func (wfc *WorkflowController) newWatch() *cache.ListWatch {
+	//c := wfc.clientset.Core().RESTClient()
+	c := wfc.restClient
+	resource := wfv1.CRDPlural
+	namespace := wfc.Config.Namespace
+	fieldSelector := fields.Everything()
+
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		options.FieldSelector = fieldSelector.String()
+		return c.Get().Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec).
+			Do().
+			Get()
 	}
-	return nil
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.Watch = true
+		options.FieldSelector = fieldSelector.String()
+		return c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec).
+			Watch()
+	}
+	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
 func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Controller, error) {
-	source := wfc.WorkflowClient.NewListWatch()
+	source := wfc.newWatch()
 
 	_, controller := cache.NewInformer(
 		source,
@@ -197,7 +214,7 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 	source := cache.NewListWatchFromClient(
 		wfc.clientset.Core().RESTClient(),
 		"pods",
-		apiv1.NamespaceDefault,
+		wfc.Config.Namespace,
 		fields.Everything(),
 	)
 
@@ -288,7 +305,8 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		newStatus = wfv1.NodeStatusError
 	}
 
-	wf, err := wfc.WorkflowClient.GetWorkflow(workflowName)
+	wfClient := workflowclient.NewWorkflowClient(wfc.restClient, pod.ObjectMeta.Namespace)
+	wf, err := wfClient.GetWorkflow(workflowName)
 	if err != nil {
 		log.Warnf("Failed to find workflow %s %+v", workflowName, err)
 		return
@@ -305,7 +323,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	}
 	//addOutputs(pod, &node)
 	wf.Status.Nodes[pod.Name] = node
-	_, err = wfc.WorkflowClient.UpdateWorkflow(wf)
+	_, err = wfClient.UpdateWorkflow(wf)
 	if err != nil {
 		log.Errorf("Failed to update %s status: %+v", pod.Name, err)
 		// if we fail to update the CRD state, we will need to rely on resync to catch up
