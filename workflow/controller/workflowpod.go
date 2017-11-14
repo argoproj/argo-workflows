@@ -208,7 +208,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	}
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
-	created, err := woc.controller.podCl.Create(&pod)
+	created, err := woc.controller.clientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(&pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if

@@ -12,10 +12,12 @@ import (
 )
 
 type WorkflowClient struct {
-	cl *rest.RESTClient
+	cl        *rest.RESTClient
+	namespace string
 }
 
-func NewClient(cfg *rest.Config) (*WorkflowClient, *runtime.Scheme, error) {
+// NewRESTClient returns a generic RESTClient that operates on kubernetes-like APIs
+func NewRESTClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
 	if err := wfv1.AddToScheme(scheme); err != nil {
 		return nil, nil, err
@@ -25,23 +27,27 @@ func NewClient(cfg *rest.Config) (*WorkflowClient, *runtime.Scheme, error) {
 	config.GroupVersion = &wfv1.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+	config.NegotiatedSerializer = serializer.DirectCodecFactory{
+		CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, nil, err
 	}
-	wfClient := WorkflowClient{
-		cl: client,
-	}
+	return client, scheme, nil
+}
 
-	return &wfClient, scheme, nil
+func NewWorkflowClient(cl *rest.RESTClient, namespace string) *WorkflowClient {
+	return &WorkflowClient{
+		cl:        cl,
+		namespace: namespace,
+	}
 }
 
 func (f *WorkflowClient) CreateWorkflow(obj *wfv1.Workflow) (*wfv1.Workflow, error) {
 	var result wfv1.Workflow
 	err := f.cl.Post().
-		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
+		Namespace(f.namespace).Resource(wfv1.CRDPlural).
 		Body(obj).Do().Into(&result)
 	return &result, err
 }
@@ -50,7 +56,7 @@ func (f *WorkflowClient) UpdateWorkflow(obj *wfv1.Workflow) (*wfv1.Workflow, err
 	var result wfv1.Workflow
 	err := f.cl.Put().
 		Name(obj.ObjectMeta.Name).
-		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
+		Namespace(f.namespace).Resource(wfv1.CRDPlural).
 		Body(obj).Do().Into(&result)
 	return &result, err
 }
@@ -58,7 +64,7 @@ func (f *WorkflowClient) UpdateWorkflow(obj *wfv1.Workflow) (*wfv1.Workflow, err
 func (f *WorkflowClient) DeleteWorkflow(name string, options *metav1.DeleteOptions) error {
 	return f.cl.Delete().
 		Name(name).
-		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
+		Namespace(f.namespace).Resource(wfv1.CRDPlural).
 		Body(options).Do().
 		Error()
 }
@@ -66,7 +72,7 @@ func (f *WorkflowClient) DeleteWorkflow(name string, options *metav1.DeleteOptio
 func (f *WorkflowClient) GetWorkflow(name string) (*wfv1.Workflow, error) {
 	var result wfv1.Workflow
 	err := f.cl.Get().
-		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
+		Namespace(f.namespace).Resource(wfv1.CRDPlural).
 		Name(name).Do().Into(&result)
 	return &result, err
 }
@@ -74,7 +80,7 @@ func (f *WorkflowClient) GetWorkflow(name string) (*wfv1.Workflow, error) {
 func (f *WorkflowClient) ListWorkflows(opts metav1.ListOptions) (*wfv1.WorkflowList, error) {
 	var result wfv1.WorkflowList
 	err := f.cl.Get().
-		Namespace(apiv1.NamespaceDefault).Resource(wfv1.CRDPlural).
+		Namespace(f.namespace).Resource(wfv1.CRDPlural).
 		//VersionedParams(&opts, f.codec).
 		Do().Into(&result)
 	return &result, err
@@ -84,6 +90,6 @@ func (f *WorkflowClient) NewListWatch() *cache.ListWatch {
 	return cache.NewListWatchFromClient(
 		f.cl,
 		wfv1.CRDPlural,
-		apiv1.NamespaceDefault,
+		apiv1.NamespaceAll,
 		fields.Everything())
 }

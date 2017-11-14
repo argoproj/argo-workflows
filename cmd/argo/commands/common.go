@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
-	"github.com/argoproj/argo/util/cmd"
 	wfclient "github.com/argoproj/argo/workflow/client"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -20,6 +18,7 @@ import (
 // Global variables
 var (
 	restConfig       *rest.Config
+	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
 	wfClient         *wfclient.WorkflowClient
 	jobStatusIconMap map[string]string
@@ -58,17 +57,9 @@ func initKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
 	}
-	var kubeConfig string
 	var err error
-	if globalArgs.kubeConfig != "" {
-		kubeConfig = globalArgs.kubeConfig
-	} else {
-		kubeConfig = filepath.Join(cmd.MustHomeDir(), ".kube", "config")
-	}
-	restConfig, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
+	restConfig, err = clientConfig.ClientConfig()
+
 	// create the clientset
 	clientset, err = kubernetes.NewForConfig(restConfig)
 	if err != nil {
@@ -77,16 +68,26 @@ func initKubeClient() *kubernetes.Clientset {
 	return clientset
 }
 
-func initWorkflowClient() *wfclient.WorkflowClient {
+func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 	if wfClient != nil {
 		return wfClient
 	}
 	initKubeClient()
+	var namespace string
 	var err error
-	wfClient, _, err = wfclient.NewClient(restConfig)
+	if len(ns) > 0 {
+		namespace = ns[0]
+	} else {
+		namespace, _, err = clientConfig.Namespace()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	restClient, _, err := wfclient.NewRESTClient(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
+	wfClient = wfclient.NewWorkflowClient(restClient, namespace)
 	return wfClient
 }
 
