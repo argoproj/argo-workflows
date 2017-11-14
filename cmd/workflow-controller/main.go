@@ -41,7 +41,7 @@ func init() {
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
 
 	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
-	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", common.DefaultWorkflowControllerConfigMap, "Name of K8s configmap to retrieve workflow controller configuration")
+	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "Name of K8s configmap to retrieve workflow controller configuration")
 }
 
 // GetClientConfig return rest config, if path not specified, assume in cluster config
@@ -71,6 +71,7 @@ func Run(cmd *cobra.Command, args []string) {
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
+	log.Infof("Creating Workflow CRD")
 	_, err = workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		log.Fatalf("%+v", err)

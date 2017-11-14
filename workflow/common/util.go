@@ -95,3 +95,8 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 	}
 	return stdOut.String(), stdErr.String(), nil
 }
+
+// DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
+func DefaultConfigMapName(controllerName string) string {
+	return fmt.Sprintf("%s-configmap", controllerName)
+}

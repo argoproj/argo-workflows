@@ -3,7 +3,9 @@ package commands
 import (
 	"fmt"
 
+	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
+	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/ghodss/yaml"
@@ -11,15 +13,16 @@ import (
 	"github.com/spf13/cobra"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
 	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installArgs.name, "name", "workflow-controller", "name of deployment")
-	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", "kube-system", "install into a specific namespace")
-	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultWorkflowControllerConfigMap, "install controller using preconfigured configmap")
+	installCmd.Flags().StringVar(&installArgs.name, "name", common.DefaultControllerDeploymentName, "name of deployment")
+	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific namespace")
+	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
 	installCmd.Flags().StringVar(&installArgs.controllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
 	installCmd.Flags().StringVar(&installArgs.executorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
 }
@@ -41,8 +44,10 @@ var installCmd = &cobra.Command{
 }
 
 func install(cmd *cobra.Command, args []string) {
+	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
 	installConfigMap()
 	installController()
+	installCRD()
 }
 
 func installConfigMap() {
@@ -57,7 +62,6 @@ func installConfigMap() {
 			log.Fatalf("Failed lookup of ConfigMap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
 		}
 		// Create the config map
-		fmt.Printf("Creating '%s' ConfigMap in '%s'\n", installArgs.configMap, installArgs.namespace)
 		wfConfig.ExecutorImage = installArgs.executorImage
 		configBytes, err := yaml.Marshal(wfConfig)
 		if err != nil {
@@ -73,7 +77,7 @@ func installConfigMap() {
 		}
 		fmt.Printf("ConfigMap '%s' created\n", installArgs.configMap)
 	} else {
-		fmt.Printf("Found existing ConfigMap '%s' in namespace '%s'. Skip ConfigMap creation\n", installArgs.configMap, installArgs.namespace)
+		fmt.Printf("ConfigMap '%s' already exists. Skip creation\n", installArgs.configMap)
 	}
 	configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
@@ -130,7 +134,6 @@ func installController() {
 	}
 
 	// Create Deployment
-	fmt.Printf("Creating '%s' deployment in '%s'\n", controllerDeployment.ObjectMeta.Name, installArgs.namespace)
 	var result *appsv1beta2.Deployment
 	var err error
 	result, err = deploymentsClient.Create(&controllerDeployment)
@@ -145,5 +148,24 @@ func installController() {
 		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
 	} else {
 		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
+	}
+}
+
+func installCRD() {
+	clientset = initKubeClient()
+	apiextensionsclientset, err := apiextensionsclient.NewForConfig(restConfig)
+	if err != nil {
+		log.Fatalf("Failed to create Workflow CRD: %v", err)
+	}
+
+	// initialize custom resource using a CustomResourceDefinition if it does not exist
+	result, err := workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
+	if err != nil {
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatalf("Failed to create Workflow CRD: %v", err)
+		}
+		fmt.Printf("Workflow CRD '%s' already exists\n", wfv1.CRDFullName)
+	} else {
+		fmt.Printf("Workflow CRD '%s' created\n", result.GetObjectMeta().GetName())
 	}
 }
