@@ -92,6 +92,7 @@ type Parameter struct {
 	Name    string  `json:"name"`
 	Value   *string `json:"value,omitempty"`
 	Default *string `json:"default,omitempty"`
+	Path    string  `json:"path,omitempty"`
 }
 
 // Artifact indicates an artifact to place at a specified path

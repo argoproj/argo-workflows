@@ -139,10 +139,17 @@ func loadArtifacts(cmd *cobra.Command, args []string) {
 
 func saveArtifacts(cmd *cobra.Command, args []string) {
 	wfExecutor := initExecutor()
+	// Saving output artifacts
 	err := wfExecutor.SaveArtifacts()
 	if err != nil {
 		log.Fatalf("Error saving output artifacts, %+v", err)
 	}
+	// Saving output parameters
+	err = wfExecutor.SaveParameters()
+	if err != nil {
+		log.Fatalf("Error saving output parameters, %+v", err)
+	}
+	// Capture output script result
 	err = wfExecutor.CaptureScriptResult()
 	if err != nil {
 		log.Fatalf("Error capturing script output, %+v", err)
