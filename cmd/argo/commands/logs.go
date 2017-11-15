@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +61,15 @@ func getLogs(cmd *cobra.Command, args []string) {
 	if logsArgs.timestamps {
 		argList = append(argList, "--timestamps=true")
 	}
+	initKubeClient()
+	namespace, _, err := clientConfig.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if namespace != "" {
+		argList = append(argList, "--namespace", namespace)
+	}
+
 	execCmd := exec.Command("kubectl", argList...)
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
