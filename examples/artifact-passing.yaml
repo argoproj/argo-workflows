@@ -9,6 +9,10 @@ spec:
     steps:
     - - name: generate-artifact
         template: whalesay
+
+
+
+
     - - name: consume-artifact
         template: print-message
         arguments:

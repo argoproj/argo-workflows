@@ -22,12 +22,12 @@ import (
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
 	// wf is the workflow object
-	wf *wfv1.Workflow
+	wf         *wfv1.Workflow
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
-	updated bool
+	updated    bool
 	// log is an logrus logging context to corrolate logs with a workflow
-	log *log.Entry
+	log        *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
 	// NOTE: eventually we may need to store additional metadata state to
@@ -167,7 +167,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	}
 	if len(newPVClist) != totalPVCs {
 		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
+		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs - len(newPVClist), totalPVCs)
 		woc.wf.Status.PersistentVolumeClaims = newPVClist
 		woc.updated = true
 	}
@@ -607,7 +607,7 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
+		replaceMap["inputs.parameters." + inParam.Name] = *inParam.Value
 	}
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
 	s, err := replace(fstTmpl, replaceMap, true)
@@ -691,7 +691,7 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		// The following escapes any special characters (e.g. newlines, tabs, etc...)
 		// in preparation for substitution
 		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement)-1]
+		replacement = replacement[1 : len(replacement) - 1]
 		return w.Write([]byte(replacement))
 	})
 	if unresolvedErr != nil {
