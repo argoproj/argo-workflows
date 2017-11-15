@@ -47,7 +47,7 @@ type ArtifactRepository struct {
 	// Future artifact repository support here
 }
 type S3ArtifactRepository struct {
-	wfv1.S3Bucket `json:",inline"`
+	wfv1.S3Bucket `json:",inline,squash"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	KeyPrefix string `json:"keyPrefix,omitempty"`
@@ -70,7 +70,6 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 		restClient: restClient,
 		restConfig: config,
 		clientset:  clientset,
-		//WorkflowClient: wfClient,
 		ConfigMap:  configMap,
 		wfUpdates:  make(chan *wfv1.Workflow, 1024),
 		podUpdates: make(chan *apiv1.Pod, 1024),
@@ -131,13 +130,6 @@ func (wfc *WorkflowController) ResyncConfig() error {
 		return errors.InternalWrapError(err)
 	}
 	log.Printf("workflow controller configuration from %s:\n%s", wfc.ConfigMap, configStr)
-	// if wfc.WorkflowClient == nil || config.Namespace != wfc.Config.Namespace {
-	// 	wfClient := workflowclient.NewClient2(wfc.clientset.RESTClient(), config.Namespace)
-	// 	if err != nil {
-	// 		return errors.InternalWrapError(err)
-	// 	}
-	// 	wfc.WorkflowClient = wfClient
-	// }
 	if wfc.Config.ExecutorImage == "" {
 		wfc.Config.ExecutorImage = common.DefaultExecutorImage
 	}

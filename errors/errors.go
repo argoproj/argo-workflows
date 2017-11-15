@@ -22,6 +22,7 @@ const (
 type ArgoError interface {
 	Error() string
 	Code() string
+	Message() string
 	JSON() []byte
 	StackTrace() errors.StackTrace
 	Format(s fmt.State, verb rune)
@@ -110,6 +111,10 @@ func (e argoerr) Error() string {
 
 func (e argoerr) Code() string {
 	return e.code
+}
+
+func (e argoerr) Message() string {
+	return e.message
 }
 
 func (e argoerr) StackTrace() errors.StackTrace {
