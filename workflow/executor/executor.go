@@ -187,6 +187,47 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 	return nil
 }
 
+// SaveParameters will save the content in the specified file path as output parameter value
+func (we *WorkflowExecutor) SaveParameters() error {
+	log.Infof("Saving output parameters")
+	if len(we.Template.Outputs.Parameters) == 0 {
+		log.Infof("No output parameters, nothing to do")
+		return nil
+	}
+	mainCtrID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	log.Infof("Main container identified as: %s", mainCtrID)
+
+	for i, param := range we.Template.Outputs.Parameters {
+		log.Infof("Saving out parameter: %s", param.Name)
+		// Determine the file path of where to find the parameter
+		if param.Path == "" {
+			return errors.InternalErrorf("Output parameter %s did not specify a file path", param.Name)
+		}
+		// Use docker cp command to print out the content of the file
+		// Node docker cp CONTAINER:SRC_PATH DEST_PATH|- streams the contents of the resource
+		// as a tar archive to STDOUT if using - as DEST_PATH. Thus, we need to extract the
+		// content from the tar archive and output into stdout. In this way, we do not need to
+		// create and copy the content into a file from the wait container.
+		dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", mainCtrID, param.Path)
+		cmd := exec.Command("sh", "-c", dockerCpCmd)
+		log.Info(cmd.Args)
+		out, err := cmd.Output()
+		if err != nil {
+			if exErr, ok := err.(*exec.ExitError); ok {
+				log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+			}
+			return errors.InternalWrapError(err)
+		}
+		output := string(out)
+		we.Template.Outputs.Parameters[i].Value = &output
+		log.Infof("Successfully saved output parameter: %s", param.Name)
+	}
+	return nil
+}
+
 func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
 		// Getting Kubernetes namespace from the environment variables
