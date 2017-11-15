@@ -23,11 +23,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Executor implements the mechanisms within a single Kubernetes pod
+// WorkflowExecutor implements the mechanisms within a single Kubernetes pod
 type WorkflowExecutor struct {
 	PodName   string
 	Template  wfv1.Template
 	ClientSet *kubernetes.Clientset
+	Namespace string
 
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
@@ -217,7 +218,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 
 // GetMainContainerStatus returns the container status of the main container
 func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, error) {
-	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
+	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -288,7 +289,7 @@ func (we *WorkflowExecutor) AnnotateOutputs() error {
 	// is doing during a `kubectl annotate pod`, which uses Patch instead of Update.
 	// For now, the easiest thing to do is to Get + Update and hope the pod
 	// resource version does not change from underneath us.
-	podIf := we.ClientSet.CoreV1().Pods(apiv1.NamespaceDefault)
+	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -357,8 +358,13 @@ func untar(tarPath string, destPath string) error {
 	return nil
 }
 
-// WaitForReady is the sidecar container waits for the main container to be ready.
-func (we *WorkflowExecutor) WaitForReady() error {
+// containerID is a convenience function to strip the 'docker://' from k8s ContainerID string
+func containerID(ctrID string) string {
+	return strings.Replace(ctrID, "docker://", "", 1)
+}
+
+// Wait is the sidecar container waits for the main container to complete and kills any sidecars after it finishes
+func (we *WorkflowExecutor) Wait() error {
 	log.Infof("Waiting on main container")
 	var mainContainerID string
 	for {
@@ -368,7 +374,7 @@ func (we *WorkflowExecutor) WaitForReady() error {
 		}
 		log.Debug(ctrStatus)
 		if ctrStatus.ContainerID != "" {
-			mainContainerID = strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
+			mainContainerID = containerID(ctrStatus.ContainerID)
 			break
 		} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
 			// status still not ready, wait
@@ -392,5 +398,66 @@ func (we *WorkflowExecutor) WaitForReady() error {
 		return errors.InternalWrapError(err)
 	}
 	log.Infof("Waiting completed")
+	err = we.killSidecars()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
 	return nil
+}
+
+const killGracePeriod = 20
+
+func (we *WorkflowExecutor) killSidecars() error {
+	log.Infof("Killing sidecars")
+	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
+	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	sidecarIDs := make([]string, 0)
+	killArgs := []string{"kill"}
+	waitArgs := []string{"wait"}
+	for _, ctrStatus := range pod.Status.ContainerStatuses {
+		if ctrStatus.Name == common.MainContainerName || ctrStatus.Name == common.WaitContainerName {
+			continue
+		}
+		if ctrStatus.State.Terminated != nil {
+			continue
+		}
+		containerID := containerID(ctrStatus.ContainerID)
+		log.Infof("Killing sidecar %s (%s)", ctrStatus.Name, containerID)
+		sidecarIDs = append(sidecarIDs, containerID)
+		killArgs = append(killArgs, containerID)
+		waitArgs = append(waitArgs, containerID)
+	}
+	if len(sidecarIDs) == 0 {
+		return nil
+	}
+	killArgs = append(killArgs, "--signal", "TERM")
+	cmd := exec.Command("docker", killArgs...)
+	log.Info(cmd.Args)
+	if err = cmd.Run(); err != nil {
+		return errors.InternalWrapError(err)
+	}
+
+	log.Infof("Waiting (%ds) for sidecars to terminate", killGracePeriod)
+	cmd = exec.Command("docker", waitArgs...)
+	log.Info(cmd.Args)
+	if err := cmd.Start(); err != nil {
+		return errors.InternalWrapError(err)
+	}
+	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
+		log.Infof("Timed out (%ds) for sidecars to terminate gracefully. Killing forcefully", killGracePeriod)
+		cmd.Process.Kill()
+		killArgs[len(waitArgs)-1] = "KILL"
+		cmd = exec.Command("docker", killArgs...)
+		log.Info(cmd.Args)
+		_ = cmd.Run()
+	})
+	err = cmd.Wait()
+	timer.Stop()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return err
 }

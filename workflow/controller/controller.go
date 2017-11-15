@@ -262,6 +262,9 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		f := false
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
+		// TODO: we may need to distinguish between the main container suceeding and ignoring the sidekick
+		// statuses. This is because executor may have had to forcibly kill a sidekick resulting in an
+		// overall pod status as failed, but we really only care about the main container status.
 		newStatus = wfv1.NodeStatusFailed
 		f := false
 		newDaemonStatus = &f

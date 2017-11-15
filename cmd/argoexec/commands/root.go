@@ -79,12 +79,17 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
+	namespace, ok := os.LookupEnv(common.EnvVarNamespace)
+	if !ok {
+		log.Fatalf("Unable to determine pod namespace from environment variable %s", common.EnvVarNamespace)
+	}
 
 	// Initialize workflow executor
 	wfExecutor := executor.WorkflowExecutor{
 		PodName:   podName,
 		Template:  wfTemplate,
 		ClientSet: clientset,
+		Namespace: namespace,
 	}
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
 	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.FullVersion, string(yamlBytes))
