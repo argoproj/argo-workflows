@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
@@ -45,7 +46,11 @@ func submitWorkflows(cmd *cobra.Command, args []string) {
 			var wf wfv1.Workflow
 			err = yaml.Unmarshal([]byte(manifestStr), &wf)
 			if err != nil {
-				log.Fatalf("Workflow manifest %s failed validation: %v\n%s", filePath, err, manifestStr)
+				log.Fatalf("Workflow manifest %s failed to parse: %v\n%s", filePath, err, manifestStr)
+			}
+			err = common.ValidateWorkflow(&wf)
+			if err != nil {
+				log.Fatalf("Workflow manifest %s failed validation: %v", filePath, err)
 			}
 			created, err := wfClient.CreateWorkflow(&wf)
 			if err != nil {

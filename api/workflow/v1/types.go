@@ -33,14 +33,14 @@ var SchemeGroupVersion = schema.GroupVersion{Group: CRDGroup, Version: CRDVersio
 
 // Workflow is the definition of our CRD Workflow class
 type Workflow struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:",inline,squash"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              WorkflowSpec   `json:"spec"`
 	Status            WorkflowStatus `json:"status"`
 }
 
 type WorkflowList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:",inline,squash"`
 	metav1.ListMeta `json:"metadata"`
 	Items           []Workflow `json:"items"`
 }
@@ -109,7 +109,7 @@ type Artifact struct {
 	// From allows an artifact to reference an artifact from a previous step
 	From string `json:"from,omitempty"`
 
-	ArtifactLocation `json:",inline"`
+	ArtifactLocation `json:",inline,squash"`
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -150,9 +150,9 @@ type Arguments struct {
 
 // Sidecar is a container which runs alongside the main container
 type Sidecar struct {
-	apiv1.Container `json:",inline"`
+	apiv1.Container `json:",inline,squash"`
 
-	SidecarOptions `json:",inline"`
+	SidecarOptions `json:",inline,squash"`
 }
 
 // SidecarOptions provide a way to customize the behavior of a sidecar and how it
@@ -215,7 +215,7 @@ type S3Bucket struct {
 }
 
 type S3Artifact struct {
-	S3Bucket `json:",inline"`
+	S3Bucket `json:",inline,squash"`
 	Key      string `json:"key"`
 }
 

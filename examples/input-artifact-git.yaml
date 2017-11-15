@@ -12,7 +12,7 @@ spec:
         path: /src
         git:
           repo: https://github.com/argoproj/argo.git
-          revision: "2.0"
+          revision: "master"
     container:
       image: golang:1.8
       command: [sh, -c]

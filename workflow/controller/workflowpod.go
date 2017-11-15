@@ -505,7 +505,7 @@ func verifyResolvedVariables(tmplStr string) error {
 	var unresolvedErr error
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "Failed to resolve {{%s}}", tag)
+		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 		return 0, nil
 	})
 	return unresolvedErr

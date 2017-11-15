@@ -685,7 +685,7 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 				// just write the same string back
 				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
 			}
-			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "Failed to resolve {{%s}}", tag)
+			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 			return 0, nil
 		}
 		// The following escapes any special characters (e.g. newlines, tabs, etc...)

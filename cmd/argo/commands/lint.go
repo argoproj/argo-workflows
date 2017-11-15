@@ -9,6 +9,7 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
@@ -54,7 +55,7 @@ func lintYAML(cmd *cobra.Command, args []string) {
 		}
 	}
 	if err != nil {
-		fmt.Printf("YAML validation failed: %v\n", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("YAML validated\n")
@@ -78,12 +79,26 @@ func lintYAMLDir(dirPath string) error {
 func lintYAMLFile(filePath string) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v\n", filePath, err)
+		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
 	}
 	var wf wfv1.Workflow
 	err = yaml.Unmarshal(body, &wf)
+	if wf.Kind != "" && wf.Kind != wfv1.CRDKind {
+		return nil
+	}
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Failed to parse %s: %v", filePath, err)
+	}
+	err = common.ValidateWorkflow(&wf)
+	if err != nil {
+		argoErr, ok := err.(errors.ArgoError)
+		var errMsg string
+		if ok {
+			errMsg = argoErr.Message()
+		} else {
+			errMsg = err.Error()
+		}
+		return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, errMsg)
 	}
 	return nil
 }
