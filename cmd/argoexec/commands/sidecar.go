@@ -29,8 +29,8 @@ var sidecarWaitCmd = &cobra.Command{
 
 func waitContainer(cmd *cobra.Command, args []string) {
 	wfExecutor := initExecutor()
-	// Wait for main container to be ready
-	err := wfExecutor.WaitForReady()
+	// Wait for main container to complete and kill sidecars
+	err := wfExecutor.Wait()
 
 	// Todo: Decide wether to always exit non-zero if error happens in the sidecar
 	if err != nil {

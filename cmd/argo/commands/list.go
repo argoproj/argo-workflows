@@ -44,12 +44,21 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(w, "NAME\tSTATUS\tAGE")
+	if listArgs.allNamespaces {
+		fmt.Fprintln(w, "NAMESPACE\tNAME\tSTATUS\tAGE")
+	} else {
+		fmt.Fprintln(w, "NAME\tSTATUS\tAGE")
+	}
+
 	for _, wf := range wfList.Items {
 		cTime := time.Unix(wf.ObjectMeta.CreationTimestamp.Unix(), 0)
 		now := time.Now()
 		hrTimeDiff := humanize.RelTime(cTime, now, "", "")
-		fmt.Fprintf(w, "%s\t%s\t%s\n", wf.ObjectMeta.Name, worklowStatus(&wf), hrTimeDiff)
+		if listArgs.allNamespaces {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", wf.ObjectMeta.Namespace, wf.ObjectMeta.Name, worklowStatus(&wf), hrTimeDiff)
+		} else {
+			fmt.Fprintf(w, "%s\t%s\t%s\n", wf.ObjectMeta.Name, worklowStatus(&wf), hrTimeDiff)
+		}
 	}
 	w.Flush()
 }
