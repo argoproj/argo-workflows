@@ -17,29 +17,24 @@ Argo is an open source container-native workflow engine for developing and runni
 * With Argo, you don’t need to install or learn other tools such as Jenkins, Chef, Cloud Formation... 
 
 ## Argo 2.0 Alpha 
-Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows as custom resources using kubectl commands. Argo 2.0 is coming in December 2017 and is available for download [here] (https://github.com/argoproj/argo/blob/master/deploy/demo.txt)
+Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows as custom resources using kubectl commands. Argo 2.0 is coming in December 2017 and is available for download [here] (https://github.com/argoproj/argo/blob/master/deploy/demo.md)
 
 
 
 ## Argo 1.1
-### Step 1: Download and install Argo
 
-https://applatix.com/open-source/argo/get-started/installation
+Download and install Argo following the instructions [here](https://applatix.com/open-source/argo/get-started/installation)
 
-### Step 2: Create and submit jobs
+Create and submit jobs following the tutorials or demo [here](
+https://blog.argoproj.io/argo-workflow-demo-at-the-kubernetes-community-meeting-c428c3c93f9d)
 
-https://blog.argoproj.io/argo-workflow-demo-at-the-kubernetes-community-meeting-c428c3c93f9d
-
-## Main Features
+#### Argo 1.1 Main Features
 * Container-native workflows for Kubernetes.
   * Each step in the workflow is a container
   * Arbitrarily compose sub-workflows to create larger workflows
-  * No need to install or learn other tools such as Jenkins, Chef, Cloud Formation
 * Configuration as code (YAML for everything)
 * Built-in support for artifacts, persistent volumes, and DNS/load-balancers/firewalls.
 * DinD (Docker-in-Docker) out of the box. Run docker builds and other containers from within containerized workflows.
-* "Cashboard" shows cost of running a workflow. Also, spending per user and application.
-* Managed fixtures.
 
 ## Resources
 * Argo website: https://argoproj.github.io/argo-site
