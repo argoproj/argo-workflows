@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
-  generateName: coinflip-
+  generateName: coinflip-recursive-
 spec:
   entrypoint: coinflip
   templates:
@@ -13,7 +13,7 @@ spec:
         template: heads
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails
-        template: tails
+        template: coinflip
         when: "{{steps.flip-coin.outputs.result}} == tails"
 
   - name: flip-coin
@@ -30,9 +30,3 @@ spec:
       image: alpine:3.6
       command: [sh, -c]
       args: ["echo \"it was heads\""]
-
-  - name: tails
-    container:
-      image: alpine:3.6
-      command: [sh, -c]
-      args: ["echo \"it was tails\""]
