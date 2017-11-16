@@ -16,12 +16,12 @@ Argo is an open source container-native workflow engine for developing and runni
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
 * With Argo, you don’t need to install or learn other tools such as Jenkins, Chef, Cloud Formation... 
 
-##Argo 2.0 Alpha 
+## Argo 2.0 Alpha 
 Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows as custom resources using kubectl commands. Argo 2.0 is coming in December 2017 and is available for download [here] (https://github.com/argoproj/argo/blob/master/deploy/demo.txt)
 
 
 
-##Argo 1.1
+## Argo 1.1
 ### Step 1: Download and install Argo
 
 https://applatix.com/open-source/argo/get-started/installation
