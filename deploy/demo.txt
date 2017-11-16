@@ -1,6 +1,13 @@
-
-1) Install the controller
+1) Install the controller.
 $ argo install
+
+If the cluster has legacy authentication disabled, create
+a service account and binding with admin privileges, and
+specify the service account during install.
+
+$ kubectl create serviceaccount --namespace kube-system argo
+$ kubectl create clusterrolebinding argo-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:argo
+$ argo install --service-account argo
 
 
 2) Submit some examples
