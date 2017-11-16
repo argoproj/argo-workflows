@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"os/user"
 
@@ -39,4 +40,10 @@ func MustHomeDir() string {
 		log.Fatal(err)
 	}
 	return usr.HomeDir
+}
+
+// IsURL returns whether or not a string is a URL
+func IsURL(u string) bool {
+	_, err := url.ParseRequestURI(u)
+	return err == nil
 }

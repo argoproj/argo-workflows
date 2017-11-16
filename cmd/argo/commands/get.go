@@ -40,6 +40,7 @@ func getWorkflow(cmd *cobra.Command, args []string) {
 func printWorkflow(wf *wfv1.Workflow) {
 	const fmtStr = "%-17s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
+	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
 	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
 
