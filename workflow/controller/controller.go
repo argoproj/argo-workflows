@@ -36,10 +36,10 @@ type WorkflowController struct {
 }
 
 type WorkflowControllerConfig struct {
-	ExecutorImage      string               `json:"executorImage,omitempty"`
-	ArtifactRepository ArtifactRepository   `json:"artifactRepository,omitempty"`
-	Namespace          string               `json:"namespace,omitempty"`
-	Selector           metav1.LabelSelector `json:"selector,omitempty"`
+	ExecutorImage      string             `json:"executorImage,omitempty"`
+	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
+	Namespace          string             `json:"namespace,omitempty"`
+	MatchLabels        map[string]string  `json:"matchLabels,omitempty"`
 }
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
@@ -138,6 +138,14 @@ func (wfc *WorkflowController) ResyncConfig() error {
 	return nil
 }
 
+// addLabelSelectors adds label selectors from the workflow controller's config
+func (wfc *WorkflowController) addLabelSelectors(req *rest.Request) *rest.Request {
+	for label, labelVal := range wfc.Config.MatchLabels {
+		req = req.Param("labelSelector", fmt.Sprintf("%s=%s", label, labelVal))
+	}
+	return req
+}
+
 func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 	c := wfc.restClient
 	resource := wfv1.CRDPlural
@@ -146,21 +154,22 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
-		return c.Get().
+		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			Do().
-			Get()
+			VersionedParams(&options, metav1.ParameterCodec)
+		req = wfc.addLabelSelectors(req)
+		return req.Do().Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.FieldSelector = fieldSelector.String()
-		return c.Get().
+		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			Watch()
+			VersionedParams(&options, metav1.ParameterCodec)
+		req = wfc.addLabelSelectors(req)
+		return req.Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
@@ -211,23 +220,24 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
-		return c.Get().
+		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
 			Param("labelSelector", fmt.Sprintf("%s=true", common.LabelKeyArgoWorkflow)).
-			VersionedParams(&options, metav1.ParameterCodec).
-			Do().
-			Get()
+			VersionedParams(&options, metav1.ParameterCodec)
+		req = wfc.addLabelSelectors(req)
+		return req.Do().Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.FieldSelector = fieldSelector.String()
-		return c.Get().
+		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
 			Param("labelSelector", fmt.Sprintf("%s=true", common.LabelKeyArgoWorkflow)).
-			VersionedParams(&options, metav1.ParameterCodec).
-			Watch()
+			VersionedParams(&options, metav1.ParameterCodec)
+		req = wfc.addLabelSelectors(req)
+		return req.Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
