@@ -56,10 +56,10 @@ Look at minio created resources:
 ```
 # kubectl get all -l release=argo-artifacts
 ```
-Edit the workflow-controller config to add
+Edit the workflow-controller config to reference the service name (argo-artifacts-minio-svc) and secret (argo-artifacts-minio-user) created by the helm install:
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
-
+...
     executorImage: argoproj/argoexec:latest
     artifactRepository:
       s3:
@@ -74,9 +74,10 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           key: secretkey
 ```
 
-Restart the pod for config to take effect
+Restart the workflow-controller pod for the config to take effect
 ```
-$ kubectl delete pod <workflow-controller-podname>
+$ kubectl get pods -n kube-system -l app=workflow-controller
+$ kubectl delete pod <workflow-controller-podname> -n kube-system
 ```
 
 ## 6. Run a workflow which uses artifacts
