@@ -11,9 +11,9 @@ $ argo install --service-account argo
 
 
 2) Submit some examples
-$ argo submit examples/hello-world.yaml
-$ argo submit examples/coinflip.yaml
-$ argo submit examples/loops-maps.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
 
 
 3) Install an artifact repository
