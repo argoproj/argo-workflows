@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
@@ -137,8 +138,7 @@ func (wfc *WorkflowController) ResyncConfig() error {
 	return nil
 }
 
-func (wfc *WorkflowController) newWatch() *cache.ListWatch {
-	//c := wfc.clientset.Core().RESTClient()
+func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 	c := wfc.restClient
 	resource := wfv1.CRDPlural
 	namespace := wfc.Config.Namespace
@@ -146,7 +146,8 @@ func (wfc *WorkflowController) newWatch() *cache.ListWatch {
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
-		return c.Get().Namespace(namespace).
+		return c.Get().
+			Namespace(namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec).
 			Do().
@@ -165,7 +166,7 @@ func (wfc *WorkflowController) newWatch() *cache.ListWatch {
 }
 
 func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Controller, error) {
-	source := wfc.newWatch()
+	source := wfc.newWorkflowWatch()
 
 	_, controller := cache.NewInformer(
 		source,
@@ -182,18 +183,18 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				log.Infof("WF Add %s", wf.ObjectMeta.SelfLink)
+				//log.Infof("WF Add %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldWf := old.(*wfv1.Workflow)
 				newWf := new.(*wfv1.Workflow)
-				log.Infof("WF Update %s", newWf.ObjectMeta.SelfLink)
+				//log.Infof("WF Update %s", newWf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- newWf
 			},
 			DeleteFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				log.Infof("WF Delete %s", wf.ObjectMeta.SelfLink)
+				//log.Infof("WF Delete %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 		})
@@ -202,13 +203,37 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 	return controller, nil
 }
 
+func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
+	c := wfc.clientset.Core().RESTClient()
+	resource := "pods"
+	namespace := wfc.Config.Namespace
+	fieldSelector := fields.Everything()
+
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		options.FieldSelector = fieldSelector.String()
+		return c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			Param("labelSelector", fmt.Sprintf("%s=true", common.LabelKeyArgoWorkflow)).
+			VersionedParams(&options, metav1.ParameterCodec).
+			Do().
+			Get()
+	}
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.Watch = true
+		options.FieldSelector = fieldSelector.String()
+		return c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			Param("labelSelector", fmt.Sprintf("%s=true", common.LabelKeyArgoWorkflow)).
+			VersionedParams(&options, metav1.ParameterCodec).
+			Watch()
+	}
+	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
 func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Controller, error) {
-	source := cache.NewListWatchFromClient(
-		wfc.clientset.Core().RESTClient(),
-		"pods",
-		wfc.Config.Namespace,
-		fields.Everything(),
-	)
+	source := wfc.newWorkflowPodWatch()
 
 	_, controller := cache.NewInformer(
 		source,
@@ -225,18 +250,18 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				log.Infof("Pod Added %s", pod.ObjectMeta.SelfLink)
+				//log.Infof("Pod Added %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 			UpdateFunc: func(old, new interface{}) {
 				//oldPod := old.(*apiv1.Pod)
 				newPod := new.(*apiv1.Pod)
-				log.Infof("Pod Updated %s", newPod.ObjectMeta.SelfLink)
+				//log.Infof("Pod Updated %s", newPod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- newPod
 			},
 			DeleteFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				log.Infof("Pod Deleted %s", pod.ObjectMeta.SelfLink)
+				//log.Infof("Pod Deleted %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 		})
