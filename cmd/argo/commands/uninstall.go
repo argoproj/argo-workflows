@@ -39,7 +39,8 @@ func uninstall(cmd *cobra.Command, args []string) {
 
 	// Delete the deployment
 	deploymentsClient := clientset.AppsV1beta2().Deployments(uninstallArgs.namespace)
-	err := deploymentsClient.Delete(uninstallArgs.name, &metav1.DeleteOptions{})
+	deletePolicy := metav1.DeletePropagationForeground
+	err := deploymentsClient.Delete(uninstallArgs.name, &metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to delete deployment '%s': %v", uninstallArgs.name, err)

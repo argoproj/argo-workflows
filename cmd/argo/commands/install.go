@@ -45,9 +45,9 @@ var installCmd = &cobra.Command{
 
 func install(cmd *cobra.Command, args []string) {
 	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
+	installCRD()
 	installConfigMap()
 	installController()
-	installCRD()
 }
 
 func installConfigMap() {
