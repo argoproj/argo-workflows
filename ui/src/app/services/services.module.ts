@@ -1,12 +1,14 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkflowsServiceService } from './workflows-service.service';
+import { HttpClientModule } from '@angular/common/http';
+import { WorkflowsService } from './workflows.service';
 
 @NgModule({
   imports: [
-    CommonModule
+    CommonModule,
+    HttpClientModule,
   ],
   declarations: [],
-  providers: [WorkflowsServiceService]
+  providers: [WorkflowsService]
 })
 export class ServicesModule { }

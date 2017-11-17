@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 
+import * as models from '../../models';
+import { WorkflowsService } from '../../services';
+
 @Component({
   selector: 'app-workflows-list-page',
   templateUrl: './workflows-list-page.component.html',
@@ -7,9 +10,11 @@ import { Component, OnInit } from '@angular/core';
 })
 export class WorkflowsListPageComponent implements OnInit {
 
-  constructor() { }
+  public workflowList: models.WorkflowList;
 
-  ngOnInit() {
+  constructor(private workflowsService: WorkflowsService) { }
+
+  public async ngOnInit() {
+    this.workflowList = await this.workflowsService.getWorkflows();
   }
-
 }
