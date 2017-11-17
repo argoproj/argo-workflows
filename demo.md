@@ -24,7 +24,7 @@ $ argo install
 
 If the cluster has legacy authentication disabled, create
 a service account and role binding with admin privileges.
-Then specify the service account during install.
+Then specify the service account during install. 
 
 ```
 $ kubectl create serviceaccount --namespace kube-system argo
