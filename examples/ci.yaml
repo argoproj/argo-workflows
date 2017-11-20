@@ -3,6 +3,8 @@ kind: Workflow
 metadata:
   generateName: ci-example-
 spec:
+  # Specify the name of the Argo template as the entrypoint
+  # to launch the workflow
   entrypoint: ci-example
   # a temporary volume, named workdir, will be used as a working
   # directory for this workflow. This volume is passed around
