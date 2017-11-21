@@ -1,0 +1,15 @@
+<div class="workflow-details">
+  <ax-tabs [selectedTabKey]="'summary'" [fixedWidth]="true">
+    <ax-tab tabKey="summary" tabTitle="JOB SUMMARY">
+      <div class="content content--with-padding-top">
+        <div class="ax-container">
+          <div class="workflow-details__summary-tab" *ngIf="workflow">
+            <div class="workflow-details__summary-tab-row">
+              <app-workflow-details-box [workflow]="workflow"></app-workflow-details-box>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ax-tab>
+  </ax-tabs>
+</div>
