@@ -4,8 +4,12 @@
     "outDir": "../out-tsc/app",
     "baseUrl": "./",
     "module": "es2015",
-    "types": []
+    "types": ["node", "jquery"]
   },
+  "include": [
+    ".",
+    "../node_modules/ui-lib/src/components"
+  ],
   "exclude": [
     "test.ts",
     "**/*.spec.ts"

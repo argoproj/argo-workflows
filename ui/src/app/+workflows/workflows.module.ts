@@ -5,6 +5,8 @@ import { BaseModule } from '../common';
 
 import { WorkflowsRoutingModule } from './workflows-routing.module';
 import { WorkflowsListPageComponent } from './workflows-list-page/workflows-list-page.component';
+import { WorkflowDetailsPageComponent } from './workflow-details-page/workflow-details-page.component';
+import { WorkflowDetailsBoxComponent } from './workflow-details-box/workflow-details-box.component';
 
 @NgModule({
   imports: [
@@ -12,6 +14,10 @@ import { WorkflowsListPageComponent } from './workflows-list-page/workflows-list
     WorkflowsRoutingModule,
     BaseModule,
   ],
-  declarations: [WorkflowsListPageComponent]
+  declarations: [
+    WorkflowsListPageComponent,
+    WorkflowDetailsPageComponent,
+    WorkflowDetailsBoxComponent,
+  ]
 })
 export class WorkflowsModule { }

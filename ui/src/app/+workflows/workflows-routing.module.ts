@@ -1,9 +1,12 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { WorkflowsListPageComponent } from './workflows-list-page/workflows-list-page.component';
+import { WorkflowDetailsPageComponent } from './workflow-details-page/workflow-details-page.component';
 
 const routes: Routes = [{
-    path: '', component: WorkflowsListPageComponent,
+  path: '', component: WorkflowsListPageComponent,
+}, {
+  path: ':name', component: WorkflowDetailsPageComponent,
 }];
 
 @NgModule({
