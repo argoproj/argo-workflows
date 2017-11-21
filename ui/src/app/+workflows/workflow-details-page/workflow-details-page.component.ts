@@ -7,6 +7,7 @@ import * as models from '../../models';
 @Component({
   selector: 'app-workflow-details-page',
   templateUrl: './workflow-details-page.html',
+  styleUrls: ['./workflow-details.scss']
 })
 export class WorkflowDetailsPageComponent implements OnInit {
 

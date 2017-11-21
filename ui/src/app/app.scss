@@ -1,0 +1,18 @@
+$axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
+@import 'node_modules/ui-lib/src/assets/styles/gui-lib';
+
+.ax-container {
+  position: relative;
+  width: $basePageWidth + 160;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 80px;
+
+  &--additional-padding {
+      padding: 0 30px;
+  }
+
+  &--full-width {
+      width: 100%;
+  }
+}
