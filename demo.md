@@ -24,19 +24,6 @@ $ chmod +x argo
 ```
 $ argo install
 ```
-
- NOTE: If your Kubernetes cluster has legacy authentication disabled, you must create a service account and a [cluster role binding](https://kubernetes.io/docs/admin/authorization/rbac/#kubectl-create-clusterrolebinding) with admin privileges. Then when you install Argo, specify the newly created service account. 
-
-```
-$ kubectl create serviceaccount --namespace kube-system argo
-$ kubectl create clusterrolebinding argo-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:argo
-$ argo install --service-account argo
-```
- Where:
- 
- * `kube-system argo` is the namespace that the `argo` serviceaccount has access to.
- * `argo-cluster-rule` is the name for the cluster role binding
- 
  
 ## 3. Run Simple Example Workflows
 ```
@@ -104,3 +91,17 @@ $ kubectl delete pod <workflow-controller-podname> -n kube-system
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
+
+
+
+NOTE: If your Kubernetes cluster has legacy authentication disabled, you must create a service account and a [cluster role binding](https://kubernetes.io/docs/admin/authorization/rbac/#kubectl-create-clusterrolebinding) with admin privileges before you install Argo. Then when you install Argo, specify the newly created service account. 
+
+```
+$ kubectl create serviceaccount --namespace kube-system argo
+$ kubectl create clusterrolebinding argo-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:argo
+$ argo install --service-account argo
+```
+ Where:
+ 
+ * `kube-system argo` is the namespace that the `argo` serviceaccount has access to.
+ * `argo-cluster-rule` is the name for the cluster role binding
