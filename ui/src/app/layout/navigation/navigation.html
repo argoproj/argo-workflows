@@ -1,0 +1,43 @@
+<div class="nav-bar">
+  <div class="nav-bar__logo">
+    <img src="/assets/styles/icons/logo.png" alt="Argo">
+    <div class="nav-bar__version">ver: {{version}}</div>
+  </div>
+  <div class="nav-bar__item" routerLink="/timeline" routerLinkActive="active" (click)="close()">
+    <i class="ax-icon-timeline"></i>
+    <span class="nav-bar__item-tooltip">Timeline</span>
+  </div>
+  <div class="nav-bar__item" routerLink="/test" routerLinkActive="active" (click)="close()">
+    <i class="ax-icon-docs"></i>
+    <span class="nav-bar__item-tooltip">Docs</span>
+  </div>
+  <div class="nav-bar__item" routerLink="/help" routerLinkActive="active" (click)="close()">
+    <i class="ax-icon-help"></i>
+    <span class="nav-bar__item-tooltip">Help</span>
+  </div>
+  <div class="nav-bar__item" (click)="open()">
+    <i class="ax-icon-more"></i>
+  </div>
+</div>
+<div class="nav-overlay" (click)="close()"></div>
+<nav class="nav">
+  <div class="nav__close" (click)="close()">
+    <div class="ax-icon-close"></div>
+  </div>
+  <div class="nav__list">
+    <a class="nav__item nav__item_tutorial" routerLink="/timeline" routerLinkActive="active" (click)="close()"
+       data-tutorial="timeline">
+      <div class="nav__ico"><i class="ax-icon-timeline"></i></div>
+      <div class="nav__name">Timeline</div>
+    </a>
+    <h3>Administration</h3>
+    <a class="nav__item" routerLink="/test" routerLinkActive="active" (click)="close()">
+      <div class="nav__ico"><i class="ax-icon-docs"></i></div>
+      <div class="nav__name">Docs</div>
+    </a>
+    <a class="nav__item" routerLink="/help" routerLinkActive="active" (click)="close()">
+      <div class="nav__ico"><i class="ax-icon-help"></i></div>
+      <div class="nav__name">Help</div>
+    </a>
+  </div>
+</nav>

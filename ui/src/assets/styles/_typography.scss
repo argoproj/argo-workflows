@@ -1,0 +1,14 @@
+.content {
+    h2 {
+        margin-bottom: 14px;
+        font-weight: bold;
+        font-size: 1.25em;
+        color: $ax-color-gray-5;
+    }
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

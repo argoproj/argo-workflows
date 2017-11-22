@@ -1,0 +1,104 @@
+.ax-toolbar {
+    right: 0;
+    left: #{$nav-width};
+    height: $toolbar-height;
+    padding: 0 0 1px;
+    line-height: $toolbar-height;
+    font-size: 16px;
+    font-weight: bold;
+
+    .ax-container::after {
+        display: inline-block;
+        vertical-align: middle;
+        content: "";
+    }
+
+    .hidden-toolbar & {
+        display: none;
+    }
+
+    .extended-bg & {
+        background: #36597f;
+        border-color: transparent;
+
+        &__item {
+            color: #fff;
+        }
+    }
+
+    &--float {
+        position: relative;
+        top: 0;
+        left: 0;
+        margin-top: -$toolbar-height;
+        min-height: $toolbar-height;
+        height: auto;
+    }
+
+    &__item {
+        display: inline-block;
+        padding: 0 10px;
+        vertical-align: middle;
+        line-height: 1.5;
+        color: $ax-color-teal-6;
+
+        &--block {
+            display: block;
+            color: #3E3E3E;
+        }
+
+        &--right-side {
+            line-height: inherit;
+        }
+
+        .ax-button {
+            margin: 0;
+        }
+
+        &--bulk-action {
+            float: right;
+            margin-top: 13px;
+            margin-right: 16px;
+        }
+    }
+
+    &__link-item {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 1.5;
+        color:#5796E0;
+        font-size: 15px;
+        font-weight: normal;
+
+        &:not(:last-child) {
+            margin-right: 20px;
+        }
+
+        &--block {
+            display: block;
+        }
+    }
+
+    &__button {
+        padding: 0 16px;
+        font-weight: 500;
+        font-size: .8125em;
+        line-height: 1.8125rem + 0.0625rem * 2;
+        text-transform: uppercase;
+        background-color: $ax-color-gray-2;
+        border-radius: 5px;
+
+        i {
+            vertical-align: middle;
+            font-size: 1.2em;
+
+            &:first-child {
+                margin-right: 4px;
+            }
+
+            &:last-child {
+                margin-left: 4px;
+            }
+        }
+    }
+}

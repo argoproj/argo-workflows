@@ -4,7 +4,7 @@ import * as models from '../../models';
 import { WorkflowsService } from '../../services';
 
 @Component({
-  selector: 'app-workflows-list-page',
+  selector: 'ax-workflows-list-page',
   templateUrl: './workflows-list-page.component.html',
   styleUrls: ['./workflows-list-page.component.scss']
 })

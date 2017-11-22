@@ -1,0 +1,15 @@
+.label {
+    display: inline-block;
+    vertical-align: middle;
+    min-width: 84px;
+    margin: 0 0 3px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: bold;
+    background-color: $ax-color-gray-2;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 24px;
+    user-select: none;
+    color: $ax-color-gray-6;
+}

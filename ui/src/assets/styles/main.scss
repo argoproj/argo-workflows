@@ -1,0 +1,185 @@
+//@import 'node_modules/owl.carousel/dist/assets/owl.carousel';
+//@import 'node_modules/nvd3/build/nv.d3.min';
+//@import 'node_modules/font-awesome-animation/dist/font-awesome-animation.min';
+//@import 'node_modules/argo-ui-lib/src/assets/styles/gui-lib';
+
+@import './config';
+@import './icons';
+@import './label';
+@import './toastr';
+@import './ng-select';
+@import './table';
+@import './dropdown';
+@import './typography';
+
+@import './elements/*.scss';
+
+// Directives style
+@import '../../app/common/highlight-substring/highlight-substring';
+@import '../../app/common/status-icon/status-icon';
+
+.initial-loading {
+    text-align: center;
+    font-size: 40px;
+    top: 50%;
+}
+
+.no-margin {
+    margin: 0;
+}
+.padding-left-medium {
+    padding-left:15px;
+}
+.padding-top-large {
+    padding-top:25px;
+}
+.margin-left-medium {
+    margin-left:15px;
+}
+.margin-right-medium {
+    margin-right:15px;
+}
+.margin-top-medium {
+    margin-top:15px;
+}
+.margin-bottom-medium {
+    margin-bottom:15px;
+}
+.margin-top-large {
+    margin-top:25px;
+}
+.margin-bottom-large {
+    margin-bottom:25px;
+}
+
+.margin-large {
+    margin:25px;
+}
+
+.ta-center {
+    text-align:center;
+}
+.ta-left {
+    text-align:left;
+}
+
+.hand {
+    cursor: hand;
+}
+
+.dib {
+    display:inline-block;
+}
+
+.w100 {
+    width:100%;
+}
+
+.fr {
+    float:right;
+}
+
+.fl {
+    float:left;
+}
+
+.va-mid {
+    vertical-align: middle;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.pre-line{
+    white-space: pre-line;
+}
+
+.no-text-ellipsis {
+    text-overflow: initial;
+    overflow: initial;
+}
+
+div.validation-default-message, div.validation-message {
+    font-size: 11px;
+    font-weight: bold;
+    width: 30%;
+    line-height: 10px;
+}
+
+.search-box {
+    width: 250px;
+    float: right;
+    margin: 3px 0;
+}
+
+.clean-link {
+    text-decoration: none !important;
+    color: white !important;
+
+    &:hover {
+        text-decoration: none;
+        color: white;
+    }
+}
+
+.clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+
+//Toaster overides
+.toast-error {
+  background-color: #FBDEDB;
+  border-color: #C0392B;
+
+  .toast-content{
+    color:#333;
+    font-size:14px;
+  }
+
+}
+
+.no-bottom-border{
+    border-bottom: 0px !important;
+}
+
+.align-wrapper:after {
+    display: inline-block;
+    content: '';
+}
+
+.warning-text {
+    color: $ax-failed-color-light;
+    .info-icon{
+        font-size: 1.325em;
+    }
+}
+
+.info-text {
+    color: $ax-color-teal-5;
+    .info-icon{
+        font-size: 1.325em;
+    }
+}
+
+.bold-text {
+    font-weight: bold;
+}
+
+.marked {
+    color: $ax-color-gray-6;
+}
+
+.error-msg {
+    font-size: 13px;
+    line-height: 13px !important;
+    margin-left: 5px;
+    color: $ax-failed-color;
+}

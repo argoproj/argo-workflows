@@ -1,0 +1,35 @@
+.dropdown {
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.2);
+
+    ul {
+        padding: 0;
+        margin: 0;
+        list-style-type: none;
+        white-space: nowrap;
+        text-align: left;
+        cursor: pointer;
+
+        li {
+            padding: 0.5em 1em;
+            border-bottom: 1px solid #cacaca;
+            color: #3E3E3E;
+            cursor: pointer;
+
+            a {
+                color: #3E3E3E;
+                cursor: pointer;
+                text-align: left;
+                font-size: 1rem;
+                font-weight: bold;
+            }
+
+            &:hover {
+                background-color: #eee;
+            }
+
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+    }
+}
