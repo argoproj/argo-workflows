@@ -1,7 +1,6 @@
-<div class="layout" [class.opened-nav]="openedNav">
-  <ax-navigation (onToggleNav)="toggleNav($event)"></ax-navigation>
-  <div class="content-wrapper" [class.hidden-scrollbar]="hiddenScrollbar"
-       [class.panel-off-canvas]="openedPanelOffCanvas">
+<div class="layout">
+  <ax-navigation></ax-navigation>
+  <div class="content-wrapper">
     <ax-top-bar></ax-top-bar>
     <ax-toolbar></ax-toolbar>
     <router-outlet></router-outlet>

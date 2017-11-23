@@ -79,6 +79,10 @@ $nav-break-height-sm: 746px;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
+      &:focus {
+        outline: none;
+      }
     }
 
     &__item-tooltip {
