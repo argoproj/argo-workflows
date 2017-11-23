@@ -1,0 +1,27 @@
+.shaded-box {
+    &__top {
+        color: $ax-color-gray-6;
+        height: 30px;
+
+        & > span {
+            font-weight: bolder;
+        }
+
+        &--right {
+            float: right;
+
+            & > i {
+                cursor: pointer;
+                font-size: 30px;
+                color: $ax-color-teal-5;
+            }
+        }
+    }
+
+    &__content {
+        border-radius: $border-radius;
+        border: 1px solid $ax-color-gray-4;
+        background-color: #F3F6F7;
+        padding: 15px 39px;
+    }
+}

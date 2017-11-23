@@ -1,0 +1,26 @@
+.fixture-status {
+    display: inline-block;
+    width: 25px;
+    height: 25px;
+    line-height: 25px;
+    text-align: center;
+    color: #fff;
+    background-color: $ax-color-gray-7;
+    border-radius: 50%;
+
+    &--success {
+        background-color: $ax-success-color;
+    }
+
+    &--failed {
+        background-color: $ax-failed-color;
+    }
+
+    &--waiting {
+        background-color: $ax-color-gray-5;
+    }
+
+    &--in-progress {
+        background-color: $ax-running-color-light;
+    }
+}

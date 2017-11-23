@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="2069px" height="1735px" viewBox="0 0 2069 1735" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 45 (43475) - http://www.bohemiancoding.com/sketch -->
+    <title>Artboard</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="V3" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard">
+            <g id="Group-8" transform="translate(-9.000000, 52.000000)">
+                <rect id="Mask" x="0" y="183" width="992" height="521.23839"></rect>
+                <g style="mix-blend-mode: darken;" transform="translate(124.000000, 0.000000)" id="Oval-12">
+                    <circle fill="#00BCCF" style="mix-blend-mode: screen;" cx="1142.28602" cy="800.150684" r="699.0564"></circle>
+                    <circle fill="#B352A0" style="mix-blend-mode: hard-light;" cx="709.821354" cy="455.782462" r="455.782462"></circle>
+                    <circle fill="#FFC300" style="mix-blend-mode: soft-light;" cx="653.588126" cy="1321.78978" r="284.947321"></circle>
+                    <circle fill="#F77530" style="mix-blend-mode: overlay;" cx="355.955155" cy="870.755873" r="355.496807"></circle>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
