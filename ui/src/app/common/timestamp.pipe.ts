@@ -6,11 +6,11 @@ import * as moment from 'moment';
 })
 export class TimestampPipe implements PipeTransform {
   transform(value: number, args: any[]) {
+    console.log(value);
     if (value === 0) {
       return '';
     } else {
-      const timestamp = value * 1000;
-      return moment(timestamp).format('YYYY/MM/DD') + ' ' + moment(timestamp).format('HH:mm');
+      return moment(value).format('YYYY/MM/DD') + ' ' + moment(value).format('HH:mm');
     }
   }
 }

@@ -8,19 +8,9 @@
         bottom: 0;
         left: 7px;
         width: 1px;
-        min-height: calc(100vh - #{$top-bar-height + $toolbar-height + 20px});
+        min-height: 100vh;
         background-color: $ax-color-gray-4;
         z-index: -1;
         content: '';
-    }
-
-    &--commit {
-        &::before {
-            left: 50px;
-        }
-    }
-
-    &--branches {
-        min-height: calc(100% - #{$top-bar-height + $toolbar-height});
     }
 }
