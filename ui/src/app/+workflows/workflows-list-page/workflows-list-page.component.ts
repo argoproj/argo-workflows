@@ -16,6 +16,5 @@ export class WorkflowsListPageComponent implements OnInit {
 
   public async ngOnInit() {
     this.workflowList = await this.workflowsService.getWorkflows();
-    console.log(this.workflowList.items[0]);
   }
 }
