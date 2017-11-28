@@ -28,4 +28,12 @@ export class WorkflowDetailsPageComponent implements OnInit {
       this.selectedTab = tab || 'summary';
     });
   }
+
+  public getProgressClasses(stepStatus: string) {
+    const status = stepStatus === 'Failed' ? 'failed' : 'running';
+    const percentage = 100;
+    return [
+        'workflow-details__node-progress', `workflow-details__node-progress--${percentage.toFixed()}-${status}`
+    ].join(' ');
+  }
 }

@@ -6,8 +6,8 @@
         </div>
     </div>
     <div class="workflow-tree__node-footer">
-        <div class="workflow-tree__node-title" [attr.title]="cell.name" (click)="selectTask(cell)">
-            {{cell.name}}
+        <div class="workflow-tree__node-title" [attr.title]="cell.stepName" (click)="selectTask(cell)">
+            {{cell.stepName}}
         </div>
         <div class="workflow-tree__node-actions">
             <div *ngIf="workflowNodeActionsTemplate">

@@ -1,3 +1,5 @@
+@import '../../../assets/styles/config';
+
 .workflow-details {
     &__summary-tab {
         padding: 0 0 10px;
@@ -5,6 +7,113 @@
             padding: 0 0 10px;
             button {
                 width: 200px;
+            }
+        }
+    }
+
+    &__status-text {
+        color: $ax-color-gray-5;
+    }
+
+    $step: 1;
+    $loops: round(10 / $step);
+    $increment: 30;
+    @for $i from 0 through $loops {
+        &__step-layer--#{$i*$step} {
+            .expanded & {
+                padding-left: $i*$increment + 22;
+            }
+        }
+    }
+    &__node-info-duration {
+        position: relative;
+        top: 50%;
+        font-size: 13px;
+        transform: translateY(-50%);
+        span {
+            display: block;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    }
+    &__node-status {
+        width: 100%;
+        height: 26px;
+        padding-top: 3px;
+        overflow: hidden;
+        color: $ax-color-gray-5;
+        font-size: 13px;
+        text-align: center;
+        margin-top: 24px;
+        .status-text {
+            text-overflow: ellipsis;
+            width: calc(100% - 15px);
+            float: left;
+        }
+        .warning-text {
+            width: 15px;
+        }
+    }
+
+    $runningBarColor: #08B789;
+    $failedBarColor: #DE3847;
+    $overlayColor: white;
+    $backColor: #EFEFEF;
+    $outer-diameter: 106px;
+    $inner-diameter: 90px;
+    &__node-progress {
+        position: relative;
+        width: $outer-diameter;
+        height: $outer-diameter;
+        border-radius: 50%;
+        border: 2px solid $backColor;
+        margin: 0 auto;
+    }
+    &__node-progress-overlay {
+        width: $inner-diameter;
+        height: $inner-diameter;
+        background-color: $overlayColor;
+        border-radius: 50%;
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        margin: 0 auto;
+        text-align: center;
+        font-size: 16px;
+    }
+    $step: 1;
+    $loops: round(100 / $step);
+    $increment: 360 / $loops;
+    $half: round($loops / 2);
+    @for $i from 0 through $loops {
+        &__node-progress--#{$i*$step}-failed {
+            @if $i < $half {
+                $nextdeg: 90deg + ( $increment * $i);
+                background-image: linear-gradient(90deg, $backColor 50%, transparent 50%, transparent), linear-gradient($nextdeg, $failedBarColor 50%, $backColor 50%, $backColor);
+            }
+            @else {
+                $nextdeg: -90deg + ( $increment * ( $i - $half));
+                background-image: linear-gradient($nextdeg, $failedBarColor 50%, transparent 50%, transparent), linear-gradient(270deg, $failedBarColor 50%, $backColor 50%, $backColor);
+            }
+            @if $i>0 {
+                &:after {
+                    background-color: #dadada;
+                }
+            }
+        }
+        &__node-progress--#{$i*$step}-running {
+            @if $i < $half {
+                $nextdeg: 90deg + ( $increment * $i);
+                background-image: linear-gradient( 90deg, $backColor 50%, transparent 50%, transparent), linear-gradient($nextdeg, $runningBarColor 50%, $backColor 50%, $backColor);
+            }
+            @else {
+                $nextdeg: -90deg + ( $increment * ( $i - $half));
+                background-image: linear-gradient( $nextdeg, $runningBarColor 50%, transparent 50%, transparent), linear-gradient(270deg, $runningBarColor 50%, $backColor 50%, $backColor);
+            }
+            @if $i>0 {
+                &:after {
+                    background-color: #08B789;
+                }
             }
         }
     }
