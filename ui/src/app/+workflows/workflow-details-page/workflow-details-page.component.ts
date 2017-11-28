@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { WorkflowsService } from '../../services';
 import * as models from '../../models';
@@ -12,12 +12,20 @@ import * as models from '../../models';
 export class WorkflowDetailsPageComponent implements OnInit {
 
   public workflow: models.Workflow;
+  public selectedTab = 'summary';
 
-  constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute) {}
+  constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute, private router: Router) {}
+
+  public tabChange(tab: string) {
+    this.router.navigate(['.', { tab }], { relativeTo: this.route });
+  }
 
   public ngOnInit() {
-    this.route.params.subscribe(async params => {
-      this.workflow = await this.workflowsService.getWorkflow(params['name']);
+    this.route.params.map(params => params['name']).distinct().subscribe(async name => {
+      this.workflow = await this.workflowsService.getWorkflow(name);
+    });
+    this.route.params.map(params => params['tab']).distinct().subscribe(tab => {
+      this.selectedTab = tab || 'summary';
     });
   }
 }
