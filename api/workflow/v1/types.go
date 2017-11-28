@@ -137,6 +137,7 @@ type WorkflowStep struct {
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`
+	WithParam string    `json:"withParam,omitempty"`
 	When      string    `json:"when,omitempty"`
 }
 

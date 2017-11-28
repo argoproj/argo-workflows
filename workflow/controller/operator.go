@@ -22,12 +22,12 @@ import (
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
 	// wf is the workflow object
-	wf         *wfv1.Workflow
+	wf *wfv1.Workflow
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
-	updated    bool
+	updated bool
 	// log is an logrus logging context to corrolate logs with a workflow
-	log        *log.Entry
+	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
 	// NOTE: eventually we may need to store additional metadata state to
@@ -167,7 +167,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	}
 	if len(newPVClist) != totalPVCs {
 		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs - len(newPVClist), totalPVCs)
+		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
 		woc.wf.Status.PersistentVolumeClaims = newPVClist
 		woc.updated = true
 	}
@@ -515,11 +515,11 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	return newStepGroup, nil
 }
 
-// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems
+// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
 func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 {
+		if len(step.WithItems) == 0 && step.WithParam == "" {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -534,7 +534,7 @@ func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv
 	return newStepGroup, nil
 }
 
-// expandStep expands a step containing withItems into multiple steps parallel steps
+// expandStep expands a step containing withItems or withParams into multiple parallel steps
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
@@ -542,13 +542,26 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	}
 	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 	expandedStep := make([]wfv1.WorkflowStep, 0)
-	for i, item := range step.WithItems {
+	var items []wfv1.Item
+	if len(step.WithItems) > 0 {
+		items = step.WithItems
+	} else if step.WithParam != "" {
+		err = json.Unmarshal([]byte(step.WithParam), &items)
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value not be parsed as a JSON list: %s", step.WithParam)
+		}
+	} else {
+		// this should have been prevented in expandStepGroup()
+		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+	}
+
+	for i, item := range items {
 		replaceMap := make(map[string]string)
 		var newStepName string
 		switch val := item.(type) {
-		case string:
-			replaceMap["item"] = val
-			newStepName = fmt.Sprintf("%s(%s)", step.Name, val)
+		case string, int32, int64, float32, float64:
+			replaceMap["item"] = fmt.Sprintf("%v", val)
+			newStepName = fmt.Sprintf("%s(%v)", step.Name, val)
 		case map[string]interface{}:
 			// Handle the case when withItems is a list of maps.
 			// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -557,18 +570,19 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			// This would eventually be part of the step name (group:developer,name:jesse)
 			vals := make([]string, 0)
 			for itemKey, itemValIf := range val {
-				itemVal, ok := itemValIf.(string)
-				if !ok {
-					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string. received: %s", i, itemKey, itemVal)
+				switch itemVal := itemValIf.(type) {
+				case string, int32, int64, float32, float64:
+					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+				default:
+					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", i, itemKey, itemVal)
 				}
-				replaceMap[fmt.Sprintf("item.%s", itemKey)] = itemVal
-				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 			}
 			// sort the values so that the name is deterministic
 			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%s)", step.Name, strings.Join(vals, ","))
+			newStepName = fmt.Sprintf("%s(%v)", step.Name, strings.Join(vals, ","))
 		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string or map. received: %s", i, val)
+			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
 		}
 		newStepStr, err := replace(fstTmpl, replaceMap, false)
 		if err != nil {
@@ -607,7 +621,7 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
-		replaceMap["inputs.parameters." + inParam.Name] = *inParam.Value
+		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
 	s, err := replace(fstTmpl, replaceMap, true)
@@ -691,7 +705,7 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		// The following escapes any special characters (e.g. newlines, tabs, etc...)
 		// in preparation for substitution
 		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement) - 1]
+		replacement = replacement[1 : len(replacement)-1]
 		return w.Write([]byte(replacement))
 	})
 	if unresolvedErr != nil {

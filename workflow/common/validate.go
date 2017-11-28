@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -122,11 +123,18 @@ func validateArtifactLocation(errPrefix string, art wfv1.Artifact) error {
 // resolveAllVariables is a helper to ensure all {{variables}} are resolveable from current scope
 func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	var unresolvedErr error
+	_, allowAllItemRefs := scope["item.*"] // 'item.*' is a magic placeholder value set by addItemsToScope
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
+
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		_, ok := scope[tag]
 		if !ok && unresolvedErr == nil {
-			unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
+			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
+				// we are *probably* referencing a undetermined item using withParam
+				// NOTE: this is far from foolproof.
+			} else {
+				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
+			}
 		}
 		return 0, nil
 	})
@@ -154,8 +162,10 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s name is not unique", tmpl.Name, i, step.Name)
 			}
 			stepNames[step.Name] = true
-			addItemsToScope(&step, scope)
-
+			err := addItemsToScope(&step, scope)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
+			}
 			stepBytes, err := json.Marshal(stepGroup)
 			if err != nil {
 				return errors.InternalWrapError(err)
@@ -180,18 +190,26 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 	return nil
 }
 
-func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) {
-	if len(step.WithItems) == 0 {
-		return
+func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) error {
+	if len(step.WithItems) > 0 && step.WithParam != "" {
+		return fmt.Errorf("only one of withItems or withParam can be specified")
 	}
-	switch val := step.WithItems[0].(type) {
-	case string:
-		scope["item"] = true
-	case map[string]interface{}:
-		for itemKey := range val {
-			scope[fmt.Sprintf("item.%s", itemKey)] = true
+	if len(step.WithItems) > 0 {
+		switch val := step.WithItems[0].(type) {
+		case string:
+			scope["item"] = true
+		case map[string]interface{}:
+			for itemKey := range val {
+				scope[fmt.Sprintf("item.%s", itemKey)] = true
+			}
 		}
+	} else if step.WithParam != "" {
+		scope["item"] = true
+		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
+		// when considering if all variables are resolveable.
+		scope["item.*"] = true
 	}
+	return nil
 }
 
 func (ctx *wfValidationCtx) addOutputsToScope(templateName string, stepName string, scope map[string]interface{}) {
