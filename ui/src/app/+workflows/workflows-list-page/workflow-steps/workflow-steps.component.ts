@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 import * as models from '../../../models';
 
@@ -7,11 +7,8 @@ import * as models from '../../../models';
   templateUrl: './workflow-steps.component.html',
   styleUrls: ['./workflow-steps.component.scss']
 })
-export class WorkflowStepsComponent implements OnInit {
+export class WorkflowStepsComponent {
 
   @Input()
   public workflow: models.WorkflowList;
-
-  public ngOnInit() {
-  }
 }

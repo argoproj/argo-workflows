@@ -6,7 +6,6 @@ import * as moment from 'moment';
 })
 export class TimestampPipe implements PipeTransform {
   transform(value: number, args: any[]) {
-    console.log(value);
     if (value === 0) {
       return '';
     } else {
