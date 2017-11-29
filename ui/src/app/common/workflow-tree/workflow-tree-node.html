@@ -1,0 +1,18 @@
+<div *ngIf="cell" class="workflow-tree__node" [ngClass]="{active: activeStep === cell?.workflow?.value?.id}">
+    <div *ngIf="hasDownConnectorArrow" class="workflow-tree__node-down-connector-arrow"></div>
+    <div class="workflow-tree__node-info" (click)="getYaml(cell)" [ngClass]="{ clickable: clickable }">
+        <div *ngIf="workflowNodeInfoTemplate">
+            <ng-container *ngTemplateOutlet="workflowNodeInfoTemplate; context: { cell: cell }"></ng-container>
+        </div>
+    </div>
+    <div class="workflow-tree__node-footer">
+        <div class="workflow-tree__node-title" [attr.title]="cell.stepName" (click)="selectTask(cell)">
+            {{cell.stepName}}
+        </div>
+        <div class="workflow-tree__node-actions">
+            <div *ngIf="workflowNodeActionsTemplate">
+                <ng-container *ngTemplateOutlet="workflowNodeActionsTemplate; context: { cell: cell }"></ng-container>
+            </div>
+        </div>
+    </div>
+</div>

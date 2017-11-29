@@ -129,3 +129,12 @@ export interface Arguments {
     parameters: Parameter[];
     artifacts: Artifact[];
 }
+
+export const NODE_STATUS = {
+  INIT: 'Init',
+  RUNNING: 'Running',
+  SUCCEEDED: 'Succeeded',
+  SKIPPED: 'Skipped',
+  FAILED: 'Failed',
+  ERROR: 'Error',
+};

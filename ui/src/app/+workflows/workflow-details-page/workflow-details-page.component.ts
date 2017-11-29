@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { WorkflowsService } from '../../services';
 import * as models from '../../models';
+import { Subscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'ax-workflow-details-page',
@@ -11,13 +12,45 @@ import * as models from '../../models';
 })
 export class WorkflowDetailsPageComponent implements OnInit {
 
-  public workflow: models.Workflow;
+  private subscription: Subscription;
 
-  constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute) {}
+  public workflow: models.Workflow;
+  public selectedTab = 'summary';
+
+  constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute, private router: Router) {}
+
+  public tabChange(tab: string) {
+    this.router.navigate(['.', { tab }], { relativeTo: this.route });
+  }
 
   public ngOnInit() {
-    this.route.params.subscribe(async params => {
-      this.workflow = await this.workflowsService.getWorkflow(params['name']);
+    this.route.params.map(params => params['name'])
+        .distinct().flatMap(name => this.workflowsService.getWorkflowStream(name))
+        .subscribe(workflow => this.workflow = workflow);
+    this.route.params.map(params => params['tab']).distinct().subscribe(tab => {
+      this.selectedTab = tab || 'summary';
     });
+  }
+
+  public getProgressClasses(stepStatus: string) {
+    const status = stepStatus === models.NODE_STATUS.FAILED ? 'failed' : 'running';
+    let percentage = 0;
+    switch (stepStatus) {
+      case models.NODE_STATUS.INIT:
+        percentage = 0;
+        break;
+      case models.NODE_STATUS.RUNNING:
+        percentage = 50;
+        break;
+      case models.NODE_STATUS.SUCCEEDED:
+      case models.NODE_STATUS.SKIPPED:
+      case models.NODE_STATUS.FAILED:
+      case models.NODE_STATUS.ERROR:
+        percentage = 100;
+        break;
+    }
+    return [
+        'workflow-details__node-progress', `workflow-details__node-progress--${percentage.toFixed()}-${status}`
+    ].join(' ');
   }
 }
