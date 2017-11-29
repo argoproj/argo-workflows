@@ -19,13 +19,16 @@ const (
 	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 
+// NodePhase is a label for the condition of a node at the current time.
+type NodePhase string
+
 // Workflow and node statuses
 const (
-	NodeStatusRunning   = "Running"
-	NodeStatusSucceeded = "Succeeded"
-	NodeStatusSkipped   = "Skipped"
-	NodeStatusFailed    = "Failed"
-	NodeStatusError     = "Error"
+	NodeRunning   NodePhase = "Running"
+	NodeSucceeded NodePhase = "Succeeded"
+	NodeSkipped   NodePhase = "Skipped"
+	NodeFailed    NodePhase = "Failed"
+	NodeError     NodePhase = "Error"
 )
 
 // Create a Rest client with the new CRD Schema
@@ -59,7 +62,7 @@ type Template struct {
 	Inputs  Inputs  `json:"inputs,omitempty"`
 	Outputs Outputs `json:"outputs,omitempty"`
 
-	// Deamon indicates will allow a workflow to proceed to the next step if the container reaches readiness
+	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
 
 	// Workflow fields
@@ -137,6 +140,7 @@ type WorkflowStep struct {
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
 	WithItems []Item    `json:"withItems,omitempty"`
+	WithParam string    `json:"withParam,omitempty"`
 	When      string    `json:"when,omitempty"`
 }
 
@@ -172,20 +176,44 @@ type SidecarOptions struct {
 }
 
 type WorkflowStatus struct {
-	Nodes                  map[string]NodeStatus `json:"nodes"`
-	PersistentVolumeClaims []apiv1.Volume        `json:"persistentVolumeClaims,omitempty"`
+	// Nodes is a mapping between a node ID and the node's status.
+	Nodes map[string]NodeStatus `json:"nodes"`
+	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
+	// The contents of this list are drained at the end of the workflow.
+	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 }
 
 type NodeStatus struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-	// PodIP captures the IP of the pod for deamoned steps
+	// ID is a unique identifier of a node within the worklow
+	// It is implemented as a hash of the node name, which makes the ID deterministic
+	ID string `json:"id"`
+
+	// Name is a human readable representation of the node in the node tree
+	// It can represent a container, step group, or the entire workflow
+	Name string `json:"name"`
+
+	// Phase a simple, high-level summary of where the node is in its lifecycle.
+	// Can be used as a state machine.
+	Phase NodePhase `json:"phase"`
+
+	// A human readable message indicating details about why the node is in this condition.
+	Message string `json:"message,omitempty"`
+
+	// Time at which this node started
+	StartedAt metav1.Time `json:"startedAt,omitempty"`
+
+	// Time at which this node completed
+	FinishedAt metav1.Time `json:"finishedAt,omitempty"`
+
+	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty"`
+
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
+
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`
+
 	// Children is a list of child node IDs
 	Children []string `json:"children,omitempty"`
 }
@@ -196,14 +224,15 @@ func (n NodeStatus) String() string {
 
 // Completed returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return n.Status == NodeStatusSucceeded ||
-		n.Status == NodeStatusFailed ||
-		n.Status == NodeStatusError ||
-		n.Status == NodeStatusSkipped
+	return n.Phase == NodeSucceeded ||
+		n.Phase == NodeFailed ||
+		n.Phase == NodeError ||
+		n.Phase == NodeSkipped
 }
 
+// Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
-	return n.Status == NodeStatusSucceeded || n.Status == NodeStatusSkipped
+	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped
 }
 
 type S3Bucket struct {

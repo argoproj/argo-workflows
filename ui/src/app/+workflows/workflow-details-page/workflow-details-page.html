@@ -1,6 +1,6 @@
 <div class="workflow-details">
-  <ax-tabs [selectedTabKey]="'summary'" [fixedWidth]="true">
-    <ax-tab tabKey="summary" tabTitle="JOB SUMMARY">
+  <ax-tabs (selected)="tabChange($event.selectedTab.tabKey)" [selectedTabKey]="selectedTab" [fixedWidth]="true">
+    <ax-tab tabKey="summary" tabTitle="SUMMARY">
       <div class="content content--with-padding-top">
         <div class="ax-container">
           <div class="workflow-details__summary-tab" *ngIf="workflow">
@@ -10,6 +10,24 @@
           </div>
         </div>
       </div>
+    </ax-tab>
+    <ax-tab tabKey="workflow" tabTitle="WORKFLOW">
+      <ax-workflow-tree [workflow]="workflow">
+        <ng-template let-cell="cell" #nodeInfo>
+          <div>
+            <div class="workflow-details__node-status">
+              <span class="text-truncate status-text" ax-tooltip="{{cell.status.status}}">{{cell.status.status}}</span>
+            </div>
+
+            <div [class]="getProgressClasses(cell.status.status)">
+              <div class="workflow-details__node-progress-overlay">
+                <div class="workflow-details__node-info-duration">
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </ax-workflow-tree>
     </ax-tab>
   </ax-tabs>
 </div>

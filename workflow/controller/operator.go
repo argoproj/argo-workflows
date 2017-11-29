@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -22,12 +23,12 @@ import (
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
 	// wf is the workflow object
-	wf         *wfv1.Workflow
+	wf *wfv1.Workflow
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
-	updated    bool
+	updated bool
 	// log is an logrus logging context to corrolate logs with a workflow
-	log        *log.Entry
+	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
 	// NOTE: eventually we may need to store additional metadata state to
@@ -75,7 +76,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	err := woc.createPVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-		woc.markNodeStatus(wf.ObjectMeta.Name, wfv1.NodeStatusError)
+		woc.markNodeError(wf.ObjectMeta.Name, err)
 		return
 	}
 
@@ -87,7 +88,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	err = woc.deletePVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-		woc.markNodeStatus(wf.ObjectMeta.Name, wfv1.NodeStatusError)
+		woc.markNodeError(wf.ObjectMeta.Name, err)
 		return
 	}
 }
@@ -127,7 +128,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil {
-			woc.markNodeStatus(woc.wf.ObjectMeta.Name, wfv1.NodeStatusError)
+			woc.markNodeError(woc.wf.ObjectMeta.Name, err)
 			return err
 		}
 		vol := apiv1.Volume{
@@ -167,7 +168,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	}
 	if len(newPVClist) != totalPVCs {
 		// we were successful in deleting one ore more PVCs
-		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs - len(newPVClist), totalPVCs)
+		woc.log.Infof("Deleted %d/%d PVCs", totalPVCs-len(newPVClist), totalPVCs)
 		woc.wf.Status.PersistentVolumeClaims = newPVClist
 		woc.updated = true
 	}
@@ -185,13 +186,13 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	tmpl := woc.wf.GetTemplate(templateName)
 	if tmpl == nil {
 		err := errors.Errorf(errors.CodeBadRequest, "Node %v error: template '%s' undefined", node, templateName)
-		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		woc.markNodeError(nodeName, err)
 		return err
 	}
 
 	tmpl, err := processArgs(tmpl, args)
 	if err != nil {
-		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		woc.markNodeError(nodeName, err)
 		return err
 	}
 
@@ -206,7 +207,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 	} else if len(tmpl.Steps) > 0 {
 		if !ok {
-			node = *woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+			node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
 			woc.log.Infof("Initialized workflow node %v", node)
 		}
 		err = woc.executeSteps(nodeName, tmpl)
@@ -218,9 +219,9 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	} else if tmpl.Script != nil {
 		return woc.executeScript(nodeName, tmpl)
 	}
-
-	woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
-	return errors.Errorf("Template '%s' missing specification", tmpl.Name)
+	err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
+	woc.markNodeError(nodeName, err)
+	return err
 }
 
 // processArgs sets in the inputs, the values either passed via arguments, or the hardwired values
@@ -275,31 +276,47 @@ func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, erro
 	return tmpl, nil
 }
 
-// markNodeError marks a node with the given status, creating the node if necessary
-func (woc *wfOperationCtx) markNodeStatus(nodeName string, status string) *wfv1.NodeStatus {
+// markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
+func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
 	if woc.wf.Status.Nodes == nil {
 		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	}
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if !ok {
-		node = wfv1.NodeStatus{ID: nodeID, Name: nodeName, Status: status}
+		node = wfv1.NodeStatus{
+			ID:        nodeID,
+			Name:      nodeName,
+			Phase:     phase,
+			StartedAt: metav1.Time{Time: time.Now().UTC()},
+		}
 	} else {
-		node.Status = status
+		node.Phase = phase
+	}
+	if len(message) > 0 {
+		node.Message = message[0]
+	}
+	if node.Completed() && node.FinishedAt.IsZero() {
+		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.updated = true
 	return &node
 }
 
+// markNodeError is a convenience method to mark a node with an error and set the message from the error
+func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
+	return woc.markNodeError(nodeName, err)
+}
+
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
 	err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
 		// TODO: may need to query pod status if we hit already exists error
-		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		woc.markNodeError(nodeName, err)
 		return err
 	}
-	node := woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
@@ -314,7 +331,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 		woc.addChildNode(nodeName, sgNodeName)
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
 		if err != nil {
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+			woc.markNodeError(nodeName, err)
 			return err
 		}
 		sgNodeID := woc.wf.NodeID(sgNodeName)
@@ -324,8 +341,9 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 		}
 
 		if !woc.wf.Status.Nodes[sgNodeID].Successful() {
-			woc.log.Infof("Workflow step group %v not successful", woc.wf.Status.Nodes[sgNodeID])
-			woc.markNodeStatus(nodeName, wfv1.NodeStatusFailed)
+			failMessage := fmt.Sprintf("step group %s was unsuccessful", sgNodeName)
+			woc.log.Info(failMessage)
+			woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
 			return nil
 		}
 
@@ -360,7 +378,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 			}
 		}
 	}
-	woc.markNodeStatus(nodeName, wfv1.NodeStatusSucceeded)
+	woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
 }
 
@@ -374,21 +392,21 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return nil
 	}
 	if !ok {
-		node = *woc.markNodeStatus(sgNodeName, wfv1.NodeStatusRunning)
+		node = *woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 		woc.log.Infof("Initializing step group node %v", node)
 	}
 
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	stepGroup, err := woc.resolveReferences(stepGroup, scope)
 	if err != nil {
-		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
+		woc.markNodeError(sgNodeName, err)
 		return err
 	}
 
 	// Next, expand the step's withItems (if any)
 	stepGroup, err = woc.expandStepGroup(stepGroup)
 	if err != nil {
-		woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
+		woc.markNodeError(sgNodeName, err)
 		return err
 	}
 
@@ -400,19 +418,20 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
-			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
+			woc.markNodeError(childNodeName, err)
+			woc.markNodeError(sgNodeName, err)
 			return err
 		}
 		if !proceed {
-			woc.log.Infof("Skipping %s: when '%s' evaluated false", childNodeName, step.When)
-			woc.markNodeStatus(childNodeName, wfv1.NodeStatusSkipped)
+			skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
+			woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+			woc.markNodePhase(childNodeName, wfv1.NodeSkipped, skipReason)
 			continue
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
-			woc.markNodeStatus(childNodeName, wfv1.NodeStatusError)
-			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusError)
+			woc.markNodeError(childNodeName, err)
+			woc.markNodeError(sgNodeName, err)
 			return err
 		}
 	}
@@ -428,12 +447,13 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		if !childNode.Successful() {
-			woc.markNodeStatus(sgNodeName, wfv1.NodeStatusFailed)
-			woc.log.Infof("Step group node %s deemed failed due to failure of %s", childNode, childNodeID)
+			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
+			woc.markNodePhase(sgNodeName, wfv1.NodeFailed, failMessage)
+			woc.log.Infof("Step group node %s deemed failed: %s", childNode, failMessage)
 			return nil
 		}
 	}
-	woc.markNodeStatus(node.Name, wfv1.NodeStatusSucceeded)
+	woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 	woc.log.Infof("Step group node %v successful", woc.wf.Status.Nodes[nodeID])
 	return nil
 }
@@ -515,11 +535,11 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 	return newStepGroup, nil
 }
 
-// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems
+// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
 func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 {
+		if len(step.WithItems) == 0 && step.WithParam == "" {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -534,7 +554,7 @@ func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv
 	return newStepGroup, nil
 }
 
-// expandStep expands a step containing withItems into multiple steps parallel steps
+// expandStep expands a step containing withItems or withParams into multiple parallel steps
 func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	stepBytes, err := json.Marshal(step)
 	if err != nil {
@@ -542,13 +562,26 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	}
 	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
 	expandedStep := make([]wfv1.WorkflowStep, 0)
-	for i, item := range step.WithItems {
+	var items []wfv1.Item
+	if len(step.WithItems) > 0 {
+		items = step.WithItems
+	} else if step.WithParam != "" {
+		err = json.Unmarshal([]byte(step.WithParam), &items)
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value not be parsed as a JSON list: %s", step.WithParam)
+		}
+	} else {
+		// this should have been prevented in expandStepGroup()
+		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
+	}
+
+	for i, item := range items {
 		replaceMap := make(map[string]string)
 		var newStepName string
 		switch val := item.(type) {
-		case string:
-			replaceMap["item"] = val
-			newStepName = fmt.Sprintf("%s(%s)", step.Name, val)
+		case string, int32, int64, float32, float64:
+			replaceMap["item"] = fmt.Sprintf("%v", val)
+			newStepName = fmt.Sprintf("%s(%v)", step.Name, val)
 		case map[string]interface{}:
 			// Handle the case when withItems is a list of maps.
 			// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -557,18 +590,19 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			// This would eventually be part of the step name (group:developer,name:jesse)
 			vals := make([]string, 0)
 			for itemKey, itemValIf := range val {
-				itemVal, ok := itemValIf.(string)
-				if !ok {
-					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string. received: %s", i, itemKey, itemVal)
+				switch itemVal := itemValIf.(type) {
+				case string, int32, int64, float32, float64:
+					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+				default:
+					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", i, itemKey, itemVal)
 				}
-				replaceMap[fmt.Sprintf("item.%s", itemKey)] = itemVal
-				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 			}
 			// sort the values so that the name is deterministic
 			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%s)", step.Name, strings.Join(vals, ","))
+			newStepName = fmt.Sprintf("%s(%v)", step.Name, strings.Join(vals, ","))
 		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string or map. received: %s", i, val)
+			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
 		}
 		newStepStr, err := replace(fstTmpl, replaceMap, false)
 		if err != nil {
@@ -588,10 +622,10 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {
 	err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
-		woc.markNodeStatus(nodeName, wfv1.NodeStatusError)
+		woc.markNodeError(nodeName, err)
 		return err
 	}
-	node := woc.markNodeStatus(nodeName, wfv1.NodeStatusRunning)
+	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
@@ -607,7 +641,7 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
-		replaceMap["inputs.parameters." + inParam.Name] = *inParam.Value
+		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
 	s, err := replace(fstTmpl, replaceMap, true)
@@ -691,7 +725,7 @@ func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		// The following escapes any special characters (e.g. newlines, tabs, etc...)
 		// in preparation for substitution
 		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement) - 1]
+		replacement = replacement[1 : len(replacement)-1]
 		return w.Write([]byte(replacement))
 	})
 	if unresolvedErr != nil {
