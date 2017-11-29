@@ -63,11 +63,11 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 	w.Flush()
 }
 
-func worklowStatus(wf *wfv1.Workflow) string {
+func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	if wf.Status.Nodes != nil {
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
 		if ok {
-			return node.Status
+			return node.Phase
 		}
 	}
 	if !wf.ObjectMeta.CreationTimestamp.IsZero() {

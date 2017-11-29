@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
@@ -287,22 +288,24 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
 		return
 	}
-	var newStatus string
+	var newPhase wfv1.NodePhase
 	var newDaemonStatus *bool
+	var message string
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		return
 	case apiv1.PodSucceeded:
-		newStatus = wfv1.NodeStatusSucceeded
+		newPhase = wfv1.NodeSucceeded
 		f := false
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
-		// TODO: we may need to distinguish between the main container suceeding and ignoring the sidekick
+		// TODO: we may need to distinguish between the main container succeeding and ignoring the sidekick
 		// statuses. This is because executor may have had to forcibly kill a sidekick resulting in an
 		// overall pod status as failed, but we really only care about the main container status.
-		newStatus = wfv1.NodeStatusFailed
+		newPhase = wfv1.NodeFailed
 		f := false
 		newDaemonStatus = &f
+		message = pod.Status.Message
 	case apiv1.PodRunning:
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
@@ -326,13 +329,13 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 			}
 		}
 		// proceed to mark node status as succeeded (and daemoned)
-		newStatus = wfv1.NodeStatusSucceeded
+		newPhase = wfv1.NodeSucceeded
 		t := true
 		newDaemonStatus = &t
 		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 	default:
 		log.Infof("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
-		newStatus = wfv1.NodeStatusError
+		newPhase = wfv1.NodeError
 	}
 
 	wfClient := workflowclient.NewWorkflowClient(wfc.restClient, pod.ObjectMeta.Namespace)
@@ -346,12 +349,11 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
 		return
 	}
-	updateNeeded := applyUpdates(pod, &node, newStatus, newDaemonStatus)
+	updateNeeded := applyUpdates(pod, &node, newPhase, newDaemonStatus, message)
 	if !updateNeeded {
 		log.Infof("No workflow updated needed for node %s", node)
 		return
 	}
-	//addOutputs(pod, &node)
 	wf.Status.Nodes[pod.Name] = node
 	_, err = wfClient.UpdateWorkflow(wf)
 	if err != nil {
@@ -360,17 +362,21 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		return
 	}
 	log.Infof("Updated %s", node)
+
+	// TODO: if we successfully updated the workflow, and the pod is completed, then we
+	// have extracted everything we need from the pod metadata and can ignore this pod.
+	// Apply a label to the pod which will filter it from the watch.
 }
 
 // applyUpdates applies any new state information about a pod, to the current status of the workflow node
 // returns whether or not any updates were necessary (resulting in a update to the workflow)
-func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newStatus string, newDaemonStatus *bool) bool {
+func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newPhase wfv1.NodePhase, newDaemonStatus *bool, message string) bool {
 	// Check various fields of the pods to see if we need to update the workflow
 	updateNeeded := false
-	if node.Status != newStatus {
-		log.Infof("Updating node %s status %s -> %s", node, node.Status, newStatus)
+	if node.Phase != newPhase {
+		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
 		updateNeeded = true
-		node.Status = newStatus
+		node.Phase = newPhase
 	}
 	if pod.Status.PodIP != node.PodIP {
 		log.Infof("Updating node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
@@ -397,10 +403,21 @@ func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newStatus string, newDa
 		err := json.Unmarshal([]byte(outputStr), &outputs)
 		if err != nil {
 			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			node.Status = wfv1.NodeStatusError
+			node.Phase = wfv1.NodeError
 		} else {
 			node.Outputs = &outputs
 		}
+	}
+	if message != "" && node.Message != message {
+		log.Infof("Updating node %s message: %s", node, message)
+		node.Message = message
+	}
+	if node.Completed() && node.FinishedAt.IsZero() {
+		// TODO: rather than using time.Now(), we should use the pod termination timestamp
+		// to get a more accurate finished timestamp, in the event the controller is
+		// down or backlogged. But this would not work for daemoned containers.
+		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		updateNeeded = true
 	}
 	return updateNeeded
 }

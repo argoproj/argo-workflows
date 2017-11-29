@@ -21,7 +21,7 @@ var (
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
 	wfClient         *wfclient.WorkflowClient
-	jobStatusIconMap map[string]string
+	jobStatusIconMap map[wfv1.NodePhase]string
 )
 
 func init() {
@@ -44,12 +44,12 @@ const (
 )
 
 func initializeSession() {
-	jobStatusIconMap = map[string]string{
-		wfv1.NodeStatusRunning:   ansiFormat("●", FgCyan),
-		wfv1.NodeStatusSucceeded: ansiFormat("✔", FgGreen),
-		wfv1.NodeStatusSkipped:   ansiFormat("○", FgWhite),
-		wfv1.NodeStatusFailed:    ansiFormat("✖", FgRed),
-		wfv1.NodeStatusError:     ansiFormat("⚠", FgRed),
+	jobStatusIconMap = map[wfv1.NodePhase]string{
+		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
+		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
+		wfv1.NodeSkipped:   ansiFormat("○", FgWhite),
+		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
+		wfv1.NodeError:     ansiFormat("⚠", FgRed),
 	}
 }
 
