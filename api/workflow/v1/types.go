@@ -230,6 +230,14 @@ func (n NodeStatus) Completed() bool {
 		n.Phase == NodeSkipped
 }
 
+// IsDaemoned returns whether or not the node is deamoned
+func (n NodeStatus) IsDaemoned() bool {
+	if n.Daemoned == nil || !*n.Daemoned {
+		return false
+	}
+	return true
+}
+
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped

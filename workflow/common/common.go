@@ -48,8 +48,8 @@ const (
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
 
-	// LabelKeyArgoWorkflow is the pod metadata label to indidcate this pod is part of a workflow
-	LabelKeyArgoWorkflow = wfv1.CRDFullName + "/argo-workflow"
+	// LabelKeyCompleted is the pod metadata label on workflow pods which indicates if a pod is completed
+	LabelKeyCompleted = wfv1.CRDFullName + "/completed"
 	// LabelKeyWorkflow is the pod metadata label to indidcate the associated workflow name
 	LabelKeyWorkflow = wfv1.CRDFullName + "/workflow"
 
