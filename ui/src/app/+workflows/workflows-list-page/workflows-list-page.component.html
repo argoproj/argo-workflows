@@ -1,7 +1,9 @@
-<div class="content content--with-padding-top">
-  <div class="ax-container">
-    <p>
-      workflows-list-page works!
-    </p>
+<div class="content content--without-padding-bottom content--with-padding-top">
+  <div class="ax-container" *ngIf="workflowList">
+    <div class="stream">
+      <div class="workflow" *ngFor="let workflow of workflowList.items">
+        <ax-workflow-item [workflow]="workflow"></ax-workflow-item>
+      </div>
+    </div>
   </div>
 </div>
