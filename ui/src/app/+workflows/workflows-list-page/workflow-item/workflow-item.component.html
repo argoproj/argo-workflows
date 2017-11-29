@@ -10,10 +10,10 @@
         </div>
     </div>
 
-    <div class="ax-workflow-stream__content">
+    <div class="ax-workflow-stream__content" [routerLink]="['/timeline/', workflow.metadata.name]">
         <div class="row collapse">
             <div class="columns medium-7">
-                <div class="ax-workflow-stream__content-box" [routerLink]="['/timeline/', workflow.metadata.name]">
+                <div class="ax-workflow-stream__content-box">
                     <ax-workflow-steps [workflow]="workflow"></ax-workflow-steps>
                 </div>
             </div>

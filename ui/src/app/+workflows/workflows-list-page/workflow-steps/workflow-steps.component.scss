@@ -8,19 +8,18 @@
     &__icon {
         display: inline-block;
         color: $ax-color-gray-5;
-        vertical-align: top;
-        padding-top: 16px;
+        vertical-align: middle;
 
         & > i {
-            font-size: 32px;
-            padding: 0 16px;
+            font-size: 26px;
+            padding: 0 8px 0 16px;
         }
     }
 
     &__description {
         display: inline-block;
         color: $ax-color-gray-6;
-        padding: 12px 0;
+        padding: 20px 0;
 
         &-title {
             font-weight: bolder;
@@ -35,7 +34,6 @@
     }
 
     &__title {
-        height: 65px;
         &-stepname {
             color : $ax-color-gray-7;
         }
