@@ -30,8 +30,22 @@ export class WorkflowDetailsPageComponent implements OnInit {
   }
 
   public getProgressClasses(stepStatus: string) {
-    const status = stepStatus === 'Failed' ? 'failed' : 'running';
-    const percentage = 100;
+    const status = stepStatus === models.NODE_STATUS.FAILED ? 'failed' : 'running';
+    let percentage = 0;
+    switch (stepStatus) {
+      case models.NODE_STATUS.INIT:
+        percentage = 0;
+        break;
+      case models.NODE_STATUS.RUNNING:
+        percentage = 50;
+        break;
+      case models.NODE_STATUS.SUCCEEDED:
+      case models.NODE_STATUS.SKIPPED:
+      case models.NODE_STATUS.FAILED:
+      case models.NODE_STATUS.ERROR:
+        percentage = 100;
+        break;
+    }
     return [
         'workflow-details__node-progress', `workflow-details__node-progress--${percentage.toFixed()}-${status}`
     ].join(' ');

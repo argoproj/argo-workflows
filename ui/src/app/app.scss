@@ -80,3 +80,13 @@ $axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
       width: 100%;
   }
 }
+
+.fl {
+  float:left;
+}
+
+.clearfix:after {
+  content: "";
+  display: table;
+  clear: both;
+}
