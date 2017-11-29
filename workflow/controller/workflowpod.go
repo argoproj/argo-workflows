@@ -132,8 +132,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.NodeID(nodeName),
 			Labels: map[string]string{
-				common.LabelKeyWorkflow:     woc.wf.ObjectMeta.Name, // Allow filtering by pods related to specific workflow
-				common.LabelKeyArgoWorkflow: "true",                 // Allow filtering by only argo workflow related pods
+				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
+				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
