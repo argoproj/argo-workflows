@@ -106,7 +106,7 @@ func Cause(err error) error {
 }
 
 func (e argoerr) Error() string {
-	return fmt.Sprintf("[%s] %s", e.code, e.message)
+	return e.message
 }
 
 func (e argoerr) Code() string {

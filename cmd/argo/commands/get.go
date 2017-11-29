@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -42,21 +43,26 @@ func printWorkflow(wf *wfv1.Workflow) {
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
-	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
-
-	//var duration time.Duration
-	// if svc.EndTime > 0 {
-	// 	fmt.Printf(svcFmtStr, "Completed:", humanizeTimestamp(svc.EndTime))
-	// 	duration = time.Second * time.Duration(svc.EndTime-svc.LaunchTime)
-	// } else {
-	// 	duration = 0
-	// }
-	//fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
 	node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
+	if node.Message != "" {
+		fmt.Printf(fmtStr, "Message:", node.Message)
+	}
+	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
 	if !ok {
 		// can get here if we just created the workflow
 		return
 	}
+
+	fmt.Printf(fmtStr, "Started:", humanizeTimestamp(node.StartedAt.Unix()))
+	var duration time.Duration
+	if !node.FinishedAt.IsZero() {
+		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(node.FinishedAt.Unix()))
+		duration = time.Second * time.Duration(node.FinishedAt.Unix()-node.StartedAt.Unix())
+	} else {
+		duration = time.Second * time.Duration(time.Now().UTC().Unix()-node.StartedAt.Unix())
+	}
+	fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
+
 	fmt.Println()
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	fmt.Fprintf(w, "STEP\tPODNAME\n")
@@ -65,8 +71,8 @@ func printWorkflow(wf *wfv1.Workflow) {
 }
 
 func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) {
-	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Status], node.Name)
-	if len(node.Children) == 0 && node.Status != wfv1.NodeStatusSkipped {
+	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.Name)
+	if len(node.Children) == 0 && node.Phase != wfv1.NodeSkipped {
 		fmt.Fprintf(w, "%s%s\t%s\n", nodePrefix, nodeName, node.ID)
 	} else {
 		fmt.Fprintf(w, "%s%s\t\n", nodePrefix, nodeName)
@@ -131,4 +137,27 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 func humanizeTimestamp(epoch int64) string {
 	ts := time.Unix(epoch, 0)
 	return fmt.Sprintf("%s (%s)", ts.Format("Mon Jan 02 15:04:05 -0700"), humanize.Time(ts))
+}
+
+// humanizeDuration humanizes time.Duration output to a meaningful value,
+func humanizeDuration(duration time.Duration) string {
+	if duration.Seconds() < 60.0 {
+		return fmt.Sprintf("%d seconds", int64(duration.Seconds()))
+	}
+	if duration.Minutes() < 60.0 {
+		remainingSeconds := math.Mod(duration.Seconds(), 60)
+		return fmt.Sprintf("%d minutes %d seconds", int64(duration.Minutes()), int64(remainingSeconds))
+	}
+	if duration.Hours() < 24.0 {
+		remainingMinutes := math.Mod(duration.Minutes(), 60)
+		remainingSeconds := math.Mod(duration.Seconds(), 60)
+		return fmt.Sprintf("%d hours %d minutes %d seconds",
+			int64(duration.Hours()), int64(remainingMinutes), int64(remainingSeconds))
+	}
+	remainingHours := math.Mod(duration.Hours(), 24)
+	remainingMinutes := math.Mod(duration.Minutes(), 60)
+	remainingSeconds := math.Mod(duration.Seconds(), 60)
+	return fmt.Sprintf("%d days %d hours %d minutes %d seconds",
+		int64(duration.Hours()/24), int64(remainingHours),
+		int64(remainingMinutes), int64(remainingSeconds))
 }
