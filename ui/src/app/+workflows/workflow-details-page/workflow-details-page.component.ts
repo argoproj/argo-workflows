@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { WorkflowsService } from '../../services';
 import * as models from '../../models';
+import { Subscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'ax-workflow-details-page',
@@ -10,6 +11,8 @@ import * as models from '../../models';
   styleUrls: ['./workflow-details.scss']
 })
 export class WorkflowDetailsPageComponent implements OnInit {
+
+  private subscription: Subscription;
 
   public workflow: models.Workflow;
   public selectedTab = 'summary';
@@ -21,9 +24,9 @@ export class WorkflowDetailsPageComponent implements OnInit {
   }
 
   public ngOnInit() {
-    this.route.params.map(params => params['name']).distinct().subscribe(async name => {
-      this.workflow = await this.workflowsService.getWorkflow(name);
-    });
+    this.route.params.map(params => params['name'])
+        .distinct().flatMap(name => this.workflowsService.getWorkflowStream(name))
+        .subscribe(workflow => this.workflow = workflow);
     this.route.params.map(params => params['tab']).distinct().subscribe(tab => {
       this.selectedTab = tab || 'summary';
     });
