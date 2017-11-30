@@ -1,0 +1,711 @@
+# Argo Workflow Templates by Example
+
+## Welcome!
+
+Argo is an open source project that provides container-native workflows for Kubernetes. Each step in an Argo workflow is defined as a container.
+
+Argo V2 is a rewrite of the Argo workflow engine as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
+
+Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
+
+## Argo CLI
+
+In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo CLI commands.
+
+Install argo cli: https://xxxx
+```
+argo submit hello-world.yaml    #submit a workflow spec to Kubernetes
+argo list                       #list current workflows
+argo get hello-world-xxx        #get info about a specific workflow
+argo logs hello-world-xxx-yyy   #get logs from a specific step in a workflow
+argo delete hello-world-xxx     #delete workflow
+```
+
+You can also run workflow specs directly using kubectl but the argo cli provides syntax checking, nicer output, and requires less typing.
+```
+kubectl create -f hello-world.yaml
+kubectl get wf
+kubectl get wf hello-world-xxx
+kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all  #similar to argo 
+kubectl logs hello-world-xxx-yyy -c main
+kubectl delete wf hello-world-xxx
+```
+
+## Hello World!
+
+Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
+
+<img src="whalesay.png" width="600">
+
+You can run this directly from your shell with a simple docker command.
+```
+bash% docker run docker/whalesay cowsay "hello world"
+ _____________ 
+< hello world >
+ ------------- 
+    \
+     \
+      \     
+                    ##        .            
+              ## ## ##       ==            
+           ## ## ## ##      ===            
+       /""""""""""""""""___/ ===        
+  ~~~ {~~ ~~~~ ~~~ ~~~~ ~~ ~ /  ===- ~~~   
+       \______ o          __/            
+        \    \        __/             
+          \____\______/   
+
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+```
+
+Below, we run the same container on a Kubernetes cluster using an Argo workflow template.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow                  #new type of k8s spec
+metadata:
+  generateName: hello-world-    #name of workflow spec
+spec:
+  entrypoint: whalesay          #invoke the whalesay template
+  templates:
+  - name: whalesay              #name of template
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+      resources:                #don't use too much resources
+        mem_mib: 32
+        cpu_cores: 0.1
+```
+Argo adds a new `kind` of Kubernetes spec called a `Workflow`.
+The above spec contains a single `template` called `whalesay` which runs the `docker/whalesay` container and invokes `cowsay "hello world"`.
+The `whalesay` template is denoted as the `entrypoint` for the spec. The entrypoint specifies the initial template that should be invoked  when the workflow spec is executed by Kubernetes. Being able to specify the entrypoint is more useful when there are more than one template defined in the Kubernetes workflow spec :-)
+
+## Parameters
+
+Let's look at a slightly more complex workflow spec with parameters.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: hello-world-parameters-
+spec:
+  # invoke the whalesay template with
+  # "hello world" as the argument
+  # to the message parameter
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message       #parameter declaration
+    container:
+      # run cowsay with that message input parameter as args
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
+This time, the `whalesay` template takes an input parameter named `message` which is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g. "{{inputs.parameters.message}}"), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
+
+## Steps
+
+In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+
+  # This spec contains two templates: hello-hello-hello and whalesay
+  templates:
+  - name: hello-hello-hello
+    # Instead of just running a container
+    # This template has a sequence of steps
+    steps:
+    - - name: hello1            #hello1 is run before the following steps
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+    - - name: hello2a           #double dash => run after previous step
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2a"
+      - name: hello2b           #single dash => run in parallel with previous step
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2b"
+
+  # This is the same template as from the previous example
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
+The above workflow spec prints three different flavors of "hello".
+The `hello-hello-hello` template consists of three `steps`.
+The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other.
+Using the argo cli command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
+```
+STEP                                     PODNAME
+ ✔ arguments-parameters-rbm92   
+ ├---✔ hello1                   steps-rbm92-2023062412
+ └-·-✔ hello2a                  steps-rbm92-685171357
+   └-✔ hello2b                  steps-rbm92-634838500
+```
+
+## Artifacts
+
+When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
+
+The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template which will be consumed by the second step named `print-message` that consumes the generated artifact. 
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    steps:
+    - - name: generate-artifact
+        template: whalesay
+    - - name: consume-artifact
+        template: print-message
+        arguments:
+          artifacts:
+          # bind message to the hello-art artifact
+          # generated by the generate-artifact step
+          - name: message
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      # generate hello-art artifact from /tmp/hello_world.txt
+      # artifacts can be directories as well as files
+      - name: hello-art
+        path: /tmp/hello_world.txt
+
+  - name: print-message
+    inputs:
+      artifacts:
+      # unpack the message input artifact
+      # and put it at /tmp/message
+      - name: message
+        path: /tmp/message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/message"]
+```
+The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file.
+The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
+The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step.
+
+## The Structure of Workflow Specs
+
+We now know enough about the basic components of a workflow spec to review its basic structure. 
+- Kubernetes header including metadata
+- Spec body
+  - Entrypoint invocation with optionally arguments
+  - List of template definitions
+
+- For each template definition
+  - Name of the template
+  - Optionally a list of inputs
+  - Optionally a list of outputs
+  - Container invocation (leaf template) or a list of steps
+    - For each step, a template invocation
+
+To summarize, workflow specs are composed of a set of Argo templates where each template consists of an optional input section, an optional output section and either a container invocation or a list of steps where each step invokes another template.
+
+Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to env vars, secrets, and volume mounts. Similarly, for volume claims and volumes.
+
+## Secrets
+Argo supports the same secrets syntax and mechanism from Kubernetes Pod specs.
+
+## Scripts & Results
+Often times, we just want a template that executes a script specified as a here-script (aka. here document) in the workflow spec.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: generate
+        template: gen-random-int-bash
+    - - name: print
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate.outputs.result}}"  # The result of the here-script
+
+  - name: gen-random-int-bash
+    script:
+      image: debian:9.1
+      command: [bash]
+      source: |                                         # Contents of the here-script
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: gen-random-int-python
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)
+          
+  - name: gen-random-int-javascript
+    script:
+      image: node:9.1-alpine
+      command: [node]
+      source: |
+        var rand = Math.floor(Math.random() * 100);
+        console.log(rand);
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+```
+The `script` keyword allows the specification of the script body using the `source` tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body.. 
+
+The use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`. This allows you to use the result of running the script itself in the rest of the workflow spec. In this example, the result is simply echoed by the print-message template.
+
+## Loops
+
+When writing workflows, it is often very useful to be able to iterate over a set of inputs.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow 
+metadata:
+  generateName: loops-
+spec:
+  entrypoint: loop-example
+  templates:
+  - name: loop-example
+    steps:
+    - - name: print-message
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:              #invoke whalesay once for each item in parallel
+        - hello world           #item 1
+        - goodbye world         #item 2
+            
+  - name: whalesay 
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+```
+
+We can also iterate over a sets of items.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow 
+metadata:
+  generateName: loops-maps-
+spec:
+  entrypoint: loop-map-example
+  templates:
+  - name: loop-map-example
+    steps:
+    - - name: test-linux
+        template: cat-os-release
+        arguments:
+          parameters:
+          - name: image
+            value: "{{item.image}}"
+          - name: tag
+            value: "{{item.tag}}"
+        withItems:
+        - { image: 'debian', tag: '9.1' }       #item set 1
+        - { image: 'debian', tag: '8.9' }       #item set 2
+        - { image: 'alpine', tag: '3.6' }       #item set 3
+        - { image: 'ubuntu', tag: '17.10' }     #item set 4
+      
+  - name: cat-os-release
+    inputs:
+      parameters:
+      - name: image
+      - name: tag
+    container:
+      image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+      command: [cat]
+      args: [/etc/os-release]
+```
+
+We can pass lists of items as parameters.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: loops-param-arg-
+spec:
+  entrypoint: loop-param-arg-example
+  arguments:
+    parameters:
+    - name: os-list                                     #a list of items
+      value: |
+        [ 
+          { "image": "debian", "tag": "9.1" },
+          { "image": "debian", "tag": "8.9" },
+          { "image": "alpine", "tag": "3.6" },
+          { "image": "ubuntu", "tag": "17.10" }
+        ]
+        
+  templates:
+  - name: loop-param-arg-example
+    inputs: 
+      parameters:
+      - name: os-list
+    steps:
+    - - name: test-linux
+        template: cat-os-release
+        arguments:
+          parameters:
+          - name: image
+            value: "{{item.image}}"
+          - name: tag
+            value: "{{item.tag}}"
+        withParam: "{{inputs.parameters.os-list}}"      #parameter specifies the list to intereate over
+
+  # This template is the same as in the previous example
+  - name: cat-os-release
+    inputs:
+      parameters:
+      - name: image
+      - name: tag
+    container:
+      image: "{{inputs.parameters.image}}:{{inputs.parameters.tag}}"
+      command: [cat]
+      args: [/etc/os-release]
+```
+
+We can even dynamically generate the list of items to interate over!
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: loops-param-result-
+spec:
+  entrypoint: loop-param-result-example
+  templates:
+  - name: loop-param-result-example
+    steps:
+    - - name: generate
+        template: gen-number-list
+    # Iterate over the list of numbers generated by the generate step above
+    - - name: sleep
+        template: sleep-n-sec
+        arguments:
+          parameters:
+          - name: seconds
+            value: "{{item}}"
+        withParam: "{{steps.generate.outputs.result}}" 
+  
+  # Generate a list of numbers in JSON format
+  - name: gen-number-list
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(20, 31)], sys.stdout)
+
+  - name: sleep-n-sec
+    inputs: 
+      parameters:
+      - name: seconds
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo sleeping for {{inputs.parameters.seconds}} seconds; sleep {{inputs.parameters.seconds}}; echo done"]
+```
+
+## Conditionals
+We also support conditional execution.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: coinflip-
+spec:
+  entrypoint: coinflip
+  templates:
+  - name: coinflip
+    steps:
+    # flip a coin
+    - - name: flip-coin
+        template: flip-coin
+    # evaluate the result in parallel
+    - - name: heads
+        template: heads                 #invoke heads template if "heads"
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails
+        template: tails                 #invoke tails template if "tails"
+        when: "{{steps.flip-coin.outputs.result}} == tails"
+    
+  # Return heads or tails based on a random number
+  - name: flip-coin
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import random
+        result = "heads" if random.randint(0,1) == 0 else "tails"
+        print(result)
+
+  - name: heads
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads\""]
+
+  - name: tails
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was tails\""]
+```
+
+## Recursion
+Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: coinflip-recursive-
+spec:
+  entrypoint: coinflip
+  templates:
+  - name: coinflip
+    steps:
+    # flip a coin
+    - - name: flip-coin
+        template: flip-coin
+    # evaluate the result in parallel
+    - - name: heads
+        template: heads                 #invoke heads template if "heads"
+        when: "{{steps.flip-coin.outputs.result}} == heads"
+      - name: tails                     #keep flipping coins if "tails"
+        template: coinflip
+        when: "{{steps.flip-coin.outputs.result}} == tails"
+    
+  - name: flip-coin
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import random
+        result = "heads" if random.randint(0,1) == 0 else "tails"
+        print(result)
+
+  - name: heads
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"it was heads\""]
+```
+
+## Volumes
+The following example dynamically creates a volume and then uses the volume in a two step workflow.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: volumes-pvc-
+spec:
+  entrypoint: volumes-pvc-example
+  volumeClaimTemplates:                 #define volume, same syntax as k8s Pod spec
+  - metadata:
+      name: workdir                     #name of volume claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi                  #Gi => 1024 * 1024 * 1024
+
+  templates:
+  - name: volumes-pvc-example
+    steps:
+    - - name: generate
+        template: whalesay
+    - - name: print
+        template: print-message
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      # Mount workdir volume at /mnt/vol before invoking docker/whalesay
+      volumeMounts:                     #same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /mnt/vol
+
+  - name: print-message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      # Mount workdir volume at /mnt/vol before invoking docker/whalesay
+      volumeMounts:                     #same syntax as k8s Pod spec
+      - name: workdir
+        mountPath: /mnt/vol
+
+```
+Volumes are a very useful way to move large amounts of data from one step in a workflow to another.
+Depending on the system, some volumes may be accessible concurrently from multiple steps.
+
+In some cases, you want to access an alredy existing volume rather than creating/destroying one dynamically.
+```
+# Define Kubernetes PVC
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: my-existing-volume
+spec:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 1Gi
+    
+---   
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata: 
+  generateName: volumes-existing-
+spec:
+  entrypoint: volumes-existing-example
+  volumes:
+  # Pass my-existing-volume as an argument to the volumes-existing-example template
+  # Same syntax as k8s Pod spec
+  - name: workdir
+    persistentVolumeClaim:
+      claimName: my-existing-volume
+        
+  templates:
+  - name: volumes-existing-example
+    steps:
+    - - name: generate
+        template: whalesay
+    - - name: print
+        template: print-message
+      
+  - name: whalesay 
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      volumeMounts: 
+      - name: workdir
+        mountPath: /mnt/vol
+      
+  - name: print-message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+```
+
+## Daemons (aka. Fixtures)
+```
+```
+
+## Sidecars
+A sidecar is another container that executes concurrently in the same pod as the "main" container and is useful
+in creating multi-container pods.
+```
+```
+
+## Hardwired Artifacts
+With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common and provide a more convenient way to generate and use these artifacts. In particular, we have "hardwired" support for git, http and s3 artifacts.
+```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: hardwired-artifact-
+spec:
+  entrypoint: hardwired-artifact
+  templates:
+  - name: hardwired-artifact
+    inputs:
+      artifacts:
+      # Check out the master branch of the argo repo and place it at /src
+      - name: argo-source
+        path: /src
+        git:
+          repo: https://github.com/argoproj/argo.git
+          revision: "master"
+      # Download kubectl 1.8.0 and place it at /bin/kubectl
+      - name: kubectl
+        path: /bin/kubectl
+        mode: 755
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+      # Copy an s3 bucket and place it at /s3
+      - name: objects
+        path: /s3
+        s3:
+          endpoint: storage.googleapis.com
+          bucket: my-bucket-name
+          key: path/in/bucket
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+    container: 
+      image: debian
+      command: [sh, -c]
+      args: ["ls -l /src /bin/kubectl /s3"]
+```
+
+## Docker-in-Docker (aka. DinD)
+
+## Continuous integration example
