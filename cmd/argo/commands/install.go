@@ -13,10 +13,14 @@ import (
 	"github.com/spf13/cobra"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
+	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
+
+const clusterAdmin = "cluster-admin"
 
 func init() {
 	RootCmd.AddCommand(installCmd)
@@ -45,8 +49,129 @@ var installCmd = &cobra.Command{
 	Run:   install,
 }
 
+func getClusterAdmin(clientset *kubernetes.Clientset) (bool, error) {
+	clusterRoles := clientset.RbacV1beta1().ClusterRoles()
+	_, err := clusterRoles.Get(clusterAdmin, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			fmt.Printf("cluster-admin role not found\n")
+			return false, nil
+		}
+		return false, fmt.Errorf("Failed to get cluster-admin role")
+	}
+
+	return true, nil
+}
+
+func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string) error {
+	s, err := clientset.CoreV1().ServiceAccounts(installArgs.namespace).Get(serviceAccountName, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			fmt.Printf("Service account %s doesn't exist\n", serviceAccountName)
+		} else {
+			fmt.Printf("Failed to check if service account %s exists: %v\n", serviceAccountName, err)
+			return err
+		}
+	}
+
+	if err == nil && s != nil {
+		fmt.Printf("ServiceAccount %s already exists...\n", serviceAccountName)
+		return nil
+	}
+
+	serviceAccount := apiv1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: installArgs.namespace,
+		},
+	}
+	_, err = clientset.CoreV1().ServiceAccounts(installArgs.namespace).Create(&serviceAccount)
+	return err
+}
+
+func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string) error {
+	subjects := []rbacv1beta1.Subject{
+		{
+			Kind:      rbacv1beta1.ServiceAccountKind,
+			Name:      serviceAccountName,
+			Namespace: installArgs.namespace,
+		},
+	}
+
+	roleName := "argo-cluster-role"
+	roleBinding := rbacv1beta1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "rbac.authorization.k8s.io/v1beta1",
+			Kind:       "ClusterRoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: roleName,
+		},
+		RoleRef: rbacv1beta1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     clusterAdmin,
+		},
+		Subjects: subjects,
+	}
+
+	r, err := clientset.RbacV1beta1().ClusterRoleBindings().Get(roleName, metav1.GetOptions{})
+	if err != nil {
+		if apierr.IsNotFound(err) {
+			fmt.Printf("ClusterRoleBinding %s does not exist\n", roleName)
+		} else {
+			fmt.Printf("Failed to check if role %s exists: %v\n", roleName, err)
+			return err
+		}
+	}
+	if err == nil && r != nil {
+		fmt.Printf("RoleBinding %s already exists\n", roleName)
+		return nil
+	}
+	_, err = clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
+	return err
+}
+
+func setupArgoRoleBinding(clientset *kubernetes.Clientset) error {
+	serviceAccountName := "argo"
+	err := createServiceAccount(clientset, serviceAccountName)
+	if err != nil {
+		fmt.Printf("Failed to create service account: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("Created service account: %s\n", serviceAccountName)
+
+	err = createRoleBinding(clientset, serviceAccountName)
+	if err != nil {
+		fmt.Printf("Failed to create role binding: %v\n", err)
+		return err
+	}
+	fmt.Printf("Created RoleBinding for %s\n", serviceAccountName)
+
+	return nil
+}
+
 func install(cmd *cobra.Command, args []string) {
 	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
+
+	clientset = initKubeClient()
+	clusterAdminFound, err := getClusterAdmin(clientset)
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return
+	}
+
+	if clusterAdminFound {
+		setupArgoRoleBinding(clientset)
+	} else {
+		fmt.Printf("Using default service-account\n")
+	}
+
 	installCRD()
 	installConfigMap()
 	installController()
