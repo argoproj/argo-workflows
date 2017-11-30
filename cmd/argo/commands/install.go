@@ -136,22 +136,35 @@ func installController() {
 		},
 	}
 
-	// Create Deployment
-	var result *appsv1beta2.Deployment
-	var err error
-	result, err = deploymentsClient.Create(&controllerDeployment)
+	// Check if the deployment exists
+	dp, err := deploymentsClient.Get(installArgs.name, metav1.GetOptions{})
 	if err != nil {
-		if !apierr.IsAlreadyExists(err) {
-			log.Fatal(err)
+		if apierr.IsNotFound(err) {
+			fmt.Printf("Deployment %s not found. Creating one...\n", installArgs.name)
+			result, err := deploymentsClient.Create(&controllerDeployment)
+			if err != nil {
+				log.Fatal(errors.Wrap(err, "ARGO_INSTALL_ERROR", "Failed to create controller deployment"))
+			}
+			fmt.Printf("Deployment %s created\n", result.GetName())
+			return
 		}
-		result, err = deploymentsClient.Update(&controllerDeployment)
+
+		// If it was some other error, log failure and stop.
+		log.Fatal(err)
+	}
+
+	if dp != nil {
+		fmt.Printf("Deployment %s exists. Updating it...\n", installArgs.name)
+		result, err := deploymentsClient.Update(&controllerDeployment)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(errors.Wrap(err, "ARGO_INSTALL_ERROR", "Failed to update deployment"))
 		}
 		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
-	} else {
-		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
+		return
 	}
+
+	// This should never be reached!
+	log.Fatal("Workflow controller neither created nor updated!")
 }
 
 func installCRD() {
