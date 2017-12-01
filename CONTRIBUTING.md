@@ -20,7 +20,37 @@ Go to https://groups.google.com/forum/#!forum/argoproj
 
 ## How to setup your dev environment
 
-xxx
+### Requirements
+* Golang 1.9
+* Docker
+* dep
+   * Mac Install: `brew install dep`
+   * Mac/Linux Install: `go get -u github.com/golang/dep/cmd/dep`
+
+### Quickstart
+```
+$ go get github.com/argoproj/argo
+$ cd $(go env GOPATH)/src/github.com/argoproj/argo
+$ dep ensure -vendor-only
+$ make
+```
+
+### Build workflow-controller and executor images
+The following will build the workflow-controller and executor images tagged with the `latest` tag, then push to a personal dockerhub repository:
+```
+$ make controller-image executor-image IMAGE_TAG=latest IMAGE_NAMESPACE=jessesuen DOCKER_PUSH=true
+```
+
+### Build argo cli
+```
+$ make cli
+$ ./dist/argo version
+```
+
+### Deploying controller with alternative controller/executor images
+```
+$ argo install --controller-image jessesuen/workflow-controller:latest --executor-image jessesuen/argoexec:latest
+```
 
 ## Most needed contributions
 

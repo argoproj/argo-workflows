@@ -10,8 +10,7 @@ VERSION=$(shell cat ${BUILD_DIR}/VERSION)
 REVISION=$(shell git rev-parse HEAD)
 REVISION_SHORT=$(shell git rev-parse --short=7 HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-
-LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.Revision=${REVISION} -X ${PACKAGE}.Branch=${BRANCH}"
+TAG=$(shell git describe --exact-match --tags HEAD 2>/dev/null)
 
 BUILDER_IMAGE=argo-builder
 BUILDER_CMD=docker run --rm \
@@ -21,7 +20,14 @@ BUILDER_CMD=docker run --rm \
 
 # docker image publishing options
 DOCKER_PUSH=false
-IMAGE_TAG=${VERSION}-${REVISION_SHORT}
+IMAGE_TAG=${VERSION}
+
+LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} \
+  -X ${PACKAGE}.Revision=${REVISION} \
+  -X ${PACKAGE}.Branch=${BRANCH} \
+  -X ${PACKAGE}.Tag=${TAG} \
+  -X ${PACKAGE}.ImageNamespace=${IMAGE_NAMESPACE} \
+  -X ${PACKAGE}.ImageTag=${IMAGE_TAG}"
 
 ifeq (${DOCKER_PUSH},true)
 ifndef IMAGE_NAMESPACE
@@ -34,7 +40,7 @@ IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
-all: cli-linux cli-darwin workflow-image argoexec-image
+all: cli controller-image executor-image
 
 builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
@@ -48,36 +54,29 @@ cli-linux: builder
 	mkdir -p ${DIST_DIR}/argocli/linux-amd64
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/linux-amd64/argo
 
-cli-darwin:
-	GOOS=darwin GOARCH=${GOARCH} go build -v ${LDFLAGS} -o ${DIST_DIR}/argocli/${GOOS}-${GOARCH}/argo ./cmd/argo
+cli-darwin: builder
+	rm -f ${DIST_DIR}/argocli/darwin-amd64/argo
+	${BUILDER_CMD} make cli GOOS=darwin
+	mkdir -p ${DIST_DIR}/argocli/darwin-amd64
+	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/darwin-amd64/argo
 
-apiserver:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo-apiserver ./cmd/argo-apiserver
-
-apiserver-linux: builder
-	${BUILDER_CMD} make apiserver
-
-apiserver-image: apiserver-linux
-	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
-
-workflow:
+controller:
 	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
-workflow-linux: builder
-	${BUILDER_CMD} make workflow
+controller-linux: builder
+	${BUILDER_CMD} make controller
 
-workflow-image: workflow-linux
+controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
-argoexec:
+executor:
 	go build -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
-argoexec-linux: builder
-	${BUILDER_CMD} make argoexec
+executor-linux: builder
+	${BUILDER_CMD} make executor
 
-argoexec-image: argoexec-linux
+executor-image: executor-linux
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
@@ -94,7 +93,7 @@ clean:
 
 .PHONY: builder \
 	cli cli-linux cli-darwin \
-	workflow workflow-linux workflow-image \
-	apiserver apiserver-linux apiserver-image \
-	argoexec argoexec-linux argoexec-image \
-	lint test fmt clean
+	controller controller-linux controller-image \
+	executor executor-linux executor-image \
+	lint
+	# test fmt clean
