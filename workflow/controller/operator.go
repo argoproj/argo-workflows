@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,13 +46,9 @@ type wfScope struct {
 // operateWorkflow is the operator logic of a workflow
 // It evaluates the current state of the workflow and decides how to proceed down the execution path
 func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
-	if wf.Completed() {
-		return
-	}
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-
 	woc := wfOperationCtx{
 		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
 		updated: false,
@@ -73,10 +70,20 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		}
 	}()
 
+	// Perform one-time workflow validation
+	if woc.wf.Status.Phase == "" {
+		woc.markWorkflowRunning()
+		err := common.ValidateWorkflow(woc.wf)
+		if err != nil {
+			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+			return
+		}
+	}
+
 	err := woc.createPVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-		woc.markNodeError(wf.ObjectMeta.Name, err)
+		woc.markWorkflowError(err, true)
 		return
 	}
 
@@ -84,22 +91,50 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
+	node := woc.wf.Status.Nodes[woc.wf.NodeID(wf.ObjectMeta.Name)]
+	if !node.Completed() {
+		return
+	}
 
 	err = woc.deletePVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-		woc.markNodeError(wf.ObjectMeta.Name, err)
+		// Mark the workflow with an error message and return, but intentionally do not
+		// markCompletion so that we can retry PVC deletion (TODO: requires resync to be set on the informer)
+		// This error phase may be cleared if a subsequent delete attempt is successful.
+		woc.markWorkflowError(err, false)
 		return
+	}
+
+	// TODO: workflow finalizer logic goes here
+
+	// If we get here, the workflow completed, all PVCs were deleted successfully,
+	// and finalizers were executed (finalizer feature yet to be implemented).
+	// We now need to infer the workflow phase from the node phase.
+	switch node.Phase {
+	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
+		woc.markWorkflowSuccess()
+	case wfv1.NodeFailed:
+		woc.markWorkflowFailed(node.Message)
+	case wfv1.NodeError:
+		woc.markWorkflowPhase(wfv1.NodeError, true, node.Message)
+	default:
+		// NOTE: we should never make it here because if the the node was 'Running'
+		// we should have returned earlier.
+		err = errors.InternalErrorf("Unexpected node phase %s: %+v", wf.ObjectMeta.Name, err)
+		woc.markWorkflowError(err, true)
 	}
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
+	if woc.wf.Status.Phase != wfv1.NodeRunning {
+		// Only attempt to create PVCs if workflow transitioned to Running state
+		// (e.g. passed validation, or didn't already complete)
+		return nil
+	}
 	if len(woc.wf.Spec.VolumeClaimTemplates) == len(woc.wf.Status.PersistentVolumeClaims) {
 		// If we have already created the PVCs, then there is nothing to do.
 		// This will also handle the case where workflow has no volumeClaimTemplates.
-		return nil
-	}
-	if woc.wf.Completed() {
 		return nil
 	}
 	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
@@ -147,8 +182,8 @@ func (woc *wfOperationCtx) createPVCs() error {
 
 func (woc *wfOperationCtx) deletePVCs() error {
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
-	if !woc.wf.Completed() || totalPVCs == 0 {
-		// workflow is not yet completed or PVC list already empty. nothing to do
+	if totalPVCs == 0 {
+		// PVC list already empty. nothing to do
 		return nil
 	}
 	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
@@ -159,10 +194,12 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		woc.log.Infof("Deleting PVC %s", pvc.PersistentVolumeClaim.ClaimName)
 		err := pvcClient.Delete(pvc.PersistentVolumeClaim.ClaimName, nil)
 		if err != nil {
-			woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
-			newPVClist = append(newPVClist, pvc)
-			if firstErr == nil {
-				firstErr = err
+			if !apierr.IsNotFound(err) {
+				woc.log.Errorf("Failed to delete pvc %s: %v", pvc.PersistentVolumeClaim.ClaimName, err)
+				newPVClist = append(newPVClist, pvc)
+				if firstErr == nil {
+					firstErr = err
+				}
 			}
 		}
 	}
@@ -276,6 +313,58 @@ func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, erro
 	return tmpl, nil
 }
 
+// markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
+// optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
+func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {
+	if woc.wf.Status.Phase != phase {
+		woc.log.Infof("Updated phase %s -> %s", woc.wf.Status.Phase, phase)
+		woc.updated = true
+		woc.wf.Status.Phase = phase
+		if woc.wf.ObjectMeta.Labels == nil {
+			woc.wf.ObjectMeta.Labels = make(map[string]string)
+		}
+		woc.wf.ObjectMeta.Labels[common.LabelKeyPhase] = string(phase)
+	}
+	if woc.wf.Status.StartedAt.IsZero() {
+		woc.updated = true
+		woc.wf.Status.StartedAt = metav1.Time{Time: time.Now().UTC()}
+	}
+	if len(message) > 0 && woc.wf.Status.Message != message[0] {
+		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
+		woc.updated = true
+		woc.wf.Status.Message = message[0]
+	}
+
+	switch phase {
+	case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError:
+		if markCompleted {
+			woc.log.Infof("Marking workflow completed")
+			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+			if woc.wf.ObjectMeta.Labels == nil {
+				woc.wf.ObjectMeta.Labels = make(map[string]string)
+			}
+			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
+			woc.updated = true
+		}
+	}
+}
+
+func (woc *wfOperationCtx) markWorkflowRunning() {
+	woc.markWorkflowPhase(wfv1.NodeRunning, false)
+}
+
+func (woc *wfOperationCtx) markWorkflowSuccess() {
+	woc.markWorkflowPhase(wfv1.NodeSucceeded, true)
+}
+
+func (woc *wfOperationCtx) markWorkflowFailed(message string) {
+	woc.markWorkflowPhase(wfv1.NodeFailed, true, message)
+}
+
+func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
+	woc.markWorkflowPhase(wfv1.NodeError, markCompleted, err.Error())
+}
+
 // markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
 func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
 	if woc.wf.Status.Nodes == nil {
@@ -306,7 +395,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
-	return woc.markNodeError(nodeName, err)
+	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
@@ -761,7 +850,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // template are actually stepGroups, which are nodes that cannot represent actual containers.
 // Returns the first error that occurs (if any)
 func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
-	log.Infof("Checking deamon children of %s", nodeID)
+	woc.log.Infof("Checking deamon children of %s", nodeID)
 	var firstErr error
 	for _, childNodeID := range woc.wf.Status.Nodes[nodeID].Children {
 		for _, grandChildID := range woc.wf.Status.Nodes[childNodeID].Children {
@@ -771,7 +860,7 @@ func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
 			}
 			err := common.KillPodContainer(woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, gcNode.ID, common.MainContainerName)
 			if err != nil {
-				log.Errorf("Failed to kill %s: %+v", gcNode, err)
+				woc.log.Errorf("Failed to kill %s: %+v", gcNode, err)
 				if firstErr == nil {
 					firstErr = err
 				}
