@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/ghodss/yaml"
+	goversion "github.com/hashicorp/go-version"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
@@ -155,11 +156,37 @@ func setupArgoRoleBinding(clientset *kubernetes.Clientset) error {
 
 	return nil
 }
+func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
+	// Check if the Kubernetes version is >= 1.8
+	versionInfo, err := clientset.ServerVersion()
+	if err != nil {
+		log.Fatalf("Failed to get Kubernetes version: %v", err)
+	}
+
+	serverVersion, err := goversion.NewVersion(versionInfo.String())
+	if err != nil {
+		log.Fatalf("Failed to create version: %v", err)
+	}
+
+	minVersion, err := goversion.NewVersion("1.8")
+	if err != nil {
+		log.Fatalf("Failed to create minimum version: %v", err)
+	}
+
+	if serverVersion.LessThan(minVersion) {
+		log.Fatalf("Server version %v < %v. Installation won't proceed...\n", serverVersion, minVersion)
+	}
+
+	fmt.Printf("Proceeding with Kubernetes version %v\n", serverVersion)
+}
 
 func install(cmd *cobra.Command, args []string) {
 	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
 
 	clientset = initKubeClient()
+
+	kubernetesVersionCheck(clientset)
+
 	clusterAdminFound, err := getClusterAdmin(clientset)
 	if err != nil {
 		fmt.Printf("%s\n", err)
