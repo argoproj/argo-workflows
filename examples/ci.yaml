@@ -3,12 +3,16 @@ kind: Workflow
 metadata:
   generateName: ci-example-
 spec:
-  # Specify the name of the Argo template as the entrypoint
-  # to launch the workflow
+  # entrypoint is the name of the template used as the starting point of the workflow
   entrypoint: ci-example
-  # a temporary volume, named workdir, will be used as a working
-  # directory for this workflow. This volume is passed around
-  # from step to step.
+  # the 'ci-example' template accepts an parameter 'revision', with a default of 'master'.
+  # this can be overridden via argo CLI (e.g. `argo submit ci.yaml -p revision=0dea2d0`)
+  arguments:
+    parameters:
+    - name: revision
+      value: master
+  # a temporary volume, named workdir, will be used as a working directory
+  # for this workflow. This volume is passed around from step to step.
   volumeClaimTemplates:
   - metadata:
       name: workdir
@@ -20,9 +24,16 @@ spec:
 
   templates:
   - name: ci-example
+    inputs:
+      parameters:
+      - name: revision
     steps:
     - - name: build
         template: build-golang-example
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
     # the test step expands into three parallel steps running
     # different operating system images. each mounts the workdir
     # and runs the compiled binary from the build step.
@@ -39,16 +50,20 @@ spec:
 
   - name: build-golang-example
     inputs:
+      parameters:
+      - name: revision
       artifacts:
       - name: code
         path: /go/src/github.com/golang/example
         git:
           repo: https://github.com/golang/example.git
+          revision: "{{inputs.parameters.revision}}"
     container:
       image: golang:1.8
       command: [sh, -c]
       args: ["
         cd /go/src/github.com/golang/example/hello &&
+        git status &&
         go build -v .
       "]
       volumeMounts:

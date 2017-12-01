@@ -47,12 +47,9 @@ func printWorkflow(wf *wfv1.Workflow) {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
 	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
-	if wf.Status.Phase == "" {
-		// can get here if we just created the workflow
-		return
+	if !wf.Status.StartedAt.IsZero() {
+		fmt.Printf(fmtStr, "Started:", humanizeTimestamp(wf.Status.StartedAt.Unix()))
 	}
-
-	fmt.Printf(fmtStr, "Started:", humanizeTimestamp(wf.Status.StartedAt.Unix()))
 	var duration time.Duration
 	if !wf.Status.FinishedAt.IsZero() {
 		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(wf.Status.FinishedAt.Unix()))
@@ -60,7 +57,19 @@ func printWorkflow(wf *wfv1.Workflow) {
 	} else {
 		duration = time.Second * time.Duration(time.Now().UTC().Unix()-wf.Status.StartedAt.Unix())
 	}
-	fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
+	if !wf.Status.StartedAt.IsZero() {
+		fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
+	}
+
+	if len(wf.Spec.Arguments.Parameters) > 0 {
+		fmt.Printf(fmtStr, "Parameters:", "")
+		for _, param := range wf.Spec.Arguments.Parameters {
+			if param.Value == nil {
+				continue
+			}
+			fmt.Printf(fmtStr, "  "+param.Name, *param.Value)
+		}
+	}
 
 	if wf.Status.Nodes != nil {
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
