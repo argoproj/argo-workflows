@@ -44,6 +44,14 @@ func MustHomeDir() string {
 
 // IsURL returns whether or not a string is a URL
 func IsURL(u string) bool {
-	_, err := url.ParseRequestURI(u)
-	return err == nil
+	var parsedURL *url.URL
+	var err error
+
+	parsedURL, err = url.ParseRequestURI(u)
+	if err == nil {
+		if parsedURL != nil && parsedURL.Host != "" {
+			return true
+		}
+	}
+	return false
 }
