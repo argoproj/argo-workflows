@@ -48,10 +48,13 @@ const (
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
 
-	// LabelKeyCompleted is the pod metadata label on workflow pods which indicates if a pod is completed
+	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
+	// Workflows and pods with a completed=true label will be ignored by the controller
 	LabelKeyCompleted = wfv1.CRDFullName + "/completed"
-	// LabelKeyWorkflow is the pod metadata label to indidcate the associated workflow name
+	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
 	LabelKeyWorkflow = wfv1.CRDFullName + "/workflow"
+	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
+	LabelKeyPhase = wfv1.CRDFullName + "/phase"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)

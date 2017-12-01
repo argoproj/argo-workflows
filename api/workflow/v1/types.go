@@ -176,8 +176,21 @@ type SidecarOptions struct {
 }
 
 type WorkflowStatus struct {
+	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
+	Phase NodePhase `json:"phase"`
+
+	// Time at which this workflow started
+	StartedAt metav1.Time `json:"startedAt,omitempty"`
+
+	// Time at which this workflow completed
+	FinishedAt metav1.Time `json:"finishedAt,omitempty"`
+
+	// A human readable message indicating details about why the workflow is in this condition.
+	Message string `json:"message,omitempty"`
+
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes"`
+
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`

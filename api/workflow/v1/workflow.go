@@ -8,10 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func (wf *Workflow) Completed() bool {
-	return wf.Status.Nodes[wf.NodeID(wf.ObjectMeta.Name)].Completed()
-}
-
 func (wf *Workflow) DeepCopyObject() runtime.Object {
 	wfBytes, err := json.Marshal(wf)
 	if err != nil {

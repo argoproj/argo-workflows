@@ -158,6 +158,7 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
+			Param("labelSelector", fmt.Sprintf("%s notin (true)", common.LabelKeyCompleted)).
 			VersionedParams(&options, metav1.ParameterCodec)
 		req = wfc.addLabelSelectors(req)
 		return req.Do().Get()
@@ -168,6 +169,7 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
+			Param("labelSelector", fmt.Sprintf("%s notin (true)", common.LabelKeyCompleted)).
 			VersionedParams(&options, metav1.ParameterCodec)
 		req = wfc.addLabelSelectors(req)
 		return req.Watch()

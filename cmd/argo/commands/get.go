@@ -43,31 +43,35 @@ func printWorkflow(wf *wfv1.Workflow) {
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
-	node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
-	if node.Message != "" {
-		fmt.Printf(fmtStr, "Message:", node.Message)
+	if wf.Status.Message != "" {
+		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
 	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
-	if !ok {
+	if wf.Status.Phase == "" {
 		// can get here if we just created the workflow
 		return
 	}
 
-	fmt.Printf(fmtStr, "Started:", humanizeTimestamp(node.StartedAt.Unix()))
+	fmt.Printf(fmtStr, "Started:", humanizeTimestamp(wf.Status.StartedAt.Unix()))
 	var duration time.Duration
-	if !node.FinishedAt.IsZero() {
-		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(node.FinishedAt.Unix()))
-		duration = time.Second * time.Duration(node.FinishedAt.Unix()-node.StartedAt.Unix())
+	if !wf.Status.FinishedAt.IsZero() {
+		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(wf.Status.FinishedAt.Unix()))
+		duration = time.Second * time.Duration(wf.Status.FinishedAt.Unix()-wf.Status.StartedAt.Unix())
 	} else {
-		duration = time.Second * time.Duration(time.Now().UTC().Unix()-node.StartedAt.Unix())
+		duration = time.Second * time.Duration(time.Now().UTC().Unix()-wf.Status.StartedAt.Unix())
 	}
 	fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
 
-	fmt.Println()
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	fmt.Fprintf(w, "STEP\tPODNAME\n")
-	printNodeTree(w, wf, node, 0, " ", " ")
-	w.Flush()
+	if wf.Status.Nodes != nil {
+		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
+		if ok {
+			fmt.Println()
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+			fmt.Fprintf(w, "STEP\tPODNAME\n")
+			printNodeTree(w, wf, node, 0, " ", " ")
+			w.Flush()
+		}
+	}
 }
 
 func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) {
