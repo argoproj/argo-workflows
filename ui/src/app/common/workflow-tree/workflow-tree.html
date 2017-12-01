@@ -2,8 +2,8 @@
     <div>
         <div class="workflow-tree__node-container" *ngFor="let nodes of nodeGroups; let isLast = last; trackBy:trackByIndex">
    			<div class="workflow-tree__table-headline">
-                <span *ngIf="nodes[0]?.value?.launch_time > 0">{{nodes[0]?.value?.launch_time | shortTime}}</span>
-                <span *ngIf="!nodes[0]?.value?.launch_time">&nbsp;</span>
+                <span *ngIf="nodes[0]?.status.startedAt">{{nodes[0]?.status.startedAt | shortTime}}</span>
+                <span *ngIf="!nodes[0]?.status.startedAt">&nbsp;</span>
 			</div>
 
             <ax-workflow-subtree [expandedTaskIds]="expandedTaskIds" [rootTask]="rootTask" [nodes]="nodes"

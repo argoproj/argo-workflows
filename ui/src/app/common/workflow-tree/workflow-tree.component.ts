@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ContentChild, TemplateRef } from '@angular/core';
 
 import * as models from '../../models';
-import { NodeInfo, getWorkflowTree } from './workflow-tree.view-models';
+import { NodeInfo, WorkflowTree } from './workflow-tree.view-models';
 
 @Component({
   selector: 'ax-workflow-tree',
@@ -25,8 +25,8 @@ export class WorkflowTreeComponent {
   public workflowNodeInfoTemplate: TemplateRef<any>;
 
   @Input()
-  set workflow(value: models.Workflow) {
-    this.nodeGroups = value ? getWorkflowTree(value).children : [];
+  set workflowTree(value: WorkflowTree) {
+    this.nodeGroups = value ? value.root.children : [];
   }
 
   @Input()

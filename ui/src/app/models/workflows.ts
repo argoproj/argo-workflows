@@ -55,11 +55,13 @@ export interface Outputs {
 export interface NodeStatus {
     id: string;
     name: string;
-    status: string;
+    phase: string;
     podIP: string;
     daemoned: boolean;
     outputs: Outputs;
     children: string[];
+    startedAt: string;
+    finishedAt: string;
 }
 
 export interface WorkflowStatus {
@@ -130,8 +132,7 @@ export interface Arguments {
     artifacts: Artifact[];
 }
 
-export const NODE_STATUS = {
-  INIT: 'Init',
+export const NODE_PHASE = {
   RUNNING: 'Running',
   SUCCEEDED: 'Succeeded',
   SKIPPED: 'Skipped',

@@ -5,7 +5,7 @@ import { Pipe, PipeTransform } from '@angular/core';
   name: 'shortTime'
 })
 export class ShortTimePipe implements PipeTransform {
-  transform(value: number, args: any[]) {
-    return value ? moment.unix(value).format('H:mm') : '';
+  transform(value: string, args: any[]) {
+    return value ? moment(value).format('H:mm') : '';
   }
 }
