@@ -15,19 +15,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	yamlSeparator = regexp.MustCompile("\\n---")
-)
-
 func init() {
 	RootCmd.AddCommand(submitCmd)
+	submitCmd.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
+	submitCmd.Flags().StringSliceVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 }
+
+type submitFlags struct {
+	entrypoint string   // --entrypoint
+	parameters []string // --parameter
+}
+
+var submitArgs submitFlags
 
 var submitCmd = &cobra.Command{
 	Use:   "submit FILE1 FILE2...",
 	Short: "submit a workflow",
 	Run:   submitWorkflows,
 }
+
+var yamlSeparator = regexp.MustCompile("\\n---")
 
 func submitWorkflows(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
@@ -63,6 +70,33 @@ func submitWorkflows(cmd *cobra.Command, args []string) {
 			err := yaml.Unmarshal([]byte(manifestStr), &wf)
 			if err != nil {
 				log.Fatalf("Workflow manifest %s failed to parse: %v\n%s", filePath, err, manifestStr)
+			}
+			if submitArgs.entrypoint != "" {
+				wf.Spec.Entrypoint = submitArgs.entrypoint
+			}
+			if len(submitArgs.parameters) > 0 {
+				newParams := make([]wfv1.Parameter, 0)
+				passedParams := make(map[string]bool)
+				for _, paramStr := range submitArgs.parameters {
+					parts := strings.SplitN(paramStr, "=", 2)
+					if len(parts) == 1 {
+						log.Fatalf("Expected parameter of the form: NAME=VALUE. Recieved: %s", paramStr)
+					}
+					param := wfv1.Parameter{
+						Name:  parts[0],
+						Value: &parts[1],
+					}
+					newParams = append(newParams, param)
+					passedParams[param.Name] = true
+				}
+				for _, param := range wf.Spec.Arguments.Parameters {
+					if _, ok := passedParams[param.Name]; ok {
+						// this parameter was overridden via command line
+						continue
+					}
+					newParams = append(newParams, param)
+				}
+				wf.Spec.Arguments.Parameters = newParams
 			}
 			err = common.ValidateWorkflow(&wf)
 			if err != nil {
