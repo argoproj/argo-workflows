@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { DurationPipe } from './duration.pipe';
 import { TimestampPipe } from './timestamp.pipe';
 import { ShortTimePipe } from './short-time.pipe';
+import { TruncateToPipe } from './trancate-to.pipe';
 import { WorkflowStatusPipe } from './workflow-status.pipe';
 import { StatusIconDirective } from './status-icon/status-icon.directive';
 import { WorkflowTreeComponent } from './workflow-tree/workflow-tree.component';
@@ -16,6 +17,7 @@ const components = [
   WorkflowStatusPipe,
   StatusIconDirective,
   ShortTimePipe,
+  TruncateToPipe,
   WorkflowTreeComponent,
   WorkflowSubtreeComponent,
   WorkflowTreeNodeComponent,

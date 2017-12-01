@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as Api from 'kubernetes-client';
 import * as bodyParser from 'body-parser';
 import * as fallback from 'express-history-api-fallback';
+import * as models from '../src/app/models';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { async } from '@angular/core/testing';
@@ -48,7 +49,11 @@ export function create(
   const app = express();
   app.use(bodyParser.json({type: () => true}));
 
-  app.get('/api/workflows', async (req, res) => serve(res, () => crd.ns['workflows'].get()));
+  app.get('/api/workflows', (req, res) => serve(res, async () => {
+    const workflowList = <models.WorkflowList> await crd.ns['workflows'].get();
+    workflowList.items.sort((first, second) => first.metadata.creationTimestamp - second.metadata.creationTimestamp);
+    return workflowList;
+  }));
   app.get('/api/workflows/:name', async (req, res) => serve(res, () => crd.ns['workflows'].get(req.params.name)));
   app.get('/api/steps/:name/logs', (req, res) => {
     const logsSource = reactifyStringStream(core.ns.po(req.params.name).log.getStream({ qs: { container: 'main', follow: true } }));
