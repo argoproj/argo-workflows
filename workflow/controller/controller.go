@@ -26,11 +26,11 @@ import (
 type WorkflowController struct {
 	// ConfigMap is the name of the config map in which to derive configuration of the controller from
 	ConfigMap string
-	//WorkflowClient *workflowclient.WorkflowClient
-	Config WorkflowControllerConfig
+	Config    WorkflowControllerConfig
 
 	restConfig *rest.Config
 	restClient *rest.RESTClient
+	scheme     *runtime.Scheme
 	clientset  *kubernetes.Clientset
 	wfUpdates  chan *wfv1.Workflow
 	podUpdates chan *apiv1.Pod
@@ -63,7 +63,7 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 		panic(err)
 	}
 
-	restClient, _, err := workflowclient.NewRESTClient(config)
+	restClient, scheme, err := workflowclient.NewRESTClient(config)
 	if err != nil {
 		panic(err)
 	}
@@ -72,6 +72,7 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 		restClient: restClient,
 		restConfig: config,
 		clientset:  clientset,
+		scheme:     scheme,
 		ConfigMap:  configMap,
 		wfUpdates:  make(chan *wfv1.Workflow, 1024),
 		podUpdates: make(chan *apiv1.Pod, 1024),
@@ -341,7 +342,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		newPhase = wfv1.NodeError
 	}
 
-	wfClient := workflowclient.NewWorkflowClient(wfc.restClient, pod.ObjectMeta.Namespace)
+	wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wfc.scheme, pod.ObjectMeta.Namespace)
 	wf, err := wfClient.GetWorkflow(workflowName)
 	if err != nil {
 		log.Warnf("Failed to find workflow %s %+v", workflowName, err)

@@ -2,19 +2,17 @@ package client
 
 import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 type WorkflowClient struct {
 	cl        *rest.RESTClient
+	codec     runtime.ParameterCodec
 	namespace string
 }
 
@@ -39,9 +37,10 @@ func NewRESTClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) 
 	return client, scheme, nil
 }
 
-func NewWorkflowClient(cl *rest.RESTClient, namespace string) *WorkflowClient {
+func NewWorkflowClient(cl *rest.RESTClient, scheme *runtime.Scheme, namespace string) *WorkflowClient {
 	return &WorkflowClient{
 		cl:        cl,
+		codec:     runtime.NewParameterCodec(scheme),
 		namespace: namespace,
 	}
 }
@@ -83,15 +82,7 @@ func (f *WorkflowClient) ListWorkflows(opts metav1.ListOptions) (*wfv1.WorkflowL
 	var result wfv1.WorkflowList
 	err := f.cl.Get().
 		Namespace(f.namespace).Resource(wfv1.CRDPlural).
-		//VersionedParams(&opts, f.codec).
+		VersionedParams(&opts, f.codec).
 		Do().Into(&result)
 	return &result, err
-}
-
-func (f *WorkflowClient) NewListWatch() *cache.ListWatch {
-	return cache.NewListWatchFromClient(
-		f.cl,
-		wfv1.CRDPlural,
-		apiv1.NamespaceAll,
-		fields.Everything())
 }

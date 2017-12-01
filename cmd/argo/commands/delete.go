@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,10 +13,12 @@ import (
 func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.Flags().BoolVar(&deleteArgs.all, "all", false, "Delete all workflows")
+	deleteCmd.Flags().BoolVar(&deleteArgs.completed, "completed", false, "Delete completed workflows")
 }
 
 type deleteFlags struct {
-	all bool // --all
+	all       bool // --all
+	completed bool // --completed
 }
 
 var deleteArgs deleteFlags
@@ -29,7 +32,13 @@ var deleteCmd = &cobra.Command{
 func deleteWorkflowCmd(cmd *cobra.Command, args []string) {
 	wfClient = initWorkflowClient()
 	if deleteArgs.all {
-		deleteAllWorkflows()
+		deleteWorkflows(metav1.ListOptions{})
+		return
+	} else if deleteArgs.completed {
+		options := metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
+		}
+		deleteWorkflows(options)
 		return
 	}
 	if len(args) == 0 {
@@ -49,8 +58,8 @@ func deleteWorkflow(wfName string) {
 	fmt.Printf("Workflow '%s' deleted\n", wfName)
 }
 
-func deleteAllWorkflows() {
-	wfList, err := wfClient.ListWorkflows(metav1.ListOptions{})
+func deleteWorkflows(options metav1.ListOptions) {
+	wfList, err := wfClient.ListWorkflows(options)
 	if err != nil {
 		log.Fatal(err)
 	}

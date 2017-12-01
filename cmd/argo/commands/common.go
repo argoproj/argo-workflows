@@ -83,11 +83,11 @@ func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 			log.Fatal(err)
 		}
 	}
-	restClient, _, err := wfclient.NewRESTClient(restConfig)
+	restClient, scheme, err := wfclient.NewRESTClient(restConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	wfClient = wfclient.NewWorkflowClient(restClient, namespace)
+	wfClient = wfclient.NewWorkflowClient(restClient, scheme, namespace)
 	return wfClient
 }
 

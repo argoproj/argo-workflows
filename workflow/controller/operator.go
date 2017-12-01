@@ -60,7 +60,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 	defer func() {
 		if woc.updated {
-			wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wf.ObjectMeta.Namespace)
+			wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wfc.scheme, wf.ObjectMeta.Namespace)
 			_, err := wfClient.UpdateWorkflow(woc.wf)
 			if err != nil {
 				woc.log.Errorf("Error updating %s status: %v", woc.wf.ObjectMeta.SelfLink, err)
