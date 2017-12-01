@@ -157,6 +157,9 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 	stepNames := make(map[string]bool)
 	for i, stepGroup := range tmpl.Steps {
 		for _, step := range stepGroup {
+			if step.Name == "" {
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name is required", tmpl.Name, i)
+			}
 			_, ok := stepNames[step.Name]
 			if ok {
 				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s name is not unique", tmpl.Name, i, step.Name)
