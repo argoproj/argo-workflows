@@ -1,20 +1,21 @@
 package common
 
 import (
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 )
 
 var (
-	// TODO: replace 'latest' tag with argo.Version when close to release
-	DefaultControllerImage = "argoproj/workflow-controller:latest"
-	DefaultExecutorImage   = "argoproj/argoexec:latest"
-	// DefaultWorkflowControllerDeploymentName is the default deployment name of the workflow controller
-	DefaultControllerDeploymentName = "workflow-controller"
-	// DefaultControllerNamespace is the default location where the workflow controller is installed
-	DefaultControllerNamespace = "kube-system"
+	DefaultControllerImage = argo.ImageNamespace + "/workflow-controller:" + argo.ImageTag
+	DefaultExecutorImage   = argo.ImageNamespace + "/argoexec:" + argo.ImageTag
 )
 
 const (
+	// DefaultControllerDeploymentName is the default deployment name of the workflow controller
+	DefaultControllerDeploymentName = "workflow-controller"
+	// DefaultControllerNamespace is the default namespace where the workflow controller is installed
+	DefaultControllerNamespace = "kube-system"
+
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"
@@ -31,7 +32,7 @@ const (
 	PodMetadataAnnotationsVolumePath = "annotations"
 	// PodMetadataMountPath is the directory mount location for DownwardAPI volume containing pod metadata
 	PodMetadataMountPath = "/argo/" + PodMetadataVolumeName
-	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by argoexec
+	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by executor
 	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
 
 	// DockerLibVolumeName is the volume name for the /var/lib/docker host path volume

@@ -12,4 +12,12 @@ var (
 	ShortRevision  = Revision[0:7]
 	FullVersion    = fmt.Sprintf("%s-%s", Version, ShortRevision)
 	DisplayVersion = fmt.Sprintf("%s (Build Date: %s)", FullVersion, BuildDate)
+	ImageNamespace = ""
+	ImageTag       = Version
 )
+
+func init() {
+	if ImageNamespace == "" {
+		ImageNamespace = "argoproj"
+	}
+}

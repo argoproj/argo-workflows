@@ -30,7 +30,7 @@ var uninstallArgs uninstallFlags
 
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "uninstall workflow-controller and Workflow CRD",
+	Short: "uninstall controller and CRD",
 	Run:   uninstall,
 }
 
