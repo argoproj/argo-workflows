@@ -10,6 +10,7 @@ import { WorkflowDetailsBoxComponent } from './workflow-details-box/workflow-det
 import { WorkflowItemComponent } from './workflows-list-page/workflow-item/workflow-item.component';
 import { WorkflowStepDetailsBoxComponent } from './workflow-step-details-box/workflow-step-details-box.component';
 import { WorkflowStepsComponent } from './workflows-list-page/workflow-steps/workflow-steps.component';
+import { WorkflowStepSummaryBoxComponent } from './workflow-step-summary-box/workflow-step-summary-box.component';
 
 @NgModule({
   imports: [
@@ -24,6 +25,7 @@ import { WorkflowStepsComponent } from './workflows-list-page/workflow-steps/wor
     WorkflowItemComponent,
     WorkflowStepsComponent,
     WorkflowStepDetailsBoxComponent,
+    WorkflowStepSummaryBoxComponent,
   ]
 })
 export class WorkflowsModule { }
