@@ -1,6 +1,6 @@
 <ax-tabs [selectedTabKey]="tab" (selected)="onTabSelected.emit($event.selectedTab.tabKey)">
   <ax-tab tabKey="summary" tabTitle="SUMMARY">
-    summary here
+    <ax-workflow-step-summary-box [workflowTree]="workflowTree" [nodeName]="nodeName"></ax-workflow-step-summary-box>
   </ax-tab>
   <ax-tab tabKey="logs" tabTitle="LOGS">
     <div class="workflow-step-details-box__logs workflow-step-details-box__logs--panel">

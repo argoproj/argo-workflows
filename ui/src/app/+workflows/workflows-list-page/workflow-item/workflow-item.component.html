@@ -2,7 +2,7 @@
     <div class="ax-workflow-stream__top">
         <div class="ax-workflow-stream__status">
             <div class="ax-workflow-stream__status-icon">
-                <i class="fa" aria-hidden="true" ax-status-icon [status]="0"></i>
+                <i class="fa" aria-hidden="true" axStatusIcon [status]="status"></i>
             </div>
             <div class="ax-workflow-stream__status-message">
                 {{  workflow.metadata.creationTimestamp | timestamp }}
