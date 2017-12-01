@@ -1,0 +1,8 @@
+.workflow-step-details-box {
+    &__logs {
+        height: calc(100vh - 409px);
+        &--panel {
+            height: calc(100vh - 220px);
+        }
+    }
+}

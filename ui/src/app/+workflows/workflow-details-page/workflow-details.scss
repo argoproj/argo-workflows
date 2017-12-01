@@ -1,6 +1,69 @@
 @import '../../../assets/styles/config';
-
 .workflow-details {
+    &__node-overlay {
+        position: absolute;
+        left: -1em;
+        top: -1em;
+        right: -1em;
+        bottom: calc(-1em - 50px);
+        background: linear-gradient(to bottom, rgba($white-color, 1) 200px, rgba($white-color, .7));
+        border: 1em solid rgba($ax-color-gray-2, .7);
+        border-radius: 4px;
+        visibility: hidden;
+        opacity: 0;
+        transition: visibility 0s, opacity 0.2s linear;
+        ul {
+            margin-left: 0;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            li {
+                list-style-type: none;
+                margin-bottom: 1em;
+                button {
+                    width: 85px;
+                }
+                .ax-dropdown__content.is-menu {
+                    overflow: visible;
+                    ul {
+                        top: 20px;
+                        left: 25px;
+                        width: max-content;
+                        z-index: 10;
+                        background-color: #FFFFFF;
+                        box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+                        transition: opacity .2s, transform .2s, visibility .2s;
+                        li {
+                            width: max-content;
+                            margin-bottom: 0;
+                            font-size: 14px;
+                            font-weight: bold;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    .workflow-tree__node:hover {
+        .workflow-details__node-overlay {
+            visibility: visible;
+            opacity: 1;
+            .ax-button {
+                padding-top: 5px;
+                padding-bottom: 5px;
+            }
+            ax-job-actions {
+                .ax-button {
+                    padding: 5px 12px;
+                }
+            }
+        }
+        .workflow-tree__node-actions {
+            display: none;
+        }
+    }
     &__summary-tab {
         padding: 0 0 10px;
         &-row {
@@ -10,11 +73,9 @@
             }
         }
     }
-
     &__status-text {
         color: $ax-color-gray-5;
     }
-
     $step: 1;
     $loops: round(10 / $step);
     $increment: 30;
@@ -54,7 +115,6 @@
             width: 15px;
         }
     }
-
     $runningBarColor: #08B789;
     $failedBarColor: #DE3847;
     $overlayColor: white;

@@ -4,11 +4,12 @@
   "license": "MIT",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.conf.json",
+    "start": "ng serve --proxy-config proxy.conf.js",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "server:dev": "nodemon --nolazy --inspect -r ts-node/register api/main.ts"
   },
   "private": true,
   "dependencies": {
@@ -21,11 +22,18 @@
     "@angular/platform-browser": "^5.0.0",
     "@angular/platform-browser-dynamic": "^5.0.0",
     "@angular/router": "^5.0.0",
+    "@types/express": "^4.0.39",
     "@types/jquery": "^3.2.16",
     "core-js": "^2.4.1",
+    "express": "^4.16.2",
+    "express-history-api-fallback": "^2.2.1",
     "font-awesome": "^4.7.0",
+    "kubernetes-client": "^3.17.1",
+    "nodemon": "^1.12.1",
     "rxjs": "^5.5.2",
     "ui-lib": "git+https://github.com/argoproj/ui-lib.git#v2.0.1",
+    "xterm": "2.4.0",
+    "yargs": "^10.0.3",
     "zone.js": "^0.8.14"
   },
   "devDependencies": {
@@ -45,7 +53,7 @@
     "karma-jasmine": "~1.1.0",
     "karma-jasmine-html-reporter": "^0.2.2",
     "protractor": "~5.1.2",
-    "ts-node": "~3.2.0",
+    "ts-node": "^3.3.0",
     "tslint": "~5.7.0",
     "typescript": "~2.4.2"
   }

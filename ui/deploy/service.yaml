@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: argo-ui
+  name: argo-ui
+spec:
+  ports:
+  - port: 80
+    targetPort: 8001
+  selector:
+    app: argo-ui
+  sessionAffinity: None
+  type: LoadBalancer
