@@ -1,0 +1,44 @@
+<div class="white-box">
+  <div class="white-box__details">
+    <div class="row white-box__details-row">
+      <div class="large-3 columns white-box__details-label">
+        Name:
+      </div>
+      <div class="large-9 columns">
+        {{ step.name }}
+      </div>
+    </div>
+    <div class="row white-box__details-row">
+      <div class="large-3 columns white-box__details-label">
+        Status:
+      </div>
+      <div class="large-9 columns">
+        {{ status.phase }}
+      </div>
+    </div>
+    <div class="row white-box__details-row">
+      <div class="large-3 columns white-box__details-label">
+        Launched at:
+      </div>
+      <div class="large-9 columns">
+        {{ status.startedAt }}
+      </div>
+    </div>
+    <div *ngIf="status.finishedAt" class="row white-box__details-row">
+      <div class="large-3 columns white-box__details-label">
+        Completed at:
+      </div>
+      <div class="large-9 columns">
+        {{ status.finishedAt }}
+      </div>
+    </div>
+    <div class="row white-box__details-row">
+      <div class="large-3 columns white-box__details-label">
+        Duration:
+      </div>
+      <div class="large-9 columns">
+        {{ stepDuration | duration:true }}
+      </div>
+    </div>
+  </div>
+</div>

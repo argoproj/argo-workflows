@@ -22,8 +22,7 @@ export class WorkflowTree {
   }
 
   private getNodeInfo(nodeStatus: models.NodeStatus, nodeName: string): NodeInfo {
-    let name = nodeStatus.name;
-    name = name.indexOf('(') > -1 ? name.substring(0, name.indexOf('(')) : name;
+    const name = nodeStatus.name;
     const step = this.getStepByName(name);
     const meta = { template: this.templateByNames.get(step.template), stepName: step.name };
     return {
@@ -41,6 +40,7 @@ export class WorkflowTree {
   }
 
   public getStepByName(name: string): models.WorkflowStep {
+    name = name.indexOf('(') > -1 ? name.substring(0, name.indexOf('(')) : name;
     const rootStep: models.WorkflowStep = {
       name: '', template: this.workflow.spec.entrypoint, arguments: null, withItems: null,  when: ''};
     const queue = [{ fullName: this.workflow.metadata.name, step: rootStep }];
