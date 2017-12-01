@@ -25,3 +25,7 @@
 [[constraint]]
   name = "github.com/minio/minio-go"
   version = "3.0.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/hashicorp/go-version"
