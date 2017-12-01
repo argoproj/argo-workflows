@@ -1,0 +1,25 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: argo-ui-deployment
+  labels:
+    app: argo-ui
+spec:
+  selector:
+    matchLabels:
+      app: argo-ui
+  template:
+    metadata:
+      labels:
+        app: argo-ui
+    spec:
+      containers:
+      - name: argo-ui
+        image: argoproj/argo-ui:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: IN_CLUSTER
+          value: 'true'
+        - name: NAMESPACE
+          value: 'default'

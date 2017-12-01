@@ -1,0 +1,10 @@
+<ax-tabs [selectedTabKey]="tab" (selected)="onTabSelected.emit($event.selectedTab.tabKey)">
+  <ax-tab tabKey="summary" tabTitle="SUMMARY">
+    summary here
+  </ax-tab>
+  <ax-tab tabKey="logs" tabTitle="LOGS">
+    <div class="workflow-step-details-box__logs workflow-step-details-box__logs--panel">
+      <ax-logs [source]="getLogsSource()" *ngIf="tab==='logs'" [tailLogs]="true"></ax-logs>
+    </div>
+  </ax-tab>
+</ax-tabs>

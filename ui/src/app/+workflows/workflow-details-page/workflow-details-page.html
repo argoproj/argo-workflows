@@ -12,22 +12,50 @@
       </div>
     </ax-tab>
     <ax-tab tabKey="workflow" tabTitle="WORKFLOW">
-      <ax-workflow-tree [workflow]="workflow">
+      <ax-workflow-tree [workflowTree]="tree">
         <ng-template let-cell="cell" #nodeInfo>
           <div>
             <div class="workflow-details__node-status">
-              <span class="text-truncate status-text" ax-tooltip="{{cell.status.status}}">{{cell.status.status}}</span>
+              <span class="text-truncate status-text" ax-tooltip="{{cell.status.phase}}">{{cell.status.phase}}</span>
             </div>
 
-            <div [class]="getProgressClasses(cell.status.status)">
+            <div [class]="getProgressClasses(cell)">
               <div class="workflow-details__node-progress-overlay">
-                <div class="workflow-details__node-info-duration">
+                <div class="workflow-details__node-info-duration" [innerHTML]="cell.status.runDuration | duration:true">
                 </div>
               </div>
             </div>
+          </div>
+          <div class="workflow-tree__node-info-footer">
+            <span *ngIf="cell.status.finishedAt && cell.status.phase === 'Succeeded'">
+                Completed at {{time(cell.status.finishedAt)}}
+            </span>
+            <span *ngIf="cell.status.finishedAt && cell.status.phase !== 'Succeeded'">
+                Failed at {{time(cell.status.finishedAt)}}
+            </span>
+         </div>
+          <div class="workflow-details__node-overlay">
+            <ul>
+              <li>
+                <button axButtonWave class="ax-button ax-button--base-o" (click)="showStepDetails(cell.nodeName, 'logs')">
+                  LOGS
+                </button>
+              </li>
+            </ul>
           </div>
         </ng-template>
       </ax-workflow-tree>
     </ax-tab>
   </ax-tabs>
 </div>
+
+<ax-sliding-panel [show]="!!stepDetailsPanel" (closePanel)="closeStepDetailsPanel()">
+  <sliding-panel-body>
+    <ax-workflow-step-details-box *ngIf="stepDetailsPanel"
+        [tab]="stepDetailsPanel.tab"
+        [nodeName]="stepDetailsPanel.nodeName"
+        [workflowTree]="tree"
+        (onTabSelected)="showStepDetails(stepDetailsPanel.nodeName, $event)">
+    </ax-workflow-step-details-box>
+  </sliding-panel-body>
+</ax-sliding-panel>

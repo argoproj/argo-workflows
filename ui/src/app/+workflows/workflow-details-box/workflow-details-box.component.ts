@@ -8,5 +8,5 @@ import { Workflow } from '../../models';
 })
 export class WorkflowDetailsBoxComponent {
     @Input()
-    workflow: Workflow;
+    public workflow: Workflow;
 }
