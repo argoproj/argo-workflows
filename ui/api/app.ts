@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as Api from 'kubernetes-client';
 import * as bodyParser from 'body-parser';
+import * as fallback from 'express-history-api-fallback';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { async } from '@angular/core/testing';
@@ -33,7 +34,12 @@ function serve<T>(res: express.Response, action: () => Promise<T>) {
   action().then(val => res.send(val)).catch(err => res.status(500).send(err));
 }
 
-export function create(inCluster: boolean, namespace: string, version = 'v1', group = 'argoproj.io') {
+export function create(
+    uiDist: string,
+    inCluster: boolean,
+    namespace: string,
+    version = 'v1',
+    group = 'argoproj.io') {
   const config = Object.assign(
     {}, inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig(), {namespace, version, group, promises: true });
   const core = new Api.Core(config);
@@ -48,6 +54,7 @@ export function create(inCluster: boolean, namespace: string, version = 'v1', gr
     const logsSource = reactifyStringStream(core.ns.po(req.params.name).log.getStream({ qs: { container: 'main', follow: true } }));
     streamServerEvents(req, res, logsSource, item => item.toString());
   });
-
+  app.use(express.static(uiDist));
+  app.use(fallback('index.html', { root: uiDist }));
   return app;
 }

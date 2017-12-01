@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.conf.json",
+    "start": "ng serve --proxy-config proxy.conf.js",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
@@ -33,6 +33,7 @@
     "rxjs": "^5.5.2",
     "ui-lib": "git+https://github.com/argoproj/ui-lib.git#v2.0.1",
     "xterm": "2.4.0",
+    "yargs": "^10.0.3",
     "zone.js": "^0.8.14"
   },
   "devDependencies": {
