@@ -157,3 +157,26 @@ func TestStepReference(t *testing.T) {
 	err := validate(stepOutputReferences)
 	assert.Nil(t, err)
 }
+
+var unsatisfiedParam = `
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestUnsatisfiedParam(t *testing.T) {
+	err := validate(unsatisfiedParam)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "not supplied")
+	}
+}

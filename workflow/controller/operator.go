@@ -3,10 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -227,7 +225,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		return err
 	}
 
-	tmpl, err := processArgs(tmpl, args)
+	tmpl, err := common.ProcessArgs(tmpl, args, false)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -259,58 +257,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
 	woc.markNodeError(nodeName, err)
 	return err
-}
-
-// processArgs sets in the inputs, the values either passed via arguments, or the hardwired values
-// It also substitutes parameters in the template from the arguments
-func processArgs(tmpl *wfv1.Template, args wfv1.Arguments) (*wfv1.Template, error) {
-	// For each input parameter:
-	// 1) check if was supplied as argument. if so use the supplied value from arg
-	// 2) if not, use default value.
-	// 3) if no default value, it is an error
-	tmpl = tmpl.DeepCopy()
-	for i, inParam := range tmpl.Inputs.Parameters {
-		if inParam.Default != nil {
-			// first set to default value
-			inParam.Value = inParam.Default
-		}
-		// overwrite value from argument (if supplied)
-		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil && argParam.Value != nil {
-			newValue := *argParam.Value
-			inParam.Value = &newValue
-		}
-		if inParam.Value == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not satisfied", inParam.Name)
-		}
-		tmpl.Inputs.Parameters[i] = inParam
-	}
-	tmpl, err := substituteParams(tmpl)
-	if err != nil {
-		return nil, err
-	}
-
-	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-	for i, inArt := range tmpl.Inputs.Artifacts {
-		// if artifact has hard-wired location, we prefer that
-		if inArt.HasLocation() {
-			newInputArtifacts[i] = inArt
-			continue
-		}
-		// artifact must be supplied
-		argArt := args.GetArtifactByName(inArt.Name)
-		if argArt == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s was not supplied", inArt.Name)
-		}
-		if !argArt.HasLocation() {
-			return nil, errors.Errorf(errors.CodeBadRequest, "arguments.artifacts.%s missing location information", inArt.Name)
-		}
-		argArt.Path = inArt.Path
-		argArt.Mode = inArt.Mode
-		newInputArtifacts[i] = *argArt
-	}
-	tmpl.Inputs.Artifacts = newInputArtifacts
-	return tmpl, nil
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
@@ -596,7 +542,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := replace(fstTmpl, replaceMap, true)
+		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
 		if err != nil {
 			return nil, err
 		}
@@ -693,7 +639,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
 		}
-		newStepStr, err := replace(fstTmpl, replaceMap, false)
+		newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 		if err != nil {
 			return nil, err
 		}
@@ -717,32 +663,6 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
-}
-
-// substituteParams returns a new copy of the template with all input parameters substituted
-func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
-	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	replaceMap := make(map[string]string)
-	for _, inParam := range tmpl.Inputs.Parameters {
-		if inParam.Value == nil {
-			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
-		}
-		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
-	}
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	s, err := replace(fstTmpl, replaceMap, true)
-	if err != nil {
-		return nil, err
-	}
-	var newTmpl wfv1.Template
-	err = json.Unmarshal([]byte(s), &newTmpl)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &newTmpl, nil
 }
 
 func (wfs *wfScope) addParamToScope(key, val string) {
@@ -794,33 +714,6 @@ func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
 	}
 	return &valArt, nil
-}
-
-// replace executes basic string substitution of a template with replacement values.
-// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
-func replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
-	var unresolvedErr error
-	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		replacement, ok := replaceMap[tag]
-		if !ok {
-			if allowUnresolved {
-				// just write the same string back
-				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
-			}
-			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-			return 0, nil
-		}
-		// The following escapes any special characters (e.g. newlines, tabs, etc...)
-		// in preparation for substitution
-		replacement = strconv.Quote(replacement)
-		replacement = replacement[1 : len(replacement)-1]
-		return w.Write([]byte(replacement))
-	})
-	if unresolvedErr != nil {
-		return "", unresolvedErr
-	}
-	return replacedTmpl, nil
 }
 
 // addChildNode adds a nodeID as a child to a parent
