@@ -347,7 +347,6 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
 	err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
-		// TODO: may need to query pod status if we hit already exists error
 		woc.markNodeError(nodeName, err)
 		return err
 	}
