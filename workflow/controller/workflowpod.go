@@ -169,6 +169,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
+	woc.addNodeSelectors(&pod, tmpl)
+
 	err = woc.addVolumeReferences(&pod, tmpl)
 	if err != nil {
 		return err
@@ -267,6 +269,18 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 		},
 	}
 	return &exec
+}
+
+// addNodeSelectors applies any node selectors, either set in the workflow or the template, to the pod
+func (woc *wfOperationCtx) addNodeSelectors(pod *apiv1.Pod, tmpl *wfv1.Template) {
+	if len(tmpl.NodeSelector) > 0 {
+		pod.Spec.NodeSelector = tmpl.NodeSelector
+		return
+	}
+	if len(woc.wf.Spec.NodeSelector) > 0 {
+		pod.Spec.NodeSelector = woc.wf.Spec.NodeSelector
+		return
+	}
 }
 
 // addVolumeReferences adds any volumeMounts that a container is referencing, to the pod.spec.volumes
