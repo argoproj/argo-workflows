@@ -2,12 +2,16 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"strconv"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1"
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -99,4 +103,109 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 // DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
 func DefaultConfigMapName(controllerName string) string {
 	return fmt.Sprintf("%s-configmap", controllerName)
+}
+
+// ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
+// It also substitutes parameters in the template from the arguments
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*wfv1.Template, error) {
+	// For each input parameter:
+	// 1) check if was supplied as argument. if so use the supplied value from arg
+	// 2) if not, use default value.
+	// 3) if no default value, it is an error
+	tmpl = tmpl.DeepCopy()
+	for i, inParam := range tmpl.Inputs.Parameters {
+		if inParam.Default != nil {
+			// first set to default value
+			inParam.Value = inParam.Default
+		}
+		// overwrite value from argument (if supplied)
+		argParam := args.GetParameterByName(inParam.Name)
+		if argParam != nil && argParam.Value != nil {
+			newValue := *argParam.Value
+			inParam.Value = &newValue
+		}
+		if inParam.Value == nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+		}
+		tmpl.Inputs.Parameters[i] = inParam
+	}
+	tmpl, err := substituteParams(tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
+	for i, inArt := range tmpl.Inputs.Artifacts {
+		// if artifact has hard-wired location, we prefer that
+		if inArt.HasLocation() {
+			newInputArtifacts[i] = inArt
+			continue
+		}
+		// artifact must be supplied
+		argArt := args.GetArtifactByName(inArt.Name)
+		if argArt == nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+		}
+		if !argArt.HasLocation() && !validateOnly {
+			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+		}
+		argArt.Path = inArt.Path
+		argArt.Mode = inArt.Mode
+		newInputArtifacts[i] = *argArt
+	}
+	tmpl.Inputs.Artifacts = newInputArtifacts
+	return tmpl, nil
+}
+
+// substituteParams returns a new copy of the template with all input parameters substituted
+func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
+	tmplBytes, err := json.Marshal(tmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	replaceMap := make(map[string]string)
+	for _, inParam := range tmpl.Inputs.Parameters {
+		if inParam.Value == nil {
+			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+		}
+		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
+	}
+	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	s, err := Replace(fstTmpl, replaceMap, true)
+	if err != nil {
+		return nil, err
+	}
+	var newTmpl wfv1.Template
+	err = json.Unmarshal([]byte(s), &newTmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &newTmpl, nil
+}
+
+// Replace executes basic string substitution of a template with replacement values.
+// allowUnresolved indicates whether or not it is acceptable to have unresolved variables
+// remaining in the substituted template.
+func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+	var unresolvedErr error
+	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		replacement, ok := replaceMap[tag]
+		if !ok {
+			if allowUnresolved {
+				// just write the same string back
+				return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+			}
+			unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
+			return 0, nil
+		}
+		// The following escapes any special characters (e.g. newlines, tabs, etc...)
+		// in preparation for substitution
+		replacement = strconv.Quote(replacement)
+		replacement = replacement[1 : len(replacement)-1]
+		return w.Write([]byte(replacement))
+	})
+	if unresolvedErr != nil {
+		return "", unresolvedErr
+	}
+	return replacedTmpl, nil
 }

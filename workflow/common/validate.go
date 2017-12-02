@@ -52,6 +52,10 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		errors.Errorf(errors.CodeBadRequest, "template names are required")
 	}
 	ctx.results[tmpl.Name] = validationResult{}
+	_, err := ProcessArgs(tmpl, args, true)
+	if err != nil {
+		return err
+	}
 	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
