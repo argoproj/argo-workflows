@@ -76,7 +76,7 @@ func printWorkflow(wf *wfv1.Workflow) {
 		if ok {
 			fmt.Println()
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintf(w, "STEP\tPODNAME\n")
+			fmt.Fprintf(w, "STEP\tPODNAME\tMESSAGE\n")
 			printNodeTree(w, wf, node, 0, " ", " ")
 			w.Flush()
 		}
@@ -86,9 +86,9 @@ func printWorkflow(wf *wfv1.Workflow) {
 func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) {
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.Name)
 	if len(node.Children) == 0 && node.Phase != wfv1.NodeSkipped {
-		fmt.Fprintf(w, "%s%s\t%s\n", nodePrefix, nodeName, node.ID)
+		fmt.Fprintf(w, "%s%s\t%s\t%s\n", nodePrefix, nodeName, node.ID, node.Message)
 	} else {
-		fmt.Fprintf(w, "%s%s\t\n", nodePrefix, nodeName)
+		fmt.Fprintf(w, "%s%s\t%s\t\n", nodePrefix, nodeName, " ")
 	}
 
 	// If the node has children, the node is a workflow template and

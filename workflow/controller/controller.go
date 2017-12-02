@@ -232,7 +232,6 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 	return controller, nil
 }
 
-
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
 	source := wfc.newControllerConfigMapWatch()
 
@@ -272,7 +271,6 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 	return controller, nil
 }
 
-
 func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 	c := wfc.clientset.Core().RESTClient()
 	resource := "configmaps"
@@ -283,7 +281,7 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-		        Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
+			Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
 			VersionedParams(&options, metav1.ParameterCodec)
 		return req.Do().Get()
 	}
@@ -478,6 +476,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 		// Pod has a nice error message. Use that.
 		return wfv1.NodeFailed, &f, pod.Status.Message
 	}
+	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 	// We only get one message to set for the overall node status.
 	// If mutiple containers failed, in order of preference: init, main, wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
@@ -490,8 +489,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 			continue
 		}
 		errMsg := fmt.Sprintf("failed to load artifacts")
-		if ctr.State.Terminated.Message != "" {
-			errMsg += ": " + ctr.State.Terminated.Message
+		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
+			if msg != "" {
+				errMsg += ": " + msg
+				break
+			}
 		}
 		// NOTE: we consider artifact load issues as Error instead of Failed
 		return wfv1.NodeError, &f, errMsg
@@ -507,11 +509,14 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 			continue
 		}
 		if ctr.Name == common.WaitContainerName {
-			if ctr.State.Terminated.Message != "" {
-				failMessages[ctr.Name] = fmt.Sprintf("failed to save artifacts: %s", ctr.State.Terminated.Message)
-			} else {
-				failMessages[ctr.Name] = fmt.Sprintf("failed to save artifacts")
+			errMsg := fmt.Sprintf("failed to save artifacts")
+			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
+				if msg != "" {
+					errMsg += ": " + msg
+					break
+				}
 			}
+			failMessages[ctr.Name] = errMsg
 		} else {
 			if ctr.State.Terminated.Message != "" {
 				failMessages[ctr.Name] = ctr.State.Terminated.Message
