@@ -26,7 +26,10 @@ import (
 type WorkflowController struct {
 	// ConfigMap is the name of the config map in which to derive configuration of the controller from
 	ConfigMap string
-	Config    WorkflowControllerConfig
+	// namespace for config map
+	ConfigMapNS string
+	//WorkflowClient *workflowclient.WorkflowClient
+	Config WorkflowControllerConfig
 
 	restConfig *rest.Config
 	restClient *rest.RESTClient
@@ -82,10 +85,18 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context) error {
+
+	log.Info("Watch Workflow controller config map updates")
+	_, err := wfc.watchControllerConfigMap(ctx)
+	if err != nil {
+		log.Errorf("Failed to register watch for controller config map: %v", err)
+		return err
+	}
+
 	log.Info("Watch Workflow objects")
 
 	// Watch Workflow objects
-	_, err := wfc.watchWorkflows(ctx)
+	_, err = wfc.watchWorkflows(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for Workflow resource: %v", err)
 		return err
@@ -123,18 +134,23 @@ func (wfc *WorkflowController) ResyncConfig() error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+	wfc.ConfigMapNS = cm.Namespace
+	return wfc.updateConfig(cm)
+}
+
+func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have key '%s'", wfc.ConfigMap, common.WorkflowControllerConfigMapKey)
 	}
 	var config WorkflowControllerConfig
-	err = yaml.Unmarshal([]byte(configStr), &config)
+	err := yaml.Unmarshal([]byte(configStr), &config)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	log.Printf("workflow controller configuration from %s:\n%s", wfc.ConfigMap, configStr)
-	if wfc.Config.ExecutorImage == "" {
-		wfc.Config.ExecutorImage = common.DefaultExecutorImage
+	if config.ExecutorImage == "" {
+		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.ConfigMap)
 	}
 	wfc.Config = config
 	return nil
@@ -214,6 +230,73 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 
 	go controller.Run(ctx.Done())
 	return controller, nil
+}
+
+
+func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
+	source := wfc.newControllerConfigMapWatch()
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.ConfigMap{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				cm := obj.(*apiv1.ConfigMap)
+				log.Infof("Detected ConfigMap update. Updating the controller config.")
+				err := wfc.updateConfig(cm)
+				if err != nil {
+					log.Errorf("Update of config failed due to: %v", err)
+				}
+
+			},
+			UpdateFunc: func(old, new interface{}) {
+				newCm := new.(*apiv1.ConfigMap)
+				log.Infof("Detected ConfigMap update. Updating the controller config.")
+				err := wfc.updateConfig(newCm)
+				if err != nil {
+					log.Errorf("Update of config failed due to: %v", err)
+				}
+			},
+		})
+
+	go controller.Run(ctx.Done())
+	return controller, nil
+}
+
+
+func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
+	c := wfc.clientset.Core().RESTClient()
+	resource := "configmaps"
+	name := wfc.ConfigMap
+	namespace := wfc.ConfigMapNS
+
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		req := c.Get().
+			Namespace(namespace).
+			Resource(resource).
+		        Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
+			VersionedParams(&options, metav1.ParameterCodec)
+		return req.Do().Get()
+	}
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.Watch = true
+		req := c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
+			VersionedParams(&options, metav1.ParameterCodec)
+		return req.Watch()
+	}
+	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
