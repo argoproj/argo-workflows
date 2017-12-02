@@ -449,15 +449,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		// for daemoned pods, in order to properly remove the daemoned status from the node when the pod
 		// terminates.
 		if !node.IsDaemoned() {
-			podIf := wfc.clientset.CoreV1().Pods(pod.ObjectMeta.Namespace)
-			// TODO: use patch instead of get/update
-			pod, err = podIf.Get(pod.ObjectMeta.Name, metav1.GetOptions{})
-			if err != nil {
-				log.Errorf("Failed to get pod %s for labeleing: %+v", node, err)
-				return
-			}
-			pod.Labels[common.LabelKeyCompleted] = "true"
-			_, err = podIf.Update(pod)
+			err = common.AddPodLabel(wfc.clientset, pod.ObjectMeta.Name, pod.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
 				log.Errorf("Failed to label completed pod %s: %+v", node, err)
 				return

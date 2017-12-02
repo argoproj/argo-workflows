@@ -8,12 +8,15 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -221,4 +224,42 @@ func RunCommand(name string, arg ...string) error {
 		return errors.InternalError(string(exErr.Stderr))
 	}
 	return nil
+}
+
+const patchRetries = 5
+
+func AddPodAnnotation(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+	return addPodMetadata(c, "annotations", podName, namespace, key, value)
+}
+
+func AddPodLabel(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+	return addPodMetadata(c, "labels", podName, namespace, key, value)
+}
+
+// addPodMetadata is helper to either add a pod label or annotation to the pod
+func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, value string) error {
+	metadata := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			field: map[string]string{
+				key: value,
+			},
+		},
+	}
+	var err error
+	patch, err := json.Marshal(metadata)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	for attempt := 0; attempt < patchRetries; attempt++ {
+		_, err = c.Core().Pods(namespace).Patch(podName, types.MergePatchType, patch)
+		if err != nil {
+			if !apierr.IsConflict(err) {
+				return err
+			}
+		} else {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return err
 }

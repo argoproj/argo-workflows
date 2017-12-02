@@ -330,12 +330,7 @@ func (we *WorkflowExecutor) AnnotateOutputs() error {
 
 // AddAnnotation adds an annotation to the workflow pod
 func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
-	// TODO: switch to k8s go-sdk to perform this logic.
-	// See kubectl/cmd/annotate.go for reference implementation.
-	// For now we just kubectl because it uses our desired
-	// overwite Patch strategy.
-	return common.RunCommand("kubectl", "annotate", "--overwrite", "pods",
-		we.PodName, fmt.Sprintf("%s=%s", key, value))
+	return common.AddPodAnnotation(we.ClientSet, we.PodName, we.Namespace, key, value)
 }
 
 // isTarball returns whether or not the file is a tarball
