@@ -35,7 +35,7 @@ $ argo get xxx-workflow-name-xxx
 $ argo logs xxx-pod-name-xxx #from get command above
 ```
 
-You can also run workflows directly with kubectl. However, the Argo CLI offers extra features that kubectl does not, such as the Argo CLI validates your YAML, displays a more human-friendly output, and requires less typing.
+You can also run workflows directly with kubectl. However, the Argo CLI offers extra features that kubectl does not, such as YAML validation, workflow visualization, and overall less typing.
 ```
 $ kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
 $ kubectl get wf
@@ -81,27 +81,7 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           key: secretkey
 ```
 
-Restart the workflow-controller pod for the config to take effect
-```
-$ kubectl get pods -n kube-system -l app=workflow-controller
-$ kubectl delete pod <workflow-controller-podname> -n kube-system
-```
-
 ## 6. Run a workflow which uses artifacts
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
-
-
-
-NOTE: If your Kubernetes cluster has legacy authentication disabled, you must create a service account and a [cluster role binding](https://kubernetes.io/docs/admin/authorization/rbac/#kubectl-create-clusterrolebinding) with admin privileges before you install Argo. Then when you install Argo, specify the newly created service account. 
-
-```
-$ kubectl create serviceaccount --namespace kube-system argo
-$ kubectl create clusterrolebinding argo-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:argo
-$ argo install --service-account argo
-```
- Where:
- 
- * `kube-system argo` is the namespace that the `argo` serviceaccount has access to.
- * `argo-cluster-rule` is the name for the cluster role binding

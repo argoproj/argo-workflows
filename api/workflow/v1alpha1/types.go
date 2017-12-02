@@ -54,13 +54,20 @@ type WorkflowSpec struct {
 	Arguments            Arguments                     `json:"arguments,omitempty"`
 	Volumes              []apiv1.Volume                `json:"volumes,omitempty"`
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
-	Timeout              string                        `json:"timeout,omitempty"`
+
+	// NodeSelector is a selector which will cause all pods of the workflow
+	// to be scheduled on the selected node(s)
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
 
 type Template struct {
 	Name    string  `json:"name"`
 	Inputs  Inputs  `json:"inputs,omitempty"`
 	Outputs Outputs `json:"outputs,omitempty"`
+
+	// NodeSelector is a selector to schedule this step of the workflow to be
+	// run on the selected node(s). Overrides the selector set at the workflow level.
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
