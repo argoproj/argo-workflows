@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"

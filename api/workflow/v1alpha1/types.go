@@ -15,7 +15,7 @@ const (
 	CRDPlural    string = "workflows"
 	CRDShortName string = "wf"
 	CRDGroup     string = "argoproj.io"
-	CRDVersion   string = "v1"
+	CRDVersion   string = "v1alpha1"
 	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 

@@ -3,7 +3,7 @@ package client
 import (
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"

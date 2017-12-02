@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ func validate(yamlStr string) error {
 }
 
 var unknownField = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -40,7 +40,7 @@ func TestUnknownField(t *testing.T) {
 }
 
 var dupTemplateNames = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -56,7 +56,7 @@ spec:
 `
 
 var dupInputNames = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -73,7 +73,7 @@ spec:
 `
 
 var emptyName = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -105,7 +105,7 @@ func TestDuplicateOrEmptyNames(t *testing.T) {
 }
 
 var unresolvedInput = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -125,7 +125,7 @@ func TestUnresolved(t *testing.T) {
 }
 
 var stepOutputReferences = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -159,7 +159,7 @@ func TestStepReference(t *testing.T) {
 }
 
 var unsatisfiedParam = `
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-

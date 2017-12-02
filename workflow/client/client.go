@@ -1,7 +1,7 @@
 package client
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"

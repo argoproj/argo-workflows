@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"

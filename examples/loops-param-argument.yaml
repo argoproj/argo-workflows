@@ -1,6 +1,6 @@
 # This example demonstrates a workflow accepting a list of items (as JSON string)
 # as an input parameter, and using it for expanding a step into multiple steps.
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: loops-param-arg-
