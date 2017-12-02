@@ -3,6 +3,7 @@ package commands
 import (
 	"os"
 
+	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -22,24 +23,29 @@ func waitContainer(cmd *cobra.Command, args []string) {
 	// Wait for main container to complete and kill sidecars
 	err := wfExecutor.Wait()
 	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Errorf("Error waiting on main container to be ready, %+v", err)
 	}
 	err = wfExecutor.SaveArtifacts()
 	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error saving output artifacts, %+v", err)
 	}
 	// Saving output parameters
 	err = wfExecutor.SaveParameters()
 	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error saving output parameters, %+v", err)
 	}
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult()
 	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error capturing script output, %+v", err)
 	}
 	err = wfExecutor.AnnotateOutputs()
 	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error annotating outputs, %+v", err)
 	}
 	os.Exit(0)

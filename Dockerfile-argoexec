@@ -31,5 +31,3 @@ RUN set -ex; \
 	docker -v
 
 COPY dist/argoexec /bin/
-
-ENTRYPOINT [ "/bin/argoexec" ]

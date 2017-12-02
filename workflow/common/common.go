@@ -44,6 +44,9 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = wfv1.CRDFullName + "/node-name"
+	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
+	// communicate errors encountered by the executor during artifact load/save, etc...
+	AnnotationKeyNodeMessage = wfv1.CRDFullName + "/node-message"
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
 	AnnotationKeyTemplate = wfv1.CRDFullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs

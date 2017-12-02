@@ -289,14 +289,9 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 func archivePath(containerID string, sourcePath string, destPath string) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
 	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
-	cmd := exec.Command("sh", "-c", dockerCpCmd)
-	log.Info(cmd.Args)
-	err := cmd.Run()
+	err := common.RunCommand("sh", "-c", dockerCpCmd)
 	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
-			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-		}
-		return errors.InternalWrapError(err)
+		return err
 	}
 	log.Infof("Archiving completed")
 	return nil
@@ -326,25 +321,21 @@ func (we *WorkflowExecutor) AnnotateOutputs() error {
 		return nil
 	}
 	log.Infof("Annotating pod with output")
-	// NOTE: this should eventually be improved to do what kubectl/cmd/annotate.go
-	// is doing during a `kubectl annotate pod`, which uses Patch instead of Update.
-	// For now, the easiest thing to do is to Get + Update and hope the pod
-	// resource version does not change from underneath us.
-	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
-	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
 	outputBytes, err := json.Marshal(we.Template.Outputs)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	pod.Annotations[common.AnnotationKeyOutputs] = string(outputBytes)
-	_, err = podIf.Update(pod)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return nil
+	return we.AddAnnotation(common.AnnotationKeyOutputs, string(outputBytes))
+}
+
+// AddAnnotation adds an annotation to the workflow pod
+func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
+	// TODO: switch to k8s go-sdk to perform this logic.
+	// See kubectl/cmd/annotate.go for reference implementation.
+	// For now we just kubectl because it uses our desired
+	// overwite Patch strategy.
+	return common.RunCommand("kubectl", "annotate", "--overwrite", "pods",
+		we.PodName, fmt.Sprintf("%s=%s", key, value))
 }
 
 // isTarball returns whether or not the file is a tarball
@@ -364,11 +355,9 @@ func untar(tarPath string, destPath string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	cmd := exec.Command("tar", "-xf", tarPath, "-C", tmpDir)
-	log.Info(cmd.Args)
-	err = cmd.Run()
+	err = common.RunCommand("tar", "-xf", tarPath, "-C", tmpDir)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
 	// next, decide how we wish to rename the file/dir
 	// to the destination path.
@@ -429,14 +418,9 @@ func (we *WorkflowExecutor) Wait() error {
 		}
 	}
 
-	cmd := exec.Command("docker", "wait", mainContainerID)
-	log.Info(cmd.Args)
-	err := cmd.Run()
+	err := common.RunCommand("docker", "wait", mainContainerID)
 	if err != nil {
-		if exErr, ok := err.(*exec.ExitError); ok {
-			log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-		}
-		return errors.InternalWrapError(err)
+		return err
 	}
 	log.Infof("Waiting completed")
 	err = we.killSidecars()
@@ -446,7 +430,9 @@ func (we *WorkflowExecutor) Wait() error {
 	return nil
 }
 
-const killGracePeriod = 20
+// killGracePeriod is the time in seconds after sending SIGTERM before
+// forcefully killing the sidcar with SIGKILL (value matches k8s)
+const killGracePeriod = 30
 
 func (we *WorkflowExecutor) killSidecars() error {
 	log.Infof("Killing sidecars")
@@ -475,14 +461,13 @@ func (we *WorkflowExecutor) killSidecars() error {
 		return nil
 	}
 	killArgs = append(killArgs, "--signal", "TERM")
-	cmd := exec.Command("docker", killArgs...)
-	log.Info(cmd.Args)
-	if err = cmd.Run(); err != nil {
-		return errors.InternalWrapError(err)
+	err = common.RunCommand("docker", killArgs...)
+	if err != nil {
+		return err
 	}
 
 	log.Infof("Waiting (%ds) for sidecars to terminate", killGracePeriod)
-	cmd = exec.Command("docker", waitArgs...)
+	cmd := exec.Command("docker", waitArgs...)
 	log.Info(cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return errors.InternalWrapError(err)

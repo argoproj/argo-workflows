@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -208,4 +209,16 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 		return "", unresolvedErr
 	}
 	return replacedTmpl, nil
+}
+
+func RunCommand(name string, arg ...string) error {
+	cmd := exec.Command(name, arg...)
+	log.Info(cmd.Args)
+	_, err := cmd.Output()
+	if err != nil {
+		exErr := err.(*exec.ExitError)
+		log.Errorf("`%s` failed: %s", strings.Join(cmd.Args, " "), string(exErr.Stderr))
+		return errors.InternalError(string(exErr.Stderr))
+	}
+	return nil
 }
