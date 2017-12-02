@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	wfclient "github.com/argoproj/argo/workflow/client"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"

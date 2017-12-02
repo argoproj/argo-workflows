@@ -1,5 +1,5 @@
 # Example of using a hard-wired artifact location
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: input-artifact-http-

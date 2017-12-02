@@ -2,7 +2,7 @@ package common
 
 import (
 	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1"
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 )
 
 var (

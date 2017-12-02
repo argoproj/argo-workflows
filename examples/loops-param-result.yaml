@@ -1,6 +1,6 @@
 # This workflow demonstrates the use of a generator step which produces a list of items as a result.
 # This list is subsequently used for expanding the next step into multiple parallel steps.
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: loops-param-result-
