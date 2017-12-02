@@ -225,8 +225,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
-	ctr.Command = []string{"sh", "-c"}
-	argoExecCmd := fmt.Sprintf("argoexec artifacts load")
+	ctr.Command = []string{"argoexec"}
+	argoExecCmd := fmt.Sprintf("init")
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
@@ -236,8 +236,8 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
-	ctr.Command = []string{"sh", "-xc"}
-	argoExecCmd := fmt.Sprintf("argoexec sidecar wait && argoexec artifacts save")
+	ctr.Command = []string{"argoexec"}
+	argoExecCmd := fmt.Sprintf("wait")
 	ctr.Args = []string{argoExecCmd}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,

@@ -1,14 +1,12 @@
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: my-existing-volume
-spec:
-  accessModes: [ "ReadWriteOnce" ]
-  resources:
-    requests:
-      storage: 1Gi
-
----
+# This example demonstrates the ability for a workflow to attach 
+# to a pre-created, existing volume for use throughout a workflow.
+# A PVC named 'my-existing-volume' is assumed to exist. Create it
+# using `kubectl create -f examples/testvolume.yaml`.
+# 
+# The first step will append the current timestamp to an access log. 
+# The second step will dump the contents of the access log. Submit
+# this workflow multiple times to see the access log grow after each
+# submission.
 apiVersion: argoproj.io/v1
 kind: Workflow
 metadata:
@@ -24,24 +22,24 @@ spec:
   - name: volumes-existing-example
     steps:
     - - name: generate
-        template: whalesay
+        template: append-to-accesslog
     - - name: print
-        template: print-message
+        template: print-accesslog
 
-  - name: whalesay
+  - name: append-to-accesslog
     container:
-      image: docker/whalesay:latest
+      image: alpine:latest
       command: [sh, -c]
-      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
+      args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
 
-  - name: print-message
+  - name: print-accesslog
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
+      args: ["echo 'Volume access log:'; cat /mnt/vol/accesslog"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/vol
