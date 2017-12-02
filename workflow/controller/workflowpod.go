@@ -20,7 +20,7 @@ import (
 // Reusable k8s pod spec portions used in workflow pods
 var (
 	// volumePodMetadata makes available the pod metadata available as a file
-	// to the executor's init and sidekick containers. Specifically, the template
+	// to the executor's init and sidecar containers. Specifically, the template
 	// of the pod is stored as an annotation
 	volumePodMetadata = apiv1.Volume{
 		Name: common.PodMetadataVolumeName,

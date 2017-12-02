@@ -303,13 +303,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 		f := false
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
-		// TODO: we may need to distinguish between the main container succeeding and ignoring the sidekick
-		// statuses. This is because executor may have had to forcibly kill a sidekick resulting in an
-		// overall pod status as failed, but we really only care about the main container status.
-		newPhase = wfv1.NodeFailed
-		f := false
-		newDaemonStatus = &f
-		message = pod.Status.Message
+		newPhase, newDaemonStatus, message = inferFailedReason(pod)
 	case apiv1.PodRunning:
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
@@ -392,6 +386,78 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 			log.Infof("Skipping completed labeling for daemoned pod: %s", node)
 		}
 	}
+}
+
+// inferFailedReason examines a Failed pod object to determine why it failed and return NodeStatus metadata
+func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
+	f := false
+	if pod.Status.Message != "" {
+		// Pod has a nice error message. Use that.
+		return wfv1.NodeFailed, &f, pod.Status.Message
+	}
+	// We only get one message to set for the overall node status.
+	// If mutiple containers failed, in order of preference: init, main, wait, sidecars
+	for _, ctr := range pod.Status.InitContainerStatuses {
+		if ctr.State.Terminated == nil {
+			// We should never get here
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			continue
+		}
+		if ctr.State.Terminated.ExitCode == 0 {
+			continue
+		}
+		errMsg := fmt.Sprintf("failed to load artifacts")
+		if ctr.State.Terminated.Message != "" {
+			errMsg += ": " + ctr.State.Terminated.Message
+		}
+		// NOTE: we consider artifact load issues as Error instead of Failed
+		return wfv1.NodeError, &f, errMsg
+	}
+	failMessages := make(map[string]string)
+	for _, ctr := range pod.Status.ContainerStatuses {
+		if ctr.State.Terminated == nil {
+			// We should never get here
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			continue
+		}
+		if ctr.State.Terminated.ExitCode == 0 {
+			continue
+		}
+		if ctr.Name == common.WaitContainerName {
+			if ctr.State.Terminated.Message != "" {
+				failMessages[ctr.Name] = fmt.Sprintf("failed to save artifacts: %s", ctr.State.Terminated.Message)
+			} else {
+				failMessages[ctr.Name] = fmt.Sprintf("failed to save artifacts")
+			}
+		} else {
+			if ctr.State.Terminated.Message != "" {
+				failMessages[ctr.Name] = ctr.State.Terminated.Message
+			} else {
+				failMessages[ctr.Name] = fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
+			}
+		}
+	}
+	if failMsg, ok := failMessages[common.MainContainerName]; ok {
+		return wfv1.NodeFailed, &f, failMsg
+	}
+	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
+		return wfv1.NodeError, &f, failMsg
+	}
+
+	// If we get here, both the main and wait container succeeded.
+	// Identify the sidecar which failed and give proper message
+	// NOTE: we may need to distinguish between the main container
+	// succeeding and ignoring the sidecar statuses. This is because
+	// executor may have had to forcefully terminate a sidecar
+	// (kill -9), resulting in an non-zero exit code of a sidecar,
+	// and overall pod status as failed. Or the sidecar is actually
+	// *expected* to fail non-zero and should be ignored. Users may
+	// want the option to consider a step failed only if the main
+	// container failed. For now return the first failure.
+	for _, failMsg := range failMessages {
+		return wfv1.NodeFailed, &f, failMsg
+	}
+	return wfv1.NodeFailed, &f, fmt.Sprintf("pod failed for unknown reason")
 }
 
 // applyUpdates applies any new state information about a pod, to the current status of the workflow node

@@ -74,8 +74,8 @@ const (
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarHostIP contains the host IP which the container is executing on.
-	// Used to communicate with kubelet directly (rather than API server).
-	// Kubelet enables the wait sidekick to determine
+	// Used to communicate with kubelet directly. Kubelet enables the wait sidecar
+	// to query pod state without burdening the k8s apiserver.
 	EnvVarHostIP = "ARGO_HOST_IP"
 	// EnvVarPodIP contains the IP of the pod (currently unused)
 	EnvVarPodIP = "ARGO_POD_IP"

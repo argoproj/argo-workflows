@@ -33,7 +33,7 @@ func init() {
 // RootCmd is the argo root level command
 var RootCmd = &cobra.Command{
 	Use:   CLIName,
-	Short: "argoexec is executor sidekick to workflow containers",
+	Short: "argoexec is the executor sidecar to workflow containers",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.HelpFunc()(cmd, args)
 	},

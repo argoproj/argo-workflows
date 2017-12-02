@@ -199,7 +199,7 @@ func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) erro
 	}
 	if len(step.WithItems) > 0 {
 		switch val := step.WithItems[0].(type) {
-		case string:
+		case string, int32, int64, float32, float64:
 			scope["item"] = true
 		case map[string]interface{}:
 			for itemKey := range val {
