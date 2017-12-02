@@ -5,7 +5,6 @@ import * as fallback from 'express-history-api-fallback';
 import * as models from '../src/app/models';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
-import { async } from '@angular/core/testing';
 
 function reactifyStream(stream, converter = item => item) {
   return new Observable((observer: Observer<any>) => {
