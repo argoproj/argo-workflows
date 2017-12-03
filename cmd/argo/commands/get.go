@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math"
@@ -11,12 +12,22 @@ import (
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	humanize "github.com/dustin/go-humanize"
+	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
 	RootCmd.AddCommand(getCmd)
+	getCmd.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	getCmd.Flags().BoolVar(&globalArgs.noColor, "no-color", false, "Disable colorized output")
 }
+
+type getFlags struct {
+	output string // --output
+}
+
+var getArgs getFlags
 
 var getCmd = &cobra.Command{
 	Use:   "get WORKFLOW",
@@ -35,7 +46,20 @@ func getWorkflow(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	printWorkflow(wf)
+	outFmt := getArgs.output
+	switch outFmt {
+	case "json":
+		outBytes, _ := json.MarshalIndent(wf, "", "    ")
+		fmt.Println(string(outBytes))
+	case "yaml":
+		outBytes, _ := yaml.Marshal(wf)
+		fmt.Print(string(outBytes))
+	case "wide", "":
+		printWorkflow(wf)
+	default:
+		log.Fatalf("Unknown output format: %s", outFmt)
+	}
+
 }
 
 func printWorkflow(wf *wfv1.Workflow) {
@@ -50,14 +74,16 @@ func printWorkflow(wf *wfv1.Workflow) {
 	if !wf.Status.StartedAt.IsZero() {
 		fmt.Printf(fmtStr, "Started:", humanizeTimestamp(wf.Status.StartedAt.Unix()))
 	}
-	var duration time.Duration
 	if !wf.Status.FinishedAt.IsZero() {
 		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(wf.Status.FinishedAt.Unix()))
-		duration = time.Second * time.Duration(wf.Status.FinishedAt.Unix()-wf.Status.StartedAt.Unix())
-	} else {
-		duration = time.Second * time.Duration(time.Now().UTC().Unix()-wf.Status.StartedAt.Unix())
 	}
 	if !wf.Status.StartedAt.IsZero() {
+		var duration time.Duration
+		if !wf.Status.FinishedAt.IsZero() {
+			duration = time.Second * time.Duration(wf.Status.FinishedAt.Unix()-wf.Status.StartedAt.Unix())
+		} else {
+			duration = time.Second * time.Duration(time.Now().UTC().Unix()-wf.Status.StartedAt.Unix())
+		}
 		fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
 	}
 
@@ -67,7 +93,7 @@ func printWorkflow(wf *wfv1.Workflow) {
 			if param.Value == nil {
 				continue
 			}
-			fmt.Printf(fmtStr, "  "+param.Name, *param.Value)
+			fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
 		}
 	}
 
@@ -75,8 +101,13 @@ func printWorkflow(wf *wfv1.Workflow) {
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
 		if ok {
 			fmt.Println()
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintf(w, "STEP\tPODNAME\tMESSAGE\n")
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+			// apply a dummy format to align tabwriter with the
+			if getArgs.output == "wide" {
+				fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			} else {
+				fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			}
 			printNodeTree(w, wf, node, 0, " ", " ")
 			w.Flush()
 		}
@@ -85,10 +116,20 @@ func printWorkflow(wf *wfv1.Workflow) {
 
 func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) {
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.Name)
+	var args []interface{}
 	if len(node.Children) == 0 && node.Phase != wfv1.NodeSkipped {
-		fmt.Fprintf(w, "%s%s\t%s\t%s\n", nodePrefix, nodeName, node.ID, node.Message)
+		args = []interface{}{nodePrefix, nodeName, node.ID, node.Message}
 	} else {
-		fmt.Fprintf(w, "%s%s\t%s\t\n", nodePrefix, nodeName, " ")
+		args = []interface{}{nodePrefix, nodeName, "", ""}
+	}
+	if getArgs.output == "wide" {
+		msg := args[len(args)-1]
+		args[len(args)-1] = humanizeDurationShort(node.StartedAt, node.FinishedAt)
+		args = append(args, getArtifactsString(node))
+		args = append(args, msg)
+		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+	} else {
+		fmt.Fprintf(w, "%s%s\t%s\t%s\n", args...)
 	}
 
 	// If the node has children, the node is a workflow template and
@@ -147,9 +188,27 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 	}
 }
 
+func getArtifactsString(node wfv1.NodeStatus) string {
+	if node.Outputs == nil {
+		return ""
+	}
+	artNames := []string{}
+	for _, art := range node.Outputs.Artifacts {
+		artNames = append(artNames, art.Name)
+	}
+	return strings.Join(artNames, ",")
+}
+
 func humanizeTimestamp(epoch int64) string {
 	ts := time.Unix(epoch, 0)
 	return fmt.Sprintf("%s (%s)", ts.Format("Mon Jan 02 15:04:05 -0700"), humanize.Time(ts))
+}
+
+func humanizeDurationShort(start, finish metav1.Time) string {
+	if finish.IsZero() {
+		finish = metav1.Time{Time: time.Now().UTC()}
+	}
+	return humanize.CustomRelTime(start.Time, finish.Time, "", "", timeMagnitudes)
 }
 
 // humanizeDuration humanizes time.Duration output to a meaningful value,
