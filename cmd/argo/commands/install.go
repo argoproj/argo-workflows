@@ -65,21 +65,6 @@ func getClusterAdmin(clientset *kubernetes.Clientset) (bool, error) {
 }
 
 func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string) error {
-	s, err := clientset.CoreV1().ServiceAccounts(installArgs.namespace).Get(serviceAccountName, metav1.GetOptions{})
-	if err != nil {
-		if apierr.IsNotFound(err) {
-			fmt.Printf("Service account %s doesn't exist\n", serviceAccountName)
-		} else {
-			fmt.Printf("Failed to check if service account %s exists: %v\n", serviceAccountName, err)
-			return err
-		}
-	}
-
-	if err == nil && s != nil {
-		fmt.Printf("ServiceAccount %s already exists...\n", serviceAccountName)
-		return nil
-	}
-
 	serviceAccount := apiv1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -90,8 +75,17 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 			Namespace: installArgs.namespace,
 		},
 	}
-	_, err = clientset.CoreV1().ServiceAccounts(installArgs.namespace).Create(&serviceAccount)
-	return err
+	_, err := clientset.CoreV1().ServiceAccounts(installArgs.namespace).Create(&serviceAccount)
+	if err != nil {
+		if apierr.IsAlreadyExists(err) {
+			fmt.Printf("Service account %s already exists\n", serviceAccountName)
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string) error {
@@ -103,14 +97,13 @@ func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName strin
 		},
 	}
 
-	roleName := "argo-cluster-role"
 	roleBinding := rbacv1beta1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1beta1",
 			Kind:       "ClusterRoleBinding",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: roleName,
+			Name: ArgoClusterRole,
 		},
 		RoleRef: rbacv1beta1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -120,39 +113,33 @@ func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName strin
 		Subjects: subjects,
 	}
 
-	r, err := clientset.RbacV1beta1().ClusterRoleBindings().Get(roleName, metav1.GetOptions{})
+	_, err := clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
 	if err != nil {
-		if apierr.IsNotFound(err) {
-			fmt.Printf("ClusterRoleBinding %s does not exist\n", roleName)
-		} else {
-			fmt.Printf("Failed to check if role %s exists: %v\n", roleName, err)
-			return err
+		if apierr.IsAlreadyExists(err) {
+			fmt.Printf("ClusterRoleBinding %s already exists\n", ArgoClusterRole)
+			return nil
 		}
+		return err
 	}
-	if err == nil && r != nil {
-		fmt.Printf("RoleBinding %s already exists\n", roleName)
-		return nil
-	}
-	_, err = clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
-	return err
+
+	return nil
 }
 
 func setupArgoRoleBinding(clientset *kubernetes.Clientset) error {
-	serviceAccountName := "argo"
-	err := createServiceAccount(clientset, serviceAccountName)
+	err := createServiceAccount(clientset, ArgoServiceAccount)
 	if err != nil {
 		fmt.Printf("Failed to create service account: %v\n", err)
 		return err
 	}
 
-	fmt.Printf("Created service account: %s\n", serviceAccountName)
+	fmt.Printf("Created service account: %s\n", ArgoServiceAccount)
 
-	err = createRoleBinding(clientset, serviceAccountName)
+	err = createRoleBinding(clientset, ArgoServiceAccount)
 	if err != nil {
 		fmt.Printf("Failed to create role binding: %v\n", err)
 		return err
 	}
-	fmt.Printf("Created RoleBinding for %s\n", serviceAccountName)
+	fmt.Printf("Created RoleBinding for %s\n", ArgoServiceAccount)
 
 	return nil
 }
