@@ -41,13 +41,15 @@ const (
 	FgMagenta = 35
 	FgCyan    = 36
 	FgWhite   = 37
+	FgDefault = 39
 )
 
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
+		//Pending:   ansiFormat("◷", FgDefault),
 		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
 		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
-		wfv1.NodeSkipped:   ansiFormat("○", FgWhite),
+		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
 		wfv1.NodeFailed:    ansiFormat("✖", FgRed),
 		wfv1.NodeError:     ansiFormat("⚠", FgRed),
 	}
