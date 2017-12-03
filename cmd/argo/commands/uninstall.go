@@ -76,4 +76,24 @@ func uninstall(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Printf("Workflow CRD '%s' deleted\n", wfv1.CRDFullName)
 	}
+
+	// Delete role binding
+	if err := clientset.RbacV1beta1().ClusterRoleBindings().Delete(ArgoClusterRole, &metav1.DeleteOptions{}); err != nil {
+		if !apierr.IsNotFound(err) {
+			log.Fatalf("Failed to check clusterRoleBinding: %v\n", err)
+		}
+		fmt.Printf("ClusterRoleBinding %s not found\n", ArgoClusterRole)
+	} else {
+		fmt.Printf("Deleted clusterRoleBinding %s\n", ArgoClusterRole)
+	}
+
+	// Delete service account
+	if err := clientset.CoreV1().ServiceAccounts(uninstallArgs.namespace).Delete(ArgoServiceAccount, &metav1.DeleteOptions{}); err != nil {
+		if !apierr.IsNotFound(err) {
+			log.Fatalf("Failed to get service accounts: %v\n", err)
+		}
+		fmt.Printf("ServiceAccount %s not found\n", ArgoClusterRole)
+	} else {
+		fmt.Printf("Deleted serviceAccount %s\n", ArgoServiceAccount)
+	}
 }
