@@ -227,16 +227,28 @@ func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Contro
 		workflowResyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				wf := obj.(*wfv1.Workflow)
-				wfc.wfUpdates <- wf
+				wf, ok := obj.(*wfv1.Workflow)
+				if ok {
+					wfc.wfUpdates <- wf
+				} else {
+					log.Warn("Watch received unusable workflow")
+				}
 			},
 			UpdateFunc: func(old, new interface{}) {
-				newWf := new.(*wfv1.Workflow)
-				wfc.wfUpdates <- newWf
+				wf, ok := new.(*wfv1.Workflow)
+				if ok {
+					wfc.wfUpdates <- wf
+				} else {
+					log.Warn("Watch received unusable workflow")
+				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				wf := obj.(*wfv1.Workflow)
-				wfc.wfUpdates <- wf
+				wf, ok := obj.(*wfv1.Workflow)
+				if ok {
+					wfc.wfUpdates <- wf
+				} else {
+					log.Warn("Watch received unusable workflow")
+				}
 			},
 		})
 	go controller.Run(ctx.Done())
@@ -251,20 +263,21 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 		0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				cm := obj.(*apiv1.ConfigMap)
-				log.Infof("Detected ConfigMap update. Updating the controller config.")
-				err := wfc.updateConfig(cm)
-				if err != nil {
-					log.Errorf("Update of config failed due to: %v", err)
+				if cm, ok := obj.(*apiv1.ConfigMap); ok {
+					log.Infof("Detected ConfigMap update. Updating the controller config.")
+					err := wfc.updateConfig(cm)
+					if err != nil {
+						log.Errorf("Update of config failed due to: %v", err)
+					}
 				}
-
 			},
 			UpdateFunc: func(old, new interface{}) {
-				newCm := new.(*apiv1.ConfigMap)
-				log.Infof("Detected ConfigMap update. Updating the controller config.")
-				err := wfc.updateConfig(newCm)
-				if err != nil {
-					log.Errorf("Update of config failed due to: %v", err)
+				if newCm, ok := new.(*apiv1.ConfigMap); ok {
+					log.Infof("Detected ConfigMap update. Updating the controller config.")
+					err := wfc.updateConfig(newCm)
+					if err != nil {
+						log.Errorf("Update of config failed due to: %v", err)
+					}
 				}
 			},
 		})
@@ -339,16 +352,28 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 		podResyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				pod := obj.(*apiv1.Pod)
-				wfc.podUpdates <- pod
+				pod, ok := obj.(*apiv1.Pod)
+				if ok {
+					wfc.podUpdates <- pod
+				} else {
+					log.Warn("Watch received unusable pod")
+				}
 			},
 			UpdateFunc: func(old, new interface{}) {
-				newPod := new.(*apiv1.Pod)
-				wfc.podUpdates <- newPod
+				pod, ok := new.(*apiv1.Pod)
+				if ok {
+					wfc.podUpdates <- pod
+				} else {
+					log.Warn("Watch received unusable pod")
+				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				pod := obj.(*apiv1.Pod)
-				wfc.podUpdates <- pod
+				pod, ok := obj.(*apiv1.Pod)
+				if ok {
+					wfc.podUpdates <- pod
+				} else {
+					log.Warn("Watch received unusable pod")
+				}
 			},
 		})
 	go controller.Run(ctx.Done())
