@@ -36,7 +36,7 @@ var uninstallCmd = &cobra.Command{
 
 func uninstall(cmd *cobra.Command, args []string) {
 	clientset = initKubeClient()
-
+	fmt.Printf("Uninstalling from namespace '%s'\n", uninstallArgs.namespace)
 	// Delete the deployment
 	deploymentsClient := clientset.AppsV1beta2().Deployments(uninstallArgs.namespace)
 	deletePolicy := metav1.DeletePropagationForeground
@@ -70,11 +70,11 @@ func uninstall(cmd *cobra.Command, args []string) {
 	err = workflowclient.DeleteCustomResourceDefinition(apiextensionsclientset)
 	if err != nil {
 		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to delete workflow CRD '%s': %v", wfv1.CRDFullName, err)
+			log.Fatalf("Failed to delete CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
 		}
-		fmt.Printf("Workflow CRD '%s' not found\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' not found\n", wfv1.CRDFullName)
 	} else {
-		fmt.Printf("Workflow CRD '%s' deleted\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' deleted\n", wfv1.CRDFullName)
 	}
 
 	// Delete role binding
@@ -82,9 +82,9 @@ func uninstall(cmd *cobra.Command, args []string) {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to check clusterRoleBinding: %v\n", err)
 		}
-		fmt.Printf("ClusterRoleBinding %s not found\n", ArgoClusterRole)
+		fmt.Printf("ClusterRoleBinding '%s' not found\n", ArgoClusterRole)
 	} else {
-		fmt.Printf("Deleted clusterRoleBinding %s\n", ArgoClusterRole)
+		fmt.Printf("ClusterRoleBinding '%s' deleted\n", ArgoClusterRole)
 	}
 
 	// Delete service account
@@ -92,8 +92,8 @@ func uninstall(cmd *cobra.Command, args []string) {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to get service accounts: %v\n", err)
 		}
-		fmt.Printf("ServiceAccount %s not found\n", ArgoClusterRole)
+		fmt.Printf("ServiceAccount '%s' in namespace '%s' not found\n", ArgoClusterRole, uninstallArgs.namespace)
 	} else {
-		fmt.Printf("Deleted serviceAccount %s\n", ArgoServiceAccount)
+		fmt.Printf("ServiceAccount '%s' deleted\n", ArgoServiceAccount)
 	}
 }
