@@ -46,10 +46,21 @@
                   DETAILS
                 </button>
               </li>
+              <li *ngIf="actionSettingsByNodeName.get(cell.nodeName)">
+                  <ax-dropdown-menu [settings]="actionSettingsByNodeName.get(cell.nodeName)">
+                      <button axButtonWave class="ax-button ax-button--base-o">
+                          ACTIONS
+                          <i class="fa fa-caret-down"></i>
+                      </button>
+                  </ax-dropdown-menu>
+              </li>
             </ul>
           </div>
         </ng-template>
       </ax-workflow-tree>
+    </ax-tab>
+    <ax-tab tabKey="artifacts" tabTitle="ARTIFACTS">
+      <ax-artifacts [workflowTree]="tree"></ax-artifacts>
     </ax-tab>
   </ax-tabs>
 </div>

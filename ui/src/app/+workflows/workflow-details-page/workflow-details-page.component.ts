@@ -8,6 +8,7 @@ import * as models from '../../models';
 import { NodeInfo, WorkflowTree } from '../../common';
 import { Observable } from 'rxjs/Observable';
 import { race } from 'rxjs/operators';
+import { DropdownMenuSettings } from 'ui-lib/src/components';
 
 @Component({
   selector: 'ax-workflow-details-page',
@@ -22,6 +23,7 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public workflow: models.Workflow;
   public selectedTab = 'summary';
   public stepDetailsPanel: { nodeName: string; tab: string; } = null;
+  public actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
 
   constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute, private router: Router) {}
 
@@ -36,6 +38,19 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     this.subscriptions.push(treeSrc.subscribe(tree => {
       this.workflow = tree.workflow;
       this.tree = tree;
+      this.actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
+      for (const artifact of this.tree.getArtifacts()) {
+        let settings = this.actionSettingsByNodeName.get(artifact.nodeName);
+        if (!settings) {
+          settings = new DropdownMenuSettings([]);
+          this.actionSettingsByNodeName.set(artifact.nodeName, settings);
+        }
+        settings.menu.push({
+          title: `Download artifact '${artifact.name}'`,
+          action: () => window.open(artifact.downloadUrl),
+          iconName: '',
+        });
+      }
     }));
 
     this.subscriptions.push(this.route.params.map(params => params['tab']).distinctUntilChanged().subscribe(tab => {

@@ -8,6 +8,12 @@ export interface NodeInfo {
   children: NodeInfo[][];
 }
 
+export interface ArtifactInfo extends models.Artifact {
+  stepName: string;
+  nodeName: string;
+  downloadUrl: string;
+}
+
 export class WorkflowTree {
   private templateByNames = new Map<string, models.Template>();
   private rootNode: NodeInfo;
@@ -18,14 +24,14 @@ export class WorkflowTree {
   }
 
   private createRoot(): NodeInfo {
-    return this.getNodeInfo(this.workflow.status.nodes[this.workflow.metadata.name], this.workflow.metadata.name);
+    return this.getNodeInfo(this.workflow.status.nodes[this.workflow.metadata.name], this.workflow.metadata.name, true);
   }
 
-  private getNodeInfo(nodeStatus: models.NodeStatus, nodeName: string): NodeInfo {
+  private getNodeInfo(nodeStatus: models.NodeStatus, nodeName: string, root = false): NodeInfo {
     const name = nodeStatus.name;
     const step = this.getStepByName(name);
     const meta = { template: this.templateByNames.get(step.template), stepName: step.name };
-    return {
+    const info = {
       nodeName,
       template: meta.template,
       stepName: meta.stepName,
@@ -37,6 +43,10 @@ export class WorkflowTree {
         })).map(item => this.getNodeInfo(item.status, item.nodeName));
       })
     };
+    if (info.children.length === 0 && root) {
+      info.children.push([Object.assign({}, info, {children: []})]);
+    }
+    return info;
   }
 
   public getStepByName(name: string): models.WorkflowStep {
@@ -62,5 +72,20 @@ export class WorkflowTree {
 
   public get root(): NodeInfo {
     return this.rootNode;
+  }
+
+  public getArtifacts(): ArtifactInfo[] {
+    return Object.keys(this.workflow.status.nodes)
+    .map(nodeName => {
+      const node = this.workflow.status.nodes[nodeName];
+      const items = (node.outputs || { artifacts: [] }).artifacts || <models.Artifact[]>[];
+      return items.map(item => Object.assign({}, item, {
+        downloadUrl: `/api/workflows/${this.workflow.metadata.name}/artifacts/${node.name}/${item.name}`,
+        stepName: node.name,
+        dateCreated: node.finishedAt,
+        nodeName
+      }));
+    })
+    .reduce((first, second) => first.concat(second), []) || [];
   }
 }

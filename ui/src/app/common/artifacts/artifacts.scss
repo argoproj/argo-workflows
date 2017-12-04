@@ -1,0 +1,68 @@
+@import '../../../assets/styles/config';
+
+.artifacts {
+    &__download-icon {
+        margin-right: 6px;
+
+        &--disabled {
+            color: $ax-color-gray-4;
+        }
+    }
+
+    &__table {
+        tbody {
+            border-radius: $border-radius;
+
+            tr:first-child td {
+                border-radius: $border-radius $border-radius 0 0;
+            }
+
+            tr:last-child {
+                td:first-child {
+                    border-bottom-left-radius: $border-radius;
+                }
+
+                td:last-child {
+                    border-bottom-right-radius: $border-radius;
+                }
+            }
+        }
+
+        tfoot tr {
+                background-color: #fff;
+                td {
+                    border-radius: $border-radius;
+                }
+
+        }
+    }
+
+    &__group-name-row {
+        border-bottom: none !important;
+        color: #778e94;
+
+        .launch-btn {
+            float: right;
+            margin: 10px 10px 0 0;
+            font-weight: 500;
+            text-transform: uppercase;
+
+            i {
+                position: relative;
+                top: -1px;
+                font-size: 1.6em;
+            }
+        }
+
+        td {
+            padding-top: 20px;
+            padding-bottom: 20px;
+            background-color: $ax-color-gray-2;
+        }
+
+        strong {
+            font-size: 1.1em;
+            color: $ax-color-gray-7;
+        }
+    }
+}
