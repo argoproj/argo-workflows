@@ -37,6 +37,11 @@
           <div class="workflow-details__node-overlay">
             <ul>
               <li>
+                <button axButtonWave class="ax-button ax-button--base-o" (click)="showYaml(cell)">
+                  YAML
+                </button>
+              </li>
+              <li>
                 <button axButtonWave class="ax-button ax-button--base-o" (click)="showStepDetails(cell.nodeName, 'logs')">
                   LOGS
                 </button>
@@ -73,5 +78,15 @@
         [workflowTree]="tree"
         (onTabSelected)="showStepDetails(stepDetailsPanel.nodeName, $event)">
     </ax-workflow-step-details-box>
+  </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel class="template-viewer__yaml" [show]="isYamlVisible" (closePanel)="closeYaml()" [hasNoPadding]="true" [offCanvas]="true">
+  <sliding-panel-header>
+    <div class="template-viewer__yaml-header"></div>
+    <i class="ax-icon-workflow"></i> <strong>{{ selectedStep }}</strong>
+  </sliding-panel-header>
+  <sliding-panel-body>
+    <ax-yaml-viewer [input]="{tree: tree, selectedStep: selectedYamlStep}"></ax-yaml-viewer>
   </sliding-panel-body>
 </ax-sliding-panel>

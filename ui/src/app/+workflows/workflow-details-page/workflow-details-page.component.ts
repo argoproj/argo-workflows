@@ -24,6 +24,8 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public selectedTab = 'summary';
   public stepDetailsPanel: { nodeName: string; tab: string; } = null;
   public actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
+  public selectedYamlStep: string;
+  public isYamlVisible: boolean;
 
   constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute, private router: Router) {}
 
@@ -67,6 +69,15 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
         }
       }));
 
+    this.subscriptions.push(this.route.params.map(params => params['yaml'] || '').distinctUntilChanged().subscribe(yaml => {
+      if (yaml) {
+        this.selectedYamlStep = yaml;
+        this.isYamlVisible = true;
+      } else {
+        this.selectedYamlStep = null;
+        this.isYamlVisible = false;
+      }
+    }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
       if (this.workflow) {
         Object.keys(this.workflow.status.nodes)
@@ -102,6 +113,10 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     return [
         'workflow-details__node-progress', `workflow-details__node-progress--${percentage.toFixed()}-${status}`
     ].join(' ');
+  }
+
+  public showYaml(node: NodeInfo) {
+    this.router.navigate(['.', { tab: this.selectedTab, yaml: node.stepName }], { relativeTo: this.route });
   }
 
   public showStepDetails(stepName: string, detailsTab: string = 'logs') {

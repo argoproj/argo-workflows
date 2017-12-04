@@ -6,7 +6,7 @@ import { NodeInfo, WorkflowTree } from './workflow-tree.view-models';
 @Component({
   selector: 'ax-workflow-tree',
   templateUrl: './workflow-tree.html',
-  styles: [require('./workflow-tree.scss')],
+  styleUrls: ['./workflow-tree.scss'],
 })
 export class WorkflowTreeComponent {
   @Input()
