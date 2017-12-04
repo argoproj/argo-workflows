@@ -652,15 +652,88 @@ spec:
         mountPath: /mnt/vol
 ```
 
-## Daemons (aka. Fixtures)
+## Daemon Containers
+Argo workflows can start containers that run in the background (aka. daemon contaienrs) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
 ```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: daemon-step-
+spec:
+  entrypoint: daemon-example
+  templates:
+  - name: daemon-example
+    steps:
+    - - name: influx
+        template: influxdb              #start an influxdb as a daemon (see the influxdb template spec below)
+
+    - - name: init-database             #initialize influxdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl -XPOST 'http://{{steps.influx.ip}}:8086/query' --data-urlencode "q=CREATE DATABASE mydb"
+
+    - - name: producer-1                #add entries to influxdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d "cpu,host=server01,region=uswest load=$i" ; sleep .5 ; done
+      - name: producer-2                #add entries to influxdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d "cpu,host=server02,region=uswest load=$((RANDOM % 100))" ; sleep .5 ; done
+      - name: producer-3                #add entries to influxdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d 'cpu,host=server03,region=useast load=15.4'
+
+    - - name: consumer                  #consume intries from influxdb
+        template: influxdb-client
+        arguments:
+          parameters:
+          - name: cmd
+            value: curl --silent -G http://{{steps.influx.ip}}:8086/query?pretty=true --data-urlencode "db=mydb" --data-urlencode "q=SELECT * FROM cpu"
+
+  - name: influxdb
+    daemon: true                        #start influxdb as a daemon      
+    container:
+      image: influxdb:1.2
+      restartPolicy: Always             #restart container if it fails
+      readinessProbe:                   #wait for readinessProbe to succeed
+        httpGet:
+          path: /ping
+          port: 8086
 ```
 
 ## Sidecars
 A sidecar is another container that executes concurrently in the same pod as the "main" container and is useful
 in creating multi-container pods.
 ```
+apiVersion: argoproj.io/v1
+kind: Workflow
+metadata:
+  generateName: sidecar-nginx-
+spec:
+  entrypoint: sidecar-nginx-example
+  templates:
+  - name: sidecar-nginx-example
+    container:
+      image: appropriate/curl
+      command: [sh, -c]
+      # Try to read from nginx web server until it comes up
+      args: ["until `curl -G 'http://127.0.0.1/' >& /tmp/out`; do echo sleep && sleep 1; done && cat /tmp/out"]
+    # Create a simple nginx web server
+    sidecars:
+    - name: nginx
+      image: nginx:1.13
 ```
+In the above example, we create a sidecar container that runs nginx as a simple web server. The order in which containers may come up is random. This is why the 'main' container polls the nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems. Always wait for any services you need to come up before running your main code.
 
 ## Hardwired Artifacts
 With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common and provide a more convenient way to generate and use these artifacts. In particular, we have "hardwired" support for git, http and s3 artifacts.
@@ -706,6 +779,39 @@ spec:
       args: ["ls -l /src /bin/kubectl /s3"]
 ```
 
-## Docker-in-Docker (aka. DinD)
+## Docker-in-Docker (aka. DinD) Using Sidecars
+An application of sidecars is to implement DinD (Docker-in-Docker).
+DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sidecar-dind-
+spec:
+  entrypoint: dind-sidecar-example
+  templates:
+  - name: dind-sidecar-example
+    container:
+      image: docker:17.10
+      command: [sh, -c]
+      args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
+      env:
+      - name: DOCKER_HOST               #the docker daemon can be access on the standard port on localhost
+        value: 127.0.0.1
+    sidecars:
+    - name: dind
+      image: docker:17.10-dind          #Docker already provides an image for running a Docker daemon
+      securityContext:
+        privileged: true                #the Docker daemon can only run in a privileged container
+      # mirrorVolumeMounts will mount the same volumes specified in the main container
+      # to the sidecar (including artifacts), at the same mountPaths. This enables
+      # dind daemon to (partially) see the same filesystem as the main container in
+      # order to use features such as docker volume binding.
+      mirrorVolumeMounts: true
+```
 
 ## Continuous integration example
+Continuous integration is a popular appication for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
+
+A good example of a CI workflow spec is provided at https://github.com/argoproj/argo/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.
+
