@@ -29,7 +29,7 @@ export class WorkflowStepsComponent {
         isSucceeded = phase === NODE_PHASE.SUCCEEDED;
         isFailed = !isSucceeded;
       }
-      this.steps = entryPointTemplate.steps.map(group => group[0]).map(step => ({ name: step.name, isSucceeded, isFailed, isRunning }));
+      this.steps = entryPointTemplate.steps ? entryPointTemplate.steps.map(group => group[0]).map(step => ({ name: step.name, isSucceeded, isFailed, isRunning })) : [];
     } else {
       this.steps = [];
     }

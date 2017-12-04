@@ -17,7 +17,16 @@
                     <ax-workflow-steps [workflow]="workflow"></ax-workflow-steps>
                 </div>
             </div>
+            <div class="columns medium-5">
+                <div class="ax-workflow-stream__content-details">
+                    <div class="ax-workflow-stream__content-details-row">
+                        <span>{{ workflow.metadata.name }}</span>
+                    </div>
+                    <div class="ax-workflow-stream__content-details-row">
+                        <span>{{  workflow.metadata.creationTimestamp | timestamp }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div> 
 </div>
-
