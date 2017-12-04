@@ -34,7 +34,7 @@ export interface HTTPArtifact {
 }
 
 export interface ArtifactLocation {
-    S3: S3Artifact;
+    s3: S3Artifact;
     git: GitArtifact;
     http: HTTPArtifact;
 }

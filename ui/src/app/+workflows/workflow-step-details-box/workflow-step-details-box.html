@@ -7,4 +7,9 @@
       <ax-logs [source]="getLogsSource()" *ngIf="tab==='logs'" [tailLogs]="true"></ax-logs>
     </div>
   </ax-tab>
+  <ax-tab tabKey="artifacts" tabTitle="ARTIFACTS">
+      <div>
+        <ax-artifacts [workflowTree]="workflowTree" [nodeName]="nodeName" isFullWidthContent="true"></ax-artifacts>
+      </div>
+    </ax-tab>
 </ax-tabs>
