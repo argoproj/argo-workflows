@@ -6,6 +6,7 @@ import { WorkflowList, Workflow } from '../models';
 import { Observable } from 'rxjs/Observable';
 import { timeInterval } from 'rxjs/operators';
 import { Observer } from 'rxjs/Observer';
+import { HttpHeaders } from '@angular/common/http';
 
 type Callback = (data: any) => void;
 
@@ -52,14 +53,17 @@ export class WorkflowsService {
       return this.http.get(`api/workflows`).map(item => <WorkflowList>item).toPromise();
   }
 
-  public async getWorkflow(name: string): Promise<models.Workflow> {
-    return this.http.get(`api/workflows/${name}`).map(item => <Workflow>item).toPromise();
+  public async getWorkflow(name: string, noLoader = false): Promise<models.Workflow> {
+    return this.http.get(
+      `api/workflows/${name}`, { headers: new HttpHeaders({ noLoader: String(noLoader) }) }).map(item => <Workflow>item).toPromise();
   }
 
   public getWorkflowStream(name: string): Observable<models.Workflow> {
-    return Observable.interval(1000).flatMap(() => Observable.fromPromise(this.getWorkflow(name))).distinct(workflow => {
-      return Object.keys(workflow.status.nodes || []).map(nodeName => `${nodeName}:${workflow.status.nodes[nodeName].phase}`).join(';');
-    });
+    return Observable.merge(
+      Observable.fromPromise(this.getWorkflow(name, false)),
+      Observable.interval(1000).flatMap(() => Observable.fromPromise(this.getWorkflow(name, true))).distinct(workflow => {
+        return Object.keys(workflow.status.nodes || []).map(nodeName => `${nodeName}:${workflow.status.nodes[nodeName].phase}`).join(';');
+      }));
   }
 
   public getStepLogs(name: string): Observable<string> {

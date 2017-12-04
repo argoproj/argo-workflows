@@ -1,7 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { WorkflowsService } from './workflows.service';
+import { LoaderService } from './loader.service';
+import { Interceptor } from './interceptor';
 
 @NgModule({
   imports: [
@@ -9,6 +11,10 @@ import { WorkflowsService } from './workflows.service';
     HttpClientModule,
   ],
   declarations: [],
-  providers: [WorkflowsService]
+  providers: [
+    LoaderService,
+    WorkflowsService,
+    {provide: HTTP_INTERCEPTORS, useClass: Interceptor, multi: true}
+  ]
 })
 export class ServicesModule { }
