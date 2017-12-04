@@ -44,7 +44,7 @@ export class WorkflowTree {
       })
     };
     if (info.children.length === 0 && root) {
-      info.children.push([Object.assign({}, info, {children: []})]);
+      info.children.push([Object.assign({}, info, {children: [], stepName: '_'})]);
     }
     return info;
   }
