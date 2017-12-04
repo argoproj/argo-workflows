@@ -62,7 +62,7 @@ This message shows that your installation appears to be working correctly.
 
 Below, we run the same container on a Kubernetes cluster using an Argo workflow template.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow                  #new type of k8s spec
 metadata:
   generateName: hello-world-    #name of workflow spec
@@ -86,7 +86,7 @@ The `whalesay` template is denoted as the `entrypoint` for the spec. The entrypo
 
 Let's look at a slightly more complex workflow spec with parameters.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-parameters-
@@ -117,7 +117,7 @@ This time, the `whalesay` template takes an input parameter named `message` whic
 
 In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: steps-
@@ -177,7 +177,7 @@ When running workflows, it is very common to have steps that generate or consume
 
 The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template which will be consumed by the second step named `print-message` that consumes the generated artifact. 
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-passing-
@@ -250,7 +250,7 @@ Argo supports the same secrets syntax and mechanism from Kubernetes Pod specs.
 ## Scripts & Results
 Often times, we just want a template that executes a script specified as a here-script (aka. here document) in the workflow spec.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: scripts-bash-
@@ -309,7 +309,7 @@ The use of the `script` feature also assigns the standard output of running the 
 
 When writing workflows, it is often very useful to be able to iterate over a set of inputs.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow 
 metadata:
   generateName: loops-
@@ -340,7 +340,7 @@ spec:
 
 We can also iterate over a sets of items.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow 
 metadata:
   generateName: loops-maps-
@@ -376,7 +376,7 @@ spec:
 
 We can pass lists of items as parameters.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: loops-param-arg-
@@ -423,7 +423,7 @@ spec:
 
 We can even dynamically generate the list of items to interate over!
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: loops-param-result-
@@ -466,7 +466,7 @@ spec:
 ## Conditionals
 We also support conditional execution.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: coinflip-
@@ -512,7 +512,7 @@ spec:
 ## Recursion
 Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: coinflip-recursive-
@@ -551,7 +551,7 @@ spec:
 ## Volumes
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: volumes-pvc-
@@ -612,7 +612,7 @@ spec:
       storage: 1Gi
     
 ---   
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata: 
   generateName: volumes-existing-
@@ -715,7 +715,7 @@ spec:
 A sidecar is another container that executes concurrently in the same pod as the "main" container and is useful
 in creating multi-container pods.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: sidecar-nginx-
@@ -738,7 +738,7 @@ In the above example, we create a sidecar container that runs nginx as a simple 
 ## Hardwired Artifacts
 With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common and provide a more convenient way to generate and use these artifacts. In particular, we have "hardwired" support for git, http and s3 artifacts.
 ```
-apiVersion: argoproj.io/v1
+apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hardwired-artifact-
