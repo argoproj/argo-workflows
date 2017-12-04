@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { LoaderService } from '../services/loader.service';
 
 @Component({
   selector: 'ax-layout',
@@ -6,4 +7,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./layout.scss'],
 })
 export class LayoutComponent {
+  constructor(public loaderService: LoaderService) {}
 }

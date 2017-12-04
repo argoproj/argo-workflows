@@ -20,7 +20,8 @@
       "prefix": "ax",
       "styles": [
         "styles.scss",
-        "../node_modules/font-awesome/css/font-awesome.css"
+        "../node_modules/font-awesome/css/font-awesome.css",
+        "../node_modules/loaders.css/loaders.min.css"
       ],
       "scripts": [],
       "environmentSource": "environments/environment.ts",

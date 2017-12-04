@@ -8,6 +8,7 @@ import { NavigationComponent } from './navigation/navigation.component';
 import { TopBarComponent } from './top-bar/top-bar.component';
 import { ToolbarComponent } from './toolbar/toolbar.component';
 import { AppRoutingModule } from '../app-routing.module';
+import { ServicesModule } from '../services';
 
 @NgModule({
   declarations: [
@@ -22,6 +23,7 @@ import { AppRoutingModule } from '../app-routing.module';
     FormsModule,
     ReactiveFormsModule,
     AppRoutingModule,
+    ServicesModule
   ],
   exports: [
     LayoutComponent

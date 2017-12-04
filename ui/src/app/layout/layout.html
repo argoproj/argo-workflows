@@ -5,4 +5,14 @@
     <ax-toolbar></ax-toolbar>
     <router-outlet></router-outlet>
   </div>
+
+  <div class="layout__loader" *ngIf="loaderService.isLoaderVisible">
+    <div class="loader-inner ball-pulse">
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
 </div>
