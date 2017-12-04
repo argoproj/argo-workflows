@@ -50,21 +50,36 @@ var installCmd = &cobra.Command{
 	Run:   install,
 }
 
-func getClusterAdmin(clientset *kubernetes.Clientset) (bool, error) {
+func install(cmd *cobra.Command, args []string) {
+	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
+	clientset = initKubeClient()
+	kubernetesVersionCheck(clientset)
+	installCRD(clientset)
+	if installArgs.serviceAccount == "" {
+		if clusterAdminExists(clientset) {
+			seviceAccountName := ArgoServiceAccount
+			createServiceAccount(clientset, seviceAccountName)
+			createClusterRoleBinding(clientset, seviceAccountName)
+			installArgs.serviceAccount = seviceAccountName
+		}
+	}
+	installConfigMap(clientset)
+	installController(clientset)
+}
+
+func clusterAdminExists(clientset *kubernetes.Clientset) bool {
 	clusterRoles := clientset.RbacV1beta1().ClusterRoles()
 	_, err := clusterRoles.Get(clusterAdmin, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			fmt.Printf("cluster-admin role not found\n")
-			return false, nil
+			return false
 		}
-		return false, fmt.Errorf("Failed to get cluster-admin role")
+		log.Fatalf("Failed to lookup 'cluster-admin' role: %v", err)
 	}
-
-	return true, nil
+	return true
 }
 
-func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string) error {
+func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string) {
 	serviceAccount := apiv1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -77,26 +92,16 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 	}
 	_, err := clientset.CoreV1().ServiceAccounts(installArgs.namespace).Create(&serviceAccount)
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			fmt.Printf("Service account %s already exists\n", serviceAccountName)
-			return nil
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatalf("Failed to create service account '%s': %v\n", serviceAccountName, err)
 		}
-
-		return err
+		fmt.Printf("ServiceAccount '%s' already exists\n", serviceAccountName)
+		return
 	}
-
-	return nil
+	fmt.Printf("ServiceAccount '%s' created\n", serviceAccountName)
 }
 
-func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string) error {
-	subjects := []rbacv1beta1.Subject{
-		{
-			Kind:      rbacv1beta1.ServiceAccountKind,
-			Name:      serviceAccountName,
-			Namespace: installArgs.namespace,
-		},
-	}
-
+func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string) {
 	roleBinding := rbacv1beta1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -110,39 +115,26 @@ func createRoleBinding(clientset *kubernetes.Clientset, serviceAccountName strin
 			Kind:     "ClusterRole",
 			Name:     clusterAdmin,
 		},
-		Subjects: subjects,
+		Subjects: []rbacv1beta1.Subject{
+			{
+				Kind:      rbacv1beta1.ServiceAccountKind,
+				Name:      serviceAccountName,
+				Namespace: installArgs.namespace,
+			},
+		},
 	}
 
 	_, err := clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
 	if err != nil {
-		if apierr.IsAlreadyExists(err) {
-			fmt.Printf("ClusterRoleBinding %s already exists\n", ArgoClusterRole)
-			return nil
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatalf("Failed to create ClusterRoleBinding %s: %v\n", ArgoClusterRole, err)
 		}
-		return err
+		fmt.Printf("ClusterRoleBinding '%s' already exists\n", ArgoClusterRole)
+		return
 	}
-
-	return nil
+	fmt.Printf("ClusterRoleBinding '%s' created, bound '%s' to '%s'\n", ArgoClusterRole, serviceAccountName, clusterAdmin)
 }
 
-func setupArgoRoleBinding(clientset *kubernetes.Clientset) error {
-	err := createServiceAccount(clientset, ArgoServiceAccount)
-	if err != nil {
-		fmt.Printf("Failed to create service account: %v\n", err)
-		return err
-	}
-
-	fmt.Printf("Created service account: %s\n", ArgoServiceAccount)
-
-	err = createRoleBinding(clientset, ArgoServiceAccount)
-	if err != nil {
-		fmt.Printf("Failed to create role binding: %v\n", err)
-		return err
-	}
-	fmt.Printf("Created RoleBinding for %s\n", ArgoServiceAccount)
-
-	return nil
-}
 func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
 	// Check if the Kubernetes version is >= 1.8
 	versionInfo, err := clientset.ServerVersion()
@@ -167,32 +159,7 @@ func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
 	fmt.Printf("Proceeding with Kubernetes version %v\n", serverVersion)
 }
 
-func install(cmd *cobra.Command, args []string) {
-	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
-
-	clientset = initKubeClient()
-
-	kubernetesVersionCheck(clientset)
-
-	clusterAdminFound, err := getClusterAdmin(clientset)
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		return
-	}
-
-	if clusterAdminFound {
-		setupArgoRoleBinding(clientset)
-	} else {
-		fmt.Printf("Using default service-account\n")
-	}
-
-	installCRD()
-	installConfigMap()
-	installController()
-}
-
-func installConfigMap() {
-	clientset = initKubeClient()
+func installConfigMap(clientset *kubernetes.Clientset) {
 	cmClient := clientset.CoreV1().ConfigMaps(installArgs.namespace)
 	var wfConfig controller.WorkflowControllerConfig
 
@@ -218,7 +185,7 @@ func installConfigMap() {
 		}
 		fmt.Printf("ConfigMap '%s' created\n", installArgs.configMap)
 	} else {
-		fmt.Printf("ConfigMap '%s' already exists. Skip creation\n", installArgs.configMap)
+		fmt.Printf("ConfigMap '%s' already exists\n", installArgs.configMap)
 	}
 	configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
@@ -230,8 +197,13 @@ func installConfigMap() {
 	}
 }
 
-func installController() {
-	clientset = initKubeClient()
+func installController(clientset *kubernetes.Clientset) {
+	if installArgs.serviceAccount == "" {
+		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.name)
+	} else {
+		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.name)
+	}
+
 	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
 	controllerDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -293,21 +265,20 @@ func installController() {
 	}
 }
 
-func installCRD() {
-	clientset = initKubeClient()
+func installCRD(clientset *kubernetes.Clientset) {
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
-		log.Fatalf("Failed to create Workflow CRD: %v", err)
+		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
 	result, err := workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
-			log.Fatalf("Failed to create Workflow CRD: %v", err)
+			log.Fatalf("Failed to create CustomResourceDefinition: %v", err)
 		}
-		fmt.Printf("Workflow CRD '%s' already exists\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' already exists\n", wfv1.CRDFullName)
 	} else {
-		fmt.Printf("Workflow CRD '%s' created\n", result.GetObjectMeta().GetName())
+		fmt.Printf("CustomResourceDefinition '%s' created\n", result.GetObjectMeta().GetName())
 	}
 }
