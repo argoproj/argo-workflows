@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	goruntime "runtime"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
@@ -12,6 +13,7 @@ import (
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
+	gocache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +39,17 @@ type WorkflowController struct {
 	clientset  *kubernetes.Clientset
 	wfUpdates  chan *wfv1.Workflow
 	podUpdates chan *apiv1.Pod
+
+	// completedPodCache an in-memory cache of completed pods names.
+	// This is used to remember the fact that we marked a pod as completed.
+	// any future pod events from the watch can be ignored. This enables
+	// pod watch handler to quickly skip evaluation of duplicated pod entries
+	// in the pod channel.
+	// Ideally this would have been prevented using completed=true label
+	// which we apply on a pod, but somehow it is possible for the informer
+	// to enqueue pods which are missing the label (depite having added it),
+	// thus, we record these pods temporarily in a TTL cache.
+	completedPodCache *gocache.Cache
 }
 
 type WorkflowControllerConfig struct {
@@ -72,19 +85,21 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 	}
 
 	wfc := WorkflowController{
-		restClient: restClient,
-		restConfig: config,
-		clientset:  clientset,
-		scheme:     scheme,
-		ConfigMap:  configMap,
-		wfUpdates:  make(chan *wfv1.Workflow, 1024),
-		podUpdates: make(chan *apiv1.Pod, 1024),
+		restClient:        restClient,
+		restConfig:        config,
+		clientset:         clientset,
+		scheme:            scheme,
+		ConfigMap:         configMap,
+		wfUpdates:         make(chan *wfv1.Workflow, 10240),
+		podUpdates:        make(chan *apiv1.Pod, 102400),
+		completedPodCache: gocache.New(1*time.Hour, 10*time.Minute),
 	}
 	return &wfc
 }
 
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context) error {
+	wfc.StartStatsTicker(5 * time.Minute)
 
 	log.Info("Watch Workflow controller config map updates")
 	_, err := wfc.watchControllerConfigMap(ctx)
@@ -109,10 +124,15 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 		return err
 	}
 
+	i := 0
 	for {
+		if i%100 == 0 {
+			// periodically print the channel sizes
+			i += 1
+			log.Infof("wfChan=%d/%d podChan=%d/%d", len(wfc.wfUpdates), cap(wfc.wfUpdates), len(wfc.podUpdates), cap(wfc.podUpdates))
+		}
 		select {
 		case wf := <-wfc.wfUpdates:
-			log.Infof("Processing wf: %v", wf.ObjectMeta.SelfLink)
 			wfc.operateWorkflow(wf)
 		case pod := <-wfc.podUpdates:
 			wfc.handlePodUpdate(pod)
@@ -309,6 +329,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 			Namespace(namespace).
 			Resource(resource).
 			Param("labelSelector", fmt.Sprintf("%s=false", common.LabelKeyCompleted)).
+			Param("fieldSelector", "status.phase!=Pending").
 			VersionedParams(&options, metav1.ParameterCodec)
 		req = wfc.addLabelSelectors(req)
 		return req.Do().Get()
@@ -320,6 +341,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 			Namespace(namespace).
 			Resource(resource).
 			Param("labelSelector", fmt.Sprintf("%s=false", common.LabelKeyCompleted)).
+			Param("fieldSelector", "status.phase!=Pending").
 			VersionedParams(&options, metav1.ParameterCodec)
 		req = wfc.addLabelSelectors(req)
 		return req.Watch()
@@ -368,9 +390,16 @@ func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Con
 // handlePodUpdate receives an update from a pod, and updates the status of the node in the workflow object accordingly
 // It is also responsible for unsetting the deamoned flag from a node status when it notices that a daemoned pod terminated.
 func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
+	if _, ok := wfc.completedPodCache.Get(pod.ObjectMeta.Name); ok {
+		return
+	}
+	if pod.Labels[common.LabelKeyCompleted] == "true" {
+		return
+	}
 	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
 	if !ok {
 		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
+		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return
 	}
 	var newPhase wfv1.NodePhase
@@ -378,6 +407,8 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	var message string
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
+		// Should not get here unless the watch is setup incorrectly
+		log.Warnf("watch returned a Pending pod: %s", pod.ObjectMeta.Name)
 		return
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
@@ -430,7 +461,7 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 	}
 	updateNeeded := applyUpdates(pod, &node, newPhase, newDaemonStatus, message)
 	if !updateNeeded {
-		log.Infof("No workflow updated needed for node %s", node)
+		log.Infof("No workflow updated needed for node %s (pod phase: %s)", node, pod.Status.Phase)
 	} else {
 		wf.Status.Nodes[pod.Name] = node
 		_, err = wfClient.UpdateWorkflow(wf)
@@ -454,9 +485,10 @@ func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
 				log.Errorf("Failed to label completed pod %s: %+v", node, err)
 				return
 			}
+			wfc.completedPodCache.SetDefault(pod.ObjectMeta.Name, true)
 			log.Infof("Set completed=true label to pod: %s", node)
 		} else {
-			log.Infof("Skipping completed labeling for daemoned pod: %s", node)
+			log.Infof("Skipping completed=true labeling for daemoned pod: %s", node)
 		}
 	}
 }
@@ -556,11 +588,6 @@ func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newPhase wfv1.NodePhase
 			node.Phase = newPhase
 		}
 	}
-	if pod.Status.PodIP != node.PodIP {
-		log.Infof("Updating node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
-		updateNeeded = true
-		node.PodIP = pod.Status.PodIP
-	}
 	if newDaemonStatus != nil {
 		if *newDaemonStatus == false {
 			// if the daemon status switched to false, we prefer to just unset daemoned status field
@@ -571,6 +598,11 @@ func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newPhase wfv1.NodePhase
 			log.Infof("Setting node %v daemoned: %v -> %v", node, node.Daemoned, newDaemonStatus)
 			node.Daemoned = newDaemonStatus
 			updateNeeded = true
+			if pod.Status.PodIP != node.PodIP {
+				// only update Pod IP for daemoned nodes to reduce number of updates
+				log.Infof("Updating daemon node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
+				node.PodIP = pod.Status.PodIP
+			}
 		}
 	}
 	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
@@ -591,11 +623,41 @@ func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newPhase wfv1.NodePhase
 		node.Message = message
 	}
 	if node.Completed() && node.FinishedAt.IsZero() {
-		// TODO: rather than using time.Now(), we should use the latest container finishedAt
-		// timestamp to get a more accurate finished timestamp, in the event the controller is
-		// down or backlogged. But this would not work for daemoned containers.
-		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		if !node.IsDaemoned() {
+			// Use the latest container finishedAt timestamp, since the controller
+			// can get backlogged or become down.
+			for _, ctr := range pod.Status.InitContainerStatuses {
+				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
+					node.FinishedAt = ctr.State.Terminated.FinishedAt
+				}
+			}
+			for _, ctr := range pod.Status.ContainerStatuses {
+				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
+					node.FinishedAt = ctr.State.Terminated.FinishedAt
+				}
+			}
+		}
+		if node.FinishedAt.IsZero() {
+			// If we get here, the container is daemoned so the
+			// finishedAt might not have been set.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		}
 		updateNeeded = true
 	}
 	return updateNeeded
+}
+
+// StartStatsTicker starts a goroutine which dumps stats at a specified interval
+func (wfc *WorkflowController) StartStatsTicker(d time.Duration) {
+	ticker := time.NewTicker(d)
+	go func() {
+		for {
+			<-ticker.C
+			var m goruntime.MemStats
+			goruntime.ReadMemStats(&m)
+			log.Infof("Alloc=%v TotalAlloc=%v Sys=%v NumGC=%v Goroutines=%d wfChan=%d/%d podChan=%d/%d",
+				m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, goruntime.NumGoroutine(),
+				len(wfc.wfUpdates), cap(wfc.wfUpdates), len(wfc.podUpdates), cap(wfc.podUpdates))
+		}
+	}()
 }

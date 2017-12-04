@@ -188,6 +188,12 @@
   version = "3.0.3"
 
 [[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/petar/GoLLRB"
   packages = ["llrb"]
@@ -328,6 +334,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "09827c257bc95a09aa945e8a07525501c7e1a4bb44083e2ad435893f80d0b93f"
+  inputs-digest = "d88d04abf40902c38a8af161ff9af4b73f8ff14d96aeef5111972926f414f6d8"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -106,7 +106,7 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) error {
-	woc.log.Infof("Creating Pod: %s", nodeName)
+	woc.log.Debugf("Creating Pod: %s", nodeName)
 	tmpl = tmpl.DeepCopy()
 	waitCtr, err := woc.newWaitContainer(tmpl)
 	if err != nil {
@@ -215,7 +215,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if
 			// the controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("pod %s already exists", nodeName)
+			woc.log.Infof("Skipped pod %s creation: already exists", nodeName)
 			return nil
 		}
 		woc.log.Infof("Failed to create pod %s: %v", nodeName, err)

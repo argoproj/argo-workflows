@@ -1,0 +1,45 @@
+# Stress test to test upper bounds of concurrent pods
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-limits-
+spec:
+  entrypoint: pod-limits
+  arguments:
+    parameters:
+    - name: limit
+      value: 1000
+
+  templates:
+  - name: pod-limits
+    inputs:
+      parameters:
+      - name: limit
+    steps:
+    - - name: gen-number-list
+        template: gen-number-list
+        arguments:
+          parameters:
+          - name: count
+            value: "{{inputs.parameters.limit}}"
+    - - name: run-pod
+        template: run-pod
+        withParam: "{{steps.gen-number-list.outputs.result}}"
+
+  - name: gen-number-list
+    inputs:
+      parameters:
+      - name: count
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([i for i in range(1, {{inputs.parameters.count}}+1)], sys.stdout)
+
+  - name: run-pod
+    container:
+      image: "alpine:3.7"
+      command: [sh, -c]
+      args: ["echo sleeping 1s; sleep 1"]

@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
@@ -262,4 +266,23 @@ func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, val
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
+}
+
+// RegisterStackDumper spawns a goroutine which dumps stack trace upon a SIGUSR1
+func RegisterStackDumper() {
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGUSR1)
+		for {
+			<-sigs
+			LogStack()
+		}
+	}()
+}
+
+// LogStack will log the current stack
+func LogStack() {
+	buf := make([]byte, 1<<20)
+	stacklen := runtime.Stack(buf, true)
+	log.Printf("*** goroutine dump...\n%s\n*** end\n", buf[:stacklen])
 }
