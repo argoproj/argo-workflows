@@ -41,12 +41,12 @@ export function create(
     uiDist: string,
     inCluster: boolean,
     namespace: string,
-    version = 'v1',
+    version,
     group = 'argoproj.io') {
   const config = Object.assign(
-    {}, inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig(), {namespace, version, group, promises: true });
+    {}, inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig(), {namespace, promises: true });
   const core = new Api.Core(config);
-  const crd = new Api.CustomResourceDefinitions(config);
+  const crd = new Api.CustomResourceDefinitions(Object.assign(config, {version, group}));
   crd.addResource('workflows');
   const app = express();
   app.use(bodyParser.json({type: () => true}));
