@@ -10,15 +10,6 @@ spec:
       image: appropriate/curl
       command: [sh, -c]
       args: ["until `curl -G 'http://127.0.0.1/' >& /tmp/out`; do echo sleep && sleep 1; done && cat /tmp/out"]
-      resources:
-        limits:
-          cpu: .05
-          memory: 32Mi
     sidecars:
     - name: nginx
       image: nginx:1.13
-      resources:
-        limits:
-          cpu: .05
-          memory: 32Mi
-
