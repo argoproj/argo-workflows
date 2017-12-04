@@ -13,6 +13,7 @@ import { WorkflowTreeComponent } from './workflow-tree/workflow-tree.component';
 import { WorkflowSubtreeComponent } from './workflow-tree/workflow-subtree.component';
 import { WorkflowTreeNodeComponent } from './workflow-tree/workflow-tree-node.component';
 import { ArtifactsComponent } from './artifacts/artifacts.component';
+import { YamlViewerComponent } from './yaml-viewer/yaml-viewer.component';
 
 const components = [
   ArtifactsComponent,
@@ -25,6 +26,7 @@ const components = [
   WorkflowTreeComponent,
   WorkflowSubtreeComponent,
   WorkflowTreeNodeComponent,
+  YamlViewerComponent,
 ];
 
 @NgModule({

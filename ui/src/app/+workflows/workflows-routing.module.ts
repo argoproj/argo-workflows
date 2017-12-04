@@ -4,7 +4,7 @@ import { WorkflowsListPageComponent } from './workflows-list-page/workflows-list
 import { WorkflowDetailsPageComponent } from './workflow-details-page/workflow-details-page.component';
 
 const routes: Routes = [{
-  path: '', component: WorkflowsListPageComponent,
+  path: '', component: WorkflowsListPageComponent, pathMatch: 'full'
 }, {
   path: ':name', component: WorkflowDetailsPageComponent,
 }];
