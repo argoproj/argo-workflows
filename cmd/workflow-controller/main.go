@@ -69,6 +69,7 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
+	common.RegisterStackDumper()
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
 	log.Infof("Creating Workflow CRD")

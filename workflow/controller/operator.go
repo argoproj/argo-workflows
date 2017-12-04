@@ -44,6 +44,12 @@ type wfScope struct {
 // operateWorkflow is the operator logic of a workflow
 // It evaluates the current state of the workflow and decides how to proceed down the execution path
 func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
+	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
+		// can get here if we already added the completed=true label,
+		// but we are still draining the controller's workflow channel
+		return
+	}
+	log.Infof("Processing wf: %v", wf.ObjectMeta.SelfLink)
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
@@ -211,11 +217,11 @@ func (woc *wfOperationCtx) deletePVCs() error {
 }
 
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
-	woc.log.Infof("Evaluating node %s: template: %s", nodeName, templateName)
+	woc.log.Debugf("Evaluating node %s: template: %s", nodeName, templateName)
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		woc.log.Infof("Node %s already completed", nodeName)
+		woc.log.Debugf("Node %s already completed", nodeName)
 		return nil
 	}
 	tmpl := woc.wf.GetTemplate(templateName)
@@ -422,7 +428,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	nodeID := woc.wf.NodeID(sgNodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		woc.log.Infof("Step group node %v already marked completed", node)
+		woc.log.Debugf("Step group node %v already marked completed", node)
 		return nil
 	}
 	if !ok {
