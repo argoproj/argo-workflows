@@ -59,6 +59,11 @@ type WorkflowControllerConfig struct {
 	MatchLabels        map[string]string  `json:"matchLabels,omitempty"`
 }
 
+const (
+	workflowResyncPeriod = 20 * time.Minute
+	podResyncPeriod      = 30 * time.Minute
+)
+
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
@@ -216,57 +221,34 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Controller, error) {
 	source := wfc.newWorkflowWatch()
-
 	_, controller := cache.NewInformer(
 		source,
-
-		// The object type.
 		&wfv1.Workflow{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
+		workflowResyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				//log.Infof("WF Add %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 			UpdateFunc: func(old, new interface{}) {
-				//oldWf := old.(*wfv1.Workflow)
 				newWf := new.(*wfv1.Workflow)
-				//log.Infof("WF Update %s", newWf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- newWf
 			},
 			DeleteFunc: func(obj interface{}) {
 				wf := obj.(*wfv1.Workflow)
-				//log.Infof("WF Delete %s", wf.ObjectMeta.SelfLink)
 				wfc.wfUpdates <- wf
 			},
 		})
-
 	go controller.Run(ctx.Done())
 	return controller, nil
 }
 
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
 	source := wfc.newControllerConfigMapWatch()
-
 	_, controller := cache.NewInformer(
 		source,
-
-		// The object type.
 		&apiv1.ConfigMap{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
 		0,
-
-		// Your custom resource event handlers.
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				cm := obj.(*apiv1.ConfigMap)
@@ -351,38 +333,24 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 
 func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Controller, error) {
 	source := wfc.newWorkflowPodWatch()
-
 	_, controller := cache.NewInformer(
 		source,
-
-		// The object type.
 		&apiv1.Pod{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
+		podResyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				//log.Infof("Pod Added %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 			UpdateFunc: func(old, new interface{}) {
-				//oldPod := old.(*apiv1.Pod)
 				newPod := new.(*apiv1.Pod)
-				//log.Infof("Pod Updated %s", newPod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- newPod
 			},
 			DeleteFunc: func(obj interface{}) {
 				pod := obj.(*apiv1.Pod)
-				//log.Infof("Pod Deleted %s", pod.ObjectMeta.SelfLink)
 				wfc.podUpdates <- pod
 			},
 		})
-
 	go controller.Run(ctx.Done())
 	return controller, nil
 }
