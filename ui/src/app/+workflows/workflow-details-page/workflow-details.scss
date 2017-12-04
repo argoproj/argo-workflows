@@ -47,6 +47,9 @@
         }
     }
     .workflow-tree__node:hover {
+        .ax-button {
+          padding: 5px 12px;
+        }
         .workflow-details__node-overlay {
             visibility: visible;
             opacity: 1;
