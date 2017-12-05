@@ -8,6 +8,7 @@ import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import * as nodeStream from 'stream';
 import * as path from 'path';
+import * as moment from 'moment';
 
 function reactifyStream(stream, converter = item => item) {
   return new Observable((observer: Observer<any>) => {
@@ -37,6 +38,10 @@ function serve<T>(res: express.Response, action: () => Promise<T>) {
   action().then(val => res.send(val)).catch(err => res.status(500).send(err));
 }
 
+function decodeBase64(input: string) {
+  return new Buffer(input, 'base64').toString('ascii');
+}
+
 export function create(
     uiDist: string,
     inCluster: boolean,
@@ -52,18 +57,22 @@ export function create(
   app.use(bodyParser.json({type: () => true}));
 
   app.get('/api/workflows', (req, res) => serve(res, async () => {
-    const workflowList = <models.WorkflowList> await crd.ns['workflows'].get();
-    workflowList.items.sort((first, second) => first.metadata.creationTimestamp - second.metadata.creationTimestamp);
+    const workflowList = <models.WorkflowList> await crd['workflows'].get();
+    workflowList.items.sort(
+      (first, second) => moment(first.metadata.creationTimestamp) < moment(second.metadata.creationTimestamp) ? 1 : -1);
     return workflowList;
   }));
-  app.get('/api/workflows/:name', async (req, res) => serve(res, () => crd.ns['workflows'].get(req.params.name)));
-  app.get('/api/workflows/:name/artifacts/:nodeName/:artifactName', async (req, res) => {
-    const workflow: models.Workflow = await crd.ns['workflows'].get(req.params.name);
+  app.get('/api/workflows/:namespace/:name',
+    async (req, res) => serve(res, () => crd.ns(req.params.namespace)['workflows'].get(req.params.name)));
+  app.get('/api/workflows/:namespace/:name/artifacts/:nodeName/:artifactName', async (req, res) => {
+    const workflow: models.Workflow = await crd.ns(req.params.namespace)['workflows'].get(req.params.name);
     const node = workflow.status.nodes[req.params.nodeName];
     const artifact = node.outputs.artifacts.find(item => item.name === req.params.artifactName);
     if (artifact.s3) {
-      const secretAccessKey = (await core.ns.secret.get(artifact.s3.secretKeySecret.name)).data[artifact.s3.secretKeySecret.key];
-      const accessKeyId = (await core.ns.secret.get(artifact.s3.accessKeySecret.name)).data[artifact.s3.accessKeySecret.key];
+      const secretAccessKey = decodeBase64((await core.ns(
+        workflow.metadata.namespace).secret.get(artifact.s3.secretKeySecret.name)).data[artifact.s3.secretKeySecret.key]);
+      const accessKeyId = decodeBase64((await core.ns(
+        workflow.metadata.namespace).secret.get(artifact.s3.accessKeySecret.name)).data[artifact.s3.accessKeySecret.key]);
       const s3 = new aws.S3({
         secretAccessKey, accessKeyId, endpoint: `http://${artifact.s3.endpoint}`, s3ForcePathStyle: true, signatureVersion: 'v4' });
       s3.getObject({ Bucket: artifact.s3.bucket, Key: artifact.s3.key }, (err, data) => {
@@ -79,8 +88,9 @@ export function create(
       });
     }
   });
-  app.get('/api/steps/:name/logs', (req, res) => {
-    const logsSource = reactifyStringStream(core.ns.po(req.params.name).log.getStream({ qs: { container: 'main', follow: true } }));
+  app.get('/api/steps/:namespace/:name/logs', (req, res) => {
+    const logsSource = reactifyStringStream(
+      core.ns(req.params.namespace).po(req.params.name).log.getStream({ qs: { container: 'main', follow: true } }));
     streamServerEvents(req, res, logsSource, item => item.toString());
   });
   app.use(express.static(uiDist));

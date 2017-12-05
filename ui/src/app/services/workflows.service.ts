@@ -53,21 +53,22 @@ export class WorkflowsService {
       return this.http.get(`api/workflows`).map(item => <WorkflowList>item).toPromise();
   }
 
-  public async getWorkflow(name: string, noLoader = false): Promise<models.Workflow> {
+  public async getWorkflow(namespace: string, name: string, noLoader = false): Promise<models.Workflow> {
     return this.http.get(
-      `api/workflows/${name}`, { headers: new HttpHeaders({ noLoader: String(noLoader) }) }).map(item => <Workflow>item).toPromise();
+      `api/workflows/${namespace}/${name}`,
+      { headers: new HttpHeaders({ noLoader: String(noLoader) }) }).map(item => <Workflow>item).toPromise();
   }
 
-  public getWorkflowStream(name: string): Observable<models.Workflow> {
+  public getWorkflowStream(namespace: string, name: string): Observable<models.Workflow> {
     return Observable.merge(
-      Observable.fromPromise(this.getWorkflow(name, false)),
-      Observable.interval(1000).flatMap(() => Observable.fromPromise(this.getWorkflow(name, true))).distinct(workflow => {
+      Observable.fromPromise(this.getWorkflow(namespace, name, false)),
+      Observable.interval(1000).flatMap(() => Observable.fromPromise(this.getWorkflow(namespace, name, true))).distinct(workflow => {
         return Object.keys(workflow.status.nodes || []).map(nodeName => `${nodeName}:${workflow.status.nodes[nodeName].phase}`).join(';');
       }));
   }
 
-  public getStepLogs(name: string): Observable<string> {
-    return this.loadEventSource(`api/steps/${name}/logs`).map(line => {
+  public getStepLogs(namespace: string, name: string): Observable<string> {
+    return this.loadEventSource(`api/steps/${namespace}/${name}/logs`).map(line => {
       return line ? line + '\n' : line;
     });
   }

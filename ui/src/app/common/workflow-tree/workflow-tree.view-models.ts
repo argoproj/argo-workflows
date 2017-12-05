@@ -80,7 +80,7 @@ export class WorkflowTree {
       const node = this.workflow.status.nodes[nodeName];
       const items = (node.outputs || { artifacts: [] }).artifacts || <models.Artifact[]>[];
       return items.map(item => Object.assign({}, item, {
-        downloadUrl: `/api/workflows/${this.workflow.metadata.name}/artifacts/${nodeName}/${item.name}`,
+        downloadUrl: `/api/workflows/${this.workflow.metadata.namespace}/${this.workflow.metadata.name}/artifacts/${nodeName}/${item.name}`,
         stepName: node.name,
         dateCreated: node.finishedAt,
         nodeName
