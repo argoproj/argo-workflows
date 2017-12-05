@@ -4,7 +4,7 @@
 
 Argo is an open source project that provides container-native workflows for Kubernetes. Each step in an Argo workflow is defined as a container.
 
-Argo V2 is a rewrite of the Argo workflow engine as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
+Argo V2 is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
 Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
 
@@ -61,6 +61,7 @@ This message shows that your installation appears to be working correctly.
 ```
 
 Below, we run the same container on a Kubernetes cluster using an Argo workflow template.
+Be sure to read the comments. They provide useful explanations.
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow                  #new type of k8s spec
@@ -115,7 +116,7 @@ This time, the `whalesay` template takes an input parameter named `message` whic
 
 ## Steps
 
-In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.
+In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.  Be sure to read the comments. They provide useful explanations.
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -547,6 +548,33 @@ spec:
       command: [sh, -c]
       args: ["echo \"it was heads\""]
 ```
+
+Here's the result of a couple of runs of coinflip for comparison.
+```
+Eds-MacBook-Pro:~/src/argo/examples ⑂ master +  argo get coinflip-recursive-tzcb5
+STEP                         PODNAME                              MESSAGE
+ ✔ coinflip-recursive-vhph5                                       
+ ├---✔ flip-coin             coinflip-recursive-vhph5-2123890397  
+ └-·-✔ heads                 coinflip-recursive-vhph5-128690560   
+   └-○ tails                                                      
+
+STEP                          PODNAME                              MESSAGE
+ ✔ coinflip-recursive-tzcb5                                        
+ ├---✔ flip-coin              coinflip-recursive-tzcb5-322836820   
+ └-·-○ heads                                                       
+   └-✔ tails                                                       
+     ├---✔ flip-coin          coinflip-recursive-tzcb5-1863890320  
+     └-·-○ heads                                                   
+       └-✔ tails                                                   
+         ├---✔ flip-coin      coinflip-recursive-tzcb5-1768147140  
+         └-·-○ heads                                               
+           └-✔ tails                                               
+             ├---✔ flip-coin  coinflip-recursive-tzcb5-4080411136  
+             └-·-✔ heads      coinflip-recursive-tzcb5-4080323273  
+               └-○ tails                                           
+```
+In the first run, the coin immediately comes up heads and we stop.
+In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
 
 ## Volumes
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
