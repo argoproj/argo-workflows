@@ -1,12 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { EventsService } from '../../services';
 
 @Component({
   selector: 'ax-top-bar',
   templateUrl: './top-bar.html',
   styleUrls: ['./top-bar.component.scss'],
 })
-export class TopBarComponent {
+export class TopBarComponent implements OnInit {
 
-  public isGlobalSearchVisible: boolean;
-  public pageTitle = 'Timeline';
+  public pageTitle = '';
+
+  constructor(private eventsService: EventsService) {
+  }
+
+  public ngOnInit() {
+    this.eventsService.setPageTitle.subscribe(title => {
+      this.pageTitle = title;
+    });
+  }
 }

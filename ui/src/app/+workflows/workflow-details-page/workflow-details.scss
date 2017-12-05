@@ -46,6 +46,22 @@
             }
         }
     }
+
+    &__sliding-panel {
+        &--adjust-close {
+            .sliding-panel__close {
+                z-index: 2;
+                top: 13px;
+            }
+        }
+
+        &--adjust-body-height {
+          .sliding-panel__body {
+            height: calc(100% - 156px) !important;
+          }
+        }
+    }
+
     .workflow-tree__node:hover {
         .ax-button {
           padding: 5px 12px;
