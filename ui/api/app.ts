@@ -67,7 +67,7 @@ export function create(
     if (artifact.s3) {
       const secretAccessKey = (await core.ns(
         workflow.metadata.namespace).secret.get(artifact.s3.secretKeySecret.name)).data[artifact.s3.secretKeySecret.key];
-      const accessKeyId = (await core.ns.ns(
+      const accessKeyId = (await core.ns(
         workflow.metadata.namespace).secret.get(artifact.s3.accessKeySecret.name)).data[artifact.s3.accessKeySecret.key];
       const s3 = new aws.S3({
         secretAccessKey, accessKeyId, endpoint: `http://${artifact.s3.endpoint}`, s3ForcePathStyle: true, signatureVersion: 'v4' });
