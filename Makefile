@@ -8,9 +8,9 @@ CURRENT_DIR=$(shell pwd)
 
 VERSION=$(shell cat ${BUILD_DIR}/VERSION)
 REVISION=$(shell git rev-parse HEAD)
-REVISION_SHORT=$(shell git rev-parse --short=7 HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-TAG=$(shell git describe --exact-match --tags HEAD 2>/dev/null)
+TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 BUILDER_IMAGE=argo-builder
 BUILDER_CMD=docker run --rm \
@@ -20,7 +20,13 @@ BUILDER_CMD=docker run --rm \
 
 # docker image publishing options
 DOCKER_PUSH=false
+ifeq (${IMAGE_TAG},)
+ifneq (${TAG},)
+IMAGE_TAG=${TAG}
+else
 IMAGE_TAG=${VERSION}
+endif
+endif
 
 LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} \
   -X ${PACKAGE}.Revision=${REVISION} \
@@ -49,16 +55,12 @@ cli:
 	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo
 
 cli-linux: builder
-	rm -f ${DIST_DIR}/argocli/linux-amd64/argo
-	${BUILDER_CMD} make cli
-	mkdir -p ${DIST_DIR}/argocli/linux-amd64
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/linux-amd64/argo
+	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG)
+	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-linux-amd64
 
 cli-darwin: builder
-	rm -f ${DIST_DIR}/argocli/darwin-amd64/argo
-	${BUILDER_CMD} make cli GOOS=darwin
-	mkdir -p ${DIST_DIR}/argocli/darwin-amd64
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argocli/darwin-amd64/argo
+	${BUILDER_CMD} make cli GOOS=darwin IMAGE_TAG=$(IMAGE_TAG)
+	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
 
 controller:
 	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
@@ -96,9 +98,17 @@ ui-image:
 	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
 
+release-precheck:
+	@if [ "$(TREE_STATE)" != "clean" ]; then echo 'git tree state is $(TREE_STATE)' ; exit 1; fi
+	@if [ -z "$(TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+
+release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
+
 .PHONY: builder \
 	cli cli-linux cli-darwin \
 	controller controller-linux controller-image \
 	executor executor-linux executor-image \
+	ui-image \
+	release-precheck release \
 	lint
 	# test fmt clean

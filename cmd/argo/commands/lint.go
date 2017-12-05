@@ -20,7 +20,7 @@ func init() {
 
 var lintCmd = &cobra.Command{
 	Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-	Short: "lint a directory or specific workflow YAML files",
+	Short: "validate a directory or specific workflow YAML files",
 	Run:   lintYAML,
 }
 

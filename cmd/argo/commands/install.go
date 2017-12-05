@@ -50,7 +50,7 @@ var installArgs installFlags
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: "install commands",
+	Short: "install Argo",
 	Run:   install,
 }
 
@@ -68,6 +68,11 @@ func install(cmd *cobra.Command, args []string) {
 		}
 	}
 	installConfigMap(clientset)
+	if installArgs.serviceAccount == "" {
+		fmt.Printf("Using default service account for deployments\n")
+	} else {
+		fmt.Printf("Using service account '%s' for deployments\n", installArgs.serviceAccount)
+	}
 	installController(clientset)
 	installUi(clientset)
 }
@@ -203,12 +208,6 @@ func installConfigMap(clientset *kubernetes.Clientset) {
 }
 
 func installController(clientset *kubernetes.Clientset) {
-	if installArgs.serviceAccount == "" {
-		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.controllerName)
-	} else {
-		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.controllerName)
-	}
-
 	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
 	controllerDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -271,12 +270,6 @@ func installController(clientset *kubernetes.Clientset) {
 }
 
 func installUi(clientset *kubernetes.Clientset) {
-	if installArgs.serviceAccount == "" {
-		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.controllerName)
-	} else {
-		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.controllerName)
-	}
-
 	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
 	uiDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

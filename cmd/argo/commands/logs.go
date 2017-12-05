@@ -15,7 +15,7 @@ func init() {
 
 var logsCmd = &cobra.Command{
 	Use:   "logs CONTAINER",
-	Short: "logs commands",
+	Short: "print the logs for a container in a workflow",
 	Run:   getLogs,
 }
 

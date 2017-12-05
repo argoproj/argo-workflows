@@ -25,7 +25,7 @@ var deleteArgs deleteFlags
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete WORKFLOW",
-	Short: "delete commands",
+	Short: "delete a workflow and its associated pods",
 	Run:   deleteWorkflowCmd,
 }
 

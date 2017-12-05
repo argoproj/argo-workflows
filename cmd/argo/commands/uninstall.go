@@ -15,22 +15,24 @@ import (
 
 func init() {
 	RootCmd.AddCommand(uninstallCmd)
-	uninstallCmd.Flags().StringVar(&uninstallArgs.name, "name", common.DefaultControllerDeploymentName, "name of deployment")
+	uninstallCmd.Flags().StringVar(&uninstallArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	uninstallCmd.Flags().StringVar(&uninstallArgs.uiName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	uninstallCmd.Flags().StringVar(&uninstallArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "name of configmap to uninstall")
 	uninstallCmd.Flags().StringVar(&uninstallArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "uninstall from a specific namespace")
 }
 
 type uninstallFlags struct {
-	name      string // --name
-	configMap string // --configmap
-	namespace string // --install-namespace
+	controllerName string // --controller-name
+	uiName         string // --ui-name
+	configMap      string // --configmap
+	namespace      string // --install-namespace
 }
 
 var uninstallArgs uninstallFlags
 
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "uninstall controller and CRD",
+	Short: "uninstall Argo",
 	Run:   uninstall,
 }
 
@@ -40,19 +42,21 @@ func uninstall(cmd *cobra.Command, args []string) {
 	// Delete the deployment
 	deploymentsClient := clientset.AppsV1beta2().Deployments(uninstallArgs.namespace)
 	deletePolicy := metav1.DeletePropagationForeground
-	err := deploymentsClient.Delete(uninstallArgs.name, &metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
-	if err != nil {
-		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to delete deployment '%s': %v", uninstallArgs.name, err)
+	for _, depName := range []string{uninstallArgs.uiName, uninstallArgs.controllerName} {
+		err := deploymentsClient.Delete(depName, &metav1.DeleteOptions{PropagationPolicy: &deletePolicy})
+		if err != nil {
+			if !apierr.IsNotFound(err) {
+				log.Fatalf("Failed to delete deployment '%s': %v", depName, err)
+			}
+			fmt.Printf("Deployment '%s' in namespace '%s' not found\n", depName, uninstallArgs.namespace)
+		} else {
+			fmt.Printf("Deployment '%s' deleted\n", depName)
 		}
-		fmt.Printf("Deployment '%s' in namespace '%s' not found\n", uninstallArgs.name, uninstallArgs.namespace)
-	} else {
-		fmt.Printf("Deployment '%s' deleted\n", uninstallArgs.name)
 	}
 
 	// Delete the configmap
 	cmClient := clientset.CoreV1().ConfigMaps(uninstallArgs.namespace)
-	err = cmClient.Delete(uninstallArgs.configMap, &metav1.DeleteOptions{})
+	err := cmClient.Delete(uninstallArgs.configMap, &metav1.DeleteOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to delete ConfigMap '%s': %v", uninstallArgs.configMap, err)

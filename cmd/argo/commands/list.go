@@ -28,7 +28,7 @@ var listArgs listFlags
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "list commands",
+	Short: "list workflows",
 	Run:   listWorkflows,
 }
 
