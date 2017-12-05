@@ -20,9 +20,14 @@ $ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-
 $ chmod +x argo 
 ```
 
-## 2. Install the Controller
+## 2. Install the Controller and UI
 ```
 $ argo install
+```
+Installation command does not configure access for argo UI. Please use following command to create externally accessable Kubernetes service:
+
+```
+$ kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/ui/deploy/service.yaml --namespace kube-system
 ```
  
 ## 3. Run Simple Example Workflows
