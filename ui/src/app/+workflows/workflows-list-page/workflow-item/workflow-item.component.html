@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <div class="ax-workflow-stream__content" [routerLink]="['/timeline/', workflow.metadata.name]">
+    <div class="ax-workflow-stream__content" [routerLink]="['/timeline/', workflow.metadata.namespace, workflow.metadata.name]">
         <div class="row collapse">
             <div class="columns medium-7">
                 <div class="ax-workflow-stream__content-box">
