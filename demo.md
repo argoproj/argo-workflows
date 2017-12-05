@@ -71,7 +71,7 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
     artifactRepository:
       s3:
         bucket: my-bucket
-        endpoint: argo-artifacts-minio-svc:9000
+        endpoint: argo-artifacts-minio-svc.default:9000
         insecure: true
         accessKeySecret:
           name: argo-artifacts-minio-user
