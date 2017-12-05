@@ -27,7 +27,7 @@ export class WorkflowStepDetailsBoxComponent {
   public getLogsSource() {
     return {
         loadLogs: () => {
-            return this.nodeName && this.workflowsService.getStepLogs(this.nodeName);
+            return this.nodeName && this.workflowsService.getStepLogs(this.workflowTree.workflow.metadata.namespace, this.nodeName);
         },
         getKey() {
             return this.nodeName;

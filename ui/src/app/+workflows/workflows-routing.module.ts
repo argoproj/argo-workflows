@@ -6,7 +6,7 @@ import { WorkflowDetailsPageComponent } from './workflow-details-page/workflow-d
 const routes: Routes = [{
   path: '', component: WorkflowsListPageComponent, pathMatch: 'full'
 }, {
-  path: ':name', component: WorkflowDetailsPageComponent,
+  path: ':namespace/:name', component: WorkflowDetailsPageComponent,
 }];
 
 @NgModule({

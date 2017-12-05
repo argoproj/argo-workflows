@@ -34,8 +34,10 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   }
 
   public ngOnInit() {
-    const treeSrc = this.route.params.map(params => params['name']).distinctUntilChanged()
-        .flatMap(name => this.workflowsService.getWorkflowStream(name)).map(workflow => new WorkflowTree(workflow)).share();
+    const treeSrc = this.route.params
+        .distinctUntilChanged((first, second) => first['name'] === second['name'] && first['namespace'] === second['namespace'] )
+        .flatMap(params => this.workflowsService.getWorkflowStream(
+          params['namespace'], params['name'])).map(workflow => new WorkflowTree(workflow)).share();
 
     this.subscriptions.push(treeSrc.subscribe(tree => {
       this.workflow = tree.workflow;
