@@ -29,7 +29,9 @@ Installation command does not configure access for argo UI. Please use following
 ```
 $ kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/ui/deploy/service.yaml --namespace kube-system
 ```
- 
+
+Service namespace should correspond to namespace chosen during argo installation (kube-system is default namespace).
+
 ## 3. Run Simple Example Workflows
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
