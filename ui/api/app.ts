@@ -38,6 +38,10 @@ function serve<T>(res: express.Response, action: () => Promise<T>) {
   action().then(val => res.send(val)).catch(err => res.status(500).send(err));
 }
 
+function decodeBase64(input: string) {
+  return new Buffer(input, 'base64').toString('ascii');
+}
+
 export function create(
     uiDist: string,
     inCluster: boolean,
@@ -65,10 +69,10 @@ export function create(
     const node = workflow.status.nodes[req.params.nodeName];
     const artifact = node.outputs.artifacts.find(item => item.name === req.params.artifactName);
     if (artifact.s3) {
-      const secretAccessKey = (await core.ns(
-        workflow.metadata.namespace).secret.get(artifact.s3.secretKeySecret.name)).data[artifact.s3.secretKeySecret.key];
-      const accessKeyId = (await core.ns(
-        workflow.metadata.namespace).secret.get(artifact.s3.accessKeySecret.name)).data[artifact.s3.accessKeySecret.key];
+      const secretAccessKey = decodeBase64((await core.ns(
+        workflow.metadata.namespace).secret.get(artifact.s3.secretKeySecret.name)).data[artifact.s3.secretKeySecret.key]);
+      const accessKeyId = decodeBase64((await core.ns(
+        workflow.metadata.namespace).secret.get(artifact.s3.accessKeySecret.name)).data[artifact.s3.accessKeySecret.key]);
       const s3 = new aws.S3({
         secretAccessKey, accessKeyId, endpoint: `http://${artifact.s3.endpoint}`, s3ForcePathStyle: true, signatureVersion: 'v4' });
       s3.getObject({ Bucket: artifact.s3.bucket, Key: artifact.s3.key }, (err, data) => {
