@@ -25,7 +25,7 @@ const clusterAdmin = "cluster-admin"
 
 func init() {
 	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installArgs.controllerName, "name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	installCmd.Flags().StringVar(&installArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
 	installCmd.Flags().StringVar(&installArgs.uiName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific namespace")
 	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
