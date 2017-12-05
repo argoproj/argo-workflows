@@ -25,19 +25,23 @@ const clusterAdmin = "cluster-admin"
 
 func init() {
 	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installArgs.name, "name", common.DefaultControllerDeploymentName, "name of deployment")
+	installCmd.Flags().StringVar(&installArgs.controllerName, "name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	installCmd.Flags().StringVar(&installArgs.uiName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific namespace")
 	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
 	installCmd.Flags().StringVar(&installArgs.controllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
+	installCmd.Flags().StringVar(&installArgs.uiImage, "ui-image", common.DefaultUiImage, "use a specified ui image")
 	installCmd.Flags().StringVar(&installArgs.executorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.serviceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 }
 
 type installFlags struct {
-	name            string // --name
+	controllerName  string // --name
+	uiName          string // --ui-name
 	namespace       string // --install-namespace
 	configMap       string // --configmap
 	controllerImage string // --controller-image
+	uiImage         string // --ui-image
 	executorImage   string // --executor-image
 	serviceAccount  string // --service-account
 }
@@ -65,6 +69,7 @@ func install(cmd *cobra.Command, args []string) {
 	}
 	installConfigMap(clientset)
 	installController(clientset)
+	installUi(clientset)
 }
 
 func clusterAdminExists(clientset *kubernetes.Clientset) bool {
@@ -199,33 +204,33 @@ func installConfigMap(clientset *kubernetes.Clientset) {
 
 func installController(clientset *kubernetes.Clientset) {
 	if installArgs.serviceAccount == "" {
-		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.name)
+		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.controllerName)
 	} else {
-		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.name)
+		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.controllerName)
 	}
 
 	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
 	controllerDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: installArgs.name,
+			Name: installArgs.controllerName,
 		},
 		Spec: appsv1beta2.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": installArgs.name,
+					"app": installArgs.controllerName,
 				},
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": installArgs.name,
+						"app": installArgs.controllerName,
 					},
 				},
 				Spec: apiv1.PodSpec{
 					ServiceAccountName: installArgs.serviceAccount,
 					Containers: []apiv1.Container{
 						{
-							Name:    installArgs.name,
+							Name:    installArgs.controllerName,
 							Image:   installArgs.controllerImage,
 							Command: []string{"workflow-controller"},
 							Args:    []string{"--configmap", installArgs.configMap},
@@ -256,6 +261,76 @@ func installController(clientset *kubernetes.Clientset) {
 			log.Fatal(err)
 		}
 		result, err = deploymentsClient.Update(&controllerDeployment)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
+	} else {
+		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
+	}
+}
+
+func installUi(clientset *kubernetes.Clientset) {
+	if installArgs.serviceAccount == "" {
+		fmt.Printf("Using default service account for '%s' deployment\n", installArgs.controllerName)
+	} else {
+		fmt.Printf("Using service account '%s' for '%s' deployment\n", installArgs.serviceAccount, installArgs.controllerName)
+	}
+
+	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
+	uiDeployment := appsv1beta2.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: installArgs.uiName,
+		},
+		Spec: appsv1beta2.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": installArgs.uiName,
+				},
+			},
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": installArgs.uiName,
+					},
+				},
+				Spec: apiv1.PodSpec{
+					ServiceAccountName: installArgs.serviceAccount,
+					Containers: []apiv1.Container{
+						{
+							Name:  installArgs.uiName,
+							Image: installArgs.uiImage,
+							Env: []apiv1.EnvVar{
+								apiv1.EnvVar{
+									Name: common.EnvVarNamespace,
+									ValueFrom: &apiv1.EnvVarSource{
+										FieldRef: &apiv1.ObjectFieldSelector{
+											APIVersion: "v1",
+											FieldPath:  "metadata.namespace",
+										},
+									},
+								},
+								apiv1.EnvVar{
+									Name:  "IN_CLUSTER",
+									Value: "true",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Create Deployment
+	var result *appsv1beta2.Deployment
+	var err error
+	result, err = deploymentsClient.Create(&uiDeployment)
+	if err != nil {
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatal(err)
+		}
+		result, err = deploymentsClient.Update(&uiDeployment)
 		if err != nil {
 			log.Fatal(err)
 		}

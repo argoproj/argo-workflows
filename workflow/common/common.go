@@ -8,11 +8,13 @@ import (
 var (
 	DefaultControllerImage = argo.ImageNamespace + "/workflow-controller:" + argo.ImageTag
 	DefaultExecutorImage   = argo.ImageNamespace + "/argoexec:" + argo.ImageTag
+	DefaultUiImage         = argo.ImageNamespace + "/argoui:" + argo.ImageTag
 )
 
 const (
 	// DefaultControllerDeploymentName is the default deployment name of the workflow controller
 	DefaultControllerDeploymentName = "workflow-controller"
+	DefaultUiDeploymentName         = "argo-ui"
 	// DefaultControllerNamespace is the default namespace where the workflow controller is installed
 	DefaultControllerNamespace = "kube-system"
 

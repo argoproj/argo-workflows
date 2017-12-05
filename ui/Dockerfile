@@ -12,4 +12,4 @@ COPY ["src/app/models", "./src/app/models"]
 
 EXPOSE 8001
 
-CMD ["sh", "-c", "yarn run ts-node ./api/main.ts --inCluster ${IN_CLUSTER} --namespace ${NAMESPACE}"]
+CMD ["sh", "-c", "yarn run ts-node ./api/main.ts --inCluster ${IN_CLUSTER} --namespace ${ARGO_NAMESPACE}"]
