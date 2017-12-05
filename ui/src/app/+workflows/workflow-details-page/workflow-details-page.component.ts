@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs/Subscription';
 
-import { WorkflowsService } from '../../services';
+import { WorkflowsService, EventsService } from '../../services';
 import * as models from '../../models';
 import { NodeInfo, WorkflowTree } from '../../common';
 import { Observable } from 'rxjs/Observable';
@@ -27,13 +27,17 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public selectedYamlStep: string;
   public isYamlVisible: boolean;
 
-  constructor(private workflowsService: WorkflowsService, private route: ActivatedRoute, private router: Router) {}
+  constructor(private workflowsService: WorkflowsService,
+              private route: ActivatedRoute,
+              private router: Router,
+              private eventsService: EventsService) {}
 
   public tabChange(tab: string) {
     this.router.navigate(['.', { tab }], { relativeTo: this.route });
   }
 
   public ngOnInit() {
+    this.eventsService.setPageTitle.emit(this.route.snapshot.params.name);
     const treeSrc = this.route.params
         .distinctUntilChanged((first, second) => first['name'] === second['name'] && first['namespace'] === second['namespace'] )
         .flatMap(params => this.workflowsService.getWorkflowStream(

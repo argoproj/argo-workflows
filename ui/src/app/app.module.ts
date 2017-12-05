@@ -10,6 +10,7 @@ import { AppRoutingModule } from './app-routing.module';
 
 import { AppComponent } from './app.component';
 import { LayoutModule } from './layout/layout.module';
+import { EventsService } from './services/events.service';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,9 @@ import { LayoutModule } from './layout/layout.module';
     AppRoutingModule,
     LayoutModule
   ],
-  providers: [],
+  providers: [
+    EventsService,
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
