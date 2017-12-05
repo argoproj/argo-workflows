@@ -121,10 +121,6 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     this.router.navigate(['.', { tab: this.selectedTab, yaml: node.stepName }], { relativeTo: this.route });
   }
 
-  public closeYaml() {
-    this.router.navigate(['.', { tab: this.selectedTab }], { relativeTo: this.route });
-  }
-
   public showStepDetails(stepName: string, detailsTab: string = 'logs') {
     this.router.navigate(['.', { tab: this.selectedTab, node: `${stepName}:${detailsTab}` }], { relativeTo: this.route });
   }
