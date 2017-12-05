@@ -1,6 +1,6 @@
 <div class="workflow-details">
   <ax-tabs (selected)="tabChange($event.selectedTab.tabKey)" [selectedTabKey]="selectedTab" [fixedWidth]="true">
-    <ax-tab tabKey="summary" tabTitle="SUMMARY">
+    <ax-tab tabKey="summary" tabTitle="SUMMARY" [isOnlyContentScrollable]="true">
       <div class="content content--with-padding-top">
         <div class="ax-container">
           <div class="workflow-details__summary-tab" *ngIf="workflow">
@@ -11,7 +11,7 @@
         </div>
       </div>
     </ax-tab>
-    <ax-tab tabKey="workflow" tabTitle="WORKFLOW">
+    <ax-tab tabKey="workflow" tabTitle="WORKFLOW" [isOnlyContentScrollable]="true" [extraHorizontalScrollPadding]="60">
       <ax-workflow-tree [workflowTree]="tree">
         <ng-template let-cell="cell" #nodeInfo>
           <div>
@@ -64,7 +64,7 @@
         </ng-template>
       </ax-workflow-tree>
     </ax-tab>
-    <ax-tab tabKey="artifacts" tabTitle="ARTIFACTS">
+    <ax-tab tabKey="artifacts" tabTitle="ARTIFACTS" [isOnlyContentScrollable]="true">
       <ax-artifacts [workflowTree]="tree"></ax-artifacts>
     </ax-tab>
   </ax-tabs>
