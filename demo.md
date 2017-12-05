@@ -11,12 +11,12 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 
 On Mac:
 ```
-$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha1/argo-darwin-amd64
+$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-darwin-amd64
 $ chmod +x argo 
 ```
 On Linux:
 ```
-$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha1/argo-linux-amd64
+$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-linux-amd64
 $ chmod +x argo 
 ```
 
@@ -67,7 +67,7 @@ Edit the workflow-controller config to reference the service name (argo-artifact
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:latest
+    executorImage: argoproj/argoexec:v2.0.0-alpha2
     artifactRepository:
       s3:
         bucket: my-bucket
