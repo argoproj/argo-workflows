@@ -31,7 +31,7 @@ var getArgs getFlags
 
 var getCmd = &cobra.Command{
 	Use:   "get WORKFLOW",
-	Short: "get commands",
+	Short: "display details about a workflow",
 	Run:   getWorkflow,
 }
 
