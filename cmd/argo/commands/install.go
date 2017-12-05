@@ -295,13 +295,8 @@ func installUi(clientset *kubernetes.Clientset) {
 							Image: installArgs.uiImage,
 							Env: []apiv1.EnvVar{
 								apiv1.EnvVar{
-									Name: common.EnvVarNamespace,
-									ValueFrom: &apiv1.EnvVarSource{
-										FieldRef: &apiv1.ObjectFieldSelector{
-											APIVersion: "v1",
-											FieldPath:  "metadata.namespace",
-										},
-									},
+									Name:  common.EnvVarNamespace,
+									Value: installArgs.namespace,
 								},
 								apiv1.EnvVar{
 									Name:  "IN_CLUSTER",
