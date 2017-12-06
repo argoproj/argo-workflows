@@ -17,14 +17,14 @@ type stackTracer interface {
 // TestErrorf tests the initializer of error package
 func TestErrorf(t *testing.T) {
 	err := errors.Errorf(errors.CodeInternal, "test internal")
-	assert.Equal(t, err.Error(), "[ERR_INTERNAL] test internal")
+	assert.Equal(t, err.Error(), "test internal")
 }
 
 // TestWrap ensures we can wrap an error and use Cause() to retrieve the original error
 func TestWrap(t *testing.T) {
 	err := fmt.Errorf("original error message")
 	argoErr := errors.Wrap(err, "WRAPPED", "wrapped message")
-	assert.Equal(t, "[WRAPPED] wrapped message", argoErr.Error())
+	assert.Equal(t, "wrapped message", argoErr.Error())
 	orig := errors.Cause(argoErr)
 	assert.Equal(t, err.Error(), orig.Error())
 }
@@ -32,19 +32,19 @@ func TestWrap(t *testing.T) {
 // TestInternalError verifies
 func TestInternalError(t *testing.T) {
 	err := errors.InternalError("test internal")
-	assert.Equal(t, "[ERR_INTERNAL] test internal", err.Error())
+	assert.Equal(t, "test internal", err.Error())
 
 	// Test wrapping errors
 	err = fmt.Errorf("random error")
 	intWrap := errors.InternalWrapError(err)
 	_ = intWrap.(stackTracer)
-	assert.Equal(t, "[ERR_INTERNAL] random error", intWrap.Error())
+	assert.Equal(t, "random error", intWrap.Error())
 	intWrap = errors.InternalWrapError(err, "different message")
 	_ = intWrap.(stackTracer)
-	assert.Equal(t, "[ERR_INTERNAL] different message", intWrap.Error())
+	assert.Equal(t, "different message", intWrap.Error())
 	intWrap = errors.InternalWrapErrorf(err, "hello %s", "world")
 	_ = intWrap.(stackTracer)
-	assert.Equal(t, "[ERR_INTERNAL] hello world", intWrap.Error())
+	assert.Equal(t, "hello world", intWrap.Error())
 }
 
 func TestStackTrace(t *testing.T) {
