@@ -46,7 +46,9 @@ IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
-all: cli controller-image executor-image ui-image
+all: no_ui ui-image
+
+no_ui: cli controller-image executor-image
 
 builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
