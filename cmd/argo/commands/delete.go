@@ -30,7 +30,7 @@ var deleteCmd = &cobra.Command{
 }
 
 func deleteWorkflowCmd(cmd *cobra.Command, args []string) {
-	wfClient = initWorkflowClient()
+	wfClient = InitWorkflowClient()
 	if deleteArgs.all {
 		deleteWorkflows(metav1.ListOptions{})
 		return
