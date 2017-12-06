@@ -58,6 +58,8 @@ $ kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --sho
 $ kubectl logs hello-world-yyy -c main
 ```
 
+Additional examples are availabe [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
+
 ## 4. Install an Artifact Repository
 
 You'll create the artifact repo using Minio.
