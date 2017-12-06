@@ -31,17 +31,18 @@ var submitArgs submitFlags
 var submitCmd = &cobra.Command{
 	Use:   "submit FILE1 FILE2...",
 	Short: "submit a workflow",
-	Run:   submitWorkflows,
+	Run:   SubmitWorkflows,
 }
 
 var yamlSeparator = regexp.MustCompile("\\n---")
 
-func submitWorkflows(cmd *cobra.Command, args []string) {
+// SubmitWorkflows runs the given workflow
+func SubmitWorkflows(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		cmd.HelpFunc()(cmd, args)
 		os.Exit(1)
 	}
-	initWorkflowClient()
+	InitWorkflowClient()
 	for _, filePath := range args {
 		var body []byte
 		var err error

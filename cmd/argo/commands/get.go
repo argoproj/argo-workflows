@@ -32,16 +32,17 @@ var getArgs getFlags
 var getCmd = &cobra.Command{
 	Use:   "get WORKFLOW",
 	Short: "display details about a workflow",
-	Run:   getWorkflow,
+	Run:   GetWorkflow,
 }
 
-func getWorkflow(cmd *cobra.Command, args []string) {
+// GetWorkflow gets the workflow passed in as args
+func GetWorkflow(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		cmd.HelpFunc()(cmd, args)
 		os.Exit(1)
 	}
 
-	wfClient := initWorkflowClient()
+	wfClient := InitWorkflowClient()
 	wf, err := wfClient.GetWorkflow(args[0])
 	if err != nil {
 		log.Fatal(err)

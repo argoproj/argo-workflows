@@ -46,9 +46,9 @@ var timeMagnitudes = []humanize.RelTimeMagnitude{
 func listWorkflows(cmd *cobra.Command, args []string) {
 	var wfClient *wfclient.WorkflowClient
 	if listArgs.allNamespaces {
-		wfClient = initWorkflowClient(apiv1.NamespaceAll)
+		wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 	} else {
-		wfClient = initWorkflowClient()
+		wfClient = InitWorkflowClient()
 	}
 	wfList, err := wfClient.ListWorkflows(metav1.ListOptions{})
 	if err != nil {
