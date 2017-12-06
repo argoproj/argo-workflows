@@ -67,7 +67,9 @@ spec:
     inputs:
       parameters:
       - name: dup
+        value: "value"
       - name: dup
+        value: "value"
     container:
       image: docker/whalesay:latest
 `
@@ -84,6 +86,7 @@ spec:
     inputs:
       parameters:
       - name: ""
+        value: "value"
     container:
       image: docker/whalesay:latest
 `
@@ -136,6 +139,7 @@ spec:
     inputs:
       parameters:
       - name: message
+        value: "value"
     container:
       image: docker/whalesay:latest
     outputs:
