@@ -3,15 +3,17 @@ package e2e
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/stretchr/testify/assert"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func checkIfInstalled() bool {
+func checkIfInstalled(namespace string) bool {
 	clientSet := getKubernetesClient()
 
 	// TODO(shri): Create a new namespace and simply install in that.
@@ -33,7 +35,23 @@ func checkIfInstalled() bool {
 }
 
 func TestInstall(t *testing.T) {
-	if !checkIfInstalled() {
-		commands.Install(nil, nil)
+	namespace := "default"
+	if !checkIfInstalled(namespace) {
+		args := commands.InstallFlags{
+			ControllerName: common.DefaultControllerDeploymentName,
+			UIName:         common.DefaultUiDeploymentName,
+			Namespace:      namespace,
+			ConfigMap:      common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
+			//TODO(shri): Use better defaults that don't need Makefiles
+			ControllerImage: "argoproj/workflow-controller:v2.0.0-alpha2",
+			UIImage:         "argoproj/argoui:v2.0.0-alpha2",
+			ExecutorImage:   "argoproj/argoexec:v2.0.0-alpha2",
+			ServiceAccount:  "",
+		}
+
+		commands.Install(nil, args)
+		// Wait a little for the installation to complete.
+		time.Sleep(10 * time.Second)
+		assert.Equal(t, true, checkIfInstalled(namespace))
 	}
 }
