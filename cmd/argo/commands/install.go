@@ -51,10 +51,11 @@ var installArgs installFlags
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "install Argo",
-	Run:   install,
+	Run:   Install,
 }
 
-func install(cmd *cobra.Command, args []string) {
+// Install installs the Argo controller and UI in the given namespace
+func Install(cmd *cobra.Command, args []string) {
 	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
 	clientset = initKubeClient()
 	kubernetesVersionCheck(clientset)

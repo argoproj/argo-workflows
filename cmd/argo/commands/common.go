@@ -70,7 +70,8 @@ func initKubeClient() *kubernetes.Clientset {
 	return clientset
 }
 
-func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
+// InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
+func InitWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 	if wfClient != nil {
 		return wfClient
 	}
