@@ -57,13 +57,21 @@ export function create(
   app.use(bodyParser.json({type: () => true}));
 
   app.get('/api/workflows', (req, res) => serve(res, async () => {
-    const workflowList = <models.WorkflowList> await crd['workflows'].get();
+    let statuses: string[] = [];
+    if (req.query.status) {
+      statuses = req.query.status instanceof Array ? req.query.status : [req.query.status];
+    }
+    const workflowList = <models.WorkflowList> await crd['workflows'].get({
+      qs: {labelSelector: statuses.length > 0 && `workflows.argoproj.io/phase in (${statuses.join(',')})` || ''}
+    });
     workflowList.items.sort(
       (first, second) => moment(first.metadata.creationTimestamp) < moment(second.metadata.creationTimestamp) ? 1 : -1);
     return workflowList;
   }));
+
   app.get('/api/workflows/:namespace/:name',
     async (req, res) => serve(res, () => crd.ns(req.params.namespace)['workflows'].get(req.params.name)));
+
   app.get('/api/workflows/:namespace/:name/artifacts/:nodeName/:artifactName', async (req, res) => {
     const workflow: models.Workflow = await crd.ns(req.params.namespace)['workflows'].get(req.params.name);
     const node = workflow.status.nodes[req.params.nodeName];
