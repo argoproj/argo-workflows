@@ -25,57 +25,62 @@ const clusterAdmin = "cluster-admin"
 
 func init() {
 	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
-	installCmd.Flags().StringVar(&installArgs.uiName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
-	installCmd.Flags().StringVar(&installArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific namespace")
-	installCmd.Flags().StringVar(&installArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
-	installCmd.Flags().StringVar(&installArgs.controllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
-	installCmd.Flags().StringVar(&installArgs.uiImage, "ui-image", common.DefaultUiImage, "use a specified ui image")
-	installCmd.Flags().StringVar(&installArgs.executorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
-	installCmd.Flags().StringVar(&installArgs.serviceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
+	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
+	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
+	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
+	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
+	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", common.DefaultUiImage, "use a specified ui image")
+	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
+	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 }
 
-type installFlags struct {
-	controllerName  string // --name
-	uiName          string // --ui-name
-	namespace       string // --install-namespace
-	configMap       string // --configmap
-	controllerImage string // --controller-image
-	uiImage         string // --ui-image
-	executorImage   string // --executor-image
-	serviceAccount  string // --service-account
+// InstallFlags has all the required parameters for installing Argo.
+type InstallFlags struct {
+	ControllerName  string // --controller-name
+	UIName          string // --ui-name
+	Namespace       string // --install-Namespace
+	ConfigMap       string // --configmap
+	ControllerImage string // --controller-image
+	UIImage         string // --ui-image
+	ExecutorImage   string // --executor-image
+	ServiceAccount  string // --service-account
 }
 
-var installArgs installFlags
+var installArgs InstallFlags
 
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "install Argo",
-	Run:   Install,
+	Run:   install,
 }
 
-// Install installs the Argo controller and UI in the given namespace
-func Install(cmd *cobra.Command, args []string) {
-	fmt.Printf("Installing into namespace '%s'\n", installArgs.namespace)
+// Install installs the Argo controller and UI in the given Namespace
+func Install(cmd *cobra.Command, args InstallFlags) {
+	fmt.Printf("Installing into namespace '%s'\n", args.Namespace)
 	clientset = initKubeClient()
 	kubernetesVersionCheck(clientset)
 	installCRD(clientset)
-	if installArgs.serviceAccount == "" {
+	if args.ServiceAccount == "" {
 		if clusterAdminExists(clientset) {
 			seviceAccountName := ArgoServiceAccount
-			createServiceAccount(clientset, seviceAccountName)
-			createClusterRoleBinding(clientset, seviceAccountName)
-			installArgs.serviceAccount = seviceAccountName
+			createServiceAccount(clientset, seviceAccountName, args)
+			createClusterRoleBinding(clientset, seviceAccountName, args)
+			args.ServiceAccount = seviceAccountName
 		}
 	}
-	installConfigMap(clientset)
-	if installArgs.serviceAccount == "" {
+	installConfigMap(clientset, args)
+	if args.ServiceAccount == "" {
 		fmt.Printf("Using default service account for deployments\n")
 	} else {
-		fmt.Printf("Using service account '%s' for deployments\n", installArgs.serviceAccount)
+		fmt.Printf("Using service account '%s' for deployments\n", args.ServiceAccount)
 	}
-	installController(clientset)
-	installUi(clientset)
+	installController(clientset, args)
+	installUi(clientset, args)
+}
+
+func install(cmd *cobra.Command, args []string) {
+	Install(cmd, installArgs)
 }
 
 func clusterAdminExists(clientset *kubernetes.Clientset) bool {
@@ -90,7 +95,7 @@ func clusterAdminExists(clientset *kubernetes.Clientset) bool {
 	return true
 }
 
-func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string) {
+func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName string, args InstallFlags) {
 	serviceAccount := apiv1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -98,10 +103,10 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceAccountName,
-			Namespace: installArgs.namespace,
+			Namespace: args.Namespace,
 		},
 	}
-	_, err := clientset.CoreV1().ServiceAccounts(installArgs.namespace).Create(&serviceAccount)
+	_, err := clientset.CoreV1().ServiceAccounts(args.Namespace).Create(&serviceAccount)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create service account '%s': %v\n", serviceAccountName, err)
@@ -112,7 +117,7 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 	fmt.Printf("ServiceAccount '%s' created\n", serviceAccountName)
 }
 
-func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string) {
+func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string, args InstallFlags) {
 	roleBinding := rbacv1beta1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1beta1",
@@ -130,7 +135,7 @@ func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountNam
 			{
 				Kind:      rbacv1beta1.ServiceAccountKind,
 				Name:      serviceAccountName,
-				Namespace: installArgs.namespace,
+				Namespace: args.Namespace,
 			},
 		},
 	}
@@ -170,37 +175,37 @@ func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
 	fmt.Printf("Proceeding with Kubernetes version %v\n", serverVersion)
 }
 
-func installConfigMap(clientset *kubernetes.Clientset) {
-	cmClient := clientset.CoreV1().ConfigMaps(installArgs.namespace)
+func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
+	cmClient := clientset.CoreV1().ConfigMaps(args.Namespace)
 	var wfConfig controller.WorkflowControllerConfig
 
-	// install configmap if non-existant
-	wfConfigMap, err := cmClient.Get(installArgs.configMap, metav1.GetOptions{})
+	// install ConfigMap if non-existant
+	wfConfigMap, err := cmClient.Get(args.ConfigMap, metav1.GetOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed lookup of ConfigMap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
+			log.Fatalf("Failed lookup of ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
 		}
 		// Create the config map
-		wfConfig.ExecutorImage = installArgs.executorImage
+		wfConfig.ExecutorImage = args.ExecutorImage
 		configBytes, err := yaml.Marshal(wfConfig)
 		if err != nil {
 			log.Fatalf("%+v", errors.InternalWrapError(err))
 		}
-		wfConfigMap.ObjectMeta.Name = installArgs.configMap
+		wfConfigMap.ObjectMeta.Name = args.ConfigMap
 		wfConfigMap.Data = map[string]string{
 			common.WorkflowControllerConfigMapKey: string(configBytes),
 		}
 		wfConfigMap, err = cmClient.Create(wfConfigMap)
 		if err != nil {
-			log.Fatalf("Failed to create ConfigMap '%s' in namespace '%s': %v", installArgs.configMap, installArgs.namespace, err)
+			log.Fatalf("Failed to create ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
 		}
-		fmt.Printf("ConfigMap '%s' created\n", installArgs.configMap)
+		fmt.Printf("ConfigMap '%s' created\n", args.ConfigMap)
 	} else {
-		fmt.Printf("ConfigMap '%s' already exists\n", installArgs.configMap)
+		fmt.Printf("ConfigMap '%s' already exists\n", args.ConfigMap)
 	}
 	configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
-		log.Fatalf("ConfigMap '%s' missing key '%s'", installArgs.configMap, common.WorkflowControllerConfigMapKey)
+		log.Fatalf("ConfigMap '%s' missing key '%s'", args.ConfigMap, common.WorkflowControllerConfigMapKey)
 	}
 	err = yaml.Unmarshal([]byte(configStr), &wfConfig)
 	if err != nil {
@@ -208,32 +213,32 @@ func installConfigMap(clientset *kubernetes.Clientset) {
 	}
 }
 
-func installController(clientset *kubernetes.Clientset) {
-	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
+func installController(clientset *kubernetes.Clientset, args InstallFlags) {
+	deploymentsClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	controllerDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: installArgs.controllerName,
+			Name: args.ControllerName,
 		},
 		Spec: appsv1beta2.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": installArgs.controllerName,
+					"app": args.ControllerName,
 				},
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": installArgs.controllerName,
+						"app": args.ControllerName,
 					},
 				},
 				Spec: apiv1.PodSpec{
-					ServiceAccountName: installArgs.serviceAccount,
+					ServiceAccountName: args.ServiceAccount,
 					Containers: []apiv1.Container{
 						{
-							Name:    installArgs.controllerName,
-							Image:   installArgs.controllerImage,
+							Name:    args.ControllerName,
+							Image:   args.ControllerImage,
 							Command: []string{"workflow-controller"},
-							Args:    []string{"--configmap", installArgs.configMap},
+							Args:    []string{"--ConfigMap", args.ConfigMap},
 							Env: []apiv1.EnvVar{
 								apiv1.EnvVar{
 									Name: common.EnvVarNamespace,
@@ -270,30 +275,30 @@ func installController(clientset *kubernetes.Clientset) {
 	}
 }
 
-func installUi(clientset *kubernetes.Clientset) {
-	deploymentsClient := clientset.AppsV1beta2().Deployments(installArgs.namespace)
+func installUi(clientset *kubernetes.Clientset, args InstallFlags) {
+	deploymentsClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	uiDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: installArgs.uiName,
+			Name: args.UIName,
 		},
 		Spec: appsv1beta2.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"app": installArgs.uiName,
+					"app": args.UIName,
 				},
 			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"app": installArgs.uiName,
+						"app": args.UIName,
 					},
 				},
 				Spec: apiv1.PodSpec{
-					ServiceAccountName: installArgs.serviceAccount,
+					ServiceAccountName: args.ServiceAccount,
 					Containers: []apiv1.Container{
 						{
-							Name:  installArgs.uiName,
-							Image: installArgs.uiImage,
+							Name:  args.UIName,
+							Image: args.UIImage,
 							Env: []apiv1.EnvVar{
 								apiv1.EnvVar{
 									Name: common.EnvVarNamespace,
