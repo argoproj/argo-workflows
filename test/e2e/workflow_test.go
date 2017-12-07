@@ -9,9 +9,30 @@ import (
 	"time"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestRunWorkflowBasic(t *testing.T) {
+type WorkflowSuite struct {
+	suite.Suite
+	testNamespace string
+}
+
+func (suite *WorkflowSuite) SetupSuite() {
+	suite.testNamespace = createNamespaceForTest()
+	if !checkIfInstalled(suite.testNamespace) {
+		installArgoInNamespace(suite.testNamespace)
+	}
+}
+
+func (suite *WorkflowSuite) TearDownSuite() {
+	if err := deleteTestNamespace(suite.testNamespace); err != nil {
+		panic(err)
+	}
+	fmt.Printf("Deleted namespace %s\n", suite.testNamespace)
+}
+
+func (suite *WorkflowSuite) TestRunWorkflowBasic() {
 	workflowName := "my-test"
 	workflowYaml := `
 apiVersion: argoproj.io/v1alpha1
@@ -65,4 +86,11 @@ spec:
 			time.Sleep(1 * time.Second)
 		}
 	}
+
+	deleteOptions := metav1.DeleteOptions{}
+	wfClient.DeleteWorkflow(workflowName, &deleteOptions)
+}
+
+func TestArgoWorkflows(t *testing.T) {
+	suite.Run(t, new(WorkflowSuite))
 }
