@@ -9,6 +9,7 @@ import { NodeInfo, WorkflowTree } from '../../common';
 import { Observable } from 'rxjs/Observable';
 import { race } from 'rxjs/operators';
 import { DropdownMenuSettings } from 'ui-lib/src/components';
+import { NODE_PHASE } from '../../models';
 
 @Component({
   selector: 'ax-workflow-details-page',
@@ -26,6 +27,8 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
   public selectedYamlStep: string;
   public isYamlVisible: boolean;
+  public isConsoleVisible: boolean;
+  public consoleNodeName;
 
   constructor(private workflowsService: WorkflowsService,
               private route: ActivatedRoute,
@@ -46,19 +49,7 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     this.subscriptions.push(treeSrc.subscribe(tree => {
       this.workflow = tree.workflow;
       this.tree = tree;
-      this.actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
-      for (const artifact of this.tree.getArtifacts()) {
-        let settings = this.actionSettingsByNodeName.get(artifact.nodeName);
-        if (!settings) {
-          settings = new DropdownMenuSettings([]);
-          this.actionSettingsByNodeName.set(artifact.nodeName, settings);
-        }
-        settings.menu.push({
-          title: `Download artifact '${artifact.name}'`,
-          action: () => window.open(artifact.downloadUrl),
-          iconName: '',
-        });
-      }
+      this.regenerateActionMenuSettings();
     }));
 
     this.subscriptions.push(this.route.params.map(params => params['tab']).distinctUntilChanged().subscribe(tab => {
@@ -82,6 +73,13 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
       } else {
         this.selectedYamlStep = null;
         this.isYamlVisible = false;
+      }
+    }));
+
+    this.subscriptions.push(this.route.params.map(params => params['console'] || '').distinctUntilChanged().subscribe(ssh => {
+      this.isConsoleVisible = !!ssh;
+      if (this.isConsoleVisible) {
+        this.consoleNodeName = ssh;
       }
     }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
@@ -125,6 +123,10 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     this.router.navigate(['.', { tab: this.selectedTab, yaml: node.stepName }], { relativeTo: this.route });
   }
 
+  public showConsole(nodeName: string) {
+    this.router.navigate(['.', { tab: this.selectedTab, console: nodeName }], { relativeTo: this.route });
+  }
+
   public showStepDetails(stepName: string, detailsTab: string = 'logs') {
     this.router.navigate(['.', { tab: this.selectedTab, node: `${stepName}:${detailsTab}` }], { relativeTo: this.route });
   }
@@ -135,5 +137,37 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
 
   public time(dateTime: string) {
     return moment(dateTime).format('H:mm:ss');
+  }
+
+  private regenerateActionMenuSettings() {
+    this.actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
+    for (const artifact of this.tree.getArtifacts()) {
+      let settings = this.actionSettingsByNodeName.get(artifact.nodeName);
+      if (!settings) {
+        settings = new DropdownMenuSettings([]);
+        this.actionSettingsByNodeName.set(artifact.nodeName, settings);
+      }
+      settings.menu.push({
+        title: `Download artifact '${artifact.name}'`,
+        action: () => window.open(artifact.downloadUrl),
+        iconName: '',
+      });
+    }
+
+    for (const nodeName of Object.keys(this.tree.workflow.status.nodes)) {
+      let settings = this.actionSettingsByNodeName.get(nodeName);
+      if (!settings) {
+        settings = new DropdownMenuSettings([]);
+        this.actionSettingsByNodeName.set(nodeName, settings);
+      }
+      const status = this.tree.workflow.status.nodes[nodeName];
+      if (status.phase === NODE_PHASE.RUNNING) {
+        settings.menu.push({
+          title: 'View Console',
+          action: () => this.showConsole(nodeName),
+          iconName: 'fa-terminal',
+        });
+      }
+    }
   }
 }
