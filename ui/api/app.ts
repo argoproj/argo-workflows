@@ -9,37 +9,13 @@ import { Observer } from 'rxjs/Observer';
 import * as nodeStream from 'stream';
 import * as path from 'path';
 import * as moment from 'moment';
+import * as http from 'http';
+import * as consoleProxy from './console-proxy';
 
-function reactifyStream(stream, converter = item => item) {
-  return new Observable((observer: Observer<any>) => {
-      stream.on('data', (d) => observer.next(converter(d)));
-      stream.on('end', () => observer.complete());
-      stream.on('error', e => observer.error(e));
-  });
-}
-
-function reactifyStringStream(stream) {
-  return reactifyStream(stream, item => item.toString());
-}
-
-function streamServerEvents<T>(req: express.Request, res: express.Response, source: Observable<T>, formatter: (input: T) => string) {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Transfer-Encoding', 'chunked');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-
-  const subscription = source.subscribe(
-      (info) => res.write(`data:${formatter(info)}\n\n`),
-      (err) => res.end(),
-      () => res.end());
-  req.on('close', () => subscription.unsubscribe());
-}
+import { decodeBase64, reactifyStringStream, streamServerEvents } from './utils';
 
 function serve<T>(res: express.Response, action: () => Promise<T>) {
   action().then(val => res.send(val)).catch(err => res.status(500).send(err));
-}
-
-function decodeBase64(input: string) {
-  return new Buffer(input, 'base64').toString('ascii');
 }
 
 export function create(
@@ -103,5 +79,9 @@ export function create(
   });
   app.use(express.static(uiDist));
   app.use(fallback('index.html', { root: uiDist }));
-  return app;
+
+  const server = http.createServer(app);
+  consoleProxy.create(server, core);
+
+  return server;
 }
