@@ -72,4 +72,12 @@ export class WorkflowsService {
       return line ? line + '\n' : line;
     });
   }
+
+  public connectToConsole(uri: string, params: URLSearchParams) {
+    const search = params || new URLSearchParams();
+    const scheme = location.protocol === 'http:' ? 'ws' : 'wss';
+    const socket = new WebSocket(`${scheme}://${location.hostname}:${location.port}/${uri}?${search.toString()}`);
+    socket.binaryType = 'arraybuffer';
+    return socket;
+  }
 }

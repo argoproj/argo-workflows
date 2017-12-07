@@ -91,3 +91,11 @@
     <ax-yaml-viewer [input]="{tree: tree, selectedStep: selectedYamlStep}"></ax-yaml-viewer>
   </sliding-panel-body>
 </ax-sliding-panel>
+
+<ax-sliding-panel [show]="isConsoleVisible" (closePanel)="closeStepDetailsPanel()">
+  <sliding-panel-body>
+    <div class="workflow-details__sys-console">
+      <ax-sys-console [setJobId]="consoleNodeName"></ax-sys-console>
+    </div>
+  </sliding-panel-body>
+</ax-sliding-panel>

@@ -21,7 +21,8 @@
       "styles": [
         "styles.scss",
         "../node_modules/font-awesome/css/font-awesome.css",
-        "../node_modules/loaders.css/loaders.min.css"
+        "../node_modules/loaders.css/loaders.min.css",
+        "../node_modules/xterm/lib/xterm.css"
       ],
       "scripts": [],
       "environmentSource": "environments/environment.ts",
