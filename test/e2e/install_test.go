@@ -5,23 +5,38 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type InstallSuite struct {
+	suite.Suite
+	testNamespace string
+}
+
+// Make sure that a new namespace is created before each test
+func (suite *InstallSuite) SetupTest() {
+	suite.testNamespace = createNamespaceForTest()
+}
+
+func (suite *InstallSuite) TearDownTest() {
+	if err := deleteTestNamespace(suite.testNamespace); err != nil {
+		panic(err)
+	}
+}
+
 func checkIfInstalled(namespace string) bool {
 	clientSet := getKubernetesClient()
 
-	// TODO(shri): Create a new namespace and simply install in that.
 	// Verify that Argo doesn't exist in the Kube-system namespace
-	_, err := clientSet.AppsV1beta2().Deployments(common.DefaultControllerNamespace).Get(
+	_, err := clientSet.AppsV1beta2().Deployments(namespace).Get(
 		common.DefaultControllerDeploymentName, metav1.GetOptions{})
 	if err == nil {
-		fmt.Println("Argo already installed...")
+		fmt.Printf("Argo already installed in namespace %s...\n", namespace)
 		return true
 	}
 
@@ -34,24 +49,16 @@ func checkIfInstalled(namespace string) bool {
 	return false
 }
 
-func TestInstall(t *testing.T) {
-	namespace := "default"
-	if !checkIfInstalled(namespace) {
-		args := commands.InstallFlags{
-			ControllerName: common.DefaultControllerDeploymentName,
-			UIName:         common.DefaultUiDeploymentName,
-			Namespace:      namespace,
-			ConfigMap:      common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
-			//TODO(shri): Use better defaults that don't need Makefiles
-			ControllerImage: "argoproj/workflow-controller:v2.0.0-alpha2",
-			UIImage:         "argoproj/argoui:v2.0.0-alpha2",
-			ExecutorImage:   "argoproj/argoexec:v2.0.0-alpha2",
-			ServiceAccount:  "",
-		}
-
-		commands.Install(nil, args)
+func (suite *InstallSuite) TestInstall() {
+	t := suite.T()
+	if !checkIfInstalled(suite.testNamespace) {
+		installArgoInNamespace(suite.testNamespace)
 		// Wait a little for the installation to complete.
 		time.Sleep(10 * time.Second)
-		assert.Equal(t, true, checkIfInstalled(namespace))
+		assert.Equal(t, true, checkIfInstalled(suite.testNamespace))
 	}
+}
+
+func TestArgoInstall(t *testing.T) {
+	suite.Run(t, new(InstallSuite))
 }
