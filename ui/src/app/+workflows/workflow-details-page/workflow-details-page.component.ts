@@ -89,6 +89,9 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(this.route.params.map(params => params['console'] || '').distinctUntilChanged().subscribe(ssh => {
       this.isConsoleVisible = !!ssh;
+      if (this.isConsoleVisible) {
+        this.consoleNodeName = ssh;
+      }
     }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
       if (this.workflow) {
@@ -132,7 +135,6 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   }
 
   public showConsole(node: NodeInfo) {
-    this.consoleNodeName = node.nodeName;
     this.router.navigate(['.', { tab: this.selectedTab, console: node.stepName }], { relativeTo: this.route });
   }
 

@@ -53,7 +53,7 @@
               </li>
               <li *ngIf="cell.status.phase == 'Running'">
                 <button axButtonWave class="ax-button ax-button--base-o" (click)="showConsole(cell)">
-                  Console
+                  View Ax Console
                 </button>
               </li>
               <li *ngIf="actionSettingsByNodeName.get(cell.nodeName)">
