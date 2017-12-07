@@ -1,0 +1,18 @@
+sudo: required
+
+services:
+  - docker
+
+language: go
+
+go:
+  - 1.9.2
+
+cache:
+  directories:
+    - vendor
+
+script:
+  - go get -u github.com/golang/dep/cmd/dep
+  - dep ensure
+  - make all
