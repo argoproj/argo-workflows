@@ -26,6 +26,8 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public actionSettingsByNodeName = new Map<String, DropdownMenuSettings>();
   public selectedYamlStep: string;
   public isYamlVisible: boolean;
+  public isConsoleVisible: boolean;
+  public consoleNodeName;
 
   constructor(private workflowsService: WorkflowsService,
               private route: ActivatedRoute,
@@ -84,6 +86,10 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
         this.isYamlVisible = false;
       }
     }));
+
+    this.subscriptions.push(this.route.params.map(params => params['console'] || '').distinctUntilChanged().subscribe(ssh => {
+      this.isConsoleVisible = !!ssh;
+    }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
       if (this.workflow) {
         Object.keys(this.workflow.status.nodes)
@@ -123,6 +129,11 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
 
   public showYaml(node: NodeInfo) {
     this.router.navigate(['.', { tab: this.selectedTab, yaml: node.stepName }], { relativeTo: this.route });
+  }
+
+  public showConsole(node: NodeInfo) {
+    this.consoleNodeName = node.nodeName;
+    this.router.navigate(['.', { tab: this.selectedTab, console: node.stepName }], { relativeTo: this.route });
   }
 
   public showStepDetails(stepName: string, detailsTab: string = 'logs') {

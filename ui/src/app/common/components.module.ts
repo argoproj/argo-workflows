@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { GuiComponentsModule } from 'ui-lib/src/components';
 
@@ -14,6 +15,7 @@ import { WorkflowSubtreeComponent } from './workflow-tree/workflow-subtree.compo
 import { WorkflowTreeNodeComponent } from './workflow-tree/workflow-tree-node.component';
 import { ArtifactsComponent } from './artifacts/artifacts.component';
 import { YamlViewerComponent } from './yaml-viewer/yaml-viewer.component';
+import { SysConsoleComponent } from './sys-console/sys-console.component';
 
 const components = [
   ArtifactsComponent,
@@ -27,6 +29,7 @@ const components = [
   WorkflowSubtreeComponent,
   WorkflowTreeNodeComponent,
   YamlViewerComponent,
+  SysConsoleComponent
 ];
 
 @NgModule({
@@ -35,6 +38,8 @@ const components = [
   imports: [
     CommonModule,
     GuiComponentsModule,
+    FormsModule,
+    ReactiveFormsModule
   ]
 })
 export class ComponentsModule {}

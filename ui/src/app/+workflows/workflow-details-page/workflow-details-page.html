@@ -51,6 +51,11 @@
                   DETAILS
                 </button>
               </li>
+              <li *ngIf="cell.status.phase == 'Running'">
+                <button axButtonWave class="ax-button ax-button--base-o" (click)="showConsole(cell)">
+                  Console
+                </button>
+              </li>
               <li *ngIf="actionSettingsByNodeName.get(cell.nodeName)">
                   <ax-dropdown-menu [settings]="actionSettingsByNodeName.get(cell.nodeName)">
                       <button axButtonWave class="ax-button ax-button--base-o">
@@ -89,5 +94,13 @@
   </sliding-panel-header>
   <sliding-panel-body>
     <ax-yaml-viewer [input]="{tree: tree, selectedStep: selectedYamlStep}"></ax-yaml-viewer>
+  </sliding-panel-body>
+</ax-sliding-panel>
+
+<ax-sliding-panel [show]="isConsoleVisible" (closePanel)="closeStepDetailsPanel()">
+  <sliding-panel-body>
+    <div class="workflow-details__sys-console">
+      <ax-sys-console [setJobId]="consoleNodeName"></ax-sys-console>
+    </div>
   </sliding-panel-body>
 </ax-sliding-panel>
