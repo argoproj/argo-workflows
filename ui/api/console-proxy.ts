@@ -40,7 +40,11 @@ export function create(server: http.Server, core) {
           }
         }));
         kubeClient.on('close', safeCallback(() => {
-          ws.close();
+          ws.terminate();
+        }));
+        kubeClient.on('error', safeCallback(err => {
+          ws.send(err.message);
+          ws.terminate();
         }));
 
         ws.on('message', safeCallback(message => {

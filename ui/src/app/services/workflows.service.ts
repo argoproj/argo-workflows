@@ -74,9 +74,9 @@ export class WorkflowsService {
   }
 
   public connectToConsole(uri: string, params: URLSearchParams) {
-    let search = params || new URLSearchParams();
-    let scheme = location.protocol === 'http:' ? 'ws' : 'wss';
-    let socket = new WebSocket(`${scheme}://${location.hostname}:${location.port}/${uri}?${search.toString()}`);
+    const search = params || new URLSearchParams();
+    const scheme = location.protocol === 'http:' ? 'ws' : 'wss';
+    const socket = new WebSocket(`${scheme}://${location.hostname}:${location.port}/${uri}?${search.toString()}`);
     socket.binaryType = 'arraybuffer';
     return socket;
   }

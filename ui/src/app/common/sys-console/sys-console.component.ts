@@ -101,7 +101,7 @@ export class SysConsoleComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private initTerminal() {
-    let size = this.termSize;
+    const size = this.termSize;
     this.terminal = new Terminal({
       cols: size.cols,
       rows: size.rows,
@@ -119,7 +119,7 @@ export class SysConsoleComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private getSocket(command: string, size: { cols: number, rows: number }) {
-    let search = new URLSearchParams();
+    const search = new URLSearchParams();
     search.set('cmd', command);
     search.set('h', size.rows.toFixed());
     search.set('w', size.cols.toFixed());
@@ -134,7 +134,7 @@ export class SysConsoleComponent implements OnInit, OnDestroy, AfterViewInit {
       this.terminal.focus();
       this.socket.onmessage = evt => {
         if (evt.data instanceof ArrayBuffer) {
-          let bytearray = new Uint8Array(evt.data);
+          const bytearray = new Uint8Array(evt.data);
           let result = '';
           for (let i = 0; i < bytearray.length; i++) {
             result += String.fromCharCode(bytearray[i]);
