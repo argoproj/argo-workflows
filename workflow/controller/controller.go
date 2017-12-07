@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	goruntime "runtime"
@@ -13,16 +12,17 @@ import (
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
-	gocache "github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 type WorkflowController struct {
@@ -30,26 +30,18 @@ type WorkflowController struct {
 	ConfigMap string
 	// namespace for config map
 	ConfigMapNS string
-	//WorkflowClient *workflowclient.WorkflowClient
-	Config WorkflowControllerConfig
+	Config      WorkflowControllerConfig
 
 	restConfig *rest.Config
 	restClient *rest.RESTClient
 	scheme     *runtime.Scheme
 	clientset  *kubernetes.Clientset
-	wfUpdates  chan *wfv1.Workflow
-	podUpdates chan *apiv1.Pod
 
-	// completedPodCache an in-memory cache of completed pods names.
-	// This is used to remember the fact that we marked a pod as completed.
-	// any future pod events from the watch can be ignored. This enables
-	// pod watch handler to quickly skip evaluation of duplicated pod entries
-	// in the pod channel.
-	// Ideally this would have been prevented using completed=true label
-	// which we apply on a pod, but somehow it is possible for the informer
-	// to enqueue pods which are missing the label (depite having added it),
-	// thus, we record these pods temporarily in a TTL cache.
-	completedPodCache *gocache.Cache
+	// datastructures to support the processing of workflows and workflow pods
+	wfInformer  cache.SharedIndexInformer
+	podInformer cache.SharedIndexInformer
+	wfQueue     workqueue.RateLimitingInterface
+	podQueue    workqueue.RateLimitingInterface
 }
 
 type WorkflowControllerConfig struct {
@@ -90,21 +82,21 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 	}
 
 	wfc := WorkflowController{
-		restClient:        restClient,
-		restConfig:        config,
-		clientset:         clientset,
-		scheme:            scheme,
-		ConfigMap:         configMap,
-		wfUpdates:         make(chan *wfv1.Workflow, 10240),
-		podUpdates:        make(chan *apiv1.Pod, 102400),
-		completedPodCache: gocache.New(1*time.Hour, 10*time.Minute),
+		restClient: restClient,
+		restConfig: config,
+		clientset:  clientset,
+		scheme:     scheme,
+		ConfigMap:  configMap,
+		wfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 	return &wfc
 }
 
 // Run starts an Workflow resource controller
 func (wfc *WorkflowController) Run(ctx context.Context) error {
-	wfc.StartStatsTicker(5 * time.Minute)
+	defer wfc.wfQueue.ShutDown()
+	defer wfc.podQueue.ShutDown()
 
 	log.Info("Watch Workflow controller config map updates")
 	_, err := wfc.watchControllerConfigMap(ctx)
@@ -113,39 +105,107 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 		return err
 	}
 
-	log.Info("Watch Workflow objects")
+	wfc.wfInformer = wfc.newWorkflowInformer()
+	wfc.podInformer = wfc.newPodInformer()
+	go wfc.wfInformer.Run(ctx.Done())
+	go wfc.podInformer.Run(ctx.Done())
 
-	// Watch Workflow objects
-	_, err = wfc.watchWorkflows(ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for Workflow resource: %v", err)
-		return err
-	}
-
-	// Watch pods related to workflows
-	_, err = wfc.watchWorkflowPods(ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for Workflow resource: %v", err)
-		return err
-	}
-
-	i := 0
-	for {
-		if i%100 == 0 {
-			// periodically print the channel sizes
-			i += 1
-			log.Infof("wfChan=%d/%d podChan=%d/%d", len(wfc.wfUpdates), cap(wfc.wfUpdates), len(wfc.podUpdates), cap(wfc.podUpdates))
-		}
-		select {
-		case wf := <-wfc.wfUpdates:
-			wfc.operateWorkflow(wf)
-		case pod := <-wfc.podUpdates:
-			wfc.handlePodUpdate(pod)
+	// Wait for all involved caches to be synced, before processing items from the queue is started
+	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
+		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
+			return errors.InternalError("Timed out waiting for caches to sync")
 		}
 	}
 
+	wfc.StartStatsTicker(5 * time.Minute)
+	for i := 0; i < 4; i++ {
+		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
+	}
+	for i := 0; i < 8; i++ {
+		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
+	}
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+func (wfc *WorkflowController) runWorker() {
+	for wfc.processNextItem() {
+	}
+}
+
+// processNextItem is the worker logic for handling workflow updates
+func (wfc *WorkflowController) processNextItem() bool {
+	key, quit := wfc.wfQueue.Get()
+	if quit {
+		return false
+	}
+	defer wfc.wfQueue.Done(key)
+
+	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
+	if err != nil {
+		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
+		return true
+	}
+	if !exists {
+		// This happens after a workflow was labeled with completed=true
+		// or was deleted, but the work queue still had an entry for it.
+		return true
+	}
+	wf, ok := obj.(*wfv1.Workflow)
+	if !ok {
+		log.Warnf("Key '%s' in index is not a workflow", key)
+		return true
+	}
+	wfc.operateWorkflow(wf)
+	// TODO: operateWorkflow should return error if it was unable to operate properly
+	// so we can requeue the work for a later time
+	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
+	//c.handleErr(err, key)
+	return true
+}
+
+func (wfc *WorkflowController) podWorker() {
+	for wfc.processNextPodItem() {
+	}
+}
+
+// processNextPodItem is the worker logic for handling pod updates.
+// For pods updates, this simply means to up the workflow worker
+// by adding the corresponding entry for the workflow into the
+// workflow workqueue.
+func (wfc *WorkflowController) processNextPodItem() bool {
+	key, quit := wfc.podQueue.Get()
+	if quit {
+		return false
+	}
+	defer wfc.podQueue.Done(key)
+
+	obj, exists, err := wfc.podInformer.GetIndexer().GetByKey(key.(string))
+	if err != nil {
+		log.Errorf("Failed to get pod '%s' from informer index: %+v", key, err)
+		return true
+	}
+	if !exists {
+		// we can get here if the workflow updator
+		return true
+	}
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		log.Warnf("Key '%s' in index is not a pod", key)
+		return true
+	}
+	if pod.Labels == nil {
+		log.Warnf("Pod '%s' did not have labels", key)
+		return true
+	}
+	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
+	if !ok {
+		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
+		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
+		return true
+	}
+	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
+	return true
 }
 
 // ResyncConfig reloads the controller config from the configmap
@@ -219,40 +279,34 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) watchWorkflows(ctx context.Context) (cache.Controller, error) {
+func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowWatch()
-	_, controller := cache.NewInformer(
-		source,
-		&wfv1.Workflow{},
-		workflowResyncPeriod,
+	informer := cache.NewSharedIndexInformer(source, &wfv1.Workflow{}, workflowResyncPeriod, cache.Indexers{})
+	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				wf, ok := obj.(*wfv1.Workflow)
-				if ok {
-					wfc.wfUpdates <- wf
-				} else {
-					log.Warn("Watch received unusable workflow")
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.wfQueue.Add(key)
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
-				wf, ok := new.(*wfv1.Workflow)
-				if ok {
-					wfc.wfUpdates <- wf
-				} else {
-					log.Warn("Watch received unusable workflow")
+				key, err := cache.MetaNamespaceKeyFunc(new)
+				if err == nil {
+					wfc.wfQueue.Add(key)
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				wf, ok := obj.(*wfv1.Workflow)
-				if ok {
-					wfc.wfUpdates <- wf
-				} else {
-					log.Warn("Watch received unusable workflow")
+				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+				// key function.
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.wfQueue.Add(key)
 				}
 			},
-		})
-	go controller.Run(ctx.Done())
-	return controller, nil
+		},
+	)
+	return informer
 }
 
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
@@ -344,300 +398,34 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (wfc *WorkflowController) watchWorkflowPods(ctx context.Context) (cache.Controller, error) {
+func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 	source := wfc.newWorkflowPodWatch()
-	_, controller := cache.NewInformer(
-		source,
-		&apiv1.Pod{},
-		podResyncPeriod,
+	informer := cache.NewSharedIndexInformer(source, &apiv1.Pod{}, podResyncPeriod, cache.Indexers{})
+	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				pod, ok := obj.(*apiv1.Pod)
-				if ok {
-					wfc.podUpdates <- pod
-				} else {
-					log.Warn("Watch received unusable pod")
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.podQueue.Add(key)
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
-				pod, ok := new.(*apiv1.Pod)
-				if ok {
-					wfc.podUpdates <- pod
-				} else {
-					log.Warn("Watch received unusable pod")
+				key, err := cache.MetaNamespaceKeyFunc(new)
+				if err == nil {
+					wfc.podQueue.Add(key)
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				pod, ok := obj.(*apiv1.Pod)
-				if ok {
-					wfc.podUpdates <- pod
-				} else {
-					log.Warn("Watch received unusable pod")
+				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
+				// key function.
+				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+				if err == nil {
+					wfc.podQueue.Add(key)
 				}
 			},
-		})
-	go controller.Run(ctx.Done())
-	return controller, nil
-}
-
-// handlePodUpdate receives an update from a pod, and updates the status of the node in the workflow object accordingly
-// It is also responsible for unsetting the deamoned flag from a node status when it notices that a daemoned pod terminated.
-func (wfc *WorkflowController) handlePodUpdate(pod *apiv1.Pod) {
-	if _, ok := wfc.completedPodCache.Get(pod.ObjectMeta.Name); ok {
-		return
-	}
-	if pod.Labels[common.LabelKeyCompleted] == "true" {
-		return
-	}
-	workflowName, ok := pod.Labels[common.LabelKeyWorkflow]
-	if !ok {
-		// Ignore pods unrelated to workflow (this shouldn't happen unless the watch is setup incorrectly)
-		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
-		return
-	}
-	var newPhase wfv1.NodePhase
-	var newDaemonStatus *bool
-	var message string
-	switch pod.Status.Phase {
-	case apiv1.PodPending:
-		// Should not get here unless the watch is setup incorrectly
-		log.Warnf("watch returned a Pending pod: %s", pod.ObjectMeta.Name)
-		return
-	case apiv1.PodSucceeded:
-		newPhase = wfv1.NodeSucceeded
-		f := false
-		newDaemonStatus = &f
-	case apiv1.PodFailed:
-		newPhase, newDaemonStatus, message = inferFailedReason(pod)
-	case apiv1.PodRunning:
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
-			return
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
-		if err != nil {
-			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
-			return
-		}
-		if tmpl.Daemon == nil || !*tmpl.Daemon {
-			// incidental state change of a running pod. No need to inspect further
-			return
-		}
-		// pod is running and template is marked daemon. check if everything is ready
-		for _, ctrStatus := range pod.Status.ContainerStatuses {
-			if !ctrStatus.Ready {
-				return
-			}
-		}
-		// proceed to mark node status as succeeded (and daemoned)
-		newPhase = wfv1.NodeSucceeded
-		t := true
-		newDaemonStatus = &t
-		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
-	default:
-		log.Infof("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
-		newPhase = wfv1.NodeError
-	}
-
-	wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wfc.scheme, pod.ObjectMeta.Namespace)
-	wf, err := wfClient.GetWorkflow(workflowName)
-	if err != nil {
-		log.Warnf("Failed to find workflow %s %+v", workflowName, err)
-		return
-	}
-	node, ok := wf.Status.Nodes[pod.Name]
-	if !ok {
-		log.Warnf("pod %s unassociated with workflow %s", pod.Name, workflowName)
-		return
-	}
-	updateNeeded := applyUpdates(pod, &node, newPhase, newDaemonStatus, message)
-	if !updateNeeded {
-		log.Infof("No workflow updated needed for node %s (pod phase: %s)", node, pod.Status.Phase)
-	} else {
-		wf.Status.Nodes[pod.Name] = node
-		_, err = wfClient.UpdateWorkflow(wf)
-		if err != nil {
-			log.Errorf("Failed to update %s status: %+v", pod.Name, err)
-			// if we fail to update the CRD state, we will need to rely on resync to catch up
-			return
-		}
-		log.Infof("Updated %s", node)
-	}
-
-	if node.Completed() {
-		// If we get here, we need to decide whether or not to set the 'completed=true' label on the pod,
-		// which prevents the controller from seeing any pod updates for the rest of its existance.
-		// We only add the label if the pod is *not* daemoned, because we still rely on this pod watch
-		// for daemoned pods, in order to properly remove the daemoned status from the node when the pod
-		// terminates.
-		if !node.IsDaemoned() {
-			err = common.AddPodLabel(wfc.clientset, pod.ObjectMeta.Name, pod.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
-			if err != nil {
-				log.Errorf("Failed to label completed pod %s: %+v", node, err)
-				return
-			}
-			wfc.completedPodCache.SetDefault(pod.ObjectMeta.Name, true)
-			log.Infof("Set completed=true label to pod: %s", node)
-		} else {
-			log.Infof("Skipping completed=true labeling for daemoned pod: %s", node)
-		}
-	}
-}
-
-// inferFailedReason examines a Failed pod object to determine why it failed and return NodeStatus metadata
-func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
-	f := false
-	if pod.Status.Message != "" {
-		// Pod has a nice error message. Use that.
-		return wfv1.NodeFailed, &f, pod.Status.Message
-	}
-	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
-	// We only get one message to set for the overall node status.
-	// If mutiple containers failed, in order of preference: init, main, wait, sidecars
-	for _, ctr := range pod.Status.InitContainerStatuses {
-		if ctr.State.Terminated == nil {
-			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
-			continue
-		}
-		if ctr.State.Terminated.ExitCode == 0 {
-			continue
-		}
-		errMsg := fmt.Sprintf("failed to load artifacts")
-		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-			if msg != "" {
-				errMsg += ": " + msg
-				break
-			}
-		}
-		// NOTE: we consider artifact load issues as Error instead of Failed
-		return wfv1.NodeError, &f, errMsg
-	}
-	failMessages := make(map[string]string)
-	for _, ctr := range pod.Status.ContainerStatuses {
-		if ctr.State.Terminated == nil {
-			// We should never get here
-			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
-			continue
-		}
-		if ctr.State.Terminated.ExitCode == 0 {
-			continue
-		}
-		if ctr.Name == common.WaitContainerName {
-			errMsg := fmt.Sprintf("failed to save artifacts")
-			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
-				if msg != "" {
-					errMsg += ": " + msg
-					break
-				}
-			}
-			failMessages[ctr.Name] = errMsg
-		} else {
-			if ctr.State.Terminated.Message != "" {
-				failMessages[ctr.Name] = ctr.State.Terminated.Message
-			} else {
-				failMessages[ctr.Name] = fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
-			}
-		}
-	}
-	if failMsg, ok := failMessages[common.MainContainerName]; ok {
-		return wfv1.NodeFailed, &f, failMsg
-	}
-	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
-		return wfv1.NodeError, &f, failMsg
-	}
-
-	// If we get here, both the main and wait container succeeded.
-	// Identify the sidecar which failed and give proper message
-	// NOTE: we may need to distinguish between the main container
-	// succeeding and ignoring the sidecar statuses. This is because
-	// executor may have had to forcefully terminate a sidecar
-	// (kill -9), resulting in an non-zero exit code of a sidecar,
-	// and overall pod status as failed. Or the sidecar is actually
-	// *expected* to fail non-zero and should be ignored. Users may
-	// want the option to consider a step failed only if the main
-	// container failed. For now return the first failure.
-	for _, failMsg := range failMessages {
-		return wfv1.NodeFailed, &f, failMsg
-	}
-	return wfv1.NodeFailed, &f, fmt.Sprintf("pod failed for unknown reason")
-}
-
-// applyUpdates applies any new state information about a pod, to the current status of the workflow node
-// returns whether or not any updates were necessary (resulting in a update to the workflow)
-func applyUpdates(pod *apiv1.Pod, node *wfv1.NodeStatus, newPhase wfv1.NodePhase, newDaemonStatus *bool, message string) bool {
-	// Check various fields of the pods to see if we need to update the workflow
-	updateNeeded := false
-	if node.Phase != newPhase {
-		if node.Completed() {
-			// Don't modify the phase if this node was already considered completed.
-			// This might happen with daemoned steps which fail after they were daemoned
-			log.Infof("Ignoring node %s status update %s -> %s", node, node.Phase, newPhase)
-		} else {
-			log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
-			updateNeeded = true
-			node.Phase = newPhase
-		}
-	}
-	if newDaemonStatus != nil {
-		if *newDaemonStatus == false {
-			// if the daemon status switched to false, we prefer to just unset daemoned status field
-			// (as opposed to setting it to false)
-			newDaemonStatus = nil
-		}
-		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
-			log.Infof("Setting node %v daemoned: %v -> %v", node, node.Daemoned, newDaemonStatus)
-			node.Daemoned = newDaemonStatus
-			updateNeeded = true
-			if pod.Status.PodIP != node.PodIP {
-				// only update Pod IP for daemoned nodes to reduce number of updates
-				log.Infof("Updating daemon node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
-				node.PodIP = pod.Status.PodIP
-			}
-		}
-	}
-	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
-	if ok && node.Outputs == nil {
-		log.Infof("Setting node %v outputs", node)
-		updateNeeded = true
-		var outputs wfv1.Outputs
-		err := json.Unmarshal([]byte(outputStr), &outputs)
-		if err != nil {
-			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
-			node.Phase = wfv1.NodeError
-		} else {
-			node.Outputs = &outputs
-		}
-	}
-	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node, message)
-		node.Message = message
-	}
-	if node.Completed() && node.FinishedAt.IsZero() {
-		if !node.IsDaemoned() {
-			// Use the latest container finishedAt timestamp, since the controller
-			// can get backlogged or become down.
-			for _, ctr := range pod.Status.InitContainerStatuses {
-				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
-					node.FinishedAt = ctr.State.Terminated.FinishedAt
-				}
-			}
-			for _, ctr := range pod.Status.ContainerStatuses {
-				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
-					node.FinishedAt = ctr.State.Terminated.FinishedAt
-				}
-			}
-		}
-		if node.FinishedAt.IsZero() {
-			// If we get here, the container is daemoned so the
-			// finishedAt might not have been set.
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-		}
-		updateNeeded = true
-	}
-	return updateNeeded
+		},
+	)
+	return informer
 }
 
 // StartStatsTicker starts a goroutine which dumps stats at a specified interval
@@ -648,9 +436,8 @@ func (wfc *WorkflowController) StartStatsTicker(d time.Duration) {
 			<-ticker.C
 			var m goruntime.MemStats
 			goruntime.ReadMemStats(&m)
-			log.Infof("Alloc=%v TotalAlloc=%v Sys=%v NumGC=%v Goroutines=%d wfChan=%d/%d podChan=%d/%d",
-				m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, goruntime.NumGoroutine(),
-				len(wfc.wfUpdates), cap(wfc.wfUpdates), len(wfc.podUpdates), cap(wfc.podUpdates))
+			log.Infof("Alloc=%v TotalAlloc=%v Sys=%v NumGC=%v Goroutines=%d",
+				m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, goruntime.NumGoroutine())
 		}
 	}()
 }

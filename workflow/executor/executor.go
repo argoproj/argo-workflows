@@ -130,7 +130,6 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Main container identified as: %s", mainCtrID)
 
 	// This directory temporarily stores the tarballs of the artifacts before uploading
 	tempOutArtDir := "/argo/outputs/artifacts"
@@ -198,7 +197,6 @@ func (we *WorkflowExecutor) SaveParameters() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Main container identified as: %s", mainCtrID)
 
 	for i, param := range we.Template.Outputs.Parameters {
 		log.Infof("Saving out parameter: %s", param.Name)
@@ -257,7 +255,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
 
-// GetMainContainerStatus returns the container status of the main container
+// GetMainContainerStatus returns the container status of the main container, nil if the main container does not exist
 func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, error) {
 	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
@@ -269,7 +267,7 @@ func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, er
 			return &ctrStatus, nil
 		}
 	}
-	return nil, errors.InternalErrorf("Main container not found")
+	return nil, nil
 }
 
 // GetMainContainerID returns the container id of the main container
@@ -281,8 +279,12 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if ctrStatus == nil {
+		return "", nil
+	}
 	mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
 	we.mainContainerID = mainCtrID
+	log.Infof("'main' container identified as: %s", mainCtrID)
 	return mainCtrID, nil
 }
 
@@ -397,19 +399,21 @@ func (we *WorkflowExecutor) Wait() error {
 		if err != nil {
 			return err
 		}
-		log.Debug(ctrStatus)
-		if ctrStatus.ContainerID != "" {
-			mainContainerID = containerID(ctrStatus.ContainerID)
-			break
-		} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
-			// status still not ready, wait
-			time.Sleep(5)
-		} else if ctrStatus.State.Waiting != nil {
-			// main container is still in waiting status
-			time.Sleep(5)
-		} else {
-			// main container in running or terminated state but missing container ID
-			return errors.InternalErrorf("Container ID cannot be found")
+		if ctrStatus != nil {
+			log.Debug(ctrStatus)
+			if ctrStatus.ContainerID != "" {
+				mainContainerID = containerID(ctrStatus.ContainerID)
+				break
+			} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
+				// status still not ready, wait
+				time.Sleep(5)
+			} else if ctrStatus.State.Waiting != nil {
+				// main container is still in waiting status
+				time.Sleep(5)
+			} else {
+				// main container in running or terminated state but missing container ID
+				return errors.InternalError("Container ID cannot be found")
+			}
 		}
 	}
 
