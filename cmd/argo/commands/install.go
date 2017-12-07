@@ -238,7 +238,7 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 							Name:    args.ControllerName,
 							Image:   args.ControllerImage,
 							Command: []string{"workflow-controller"},
-							Args:    []string{"--ConfigMap", args.ConfigMap},
+							Args:    []string{"--configmap", args.ConfigMap},
 							Env: []apiv1.EnvVar{
 								apiv1.EnvVar{
 									Name: common.EnvVarNamespace,
