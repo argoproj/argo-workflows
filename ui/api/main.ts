@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 import * as yargs from 'yargs';
 import * as app from './app';
 import * as path from 'path';
