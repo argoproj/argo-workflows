@@ -12,17 +12,21 @@ import (
 	"github.com/argoproj/argo/errors"
 	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
+	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
 type wfOperationCtx struct {
 	// wf is the workflow object
 	wf *wfv1.Workflow
+	// orig is the original workflow object for purposes of creating a patch
+	orig *wfv1.Workflow
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
@@ -30,9 +34,8 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
-	// NOTE: eventually we may need to store additional metadata state to
-	// understand how to proceed in workflows with more complex control flows.
-	// (e.g. workflow failed in step 1 of 3 but has finalizer steps)
+	// map of pods which need to be labeled with completed=true
+	completedPods map[string]bool
 }
 
 // wfScope contains the current scope of variables available when iterating steps in a workflow
@@ -41,38 +44,34 @@ type wfScope struct {
 	scope map[string]interface{}
 }
 
-// operateWorkflow is the operator logic of a workflow
-// It evaluates the current state of the workflow and decides how to proceed down the execution path
+// operateWorkflow is the main operator logic of a workflow.
+// It evaluates the current state of the workflow, and its pods
+// and decides how to proceed down the execution path.
+// TODO: an error returned by this method should result in requeing the
+// workflow to be retried at a later time
 func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
 		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow channel
+		// but we are still draining the controller's workflow workqueue
 		return
 	}
-	log.Infof("Processing wf: %v", wf.ObjectMeta.SelfLink)
+	var err error
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
 	woc := wfOperationCtx{
 		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
+		orig:    wf,
 		updated: false,
 		log: log.WithFields(log.Fields{
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller: wfc,
+		controller:    wfc,
+		completedPods: make(map[string]bool),
 	}
-	defer func() {
-		if woc.updated {
-			wfClient := workflowclient.NewWorkflowClient(wfc.restClient, wfc.scheme, wf.ObjectMeta.Namespace)
-			_, err := wfClient.UpdateWorkflow(woc.wf)
-			if err != nil {
-				woc.log.Errorf("Error updating %s status: %v", woc.wf.ObjectMeta.SelfLink, err)
-			} else {
-				woc.log.Infof("Workflow %s updated", woc.wf.ObjectMeta.SelfLink)
-			}
-		}
-	}()
+	defer woc.persistUpdates()
+	woc.log.Infof("Processing workflow")
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -82,15 +81,21 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
 		}
+	} else {
+		err = woc.podReconciliation()
+		if err != nil {
+			woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+			// TODO: we need to re-add to the workqueue, but should happen in caller
+			return
+		}
 	}
 
-	err := woc.createPVCs()
+	err = woc.createPVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 		return
 	}
-
 	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
@@ -104,7 +109,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 		// Mark the workflow with an error message and return, but intentionally do not
-		// markCompletion so that we can retry PVC deletion (TODO: requires resync to be set on the informer)
+		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
 		// This error phase may be cleared if a subsequent delete attempt is successful.
 		woc.markWorkflowError(err, false)
 		return
@@ -128,6 +133,333 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 	}
+}
+
+// persistUpdates will PATCH a workflow with any updates made during workflow operation.
+// It also labels any pods as completed if we have extracted everything we need from it.
+func (woc *wfOperationCtx) persistUpdates() {
+	if !woc.updated {
+		return
+	}
+	oldData, err := json.Marshal(woc.orig)
+	if err != nil {
+		woc.log.Errorf("Error marshalling orig wf for patch: %+v", err)
+		return
+	}
+	newData, err := json.Marshal(woc.wf)
+	if err != nil {
+		woc.log.Errorf("Error marshalling wf for patch: %+v", err)
+		return
+	}
+	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		woc.log.Errorf("Error creating patch: %+v", err)
+		return
+	}
+	if string(patchBytes) != "{}" {
+		wfClient := workflowclient.NewWorkflowClient(woc.controller.restClient, woc.controller.scheme, woc.wf.ObjectMeta.Namespace)
+		_, err = wfClient.PatchWorkflow(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
+		if err != nil {
+			woc.log.Errorf("Error applying patch %s: %v", string(patchBytes), err)
+			return
+		}
+		woc.log.Infof("Patch successful")
+	}
+	if len(woc.completedPods) > 0 {
+		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
+		for podName := range woc.completedPods {
+			err = common.AddPodLabel(woc.controller.clientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
+			if err != nil {
+				woc.log.Errorf("Failed adding completed label to pod %s: %+v", podName, err)
+			}
+		}
+	}
+}
+
+// podReconciliation is the process by which a workflow will examine all its related
+// pods and update the node state before continuing the evaluation of the workflow.
+// Records all pods which were observed completed, which will be labeled completed=true
+// after successful persist of the workflow.
+func (woc *wfOperationCtx) podReconciliation() error {
+	podList, err := woc.getWorkflowPods(false)
+	if err != nil {
+		return err
+	}
+	seenPods := make(map[string]bool)
+	for _, pod := range podList.Items {
+		seenPods[pod.ObjectMeta.Name] = true
+		if node, ok := woc.wf.Status.Nodes[pod.ObjectMeta.Name]; ok {
+			if newState := assessNodeStatus(&pod, &node); newState != nil {
+				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
+				woc.updated = true
+				if newState.Completed() {
+					woc.completedPods[newState.ID] = true
+				}
+			}
+		}
+	}
+	if len(podList.Items) > 0 {
+		return nil
+	}
+	// If we get here, our initial query for pods related to this workflow returned nothing.
+	// (note that our initial query excludes Pending pods for performance reasons since
+	// there's generally no action needed to be taken on pods in a Pending state).
+	// There are only a few scenarios where the pod list would have been empty:
+	//  1. this workflow's pods are still pending (ideal case)
+	//  2. this workflow's pods were deleted unbeknownst to the controller
+	//  3. combination of 1 and 2
+	// In order to detect scenario 2, we repeat the pod reconciliation process, this time
+	// including Pending pods in the query. If one of our nodes does not show up in this list,
+	// it implies that the pod was deleted without the controller seeing the event.
+	woc.log.Info("Checking for deleted pods")
+	podList, err = woc.getWorkflowPods(true)
+	if err != nil {
+		return err
+	}
+	for _, pod := range podList.Items {
+		seenPods[pod.ObjectMeta.Name] = true
+		if node, ok := woc.wf.Status.Nodes[pod.ObjectMeta.Name]; ok {
+			if newState := assessNodeStatus(&pod, &node); newState != nil {
+				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
+				woc.updated = true
+				if newState.Completed() {
+					woc.completedPods[newState.ID] = true
+				}
+			}
+		}
+	}
+	// Now iterate the workflow pod nodes which we still believe to be incomplete.
+	// If the pod was not seen in the pod list, it means the pod was deleted and it
+	// is now impossible to infer status. The only thing we can do at this point is
+	// to mark the node with Error.
+	for nodeID, node := range woc.wf.Status.Nodes {
+		if len(node.Children) > 0 || node.Completed() {
+			// node is not a pod, or it is already complete
+			continue
+		}
+		if _, ok := seenPods[nodeID]; !ok {
+			node.Message = "pod deleted"
+			node.Phase = wfv1.NodeError
+			woc.wf.Status.Nodes[nodeID] = node
+			woc.log.Warnf("pod %s deleted", nodeID)
+			woc.updated = true
+		}
+	}
+	return nil
+}
+
+// getWorkflowPods returns all pods related to the current workflow
+func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList, error) {
+	options := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s=false",
+			common.LabelKeyWorkflow,
+			woc.wf.ObjectMeta.Name,
+			common.LabelKeyCompleted),
+	}
+	if !includePending {
+		options.FieldSelector = "status.phase!=Pending"
+	}
+	podList, err := woc.controller.clientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return podList, nil
+}
+
+// assessNodeStatus compares the current state of a pod with its corresponding node
+// and returns the new node status if something changed
+func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
+	var newPhase wfv1.NodePhase
+	var newDaemonStatus *bool
+	var message string
+	updated := false
+	switch pod.Status.Phase {
+	case apiv1.PodPending:
+		return nil
+	case apiv1.PodSucceeded:
+		newPhase = wfv1.NodeSucceeded
+		f := false
+		newDaemonStatus = &f
+	case apiv1.PodFailed:
+		newPhase, newDaemonStatus, message = inferFailedReason(pod)
+	case apiv1.PodRunning:
+		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+		if !ok {
+			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+			return nil
+		}
+		var tmpl wfv1.Template
+		err := json.Unmarshal([]byte(tmplStr), &tmpl)
+		if err != nil {
+			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+			return nil
+		}
+		if tmpl.Daemon == nil || !*tmpl.Daemon {
+			// incidental state change of a running pod. No need to inspect further
+			return nil
+		}
+		// pod is running and template is marked daemon. check if everything is ready
+		for _, ctrStatus := range pod.Status.ContainerStatuses {
+			if !ctrStatus.Ready {
+				return nil
+			}
+		}
+		// proceed to mark node status as succeeded (and daemoned)
+		newPhase = wfv1.NodeSucceeded
+		t := true
+		newDaemonStatus = &t
+		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+	default:
+		newPhase = wfv1.NodeError
+		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
+		log.Error(message)
+	}
+
+	if newDaemonStatus != nil {
+		if *newDaemonStatus == false {
+			// if the daemon status switched to false, we prefer to just unset daemoned status field
+			// (as opposed to setting it to false)
+			newDaemonStatus = nil
+		}
+		if (newDaemonStatus != nil && node.Daemoned == nil) || (newDaemonStatus == nil && node.Daemoned != nil) {
+			log.Infof("Setting node %v daemoned: %v -> %v", node, node.Daemoned, newDaemonStatus)
+			node.Daemoned = newDaemonStatus
+			updated = true
+			if pod.Status.PodIP != "" && pod.Status.PodIP != node.PodIP {
+				// only update Pod IP for daemoned nodes to reduce number of updates
+				log.Infof("Updating daemon node %s IP %s -> %s", node, node.PodIP, pod.Status.PodIP)
+				node.PodIP = pod.Status.PodIP
+			}
+		}
+	}
+	outputStr, ok := pod.Annotations[common.AnnotationKeyOutputs]
+	if ok && node.Outputs == nil {
+		updated = true
+		log.Infof("Setting node %v outputs", node)
+		var outputs wfv1.Outputs
+		err := json.Unmarshal([]byte(outputStr), &outputs)
+		if err != nil {
+			log.Errorf("Failed to unmarshal %s outputs from pod annotation: %v", pod.Name, err)
+			node.Phase = wfv1.NodeError
+		} else {
+			node.Outputs = &outputs
+		}
+	}
+	if message != "" && node.Message != message {
+		log.Infof("Updating node %s message: %s", node, message)
+		node.Message = message
+	}
+	if node.Phase != newPhase {
+		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
+		updated = true
+		node.Phase = newPhase
+	}
+	if node.Completed() && node.FinishedAt.IsZero() {
+		updated = true
+		if !node.IsDaemoned() {
+			// Use the latest container finishedAt timestamp, since the controller
+			// can get backlogged or become down.
+			for _, ctr := range pod.Status.InitContainerStatuses {
+				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
+					node.FinishedAt = ctr.State.Terminated.FinishedAt
+				}
+			}
+			for _, ctr := range pod.Status.ContainerStatuses {
+				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
+					node.FinishedAt = ctr.State.Terminated.FinishedAt
+				}
+			}
+		}
+		if node.FinishedAt.IsZero() {
+			// If we get here, the container is daemoned so the
+			// finishedAt might not have been set.
+			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		}
+	}
+	if updated {
+		return node
+	}
+	return nil
+}
+
+// inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
+// Returns a 3-tuple of the new NodePhase, daemoned status, and a node message.
+func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
+	f := false
+	if pod.Status.Message != "" {
+		// Pod has a nice error message. Use that.
+		return wfv1.NodeFailed, &f, pod.Status.Message
+	}
+	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
+	// We only get one message to set for the overall node status.
+	// If mutiple containers failed, in order of preference: init, main, wait, sidecars
+	for _, ctr := range pod.Status.InitContainerStatuses {
+		if ctr.State.Terminated == nil {
+			// We should never get here
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			continue
+		}
+		if ctr.State.Terminated.ExitCode == 0 {
+			continue
+		}
+		errMsg := fmt.Sprintf("failed to load artifacts")
+		for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
+			if msg != "" {
+				errMsg += ": " + msg
+				break
+			}
+		}
+		// NOTE: we consider artifact load issues as Error instead of Failed
+		return wfv1.NodeError, &f, errMsg
+	}
+	failMessages := make(map[string]string)
+	for _, ctr := range pod.Status.ContainerStatuses {
+		if ctr.State.Terminated == nil {
+			// We should never get here
+			log.Warnf("Pod %s phase was Failed but %s did not have terminated state", pod.ObjectMeta.Name, ctr.Name)
+			continue
+		}
+		if ctr.State.Terminated.ExitCode == 0 {
+			continue
+		}
+		if ctr.Name == common.WaitContainerName {
+			errMsg := fmt.Sprintf("failed to save artifacts")
+			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
+				if msg != "" {
+					errMsg += ": " + msg
+					break
+				}
+			}
+			failMessages[ctr.Name] = errMsg
+		} else {
+			if ctr.State.Terminated.Message != "" {
+				failMessages[ctr.Name] = ctr.State.Terminated.Message
+			} else {
+				failMessages[ctr.Name] = fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
+			}
+		}
+	}
+	if failMsg, ok := failMessages[common.MainContainerName]; ok {
+		return wfv1.NodeFailed, &f, failMsg
+	}
+	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
+		return wfv1.NodeError, &f, failMsg
+	}
+
+	// If we get here, both the main and wait container succeeded.
+	// Identify the sidecar which failed and give proper message
+	// NOTE: we may need to distinguish between the main container
+	// succeeding and ignoring the sidecar statuses. This is because
+	// executor may have had to forcefully terminate a sidecar
+	// (kill -9), resulting in an non-zero exit code of a sidecar,
+	// and overall pod status as failed. Or the sidecar is actually
+	// *expected* to fail non-zero and should be ignored. Users may
+	// want the option to consider a step failed only if the main
+	// container failed. For now return the first failure.
+	for _, failMsg := range failMessages {
+		return wfv1.NodeFailed, &f, failMsg
+	}
+	return wfv1.NodeFailed, &f, fmt.Sprintf("pod failed for unknown reason")
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
