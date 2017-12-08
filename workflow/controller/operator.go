@@ -19,6 +19,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -36,7 +37,16 @@ type wfOperationCtx struct {
 	controller *WorkflowController
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
+	// deadline is the dealine time in which this operation should relinquish
+	// its hold on the workflow so that an operation does not run for too long
+	// and starve other workqueue items. It also enables workflow progress to
+	// be periodically synced to the database.
+	deadline time.Time
 }
+
+// maxOperationTime is the maximum time a workflow operation is allowed to run
+// for before requeuing the workflow onto the workqueue.
+const maxOperationTime time.Duration = 10 * time.Second
 
 // wfScope contains the current scope of variables available when iterating steps in a workflow
 type wfScope struct {
@@ -69,6 +79,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		}),
 		controller:    wfc,
 		completedPods: make(map[string]bool),
+		deadline:      time.Now().UTC().Add(maxOperationTime),
 	}
 	defer woc.persistUpdates()
 	woc.log.Infof("Processing workflow")
@@ -98,6 +109,16 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
 	if err != nil {
+		if errors.IsCode(errors.CodeTimeout, err) {
+			// A timeout indicates we took too long operating on the workflow.
+			// Return so we can persist all the work we have done so far, and
+			// requeue the workflow for another day. TODO: move this into the caller
+			key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+			if err == nil {
+				wfc.wfQueue.Add(key)
+			}
+			return
+		}
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
 	node := woc.wf.Status.Nodes[woc.wf.NodeID(wf.ObjectMeta.Name)]
@@ -192,9 +213,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if newState := assessNodeStatus(&pod, &node); newState != nil {
 				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
 				woc.updated = true
-				if newState.Completed() {
-					woc.completedPods[newState.ID] = true
-				}
+			}
+			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
+				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}
@@ -222,9 +243,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if newState := assessNodeStatus(&pod, &node); newState != nil {
 				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
 				woc.updated = true
-				if newState.Completed() {
-					woc.completedPods[newState.ID] = true
-				}
+			}
+			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
+				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}
@@ -273,15 +294,16 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newDaemonStatus *bool
 	var message string
 	updated := false
+	f := false
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		return nil
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
-		f := false
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
-		newPhase, newDaemonStatus, message = inferFailedReason(pod)
+		newPhase, message = inferFailedReason(pod)
+		newDaemonStatus = &f
 	case apiv1.PodRunning:
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
@@ -357,18 +379,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	if node.Completed() && node.FinishedAt.IsZero() {
 		updated = true
 		if !node.IsDaemoned() {
-			// Use the latest container finishedAt timestamp, since the controller
-			// can get backlogged or become down.
-			for _, ctr := range pod.Status.InitContainerStatuses {
-				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
-					node.FinishedAt = ctr.State.Terminated.FinishedAt
-				}
-			}
-			for _, ctr := range pod.Status.ContainerStatuses {
-				if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(node.FinishedAt.Time) {
-					node.FinishedAt = ctr.State.Terminated.FinishedAt
-				}
-			}
+			node.FinishedAt = getLatestFinishedAt(pod)
 		}
 		if node.FinishedAt.IsZero() {
 			// If we get here, the container is daemoned so the
@@ -382,13 +393,29 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	return nil
 }
 
+// getLatestFinishedAt returns the latest finishAt timestamp from all the
+// containers of this pod.
+func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
+	var latest metav1.Time
+	for _, ctr := range pod.Status.InitContainerStatuses {
+		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
+			latest = ctr.State.Terminated.FinishedAt
+		}
+	}
+	for _, ctr := range pod.Status.ContainerStatuses {
+		if ctr.State.Terminated != nil && ctr.State.Terminated.FinishedAt.After(latest.Time) {
+			latest = ctr.State.Terminated.FinishedAt
+		}
+	}
+	return latest
+}
+
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
-// Returns a 3-tuple of the new NodePhase, daemoned status, and a node message.
-func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
-	f := false
+// Returns a tuple of the new phase and message
+func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	if pod.Status.Message != "" {
 		// Pod has a nice error message. Use that.
-		return wfv1.NodeFailed, &f, pod.Status.Message
+		return wfv1.NodeFailed, pod.Status.Message
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 	// We only get one message to set for the overall node status.
@@ -410,7 +437,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 			}
 		}
 		// NOTE: we consider artifact load issues as Error instead of Failed
-		return wfv1.NodeError, &f, errMsg
+		return wfv1.NodeError, errMsg
 	}
 	failMessages := make(map[string]string)
 	for _, ctr := range pod.Status.ContainerStatuses {
@@ -440,10 +467,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 		}
 	}
 	if failMsg, ok := failMessages[common.MainContainerName]; ok {
-		return wfv1.NodeFailed, &f, failMsg
+		return wfv1.NodeFailed, failMsg
 	}
 	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
-		return wfv1.NodeError, &f, failMsg
+		return wfv1.NodeError, failMsg
 	}
 
 	// If we get here, both the main and wait container succeeded.
@@ -457,9 +484,9 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, *bool, string) {
 	// want the option to consider a step failed only if the main
 	// container failed. For now return the first failure.
 	for _, failMsg := range failMessages {
-		return wfv1.NodeFailed, &f, failMsg
+		return wfv1.NodeFailed, failMsg
 	}
-	return wfv1.NodeFailed, &f, fmt.Sprintf("pod failed for unknown reason")
+	return wfv1.NodeFailed, fmt.Sprintf("pod failed for unknown reason")
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
@@ -576,8 +603,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 			return nil
 		}
 		// We have not yet created the pod
-		return woc.executeContainer(nodeName, tmpl)
-
+		err = woc.executeContainer(nodeName, tmpl)
 	} else if len(tmpl.Steps) > 0 {
 		if !ok {
 			node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
@@ -587,14 +613,20 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		if woc.wf.Status.Nodes[nodeID].Completed() {
 			woc.killDeamonedChildren(nodeID)
 		}
-		return err
-
 	} else if tmpl.Script != nil {
-		return woc.executeScript(nodeName, tmpl)
+		err = woc.executeScript(nodeName, tmpl)
+	} else {
+		err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
+		woc.markNodeError(nodeName, err)
 	}
-	err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
-	woc.markNodeError(nodeName, err)
-	return err
+	if err != nil {
+		return err
+	}
+	if time.Now().UTC().After(woc.deadline) {
+		woc.log.Warnf("Deadline exceeded")
+		return errors.New(errors.CodeTimeout, "Deadline exceeded")
+	}
+	return nil
 }
 
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
@@ -683,12 +715,14 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
-	err := woc.createWorkflowPod(nodeName, tmpl)
+	pod, err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	node.StartedAt = pod.CreationTimestamp
+	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
@@ -703,6 +737,9 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 		woc.addChildNode(nodeName, sgNodeName)
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
 		if err != nil {
+			if errors.IsCode(errors.CodeTimeout, err) {
+				return err
+			}
 			woc.markNodeError(nodeName, err)
 			return err
 		}
@@ -802,8 +839,10 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
 		if err != nil {
-			woc.markNodeError(childNodeName, err)
-			woc.markNodeError(sgNodeName, err)
+			if !errors.IsCode(errors.CodeTimeout, err) {
+				woc.markNodeError(childNodeName, err)
+				woc.markNodeError(sgNodeName, err)
+			}
 			return err
 		}
 	}
@@ -992,12 +1031,14 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {
-	err := woc.createWorkflowPod(nodeName, tmpl)
+	pod, err := woc.createWorkflowPod(nodeName, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	node.StartedAt = pod.CreationTimestamp
+	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }

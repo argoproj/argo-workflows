@@ -14,6 +14,7 @@ const (
 	CodeBadRequest   = "ERR_BAD_REQUEST"
 	CodeForbidden    = "ERR_FORBIDDEN"
 	CodeNotFound     = "ERR_NOT_FOUND"
+	CodeTimeout      = "ERR_TIMEOUT"
 	CodeInternal     = "ERR_INTERNAL"
 )
 
@@ -148,4 +149,13 @@ func (e argoerr) Format(s fmt.State, verb rune) {
 	case 'q':
 		fmt.Fprintf(s, "%q", e.Error())
 	}
+}
+
+// IsCode is a helper to determine if the error is of a specific code
+func IsCode(code string, err error) bool {
+	if argoErr, ok := err.(argoerr); ok {
+		return argoErr.code == code
+	}
+	return false
+
 }
