@@ -96,7 +96,6 @@ clean:
 	-rm -rf ${BUILD_DIR}/dist
 
 ui-image:
-	docker run --rm -v `pwd`/ui:/src -w /src -it node:6.9.5 bash -c "npm install -g yarn && rm -rf node_modules && yarn install && yarn run build" && \
 	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
 
