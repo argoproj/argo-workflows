@@ -2,8 +2,6 @@ package e2e
 
 import (
 	"flag"
-	"os"
-	"path/filepath"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/workflow/common"
@@ -15,21 +13,9 @@ import (
 
 var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
 
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-}
-
 func getKubernetesClient() *kubernetes.Clientset {
 	if *kubeConfig == "" {
-		if home := homeDir(); home != "" {
-			k := filepath.Join(home, ".kube", "config")
-			kubeConfig = &k
-		} else {
-			panic("Failed to find kubeConfig")
-		}
+		panic("Kubeconfig not provided")
 	}
 
 	// use the current context in kubeconfig
