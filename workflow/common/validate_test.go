@@ -184,3 +184,57 @@ func TestUnsatisfiedParam(t *testing.T) {
 		assert.Contains(t, err.Error(), "not supplied")
 	}
 }
+
+var globalParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-parameters-complex-
+spec:
+  entrypoint: test-workflow
+  arguments:
+    parameters:
+    - name: message1
+      value: hello world
+    - name: message2
+      value: foo bar
+
+  templates:
+  - name: test-workflow
+    inputs:
+      parameters:
+      - name: message1
+      - name: message-internal
+        value: "{{workflow.parameters.message1}}"
+    steps:
+    - - name: step1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message1
+            value: world hello
+          - name: message2
+            value: "{{inputs.parameters.message1}}"
+          - name: message3
+            value: "{{workflow.parameters.message2}}"
+          - name: message4
+            value: "{{inputs.parameters.message-internal}}"
+
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message1
+      - name: message2
+      - name: message3
+      - name: message4
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["Global 1: {{workflow.parameters.message1}} Input 1: {{inputs.parameters.message1}} Input 2/Steps Input 1/Global 1: {{inputs.parameters.message2}} Input 3/Global 2: {{inputs.parameters.message3}} Input4/Steps Input 2 internal/Global 1: {{inputs.parameters.message4}}"]
+`
+
+func TestGlobalParam(t *testing.T) {
+	err := validate(globalParam)
+	assert.Nil(t, err)
+}
