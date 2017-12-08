@@ -23,6 +23,7 @@ export class StatusIconDirective {
         let styleClasses = [];
 
         switch (status) {
+            case NODE_PHASE.ERROR:
             case NODE_PHASE.FAILED:
                 styleClasses = ['fa-times-circle', 'status-icon--failed'];
                 break;
