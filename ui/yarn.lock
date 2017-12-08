@@ -6081,9 +6081,9 @@ uglifyjs-webpack-plugin@^0.4.6:
     uglify-js "^2.8.29"
     webpack-sources "^1.0.1"
 
-"ui-lib@git+https://github.com/argoproj/ui-lib.git#v2.0.1":
-  version "2.0.0"
-  resolved "git+https://github.com/argoproj/ui-lib.git#734c03895fe71c18de31d6474698ebc976a183a6"
+"ui-lib@git+https://github.com/argoproj/ui-lib.git#v2.0.2":
+  version "2.0.2"
+  resolved "git+https://github.com/argoproj/ui-lib.git#6fed9a37fa8149fd659f356b73ae02ae27bc8df6"
   dependencies:
     "@angular/animations" "^5.0.0"
     "@angular/common" "^5.0.0"
@@ -6101,7 +6101,7 @@ uglifyjs-webpack-plugin@^0.4.6:
     marked "^0.3.6"
     moment "^2.19.2"
     rxjs "^5.5.2"
-    xterm "^2.9.2"
+    xterm "^2.4.0"
     zone.js "^0.8.14"
 
 uid-number@^0.0.6:
@@ -6606,7 +6606,7 @@ xterm@2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/xterm/-/xterm-2.4.0.tgz#d70227993b74323e36495ab9c7bdee0bc8d0dbba"
 
-xterm@^2.9.2:
+xterm@^2.4.0:
   version "2.9.2"
   resolved "https://registry.yarnpkg.com/xterm/-/xterm-2.9.2.tgz#ec3e7c636ba67af4a7026be2cff7bdf08e56400a"
 
