@@ -18,6 +18,12 @@ type InstallSuite struct {
 	testNamespace string
 }
 
+func (suite *InstallSuite) SetupSuite() {
+	if *kubeConfig == "" {
+		suite.T().Skip("Skipping test. Kubeconfig not provided")
+	}
+}
+
 // Make sure that a new namespace is created before each test
 func (suite *InstallSuite) SetupTest() {
 	suite.testNamespace = createNamespaceForTest()

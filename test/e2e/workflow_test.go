@@ -19,6 +19,10 @@ type WorkflowSuite struct {
 }
 
 func (suite *WorkflowSuite) SetupSuite() {
+	if *kubeConfig == "" {
+		suite.T().Skip("Skipping test. Kubeconfig not provided")
+		return
+	}
 	suite.testNamespace = createNamespaceForTest()
 	if !checkIfInstalled(suite.testNamespace) {
 		installArgoInNamespace(suite.testNamespace)
