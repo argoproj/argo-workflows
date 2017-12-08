@@ -57,7 +57,7 @@
     "nodemon": "^1.12.1",
     "protractor": "~5.1.2",
     "tslint": "~5.7.0",
-    "ui-lib": "git+https://github.com/argoproj/ui-lib.git#v2.0.1",
+    "ui-lib": "git+https://github.com/argoproj/ui-lib.git#v2.0.2",
     "xterm": "2.4.0",
     "yamljs": "^0.3.0",
     "zone.js": "^0.8.14"
