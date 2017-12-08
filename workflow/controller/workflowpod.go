@@ -105,12 +105,12 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 	}
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) error {
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	woc.log.Debugf("Creating Pod: %s", nodeName)
 	tmpl = tmpl.DeepCopy()
 	waitCtr, err := woc.newWaitContainer(tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var mainCtr apiv1.Container
 	if tmpl.Container != nil {
@@ -123,7 +123,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			Args:    []string{common.ScriptTemplateSourcePath},
 		}
 	} else {
-		return errors.InternalError("Cannot create container from non-container/script template")
+		return nil, errors.InternalError("Cannot create container from non-container/script template")
 	}
 	mainCtr.Name = common.MainContainerName
 	t := true
@@ -173,16 +173,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 
 	err = woc.addVolumeReferences(&pod, tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = woc.addInputArtifactsVolumes(&pod, tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = woc.addArchiveLocation(&pod, tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if tmpl.Script != nil {
@@ -193,7 +193,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	// in the main container (in case sidecar requires volume mount mirroring)
 	err = addSidecars(&pod, tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Set the container template JSON in pod annotations, which executor
@@ -202,11 +202,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	// template manipulations have been performed.
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = verifyResolvedVariables(string(tmplBytes))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
@@ -216,13 +216,13 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			// workflow pod names are deterministic. We can get here if
 			// the controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Skipped pod %s creation: already exists", nodeName)
-			return nil
+			return created, nil
 		}
 		woc.log.Infof("Failed to create pod %s: %v", nodeName, err)
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s", created.Name)
-	return nil
+	return created, nil
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {

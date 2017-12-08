@@ -170,9 +170,8 @@ func (wfc *WorkflowController) podWorker() {
 }
 
 // processNextPodItem is the worker logic for handling pod updates.
-// For pods updates, this simply means to up the workflow worker
-// by adding the corresponding entry for the workflow into the
-// workflow workqueue.
+// For pods updates, this simply means to "wake up" the workflow by
+// adding the corresponding workflow key into the workflow workqueue.
 func (wfc *WorkflowController) processNextPodItem() bool {
 	key, quit := wfc.podQueue.Get()
 	if quit {
@@ -186,7 +185,9 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		return true
 	}
 	if !exists {
-		// we can get here if the workflow updator
+		// we can get here if pod was queued into the pod workqueue,
+		// but it was either deleted or labeled completed by the time
+		// we dequeued it.
 		return true
 	}
 	pod, ok := obj.(*apiv1.Pod)
@@ -204,6 +205,9 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
+	// TODO: currently we reawaken the workflow on *any* pod updates.
+	// But this could be be much improved to become smarter by only
+	// requeue the workflow when there are changes that we care about.
 	wfc.wfQueue.Add(pod.ObjectMeta.Namespace + "/" + workflowName)
 	return true
 }
