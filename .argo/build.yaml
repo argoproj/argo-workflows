@@ -1,0 +1,90 @@
+---
+type: workflow
+version: 1
+name: build
+inputs:
+  parameters:
+    COMMIT:
+      default: "%%session.commit%%"
+    REPO:
+      default: "%%session.repo%%"
+steps:
+- CHECKOUT:
+    template: checkout
+- CONTROLLER-IMAGE:
+    template: make
+    arguments:
+      parameters.TARGET: controller-image
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  EXECUTOR-IMAGE:
+    template: make
+    arguments:
+      parameters.TARGET: executor-image
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  CLI-LINUX:
+    template: make
+    arguments:
+      parameters.TARGET: cli-linux
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  CLI-DARWIN:
+    template: make
+    arguments:
+      parameters.TARGET: cli-darwin
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  UI-IMAGE:
+    resources:
+      mem_mib: 512
+      cpu_cores: 0.1
+    image: argoproj/argo-ci-builder:1.0
+    command: ["sh", "-c"]
+    args: [
+      "cd /go/src/github.com/argoproj/argo && make ui-image"
+    ]
+    inputs:
+      artifacts:
+        CODE:
+          from: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+          path: /go/src/github.com/argoproj/argo
+    annotations:
+      ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.5, "mem_mib":3072}'
+
+
+---
+type: container
+version: 1
+name: make
+resources:
+  mem_mib: 512
+  cpu_cores: 0.1
+image: argoproj/argo-ci-builder:1.0
+command: ["sh", "-c"]
+args: [
+  "cd /go/src/github.com/argoproj/argo && make %%inputs.parameters.TARGET%%"
+]
+inputs:
+  parameters:
+    TARGET:
+  artifacts:
+    CODE:
+      path: /go/src/github.com/argoproj/argo
+annotations:
+  ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.3, "mem_mib":600}'
+
+---
+type: policy
+name: build-policy
+version: 1
+template: build
+notifications:
+  -
+    when:
+      - on_change
+    whom:
+      - committer
+      - submitter
+      - author
+when:
+  -
+    event: on_pull_request
+  -
+    event: on_push
