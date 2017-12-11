@@ -1,0 +1,8 @@
+FROM golang:1.9.2
+
+WORKDIR /tmp
+
+RUN curl -O https://get.docker.com/builds/Linux/x86_64/docker-1.13.1.tgz && \
+  tar -xzf docker-1.13.1.tgz && \
+  mv docker/docker /usr/local/bin/docker && \
+  rm -rf ./docker
