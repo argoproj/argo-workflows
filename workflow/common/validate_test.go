@@ -238,3 +238,284 @@ func TestGlobalParam(t *testing.T) {
 	err := validate(globalParam)
 	assert.Nil(t, err)
 }
+
+var invalidTemplateNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay_d
+  templates:
+  - name: whalesay_d
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidTemplateName(t *testing.T) {
+	err := validate(invalidTemplateNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidArgParamNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: param#1
+      value: paramValue
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestInvalidArgParamName(t *testing.T) {
+	err := validate(invalidArgParamNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidArgArtNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: arguments-artifacts-
+spec:
+  entrypoint: kubectl-input-artifact
+  arguments:
+    artifacts:
+    - name: -kubectl
+      http:
+        url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+
+  templates:
+  - name: kubectl-input-artifact
+    inputs:
+      artifacts:
+      - name: -kubectl
+        path: /usr/local/bin/kubectl
+        mode: 755
+    container:
+      image: debian:9.1
+      command: [sh, -c]
+      args: ["kubectl version"]
+`
+
+func TestInvalidArgArtName(t *testing.T) {
+	err := validate(invalidArgArtNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidStepNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1.blah
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+    - - name: hello2a
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2a"
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2b"
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestInvalidStepName(t *testing.T) {
+	err := validate(invalidStepNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidInputParamNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+    - - name: hello2a
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2a"
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2b"
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message+123
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestInvalidInputParamName(t *testing.T) {
+	err := validate(invalidInputParamNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidInputArtNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: steps-
+spec:
+  entrypoint: hello-hello-hello
+
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello1"
+    - - name: hello2a
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2a"
+      - name: hello2b
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "hello2b"
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+      artifacts:
+      - name: test(jpg
+        path: /test.jpg
+        http:
+          url: https://commons.wikimedia.org/wiki/File:Example.jpg
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestInvalidInputArtName(t *testing.T) {
+	err := validate(invalidInputArtNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidOutputArtNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: __1
+        path: /tmp/hello_world.txt
+`
+
+func TestInvalidOutputArtName(t *testing.T) {
+	err := validate(invalidOutputArtNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}
+
+var invalidOutputParamNames = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: blah-122lsfj}
+        path: /tmp/hello_world.txt
+`
+
+func TestInvalidOutputParamName(t *testing.T) {
+	err := validate(invalidOutputParamNames)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "has invalid name")
+	}
+}

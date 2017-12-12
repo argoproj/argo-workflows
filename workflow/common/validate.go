@@ -43,17 +43,82 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	return ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments, ctx.wf.Spec.Arguments.Parameters)
 }
 
+func validateFieldName(name string, errFormatStr string) error {
+	if errs := IsValidWorkflowFieldName(name); len(errs) != 0 {
+		return errors.Errorf(errors.CodeBadRequest, errFormatStr, name, strings.Join(errs, ";"))
+	}
+	return nil
+}
+
+func validateTemplateFieldNames(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
+	// Validate Template Name
+	if err := validateFieldName(tmpl.Name, "workflow.spec.templates.%s has invalid name: %s"); err != nil {
+		return err
+	}
+	// Validate globalParameter names
+	for _, globalParam := range wfGlobalParameters {
+		if err := validateFieldName(globalParam.Name, "workflow.spec.arguments.parameters.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	// Validate Argument Names
+	for _, argParam := range args.Parameters {
+		if err := validateFieldName(argParam.Name, "arguments.parameters.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	for _, argArt := range args.Artifacts {
+		if err := validateFieldName(argArt.Name, "arguments.artifacts.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	// Validate Input Names
+	for _, inParam := range tmpl.Inputs.Parameters {
+		if err := validateFieldName(inParam.Name, "inputs.parameters.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	for _, inArt := range tmpl.Inputs.Artifacts {
+		if err := validateFieldName(inArt.Name, "inputs.artifacts.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	// Validate Output Names
+	for _, outParam := range tmpl.Outputs.Parameters {
+		if err := validateFieldName(outParam.Name, "outputs.parameters.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	for _, outArt := range tmpl.Outputs.Artifacts {
+		if err := validateFieldName(outArt.Name, "outputs.artifacts.%s has invalid name: %s"); err != nil {
+			return err
+		}
+	}
+	// Validate step names
+	for _, stepList := range tmpl.Steps {
+		for _, step := range stepList {
+			if err := validateFieldName(step.Name, "steps.%s has invalid name: %s"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
+
+	err := validateTemplateFieldNames(tmpl, args, wfGlobalParameters)
+	if err != nil {
+		return err
+	}
 	_, ok := ctx.results[tmpl.Name]
 	if ok {
 		// we already processed this template
 		return nil
 	}
-	if tmpl.Name == "" {
-		errors.Errorf(errors.CodeBadRequest, "template names are required")
-	}
+
 	ctx.results[tmpl.Name] = validationResult{}
-	_, err := ProcessArgs(tmpl, args, wfGlobalParameters, true)
+	_, err = ProcessArgs(tmpl, args, wfGlobalParameters, true)
 	if err != nil {
 		return err
 	}
