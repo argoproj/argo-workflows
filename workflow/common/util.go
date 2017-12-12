@@ -70,7 +70,7 @@ func KillPodContainer(restConfig *rest.Config, namespace string, pod string, con
 func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (remotecommand.Executor, error) {
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 
 	execRequest := clientset.CoreV1().RESTClient().Post().

@@ -61,6 +61,9 @@ func initKubeClient() *kubernetes.Clientset {
 	}
 	var err error
 	restConfig, err = clientConfig.ClientConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// create the clientset
 	clientset, err = kubernetes.NewForConfig(restConfig)

@@ -49,7 +49,7 @@ func (wf *Workflow) NodeID(name string) string {
 		return wf.ObjectMeta.Name
 	}
 	h := fnv.New32a()
-	h.Write([]byte(name))
+	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
 }
 

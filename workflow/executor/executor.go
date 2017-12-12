@@ -474,7 +474,7 @@ func (we *WorkflowExecutor) killSidecars() error {
 	}
 	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
 		log.Infof("Timed out (%ds) for sidecars to terminate gracefully. Killing forcefully", killGracePeriod)
-		cmd.Process.Kill()
+		_ = cmd.Process.Kill()
 		killArgs[len(waitArgs)-1] = "KILL"
 		cmd = exec.Command("docker", killArgs...)
 		log.Info(cmd.Args)

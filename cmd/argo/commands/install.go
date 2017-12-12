@@ -242,7 +242,7 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 							Command: []string{"workflow-controller"},
 							Args:    []string{"--configmap", args.ConfigMap},
 							Env: []apiv1.EnvVar{
-								apiv1.EnvVar{
+								{
 									Name: common.EnvVarNamespace,
 									ValueFrom: &apiv1.EnvVarSource{
 										FieldRef: &apiv1.ObjectFieldSelector{
@@ -302,7 +302,7 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 							Name:  args.UIName,
 							Image: args.UIImage,
 							Env: []apiv1.EnvVar{
-								apiv1.EnvVar{
+								{
 									Name: common.EnvVarNamespace,
 									ValueFrom: &apiv1.EnvVarSource{
 										FieldRef: &apiv1.ObjectFieldSelector{
@@ -311,7 +311,7 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 										},
 									},
 								},
-								apiv1.EnvVar{
+								{
 									Name:  "IN_CLUSTER",
 									Value: "true",
 								},
@@ -350,7 +350,7 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 		},
 		Spec: apiv1.ServiceSpec{
 			Ports: []apiv1.ServicePort{
-				apiv1.ServicePort{
+				{
 					Port:       80,
 					TargetPort: intstr.FromInt(8001),
 				},
