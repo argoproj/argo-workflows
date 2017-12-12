@@ -4,4 +4,5 @@ package commands
 const (
 	ArgoServiceAccount = "argo"
 	ArgoClusterRole    = "argo-cluster-role"
+	ArgoServiceName    = "argo-ui"
 )

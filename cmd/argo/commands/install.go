@@ -18,6 +18,7 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -39,7 +40,7 @@ func init() {
 type InstallFlags struct {
 	ControllerName  string // --controller-name
 	UIName          string // --ui-name
-	Namespace       string // --install-Namespace
+	Namespace       string // --install-namespace
 	ConfigMap       string // --configmap
 	ControllerImage string // --controller-image
 	UIImage         string // --ui-image
@@ -76,7 +77,8 @@ func Install(cmd *cobra.Command, args InstallFlags) {
 		fmt.Printf("Using service account '%s' for deployments\n", args.ServiceAccount)
 	}
 	installController(clientset, args)
-	installUi(clientset, args)
+	installUI(clientset, args)
+	installUIService(clientset, args)
 }
 
 func install(cmd *cobra.Command, args []string) {
@@ -275,7 +277,7 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 	}
 }
 
-func installUi(clientset *kubernetes.Clientset, args InstallFlags) {
+func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 	deploymentsClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	uiDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -336,6 +338,36 @@ func installUi(clientset *kubernetes.Clientset, args InstallFlags) {
 		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
 	} else {
 		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
+	}
+}
+
+func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
+	svcName := ArgoServiceName
+	svcClient := clientset.CoreV1().Services(args.Namespace)
+	uiSvc := apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: svcName,
+		},
+		Spec: apiv1.ServiceSpec{
+			Ports: []apiv1.ServicePort{
+				apiv1.ServicePort{
+					Port:       80,
+					TargetPort: intstr.FromInt(8001),
+				},
+			},
+			Selector: map[string]string{
+				"app": args.UIName,
+			},
+		},
+	}
+	_, err := svcClient.Create(&uiSvc)
+	if err != nil {
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatal(err)
+		}
+		fmt.Printf("Service '%s' already exists\n", svcName)
+	} else {
+		fmt.Printf("Service '%s' created\n", svcName)
 	}
 }
 
