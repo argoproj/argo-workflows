@@ -1,3 +1,12 @@
+# This example demonstrates the loading a hard-wired input artifact from an S3 compliant
+# store. This can be AWS S3, Google Cloud Storage (GCS) with interoperability enabled,
+# or a self-hosted minio service. S3 guards access to buckets using an access key and
+# secret key, which are stored as regular Kubernetes secrets. and referenced in the
+# workflow using secret selectors To create the secret required for this example, first
+# run the following commands:
+#   $ echo -n "<your plain-text s3 access key>" > ./accessKey
+#   $ echo -n "<your plain-text s3 secret key>" > ./secretKey
+#   $ kubectl create secret generic my-s3-credentials --from-file=./accessKey --from-file=./secretKey
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -8,12 +17,21 @@ spec:
   - name: input-artifact-s3-example
     inputs:
       artifacts:
-      - name: code
-        path: /src
+      - name: my-art
+        path: /my-artifact
         s3:
-          endpoint: storage.googleapis.com
+          # Use the corresponding endpoint depending on your S3 provider:
+          #   AWS: s3.amazonaws.com
+          #   GCS: storage.googleapis.com
+          #   Minio: my-minio-endpoint.default:9000
+          endpoint: s3.amazonaws.com
           bucket: my-bucket-name
           key: path/in/bucket
+          # accessKeySecret and secretKeySecret are secret selectors.
+          # It is referencing the k8s secret named 'my-s3-credentials'.
+          # This secret is expected to have have the keys 'accessKey'
+          # and 'secretKey', which the workflow executor will use to
+          # load the artifacts.
           accessKeySecret:
             name: my-s3-credentials
             key: accessKey
@@ -23,4 +41,4 @@ spec:
     container:
       image: debian:latest
       command: [sh, -c]
-      args: ["cd /src && ls -l"]
+      args: ["ls -l /my-artifact"]
