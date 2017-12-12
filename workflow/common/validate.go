@@ -122,7 +122,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 func validateWFGlobalParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter, scope map[string]interface{}) error {
 	err := VerifyUniqueNonEmptyNames(wfGlobalParams)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "workflow.spec.Arguments.parameters non unique names for %s", err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "Workflow spec.arguments.parameters%s", err.Error())
 	}
 	for _, param := range wfGlobalParams {
 		scope[WorkflowGlobalParameterPrefixString+param.Name] = true
