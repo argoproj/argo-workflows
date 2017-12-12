@@ -39,10 +39,11 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	if entryTmpl == nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
 	}
-	return ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
+
+	return ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments, ctx.wf.Spec.Arguments.Parameters)
 }
 
-func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
+func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
 	_, ok := ctx.results[tmpl.Name]
 	if ok {
 		// we already processed this template
@@ -52,11 +53,15 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		errors.Errorf(errors.CodeBadRequest, "template names are required")
 	}
 	ctx.results[tmpl.Name] = validationResult{}
-	_, err := ProcessArgs(tmpl, args, true)
+	_, err := ProcessArgs(tmpl, args, wfGlobalParameters, true)
 	if err != nil {
 		return err
 	}
 	scope, err := validateInputs(tmpl)
+	if err != nil {
+		return err
+	}
+	err = validateWFGlobalParams(tmpl, wfGlobalParameters, scope)
 	if err != nil {
 		return err
 	}
@@ -112,6 +117,17 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		}
 	}
 	return scope, nil
+}
+
+func validateWFGlobalParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter, scope map[string]interface{}) error {
+	err := VerifyUniqueNonEmptyNames(wfGlobalParams)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "Workflow spec.arguments.parameters%s", err.Error())
+	}
+	for _, param := range wfGlobalParams {
+		scope[WorkflowGlobalParameterPrefixString+param.Name] = true
+	}
+	return nil
 }
 
 func validateArtifactLocation(errPrefix string, art wfv1.Artifact) error {
@@ -185,7 +201,7 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			if childTmpl == nil {
 				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
 			}
-			err = ctx.validateTemplate(childTmpl, step.Arguments)
+			err = ctx.validateTemplate(childTmpl, step.Arguments, ctx.wf.Spec.Arguments.Parameters)
 			if err != nil {
 				return err
 			}
