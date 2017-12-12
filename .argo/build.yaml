@@ -46,7 +46,7 @@ steps:
           from: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
           path: /go/src/github.com/argoproj/argo
     annotations:
-      ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.5, "mem_mib":3072}'
+      ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.5, "mem_mib":4096}'
 
 
 ---
