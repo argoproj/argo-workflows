@@ -113,7 +113,9 @@ func getTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 		return errors.InternalWrapError(err)
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	reader := bufio.NewReader(file)
 
 	// Prefix of template property in the annotation file

@@ -3,6 +3,7 @@
     "DisableAll": true,
     "Enable": [
         "vet",
+        "gofmt",
         "deadcode",
         "errcheck",
         "varcheck",

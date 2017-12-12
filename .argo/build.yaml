@@ -47,7 +47,11 @@ steps:
           path: /go/src/github.com/argoproj/argo
     annotations:
       ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.5, "mem_mib":4096}'
-
+  #LINT:
+  #  template: make
+  #  arguments:
+  #    parameters.TARGET: lint
+  #    artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
 
 ---
 type: container
