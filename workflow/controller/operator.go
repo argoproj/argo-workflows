@@ -590,7 +590,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		return err
 	}
 
-	tmpl, err := common.ProcessArgs(tmpl, args, false)
+	tmpl, err := common.ProcessArgs(tmpl, args, woc.wf.Spec.Arguments.Parameters, false)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -918,7 +918,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 			}
 		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
+		newStepStr, err := common.Replace(fstTmpl, replaceMap, true, "")
 		if err != nil {
 			return nil, err
 		}
@@ -1015,7 +1015,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
 		}
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+		newStepStr, err := common.Replace(fstTmpl, replaceMap, false, "")
 		if err != nil {
 			return nil, err
 		}

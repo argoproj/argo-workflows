@@ -115,7 +115,8 @@ func DefaultConfigMapName(controllerName string) string {
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It also substitutes parameters in the template from the arguments
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*wfv1.Template, error) {
+// It will also substitue Global Workflow Parameters referenced in template.
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParams []wfv1.Parameter, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -137,7 +138,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*
 		}
 		tmpl.Inputs.Parameters[i] = inParam
 	}
-	tmpl, err := substituteParams(tmpl)
+	tmpl, err := substituteParams(tmpl, wfGlobalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -166,20 +167,40 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*
 }
 
 // substituteParams returns a new copy of the template with all input parameters substituted
-func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
+func substituteParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	globalReplaceMap := make(map[string]string)
+	for _, param := range wfGlobalParams {
+		if param.Value == nil {
+			return nil, errors.InternalErrorf("workflow.spec.arguments.parameters.%s had no value", param.Name)
+		}
+		globalReplaceMap[WorkflowGlobalParameterPrefixString+param.Name] = *param.Value
+	}
+	// First replace globals then replace inputs because globals could be referenced in the
+	// inputs. Note globals cannot be unresolved
+	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	globalReplacedTmplStr, err := Replace(fstTmpl, globalReplaceMap, false, WorkflowGlobalParameterPrefixString)
+	if err != nil {
+		return nil, err
+	}
+	var globalReplacedTmpl wfv1.Template
+	err = json.Unmarshal([]byte(globalReplacedTmplStr), &globalReplacedTmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	// Now replace the rest of substitutions (the ones that can be made) in the template
 	replaceMap := make(map[string]string)
-	for _, inParam := range tmpl.Inputs.Parameters {
+	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	s, err := Replace(fstTmpl, replaceMap, true)
+	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
+	s, err := Replace(fstTmpl, replaceMap, true, "")
 	if err != nil {
 		return nil, err
 	}
@@ -194,9 +215,12 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
 // remaining in the substituted template.
-func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
+func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool, prefixFilter string) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		if !strings.HasPrefix(tag, prefixFilter) {
+			return w.Write([]byte(fmt.Sprintf("{{%s}}", tag)))
+		}
 		replacement, ok := replaceMap[tag]
 		if !ok {
 			if allowUnresolved {
