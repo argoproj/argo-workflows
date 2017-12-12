@@ -10,6 +10,7 @@ import (
 // S3ArtifactDriver is a driver for AWS S3
 type S3ArtifactDriver struct {
 	Endpoint  string
+	Region    string
 	Secure    bool
 	AccessKey string
 	SecretKey string
@@ -17,7 +18,13 @@ type S3ArtifactDriver struct {
 
 // newMinioClient instantiates a new minio client object.
 func (s3Driver *S3ArtifactDriver) newMinioClient() (*minio.Client, error) {
-	minioClient, err := minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
+	var minioClient *minio.Client
+	var err error
+	if s3Driver.Region != "" {
+		minioClient, err = minio.NewWithRegion(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure, s3Driver.Region)
+	} else {
+		minioClient, err = minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
+	}
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
