@@ -73,5 +73,8 @@ func getLogs(cmd *cobra.Command, args []string) {
 	execCmd := exec.Command("kubectl", argList...)
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
-	execCmd.Run()
+	err = execCmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

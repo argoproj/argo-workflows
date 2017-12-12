@@ -94,7 +94,7 @@ func NewWorkflowController(config *rest.Config, configMap string) *WorkflowContr
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context) error {
+func (wfc *WorkflowController) Run(ctx context.Context) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
@@ -102,7 +102,7 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 	_, err := wfc.watchControllerConfigMap(ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for controller config map: %v", err)
-		return err
+		return
 	}
 
 	wfc.wfInformer = wfc.newWorkflowInformer()
@@ -113,7 +113,8 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
-			return errors.InternalError("Timed out waiting for caches to sync")
+			log.Error("Timed out waiting for caches to sync")
+			return
 		}
 	}
 
@@ -125,7 +126,6 @@ func (wfc *WorkflowController) Run(ctx context.Context) error {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
-	return ctx.Err()
 }
 
 func (wfc *WorkflowController) runWorker() {

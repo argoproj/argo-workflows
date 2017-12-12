@@ -110,7 +110,7 @@ func printWorkflow(wf *wfv1.Workflow) {
 				fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 			}
 			printNodeTree(w, wf, node, 0, " ", " ")
-			w.Flush()
+			_ = w.Flush()
 		}
 	}
 }
@@ -184,7 +184,6 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 			// Remove stepgroup name from being displayed
 			childNode.Name = strings.TrimPrefix(childNode.Name, stepGroupNode.Name+".")
 			printNodeTree(w, wf, childNode, depth+1, childNodePrefix, childChldPrefix)
-			j = j + 1
 		}
 	}
 }

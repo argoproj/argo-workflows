@@ -516,7 +516,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			metav1.OwnerReference{
+			{
 				APIVersion:         wfv1.CRDFullName,
 				Kind:               wfv1.CRDKind,
 				Name:               woc.wf.ObjectMeta.Name,
@@ -611,7 +611,9 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		}
 		err = woc.executeSteps(nodeName, tmpl)
 		if woc.wf.Status.Nodes[nodeID].Completed() {
-			woc.killDeamonedChildren(nodeID)
+			// TODO: this implementation should be handled via annotating the pod
+			// and signaling the executor to kill the pod instead.
+			_ = woc.killDeamonedChildren(nodeID)
 		}
 	} else if tmpl.Script != nil {
 		err = woc.executeScript(nodeName, tmpl)

@@ -136,16 +136,15 @@ func (e argoerr) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			io.WriteString(s, e.Error())
+			_, _ = io.WriteString(s, e.Error())
 			for _, pc := range e.StackTrace() {
-				f := errors.Frame(pc)
-				fmt.Fprintf(s, "\n%+v", f)
+				fmt.Fprintf(s, "\n%+v", pc)
 			}
 			return
 		}
 		fallthrough
 	case 's':
-		io.WriteString(s, e.Error())
+		_, _ = io.WriteString(s, e.Error())
 	case 'q':
 		fmt.Fprintf(s, "%q", e.Error())
 	}

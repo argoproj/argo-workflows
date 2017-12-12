@@ -52,7 +52,7 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 				log.Fatal(err)
 			}
 			body, err = ioutil.ReadAll(response.Body)
-			response.Body.Close()
+			_ = response.Body.Close()
 			if err != nil {
 				log.Fatal(err)
 			}

@@ -14,14 +14,12 @@ import (
 
 // wfValidationCtx is the context for validating a workflow spec
 type wfValidationCtx struct {
-	wf      *wfv1.Workflow
-	results map[string]validationResult
+	wf *wfv1.Workflow
+	// results tracks if validation has already been run on a template
+	results map[string]bool
 }
 
-type validationResult struct {
-	outputs *wfv1.Outputs
-}
-
+// ValidateWorkflow accepts a workflow and performs validation against it
 func ValidateWorkflow(wf *wfv1.Workflow) error {
 	err := VerifyUniqueNonEmptyNames(wf.Spec.Templates)
 	if err != nil {
@@ -30,7 +28,7 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 
 	ctx := wfValidationCtx{
 		wf:      wf,
-		results: make(map[string]validationResult),
+		results: make(map[string]bool),
 	}
 	if ctx.wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
@@ -106,7 +104,6 @@ func validateTemplateFieldNames(tmpl *wfv1.Template, args wfv1.Arguments, wfGlob
 }
 
 func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
-
 	err := validateTemplateFieldNames(tmpl, args, wfGlobalParameters)
 	if err != nil {
 		return err
@@ -116,8 +113,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		// we already processed this template
 		return nil
 	}
-
-	ctx.results[tmpl.Name] = validationResult{}
+	ctx.results[tmpl.Name] = true
 	_, err = ProcessArgs(tmpl, args, wfGlobalParameters, true)
 	if err != nil {
 		return err

@@ -27,7 +27,7 @@ var (
 		VolumeSource: apiv1.VolumeSource{
 			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
 				Items: []apiv1.DownwardAPIVolumeFile{
-					apiv1.DownwardAPIVolumeFile{
+					{
 						Path: common.PodMetadataAnnotationsVolumePath,
 						FieldRef: &apiv1.ObjectFieldSelector{
 							APIVersion: "v1",
@@ -139,7 +139,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 				common.AnnotationKeyNodeName: nodeName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
+				{
 					APIVersion:         wfv1.CRDFullName,
 					Kind:               wfv1.CRDKind,
 					Name:               woc.wf.ObjectMeta.Name,
