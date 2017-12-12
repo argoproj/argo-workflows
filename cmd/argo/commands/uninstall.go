@@ -39,7 +39,19 @@ var uninstallCmd = &cobra.Command{
 func uninstall(cmd *cobra.Command, args []string) {
 	clientset = initKubeClient()
 	fmt.Printf("Uninstalling from namespace '%s'\n", uninstallArgs.namespace)
-	// Delete the deployment
+	// Delete the UI service
+	svcClient := clientset.CoreV1().Services(uninstallArgs.namespace)
+	err := svcClient.Delete(ArgoServiceName, &metav1.DeleteOptions{})
+	if err != nil {
+		if !apierr.IsNotFound(err) {
+			log.Fatalf("Failed to delete service '%s': %v", ArgoServiceName, err)
+		}
+		fmt.Printf("Service '%s' in namespace '%s' not found\n", ArgoServiceName, uninstallArgs.namespace)
+	} else {
+		fmt.Printf("Service '%s' deleted\n", ArgoServiceName)
+	}
+
+	// Delete the UI and workflow-controller deployment
 	deploymentsClient := clientset.AppsV1beta2().Deployments(uninstallArgs.namespace)
 	deletePolicy := metav1.DeletePropagationForeground
 	for _, depName := range []string{uninstallArgs.uiName, uninstallArgs.controllerName} {
@@ -56,7 +68,7 @@ func uninstall(cmd *cobra.Command, args []string) {
 
 	// Delete the configmap
 	cmClient := clientset.CoreV1().ConfigMaps(uninstallArgs.namespace)
-	err := cmClient.Delete(uninstallArgs.configMap, &metav1.DeleteOptions{})
+	err = cmClient.Delete(uninstallArgs.configMap, &metav1.DeleteOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to delete ConfigMap '%s': %v", uninstallArgs.configMap, err)
@@ -96,7 +108,7 @@ func uninstall(cmd *cobra.Command, args []string) {
 		if !apierr.IsNotFound(err) {
 			log.Fatalf("Failed to get service accounts: %v\n", err)
 		}
-		fmt.Printf("ServiceAccount '%s' in namespace '%s' not found\n", ArgoClusterRole, uninstallArgs.namespace)
+		fmt.Printf("ServiceAccount '%s' in namespace '%s' not found\n", ArgoServiceAccount, uninstallArgs.namespace)
 	} else {
 		fmt.Printf("ServiceAccount '%s' deleted\n", ArgoServiceAccount)
 	}
