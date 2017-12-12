@@ -44,7 +44,7 @@ func (we *WorkflowExecutor) getSecrets(namespace string, name string, key string
 
 	val, ok := secrets.Data[key]
 	if !ok {
-		return "", errors.InternalErrorf("Key %s does not exists for secret %s", key, name)
+		return "", errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
 	return string(val), nil
 }
@@ -243,6 +243,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			AccessKey: accessKey,
 			SecretKey: secretKey,
 			Secure:    art.S3.Insecure == nil || *art.S3.Insecure == false,
+			Region:    art.S3.Region,
 		}
 		return &driver, nil
 	}
