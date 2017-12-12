@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -21,6 +22,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -309,4 +311,23 @@ func LogStack() {
 	buf := make([]byte, 1<<20)
 	stacklen := runtime.Stack(buf, true)
 	log.Printf("*** goroutine dump...\n%s\n*** end\n", buf[:stacklen])
+}
+
+const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
+const workflowFieldNameErrMsg string = "a workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
+const workflowFieldMaxLength int = 128
+
+var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+
+// IsValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
+func IsValidWorkflowFieldName(name string) []string {
+	var errs []string
+	if len(name) > workflowFieldMaxLength {
+		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
+	}
+	if !workflowFieldNameRegexp.MatchString(name) {
+		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
+		errs = append(errs, msg)
+	}
+	return errs
 }
