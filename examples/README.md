@@ -681,7 +681,7 @@ spec:
 ```
 
 ## Daemon Containers
-Argo workflows can start containers that run in the background (aka. daemon contaienrs) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
+Argo workflows can start containers that run in the background (aka. daemon containers) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
