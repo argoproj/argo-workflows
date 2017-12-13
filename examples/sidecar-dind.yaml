@@ -1,3 +1,7 @@
+# sidecar-dind (dind is an acronym for docker-in-docker) demonstrates
+# the ability to run docker commands (e.g. `docker run`, `docker build`)
+# from within a container, by running the docker daemon as a sidecar to
+# the main container.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

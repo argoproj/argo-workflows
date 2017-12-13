@@ -1,4 +1,4 @@
-# This example demonstrates the loading a hard-wired input artifact from an S3 compliant
+# This example demonstrates the loading of a hard-wired input artifact from an S3 compliant
 # store. This can be AWS S3, Google Cloud Storage (GCS) with interoperability enabled,
 # or a self-hosted minio service. S3 guards access to buckets using an access key and
 # secret key, which will be stored as regular Kubernetes secrets, and referenced in the

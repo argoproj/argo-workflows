@@ -1,6 +1,6 @@
 #  Example of GIF processing using ImageMagick and Gifsicle.
 #
-#  This commit adds an example of processing gifs using ImageMagick and gifsicle.
+#  This is an example of workflow processing gifs using ImageMagick and gifsicle.
 #  The workflow creates a PVC that is used for locally storing the downloaded
 #  images and then running 'convert' and 'gifsicle' on these images.
 #

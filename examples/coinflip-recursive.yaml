@@ -1,3 +1,8 @@
+# coinflip-recursive is a variation of the coinflip example.
+# This is an example of a dynamic workflow which extends
+# indefinitely until it acheives a desired result. In this
+# example, the 'flip-coin' step is recursively repeated until
+# the result of the step is "heads".
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
