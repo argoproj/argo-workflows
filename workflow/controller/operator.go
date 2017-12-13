@@ -1119,7 +1119,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 }
 
 // killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
-// We only need to check grandchildren instead of children becuase the direct children of a step
+// We only need to check grandchildren instead of children because the direct children of a step
 // template are actually stepGroups, which are nodes that cannot represent actual containers.
 // Returns the first error that occurs (if any)
 func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {

@@ -302,7 +302,7 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Templa
 	return nil
 }
 
-// getVolByName is a helper to retreive a volume by its name, either from the volumes or claims section
+// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 func getVolByName(name string, wf *wfv1.Workflow) *apiv1.Volume {
 	for _, vol := range wf.Spec.Volumes {
 		if vol.Name == name {

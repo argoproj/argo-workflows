@@ -9,6 +9,7 @@
         "varcheck",
         "structcheck",
         "ineffassign",
-        "unconvert"
+        "unconvert",
+        "misspell"
     ]
 }

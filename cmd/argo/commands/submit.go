@@ -81,7 +81,7 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 				for _, paramStr := range submitArgs.parameters {
 					parts := strings.SplitN(paramStr, "=", 2)
 					if len(parts) == 1 {
-						log.Fatalf("Expected parameter of the form: NAME=VALUE. Recieved: %s", paramStr)
+						log.Fatalf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 					}
 					param := wfv1.Parameter{
 						Name:  parts[0],
