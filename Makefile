@@ -1,21 +1,19 @@
-GOARCH=amd64
-GOPATH=$(shell go env GOPATH)
-
 PACKAGE=github.com/argoproj/argo
-BUILD_DIR=${GOPATH}/src/${PACKAGE}
-DIST_DIR=${GOPATH}/src/${PACKAGE}/dist
 CURRENT_DIR=$(shell pwd)
+DIST_DIR=${CURRENT_DIR}/dist
 
-VERSION=$(shell cat ${BUILD_DIR}/VERSION)
+VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
 REVISION=$(shell git rev-parse HEAD)
 BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
 TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 BUILDER_IMAGE=argo-builder
+# NOTE: the volume mount of ${DIST_DIR}/pkg below is optional and serves only
+# to speed up subsequent builds by caching ${GOPATH}/pkg between builds.
 BUILDER_CMD=docker run --rm \
-  -v ${BUILD_DIR}:/root/go/src/${PACKAGE} \
-  -v ${GOPATH}/pkg:/root/go/pkg \
+  -v ${CURRENT_DIR}:/root/go/src/${PACKAGE} \
+  -v ${DIST_DIR}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
 # docker image publishing options
@@ -75,7 +73,7 @@ controller-image: controller-linux
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
 executor:
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
 executor-linux: builder
 	${BUILDER_CMD} make executor
@@ -87,13 +85,11 @@ executor-image: executor-linux
 lint:
 	gometalinter --config gometalinter.json --vendor ./...
 
-fmt:
-	cd ${BUILD_DIR}; \
-	go fmt $$(go list ./... | grep -v /vendor/) ; \
-	cd - >/dev/null
+test:
+	go test ./...
 
 clean:
-	-rm -rf ${BUILD_DIR}/dist
+	-rm -rf ${CURRENT_DIR}/dist
 
 ui-image:
 	docker build -t argo-ui-builder -f ui/Dockerfile.builder ui && \
@@ -118,5 +114,4 @@ release: release-precheck controller-image cli-darwin cli-linux executor-image u
 	executor executor-linux executor-image \
 	ui-image \
 	release-precheck release \
-	lint
-	# test fmt clean
+	lint clean test
