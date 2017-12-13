@@ -16,6 +16,7 @@ import { WorkflowTreeNodeComponent } from './workflow-tree/workflow-tree-node.co
 import { ArtifactsComponent } from './artifacts/artifacts.component';
 import { YamlViewerComponent } from './yaml-viewer/yaml-viewer.component';
 import { SysConsoleComponent } from './sys-console/sys-console.component';
+import { ToolbarComponent } from './toolbar/toolbar.component';
 
 const components = [
   ArtifactsComponent,
@@ -29,7 +30,8 @@ const components = [
   WorkflowSubtreeComponent,
   WorkflowTreeNodeComponent,
   YamlViewerComponent,
-  SysConsoleComponent
+  SysConsoleComponent,
+  ToolbarComponent,
 ];
 
 @NgModule({
