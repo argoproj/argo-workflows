@@ -46,7 +46,7 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 	return volMnt
 }
 
-// KillPodContainer is a convenience funtion to issue a kill signal to a container in a pod
+// KillPodContainer is a convenience function to issue a kill signal to a container in a pod
 // It gives a 15 second grace period before issuing SIGKILL
 // NOTE: this only works with containers that have sh
 func KillPodContainer(restConfig *rest.Config, namespace string, pod string, container string) error {
@@ -117,7 +117,7 @@ func DefaultConfigMapName(controllerName string) string {
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It also substitutes parameters in the template from the arguments
-// It will also substitue Global Workflow Parameters referenced in template.
+// It will also substitute Global Workflow Parameters referenced in template.
 func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParams []wfv1.Parameter, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg

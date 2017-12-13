@@ -181,7 +181,7 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 	cmClient := clientset.CoreV1().ConfigMaps(args.Namespace)
 	var wfConfig controller.WorkflowControllerConfig
 
-	// install ConfigMap if non-existant
+	// install ConfigMap if non-existent
 	wfConfigMap, err := cmClient.Get(args.ConfigMap, metav1.GetOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
