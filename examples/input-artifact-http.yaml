@@ -1,4 +1,4 @@
-# Example of using a hard-wired artifact location
+# Example of using a hard-wired artifact location from a HTTP URL.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

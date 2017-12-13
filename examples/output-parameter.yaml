@@ -1,18 +1,48 @@
+# Output parameters provide a way to use the contents of a file,
+# as a parameter value in a workflow. In that regard, they are
+# similar in concept to script templates, with the difference being
+# that the ouput parameter values are obtained via file contents
+# instead of stdout (as with script templates). Secondly, there can
+# be multiple 'output.parameters.xxx' in a single template, versus
+# a single 'output.result' from a script template.
+# 
+# In this example, the 'whalesay' template produces an output
+# parameter named 'hello-param', taken from the file contents of
+# /tmp/hello_world.txt. This parameter is passed to a subsequent
+# step as an input parameter to the template, 'print-message'.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: output-parameters-
+  generateName: output-parameter-
 spec:
-  entrypoint: whalesay
+  entrypoint: output-parameter
   templates:
+  - name: output-parameter
+    steps:
+    - - name: generate-parameter
+        template: whalesay
+    - - name: consume-parameter
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate-parameter.outputs.parameters.hello-param}}"
+
   - name: whalesay
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
       args: ["echo -n hello world > /tmp/hello_world.txt"]
     outputs:
-      # Output as parameters, this enables user to store certain file content
-      # into a parameter. In the other steps, user can reference this parameter
+      parameters:
+      - name: hello-param
+        path: /tmp/hello_world.txt
+
+  - name: print-message
+    inputs:
       parameters:
       - name: message
-        path: /tmp/hello_world.txt
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
