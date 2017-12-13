@@ -103,7 +103,7 @@ func TestDuplicateOrEmptyNames(t *testing.T) {
 	}
 	err = validate(emptyName)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "name is required")
+		assert.Contains(t, err.Error(), "has invalid name")
 	}
 }
 
