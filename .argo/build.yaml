@@ -12,67 +12,68 @@ steps:
 - CHECKOUT:
     template: checkout
 - CONTROLLER-IMAGE:
-    template: make
+    template: ci-builder
     arguments:
-      parameters.TARGET: controller-image
+      parameters.CMD: make controller-image
       artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
   EXECUTOR-IMAGE:
-    template: make
+    template: ci-builder
     arguments:
-      parameters.TARGET: executor-image
+      parameters.CMD: make executor-image
       artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
   CLI-LINUX:
-    template: make
+    template: ci-builder
     arguments:
-      parameters.TARGET: cli-linux
+      parameters.CMD: make cli-linux
       artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
   CLI-DARWIN:
-    template: make
+    template: ci-builder
     arguments:
-      parameters.TARGET: cli-darwin
+      parameters.CMD: make cli-darwin
       artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
   UI-IMAGE:
-    resources:
-      mem_mib: 512
-      cpu_cores: 0.1
-    image: argoproj/argo-ci-builder:1.0
-    command: ["sh", "-c"]
-    args: [
-      "cd /go/src/github.com/argoproj/argo && make ui-image"
-    ]
-    inputs:
-      artifacts:
-        CODE:
-          from: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
-          path: /go/src/github.com/argoproj/argo
-    annotations:
-      ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.5, "mem_mib":4096}'
-  #LINT:
-  #  template: make
-  #  arguments:
-  #    parameters.TARGET: lint
-  #    artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+    template: ci-builder
+    arguments:
+      parameters.CMD: make ui-image
+      parameters.DIND_MEM: "4096"
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  LINT:
+    template: ci-builder
+    arguments:
+      parameters.CMD: dep ensure && make lint
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  TEST:
+    template: ci-builder
+    arguments:
+      parameters.CMD: dep ensure && make test
+      parameters.MEM: "1024"
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
 
 ---
 type: container
 version: 1
-name: make
-resources:
-  mem_mib: 512
-  cpu_cores: 0.1
-image: argoproj/argo-ci-builder:1.0
-command: ["sh", "-c"]
-args: [
-  "cd /go/src/github.com/argoproj/argo && make %%inputs.parameters.TARGET%%"
-]
+name: ci-builder
 inputs:
   parameters:
-    TARGET:
+    CMD:
+    MEM:
+      default: "512"
+    DIND_MEM:
+      default: "600"
   artifacts:
     CODE:
       path: /go/src/github.com/argoproj/argo
+resources:
+  mem_mib: "%%inputs.parameters.MEM%%"
+  cpu_cores: 0.1
+image_pull_policy: Always
+image: argoproj/argo-ci-builder:1.0
+command: ["sh", "-c"]
+args: [
+  "cd /go/src/github.com/argoproj/argo && %%inputs.parameters.CMD%%"
+]
 annotations:
-  ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.3, "mem_mib":600}'
+  ax_ea_docker_enable: '{ "graph-storage-name": "argobuildstorage", "graph-storage-size": "25Gi", "cpu_cores":0.3, "mem_mib":%%inputs.parameters.DIND_MEM%%}'
 
 ---
 type: policy
