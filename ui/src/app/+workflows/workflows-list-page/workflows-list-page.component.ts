@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 import * as models from '../../models';
 import { WorkflowsService, EventsService } from '../../services';
 import { NODE_PHASE } from '../../models';
 import { DropDownComponent } from 'ui-lib/src/components';
+import { ToolbarFilters } from '../../common/toolbar';
 
 @Component({
   selector: 'ax-workflows-list-page',
@@ -13,14 +14,11 @@ import { DropDownComponent } from 'ui-lib/src/components';
 export class WorkflowsListPageComponent implements OnInit {
 
   public workflowList: models.WorkflowList;
-  public toolbarFilters: any = {
+  public toolbarFilters: ToolbarFilters = {
     data: [],
     model: [],
   };
   private pageTitle = 'Timeline';
-
-  @ViewChild(DropDownComponent)
-  private dropdown: DropDownComponent;
 
   constructor(private workflowsService: WorkflowsService, private eventsService: EventsService) { }
 
@@ -36,20 +34,9 @@ export class WorkflowsListPageComponent implements OnInit {
     this.workflowList = await this.workflowsService.getWorkflows(this.toolbarFilters.model);
   }
 
-  public async toggleFilter(option) {
-    if (this.toolbarFilters.model.indexOf(option.value) > -1) {
-      this.toolbarFilters.model.splice(this.toolbarFilters.model.indexOf(option.value), 1);
-    } else {
-      this.toolbarFilters.model.push(option.value);
-    }
+  public async toggleFilter(model: string[]) {
+    this.toolbarFilters.model = model;
 
-    this.dropdown.close();
     this.workflowList = await this.workflowsService.getWorkflows(this.toolbarFilters.model);
-  }
-
-  public get hasFilters(): boolean {
-    return this.toolbarFilters.data.filter(item => {
-      return this.toolbarFilters.model.indexOf(item.value) > -1;
-    }).length > 0;
   }
 }
