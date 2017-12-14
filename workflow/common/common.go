@@ -1,14 +1,7 @@
 package common
 
 import (
-	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-)
-
-var (
-	DefaultControllerImage = argo.ImageNamespace + "/workflow-controller:" + argo.ImageTag
-	DefaultExecutorImage   = argo.ImageNamespace + "/argoexec:" + argo.ImageTag
-	DefaultUiImage         = argo.ImageNamespace + "/argoui:" + argo.ImageTag
 )
 
 const (

@@ -98,7 +98,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		Namespace: namespace,
 	}
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.FullVersion, string(yamlBytes))
+	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.GetVersion(), string(yamlBytes))
 	return &wfExecutor
 }
 
