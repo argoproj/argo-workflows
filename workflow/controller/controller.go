@@ -7,6 +7,7 @@ import (
 	goruntime "runtime"
 	"time"
 
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	workflowclient "github.com/argoproj/argo/workflow/client"
@@ -98,6 +99,7 @@ func (wfc *WorkflowController) Run(ctx context.Context) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
+	log.Infof("Workflow Controller (version: %s) starting", argo.GetVersion())
 	log.Info("Watch Workflow controller config map updates")
 	_, err := wfc.watchControllerConfigMap(ctx)
 	if err != nil {
