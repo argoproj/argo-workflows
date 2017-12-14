@@ -24,21 +24,21 @@ spec:
   templates:
   - name: run-workflow
     steps:
-    - - name: step 1
+    - - name: step-1
         template: create-output-dir
-    - - name: step 2
+    - - name: step-2
         template: download-images
-    - - name: step 3
+    - - name: step-3
         template: create-gif
-    - - name: step 4
+    - - name: step-4
         template: black-and-white
-    - - name: step 5.1
+    - - name: step-5A
         template: combine-horizontal
-      - name: step 5.2
+      - name: step-5B
         template: combine-vertical
-    - - name: step 6
+    - - name: step-6
         template: make-bigger
-    - - name: step 7
+    - - name: step-7
         template: bundle-up
 
   - name: create-output-dir
@@ -106,5 +106,5 @@ spec:
         mountPath: /mnt/data
     outputs:
       artifacts:
-      - name: output_gif
+      - name: output-gif
         path: /mnt/data/output
