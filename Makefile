@@ -3,10 +3,10 @@ CURRENT_DIR=$(shell pwd)
 DIST_DIR=${CURRENT_DIR}/dist
 
 VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
-REVISION=$(shell git rev-parse HEAD)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
-TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 BUILDER_IMAGE=argo-builder
 # NOTE: the volume mount of ${DIST_DIR}/pkg below is optional and serves only
@@ -16,22 +16,25 @@ BUILDER_CMD=docker run --rm \
   -v ${DIST_DIR}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
+LDFLAGS = \
+  -X ${PACKAGE}.version=${VERSION} \
+  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
+  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
+  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
+
 # docker image publishing options
 DOCKER_PUSH=false
-ifeq (${IMAGE_TAG},)
-ifneq (${TAG},)
-IMAGE_TAG=${TAG}
-else
-IMAGE_TAG=${VERSION}
+IMAGE_TAG=latest
+ifneq (${GIT_TAG},)
+IMAGE_TAG=${GIT_TAG}
+LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
+ifneq (${IMAGE_NAMESPACE},)
+LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageNamespace=${IMAGE_NAMESPACE}
 endif
-
-LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} \
-  -X ${PACKAGE}.Revision=${REVISION} \
-  -X ${PACKAGE}.Branch=${BRANCH} \
-  -X ${PACKAGE}.Tag=${TAG} \
-  -X ${PACKAGE}.ImageNamespace=${IMAGE_NAMESPACE} \
-  -X ${PACKAGE}.ImageTag=${IMAGE_TAG}"
+ifneq (${IMAGE_TAG},)
+LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageTag=${IMAGE_TAG}
+endif
 
 ifeq (${DOCKER_PUSH},true)
 ifndef IMAGE_NAMESPACE
@@ -52,7 +55,7 @@ builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
 
 cli:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo ./cmd/argo
 
 cli-linux: builder
 	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG)
@@ -63,7 +66,7 @@ cli-darwin: builder
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
 
 controller:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 controller-linux: builder
 	${BUILDER_CMD} make controller
@@ -73,7 +76,7 @@ controller-image: controller-linux
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
 executor:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
 executor-linux: builder
 	${BUILDER_CMD} make executor
