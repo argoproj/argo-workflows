@@ -14,7 +14,7 @@
             <div class="workflow-steps__step-circle workflow-steps__step-circle-small"></div>
             <div class="workflow-steps__step-name">&nbsp;</div>
         </div>
-        <div *ngFor="let step of steps; let i = index" class="workflow-steps__step"
+        <div *ngFor="let step of (steps ? steps.slice(0, 3) : []); let i = index" class="workflow-steps__step"
              [ngClass]="{
                        'workflow-steps__step--succeeded': step.isSucceeded,
                        'workflow-steps__step--failed': step.isFailed,
