@@ -1,16 +1,16 @@
-<div class="ax-toolbar-new has-sticky-panel">
-  <div class="ax-toolbar-new__filters">
-    <div class="ax-toolbar-new__filter" *ngIf="toolbarFilters" [class.has-filter]="hasFilters">
+<div class="ax-toolbar">
+  <div class="ax-toolbar__filters">
+    <div class="ax-toolbar__filter" *ngIf="toolbarFilters" [class.has-filter]="hasFilters">
       <ax-dropdown>
         <ax-dropdown-anchor>
-          <div class="ax-toolbar-new__filter-btn">
+          <div class="ax-toolbar__filter-btn">
             <i class="ax-icon-filter" aria-hidden="true"></i>
             <i class="fa fa-angle-down" aria-hidden="true"></i>
           </div>
         </ax-dropdown-anchor>
         <ax-dropdown-content>
-          <div class="ax-toolbar-new__select">
-            <div class="ax-toolbar-new__option" *ngFor="let option of toolbarFilters.data" (click)="toggleFilter(option)" [class.has-separator]="option.hasSeparator">
+          <div class="ax-toolbar__select">
+            <div class="ax-toolbar__option" *ngFor="let option of toolbarFilters.data" (click)="toggleFilter(option)" [class.has-separator]="option.hasSeparator">
               <ax-checkbox [checked]="toolbarFilters.model.indexOf(option.value) > -1"></ax-checkbox>
               {{ option.name }}
             </div>
@@ -20,3 +20,4 @@
     </div>
   </div>
 </div>
+<div class="ax-toolbar-padding"></div>

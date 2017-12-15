@@ -1,6 +1,10 @@
 @import '../../../assets/styles/config';
 
-.ax-toolbar-new {
+.ax-toolbar-padding {
+    height: $toolbar-height;
+}
+
+.ax-toolbar {
     position: fixed;
     top: $top-bar-height;
     left: $nav-width;
