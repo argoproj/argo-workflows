@@ -103,19 +103,25 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 	}
 
 	if wf.Status.Nodes != nil {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Println()
+		// apply a dummy FgDefault format to align tabwriter with the rest of the columns
+		if getArgs.output == "wide" {
+			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+		} else {
+			fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+		}
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
 		if ok {
-			fmt.Println()
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			// apply a dummy format to align tabwriter with the
-			if getArgs.output == "wide" {
-				fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
-			} else {
-				fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
-			}
 			printNodeTree(w, wf, node, 0, " ", " ")
-			_ = w.Flush()
 		}
+		onExitNode, ok := wf.Status.Nodes[wf.NodeID(wf.ObjectMeta.Name+".onExit")]
+		if ok {
+			fmt.Fprintf(w, "\t\t\t\t\n")
+			onExitNode.Name = "onExit"
+			printNodeTree(w, wf, onExitNode, 0, " ", " ")
+		}
+		_ = w.Flush()
 	}
 }
 

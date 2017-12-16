@@ -117,8 +117,9 @@ func DefaultConfigMapName(controllerName string) string {
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It also substitutes parameters in the template from the arguments
-// It will also substitute Global Workflow Parameters referenced in template.
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParams []wfv1.Parameter, validateOnly bool) (*wfv1.Template, error) {
+// It will also substitute any global variables referenced in template
+// (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -140,7 +141,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParams []wfv1
 		}
 		tmpl.Inputs.Parameters[i] = inParam
 	}
-	tmpl, err := substituteParams(tmpl, wfGlobalParams)
+	tmpl, err := substituteParams(tmpl, globalParams)
 	if err != nil {
 		return nil, err
 	}
@@ -169,22 +170,15 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParams []wfv1
 }
 
 // substituteParams returns a new copy of the template with all input parameters substituted
-func substituteParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter) (*wfv1.Template, error) {
+func substituteParams(tmpl *wfv1.Template, globalParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	globalReplaceMap := make(map[string]string)
-	for _, param := range wfGlobalParams {
-		if param.Value == nil {
-			return nil, errors.InternalErrorf("workflow.spec.arguments.parameters.%s had no value", param.Name)
-		}
-		globalReplaceMap[WorkflowGlobalParameterPrefixString+param.Name] = *param.Value
-	}
 	// First replace globals then replace inputs because globals could be referenced in the
 	// inputs. Note globals cannot be unresolved
 	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
-	globalReplacedTmplStr, err := Replace(fstTmpl, globalReplaceMap, false, WorkflowGlobalParameterPrefixString)
+	globalReplacedTmplStr, err := Replace(fstTmpl, globalParams, false, "workflow.")
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +210,8 @@ func substituteParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter) (*wf
 
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
+// remaining in the substituted template. prefixFilter will apply the replacements only
+// to variables with the specified prefix
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool, prefixFilter string) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -314,7 +309,7 @@ func LogStack() {
 }
 
 const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
-const workflowFieldNameErrMsg string = "a workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
+const workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
 const workflowFieldMaxLength int = 128
 
 var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
