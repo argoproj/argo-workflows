@@ -121,7 +121,7 @@ argo submit arguments-parameters.yaml -p message="goodbye world"
 
 Command line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows.
 ```
-argp submit arguments-parameters.yaml --entrypoint whalesay2
+argo submit arguments-parameters.yaml --entrypoint whalesay2
 ```
 
 By using a combination of the `--entrypoint` and `-p` parameters, you can invoke any template in the workflow spec with any parameter that you like.
