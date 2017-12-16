@@ -15,9 +15,6 @@ const (
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"
 
-	// Workflow Global Parameter Reference Prefix string in yaml
-	WorkflowGlobalParameterPrefixString = "workflow.parameters."
-
 	// Container names used in the workflow pod
 	MainContainerName = "main"
 	InitContainerName = "init"
