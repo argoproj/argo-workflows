@@ -47,8 +47,13 @@ func GetWorkflow(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	outFmt := getArgs.output
+	printWorkflow(getArgs.output, wf)
+}
+
+func printWorkflow(outFmt string, wf *wfv1.Workflow) {
 	switch outFmt {
+	case "name":
+		fmt.Println(wf.ObjectMeta.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -56,14 +61,13 @@ func GetWorkflow(cmd *cobra.Command, args []string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflow(wf)
+		printWorkflowHelper(wf)
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
-
 }
 
-func printWorkflow(wf *wfv1.Workflow) {
+func printWorkflowHelper(wf *wfv1.Workflow) {
 	const fmtStr = "%-17s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
