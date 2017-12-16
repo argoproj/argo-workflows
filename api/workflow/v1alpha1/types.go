@@ -48,16 +48,36 @@ type WorkflowList struct {
 	Items           []Workflow `json:"items"`
 }
 
+// WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
-	Templates            []Template                    `json:"templates"`
-	Entrypoint           string                        `json:"entrypoint"`
-	Arguments            Arguments                     `json:"arguments,omitempty"`
-	Volumes              []apiv1.Volume                `json:"volumes,omitempty"`
+	// Templates is a list of workflow templates used in a workflow
+	Templates []Template `json:"templates"`
+
+	// Entrypoint is a template reference to the starting point of the workflow
+	Entrypoint string `json:"entrypoint"`
+
+	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
+	// Parameters are referencable globally using the 'workflow' variable prefix.
+	// e.g. {{workflow.parameters.myparam}}
+	Arguments Arguments `json:"arguments,omitempty"`
+
+	// Volumes is a list of volumes that can be mounted by containers in a workflow.
+	Volumes []apiv1.Volume `json:"volumes,omitempty"`
+
+	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
+	// The Workflow controller will create the claims at the beginning of the workflow
+	// and delete the claims upon completion of the workflow
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 
-	// NodeSelector is a selector which will cause all pods of the workflow
-	// to be scheduled on the selected node(s)
+	// NodeSelector is a selector which will result in all pods of the workflow
+	// to be scheduled on the selected node(s). This is able to be overridden by
+	// a nodeSelector specified in the template.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// workflow, irrespective of the success, failure, or error of the
+	// primary workflow.
+	OnExit string `json:"onExit,omitempty"`
 }
 
 type Template struct {
