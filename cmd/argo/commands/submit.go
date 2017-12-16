@@ -17,11 +17,13 @@ func init() {
 	RootCmd.AddCommand(submitCmd)
 	submitCmd.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
 	submitCmd.Flags().StringSliceVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
+	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 }
 
 type submitFlags struct {
 	entrypoint string   // --entrypoint
 	parameters []string // --parameter
+	output     string   // --output
 }
 
 var submitArgs submitFlags
@@ -108,6 +110,6 @@ func submitWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	printWorkflow(created)
+	printWorkflow(submitArgs.output, created)
 	return nil
 }
