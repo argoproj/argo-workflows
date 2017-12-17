@@ -159,6 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 				volumeDockerLib,
 				volumeDockerSock,
 			},
+			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
 		},
 	}
 
