@@ -89,6 +89,11 @@ type Template struct {
 	// artifact repository location configured in the controller, appended with the
 	// <workflowname>/<nodename> in the key.
 	ArchiveLocation *ArtifactLocation `json:"archiveLocation,omitempty"`
+
+	// Optional duration in seconds relative to the StartTime that the pod may be active on a node
+	// before the system actively tries to terminate the pod; value must be positive integer
+	// This field is only applicable to container and script templates.
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
