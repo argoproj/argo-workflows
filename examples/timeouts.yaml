@@ -1,0 +1,17 @@
+# To enforce a timeout to a template, specify a value for activeDeadlineSeconds.
+# This value represents the duration in seconds relative to the pod StartTime
+# that the pod may be active on a node before the system actively tries to
+# terminate it. This field is only applicable to container and script templates.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeouts-
+spec:
+  entrypoint: sleep
+  templates:
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo sleeping for 1m; sleep 60; echo done"]
+    activeDeadlineSeconds: 10
