@@ -432,9 +432,21 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
 			Key:      artLocationKey,
 		}
+	} else if woc.controller.Config.ArtifactRepository.Artifactory != nil {
+		log.Debugf("Setting artifactory artifact repository information")
+		repoUrl := ""
+		if woc.controller.Config.ArtifactRepository.Artifactory.RepoUrl != "" {
+			repoUrl = woc.controller.Config.ArtifactRepository.Artifactory.RepoUrl + "/"
+		}
+		artUrl := fmt.Sprintf("%s%s/%s", repoUrl, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
+		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
+			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
+			URL:             artUrl,
+		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if !art.HasLocation() {
+				log.Errorf("artifact has no location details:%#v", art)
 				return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
 			}
 		}

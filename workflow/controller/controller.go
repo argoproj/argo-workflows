@@ -79,12 +79,19 @@ const (
 type ArtifactRepository struct {
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Future artifact repository support here
+	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 }
 type S3ArtifactRepository struct {
 	wfv1.S3Bucket `json:",inline,squash"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+type ArtifactoryArtifactRepository struct {
+	wfv1.ArtifactoryAuth `json:",inline,squash"`
+	// RepoUrl is the url for artifactory repo .
+	RepoUrl string `json:"RepoUrl,omitempty"`
 }
 
 // NewWorkflowController instantiates a new WorkflowController

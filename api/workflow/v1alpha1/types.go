@@ -153,9 +153,10 @@ type Artifact struct {
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
-	S3   *S3Artifact   `json:"s3,omitempty"`
-	Git  *GitArtifact  `json:"git,omitempty"`
-	HTTP *HTTPArtifact `json:"http,omitempty"`
+	S3          *S3Artifact          `json:"s3,omitempty"`
+	Git         *GitArtifact         `json:"git,omitempty"`
+	HTTP        *HTTPArtifact        `json:"http,omitempty"`
+	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
 }
 
 type Outputs struct {
@@ -309,6 +310,16 @@ type GitArtifact struct {
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
+type ArtifactoryAuth struct {
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+}
+
+type ArtifactoryArtifact struct {
+	ArtifactoryAuth `json:",inline,squash"`
+	URL             string `json:"url"`
+}
+
 type HTTPArtifact struct {
 	URL string `json:"url"`
 }
@@ -371,5 +382,5 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil
 }
