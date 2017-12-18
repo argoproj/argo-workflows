@@ -22,7 +22,7 @@ $ chmod +x argo
 
 ## 2. Install the Controller and UI
 ```
-$ argo install
+$ ./argo install
 ```
 Installation command does not configure access for argo UI. Please use following command to create externally accessable Kubernetes service:
 
