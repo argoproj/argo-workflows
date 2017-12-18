@@ -15,6 +15,7 @@ import (
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
+	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
@@ -169,6 +170,10 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 				shallowCopy := *we.Template.ArchiveLocation.S3
 				art.S3 = &shallowCopy
 				art.S3.Key = path.Join(art.S3.Key, fileName)
+			} else if we.Template.ArchiveLocation.Artifactory != nil {
+				shallowCopy := *we.Template.ArchiveLocation.Artifactory
+				art.Artifactory = &shallowCopy
+				art.Artifactory.URL = path.Join(art.Artifactory.URL, fileName)
 			} else {
 				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 			}
@@ -279,6 +284,24 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		}
 
 		return &gitDriver, nil
+	}
+	if art.Artifactory != nil {
+		// Getting Kubernetes namespace from the environment variables
+		namespace := os.Getenv(common.EnvVarNamespace)
+		username, err := we.getSecrets(namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+		password, err := we.getSecrets(namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		if err != nil {
+			return nil, err
+		}
+		driver := artifactory.ArtifactoryArtifactDriver{
+			Username: username,
+			Password: password,
+		}
+		return &driver, nil
+
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
