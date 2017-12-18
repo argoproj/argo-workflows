@@ -67,21 +67,28 @@ const (
 	// (when there is overlapping paths between artifacts and volume mounts)
 	InitContainerMainFilesystemDir = "/mainctrfs"
 
-	// ScriptTemplateEmptyDir is the path of the emptydir which will be shared between init/main container for script templates
-	ScriptTemplateEmptyDir = "/argo/script"
-	// ScriptTemplateSourcePath is the path which init will write the source file to and the main container will execute
-	ScriptTemplateSourcePath = "/argo/script/source"
+	// ExecutorStagingEmptyDir is the path of the emptydir which is used as a staging area to transfer a file between init/main container for script/resource templates
+	ExecutorStagingEmptyDir = "/argo/staging"
+	// ExecutorScriptSourcePath is the path which init will write the script source file to for script templates
+	ExecutorScriptSourcePath = "/argo/staging/script"
+	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
+	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarHostIP contains the host IP which the container is executing on.
-	// Used to communicate with kubelet directly. Kubelet enables the wait sidecar
-	// to query pod state without burdening the k8s apiserver.
-	EnvVarHostIP = "ARGO_HOST_IP"
 	// EnvVarPodIP contains the IP of the pod (currently unused)
 	EnvVarPodIP = "ARGO_POD_IP"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarNamespace contains the namespace of the pod (currently unused)
 	EnvVarNamespace = "ARGO_NAMESPACE"
+
+	// These are global variables that are added to the scope during template execution and can be referenced using {{}} syntax
+
+	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
+	GlobalVarWorkflowName = "workflow.name"
+	// GlobalVarWorkflowUUID is a global workflow variable referencing the workflow's metadata.uuid field
+	GlobalVarWorkflowUUID = "workflow.uuid"
+	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
+	GlobalVarWorkflowStatus = "workflow.status"
 )

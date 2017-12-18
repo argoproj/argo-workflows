@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -32,7 +33,14 @@ var (
 	GlobalArgs globalFlags
 )
 
+type globalFlags struct {
+	podAnnotationsPath string // --pod-annotations
+	kubeConfig         string // --kubeconfig
+}
+
 func init() {
+	RootCmd.PersistentFlags().StringVar(&GlobalArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
+	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, "Pod annotations file from k8s downward API")
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
 }
 
@@ -45,14 +53,12 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-type globalFlags struct {
-	hostIP             string // --host-ip
-	podAnnotationsPath string // --pod-annotations
-}
-
-func init() {
-	RootCmd.PersistentFlags().StringVar(&GlobalArgs.hostIP, "host-ip", common.EnvVarHostIP, fmt.Sprintf("IP of host. (Default: %s)", common.EnvVarHostIP))
-	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
+// getClientConfig return rest config, if path not specified, assume in cluster config
+func getClientConfig(kubeconfig string) (*rest.Config, error) {
+	if kubeconfig != "" {
+		return clientcmd.BuildConfigFromFlags("", kubeconfig)
+	}
+	return rest.InClusterConfig()
 }
 
 func initExecutor() *executor.WorkflowExecutor {
@@ -71,8 +77,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		log.Fatalf("Error getting template %v", err)
 	}
 
-	// Initialize in-cluster Kubernetes client
-	config, err := rest.InClusterConfig()
+	config, err := getClientConfig(GlobalArgs.kubeConfig)
 	if err != nil {
 		panic(err.Error())
 	}

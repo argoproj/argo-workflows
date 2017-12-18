@@ -19,6 +19,17 @@ const (
 	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 
+// TemplateType is the type of a template
+type TemplateType string
+
+// Possible template types
+const (
+	TemplateTypeContainer TemplateType = "Container"
+	TemplateTypeSteps     TemplateType = "Steps"
+	TemplateTypeScript    TemplateType = "Script"
+	TemplateTypeResource  TemplateType = "Resource"
+)
+
 // NodePhase is a label for the condition of a node at the current time.
 type NodePhase string
 
@@ -104,6 +115,8 @@ type Template struct {
 	// Sidecar containers
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
+	Resource *ResourceTemplate `json:"resource,omitempty"`
+
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
 	// artifact repository location configured in the controller, appended with the
@@ -127,7 +140,9 @@ type Parameter struct {
 	Name    string  `json:"name"`
 	Value   *string `json:"value,omitempty"`
 	Default *string `json:"default,omitempty"`
-	Path    string  `json:"path,omitempty"`
+
+	// Path describes the location in which to retrieve the output parameter value from
+	Path string `json:"path,omitempty"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -159,11 +174,14 @@ type ArtifactLocation struct {
 }
 
 type Outputs struct {
+	// Parameters holds the list of output parameters produced by a step
 	Parameters []Parameter `json:"parameters,omitempty"`
-	Artifacts  []Artifact  `json:"artifacts,omitempty"`
-	Result     *string     `json:"result,omitempty"`
-	// TODO:
-	// - Logs (log artifact(s) from the container?)
+
+	// Artifacts holds the list of output artifacts produced by a step
+	Artifacts []Artifact `json:"artifacts,omitempty"`
+
+	// Result holds the result (stdout) of a script template
+	Result *string `json:"result,omitempty"`
 }
 
 // WorkflowStep is a template ref
@@ -318,6 +336,40 @@ type Script struct {
 	Image   string   `json:"image"`
 	Command []string `json:"command"`
 	Source  string   `json:"source"`
+}
+
+// ResourceTemplate is a template subtype to manipulate kubernetes resources
+type ResourceTemplate struct {
+	// Action is the action to perform to the resource.
+	// Must be one of: create, apply, delete
+	Action string `json:"action"`
+
+	// Manifest contains the kubernetes manifest
+	Manifest string `json:"manifest"`
+
+	// SuccessCondition is a label selector expression which describes the conditions
+	// of the k8s resource in which it is acceptable to proceed to the following step
+	SuccessCondition string `json:"successCondition,omitempty"`
+
+	// FailureCondition is a label selector expression which describes the conditions
+	// of the k8s resource in which the step was considered failed
+	FailureCondition string `json:"failureCondition,omitempty"`
+}
+
+func (tmpl *Template) GetType() TemplateType {
+	if tmpl.Container != nil {
+		return TemplateTypeContainer
+	}
+	if tmpl.Steps != nil {
+		return TemplateTypeSteps
+	}
+	if tmpl.Script != nil {
+		return TemplateTypeScript
+	}
+	if tmpl.Resource != nil {
+		return TemplateTypeResource
+	}
+	return "Unknown"
 }
 
 func (in *Inputs) GetArtifactByName(name string) *Artifact {

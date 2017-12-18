@@ -65,6 +65,6 @@ script:
 func TestScriptTemplateWithVolume(t *testing.T) {
 	// ensure we can a script pod with input artifacts
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
-	_, err := newWoc().createWorkflowPod(tmpl.Name, tmpl)
+	err := newWoc().executeScript(tmpl.Name, tmpl)
 	assert.Nil(t, err)
 }
