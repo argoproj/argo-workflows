@@ -175,3 +175,13 @@
         }
     }
 }
+
+.ax-top-bar-shadow {
+    position: fixed;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    left: $nav-width;
+    height: $top-bar-height;
+    box-shadow: 0 1px 3px rgba(143, 164, 177, .3);
+}

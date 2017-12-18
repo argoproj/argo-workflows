@@ -3,7 +3,7 @@ $axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
 @import '../assets/styles/config';
 
 .content-wrapper {
-  padding: #{$top-bar-height + $toolbar-height} 0 0 $nav-width;
+  padding: $top-bar-height 0 0 $nav-width;
   position: relative;
   display: block;
   min-height: 100vh;
@@ -13,39 +13,6 @@ $axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
 
   &.hidden-scrollbar {
     height: 100%;
-  }
-
-  .hidden-toolbar & {
-    padding-top: $top-bar-height;
-  }
-
-  &::before {
-    position: absolute;
-    z-index: -2;
-    top: $top-bar-height;
-    left: $nav-width;
-    width: 100%;
-    height: $top-bar-height;
-    content: '';
-
-    .hidden-toolbar & {
-      display: none;
-    }
-  }
-
-  &::after {
-    position: fixed;
-    z-index: -1;
-    top: $top-bar-height;
-    left: $nav-width;
-    right: 0;
-    height: $toolbar-height;
-    padding-left: 20px;
-    line-height: $toolbar-height;
-    background-color: $ax-color-white;
-    border-bottom: 1px solid $ax-color-gray-2;
-    box-shadow: 0 1px 3px rgba(143, 164, 177, .3);
-    content: '';
   }
 }
 
