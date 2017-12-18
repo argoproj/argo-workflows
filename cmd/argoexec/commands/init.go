@@ -19,10 +19,10 @@ var initCmd = &cobra.Command{
 func loadArtifacts(cmd *cobra.Command, args []string) {
 	wfExecutor := initExecutor()
 	// Download input artifacts
-	err := wfExecutor.LoadScriptSource()
+	err := wfExecutor.StageFiles()
 	if err != nil {
 		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
-		log.Fatalf("Error loading script: %+v", err)
+		log.Fatalf("Error loading staging files: %+v", err)
 	}
 	err = wfExecutor.LoadArtifacts()
 	if err != nil {

@@ -85,7 +85,6 @@ var (
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
 	execEnvVars = []apiv1.EnvVar{
-		envFromField(common.EnvVarHostIP, "status.hostIP"),
 		envFromField(common.EnvVarPodIP, "status.podIP"),
 		envFromField(common.EnvVarPodName, "metadata.name"),
 		envFromField(common.EnvVarNamespace, "metadata.namespace"),
@@ -105,29 +104,11 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 	}
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	woc.log.Debugf("Creating Pod: %s", nodeName)
 	tmpl = tmpl.DeepCopy()
-	waitCtr, err := woc.newWaitContainer(tmpl)
-	if err != nil {
-		return nil, err
-	}
-	var mainCtr apiv1.Container
-	if tmpl.Container != nil {
-		mainCtr = *tmpl.Container
-	} else if tmpl.Script != nil {
-		// script case
-		mainCtr = apiv1.Container{
-			Image:   tmpl.Script.Image,
-			Command: tmpl.Script.Command,
-			Args:    []string{common.ScriptTemplateSourcePath},
-		}
-	} else {
-		return nil, errors.InternalError("Cannot create container from non-container/script template")
-	}
 	mainCtr.Name = common.MainContainerName
 	t := true
-
 	pod := apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.NodeID(nodeName),
@@ -151,7 +132,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 		Spec: apiv1.PodSpec{
 			RestartPolicy: apiv1.RestartPolicyNever,
 			Containers: []apiv1.Container{
-				*waitCtr,
 				mainCtr,
 			},
 			Volumes: []apiv1.Volume{
@@ -165,16 +145,28 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
-	// Add init container only if it needs input artifacts
-	// or if it is a script template (which needs to populate the script)
-	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.Script != nil {
+
+	if tmpl.GetType() != wfv1.TemplateTypeResource {
+		// we do not need the wait container for resource templates because
+		// argoexec runs as the main container and will perform the job of
+		// annotating the outputs or errors, making the wait container redundant.
+		waitCtr, err := woc.newWaitContainer(tmpl)
+		if err != nil {
+			return nil, err
+		}
+		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
+	}
+
+	// Add init container only if it needs input artifacts. This is also true for
+	// script templates (which needs to populate the script)
+	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
 	woc.addNodeSelectors(&pod, tmpl)
 
-	err = woc.addVolumeReferences(&pod, tmpl)
+	err := woc.addVolumeReferences(&pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +175,14 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	if err != nil {
 		return nil, err
 	}
+
 	err = woc.addArchiveLocation(&pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
-	if tmpl.Script != nil {
-		addScriptVolume(&pod)
+	if tmpl.GetType() == wfv1.TemplateTypeScript {
+		addExecutorStagingVolume(&pod)
 	}
 
 	// addSidecars should be called after all volumes have been manipulated
@@ -216,8 +209,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 	created, err := woc.controller.clientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(&pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if
-			// the controller fails to persist the workflow after creating the pod.
+			// workflow pod names are deterministic. We can get here if the
+			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Skipped pod %s creation: already exists", nodeName)
 			return created, nil
 		}
@@ -231,8 +224,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"argoexec"}
-	argoExecCmd := fmt.Sprintf("init")
-	ctr.Args = []string{argoExecCmd}
+	ctr.Args = []string{"init"}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
@@ -242,8 +234,7 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"argoexec"}
-	argoExecCmd := fmt.Sprintf("wait")
-	ctr.Args = []string{argoExecCmd}
+	ctr.Args = []string{"wait"}
 	ctr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 		volumeMountDockerLib,
@@ -374,7 +365,7 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 	for i, ctr := range pod.Spec.Containers {
 		if ctr.Name == common.MainContainerName {
 			mainCtrIndex = i
-			mainCtr = &ctr
+			mainCtr = &pod.Spec.Containers[i]
 		}
 	}
 	if mainCtr == nil {
@@ -442,23 +433,23 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	return nil
 }
 
-// addScriptVolume sets up the shared volume between init container and main container
-// containing the template script source code
-func addScriptVolume(pod *apiv1.Pod) {
-	volName := "script"
-	scriptVol := apiv1.Volume{
+// addExecutorStagingVolume sets up a shared staging volume between the init container
+// and main container for the purpose of holding the script source code for script templates
+func addExecutorStagingVolume(pod *apiv1.Pod) {
+	volName := "argo-staging"
+	stagingVol := apiv1.Volume{
 		Name: volName,
 		VolumeSource: apiv1.VolumeSource{
 			EmptyDir: &apiv1.EmptyDirVolumeSource{},
 		},
 	}
-	pod.Spec.Volumes = append(pod.Spec.Volumes, scriptVol)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, stagingVol)
 
 	for i, initCtr := range pod.Spec.InitContainers {
 		if initCtr.Name == common.InitContainerName {
 			volMount := apiv1.VolumeMount{
 				Name:      volName,
-				MountPath: common.ScriptTemplateEmptyDir,
+				MountPath: common.ExecutorStagingEmptyDir,
 			}
 			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volMount)
 			pod.Spec.InitContainers[i] = initCtr
@@ -470,7 +461,7 @@ func addScriptVolume(pod *apiv1.Pod) {
 		if ctr.Name == common.MainContainerName {
 			volMount := apiv1.VolumeMount{
 				Name:      volName,
-				MountPath: common.ScriptTemplateEmptyDir,
+				MountPath: common.ExecutorStagingEmptyDir,
 			}
 			if ctr.VolumeMounts == nil {
 				ctr.VolumeMounts = []apiv1.VolumeMount{volMount}

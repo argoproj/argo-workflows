@@ -550,7 +550,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}}"]
+      args: ["echo {{workflow.status}} {{workflow.uuid}}"]
 `
 
 var workflowStatusNotOnExit = `
