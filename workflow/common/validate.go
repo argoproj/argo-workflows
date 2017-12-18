@@ -48,7 +48,8 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	ctx.globalParams["workflow.name"] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowName] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowUUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
@@ -71,7 +72,7 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 			return errors.Errorf(errors.CodeBadRequest, "spec.onExit template '%s' undefined", ctx.wf.Spec.OnExit)
 		}
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams["workflow.status"] = placeholderValue
+		ctx.globalParams[GlobalVarWorkflowStatus] = placeholderValue
 		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments)
 		if err != nil {
 			return err
@@ -109,12 +110,15 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if tmpl.Script != nil {
 		tmplTypes++
 	}
+	if tmpl.Resource != nil {
+		tmplTypes++
+	}
 	switch tmplTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script")
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script")
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource")
 	}
 	if tmpl.Steps == nil {
 		err = validateLeaf(scope, tmpl)
