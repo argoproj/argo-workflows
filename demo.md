@@ -11,18 +11,18 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 
 On Mac:
 ```
-$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-darwin-amd64
-$ chmod +x argo
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-darwin-amd64
+$ chmod +x /usr/local/bin/argo
 ```
 On Linux:
 ```
-$ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-linux-amd64
-$ chmod +x argo
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-linux-amd64
+$ chmod +x /usr/local/bin/argo
 ```
 
 ## 2. Install the Controller and UI
 ```
-$ ./argo install
+$ argo install
 ```
 Installation command does not configure access for argo UI. Please use following command to create externally accessable Kubernetes service:
 
@@ -48,12 +48,12 @@ So, to access the Argo UI, you need to hit the IP of the Docker environment and 
 
 ## 3. Run Simple Example Workflows
 ```
-$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
-$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
-$ ./argo list
-$ ./argo get xxx-workflow-name-xxx
-$ ./argo logs xxx-pod-name-xxx #from get command above
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
+$ argo list
+$ argo get xxx-workflow-name-xxx
+$ argo logs xxx-pod-name-xxx #from get command above
 ```
 
 You can also run workflows directly with kubectl. However, the Argo CLI offers extra features that kubectl does not, such as YAML validation, workflow visualization, and overall less typing.
@@ -118,5 +118,5 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
 
 ## 6. Run a workflow which uses artifacts
 ```
-$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
