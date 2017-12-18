@@ -12,12 +12,12 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 On Mac:
 ```
 $ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-darwin-amd64
-$ chmod +x argo 
+$ chmod +x argo
 ```
 On Linux:
 ```
 $ curl -sSL -o ./argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-linux-amd64
-$ chmod +x argo 
+$ chmod +x argo
 ```
 
 ## 2. Install the Controller and UI
@@ -38,15 +38,22 @@ $ kubectl get services --namespace kube-system
 
 Note: service namespace should correspond to namespace chosen during argo installation (kube-system is default namespace).
 
+Note: If you are installing Argo on Minikube, you won't get an external IP on creating the service above. Instead, it will just show `pending`. It should look something like below:
+```
+argo-ui                LoadBalancer   <redacted-IP>   <pending>     80:31185/TCP    1h
+```
+
+So, to access the Argo UI, you need to hit the IP of the Docker environment and the internal port. For instance, in the above case, it would be `192.168.99.100:31185`.
+
 
 ## 3. Run Simple Example Workflows
 ```
-$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
-$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
-$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
-$ argo list
-$ argo get xxx-workflow-name-xxx
-$ argo logs xxx-pod-name-xxx #from get command above
+$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
+$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
+$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/loops-maps.yaml
+$ ./argo list
+$ ./argo get xxx-workflow-name-xxx
+$ ./argo logs xxx-pod-name-xxx #from get command above
 ```
 
 You can also run workflows directly with kubectl. However, the Argo CLI offers extra features that kubectl does not, such as YAML validation, workflow visualization, and overall less typing.
@@ -64,7 +71,7 @@ Additional examples are availabe [here](https://github.com/argoproj/argo/blob/ma
 
 You'll create the artifact repo using Minio.
 ```
-$ brew install kubernetes-helm #mac
+$ brew install kubernetes-helm #mac. This is not really needed if you already have the kubectl cli installed.
 $ helm init
 $ helm install stable/minio --name argo-artifacts
 ```
@@ -111,5 +118,5 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
 
 ## 6. Run a workflow which uses artifacts
 ```
-$ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+$ ./argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
