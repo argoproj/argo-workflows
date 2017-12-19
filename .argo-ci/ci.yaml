@@ -1,0 +1,137 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: argo-ci-
+spec:
+  entrypoint: argo-ci
+  arguments:
+    parameters:
+    - name: revision
+      value: master
+    - name: repo
+      value: https://github.com/argoproj/argo.git
+
+  templates:
+  - name: argo-ci
+    inputs:
+      parameters:
+      - name: revision
+      - name: repo
+    steps:
+    - - name: controller-image
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "make controller-image"
+
+      - name: executor-image
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "make executor-image"
+
+      - name: cli-linux
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "make cli-linux"
+
+      - name: cli-darwin
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "make cli-darwin"
+
+      - name: ui-image
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "make ui-image"
+          - name: dind-mem
+            value: "4096"
+
+      - name: lint
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "dep ensure && make lint"
+
+      - name: test
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: revision
+            value: "{{inputs.parameters.revision}}"
+          - name: repo
+            value: "{{inputs.parameters.repo}}"
+          - name: cmd
+            value: "dep ensure && make test"
+          - name: mem
+            value: "1024"
+
+  - name: ci-builder
+    inputs:
+      parameters:
+      - name: revision
+      - name: repo
+      - name: cmd
+      - name: mem
+        default: "512"
+      - name: dind-mem
+        default: "600"
+      artifacts:
+      - name: code
+        path: /go/src/github.com/argoproj/argo
+        git:
+          repo: "{{inputs.parameters.repo}}"
+          revision: "{{inputs.parameters.revision}}"
+    container:
+      image: argoproj/argo-ci-builder:1.0
+      command: [sh, -c]
+      args: ["until docker ps; do sleep 3; done; cd /go/src/github.com/argoproj/argo && {{inputs.parameters.cmd}}"]
+      resources:
+        mem_mib: "{{inputs.parameters.mem}}"
+        cpu_cores: 0.1
+      env:
+      - name: DOCKER_HOST
+        value: 127.0.0.1
+
+    sidecars:
+    - name: dind
+      image: docker:17.10-dind
+      securityContext:
+        privileged: true
+      resources:
+        mem_mib: "{{inputs.parameters.dind-mem}}"
+        cpu_cores: 0.3
+      mirrorVolumeMounts: true
