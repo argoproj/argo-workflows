@@ -24,15 +24,27 @@ import (
 
 const clusterAdmin = "cluster-admin"
 
+var (
+	// These values may be overridden by the link flags during build
+	// (e.g. imageTag will use the official release tag on tagged builds)
+	imageNamespace = "argoproj"
+	imageTag       = "latest"
+
+	// These are the default image names which `argo install` uses during install
+	DefaultControllerImage = imageNamespace + "/workflow-controller:" + imageTag
+	DefaultExecutorImage   = imageNamespace + "/argoexec:" + imageTag
+	DefaultUiImage         = imageNamespace + "/argoui:" + imageTag
+)
+
 func init() {
 	RootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
 	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
 	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
-	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
-	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", common.DefaultUiImage, "use a specified ui image")
-	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
+	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
+	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
+	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 }
 
