@@ -105,3 +105,8 @@ func (f *WorkflowClient) ListWorkflows(opts metav1.ListOptions) (*wfv1.WorkflowL
 		Do().Into(&result)
 	return &result, err
 }
+
+// GetRestClient returns the REST client used by WorkflowClient
+func (f *WorkflowClient) GetRestClient() *rest.RESTClient {
+	return f.cl
+}
