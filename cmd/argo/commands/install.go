@@ -2,7 +2,9 @@ package commands
 
 import (
 	"fmt"
+	"reflect"
 
+	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	workflowclient "github.com/argoproj/argo/workflow/client"
@@ -39,6 +41,7 @@ var (
 func init() {
 	RootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	installCmd.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
 	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
 	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
@@ -46,11 +49,13 @@ func init() {
 	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
 	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
+	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
 }
 
 // InstallFlags has all the required parameters for installing Argo.
 type InstallFlags struct {
 	ControllerName  string // --controller-name
+	InstanceID      string // --instanceid
 	UIName          string // --ui-name
 	Namespace       string // --install-namespace
 	ConfigMap       string // --configmap
@@ -58,6 +63,7 @@ type InstallFlags struct {
 	UIImage         string // --ui-image
 	ExecutorImage   string // --executor-image
 	ServiceAccount  string // --service-account
+	Upgrade         bool   // --upgrade
 }
 
 var installArgs InstallFlags
@@ -70,7 +76,7 @@ var installCmd = &cobra.Command{
 
 // Install installs the Argo controller and UI in the given Namespace
 func Install(cmd *cobra.Command, args InstallFlags) {
-	fmt.Printf("Installing into namespace '%s'\n", args.Namespace)
+	fmt.Printf("Installing Argo %s into namespace '%s'\n", argo.GetVersion(), args.Namespace)
 	clientset = initKubeClient()
 	kubernetesVersionCheck(clientset)
 	installCRD(clientset)
@@ -201,6 +207,7 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 		}
 		// Create the config map
 		wfConfig.ExecutorImage = args.ExecutorImage
+		wfConfig.InstanceID = args.InstanceID
 		configBytes, err := yaml.Marshal(wfConfig)
 		if err != nil {
 			log.Fatalf("%+v", errors.InternalWrapError(err))
@@ -215,20 +222,32 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 		}
 		fmt.Printf("ConfigMap '%s' created\n", args.ConfigMap)
 	} else {
-		fmt.Printf("ConfigMap '%s' already exists\n", args.ConfigMap)
-	}
-	configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
-	if !ok {
-		log.Fatalf("ConfigMap '%s' missing key '%s'", args.ConfigMap, common.WorkflowControllerConfigMapKey)
-	}
-	err = yaml.Unmarshal([]byte(configStr), &wfConfig)
-	if err != nil {
-		log.Fatalf("Failed to load controller configuration: %v", err)
+		// Check if existing configmap needs upgrade to a new executor image
+		configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
+		if !ok {
+			log.Fatalf("ConfigMap '%s' missing key '%s'", args.ConfigMap, common.WorkflowControllerConfigMapKey)
+		}
+		err = yaml.Unmarshal([]byte(configStr), &wfConfig)
+		if err != nil {
+			log.Fatalf("Failed to load controller configuration: %v", err)
+		}
+		if wfConfig.ExecutorImage != args.ExecutorImage {
+			if !args.Upgrade {
+				log.Fatalf("ConfigMap '%s' requires upgrade. Rerun with --upgrade to update the configuration", args.ConfigMap)
+			}
+			wfConfig.ExecutorImage = args.ExecutorImage
+			_, err = cmClient.Update(wfConfigMap)
+			if err != nil {
+				log.Fatalf("Failed to update ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
+			}
+			fmt.Printf("ConfigMap '%s' updated\n", args.ConfigMap)
+		} else {
+			fmt.Printf("Existing ConfigMap '%s' up-to-date\n", args.ConfigMap)
+		}
 	}
 }
 
 func installController(clientset *kubernetes.Clientset, args InstallFlags) {
-	deploymentsClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	controllerDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: args.ControllerName,
@@ -270,27 +289,10 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 			},
 		},
 	}
-
-	// Create Deployment
-	var result *appsv1beta2.Deployment
-	var err error
-	result, err = deploymentsClient.Create(&controllerDeployment)
-	if err != nil {
-		if !apierr.IsAlreadyExists(err) {
-			log.Fatal(err)
-		}
-		result, err = deploymentsClient.Update(&controllerDeployment)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
-	} else {
-		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
-	}
+	createDeploymentHelper(&controllerDeployment, args)
 }
 
 func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
-	deploymentsClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	uiDeployment := appsv1beta2.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: args.UIName,
@@ -334,23 +336,69 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 			},
 		},
 	}
+	createDeploymentHelper(&uiDeployment, args)
+}
 
-	// Create Deployment
+// createDeploymentHelper is helper to create or update an existing deployment (if --upgrade was supplied)
+func createDeploymentHelper(deployment *appsv1beta2.Deployment, args InstallFlags) {
+	depClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	var result *appsv1beta2.Deployment
 	var err error
-	result, err = deploymentsClient.Create(&uiDeployment)
+	result, err = depClient.Create(deployment)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatal(err)
 		}
-		result, err = deploymentsClient.Update(&uiDeployment)
+		// deployment already exists
+		existing, err := depClient.Get(deployment.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Failed to get existing deployment: %v", err)
 		}
-		fmt.Printf("Existing deployment '%s' updated\n", result.GetObjectMeta().GetName())
+		if upgradeNeeded(deployment, existing) {
+			if !args.Upgrade {
+				log.Fatalf("Deployment '%s' requires upgrade. Rerun with --upgrade to upgrade the deployment", deployment.ObjectMeta.Name)
+			}
+			existing, err = depClient.Update(deployment)
+			if err != nil {
+				log.Fatalf("Failed to update deployment: %v", err)
+			}
+			fmt.Printf("Existing deployment '%s' updated\n", existing.GetObjectMeta().GetName())
+		} else {
+			fmt.Printf("Existing deployment '%s' up-to-date\n", existing.GetObjectMeta().GetName())
+		}
 	} else {
 		fmt.Printf("Deployment '%s' created\n", result.GetObjectMeta().GetName())
 	}
+}
+
+// upgradeNeeded checks two deployments and returns whether or not there are obvious
+// differences in a few deployment/container spec fields that would warrant an
+// upgrade. WARNING: This is not intended to be comprehensive -- its primary purpose
+// is to check if the controller/UI image is out of date with this version of argo.
+func upgradeNeeded(dep1, dep2 *appsv1beta2.Deployment) bool {
+	if len(dep1.Spec.Template.Spec.Containers) != len(dep2.Spec.Template.Spec.Containers) {
+		return true
+	}
+	for i := 0; i < len(dep1.Spec.Template.Spec.Containers); i++ {
+		ctr1 := dep1.Spec.Template.Spec.Containers[i]
+		ctr2 := dep2.Spec.Template.Spec.Containers[i]
+		if ctr1.Name != ctr2.Name {
+			return true
+		}
+		if ctr1.Image != ctr2.Image {
+			return true
+		}
+		if !reflect.DeepEqual(ctr1.Env, ctr2.Env) {
+			return true
+		}
+		if !reflect.DeepEqual(ctr1.Command, ctr2.Command) {
+			return true
+		}
+		if !reflect.DeepEqual(ctr1.Args, ctr2.Args) {
+			return true
+		}
+	}
+	return false
 }
 
 func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
