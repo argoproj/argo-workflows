@@ -161,7 +161,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 			},
 		},
 	}
-
+	if woc.controller.Config.InstanceID != "" {
+		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+	}
 	// Add init container only if it needs input artifacts
 	// or if it is a script template (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.Script != nil {

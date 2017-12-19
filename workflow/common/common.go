@@ -50,6 +50,9 @@ const (
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
 
+	// LabelKeyControllerInstanceID is the label the controller will carry forward to pod labels
+	// for the purposes of workflow segregation
+	LabelKeyControllerInstanceID = wfv1.CRDFullName + "/controller-instanceid"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
 	LabelKeyCompleted = wfv1.CRDFullName + "/completed"
