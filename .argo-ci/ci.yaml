@@ -13,19 +13,15 @@ spec:
 
   templates:
   - name: argo-ci
-    inputs:
-      parameters:
-      - name: revision
-      - name: repo
     steps:
     - - name: controller-image
         template: ci-builder
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "make controller-image"
 
@@ -34,9 +30,9 @@ spec:
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "make executor-image"
 
@@ -45,9 +41,9 @@ spec:
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "make cli-linux"
 
@@ -56,9 +52,9 @@ spec:
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "make cli-darwin"
 
@@ -67,22 +63,20 @@ spec:
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "make ui-image"
-          - name: dind-mem
-            value: "4096"
 
       - name: lint
         template: ci-builder
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "dep ensure && make lint"
 
@@ -91,13 +85,11 @@ spec:
         arguments:
           parameters:
           - name: revision
-            value: "{{inputs.parameters.revision}}"
+            value: "{{workflow.parameters.revision}}"
           - name: repo
-            value: "{{inputs.parameters.repo}}"
+            value: "{{workflow.parameters.repo}}"
           - name: cmd
             value: "dep ensure && make test"
-          - name: mem
-            value: "1024"
 
   - name: ci-builder
     inputs:
@@ -105,23 +97,16 @@ spec:
       - name: revision
       - name: repo
       - name: cmd
-      - name: mem
-        default: "512"
-      - name: dind-mem
-        default: "600"
       artifacts:
       - name: code
         path: /go/src/github.com/argoproj/argo
         git:
-          repo: "{{inputs.parameters.repo}}"
-          revision: "{{inputs.parameters.revision}}"
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
     container:
       image: argoproj/argo-ci-builder:1.0
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done; cd /go/src/github.com/argoproj/argo && {{inputs.parameters.cmd}}"]
-      resources:
-        mem_mib: "{{inputs.parameters.mem}}"
-        cpu_cores: 0.1
       env:
       - name: DOCKER_HOST
         value: 127.0.0.1
@@ -131,7 +116,4 @@ spec:
       image: docker:17.10-dind
       securityContext:
         privileged: true
-      resources:
-        mem_mib: "{{inputs.parameters.dind-mem}}"
-        cpu_cores: 0.3
       mirrorVolumeMounts: true
