@@ -18,12 +18,14 @@ func init() {
 	submitCmd.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
 	submitCmd.Flags().StringSliceVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
 }
 
 type submitFlags struct {
 	entrypoint string   // --entrypoint
 	parameters []string // --parameter
 	output     string   // --output
+	wait       bool     // --wait
 }
 
 var submitArgs submitFlags
@@ -111,5 +113,10 @@ func submitWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	printWorkflow(submitArgs.output, created)
+
+	if submitArgs.wait {
+		wsp := WorkflowStatusPoller{wfClient}
+		wsp.waitOnOne(created.ObjectMeta.Name, false)
+	}
 	return nil
 }
