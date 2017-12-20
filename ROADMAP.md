@@ -65,3 +65,15 @@
   * Kubernetes 1.6.
   * Dev CLI tool.
   * Move to kops
+* M11: Nov 2017
+  * Kubernetes-in-Kubernetes (KinK)
+  * Support for minikube and GKE
+  * Argolite proof of concept (conceptual basis for Argo 2.0)
+* M12: Dec 2017
+  * Argo 2.0!
+  * Argo is now a Kubernetes CRD!
+  * Basic UI
+  * Examples
+* M13: In progress
+  * Event triggers
+  * More examples
