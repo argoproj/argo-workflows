@@ -17,7 +17,9 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
@@ -36,7 +38,7 @@ type WorkflowController struct {
 	restConfig *rest.Config
 	restClient *rest.RESTClient
 	scheme     *runtime.Scheme
-	clientset  *kubernetes.Clientset
+	clientset  kubernetes.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer  cache.SharedIndexInformer
@@ -45,11 +47,27 @@ type WorkflowController struct {
 	podQueue    workqueue.RateLimitingInterface
 }
 
+// WorkflowControllerConfig contain the configuration settings for the workflow controller
 type WorkflowControllerConfig struct {
-	ExecutorImage      string             `json:"executorImage,omitempty"`
+	// ExecutorImage is the image name of the executor to use when running pods
+	ExecutorImage string `json:"executorImage,omitempty"`
+
+	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
-	Namespace          string             `json:"namespace,omitempty"`
-	MatchLabels        map[string]string  `json:"matchLabels,omitempty"`
+
+	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
+	Namespace string `json:"namespace,omitempty"`
+
+	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
+	// contains an arbitrary value that is carried forward into its pod labels, under the key
+	// workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
+	// enables a controller to only receive workflow and pod events that it is interested about,
+	// in order to support multiple controllers in a single cluster, and ultimately allows the
+	// controller itself to be bundled as part of a higher level application. If omitted, the
+	// controller watches workflows and pods that *are not* labeled with an instance id.
+	InstanceID string `json:"instanceID,omitempty"`
+
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
 
 const (
@@ -247,12 +265,19 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	return nil
 }
 
-// addLabelSelectors adds label selectors from the workflow controller's config
-func (wfc *WorkflowController) addLabelSelectors(req *rest.Request) *rest.Request {
-	for label, labelVal := range wfc.Config.MatchLabels {
-		req = req.Param("labelSelector", fmt.Sprintf("%s=%s", label, labelVal))
+// instanceIDRequirement returns the label requirement to filter against a controller instance (or not)
+func (wfc *WorkflowController) instanceIDRequirement() labels.Requirement {
+	var instanceIDReq *labels.Requirement
+	var err error
+	if wfc.Config.InstanceID != "" {
+		instanceIDReq, err = labels.NewRequirement(common.LabelKeyControllerInstanceID, selection.Equals, []string{wfc.Config.InstanceID})
+	} else {
+		instanceIDReq, err = labels.NewRequirement(common.LabelKeyControllerInstanceID, selection.DoesNotExist, nil)
 	}
-	return req
+	if err != nil {
+		panic(err)
+	}
+	return *instanceIDReq
 }
 
 func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
@@ -260,26 +285,32 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 	resource := wfv1.CRDPlural
 	namespace := wfc.Config.Namespace
 	fieldSelector := fields.Everything()
+	// completed notin (true)
+	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector().
+		Add(*incompleteReq).
+		Add(wfc.instanceIDRequirement())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
+		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("labelSelector", fmt.Sprintf("%s notin (true)", common.LabelKeyCompleted)).
 			VersionedParams(&options, metav1.ParameterCodec)
-		req = wfc.addLabelSelectors(req)
 		return req.Do().Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.FieldSelector = fieldSelector.String()
+		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("labelSelector", fmt.Sprintf("%s notin (true)", common.LabelKeyCompleted)).
 			VersionedParams(&options, metav1.ParameterCodec)
-		req = wfc.addLabelSelectors(req)
 		return req.Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
@@ -351,21 +382,22 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 	resource := "configmaps"
 	name := wfc.ConfigMap
 	namespace := wfc.ConfigMapNS
+	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		options.FieldSelector = fieldSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
 			VersionedParams(&options, metav1.ParameterCodec)
 		return req.Do().Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
+		options.FieldSelector = fieldSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("fieldSelector", fmt.Sprintf("metadata.name=%s", name)).
 			VersionedParams(&options, metav1.ParameterCodec)
 		return req.Watch()
 	}
@@ -376,29 +408,30 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.clientset.Core().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
-	fieldSelector := fields.Everything()
+	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
+	// completed=false
+	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
+	labelSelector := labels.NewSelector().
+		Add(*incompleteReq).
+		Add(wfc.instanceIDRequirement())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
+		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("labelSelector", fmt.Sprintf("%s=false", common.LabelKeyCompleted)).
-			Param("fieldSelector", "status.phase!=Pending").
 			VersionedParams(&options, metav1.ParameterCodec)
-		req = wfc.addLabelSelectors(req)
 		return req.Do().Get()
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
 		options.FieldSelector = fieldSelector.String()
+		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			Param("labelSelector", fmt.Sprintf("%s=false", common.LabelKeyCompleted)).
-			Param("fieldSelector", "status.phase!=Pending").
 			VersionedParams(&options, metav1.ParameterCodec)
-		req = wfc.addLabelSelectors(req)
 		return req.Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}

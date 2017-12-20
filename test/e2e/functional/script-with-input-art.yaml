@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: script-with-input-artifact-
+spec:
+  entrypoint: script-with-input-artifact
+  templates:
+  - name: script-with-input-artifact
+    inputs:
+      artifacts:
+      - name: kubectl
+        path: /bin/kubectl
+        http:
+          url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: |
+        ls /bin/kubectl
