@@ -358,11 +358,12 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 			// We also add the user supplied mount paths to the init container,
 			// in case the executor needs to load artifacts to this volume
 			// instead of the artifacts volume
-			for _, mnt := range tmpl.Container.VolumeMounts {
-				mnt.MountPath = path.Join(common.InitContainerMainFilesystemDir, mnt.MountPath)
-				initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
+			if tmpl.Container != nil {
+				for _, mnt := range tmpl.Container.VolumeMounts {
+					mnt.MountPath = path.Join(common.InitContainerMainFilesystemDir, mnt.MountPath)
+					initCtr.VolumeMounts = append(initCtr.VolumeMounts, mnt)
+				}
 			}
-
 			pod.Spec.InitContainers[i] = initCtr
 			break
 		}
