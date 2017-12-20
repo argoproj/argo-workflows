@@ -36,7 +36,7 @@ type WorkflowController struct {
 	restConfig *rest.Config
 	restClient *rest.RESTClient
 	scheme     *runtime.Scheme
-	clientset  *kubernetes.Clientset
+	clientset  kubernetes.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer  cache.SharedIndexInformer
