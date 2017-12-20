@@ -32,6 +32,9 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any).
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
+	if tmpl.Container == nil {
+		return nil
+	}
 	var volMnt *apiv1.VolumeMount
 	deepestLen := 0
 	for _, mnt := range tmpl.Container.VolumeMounts {
@@ -253,16 +256,16 @@ func RunCommand(name string, arg ...string) error {
 
 const patchRetries = 5
 
-func AddPodAnnotation(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "annotations", podName, namespace, key, value)
 }
 
-func AddPodLabel(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "labels", podName, namespace, key, value)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, value string) error {
+func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string) error {
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			field: map[string]string{
