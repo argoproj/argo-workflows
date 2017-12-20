@@ -164,6 +164,12 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/jpillora/backoff"
+  packages = ["."]
+  revision = "8eab2debe79d12b7bd3d10653910df25fa9552ba"
+
+[[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "6ed27152e0428abfde127acb33b08b03a1e67cac"
@@ -237,7 +243,7 @@
 
 [[projects]]
   name = "github.com/stretchr/testify"
-  packages = ["assert"]
+  packages = ["assert","require","suite"]
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
@@ -334,6 +340,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "50fe255da32bfb1b1fdf6eb51ce135d161d394942c66b99432f3b359f6cb35e0"
+  inputs-digest = "5d6e9ab2201ce2778a2797c7d2c2049ae16373d7ceb34042cf6f3ee560145f2d"
   solver-name = "gps-cdcl"
   solver-version = 1
