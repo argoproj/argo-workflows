@@ -18,12 +18,14 @@ func init() {
 	submitCmd.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
 	submitCmd.Flags().StringSliceVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
 }
 
 type submitFlags struct {
 	entrypoint string   // --entrypoint
 	parameters []string // --parameter
 	output     string   // --output
+	wait       bool     // --wait
 }
 
 var submitArgs submitFlags
@@ -41,6 +43,8 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	InitWorkflowClient()
+
+	var workflowNames []string
 	for _, filePath := range args {
 		var body []byte
 		var err error
@@ -65,16 +69,23 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 			log.Fatalf("%s failed to parse: %v", filePath, err)
 		}
 		for _, wf := range workflows {
-			err = submitWorkflow(&wf)
+			wfName, err := submitWorkflow(&wf)
 			if err != nil {
 				log.Fatalf("Workflow manifest %s failed submission: %v", filePath, err)
 			}
+
+			workflowNames = append(workflowNames, wfName)
 		}
+	}
+
+	if submitArgs.wait {
+		wsp := NewWorkflowStatusPoller(wfClient, false, submitArgs.output == "json")
+		wsp.WaitWorkflows(workflowNames)
 	}
 }
 
 // submitWorkflow is a helper to validate and submit a single workflow and override the entrypoint/params supplied from command line
-func submitWorkflow(wf *wfv1.Workflow) error {
+func submitWorkflow(wf *wfv1.Workflow) (string, error) {
 	if submitArgs.entrypoint != "" {
 		wf.Spec.Entrypoint = submitArgs.entrypoint
 	}
@@ -104,12 +115,13 @@ func submitWorkflow(wf *wfv1.Workflow) error {
 	}
 	err := common.ValidateWorkflow(wf)
 	if err != nil {
-		return err
+		return "", err
 	}
 	created, err := wfClient.CreateWorkflow(wf)
 	if err != nil {
-		return err
+		return "", err
 	}
 	printWorkflow(submitArgs.output, created)
-	return nil
+
+	return created.Name, nil
 }

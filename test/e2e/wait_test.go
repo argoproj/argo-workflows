@@ -71,9 +71,9 @@ spec:
 
 	commands.SubmitWorkflows(nil, []string{tmpfile.Name()})
 
-	commands.WaitWorkflows(nil, []string{workflowName})
-
 	wfClient := commands.InitWorkflowClient()
+	wsp := commands.NewWorkflowStatusPoller(wfClient, false, false)
+	wsp.WaitWorkflows([]string{workflowName})
 
 	wf, err := wfClient.GetWorkflow(workflowName)
 	if err != nil {
