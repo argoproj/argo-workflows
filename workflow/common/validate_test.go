@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// validate is a test helper to accept YAML as a string and return
+// its validation result.
 func validate(yamlStr string) error {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(yamlStr), &wf)
@@ -16,6 +18,8 @@ func validate(yamlStr string) error {
 	}
 	return ValidateWorkflow(&wf)
 }
+
+const invalidErr = "is invalid"
 
 var unknownField = `
 apiVersion: argoproj.io/v1alpha1
@@ -258,7 +262,7 @@ spec:
 func TestInvalidTemplateName(t *testing.T) {
 	err := validate(invalidTemplateNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -285,7 +289,7 @@ spec:
 func TestInvalidArgParamName(t *testing.T) {
 	err := validate(invalidArgParamNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -318,7 +322,7 @@ spec:
 func TestInvalidArgArtName(t *testing.T) {
 	err := validate(invalidArgArtNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -365,7 +369,7 @@ spec:
 func TestInvalidStepName(t *testing.T) {
 	err := validate(invalidStepNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -375,34 +379,13 @@ kind: Workflow
 metadata:
   generateName: steps-
 spec:
-  entrypoint: hello-hello-hello
-
+  entrypoint: whalesay
   templates:
-  - name: hello-hello-hello
-    steps:
-    - - name: hello1
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello1"
-    - - name: hello2a
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2a"
-      - name: hello2b
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "hello2b"
-
   - name: whalesay
     inputs:
       parameters:
       - name: message+123
+        default: "abc"
     container:
       image: docker/whalesay
       command: [cowsay]
@@ -412,7 +395,7 @@ spec:
 func TestInvalidInputParamName(t *testing.T) {
 	err := validate(invalidInputParamNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -464,7 +447,7 @@ spec:
 func TestInvalidInputArtName(t *testing.T) {
 	err := validate(invalidInputArtNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -490,7 +473,7 @@ spec:
 func TestInvalidOutputArtName(t *testing.T) {
 	err := validate(invalidOutputArtNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
 }
 
@@ -516,6 +499,81 @@ spec:
 func TestInvalidOutputParamName(t *testing.T) {
 	err := validate(invalidOutputParamNames)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "has invalid name")
+		assert.Contains(t, err.Error(), invalidErr)
 	}
+}
+
+var multipleTemplateTypes = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: multiple-template-types-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)
+`
+
+func TestMultipleTemplateTypes(t *testing.T) {
+	err := validate(multipleTemplateTypes)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "multiple template types specified")
+	}
+}
+
+var exitHandlerWorkflowStatusOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  onExit: fail
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+  - name: fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{workflow.status}}"]
+`
+
+var workflowStatusNotOnExit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: pass
+  templates:
+  - name: pass
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{workflow.status}}"]
+`
+
+func TestExitHandler(t *testing.T) {
+	// ensure {{workflow.status}} is not available when not in exit handler
+	err := validate(workflowStatusNotOnExit)
+	assert.NotNil(t, err)
+
+	// ensure {{workflow.status}} is available in exit handler
+	err = validate(exitHandlerWorkflowStatusOnExit)
+	assert.Nil(t, err)
 }

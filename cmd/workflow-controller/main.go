@@ -85,7 +85,8 @@ func Run(cmd *cobra.Command, args []string) {
 		log.Fatalf("%+v", err)
 	}
 
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	go wfController.Run(ctx)
 
 	// Wait forever

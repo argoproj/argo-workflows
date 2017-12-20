@@ -1,12 +1,10 @@
-# This example demonstrates the loading a hard-wired input artifact from an S3 compliant
+# This example demonstrates the loading of a hard-wired input artifact from an S3 compliant
 # store. This can be AWS S3, Google Cloud Storage (GCS) with interoperability enabled,
 # or a self-hosted minio service. S3 guards access to buckets using an access key and
 # secret key, which will be stored as regular Kubernetes secrets, and referenced in the
 # workflow using secret selectors. To create the secret required for this example, first
-# run the following commands:
-#   $ echo -n "<your plain-text s3 access key>" > ./accessKey
-#   $ echo -n "<your plain-text s3 secret key>" > ./secretKey
-#   $ kubectl create secret generic my-s3-credentials --from-file=./accessKey --from-file=./secretKey
+# run the following command:
+# $ kubectl create secret generic my-s3-credentials --from-literal=accessKey=<YOUR-ACCESS-KEY> --from-literal=secretKey=<YOUR-SECRET-KEY>
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

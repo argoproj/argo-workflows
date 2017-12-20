@@ -49,8 +49,8 @@ export class WorkflowsService {
       });
   }
 
-  public async getWorkflows(): Promise<models.WorkflowList> {
-      return this.http.get(`api/workflows`).map(item => <WorkflowList>item).toPromise();
+  public async getWorkflows(statuses: string[] = []): Promise<models.WorkflowList> {
+      return this.http.get(`api/workflows`, { params: { status: statuses } }).map(item => <WorkflowList>item).toPromise();
   }
 
   public async getWorkflow(namespace: string, name: string, noLoader = false): Promise<models.Workflow> {

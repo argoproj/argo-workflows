@@ -114,6 +114,18 @@ spec:
 ```
 This time, the `whalesay` template takes an input parameter named `message` which is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g. "{{inputs.parameters.message}}"), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
 
+The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the `message` parameter to "goodbye world" instead of the default "hello world".
+```
+argo submit arguments-parameters.yaml -p message="goodbye world"
+```
+
+Command line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows.
+```
+argo submit arguments-parameters.yaml --entrypoint whalesay2
+```
+
+By using a combination of the `--entrypoint` and `-p` parameters, you can invoke any template in the workflow spec with any parameter that you like.
+
 ## Steps
 
 In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.  Be sure to read the comments. They provide useful explanations.
@@ -681,7 +693,7 @@ spec:
 ```
 
 ## Daemon Containers
-Argo workflows can start containers that run in the background (aka. daemon contaienrs) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
+Argo workflows can start containers that run in the background (aka. daemon containers) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

@@ -1,14 +1,7 @@
 package common
 
 import (
-	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-)
-
-var (
-	DefaultControllerImage = argo.ImageNamespace + "/workflow-controller:" + argo.ImageTag
-	DefaultExecutorImage   = argo.ImageNamespace + "/argoexec:" + argo.ImageTag
-	DefaultUiImage         = argo.ImageNamespace + "/argoui:" + argo.ImageTag
 )
 
 const (
@@ -21,9 +14,6 @@ const (
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"
-
-	// Workflow Global Parameter Reference Prefix string in yaml
-	WorkflowGlobalParameterPrefixString = "workflow.parameters."
 
 	// Container names used in the workflow pod
 	MainContainerName = "main"

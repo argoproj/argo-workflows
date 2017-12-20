@@ -27,7 +27,7 @@ var (
 		VolumeSource: apiv1.VolumeSource{
 			DownwardAPI: &apiv1.DownwardAPIVolumeSource{
 				Items: []apiv1.DownwardAPIVolumeFile{
-					apiv1.DownwardAPIVolumeFile{
+					{
 						Path: common.PodMetadataAnnotationsVolumePath,
 						FieldRef: &apiv1.ObjectFieldSelector{
 							APIVersion: "v1",
@@ -139,7 +139,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 				common.AnnotationKeyNodeName: nodeName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
+				{
 					APIVersion:         wfv1.CRDFullName,
 					Kind:               wfv1.CRDKind,
 					Name:               woc.wf.ObjectMeta.Name,
@@ -159,6 +159,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, tmpl *wfv1.Templat
 				volumeDockerLib,
 				volumeDockerSock,
 			},
+			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
 		},
 	}
 
@@ -302,7 +303,7 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Templa
 	return nil
 }
 
-// getVolByName is a helper to retreive a volume by its name, either from the volumes or claims section
+// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 func getVolByName(name string, wf *wfv1.Workflow) *apiv1.Volume {
 	for _, vol := range wf.Spec.Volumes {
 		if vol.Name == name {

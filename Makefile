@@ -1,39 +1,40 @@
-GOARCH=amd64
-GOPATH=$(shell go env GOPATH)
-
 PACKAGE=github.com/argoproj/argo
-BUILD_DIR=${GOPATH}/src/${PACKAGE}
-DIST_DIR=${GOPATH}/src/${PACKAGE}/dist
 CURRENT_DIR=$(shell pwd)
+DIST_DIR=${CURRENT_DIR}/dist
 
-VERSION=$(shell cat ${BUILD_DIR}/VERSION)
-REVISION=$(shell git rev-parse HEAD)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
-TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
+BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 BUILDER_IMAGE=argo-builder
+# NOTE: the volume mount of ${DIST_DIR}/pkg below is optional and serves only
+# to speed up subsequent builds by caching ${GOPATH}/pkg between builds.
 BUILDER_CMD=docker run --rm \
-  -v ${BUILD_DIR}:/root/go/src/${PACKAGE} \
-  -v ${GOPATH}/pkg:/root/go/pkg \
+  -v ${CURRENT_DIR}:/root/go/src/${PACKAGE} \
+  -v ${DIST_DIR}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
+
+LDFLAGS = \
+  -X ${PACKAGE}.version=${VERSION} \
+  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
+  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
+  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
 
 # docker image publishing options
 DOCKER_PUSH=false
-ifeq (${IMAGE_TAG},)
-ifneq (${TAG},)
-IMAGE_TAG=${TAG}
-else
-IMAGE_TAG=${VERSION}
+IMAGE_TAG=latest
+ifneq (${GIT_TAG},)
+IMAGE_TAG=${GIT_TAG}
+LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
+ifneq (${IMAGE_NAMESPACE},)
+LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageNamespace=${IMAGE_NAMESPACE}
 endif
-
-LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} \
-  -X ${PACKAGE}.Revision=${REVISION} \
-  -X ${PACKAGE}.Branch=${BRANCH} \
-  -X ${PACKAGE}.Tag=${TAG} \
-  -X ${PACKAGE}.ImageNamespace=${IMAGE_NAMESPACE} \
-  -X ${PACKAGE}.ImageTag=${IMAGE_TAG}"
+ifneq (${IMAGE_TAG},)
+LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageTag=${IMAGE_TAG}
+endif
 
 ifeq (${DOCKER_PUSH},true)
 ifndef IMAGE_NAMESPACE
@@ -54,7 +55,7 @@ builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
 
 cli:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo ./cmd/argo
 
 cli-linux: builder
 	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG)
@@ -65,7 +66,7 @@ cli-darwin: builder
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
 
 controller:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 controller-linux: builder
 	${BUILDER_CMD} make controller
@@ -75,7 +76,7 @@ controller-image: controller-linux
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
 executor:
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
 executor-linux: builder
 	${BUILDER_CMD} make executor
@@ -85,15 +86,13 @@ executor-image: executor-linux
 	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 lint:
-	gometalinter --config gometalinter.json --vendor ./...
+	gometalinter --deadline 2m --config gometalinter.json --vendor ./...
 
-fmt:
-	cd ${BUILD_DIR}; \
-	go fmt $$(go list ./... | grep -v /vendor/) ; \
-	cd - >/dev/null
+test:
+	go test ./...
 
 clean:
-	-rm -rf ${BUILD_DIR}/dist
+	-rm -rf ${CURRENT_DIR}/dist
 
 ui-image:
 	docker build -t argo-ui-builder -f ui/Dockerfile.builder ui && \
@@ -118,5 +117,4 @@ release: release-precheck controller-image cli-darwin cli-linux executor-image u
 	executor executor-linux executor-image \
 	ui-image \
 	release-precheck release \
-	lint
-	# test fmt clean
+	lint clean test

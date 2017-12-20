@@ -47,8 +47,13 @@ func GetWorkflow(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	outFmt := getArgs.output
+	printWorkflow(getArgs.output, wf)
+}
+
+func printWorkflow(outFmt string, wf *wfv1.Workflow) {
 	switch outFmt {
+	case "name":
+		fmt.Println(wf.ObjectMeta.Name)
 	case "json":
 		outBytes, _ := json.MarshalIndent(wf, "", "    ")
 		fmt.Println(string(outBytes))
@@ -56,14 +61,13 @@ func GetWorkflow(cmd *cobra.Command, args []string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflow(wf)
+		printWorkflowHelper(wf)
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
-
 }
 
-func printWorkflow(wf *wfv1.Workflow) {
+func printWorkflowHelper(wf *wfv1.Workflow) {
 	const fmtStr = "%-17s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
@@ -99,19 +103,25 @@ func printWorkflow(wf *wfv1.Workflow) {
 	}
 
 	if wf.Status.Nodes != nil {
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Println()
+		// apply a dummy FgDefault format to align tabwriter with the rest of the columns
+		if getArgs.output == "wide" {
+			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+		} else {
+			fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+		}
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
 		if ok {
-			fmt.Println()
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			// apply a dummy format to align tabwriter with the
-			if getArgs.output == "wide" {
-				fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
-			} else {
-				fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
-			}
 			printNodeTree(w, wf, node, 0, " ", " ")
-			w.Flush()
 		}
+		onExitNode, ok := wf.Status.Nodes[wf.NodeID(wf.ObjectMeta.Name+".onExit")]
+		if ok {
+			fmt.Fprintf(w, "\t\t\t\t\n")
+			onExitNode.Name = "onExit"
+			printNodeTree(w, wf, onExitNode, 0, " ", " ")
+		}
+		_ = w.Flush()
 	}
 }
 
@@ -184,7 +194,6 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 			// Remove stepgroup name from being displayed
 			childNode.Name = strings.TrimPrefix(childNode.Name, stepGroupNode.Name+".")
 			printNodeTree(w, wf, childNode, depth+1, childNodePrefix, childChldPrefix)
-			j = j + 1
 		}
 	}
 }

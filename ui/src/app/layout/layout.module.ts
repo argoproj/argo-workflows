@@ -6,7 +6,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LayoutComponent } from './layout.component';
 import { NavigationComponent } from './navigation/navigation.component';
 import { TopBarComponent } from './top-bar/top-bar.component';
-import { ToolbarComponent } from './toolbar/toolbar.component';
 import { AppRoutingModule } from '../app-routing.module';
 import { ServicesModule } from '../services';
 
@@ -15,7 +14,6 @@ import { ServicesModule } from '../services';
     LayoutComponent,
     TopBarComponent,
     NavigationComponent,
-    ToolbarComponent,
   ],
   imports: [
     CommonModule,

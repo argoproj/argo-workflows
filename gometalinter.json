@@ -3,11 +3,13 @@
     "DisableAll": true,
     "Enable": [
         "vet",
+        "gofmt",
         "deadcode",
         "errcheck",
         "varcheck",
         "structcheck",
         "ineffassign",
-        "unconvert"
+        "unconvert",
+        "misspell"
     ]
 }

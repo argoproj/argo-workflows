@@ -14,24 +14,45 @@ import (
 
 // wfValidationCtx is the context for validating a workflow spec
 type wfValidationCtx struct {
-	wf      *wfv1.Workflow
-	results map[string]validationResult
+	wf *wfv1.Workflow
+	// globalParams keeps track of variables which are available the global
+	// scope and can be referenced from anywhere.
+	globalParams map[string]string
+	// results tracks if validation has already been run on a template
+	results map[string]bool
 }
 
-type validationResult struct {
-	outputs *wfv1.Outputs
-}
+const (
+	// placeholderValue is an arbitrary string to perform mock substitution of variables
+	placeholderValue = "placeholder"
 
+	// anyItemMagicValue is a magic value set in addItemsToScope() and checked in
+	// resolveAllVariables() to determine if any {{item.name}} can be accepted during
+	// variable resolution (to support withParam)
+	anyItemMagicValue = "item.*"
+)
+
+// ValidateWorkflow accepts a workflow and performs validation against it
 func ValidateWorkflow(wf *wfv1.Workflow) error {
-	err := VerifyUniqueNonEmptyNames(wf.Spec.Templates)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates%s", err.Error())
+	ctx := wfValidationCtx{
+		wf:           wf,
+		globalParams: make(map[string]string),
+		results:      make(map[string]bool),
 	}
 
-	ctx := wfValidationCtx{
-		wf:      wf,
-		results: make(map[string]validationResult),
+	err := validateWorkflowFieldNames(wf.Spec.Templates)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
+	err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+	if err != nil {
+		return err
+	}
+	ctx.globalParams["workflow.name"] = placeholderValue
+	for _, param := range ctx.wf.Spec.Arguments.Parameters {
+		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+	}
+
 	if ctx.wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
@@ -40,85 +61,33 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
 	}
 
-	return ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments, ctx.wf.Spec.Arguments.Parameters)
-}
-
-func validateFieldName(name string, errFormatStr string) error {
-	if errs := IsValidWorkflowFieldName(name); len(errs) != 0 {
-		return errors.Errorf(errors.CodeBadRequest, errFormatStr, name, strings.Join(errs, ";"))
-	}
-	return nil
-}
-
-func validateTemplateFieldNames(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
-	// Validate Template Name
-	if err := validateFieldName(tmpl.Name, "workflow.spec.templates.%s has invalid name: %s"); err != nil {
-		return err
-	}
-	// Validate globalParameter names
-	for _, globalParam := range wfGlobalParameters {
-		if err := validateFieldName(globalParam.Name, "workflow.spec.arguments.parameters.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	// Validate Argument Names
-	for _, argParam := range args.Parameters {
-		if err := validateFieldName(argParam.Name, "arguments.parameters.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	for _, argArt := range args.Artifacts {
-		if err := validateFieldName(argArt.Name, "arguments.artifacts.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	// Validate Input Names
-	for _, inParam := range tmpl.Inputs.Parameters {
-		if err := validateFieldName(inParam.Name, "inputs.parameters.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	for _, inArt := range tmpl.Inputs.Artifacts {
-		if err := validateFieldName(inArt.Name, "inputs.artifacts.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	// Validate Output Names
-	for _, outParam := range tmpl.Outputs.Parameters {
-		if err := validateFieldName(outParam.Name, "outputs.parameters.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	for _, outArt := range tmpl.Outputs.Artifacts {
-		if err := validateFieldName(outArt.Name, "outputs.artifacts.%s has invalid name: %s"); err != nil {
-			return err
-		}
-	}
-	// Validate step names
-	for _, stepList := range tmpl.Steps {
-		for _, step := range stepList {
-			if err := validateFieldName(step.Name, "steps.%s has invalid name: %s"); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments, wfGlobalParameters []wfv1.Parameter) error {
-
-	err := validateTemplateFieldNames(tmpl, args, wfGlobalParameters)
+	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
 	if err != nil {
 		return err
 	}
+	if ctx.wf.Spec.OnExit != "" {
+		exitTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.OnExit)
+		if exitTmpl == nil {
+			return errors.Errorf(errors.CodeBadRequest, "spec.onExit template '%s' undefined", ctx.wf.Spec.OnExit)
+		}
+		// now when validating onExit, {{workflow.status}} is now available as a global
+		ctx.globalParams["workflow.status"] = placeholderValue
+		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
 	_, ok := ctx.results[tmpl.Name]
 	if ok {
 		// we already processed this template
 		return nil
 	}
-
-	ctx.results[tmpl.Name] = validationResult{}
-	_, err = ProcessArgs(tmpl, args, wfGlobalParameters, true)
+	ctx.results[tmpl.Name] = true
+	_, err := ProcessArgs(tmpl, args, ctx.globalParams, true)
 	if err != nil {
 		return err
 	}
@@ -126,9 +95,26 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if err != nil {
 		return err
 	}
-	err = validateWFGlobalParams(tmpl, wfGlobalParameters, scope)
-	if err != nil {
-		return err
+	for globalVar, val := range ctx.globalParams {
+		scope[globalVar] = val
+	}
+	// the following validates that only one template type is defined
+	tmplTypes := 0
+	if tmpl.Container != nil {
+		tmplTypes++
+	}
+	if tmpl.Steps != nil {
+		tmplTypes++
+	}
+	if tmpl.Script != nil {
+		tmplTypes++
+	}
+	switch tmplTypes {
+	case 0:
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script")
+	case 1:
+	default:
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script")
 	}
 	if tmpl.Steps == nil {
 		err = validateLeaf(scope, tmpl)
@@ -138,7 +124,6 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if err != nil {
 		return err
 	}
-
 	err = validateOutputs(tmpl)
 	if err != nil {
 		return err
@@ -147,11 +132,11 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 }
 
 func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
-	err := VerifyUniqueNonEmptyNames(tmpl.Inputs.Parameters)
+	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.parameters%s", tmpl.Name, err.Error())
 	}
-	err = VerifyUniqueNonEmptyNames(tmpl.Inputs.Artifacts)
+	err = validateWorkflowFieldNames(tmpl.Inputs.Artifacts)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.artifacts%s", tmpl.Name, err.Error())
 	}
@@ -184,17 +169,6 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	return scope, nil
 }
 
-func validateWFGlobalParams(tmpl *wfv1.Template, wfGlobalParams []wfv1.Parameter, scope map[string]interface{}) error {
-	err := VerifyUniqueNonEmptyNames(wfGlobalParams)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Workflow spec.arguments.parameters%s", err.Error())
-	}
-	for _, param := range wfGlobalParams {
-		scope[WorkflowGlobalParameterPrefixString+param.Name] = true
-	}
-	return nil
-}
-
 func validateArtifactLocation(errPrefix string, art wfv1.Artifact) error {
 	if art.Git != nil {
 		if art.Git.Repo == "" {
@@ -208,7 +182,7 @@ func validateArtifactLocation(errPrefix string, art wfv1.Artifact) error {
 // resolveAllVariables is a helper to ensure all {{variables}} are resolveable from current scope
 func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	var unresolvedErr error
-	_, allowAllItemRefs := scope["item.*"] // 'item.*' is a magic placeholder value set by addItemsToScope
+	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -238,6 +212,20 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	return nil
 }
 
+func validateArguments(prefix string, arguments wfv1.Arguments) error {
+	fieldToSlices := map[string]interface{}{
+		"parameters": arguments.Parameters,
+		"artifacts":  arguments.Artifacts,
+	}
+	for fieldName, lst := range fieldToSlices {
+		err := validateWorkflowFieldNames(lst)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "%s%s%s", prefix, fieldName, err.Error())
+		}
+	}
+	return nil
+}
+
 func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	stepNames := make(map[string]bool)
 	for i, stepGroup := range tmpl.Steps {
@@ -247,7 +235,10 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			}
 			_, ok := stepNames[step.Name]
 			if ok {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s name is not unique", tmpl.Name, i, step.Name)
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
+			}
+			if errs := IsValidWorkflowFieldName(step.Name); len(errs) != 0 {
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
 			err := addItemsToScope(&step, scope)
@@ -266,7 +257,11 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			if childTmpl == nil {
 				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
 			}
-			err = ctx.validateTemplate(childTmpl, step.Arguments, ctx.wf.Spec.Arguments.Parameters)
+			err = validateArguments(fmt.Sprintf("template '%s' steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
+			if err != nil {
+				return err
+			}
+			err = ctx.validateTemplate(childTmpl, step.Arguments)
 			if err != nil {
 				return err
 			}
@@ -295,7 +290,7 @@ func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) erro
 		scope["item"] = true
 		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
 		// when considering if all variables are resolveable.
-		scope["item.*"] = true
+		scope[anyItemMagicValue] = true
 	}
 	return nil
 }
@@ -317,11 +312,11 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, stepName stri
 }
 
 func validateOutputs(tmpl *wfv1.Template) error {
-	err := VerifyUniqueNonEmptyNames(tmpl.Outputs.Parameters)
+	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs.parameters%s", tmpl.Name, err.Error())
 	}
-	err = VerifyUniqueNonEmptyNames(tmpl.Outputs.Artifacts)
+	err = validateWorkflowFieldNames(tmpl.Outputs.Artifacts)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs.artifacts%s", tmpl.Name, err.Error())
 	}
@@ -345,12 +340,15 @@ func validateOutputs(tmpl *wfv1.Template) error {
 	return nil
 }
 
-// VerifyUniqueNonEmptyNames accepts a slice of structs and
-// verifies that the Name field of the structs are unique and non-empty
-func VerifyUniqueNonEmptyNames(slice interface{}) error {
+// validateWorkflowFieldNames accepts a slice of structs and
+// verifies that the Name field of the structs are:
+// * unique
+// * non-empty
+// * matches matches our regex requirements
+func validateWorkflowFieldNames(slice interface{}) error {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {
-		return errors.InternalErrorf("VerifyNoDuplicateOrEmptyNames given a non-slice type")
+		return errors.InternalErrorf("validateWorkflowFieldNames given a non-slice type")
 	}
 	items := make([]interface{}, s.Len())
 	for i := 0; i < s.Len(); i++ {
@@ -374,11 +372,14 @@ func VerifyUniqueNonEmptyNames(slice interface{}) error {
 			return err
 		}
 		if name == "" {
-			return fmt.Errorf("[%d].name is required", i)
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name is required", i)
+		}
+		if errs := IsValidWorkflowFieldName(name); len(errs) != 0 {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
 		}
 		_, ok := names[name]
 		if ok {
-			return fmt.Errorf("[%d].name '%s' is not unique", i, name)
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
 		}
 		names[name] = true
 	}

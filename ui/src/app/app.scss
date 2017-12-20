@@ -3,7 +3,7 @@ $axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
 @import '../assets/styles/config';
 
 .content-wrapper {
-  padding: #{$top-bar-height + $toolbar-height} 0 0 $nav-width;
+  padding: $top-bar-height 0 0 $nav-width;
   position: relative;
   display: block;
   min-height: 100vh;
@@ -13,24 +13,6 @@ $axFontsDirectorPath: "../../node_modules/ui-lib/src/assets/fonts";
 
   &.hidden-scrollbar {
     height: 100%;
-  }
-
-  .hidden-toolbar & {
-    padding-top: $top-bar-height;
-  }
-
-  &::before {
-    position: absolute;
-    z-index: -2;
-    top: $top-bar-height;
-    left: $nav-width;
-    width: 100%;
-    height: $top-bar-height;
-    content: '';
-
-    .hidden-toolbar & {
-      display: none;
-    }
   }
 }
 

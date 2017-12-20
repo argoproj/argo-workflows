@@ -33,14 +33,14 @@ var listCmd = &cobra.Command{
 }
 
 var timeMagnitudes = []humanize.RelTimeMagnitude{
-	{time.Second, "0s", time.Second},
-	{2 * time.Second, "1s %s", 1},
-	{time.Minute, "%ds %s", time.Second},
-	{2 * time.Minute, "1m %s", 1},
-	{time.Hour, "%dm %s", time.Minute},
-	{2 * time.Hour, "1h %s", 1},
-	{humanize.Day, "%dh %s", time.Hour},
-	{2 * humanize.Day, "1d %s", 1},
+	{D: time.Second, Format: "0s", DivBy: time.Second},
+	{D: 2 * time.Second, Format: "1s %s", DivBy: 1},
+	{D: time.Minute, Format: "%ds %s", DivBy: time.Second},
+	{D: 2 * time.Minute, Format: "1m %s", DivBy: 1},
+	{D: time.Hour, Format: "%dm %s", DivBy: time.Minute},
+	{D: 2 * time.Hour, Format: "1h %s", DivBy: 1},
+	{D: humanize.Day, Format: "%dh %s", DivBy: time.Hour},
+	{D: 2 * humanize.Day, Format: "1d %s", DivBy: 1},
 }
 
 func listWorkflows(cmd *cobra.Command, args []string) {
@@ -71,7 +71,7 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr)
 		}
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {

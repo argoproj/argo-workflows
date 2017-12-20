@@ -24,15 +24,27 @@ import (
 
 const clusterAdmin = "cluster-admin"
 
+var (
+	// These values may be overridden by the link flags during build
+	// (e.g. imageTag will use the official release tag on tagged builds)
+	imageNamespace = "argoproj"
+	imageTag       = "latest"
+
+	// These are the default image names which `argo install` uses during install
+	DefaultControllerImage = imageNamespace + "/workflow-controller:" + imageTag
+	DefaultExecutorImage   = imageNamespace + "/argoexec:" + imageTag
+	DefaultUiImage         = imageNamespace + "/argoui:" + imageTag
+)
+
 func init() {
 	RootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
 	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
 	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
-	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", common.DefaultControllerImage, "use a specified controller image")
-	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", common.DefaultUiImage, "use a specified ui image")
-	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", common.DefaultExecutorImage, "use a specified executor image")
+	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
+	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
+	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 }
 
@@ -181,7 +193,7 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 	cmClient := clientset.CoreV1().ConfigMaps(args.Namespace)
 	var wfConfig controller.WorkflowControllerConfig
 
-	// install ConfigMap if non-existant
+	// install ConfigMap if non-existent
 	wfConfigMap, err := cmClient.Get(args.ConfigMap, metav1.GetOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
@@ -242,7 +254,7 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 							Command: []string{"workflow-controller"},
 							Args:    []string{"--configmap", args.ConfigMap},
 							Env: []apiv1.EnvVar{
-								apiv1.EnvVar{
+								{
 									Name: common.EnvVarNamespace,
 									ValueFrom: &apiv1.EnvVarSource{
 										FieldRef: &apiv1.ObjectFieldSelector{
@@ -302,7 +314,7 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 							Name:  args.UIName,
 							Image: args.UIImage,
 							Env: []apiv1.EnvVar{
-								apiv1.EnvVar{
+								{
 									Name: common.EnvVarNamespace,
 									ValueFrom: &apiv1.EnvVarSource{
 										FieldRef: &apiv1.ObjectFieldSelector{
@@ -311,7 +323,7 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 										},
 									},
 								},
-								apiv1.EnvVar{
+								{
 									Name:  "IN_CLUSTER",
 									Value: "true",
 								},
@@ -350,7 +362,7 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 		},
 		Spec: apiv1.ServiceSpec{
 			Ports: []apiv1.ServicePort{
-				apiv1.ServicePort{
+				{
 					Port:       80,
 					TargetPort: intstr.FromInt(8001),
 				},

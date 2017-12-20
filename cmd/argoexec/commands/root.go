@@ -98,7 +98,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		Namespace: namespace,
 	}
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.FullVersion, string(yamlBytes))
+	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.GetVersion(), string(yamlBytes))
 	return &wfExecutor
 }
 
@@ -113,7 +113,9 @@ func getTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Templa
 		return errors.InternalWrapError(err)
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	reader := bufio.NewReader(file)
 
 	// Prefix of template property in the annotation file

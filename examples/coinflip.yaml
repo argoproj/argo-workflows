@@ -1,3 +1,8 @@
+# The coinflip example combines the use of a script result,
+# along with conditionals, to take a dynamic path in the
+# workflow. In this example, depending on the result of the
+# first step, 'flip-coin', the template will either run the
+# 'heads' step or the 'tails' step.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

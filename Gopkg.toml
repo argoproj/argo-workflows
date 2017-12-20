@@ -29,3 +29,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/hashicorp/go-version"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/jpillora/backoff"

@@ -35,6 +35,9 @@ type wfOperationCtx struct {
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
+	// globalParms holds any parameters that are available to be referenced
+	// in the global scope (e.g. workflow.parameters.XXX).
+	globalParams map[string]string
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
@@ -78,12 +81,12 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
 		controller:    wfc,
+		globalParams:  make(map[string]string),
 		completedPods: make(map[string]bool),
 		deadline:      time.Now().UTC().Add(maxOperationTime),
 	}
 	defer woc.persistUpdates()
 	woc.log.Infof("Processing workflow")
-
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
@@ -99,6 +102,10 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
+	}
+	woc.globalParams["workflow.name"] = wf.ObjectMeta.Name
+	for _, param := range wf.Spec.Arguments.Parameters {
+		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 
 	err = woc.createPVCs()
@@ -126,6 +133,34 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		return
 	}
 
+	var onExitNode *wfv1.NodeStatus
+	if wf.Spec.OnExit != "" {
+		if node.Phase == wfv1.NodeSkipped {
+			// treat skipped the same as Succeeded for workflow.status
+			woc.globalParams["workflow.status"] = string(wfv1.NodeSucceeded)
+		} else {
+			woc.globalParams["workflow.status"] = string(node.Phase)
+		}
+		woc.log.Infof("Running OnExit handler: %s", wf.Spec.OnExit)
+		onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+		err = woc.executeTemplate(wf.Spec.OnExit, wf.Spec.Arguments, onExitNodeName)
+		if err != nil {
+			if errors.IsCode(errors.CodeTimeout, err) {
+				key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+				if err == nil {
+					wfc.wfQueue.Add(key)
+				}
+				return
+			}
+			woc.log.Errorf("%s error: %+v", onExitNodeName, err)
+		}
+		xitNode := woc.wf.Status.Nodes[woc.wf.NodeID(onExitNodeName)]
+		onExitNode = &xitNode
+		if !onExitNode.Completed() {
+			return
+		}
+	}
+
 	err = woc.deletePVCs()
 	if err != nil {
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
@@ -136,14 +171,18 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		return
 	}
 
-	// TODO: workflow finalizer logic goes here
-
-	// If we get here, the workflow completed, all PVCs were deleted successfully,
-	// and finalizers were executed (finalizer feature yet to be implemented).
-	// We now need to infer the workflow phase from the node phase.
+	// If we get here, the workflow completed, all PVCs were deleted successfully, and
+	// exit handlers were executed. We now need to infer the workflow phase from the
+	// node phase.
 	switch node.Phase {
 	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-		woc.markWorkflowSuccess()
+		if onExitNode != nil && !onExitNode.Successful() {
+			// if main workflow succeeded, but the exit node was unsuccessful
+			// the workflow is now considered unsuccessful.
+			woc.markWorkflowPhase(onExitNode.Phase, true, onExitNode.Message)
+		} else {
+			woc.markWorkflowSuccess()
+		}
 	case wfv1.NodeFailed:
 		woc.markWorkflowFailed(node.Message)
 	case wfv1.NodeError:
@@ -516,7 +555,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			metav1.OwnerReference{
+			{
 				APIVersion:         wfv1.CRDFullName,
 				Kind:               wfv1.CRDKind,
 				Name:               woc.wf.ObjectMeta.Name,
@@ -590,7 +629,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		return err
 	}
 
-	tmpl, err := common.ProcessArgs(tmpl, args, woc.wf.Spec.Arguments.Parameters, false)
+	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, false)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -610,9 +649,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 			woc.log.Infof("Initialized workflow node %v", node)
 		}
 		err = woc.executeSteps(nodeName, tmpl)
-		if woc.wf.Status.Nodes[nodeID].Completed() {
-			woc.killDeamonedChildren(nodeID)
-		}
 	} else if tmpl.Script != nil {
 		err = woc.executeScript(nodeName, tmpl)
 	} else {
@@ -728,6 +764,14 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
+	defer func() {
+		nodeID := woc.wf.NodeID(nodeName)
+		if woc.wf.Status.Nodes[nodeID].Completed() {
+			// TODO: this implementation should be handled via annotating the pod
+			// and signaling the executor to kill the pod instead.
+			_ = woc.killDeamonedChildren(nodeID)
+		}
+	}()
 	scope := wfScope{
 		tmpl:  tmpl,
 		scope: make(map[string]interface{}),
@@ -1117,7 +1161,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 }
 
 // killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
-// We only need to check grandchildren instead of children becuase the direct children of a step
+// We only need to check grandchildren instead of children because the direct children of a step
 // template are actually stepGroups, which are nodes that cannot represent actual containers.
 // Returns the first error that occurs (if any)
 func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {

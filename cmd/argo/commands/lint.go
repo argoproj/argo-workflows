@@ -6,11 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -76,29 +74,21 @@ func lintYAMLDir(dirPath string) error {
 	return filepath.Walk(dirPath, walkFunc)
 }
 
+// lintYAMLFile lints multiple workflow manifest in a single yaml file. Ignores non-workflow manifests
 func lintYAMLFile(filePath string) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
 	}
-	var wf wfv1.Workflow
-	err = yaml.Unmarshal(body, &wf)
-	if wf.Kind != "" && wf.Kind != wfv1.CRDKind {
-		return nil
-	}
+	workflows, err := splitYAMLFile(body)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Failed to parse %s: %v", filePath, err)
+		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
-	err = common.ValidateWorkflow(&wf)
-	if err != nil {
-		argoErr, ok := err.(errors.ArgoError)
-		var errMsg string
-		if ok {
-			errMsg = argoErr.Message()
-		} else {
-			errMsg = err.Error()
+	for _, wf := range workflows {
+		err = common.ValidateWorkflow(&wf)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}
-		return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, errMsg)
 	}
 	return nil
 }
