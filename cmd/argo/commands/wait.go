@@ -11,15 +11,16 @@ import (
 	"github.com/jpillora/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func init() {
 	RootCmd.AddCommand(waitCmd)
-	waitCmd.Flags().StringVarP(&waitArgs.namespace, "namespace", "n", "default", "Namespace in which to watch workflows")
+	waitCmd.Flags().BoolVar(&waitArgs.ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
 }
 
 type waitFlags struct {
-	namespace string
+	ignoreNotFound bool
 }
 
 var waitArgs waitFlags
@@ -59,29 +60,39 @@ func (vc *VersionChecker) run() {
 
 // WorkflowStatusPoller exports methods to wait on workflows by periodically
 // querying their status.
-type WorkflowStatusPoller struct{}
+type WorkflowStatusPoller struct {
+	wfc *wfclient.WorkflowClient
+}
 
-func (wsp *WorkflowStatusPoller) waitOnOne(wfc *wfclient.WorkflowClient, workflowName string, wg *sync.WaitGroup) bool {
+func (wsp *WorkflowStatusPoller) waitOnOne(workflowName string, ignoreNotFound bool) {
 	b := &backoff.Backoff{
-		Min:    100 * time.Millisecond,
-		Max:    5 * time.Minute,
+		Min:    1 * time.Second,
+		Max:    1 * time.Minute,
 		Factor: 2,
 	}
 	for {
-		wf, err := wfc.GetWorkflow(workflowName)
+		wf, err := wsp.wfc.GetWorkflow(workflowName)
 		if err != nil {
+			if ignoreNotFound && apierr.IsNotFound(err) {
+				fmt.Printf("%s not found. Ignoring...\n", workflowName)
+				return
+			}
 			panic(err)
 		}
 
 		if !wf.Status.FinishedAt.IsZero() {
 			fmt.Printf("%s completed at %v\n", workflowName, wf.Status.FinishedAt)
-			wg.Done()
-			return true
+			return
 		}
 
 		time.Sleep(b.Duration())
 		continue
 	}
+}
+
+func (wsp *WorkflowStatusPoller) waitUpdateWaitGroup(workflowName string, ignoreNotFound bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+	wsp.waitOnOne(workflowName, ignoreNotFound)
 }
 
 // WaitWorkflows waits for the workflows passed in as args
@@ -91,7 +102,7 @@ func WaitWorkflows(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	wfc := InitWorkflowClient(waitArgs.namespace)
+	wfc := InitWorkflowClient()
 
 	// TODO(shri): When Kubernetes 1.9 support is added, this block should be executed
 	// only for versions 1.8 and for 1.9, a new "watch" based implmentation should be
@@ -100,10 +111,10 @@ func WaitWorkflows(cmd *cobra.Command, args []string) {
 	vc.run()
 
 	var wg sync.WaitGroup
-	var wsp WorkflowStatusPoller
+	wsp := WorkflowStatusPoller{wfc}
 	for _, workflowName := range args {
 		wg.Add(1)
-		go wsp.waitOnOne(wfc, workflowName, &wg)
+		go wsp.waitUpdateWaitGroup(workflowName, waitArgs.ignoreNotFound, &wg)
 	}
 
 	wg.Wait()
