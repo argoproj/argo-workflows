@@ -236,6 +236,13 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 				log.Fatalf("ConfigMap '%s' requires upgrade. Rerun with --upgrade to update the configuration", args.ConfigMap)
 			}
 			wfConfig.ExecutorImage = args.ExecutorImage
+			configBytes, err := yaml.Marshal(wfConfig)
+			if err != nil {
+				log.Fatalf("%+v", errors.InternalWrapError(err))
+			}
+			wfConfigMap.Data = map[string]string{
+				common.WorkflowControllerConfigMapKey: string(configBytes),
+			}
 			_, err = cmClient.Update(wfConfigMap)
 			if err != nil {
 				log.Fatalf("Failed to update ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
