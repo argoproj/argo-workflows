@@ -258,7 +258,45 @@ To summarize, workflow specs are composed of a set of Argo templates where each 
 Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to env vars, secrets, and volume mounts. Similarly, for volume claims and volumes.
 
 ## Secrets
-Argo supports the same secrets syntax and mechanism from Kubernetes Pod specs.
+Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts.
+- https://kubernetes.io/docs/concepts/configuration/secret/
+
+```
+# To run this example, first create the secret by running:
+# kubectl create secret generic my-secret --from-literal=mypassword=S00perS3cretPa55word
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: secret-example-
+spec:
+  entrypoint: whalesay
+  # To access secrets as files, add a volume entry in spec.volumes[] and
+  # then in the container template spec, add a mount using volumeMounts.
+  volumes:
+  - name: my-secret-vol
+    secret:
+      secretName: my-secret     # name of an existing k8s secret
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ['
+        echo "secret from env: $MYSECRETPASSWORD";
+        echo "secret from file: `cat /secret/mountpath/mypassword`"
+      ']
+      # To access secrets as environment variables, use the k8s valueFrom and
+      # secretKeyRef constructs.
+      env:
+      - name: MYSECRETPASSWORD  # name of env var
+        valueFrom:
+          secretKeyRef:
+            name: my-secret     # name of an existing k8s secret
+            key: mypassword     # 'key' subcomponent of the secret
+      volumeMounts:
+      - name: my-secret-vol     # mount file containing secret at /secret/mountpath
+        mountPath: "/secret/mountpath"
+```
 
 ## Scripts & Results
 Often times, we just want a template that executes a script specified as a here-script (aka. here document) in the workflow spec.
