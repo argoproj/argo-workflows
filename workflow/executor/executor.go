@@ -228,13 +228,11 @@ func (we *WorkflowExecutor) SaveParameters() error {
 
 func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
-		// Getting Kubernetes namespace from the environment variables
-		namespace := os.Getenv(common.EnvVarNamespace)
-		accessKey, err := we.getSecrets(namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+		accessKey, err := we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		secretKey, err := we.getSecrets(namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+		secretKey, err := we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -251,7 +249,23 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &http.HTTPArtifactDriver{}, nil
 	}
 	if art.Git != nil {
-		return &git.GitArtifactDriver{}, nil
+		gitDriver := git.GitArtifactDriver{}
+		if art.Git.UsernameSecret != nil {
+			username, err := we.getSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.Username = username
+		}
+		if art.Git.PasswordSecret != nil {
+			password, err := we.getSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.Password = password
+		}
+
+		return &gitDriver, nil
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }

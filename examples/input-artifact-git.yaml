@@ -16,6 +16,15 @@ spec:
         git:
           repo: https://github.com/argoproj/argo.git
           revision: "master"
+          # For private repositories, first create a k8s secret containing
+          # the git credentials. Then and reference the keys in the secret
+          # selectors: usernameSecret and passwordSecret.
+          usernameSecret:
+            name: github-creds
+            key: username
+          passwordSecret:
+            name: github-creds
+            key: password
     container:
       image: golang:1.8
       command: [sh, -c]
