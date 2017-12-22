@@ -125,32 +125,44 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		woc.markWorkflowError(err, true)
 		return
 	}
-	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
-	if err != nil {
-		if errors.IsCode(errors.CodeTimeout, err) {
-			// A timeout indicates we took too long operating on the workflow.
-			// Return so we can persist all the work we have done so far, and
-			// requeue the workflow for another day. TODO: move this into the caller
-			key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-			if err == nil {
-				wfc.wfQueue.Add(key)
+	var workflowStatus wfv1.NodePhase
+	var workflowMessage string
+	if wf.Spec.Entrypoint != "" {
+		err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
+		if err != nil {
+			if errors.IsCode(errors.CodeTimeout, err) {
+				// A timeout indicates we took too long operating on the workflow.
+				// Return so we can persist all the work we have done so far, and
+				// requeue the workflow for another day. TODO: move this into the caller
+				key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+				if err == nil {
+					wfc.wfQueue.Add(key)
+				}
+				return
 			}
+			woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		}
+		node := woc.wf.Status.Nodes[woc.wf.NodeID(wf.ObjectMeta.Name)]
+		if !node.Completed() {
 			return
 		}
-		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-	}
-	node := woc.wf.Status.Nodes[woc.wf.NodeID(wf.ObjectMeta.Name)]
-	if !node.Completed() {
-		return
+		workflowStatus = node.Phase
+		workflowMessage = node.Message
+	} else {
+		completed, prelimStatus := woc.operateDAG()
+		if !completed {
+			return
+		}
+		workflowStatus = prelimStatus
 	}
 
 	var onExitNode *wfv1.NodeStatus
 	if wf.Spec.OnExit != "" {
-		if node.Phase == wfv1.NodeSkipped {
+		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
 		} else {
-			woc.globalParams[common.GlobalVarWorkflowStatus] = string(node.Phase)
+			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
 		woc.log.Infof("Running OnExit handler: %s", wf.Spec.OnExit)
 		onExitNodeName := wf.ObjectMeta.Name + ".onExit"
@@ -185,7 +197,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	// If we get here, the workflow completed, all PVCs were deleted successfully, and
 	// exit handlers were executed. We now need to infer the workflow phase from the
 	// node phase.
-	switch node.Phase {
+	switch workflowStatus {
 	case wfv1.NodeSucceeded, wfv1.NodeSkipped:
 		if onExitNode != nil && !onExitNode.Successful() {
 			// if main workflow succeeded, but the exit node was unsuccessful
@@ -195,9 +207,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			woc.markWorkflowSuccess()
 		}
 	case wfv1.NodeFailed:
-		woc.markWorkflowFailed(node.Message)
+		woc.markWorkflowFailed(workflowMessage)
 	case wfv1.NodeError:
-		woc.markWorkflowPhase(wfv1.NodeError, true, node.Message)
+		woc.markWorkflowPhase(wfv1.NodeError, true, workflowMessage)
 	default:
 		// NOTE: we should never make it here because if the the node was 'Running'
 		// we should have returned earlier.
@@ -270,6 +282,12 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	if len(podList.Items) > 0 {
+		return nil
+	}
+	if woc.wf.Spec.Entrypoint == "" {
+		// if we are running as a DAG, we do not attempt to
+		// detect deleted pods yet
+		// TODO: revisit this logic
 		return nil
 	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
@@ -656,9 +674,10 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
-		if ok {
-			// There's already a node entry for the container. This means the container was already
-			// scheduled (or had a create pod error). Nothing to more to do with this node.
+		if ok && node.Phase != wfv1.NodePending {
+			// There's already a node entry for the container which is Running.
+			// This means the container was already scheduled (or had a create pod error).
+			// Nothing to more to do with this node.
 			return nil
 		}
 		// We have not yet created the pod
@@ -753,17 +772,28 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 			Phase:     phase,
 			StartedAt: metav1.Time{Time: time.Now().UTC()},
 		}
+		woc.log.Infof("node %s initialized %s", node, node.Phase)
+		woc.updated = true
 	} else {
-		node.Phase = phase
+		if node.Phase != phase {
+			woc.log.Infof("node %s phase %s -> %s", node, node.Phase, phase)
+			node.Phase = phase
+			woc.updated = true
+		}
 	}
 	if len(message) > 0 {
-		node.Message = message[0]
+		if message[0] != node.Message {
+			woc.log.Infof("node %s message: %s", node, message[0])
+			node.Message = message[0]
+			woc.updated = true
+		}
 	}
 	if node.Completed() && node.FinishedAt.IsZero() {
 		node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+		woc.log.Infof("node %s finished: %s", node, node.FinishedAt)
+		woc.updated = true
 	}
 	woc.wf.Status.Nodes[nodeID] = node
-	woc.updated = true
 	return &node
 }
 
@@ -781,7 +811,6 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
 
@@ -1110,7 +1139,6 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Initialized script node %v", node)
 	return nil
 }
 
@@ -1231,6 +1259,5 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template)
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Initialized resource node %v", node)
 	return nil
 }

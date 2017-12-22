@@ -54,17 +54,18 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
 
-	if ctx.wf.Spec.Entrypoint == "" {
-		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
+	if ctx.wf.Spec.Entrypoint == "" && len(ctx.wf.Spec.Targets) == 0 {
+		return errors.New(errors.CodeBadRequest, "spec.targets or spec.entrypoint must be defined")
 	}
-	entryTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.Entrypoint)
-	if entryTmpl == nil {
-		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
-	}
-
-	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
-	if err != nil {
-		return err
+	if ctx.wf.Spec.Entrypoint != "" {
+		entryTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.Entrypoint)
+		if entryTmpl == nil {
+			return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
+		}
+		err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
+		if err != nil {
+			return err
+		}
 	}
 	if ctx.wf.Spec.OnExit != "" {
 		exitTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.OnExit)

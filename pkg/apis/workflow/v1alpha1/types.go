@@ -37,6 +37,7 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
+	NodePending   NodePhase = "Pending"
 	NodeRunning   NodePhase = "Running"
 	NodeSucceeded NodePhase = "Succeeded"
 	NodeSkipped   NodePhase = "Skipped"
@@ -74,7 +75,13 @@ type WorkflowSpec struct {
 	Templates []Template `json:"templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow
-	Entrypoint string `json:"entrypoint"`
+	Entrypoint string `json:"entrypoint,omitempty"`
+
+	// Target is one or more names of targets to run in a DAG
+	Target string `json:"target,omitempty"`
+
+	// Targets are a list of target definitions  in a DAG
+	Targets []Target `json:"targets,omitempty"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
@@ -397,6 +404,21 @@ func (tmpl *Template) GetType() TemplateType {
 		return TemplateTypeResource
 	}
 	return "Unknown"
+}
+
+// Target represents a node in the graph during DAG execution
+type Target struct {
+	// Name is the name of the target
+	Name string `json:"name"`
+
+	// Name of template to execute
+	Template string `json:"template"`
+
+	// Arguments are the parameter and artifact arguments to the template
+	Arguments Arguments `json:"arguments,omitempty"`
+
+	// Dependencies are name of other targets which this depends on
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
