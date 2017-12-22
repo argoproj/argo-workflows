@@ -827,6 +827,7 @@ spec:
     inputs:
       artifacts:
       # Check out the master branch of the argo repo and place it at /src
+      # revision can be anything that git checkout accepts: branch, commit, tag, etc.
       - name: argo-source
         path: /src
         git:
