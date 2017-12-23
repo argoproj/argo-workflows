@@ -20,12 +20,12 @@
 #       D1 D2  D3
 #         \ | /
 #           *
-
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: diamond-dag-
+  generateName: dag-diamond-steps-
 spec:
+  entrypoint: diamond
   templates:
   - name: echo
     inputs:
@@ -45,24 +45,25 @@ spec:
           parameters:
           - {name: message, value: "{{inputs.parameters.message}}{{item}}"}
         withItems: [1,2,3]
-
-  targets:
-  - name: A
-    template: echo-thrice
-    arguments:
-      parameters: [{name: message, value: A}]
-  - name: B
-    dependencies: [A]
-    template: echo-thrice
-    arguments:
-      parameters: [{name: message, value: B}]
-  - name: C
-    dependencies: [A]
-    template: echo-thrice
-    arguments:
-      parameters: [{name: message, value: C}]
-  - name: D
-    dependencies: [B, C]
-    template: echo-thrice
-    arguments:
-      parameters: [{name: message, value: D}]
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: C}]
+      - name: D
+        dependencies: [B, C]
+        template: echo-thrice
+        arguments:
+          parameters: [{name: message, value: D}]

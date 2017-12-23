@@ -53,19 +53,16 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
-
-	if ctx.wf.Spec.Entrypoint == "" && len(ctx.wf.Spec.Targets) == 0 {
-		return errors.New(errors.CodeBadRequest, "spec.targets or spec.entrypoint must be defined")
+	if ctx.wf.Spec.Entrypoint == "" {
+		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
-	if ctx.wf.Spec.Entrypoint != "" {
-		entryTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.Entrypoint)
-		if entryTmpl == nil {
-			return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
-		}
-		err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
-		if err != nil {
-			return err
-		}
+	entryTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.Entrypoint)
+	if entryTmpl == nil {
+		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
+	}
+	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
+	if err != nil {
+		return err
 	}
 	if ctx.wf.Spec.OnExit != "" {
 		exitTmpl := ctx.wf.GetTemplate(ctx.wf.Spec.OnExit)
@@ -114,12 +111,15 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if tmpl.Resource != nil {
 		tmplTypes++
 	}
+	if tmpl.DAG != nil {
+		tmplTypes++
+	}
 	switch tmplTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource")
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource, dag")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource")
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource, dag")
 	}
 	if tmpl.Steps == nil {
 		err = validateLeaf(scope, tmpl)

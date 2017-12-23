@@ -30,6 +30,7 @@ const (
 	TemplateTypeSteps     TemplateType = "Steps"
 	TemplateTypeScript    TemplateType = "Script"
 	TemplateTypeResource  TemplateType = "Resource"
+	TemplateTypeDAG       TemplateType = "DAG"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -77,12 +78,6 @@ type WorkflowSpec struct {
 	// Entrypoint is a template reference to the starting point of the workflow
 	Entrypoint string `json:"entrypoint,omitempty"`
 
-	// Target is one or more names of targets to run in a DAG
-	Target string `json:"target,omitempty"`
-
-	// Targets are a list of target definitions  in a DAG
-	Targets []Target `json:"targets,omitempty"`
-
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
 	// e.g. {{workflow.parameters.myparam}}
@@ -125,7 +120,7 @@ type Template struct {
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
 
-	// Workflow fields
+	// Step
 	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
 	// Container
@@ -137,8 +132,11 @@ type Template struct {
 	// Sidecar containers
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
-	// Resource is the resource template type
+	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty"`
+
+	// DAG template subtype which runs a DAG
+	DAG *DAG `json:"dag,omitempty"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
@@ -292,6 +290,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty"`
 
+	// IsPod indicates if this node is a pod or not
+	IsPod bool `json:"isPod,omitempty"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty"`
 
@@ -397,6 +398,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Steps != nil {
 		return TemplateTypeSteps
 	}
+	if tmpl.DAG != nil {
+		return TemplateTypeDAG
+	}
 	if tmpl.Script != nil {
 		return TemplateTypeScript
 	}
@@ -406,8 +410,17 @@ func (tmpl *Template) GetType() TemplateType {
 	return "Unknown"
 }
 
-// Target represents a node in the graph during DAG execution
-type Target struct {
+// DAG is a template subtype for directed acyclic graph templates
+type DAG struct {
+	// Target are one or more names of targets to execute in a DAG
+	Targets string `json:"target,omitempty"`
+
+	// Tasks are a list of DAG tasks
+	Tasks []DAGTask `json:"tasks"`
+}
+
+// DAGTask represents a node in the graph during DAG execution
+type DAGTask struct {
 	// Name is the name of the target
 	Name string `json:"name"`
 

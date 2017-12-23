@@ -127,34 +127,26 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	if wf.Spec.Entrypoint != "" {
-		err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
-		if err != nil {
-			if errors.IsCode(errors.CodeTimeout, err) {
-				// A timeout indicates we took too long operating on the workflow.
-				// Return so we can persist all the work we have done so far, and
-				// requeue the workflow for another day. TODO: move this into the caller
-				key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-				}
-				return
+	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
+	if err != nil {
+		if errors.IsCode(errors.CodeTimeout, err) {
+			// A timeout indicates we took too long operating on the workflow.
+			// Return so we can persist all the work we have done so far, and
+			// requeue the workflow for another day. TODO: move this into the caller
+			key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+			if err == nil {
+				wfc.wfQueue.Add(key)
 			}
-			woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
-		}
-		node := woc.wf.Status.Nodes[woc.wf.NodeID(wf.ObjectMeta.Name)]
-		if !node.Completed() {
 			return
 		}
-		workflowStatus = node.Phase
-		workflowMessage = node.Message
-	} else {
-		completed, prelimStatus := woc.operateDAG()
-		if !completed {
-			return
-		}
-		workflowStatus = prelimStatus
+		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
 	}
+	node := woc.getNodeByName(wf.ObjectMeta.Name)
+	if !node.Completed() {
+		return
+	}
+	workflowStatus = node.Phase
+	workflowMessage = node.Message
 
 	var onExitNode *wfv1.NodeStatus
 	if wf.Spec.OnExit != "" {
@@ -216,6 +208,15 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 	}
+}
+
+func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
+	nodeID := woc.wf.NodeID(nodeName)
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	if !ok {
+		return nil
+	}
+	return &node
 }
 
 // persistUpdates will PATCH a workflow with any updates made during workflow operation.
@@ -284,12 +285,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	if len(podList.Items) > 0 {
 		return nil
 	}
-	if woc.wf.Spec.Entrypoint == "" {
-		// if we are running as a DAG, we do not attempt to
-		// detect deleted pods yet
-		// TODO: revisit this logic
-		return nil
-	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
 	// (note that our initial query excludes Pending pods for performance reasons since
 	// there's generally no action needed to be taken on pods in a Pending state).
@@ -322,7 +317,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// is now impossible to infer status. The only thing we can do at this point is
 	// to mark the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if len(node.Children) > 0 || node.Completed() {
+		if !node.IsPod || node.Completed() {
 			// node is not a pod, or it is already complete
 			continue
 		}
@@ -653,9 +648,8 @@ func (woc *wfOperationCtx) deletePVCs() error {
 
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
 	woc.log.Debugf("Evaluating node %s: template: %s", nodeName, templateName)
-	nodeID := woc.wf.NodeID(nodeName)
-	node, ok := woc.wf.Status.Nodes[nodeID]
-	if ok && node.Completed() {
+	node := woc.getNodeByName(nodeName)
+	if node != nil && node.Completed() {
 		woc.log.Debugf("Node %s already completed", nodeName)
 		return nil
 	}
@@ -674,26 +668,17 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
-		if ok && node.Phase != wfv1.NodePending {
-			// There's already a node entry for the container which is Running.
-			// This means the container was already scheduled (or had a create pod error).
-			// Nothing to more to do with this node.
-			return nil
-		}
-		// We have not yet created the pod
 		err = woc.executeContainer(nodeName, tmpl)
 	case wfv1.TemplateTypeSteps:
-		if !ok {
-			node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
-			woc.log.Infof("Initialized workflow node %v", node)
-		}
 		err = woc.executeSteps(nodeName, tmpl)
 	case wfv1.TemplateTypeScript:
 		err = woc.executeScript(nodeName, tmpl)
 	case wfv1.TemplateTypeResource:
 		err = woc.executeResource(nodeName, tmpl)
+	case wfv1.TemplateTypeDAG:
+		_ = woc.executeDAG(nodeName, tmpl)
 	default:
-		err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
+		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", tmpl.Name)
 		woc.markNodeError(nodeName, err)
 	}
 	if err != nil {
@@ -803,24 +788,33 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
+	node := woc.getNodeByName(nodeName)
+	if node != nil && node.Phase == wfv1.NodeRunning {
+		// we already marked the node running. pod should have already been created
+		return nil
+	}
 	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
-	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
+	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
 	return nil
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
+	node := woc.getNodeByName(nodeName)
+	if node == nil || node.Phase == wfv1.NodePending {
+		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	}
 	defer func() {
-		nodeID := woc.wf.NodeID(nodeName)
-		if woc.wf.Status.Nodes[nodeID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Completed() {
 			// TODO: this implementation should be handled via annotating the pod
 			// and signaling the executor to kill the pod instead.
-			_ = woc.killDeamonedChildren(nodeID)
+			_ = woc.killDeamonedChildren(node.ID)
 		}
 	}()
 	scope := wfScope{
@@ -889,15 +883,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 // executeStepGroup examines a map of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
 func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
-	nodeID := woc.wf.NodeID(sgNodeName)
-	node, ok := woc.wf.Status.Nodes[nodeID]
-	if ok && node.Completed() {
+	node := woc.getNodeByName(sgNodeName)
+	if node != nil && node.Completed() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return nil
 	}
-	if !ok {
-		node = *woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
-		woc.log.Infof("Initializing step group node %v", node)
+	if node == nil {
+		node = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 	}
 
 	// First, resolve any references to outputs from previous steps, and perform substitution
@@ -914,7 +906,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return err
 	}
 
-	// Kick off all parallel steps in the group
+	// Kick off all parallel steps in the group asynchronously
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 		woc.addChildNode(sgNodeName, childNodeName)
@@ -942,8 +934,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		}
 	}
 
-	node = woc.wf.Status.Nodes[nodeID]
 	// Return if not all children completed
+	node = woc.getNodeByName(sgNodeName)
 	for _, childNodeID := range node.Children {
 		if !woc.wf.Status.Nodes[childNodeID].Completed() {
 			return nil
@@ -959,8 +951,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return nil
 		}
 	}
-	woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
-	woc.log.Infof("Step group node %v successful", woc.wf.Status.Nodes[nodeID])
+	node = woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
+	woc.log.Infof("Step group node %v successful", node)
 	return nil
 }
 
@@ -1138,6 +1130,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
+	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
 	return nil
 }
@@ -1194,6 +1187,7 @@ func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 }
 
 // addChildNode adds a nodeID as a child to a parent
+// parent and childe are both node names
 func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	parentID := woc.wf.NodeID(parent)
 	childID := woc.wf.NodeID(child)
@@ -1258,6 +1252,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template)
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
+	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
 	return nil
 }
