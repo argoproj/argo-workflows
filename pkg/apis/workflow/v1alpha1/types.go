@@ -38,7 +38,6 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
-	NodePending   NodePhase = "Pending"
 	NodeRunning   NodePhase = "Running"
 	NodeSucceeded NodePhase = "Succeeded"
 	NodeSkipped   NodePhase = "Skipped"
@@ -304,6 +303,20 @@ type NodeStatus struct {
 
 	// Children is a list of child node IDs
 	Children []string `json:"children,omitempty"`
+
+	// OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.
+	// For every invocation of a template, there are nodes which we considered as "outbound". Essentially,
+	// these are last nodes in the execution sequence to run, before the template is considered completed.
+	// These nodes are then connected as parents to a following step.
+	//
+	// In the case of single pod steps (i.e. container, script, resource templates), this list will be nil
+	// since the pod itself is already considered the "outbound" node.
+	// In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).
+	// In the case of steps, outbound nodes are all the containers involved in the last step group.
+	// NOTE: since templates are composable, the list of outbound nodes are carried upwards when
+	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
+	// a template, will be a superset of the outbound nodes of its last children.
+	OutboundNodes []string `json:"outboundNodes,omitempty"`
 }
 
 func (n NodeStatus) String() string {
