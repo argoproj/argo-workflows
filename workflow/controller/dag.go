@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/valyala/fasttemplate"
 )
 
 // dagContext holds context information about this context's DAG
@@ -20,6 +24,10 @@ type dagContext struct {
 	// in order to avoid duplicating work
 	visited map[string]bool
 
+	// tmpl is the template spec. it is needed to resolve hard-wired artifacts
+	tmpl *wfv1.Template
+
+	// wf is stored to formulate nodeIDs
 	wf *wfv1.Workflow
 }
 
@@ -62,6 +70,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv
 		encompasser: nodeName,
 		tasks:       tmpl.DAG.Tasks,
 		visited:     make(map[string]bool),
+		tmpl:        tmpl,
 		wf:          woc.wf,
 	}
 	var targetTasks []string
@@ -203,8 +212,59 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		return
 	}
 
-	// All our dependencies were satisifed and successful. It's our turn to run
-	woc.executeTemplate(task.Template, task.Arguments, nodeName)
+	// All our dependencies were satisfied and successful. It's our turn to run
+	// Substitute params/artifacts from our dependencies and execute the template
+	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
+	if err != nil {
+		woc.markNodeError(nodeName, err)
+		return
+	}
+	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName)
+}
+
+// resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
+// NOTE: by now, input parameters should have been substituted throughout the template
+func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task *wfv1.DAGTask) (*wfv1.DAGTask, error) {
+	// build up the scope
+	scope := wfScope{
+		tmpl:  dagCtx.tmpl,
+		scope: make(map[string]interface{}),
+	}
+	for _, depName := range task.Dependencies {
+		depNode := dagCtx.getTaskNode(depName)
+		prefix := fmt.Sprintf("dependencies.%s", depName)
+		scope.addNodeOutputsToScope(prefix, depNode)
+	}
+
+	// Perform replacement
+	taskBytes, err := json.Marshal(task)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
+	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), false, "")
+	if err != nil {
+		return nil, err
+	}
+	var newTask wfv1.DAGTask
+	err = json.Unmarshal([]byte(newTaskStr), &newTask)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+
+	// replace all artifact references
+	for j, art := range newTask.Arguments.Artifacts {
+		if art.From == "" {
+			continue
+		}
+		resolvedArt, err := scope.resolveArtifact(art.From)
+		if err != nil {
+			return nil, err
+		}
+		resolvedArt.Name = art.Name
+		newTask.Arguments.Artifacts[j] = *resolvedArt
+	}
+	return &newTask, nil
 }
 
 // findLeafTaskNames finds the names of all tasks whom no other nodes depend on.

@@ -863,7 +863,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 			return nil
 		}
 
-		// HACK: need better way to add children to scope
 		for _, step := range stepGroup {
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			childNodeID := woc.wf.NodeID(childNodeName)
@@ -874,24 +873,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				// are not easily referenceable by user.
 				continue
 			}
-			if childNode.PodIP != "" {
-				key := fmt.Sprintf("steps.%s.ip", step.Name)
-				scope.addParamToScope(key, childNode.PodIP)
-			}
-			if childNode.Outputs != nil {
-				if childNode.Outputs.Result != nil {
-					key := fmt.Sprintf("steps.%s.outputs.result", step.Name)
-					scope.addParamToScope(key, *childNode.Outputs.Result)
-				}
-				for _, outParam := range childNode.Outputs.Parameters {
-					key := fmt.Sprintf("steps.%s.outputs.parameters.%s", step.Name, outParam.Name)
-					scope.addParamToScope(key, *outParam.Value)
-				}
-				for _, outArt := range childNode.Outputs.Artifacts {
-					key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", step.Name, outArt.Name)
-					scope.addArtifactToScope(key, outArt)
-				}
-			}
+			prefix := fmt.Sprintf("steps.%s", step.Name)
+			scope.addNodeOutputsToScope(prefix, &childNode)
 		}
 	}
 	// Now that we have completed, set the outbound nodes from the last step group
@@ -1046,15 +1029,8 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		replaceMap := make(map[string]string)
-		for key, val := range scope.scope {
-			valStr, ok := val.(string)
-			if ok {
-				replaceMap[key] = valStr
-			}
-		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, true, "")
+		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true, "")
 		if err != nil {
 			return nil, err
 		}
@@ -1182,6 +1158,40 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
 	return nil
+}
+
+// addNodeOutputsToScope adds all of a nodes outputs to the scope with the given prefix
+func (wfs *wfScope) addNodeOutputsToScope(prefix string, node *wfv1.NodeStatus) {
+	if node.PodIP != "" {
+		key := fmt.Sprintf("%s.ip", prefix)
+		wfs.addParamToScope(key, node.PodIP)
+	}
+	if node.Outputs != nil {
+		if node.Outputs.Result != nil {
+			key := fmt.Sprintf("%s.outputs.result", prefix)
+			wfs.addParamToScope(key, *node.Outputs.Result)
+		}
+		for _, outParam := range node.Outputs.Parameters {
+			key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, outParam.Name)
+			wfs.addParamToScope(key, *outParam.Value)
+		}
+		for _, outArt := range node.Outputs.Artifacts {
+			key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, outArt.Name)
+			wfs.addArtifactToScope(key, outArt)
+		}
+	}
+}
+
+// replaceMap returns a replacement map of strings intended to be used simple string substitution
+func (wfs *wfScope) replaceMap() map[string]string {
+	replaceMap := make(map[string]string)
+	for key, val := range wfs.scope {
+		valStr, ok := val.(string)
+		if ok {
+			replaceMap[key] = valStr
+		}
+	}
+	return replaceMap
 }
 
 func (wfs *wfScope) addParamToScope(key, val string) {

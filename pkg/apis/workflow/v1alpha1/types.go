@@ -75,7 +75,7 @@ type WorkflowSpec struct {
 	Templates []Template `json:"templates"`
 
 	// Entrypoint is a template reference to the starting point of the workflow
-	Entrypoint string `json:"entrypoint,omitempty"`
+	Entrypoint string `json:"entrypoint"`
 
 	// Arguments contain the parameters and artifacts sent to the workflow entrypoint
 	// Parameters are referencable globally using the 'workflow' variable prefix.
