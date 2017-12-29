@@ -12,7 +12,7 @@ import (
 )
 
 type WorkflowClient struct {
-	cl        *rest.RESTClient
+	cl        rest.Interface
 	codec     runtime.ParameterCodec
 	namespace string
 }
@@ -38,7 +38,7 @@ func NewRESTClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) 
 	return client, scheme, nil
 }
 
-func NewWorkflowClient(cl *rest.RESTClient, scheme *runtime.Scheme, namespace string) *WorkflowClient {
+func NewWorkflowClient(cl rest.Interface, scheme *runtime.Scheme, namespace string) *WorkflowClient {
 	return &WorkflowClient{
 		cl:        cl,
 		codec:     runtime.NewParameterCodec(scheme),
