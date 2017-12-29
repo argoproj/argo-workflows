@@ -19,7 +19,7 @@ export class WorkflowStepsComponent {
     this._workflow = val;
     if (val) {
       const entryPointTemplate = val.spec.templates.find(template => template.name === val.spec.entrypoint);
-      const phase = this._workflow.status.nodes[val.metadata.name].phase;
+      const phase = this._workflow.status && this._workflow.status.phase;
       let isSucceeded = false;
       let isFailed = false;
       let isRunning = false;
