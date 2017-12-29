@@ -7,8 +7,6 @@ import (
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
@@ -21,12 +19,12 @@ func unmarshalTemplate(yamlStr string) *wfv1.Template {
 }
 
 // newWoc a new operation context suitable for testing
-func newWoc() *wfOperationCtx {
-	wf := &wfv1.Workflow{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-wf",
-			Namespace: "default",
-		},
+func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
+	var wf *wfv1.Workflow
+	if len(wfs) == 0 {
+		wf = unmarshalWF(helloWorldWf)
+	} else {
+		wf = &wfs[0]
 	}
 	woc := wfOperationCtx{
 		wf:      wf,
@@ -36,12 +34,7 @@ func newWoc() *wfOperationCtx {
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller: &WorkflowController{
-			Config: WorkflowControllerConfig{
-				ExecutorImage: "executor:latest",
-			},
-			clientset: fake.NewSimpleClientset(),
-		},
+		controller:    newController(),
 		completedPods: make(map[string]bool),
 	}
 	return &woc
