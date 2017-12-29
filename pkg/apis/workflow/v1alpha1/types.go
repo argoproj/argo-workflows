@@ -128,6 +128,8 @@ type Template struct {
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
+	RetryInfo *RetryInfo `json:"retries,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -248,6 +250,21 @@ type WorkflowStatus struct {
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 }
 
+// GetNodesWithRetries returns a list of nodes that have maxRetries > 0.
+func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
+	var nodesWithRetries []NodeStatus
+	for _, node := range wfs.Nodes {
+		if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+			nodesWithRetries = append(nodesWithRetries, node)
+		}
+	}
+	return nodesWithRetries
+}
+
+type RetryInfo struct {
+	Limit int32 `json:"limit"`
+}
+
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
 	// It is implemented as a hash of the node name, which makes the ID deterministic
@@ -275,6 +292,8 @@ type NodeStatus struct {
 
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
+
+	RetryInfo *RetryInfo `json:"retries,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`
@@ -306,6 +325,12 @@ func (n NodeStatus) IsDaemoned() bool {
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped
+}
+
+// CanRetry returns whether the node should be retried or not.
+func (n NodeStatus) CanRetry() bool {
+	// TODO(shri): Check if there are some 'unretryable' errors.
+	return n.Completed() && !n.Successful()
 }
 
 type S3Bucket struct {

@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: container-retries-
+spec:
+  entrypoint: container-retries
+  templates:
+  - name: container-retries
+    retries:
+      limit: 4
+    container:
+      image: shrinand/random-fail
+      command: ["python"]
+      args: ["/run.py", "80"]
+

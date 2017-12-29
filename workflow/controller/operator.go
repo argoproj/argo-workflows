@@ -57,6 +57,29 @@ type wfScope struct {
 	scope map[string]interface{}
 }
 
+// newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
+func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
+	woc := wfOperationCtx{
+		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
+		orig:    wf,
+		updated: false,
+		log: log.WithFields(log.Fields{
+			"workflow":  wf.ObjectMeta.Name,
+			"namespace": wf.ObjectMeta.Namespace,
+		}),
+		controller:    wfc,
+		globalParams:  make(map[string]string),
+		completedPods: make(map[string]bool),
+		deadline:      time.Now().UTC().Add(maxOperationTime),
+	}
+
+	if woc.wf.Status.Nodes == nil {
+		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	}
+
+	return &woc
+}
+
 // operateWorkflow is the main operator logic of a workflow.
 // It evaluates the current state of the workflow, and its pods
 // and decides how to proceed down the execution path.
@@ -72,19 +95,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use DeepCopy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	woc := wfOperationCtx{
-		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
-		orig:    wf,
-		updated: false,
-		log: log.WithFields(log.Fields{
-			"workflow":  wf.ObjectMeta.Name,
-			"namespace": wf.ObjectMeta.Namespace,
-		}),
-		controller:    wfc,
-		globalParams:  make(map[string]string),
-		completedPods: make(map[string]bool),
-		deadline:      time.Now().UTC().Add(maxOperationTime),
-	}
+	woc := newWorkflowOperationCtx(wf, wfc)
 	defer woc.persistUpdates()
 	defer func() {
 		if r := recover(); r != nil {
@@ -247,6 +258,49 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 }
 
+// processNodesWithRetries checks whether any of the failed nodes had retries left and if so,
+// starts a new pod. It returns whether there are retries left or not.
+func (woc *wfOperationCtx) processNodesWithRetries() (bool, error) {
+	// TODO(shri): This should be fixed by moving the container execution logic into a
+	// separate layer. Steps, Retries, etc. will be higher layers that call into the
+	// container execution layer.
+	for _, node := range woc.wf.Status.GetNodesWithRetries() {
+		if node.Completed() {
+			continue
+		}
+		lastChildNode, err := woc.getLastChildNode(&node)
+		if err != nil {
+			return false, fmt.Errorf("Failed to find last child of node " + node.Name)
+		}
+
+		if !lastChildNode.Completed() {
+			// last child node is still running.
+			return false, nil
+		}
+
+		if lastChildNode.Successful() {
+			woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
+			return false, nil
+		}
+
+		if !lastChildNode.CanRetry() {
+			woc.log.Infof("Node cannot be retried. Marking it failed")
+			woc.markNodePhase(node.Name, wfv1.NodeFailed)
+			return false, nil
+		}
+
+		if int32(len(node.Children)) > node.RetryInfo.Limit {
+			woc.log.Infoln("No more retries left. Failing...")
+			woc.markNodePhase(node.Name, wfv1.NodeFailed)
+			return false, nil
+		}
+		woc.log.Infof("%d child nodes failed. Trying again...", len(node.Children))
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // podReconciliation is the process by which a workflow will examine all its related
 // pods and update the node state before continuing the evaluation of the workflow.
 // Records all pods which were observed completed, which will be labeled completed=true
@@ -258,10 +312,12 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 	seenPods := make(map[string]bool)
 	for _, pod := range podList.Items {
-		seenPods[pod.ObjectMeta.Name] = true
-		if node, ok := woc.wf.Status.Nodes[pod.ObjectMeta.Name]; ok {
+		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+		nodeID := woc.wf.NodeID(nodeNameForPod)
+		seenPods[nodeID] = true
+		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := assessNodeStatus(&pod, &node); newState != nil {
-				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
+				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.updated = true
 			}
 			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
@@ -269,7 +325,13 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 		}
 	}
-	if len(podList.Items) > 0 {
+
+	retriesLeft, err := woc.processNodesWithRetries()
+	if err != nil {
+		return err
+	}
+
+	if retriesLeft || len(podList.Items) > 0 {
 		return nil
 	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
@@ -288,10 +350,12 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		return err
 	}
 	for _, pod := range podList.Items {
-		seenPods[pod.ObjectMeta.Name] = true
-		if node, ok := woc.wf.Status.Nodes[pod.ObjectMeta.Name]; ok {
+		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+		nodeID := woc.wf.NodeID(nodeNameForPod)
+		seenPods[nodeID] = true
+		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := assessNodeStatus(&pod, &node); newState != nil {
-				woc.wf.Status.Nodes[pod.ObjectMeta.Name] = *newState
+				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.updated = true
 			}
 			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
@@ -299,6 +363,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 		}
 	}
+
 	// Now iterate the workflow pod nodes which we still believe to be incomplete.
 	// If the pod was not seen in the pod list, it means the pod was deleted and it
 	// is now impossible to infer status. The only thing we can do at this point is
@@ -308,6 +373,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// node is not a pod, or it is already complete
 			continue
 		}
+
 		if _, ok := seenPods[nodeID]; !ok {
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
@@ -626,12 +692,26 @@ func (woc *wfOperationCtx) deletePVCs() error {
 	return firstErr
 }
 
+func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
+	if len(node.Children) <= 0 {
+		return nil, nil
+	}
+
+	lastChildNodeName := node.Children[len(node.Children)-1]
+	lastChildNode, ok := woc.wf.Status.Nodes[lastChildNodeName]
+	if !ok {
+		return nil, fmt.Errorf("Failed to find node " + lastChildNodeName)
+	}
+
+	return &lastChildNode, nil
+}
+
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
-	woc.log.Debugf("Evaluating node %s: template: %s", nodeName, templateName)
+	woc.log.Infof("Evaluating node %s: template: %s", nodeName, templateName)
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		woc.log.Debugf("Node %s already completed", nodeName)
+		woc.log.Infof("Node %s already completed", nodeName)
 		return nil
 	}
 	tmpl := woc.wf.GetTemplate(templateName)
@@ -650,12 +730,50 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		if ok {
-			// There's already a node entry for the container. This means the container was already
-			// scheduled (or had a create pod error). Nothing to more to do with this node.
-			return nil
+			if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+				lastChild, err := woc.getLastChildNode(&node)
+				if err != nil {
+					err := errors.Errorf("Couldn't find last child of node: %s", node.Name)
+					woc.markNodeError(nodeName, err)
+					return err
+				}
+				if !lastChild.Completed() {
+					// last child node is still running.
+					return nil
+				}
+			} else {
+				// There are no retries configured and there's already a node entry for the container.
+				// This means the container was already scheduled (or had a create pod error). Nothing
+				// to more to do with this node.
+				return nil
+			}
 		}
+
+		// If the user has specified retries, a special "retries" non-leaf node
+		// is created. This node acts as the parent of all retries that will be
+		// done for the container. The status of this node should be "Success"
+		// if any of the retries succeed. Otherwise, it is "Failed".
+
+		// TODO(shri): Mark the current node as a "retry" node
+		// Create a new child node as the first attempt node and
+		// run the template in that node.
+		nodeToExecute := nodeName
+		if tmpl.RetryInfo != nil && tmpl.RetryInfo.Limit > 0 {
+			node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+			retries := wfv1.RetryInfo{}
+			node.RetryInfo = &retries
+			node.RetryInfo.Limit = tmpl.RetryInfo.Limit
+			woc.wf.Status.Nodes[nodeID] = *node
+
+			// Create new node as child of 'node'
+			newContainerName := fmt.Sprintf("%s-%d", nodeName, len(node.Children))
+			woc.markNodePhase(newContainerName, wfv1.NodeRunning)
+			woc.addChildNode(nodeName, newContainerName)
+			nodeToExecute = newContainerName
+		}
+
 		// We have not yet created the pod
-		err = woc.executeContainer(nodeName, tmpl)
+		err = woc.executeContainer(nodeToExecute, tmpl)
 	case wfv1.TemplateTypeSteps:
 		if !ok {
 			node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
@@ -734,9 +852,6 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 
 // markNodePhase marks a node with the given phase, creating the node if necessary and handles timestamps
 func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
-	if woc.wf.Status.Nodes == nil {
-		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	}
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if !ok {
@@ -757,6 +872,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.updated = true
+	woc.log.Debugf("Marked node %s %s\n", nodeName, phase)
 	return &node
 }
 
@@ -766,6 +882,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
+	woc.log.Infof("Executing node %s with container template: %v\n", nodeName, tmpl)
 	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)

@@ -143,57 +143,76 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 		fmt.Fprintf(w, "%s%s\t%s\t%s\n", args...)
 	}
 
-	// If the node has children, the node is a workflow template and
-	// node.Children prepresent a list of parallel steps. We skip
-	// a generation when recursing since the children nodes of workflow
-	// templates represent a virtual step group, which are not worh printing.
-	for i, stepGroupNodeID := range node.Children {
-		lastStepGroup := bool(i == len(node.Children)-1)
-		var part1, subp1 string
-		if lastStepGroup {
-			part1 = "└-"
+	if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+		for i, childNodeID := range node.Children {
+			var part1, subp1 string
 			subp1 = "  "
-		} else {
-			part1 = "├-"
-			subp1 = "| "
-		}
-		stepGroupNode := wf.Status.Nodes[stepGroupNodeID]
-		for j, childNodeID := range stepGroupNode.Children {
-			childNode := wf.Status.Nodes[childNodeID]
-			if j > 0 {
-				if lastStepGroup {
-					part1 = "  "
-				} else {
-					part1 = "| "
-				}
-			}
-			firstParallel := bool(j == 0)
-			lastParallel := bool(j == len(stepGroupNode.Children)-1)
-			var part2, subp2 string
-			if firstParallel {
-				if len(stepGroupNode.Children) == 1 {
-					part2 = "--"
-				} else {
-					part2 = "·-"
-				}
-				if !lastParallel {
-					subp2 = "| "
-				} else {
-					subp2 = "  "
-				}
 
-			} else if lastParallel {
-				part2 = "└-"
-				subp2 = "  "
+			childNode := wf.Status.Nodes[childNodeID]
+			if i > 0 && i < len(node.Children)-1 {
+				part1 = "├-"
 			} else {
-				part2 = "├-"
-				subp2 = "| "
+				part1 = "└-"
 			}
+			var part2, subp2 string
+			part2 = "--"
 			childNodePrefix := childPrefix + part1 + part2
 			childChldPrefix := childPrefix + subp1 + subp2
-			// Remove stepgroup name from being displayed
-			childNode.Name = strings.TrimPrefix(childNode.Name, stepGroupNode.Name+".")
 			printNodeTree(w, wf, childNode, depth+1, childNodePrefix, childChldPrefix)
+		}
+	} else {
+		// If the node has children, the node is a workflow template and
+		// node.Children prepresent a list of parallel steps. We skip
+		// a generation when recursing since the children nodes of workflow
+		// templates represent a virtual step group, which are not worh printing.
+		for i, stepGroupNodeID := range node.Children {
+			lastStepGroup := bool(i == len(node.Children)-1)
+			var part1, subp1 string
+			if lastStepGroup {
+				part1 = "└-"
+				subp1 = "  "
+			} else {
+				part1 = "├-"
+				subp1 = "| "
+			}
+			stepGroupNode := wf.Status.Nodes[stepGroupNodeID]
+			for j, childNodeID := range stepGroupNode.Children {
+				childNode := wf.Status.Nodes[childNodeID]
+				if j > 0 {
+					if lastStepGroup {
+						part1 = "  "
+					} else {
+						part1 = "| "
+					}
+				}
+				firstParallel := bool(j == 0)
+				lastParallel := bool(j == len(stepGroupNode.Children)-1)
+				var part2, subp2 string
+				if firstParallel {
+					if len(stepGroupNode.Children) == 1 {
+						part2 = "--"
+					} else {
+						part2 = "·-"
+					}
+					if !lastParallel {
+						subp2 = "| "
+					} else {
+						subp2 = "  "
+					}
+
+				} else if lastParallel {
+					part2 = "└-"
+					subp2 = "  "
+				} else {
+					part2 = "├-"
+					subp2 = "| "
+				}
+				childNodePrefix := childPrefix + part1 + part2
+				childChldPrefix := childPrefix + subp1 + subp2
+				// Remove stepgroup name from being displayed
+				childNode.Name = strings.TrimPrefix(childNode.Name, stepGroupNode.Name+".")
+				printNodeTree(w, wf, childNode, depth+1, childNodePrefix, childChldPrefix)
+			}
 		}
 	}
 }
