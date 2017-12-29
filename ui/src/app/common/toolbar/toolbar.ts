@@ -4,6 +4,6 @@ export interface ToolbarFIltersItem {
 }
 
 export interface ToolbarFilters {
-  data: ToolbarFIltersItem[],
-  model: string[],
+  data: ToolbarFIltersItem[];
+  model: string[];
 }

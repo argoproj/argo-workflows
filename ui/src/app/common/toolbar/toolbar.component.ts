@@ -10,7 +10,7 @@ export class ToolbarComponent {
 
   @Input()
   public toolbarFilters: ToolbarFilters;
-  
+
   @Output()
   public onToggleFilter: EventEmitter<string[]> = new EventEmitter();
 
