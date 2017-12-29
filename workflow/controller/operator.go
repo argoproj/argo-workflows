@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -86,6 +87,16 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		deadline:      time.Now().UTC().Add(maxOperationTime),
 	}
 	defer woc.persistUpdates()
+	defer func() {
+		if r := recover(); r != nil {
+			if rerr, ok := r.(error); ok {
+				woc.markWorkflowError(rerr, true)
+			} else {
+				woc.markWorkflowPhase(wfv1.NodeError, true, fmt.Sprintf("%v", r))
+			}
+			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
+		}
+	}()
 	woc.log.Infof("Processing workflow")
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {

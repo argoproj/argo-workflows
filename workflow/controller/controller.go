@@ -36,7 +36,7 @@ type WorkflowController struct {
 	Config      WorkflowControllerConfig
 
 	restConfig *rest.Config
-	restClient *rest.RESTClient
+	restClient rest.Interface
 	scheme     *runtime.Scheme
 	clientset  kubernetes.Interface
 
