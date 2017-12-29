@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@angular/core';
+import { Injectable, Optional, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import * as models from '../models';
@@ -27,24 +27,31 @@ enum ReadyState {
 
 @Injectable()
 export class WorkflowsService {
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private zone: NgZone) { }
 
     /**
      * Reads server sent messages from specified URL.
      */
-    private loadEventSource(url): Observable<string> {
+    private loadEventSource(url: string, zone?: NgZone): Observable<string> {
+      function runInZone(action: () => any) {
+        if (zone) {
+          zone.run(() => action());
+        } else {
+          action();
+        }
+      }
       return Observable.create((observer: Observer<any>) => {
           const eventSource = new EventSource(url);
-          eventSource.onmessage = msg => observer.next(msg.data);
-          eventSource.onerror = e => {
+          eventSource.onmessage = msg => runInZone(() => observer.next(msg.data));
+          eventSource.onerror = e => runInZone(() => {
               if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
                   observer.complete();
               } else {
                   observer.error(e);
               }
-          };
+          });
           return () => {
-              eventSource.close();
+              runInZone(() => eventSource.close());
           };
       });
   }
@@ -62,9 +69,12 @@ export class WorkflowsService {
   public getWorkflowStream(namespace: string, name: string): Observable<models.Workflow> {
     return Observable.merge(
       Observable.fromPromise(this.getWorkflow(namespace, name, false)),
-      Observable.interval(1000).flatMap(() => Observable.fromPromise(this.getWorkflow(namespace, name, true))).distinct(workflow => {
-        return Object.keys(workflow.status.nodes || []).map(nodeName => `${nodeName}:${workflow.status.nodes[nodeName].phase}`).join(';');
-      }));
+      this.loadEventSource(
+        `api/workflows/live?name=${name}&namespace=${namespace}`, this.zone).repeat().retry().map(data => JSON.parse(data)));
+  }
+
+  public getWorkflowsStream(): Observable<models.Workflow> {
+    return this.loadEventSource('api/workflows/live', this.zone).repeat().retry().map(data => JSON.parse(data));
   }
 
   public getStepLogs(namespace: string, name: string): Observable<string> {
