@@ -1,3 +1,6 @@
+import { Observable } from 'rxjs/Observable';
+import { Observer } from 'rxjs/Observer';
+
 export const ViewUtils = {
   scrollParent(el) {
     const regex = /(auto|scroll)/;

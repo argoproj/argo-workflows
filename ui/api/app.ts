@@ -6,11 +6,13 @@ import * as fallback from 'express-history-api-fallback';
 import * as models from '../src/app/models';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
+import 'rxjs/add/operator/filter';
 import * as nodeStream from 'stream';
 import * as path from 'path';
 import * as moment from 'moment';
 import * as http from 'http';
 import * as consoleProxy from './console-proxy';
+import * as JSONStream from 'json-stream';
 
 import { decodeBase64, reactifyStringStream, streamServerEvents } from './utils';
 
@@ -47,6 +49,26 @@ export function create(
 
   app.get('/api/workflows/:namespace/:name',
     async (req, res) => serve(res, () => crd.ns(req.params.namespace)['workflows'].get(req.params.name)));
+
+  app.get('/api/workflows/live', async (req, res) => {
+    let updatesSource = new Observable((observer: Observer<any>) => {
+        let stream = crd.ns(req.params.namespace)['workflows'].getStream({ qs: { watch: true } });
+        stream.on('end', () => observer.complete());
+        stream.on('error', e => observer.error(e));
+        stream.on('close', () => observer.complete());
+        stream = stream.pipe(new JSONStream());
+        stream.on('data', data => data && observer.next(data));
+    });
+    if (req.query.namespace) {
+      updatesSource = updatesSource.filter(change => {
+        return change.object.metadata.namespace === req.query.namespace;
+      });
+    }
+    if (req.query.name) {
+      updatesSource = updatesSource.filter(change => change.object.metadata.name === req.query.name);
+    }
+    streamServerEvents(req, res, updatesSource, item => JSON.stringify(item.object));
+  });
 
   app.get('/api/workflows/:namespace/:name/artifacts/:nodeName/:artifactName', async (req, res) => {
     const workflow: models.Workflow = await crd.ns(req.params.namespace)['workflows'].get(req.params.name);

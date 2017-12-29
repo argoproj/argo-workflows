@@ -18,6 +18,7 @@
     "aws-sdk": "^2.162.0",
     "express": "^4.16.2",
     "express-history-api-fallback": "^2.2.1",
+    "json-stream": "^1.0.0",
     "kubernetes-client": "^3.17.1",
     "moment": "^2.19.3",
     "rxjs": "^5.5.2",
