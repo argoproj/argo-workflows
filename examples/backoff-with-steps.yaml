@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: backoff-with-steps-
+spec:
+  entrypoint: hello-hello-hello
+  templates:
+  - name: hello-hello-hello
+    steps:
+    - - name: hello1
+        template: random-fail
+        arguments:
+          parameters:
+          - name: failPct
+            value: "80"
+    - - name: hello2a
+        template: random-fail
+        arguments:
+          parameters:
+          - name: failPct
+            value: "90"
+      - name: hello2b
+        template: random-fail
+        arguments:
+          parameters:
+          - name: failPct
+            value: "90"
+  - name: random-fail
+    inputs:
+      parameters:
+      - name: failPct
+    backoffLimit: 3
+    container:
+      image: shrinand/random-fail
+      command: ["python"]
+      args: ["/run.py", "{{inputs.parameters.failPct}}"]

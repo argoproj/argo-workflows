@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: backoff-
+spec:
+  entrypoint: backoff
+  templates:
+  - name: backoff
+    backoffLimit: 4
+    container:
+      image: shrinand/random-fail
+      command: ["python"]
+      args: ["/run.py", "80"]
+
