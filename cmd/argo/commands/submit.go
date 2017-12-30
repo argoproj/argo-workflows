@@ -19,13 +19,15 @@ func init() {
 	submitCmd.Flags().StringSliceVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	submitCmd.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 }
 
 type submitFlags struct {
-	entrypoint string   // --entrypoint
-	parameters []string // --parameter
-	output     string   // --output
-	wait       bool     // --wait
+	entrypoint     string   // --entrypoint
+	parameters     []string // --parameter
+	output         string   // --output
+	wait           bool     // --wait
+	serviceAccount string   // --serviceaccount
 }
 
 var submitArgs submitFlags
@@ -88,6 +90,9 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 func submitWorkflow(wf *wfv1.Workflow) (string, error) {
 	if submitArgs.entrypoint != "" {
 		wf.Spec.Entrypoint = submitArgs.entrypoint
+	}
+	if submitArgs.serviceAccount != "" {
+		wf.Spec.ServiceAccountName = submitArgs.serviceAccount
 	}
 	if len(submitArgs.parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)

@@ -72,6 +72,9 @@ type WorkflowSpec struct {
 	// e.g. {{workflow.parameters.myparam}}
 	Arguments Arguments `json:"arguments,omitempty"`
 
+	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	Volumes []apiv1.Volume `json:"volumes,omitempty"`
 

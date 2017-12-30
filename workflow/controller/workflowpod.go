@@ -140,6 +140,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				volumeDockerSock,
 			},
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {
