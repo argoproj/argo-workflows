@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/argoproj/argo"
 	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
@@ -50,20 +51,22 @@ func init() {
 	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
+	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows to ssh into running step container using Argo UI")
 }
 
 // InstallFlags has all the required parameters for installing Argo.
 type InstallFlags struct {
-	ControllerName  string // --controller-name
-	InstanceID      string // --instanceid
-	UIName          string // --ui-name
-	Namespace       string // --install-namespace
-	ConfigMap       string // --configmap
-	ControllerImage string // --controller-image
-	UIImage         string // --ui-image
-	ExecutorImage   string // --executor-image
-	ServiceAccount  string // --service-account
-	Upgrade         bool   // --upgrade
+	ControllerName   string // --controller-name
+	InstanceID       string // --instanceid
+	UIName           string // --ui-name
+	Namespace        string // --install-namespace
+	ConfigMap        string // --configmap
+	ControllerImage  string // --controller-image
+	UIImage          string // --ui-image
+	ExecutorImage    string // --executor-image
+	ServiceAccount   string // --service-account
+	Upgrade          bool   // --upgrade
+	EnableWebConsole bool   // --enable-web-console
 }
 
 var installArgs InstallFlags
@@ -335,6 +338,10 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 								{
 									Name:  "IN_CLUSTER",
 									Value: "true",
+								},
+								{
+									Name:  "ENABLE_WEB_CONSOLE",
+									Value: strconv.FormatBool(args.EnableWebConsole),
 								},
 							},
 						},
