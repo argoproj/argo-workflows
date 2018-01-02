@@ -7,6 +7,6 @@ import * as models from '../models';
 })
 export class WorkflowStatusPipe implements PipeTransform {
   public transform(value: models.Workflow, ...args: any[]) {
-    return value.status.nodes[value.metadata.name].phase;
+    return value.status.phase;
   }
 }

@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs/Subscription';
 
-import { WorkflowsService, EventsService } from '../../services';
+import { WorkflowsService, EventsService, SystemService } from '../../services';
 import * as models from '../../models';
 import { NodeInfo, WorkflowTree } from '../../common';
 import { Observable } from 'rxjs/Observable';
@@ -28,19 +28,23 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
   public selectedYamlStep: string;
   public isYamlVisible: boolean;
   public isConsoleVisible: boolean;
-  public consoleNodeName;
+  public consoleNodeName: string;
+  public isWebConsoleEnabled: boolean;
 
   constructor(private workflowsService: WorkflowsService,
               private route: ActivatedRoute,
               private router: Router,
-              private eventsService: EventsService) {}
+              private eventsService: EventsService,
+              private systemService: SystemService) {}
 
   public tabChange(tab: string) {
     this.router.navigate(['.', { tab }], { relativeTo: this.route });
   }
 
-  public ngOnInit() {
+  public async ngOnInit() {
     this.eventsService.setPageTitle.emit(this.route.snapshot.params.name);
+    const settings = await this.systemService.getSettings();
+    this.isWebConsoleEnabled = settings.isWebConsoleEnabled;
     const treeSrc = this.route.params
         .distinctUntilChanged((first, second) => first['name'] === second['name'] && first['namespace'] === second['namespace'] )
         .flatMap(params => this.workflowsService.getWorkflowStream(
@@ -84,7 +88,7 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
     }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
       if (this.workflow) {
-        Object.keys(this.workflow.status.nodes)
+        Object.keys(this.workflow.status.nodes || {})
             .map(name => this.workflow.status.nodes[name]).filter(node => node.startedAt).forEach(node => {
           const endTime = node.finishedAt ? moment(node.finishedAt) : moment();
           node['runDuration'] = endTime.diff(moment(node.startedAt)) / 1000;
@@ -154,14 +158,14 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    for (const nodeName of Object.keys(this.tree.workflow.status.nodes)) {
+    for (const nodeName of Object.keys(this.tree.workflow.status.nodes || {})) {
       let settings = this.actionSettingsByNodeName.get(nodeName);
       if (!settings) {
         settings = new DropdownMenuSettings([]);
         this.actionSettingsByNodeName.set(nodeName, settings);
       }
-      const status = this.tree.workflow.status.nodes[nodeName];
-      if (status.phase === NODE_PHASE.RUNNING) {
+      const status = (this.tree.workflow.status.nodes || {})[nodeName];
+      if (status.phase === NODE_PHASE.RUNNING && this.isWebConsoleEnabled) {
         settings.menu.push({
           title: 'View Console',
           action: () => this.showConsole(nodeName),

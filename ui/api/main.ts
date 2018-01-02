@@ -11,4 +11,5 @@ app.create(
   argv.inCluster === 'true',
   argv.namespace || 'default',
   argv.crdVersion || 'v1alpha1',
+  argv.enableWebConsole === 'true',
 ).listen(8001);

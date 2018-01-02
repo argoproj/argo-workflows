@@ -24,7 +24,20 @@ export class WorkflowTree {
   }
 
   private createRoot(): NodeInfo {
-    return this.getNodeInfo(this.workflow.status.nodes[this.workflow.metadata.name], this.workflow.metadata.name, true);
+    const status: models.NodeStatus = this.workflow.status &&
+        this.workflow.status.nodes &&
+        this.workflow.status.nodes[this.workflow.metadata.name] || {
+          id: '',
+          name: this.workflow.metadata.name,
+          phase: '',
+          podIP: '',
+          daemoned: false,
+          outputs: null,
+          children: [],
+          startedAt: '',
+          finishedAt: ''
+      };
+    return this.getNodeInfo(status, this.workflow.metadata.name, true);
   }
 
   private getNodeInfo(nodeStatus: models.NodeStatus, nodeName: string, root = false): NodeInfo {
@@ -75,7 +88,7 @@ export class WorkflowTree {
   }
 
   public getArtifacts(): ArtifactInfo[] {
-    return Object.keys(this.workflow.status.nodes)
+    return Object.keys(this.workflow.status.nodes || {})
     .map(nodeName => {
       const node = this.workflow.status.nodes[nodeName];
       const items = (node.outputs || { artifacts: [] }).artifacts || <models.Artifact[]>[];
