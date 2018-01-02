@@ -25,6 +25,7 @@ export function create(
     inCluster: boolean,
     namespace: string,
     version,
+    isWebConsoleEnabled: boolean,
     group = 'argoproj.io') {
   const config = Object.assign(
     {}, inCluster ? Api.config.getInCluster() : Api.config.fromKubeconfig(), {namespace, promises: true });
@@ -99,11 +100,14 @@ export function create(
       core.ns(req.params.namespace).po(req.params.name).log.getStream({ qs: { container: 'main', follow: true } }));
     streamServerEvents(req, res, logsSource, item => item.toString());
   });
+  app.get('/api/system/settings', (req, res) => res.send({ isWebConsoleEnabled }));
   app.use(express.static(uiDist));
   app.use(fallback('index.html', { root: uiDist }));
 
   const server = http.createServer(app);
-  consoleProxy.create(server, core);
+  if (isWebConsoleEnabled) {
+    consoleProxy.create(server, core);
+  }
 
   return server;
 }

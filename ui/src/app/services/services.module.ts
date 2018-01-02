@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { WorkflowsService } from './workflows.service';
 import { LoaderService } from './loader.service';
+import { SystemService } from './system.service';
 import { Interceptor } from './interceptor';
 
 @NgModule({
@@ -12,6 +13,7 @@ import { Interceptor } from './interceptor';
   ],
   declarations: [],
   providers: [
+    SystemService,
     LoaderService,
     WorkflowsService,
     {provide: HTTP_INTERCEPTORS, useClass: Interceptor, multi: true}

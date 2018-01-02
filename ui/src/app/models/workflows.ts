@@ -65,6 +65,7 @@ export interface NodeStatus {
 }
 
 export interface WorkflowStatus {
+    phase: string;
     nodes: {[name: string]: NodeStatus};
     persistentVolumeClaims: kubernetes.Volume;
 }
