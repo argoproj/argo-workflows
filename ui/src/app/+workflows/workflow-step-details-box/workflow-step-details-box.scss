@@ -1,8 +1,15 @@
+@import '../../../assets/styles/config';
 .workflow-step-details-box {
     &__logs {
         height: calc(100vh - 409px);
         &--panel {
-            height: calc(100vh - 220px);
+            height: calc(100vh - 129px);
         }
+    }
+
+    &__logs-footer {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        border-top: 1px solid $ax-color-gray-4;
     }
 }

@@ -10,7 +10,8 @@ import { WorkflowsService } from '../../services';
 })
 export class WorkflowStepDetailsBoxComponent {
 
-  constructor(private workflowsService: WorkflowsService) {}
+  constructor(private workflowsService: WorkflowsService) {
+  }
 
   @Input()
   public tab: string;
@@ -26,12 +27,12 @@ export class WorkflowStepDetailsBoxComponent {
 
   public getLogsSource() {
     return {
-        loadLogs: () => {
-            return this.nodeName && this.workflowsService.getStepLogs(this.workflowTree.workflow.metadata.namespace, this.nodeName);
-        },
-        getKey() {
-            return this.nodeName;
-        }
+      loadLogs: () => {
+        return this.nodeName && this.workflowsService.getStepLogs(this.workflowTree.workflow.metadata.namespace, this.nodeName);
+      },
+      getKey() {
+        return this.nodeName;
+      }
     };
-}
+  }
 }
