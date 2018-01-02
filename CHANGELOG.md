@@ -3,12 +3,14 @@
 ## 2.0.0-alpha3 (2018-01-02)
 + Introduce the "resource" template type for performing CRUD operations on k8s resources
 + Support for workflow exit handlers
++ Support artifactory as an artifact repository
 + Add ability to timeout a container/script using activeDeadlineSeconds
 + Add CLI command and flags to wait for a workflow to complete `argo wait`/`argo submit --wait`
 + Add ability to run multiple workflow controllers operating on separate instance ids
 + Add ability to run workflows using a specified service account
 * Scalability improvements for highly parallelized workflows
 * Improved validation of volume mounts with input artifacts
+* Argo UI bug fixes and improvements
 - Recover from unexpected panics when operating on workflows
 - Fix a controller panic when using a script templates with input artifacts
 - Fix issue preventing ability to pass JSON as a command line argument
