@@ -40,5 +40,6 @@ https://blog.argoproj.io/argo-workflow-demo-at-the-kubernetes-community-meeting-
 ## Resources
 * Argo website: https://argoproj.github.io/argo-site
 * Argo GitHub:  https://github.com/argoproj
+* Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMjkyNjcxMDg5NTM2LWFiMDJlZWVhYWI2NmI3OWQyNTZjZThjN2UwNGFlYTJkNGM5ODg0MGJkZTFjMGRhZjQ1MzAzNWY1NzlhZjI2MDg)
 * Argo forum:   https://groups.google.com/forum/#!forum/argoproj
 
