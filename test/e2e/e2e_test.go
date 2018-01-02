@@ -61,9 +61,9 @@ func installArgoInNamespace(namespace string) {
 		Namespace:      namespace,
 		ConfigMap:      common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
 		//TODO(shri): Use better defaults that don't need Makefiles
-		ControllerImage: "argoproj/workflow-controller:v2.0.0-alpha2",
-		UIImage:         "argoproj/argoui:v2.0.0-alpha2",
-		ExecutorImage:   "argoproj/argoexec:v2.0.0-alpha2",
+		ControllerImage: "argoproj/workflow-controller:v2.0.0-alpha3",
+		UIImage:         "argoproj/argoui:v2.0.0-alpha3",
+		ExecutorImage:   "argoproj/argoexec:v2.0.0-alpha3",
 		ServiceAccount:  "",
 	}
 
