@@ -1,18 +1,18 @@
 package artifactory
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	"io"
 	"net/http"
 	"os"
+
+	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	"io"
 )
 
 type ArtifactoryArtifactDriver struct {
 	Username string
 	Password string
 }
-
 
 // Download artifact from an artifactory URL
 func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
@@ -21,23 +21,27 @@ func (a *ArtifactoryArtifactDriver) Load(artifact *wfv1.Artifact, path string) e
 	if err != nil {
 		return err
 	}
-	defer lf.Close()
+	defer func() {
+		_ = lf.Close()
+	}()
 
-	req,err := http.NewRequest(http.MethodGet,artifact.Artifactory.URL,nil)
+	req, err := http.NewRequest(http.MethodGet, artifact.Artifactory.URL, nil)
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(a.Username,a.Password)
+	req.SetBasicAuth(a.Username, a.Password)
 	res, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("loading file from artifactory failed with reason:%s",res.Status)
+		return errors.InternalErrorf("loading file from artifactory failed with reason:%s", res.Status)
 	}
 
-	_,err = io.Copy(lf,res.Body)
+	_, err = io.Copy(lf, res.Body)
 
 	return err
 }
@@ -49,18 +53,20 @@ func (a *ArtifactoryArtifactDriver) Save(path string, artifact *wfv1.Artifact) e
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPut,artifact.Artifactory.URL,f)
+	req, err := http.NewRequest(http.MethodPut, artifact.Artifactory.URL, f)
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(a.Username,a.Password)
+	req.SetBasicAuth(a.Username, a.Password)
 	res, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return errors.InternalErrorf("saving file %s to artifactory failed with reason:%s",path,res.Status)
+		return errors.InternalErrorf("saving file %s to artifactory failed with reason:%s", path, res.Status)
 	}
 	return nil
 }
