@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-	wfclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
@@ -44,13 +44,13 @@ var timeMagnitudes = []humanize.RelTimeMagnitude{
 }
 
 func listWorkflows(cmd *cobra.Command, args []string) {
-	var wfClient *wfclient.WorkflowClient
+	var wfClient v1alpha1.WorkflowInterface
 	if listArgs.allNamespaces {
 		wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 	} else {
 		wfClient = InitWorkflowClient()
 	}
-	wfList, err := wfClient.ListWorkflows(metav1.ListOptions{})
+	wfList, err := wfClient.List(metav1.ListOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

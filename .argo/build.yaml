@@ -48,6 +48,11 @@ steps:
       parameters.CMD: dep ensure && make test
       parameters.MEM: "1024"
       artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
+  VERIFY-CODEGEN:
+    template: ci-builder
+    arguments:
+      parameters.CMD: dep ensure && ./hack/verify-codegen.sh
+      artifacts.CODE: "%%steps.CHECKOUT.outputs.artifacts.CODE%%"
 
 ---
 type: container

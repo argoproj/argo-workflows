@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"

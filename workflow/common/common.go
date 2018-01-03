@@ -1,7 +1,7 @@
 package common
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const (

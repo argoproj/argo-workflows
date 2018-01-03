@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"

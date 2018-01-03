@@ -8,9 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	wfclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -23,7 +24,7 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
-	wfClient         *wfclient.WorkflowClient
+	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 )
 
@@ -77,7 +78,7 @@ func initKubeClient() *kubernetes.Clientset {
 }
 
 // InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
-func InitWorkflowClient(ns ...string) *wfclient.WorkflowClient {
+func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if wfClient != nil {
 		return wfClient
 	}
@@ -92,11 +93,8 @@ func InitWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 			log.Fatal(err)
 		}
 	}
-	restClient, scheme, err := wfclient.NewRESTClient(restConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	wfClient = wfclient.NewWorkflowClient(restClient, scheme, namespace)
+	wfcs := wfclientset.NewForConfigOrDie(restConfig)
+	wfClient = wfcs.ArgoprojV1alpha1().Workflows(namespace)
 	return wfClient
 }
 
