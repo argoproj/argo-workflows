@@ -1,6 +1,7 @@
 {
     "Vendor": true,
     "DisableAll": true,
+    "Deadline": "2m",
     "Enable": [
         "vet",
         "gofmt",
@@ -11,5 +12,13 @@
         "ineffassign",
         "unconvert",
         "misspell"
+    ],
+    "Skip": [
+        "pkg/client",
+        "vendor/"
+    ],
+    "Exclude": [
+        "pkg/client",
+        "vendor/"
     ]
 }

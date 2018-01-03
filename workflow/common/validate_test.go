@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )

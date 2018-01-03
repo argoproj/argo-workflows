@@ -8,16 +8,11 @@ import (
 	"net/http"
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/ghodss/yaml"
-	"k8s.io/apimachinery/pkg/apimachinery"
-	"k8s.io/apimachinery/pkg/apimachinery/registered"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/fake"
-	fakerest "k8s.io/client-go/rest/fake"
-	"k8s.io/kubernetes/pkg/api"
 )
 
 var helloWorldWf = `
@@ -36,34 +31,12 @@ spec:
 `
 
 func newController() *WorkflowController {
-	scheme := runtime.NewScheme()
-	wfv1.AddToScheme(scheme)
-	api.AddToScheme(scheme)
-	registry, _ := registered.NewAPIRegistrationManager("v1")
-
-	registry.RegisterGroup(apimachinery.GroupMeta{
-		GroupVersion: wfv1.SchemeGroupVersion,
-	})
-	// The following prevents the "The legacy v1 API is not registered." panic from the fake RESTClient
-	registry.RegisterGroup(apimachinery.GroupMeta{
-		GroupVersion: schema.GroupVersion{Group: "", Version: ""},
-	})
 	return &WorkflowController{
 		Config: WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
 		},
-		clientset: fake.NewSimpleClientset(),
-		scheme:    scheme,
-		restClient: &fakerest.RESTClient{
-			APIRegistry:          registry,
-			NegotiatedSerializer: serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)},
-			GroupName:            wfv1.CRDGroup,
-			VersionedAPIPath:     wfv1.CRDVersion,
-			Client: fakerest.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
-				var wf wfv1.Workflow
-				return &http.Response{StatusCode: 200, Header: defaultHeader(), Body: marshallBody(wf)}, nil
-			}),
-		},
+		kubeclientset: fake.NewSimpleClientset(),
+		wfclientset:   fakewfclientset.NewSimpleClientset(),
 	}
 }
 func defaultHeader() http.Header {
@@ -98,7 +71,7 @@ func TestOperateWorkflowPanicRecover(t *testing.T) {
 	}()
 	controller := newController()
 	// intentionally set clientset to nil to induce panic
-	controller.clientset = nil
+	controller.kubeclientset = nil
 	wf := unmarshalWF(helloWorldWf)
 	controller.operateWorkflow(wf)
 }

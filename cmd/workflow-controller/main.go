@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/util/cmd"
-	workflowclient "github.com/argoproj/argo/workflow/client"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
+	// load the gcp plugin (required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -73,13 +76,21 @@ func Run(cmd *cobra.Command, args []string) {
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
 	log.Infof("Creating Workflow CRD")
-	_, err = workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
+	_, err = common.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		log.Fatalf("%+v", err)
 	}
 
+	// make a new config for our extension's API group, using the first config as a baseline
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
+	wfcs := wfclientset.NewForConfigOrDie(config)
+
 	// start a controller on instances of our custom resource
-	wfController := controller.NewWorkflowController(config, rootArgs.configMap)
+	wfController := controller.NewWorkflowController(config, clientset, wfcs, rootArgs.configMap)
 	err = wfController.ResyncConfig()
 	if err != nil {
 		log.Fatalf("%+v", err)

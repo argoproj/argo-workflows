@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/spf13/cobra"
@@ -122,7 +122,7 @@ func submitWorkflow(wf *wfv1.Workflow) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	created, err := wfClient.CreateWorkflow(wf)
+	created, err := wfClient.Create(wf)
 	if err != nil {
 		return "", err
 	}

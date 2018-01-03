@@ -51,7 +51,7 @@ func deleteWorkflowCmd(cmd *cobra.Command, args []string) {
 }
 
 func deleteWorkflow(wfName string) {
-	err := wfClient.DeleteWorkflow(wfName, &metav1.DeleteOptions{})
+	err := wfClient.Delete(wfName, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func deleteWorkflow(wfName string) {
 }
 
 func deleteWorkflows(options metav1.ListOptions) {
-	wfList, err := wfClient.ListWorkflows(options)
+	wfList, err := wfClient.List(options)
 	if err != nil {
 		log.Fatal(err)
 	}
