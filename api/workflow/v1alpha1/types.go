@@ -130,6 +130,10 @@ type Template struct {
 	// before the system actively tries to terminate the pod; value must be positive integer
 	// This field is only applicable to container and script templates.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
+	// Optional number of retries to perform before declaring the container as failed. Only
+	// applicable to `container` type.
+	BackoffLimit *int32 `json:"backoffLimit,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -250,6 +254,17 @@ type WorkflowStatus struct {
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 }
 
+// GetNodesWithRetries returns a list of nodes that have maxRetries > 0.
+func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
+	var nodesWithRetries []NodeStatus
+	for _, node := range wfs.Nodes {
+		if node.MaxRetries > 0 {
+			nodesWithRetries = append(nodesWithRetries, node)
+		}
+	}
+	return nodesWithRetries
+}
+
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
 	// It is implemented as a hash of the node name, which makes the ID deterministic
@@ -277,6 +292,10 @@ type NodeStatus struct {
 
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
+
+	// MaxRetries indicates how many retries should be executed before marking the node
+	// as Failed. MaxRetries is the same as BackoffLimit from the template.
+	MaxRetries int32 `json:"maxRetries,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`
@@ -308,6 +327,11 @@ func (n NodeStatus) IsDaemoned() bool {
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
 	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped
+}
+
+// Failed returns whether the node failed during execution.
+func (n NodeStatus) Failed() bool {
+	return n.Phase == NodeFailed
 }
 
 type S3Bucket struct {
