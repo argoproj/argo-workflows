@@ -6,12 +6,13 @@ import (
 	"sync"
 	"time"
 
-	wfclient "github.com/argoproj/argo/workflow/client"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	goversion "github.com/hashicorp/go-version"
 	"github.com/jpillora/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func init() {
@@ -61,13 +62,13 @@ func (vc *VersionChecker) run() {
 // WorkflowStatusPoller exports methods to wait on workflows by periodically
 // querying their status.
 type WorkflowStatusPoller struct {
-	wfc            *wfclient.WorkflowClient
+	wfc            v1alpha1.WorkflowInterface
 	ignoreNotFound bool
 	noOutput       bool
 }
 
 // NewWorkflowStatusPoller creates a new WorkflowStatusPoller object.
-func NewWorkflowStatusPoller(wfc *wfclient.WorkflowClient, ignoreNotFound bool, noOutput bool) *WorkflowStatusPoller {
+func NewWorkflowStatusPoller(wfc v1alpha1.WorkflowInterface, ignoreNotFound bool, noOutput bool) *WorkflowStatusPoller {
 	return &WorkflowStatusPoller{wfc, ignoreNotFound, noOutput}
 }
 
@@ -78,7 +79,7 @@ func (wsp *WorkflowStatusPoller) waitOnOne(workflowName string) {
 		Factor: 2,
 	}
 	for {
-		wf, err := wsp.wfc.GetWorkflow(workflowName)
+		wf, err := wsp.wfc.Get(workflowName, metav1.GetOptions{})
 		if err != nil {
 			if wsp.ignoreNotFound && apierr.IsNotFound(err) {
 				if !wsp.noOutput {

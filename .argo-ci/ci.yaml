@@ -14,88 +14,25 @@ spec:
   templates:
   - name: argo-ci
     steps:
-    - - name: controller-image
+    - - name: ci
         template: ci-builder
         arguments:
           parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
           - name: cmd
-            value: "make controller-image"
-
-      - name: executor-image
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "make executor-image"
-
-      - name: cli-linux
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "make cli-linux"
-
-      - name: cli-darwin
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "make cli-darwin"
-
-      - name: ui-image
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "make ui-image"
-
-      - name: lint
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "dep ensure && make lint"
-
-      - name: test
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: revision
-            value: "{{workflow.parameters.revision}}"
-          - name: repo
-            value: "{{workflow.parameters.repo}}"
-          - name: cmd
-            value: "dep ensure && make test"
+            value: "{{item}}"
+        withItems:
+        - make controller-image
+        - make executor-image
+        - make cli-linux
+        - make cli-darwin
+        - make ui-image
+        - dep ensure && make lint
+        - dep ensure && make test
+        - dep ensure && ./hack/verify-codegen.sh
 
   - name: ci-builder
     inputs:
       parameters:
-      - name: revision
-      - name: repo
       - name: cmd
       artifacts:
       - name: code
@@ -110,7 +47,6 @@ spec:
       env:
       - name: DOCKER_HOST
         value: 127.0.0.1
-
     sidecars:
     - name: dind
       image: docker:17.10-dind

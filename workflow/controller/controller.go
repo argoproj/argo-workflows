@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	wfinformers "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
@@ -35,10 +36,12 @@ type WorkflowController struct {
 	ConfigMapNS string
 	Config      WorkflowControllerConfig
 
-	restConfig *rest.Config
-	restClient rest.Interface
-	scheme     *runtime.Scheme
-	clientset  kubernetes.Interface
+	// restConfig is needed for the controller to perform manual kills of daemoned containers
+	// using remotecommand.NewSPDYExecutor().
+	// TODO(jessesuen): remove this in favor of signaling the executor (via annotation) to perform the kill
+	restConfig    *rest.Config
+	kubeclientset kubernetes.Interface
+	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
 	wfInformer  cache.SharedIndexInformer
@@ -95,26 +98,14 @@ type ArtifactoryArtifactRepository struct {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(config *rest.Config, configMap string) *WorkflowController {
-	// make a new config for our extension's API group, using the first config as a baseline
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-
-	restClient, scheme, err := workflowclient.NewRESTClient(config)
-	if err != nil {
-		panic(err)
-	}
-
+func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, configMap string) *WorkflowController {
 	wfc := WorkflowController{
-		restClient: restClient,
-		restConfig: config,
-		clientset:  clientset,
-		scheme:     scheme,
-		ConfigMap:  configMap,
-		wfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		restConfig:    restConfig,
+		kubeclientset: kubeclientset,
+		wfclientset:   wfclientset,
+		ConfigMap:     configMap,
+		wfQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 	return &wfc
 }
@@ -245,7 +236,7 @@ func (wfc *WorkflowController) ResyncConfig() error {
 	if namespace == "" {
 		namespace = common.DefaultControllerNamespace
 	}
-	cmClient := wfc.clientset.CoreV1().ConfigMaps(namespace)
+	cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(namespace)
 	cm, err := cmClient.Get(wfc.ConfigMap, metav1.GetOptions{})
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -287,11 +278,9 @@ func (wfc *WorkflowController) instanceIDRequirement() labels.Requirement {
 	return *instanceIDReq
 }
 
-func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
-	c := wfc.restClient
-	resource := wfv1.CRDPlural
-	namespace := wfc.Config.Namespace
-	fieldSelector := fields.Everything()
+func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
+	options.FieldSelector = fields.Everything().String()
+
 	// completed notin (true)
 	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
 	if err != nil {
@@ -300,32 +289,17 @@ func (wfc *WorkflowController) newWorkflowWatch() *cache.ListWatch {
 	labelSelector := labels.NewSelector().
 		Add(*incompleteReq).
 		Add(wfc.instanceIDRequirement())
-
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.FieldSelector = fieldSelector.String()
-		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
-	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		options.Watch = true
-		options.FieldSelector = fieldSelector.String()
-		options.LabelSelector = labelSelector.String()
-		req := c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+	options.LabelSelector = labelSelector.String()
 }
 
 func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
-	source := wfc.newWorkflowWatch()
-	informer := cache.NewSharedIndexInformer(source, &wfv1.Workflow{}, workflowResyncPeriod, cache.Indexers{})
+	wfInformerFactory := wfinformers.NewFilteredSharedInformerFactory(
+		wfc.wfclientset,
+		workflowResyncPeriod,
+		wfc.Config.Namespace,
+		wfc.tweakWorkflowlist,
+	)
+	informer := wfInformerFactory.Argoproj().V1alpha1().Workflows().Informer()
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
@@ -385,7 +359,7 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 }
 
 func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
-	c := wfc.clientset.Core().RESTClient()
+	c := wfc.kubeclientset.Core().RESTClient()
 	resource := "configmaps"
 	name := wfc.ConfigMap
 	namespace := wfc.ConfigMapNS
@@ -412,7 +386,7 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
-	c := wfc.clientset.Core().RESTClient()
+	c := wfc.kubeclientset.Core().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
 	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")

@@ -9,9 +9,8 @@ import (
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -229,8 +228,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	if string(patchBytes) != "{}" {
-		wfClient := workflowclient.NewWorkflowClient(woc.controller.restClient, woc.controller.scheme, woc.wf.ObjectMeta.Namespace)
-		_, err = wfClient.PatchWorkflow(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
+		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
 		if err != nil {
 			woc.log.Errorf("Error applying patch %s: %v", string(patchBytes), err)
 			return
@@ -240,7 +239,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if len(woc.completedPods) > 0 {
 		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
 		for podName := range woc.completedPods {
-			err = common.AddPodLabel(woc.controller.clientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
+			err = common.AddPodLabel(woc.controller.kubeclientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
 				woc.log.Errorf("Failed adding completed label to pod %s: %+v", podName, err)
 			}
@@ -331,7 +330,7 @@ func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList,
 	if !includePending {
 		options.FieldSelector = "status.phase!=Pending"
 	}
-	podList, err := woc.controller.clientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -562,7 +561,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
 		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wf.Spec.VolumeClaimTemplates))
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	t := true
 	for i, pvcTmpl := range woc.wf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
@@ -608,7 +607,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error

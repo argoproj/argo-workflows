@@ -1,8 +1,8 @@
 package s3
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
 )

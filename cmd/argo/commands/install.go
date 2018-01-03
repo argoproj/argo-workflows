@@ -6,9 +6,8 @@ import (
 	"strconv"
 
 	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/ghodss/yaml"
@@ -452,7 +451,7 @@ func installCRD(clientset *kubernetes.Clientset) {
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
-	result, err := workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
+	result, err := common.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create CustomResourceDefinition: %v", err)

@@ -3,7 +3,7 @@ package controller
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -83,7 +83,7 @@ func TestServiceAccount(t *testing.T) {
 	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0])
 	assert.Nil(t, err)
 	podName := getPodName(woc.wf)
-	pod, err := woc.controller.clientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, pod.Spec.ServiceAccountName, "foo")
 }

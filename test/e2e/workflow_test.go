@@ -70,7 +70,7 @@ spec:
 	wfClient := commands.InitWorkflowClient()
 
 	for {
-		wf, err := wfClient.GetWorkflow(workflowName)
+		wf, err := wfClient.Get(workflowName, metav1.GetOptions{})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -92,7 +92,7 @@ spec:
 	}
 
 	deleteOptions := metav1.DeleteOptions{}
-	wfClient.DeleteWorkflow(workflowName, &deleteOptions)
+	wfClient.Delete(workflowName, &deleteOptions)
 }
 
 func TestArgoWorkflows(t *testing.T) {

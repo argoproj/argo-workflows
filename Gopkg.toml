@@ -1,18 +1,22 @@
 [[constraint]]
-  branch = "release-1.8"
   name = "k8s.io/api"
+  branch = "release-1.9"
 
 [[constraint]]
-  branch = "release-1.8"
   name = "k8s.io/apiextensions-apiserver"
+  branch = "release-1.9"
 
 [[constraint]]
-  branch = "release-1.8"
   name = "k8s.io/apimachinery"
+  branch = "release-1.9"
+
+[[constraint]]
+  name = "k8s.io/code-generator"
+  branch = "release-1.9"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  branch = "release-5.0"
+  branch = "release-6.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -27,9 +31,13 @@
   version = "3.0.2"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/hashicorp/go-version"
+  branch = "master"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/jpillora/backoff"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  branch = "master"
