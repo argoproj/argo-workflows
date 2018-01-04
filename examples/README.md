@@ -4,7 +4,7 @@
 
 Argo is an open source project that provides container-native workflows for Kubernetes. Each step in an Argo workflow is defined as a container.
 
-Argo V2 is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
+Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
 Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
 
@@ -12,7 +12,8 @@ Many of the Argo examples used in this walkthrough are available at https://gith
 
 In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo CLI commands.
 
-Install argo cli: https://xxxx
+[Install Argo here](https://github.com/argoproj/argo/blob/master/demo.md)
+
 ```
 argo submit hello-world.yaml    #submit a workflow spec to Kubernetes
 argo list                       #list current workflows
@@ -601,7 +602,8 @@ spec:
 
 Here's the result of a couple of runs of coinflip for comparison.
 ```
-Eds-MacBook-Pro:~/src/argo/examples ⑂ master +  argo get coinflip-recursive-tzcb5
+argo get coinflip-recursive-tzcb5
+
 STEP                         PODNAME                              MESSAGE
  ✔ coinflip-recursive-vhph5                                       
  ├---✔ flip-coin             coinflip-recursive-vhph5-2123890397  
@@ -625,6 +627,82 @@ STEP                          PODNAME                              MESSAGE
 ```
 In the first run, the coin immediately comes up heads and we stop.
 In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
+
+## Exit handlers
+
+An exit handler is a template that always executes, irrespective of success or failure, at the end of the workflow.
+
+Some common use cases of exit handlers are:
+- cleaning up after a workflow runs
+- sending notifications of workflow status (e.g. e-mail/slack)
+- posting the pass/fail status to a webhook result (e.g. github build result)
+- resubmitting or submitting another workflow
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-handlers-
+spec:
+  entrypoint: intentional-fail
+  onExit: exit-handler                  #invoke exit-hander template at end of the workflow
+  templates:
+  # primary workflow template
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]
+
+  # Exit handler templates
+  # After the completion of the entrypoint template, the status of the
+  # workflow is made available in the global variable {{workflow.status}}.
+  # {{workflow.status}} will be one of: Succeeded, Failed, Error
+  - name: exit-handler
+    steps:
+    - - name: notify
+        template: send-email
+      - name: celebrate
+        template: celebrate
+        when: "{{workflow.status}} == Succeeded"
+      - name: cry
+        template: cry
+        when: "{{workflow.status}} != Succeeded"
+  - name: send-email
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo send e-mail: {{workflow.name}} {{workflow.status}}"]
+  - name: celebrate
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo hooray!"]
+  - name: cry
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo boohoo!"]
+```
+
+## Timeouts
+To limit the elapsed time for a workflow, you can set `activeDeadlineSeconds`.
+```
+# To enforce a timeout for a container template, specify a value for activeDeadlineSeconds.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: timeouts-
+spec:
+  entrypoint: sleep
+  templates:
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo sleeping for 1m; sleep 60; echo done"]
+    activeDeadlineSeconds: 10           #terminate container template after 10 seconds
+```
 
 ## Volumes
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
@@ -856,6 +934,51 @@ spec:
       image: debian
       command: [sh, -c]
       args: ["ls -l /src /bin/kubectl /s3"]
+```
+
+
+## Kubernetes Resources
+
+In many cases, you will want to manage Kuberenetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of kubernetes resource.
+```
+# in a workflow. The resource template type accepts any k8s manifest
+# (including CRDs) and can perform any kubectl action against it (e.g. create,
+# apply, delete, patch).
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-jobs-
+spec:
+  entrypoint: pi-tmpl
+  templates:
+  - name: pi-tmpl
+    resource:                   #indicates that this is a resource template
+      action: create            #can be any kubectl action (e.g. create, delete, apply, patch)
+      # The successCondition and failureCondition are optional expressions.
+      # If failureCondition is true, the step is considered failed.
+      # If successCondition is true, the step is considered successful.
+      # They use kubernetes label selection syntax and can be applied against any field
+      # of the resource (not just labels). Multiple AND conditions can be represented by comma
+      # delimited expressions.
+      # For more details: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+      successCondition: status.succeeded > 0
+      failureCondition: status.failed > 3
+      manifest: |               #put your kubernetes spec here
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: pi-job-
+        spec:
+          template:
+            metadata:
+              name: pi
+            spec:
+              containers:
+              - name: pi
+                image: perl
+                command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
+              restartPolicy: Never
+          backoffLimit: 4
 ```
 
 ## Docker-in-Docker (aka. DinD) Using Sidecars
