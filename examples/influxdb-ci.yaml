@@ -72,8 +72,9 @@ spec:
         go install -v ./...
       "]
       resources:
-        mem_mib: 1024
-        cpu_cores: 0.2
+        requests:
+          memory: 1024Mi
+          cpu: 200m
 
   - name: test-unit
     inputs:
@@ -90,8 +91,9 @@ spec:
         go test -v ./...
       "]
       resources:
-        mem_mib: 5120
-        cpu_cores: 0.2
+        requests:
+          memory: 5120Mi
+          cpu: 200m
 
   - name: test-cov
     inputs:
@@ -148,8 +150,9 @@ spec:
         go tool cover -html=/tmp/cov.out -o /tmp/index.html
       "]
       resources:
-        mem_mib: 4096
-        cpu_cores: 0.2
+        requests:
+          memory: 4096Mi
+          cpu: 200m
 
   - name: test-e2e
     inputs:
@@ -211,8 +214,9 @@ spec:
       command: ["/bin/sh", "-c"]
       args: ["chmod +x /app/influxd && /app/influxd"]
       resources:
-        mem_mib: 512
-        cpu_cores: 0.25
+        requests:
+          memory: 512Mi
+          cpu: 250m
 
   - name: influxdb-client
     inputs:
@@ -223,6 +227,6 @@ spec:
       command: ["/bin/sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]
       resources:
-        mem_mib: 32
-        cpu_cores: 0.05
+        memory: 32Mi
+        cpu: 100m
 
