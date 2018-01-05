@@ -562,7 +562,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wf.Spec.VolumeClaimTemplates))
 	}
 	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	t := true
 	for i, pvcTmpl := range woc.wf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -574,13 +573,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			{
-				APIVersion:         wfv1.CRDFullName,
-				Kind:               wfv1.CRDKind,
-				Name:               woc.wf.ObjectMeta.Name,
-				UID:                woc.wf.ObjectMeta.UID,
-				BlockOwnerDeletion: &t,
-			},
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil {

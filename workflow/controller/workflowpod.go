@@ -108,7 +108,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s", nodeName)
 	tmpl = tmpl.DeepCopy()
 	mainCtr.Name = common.MainContainerName
-	t := true
 	pod := apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: woc.wf.NodeID(nodeName),
@@ -120,13 +119,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				common.AnnotationKeyNodeName: nodeName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         wfv1.CRDFullName,
-					Kind:               wfv1.CRDKind,
-					Name:               woc.wf.ObjectMeta.Name,
-					UID:                woc.wf.ObjectMeta.UID,
-					BlockOwnerDeletion: &t,
-				},
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 			},
 		},
 		Spec: apiv1.PodSpec{
