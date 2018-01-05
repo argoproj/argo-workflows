@@ -7,7 +7,7 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/ghodss/yaml"
@@ -447,7 +447,7 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 func installCRD(clientset *kubernetes.Clientset) {
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
-		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
+		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", workflow.FullName, err)
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
@@ -456,7 +456,7 @@ func installCRD(clientset *kubernetes.Clientset) {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create CustomResourceDefinition: %v", err)
 		}
-		fmt.Printf("CustomResourceDefinition '%s' already exists\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' already exists\n", workflow.FullName)
 	} else {
 		fmt.Printf("CustomResourceDefinition '%s' created\n", result.GetObjectMeta().GetName())
 	}

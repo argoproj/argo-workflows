@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -129,7 +130,7 @@ func splitYAMLFile(body []byte) ([]wfv1.Workflow, error) {
 		}
 		var wf wfv1.Workflow
 		err := yaml.Unmarshal([]byte(manifestStr), &wf)
-		if wf.Kind != "" && wf.Kind != wfv1.CRDKind {
+		if wf.Kind != "" && wf.Kind != workflow.Kind {
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about validating Workflow manifests.
 			continue

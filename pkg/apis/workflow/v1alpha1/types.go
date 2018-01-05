@@ -7,18 +7,6 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)
-
-// CRD constants
-const (
-	CRDKind      string = "Workflow"
-	CRDSingular  string = "workflow"
-	CRDPlural    string = "workflows"
-	CRDShortName string = "wf"
-	CRDGroup     string = "argoproj.io"
-	CRDVersion   string = "v1alpha1"
-	CRDFullName  string = CRDPlural + "." + CRDGroup
 )
 
 // TemplateType is the type of a template
@@ -43,9 +31,6 @@ const (
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
 )
-
-// Create a Rest client with the new CRD Schema
-var SchemeGroupVersion = schema.GroupVersion{Group: CRDGroup, Version: CRDVersion}
 
 // +genclient
 // +genclient:noStatus

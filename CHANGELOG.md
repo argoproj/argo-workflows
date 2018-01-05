@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.0.0-alpha4 (Unreleased)
+- Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
+
 ## 2.0.0-alpha3 (2018-01-02)
 + Introduce the "resource" template type for performing CRUD operations on k8s resources
 + Support for workflow exit handlers
