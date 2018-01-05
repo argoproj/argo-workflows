@@ -77,8 +77,9 @@ spec:
       command: [cowsay]
       args: ["hello world"]
       resources:                #don't use too much resources
-        mem_mib: 32
-        cpu_cores: 0.1
+        limits:
+          memory: 32Mi
+          cpu: 100m
 ```
 Argo adds a new `kind` of Kubernetes spec called a `Workflow`.
 The above spec contains a single `template` called `whalesay` which runs the `docker/whalesay` container and invokes `cowsay "hello world"`.

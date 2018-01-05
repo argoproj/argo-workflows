@@ -1,5 +1,0 @@
-FROM debian:9.1
-
-COPY dist/argo-apiserver /bin/
-
-ENTRYPOINT [ "/bin/argo-apiserver" ]
