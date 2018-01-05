@@ -15,7 +15,7 @@ Argo is an open source container-native workflow engine for getting work done on
 * Argo is designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
 * Argo is cloud agnostic and can run on any kubernetes cluster.
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
-* We want to make it as easy to run Aggo workflows on Kubernetes as it is to run jobs on you laptop.
+* We want to make it as easy to run Argo workflows on Kubernetes as it is to run jobs on you laptop.
 
 ## Argo 2.0 Alpha 
 Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows using kubectl commands.

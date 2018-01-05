@@ -755,7 +755,7 @@ spec:
 Volumes are a very useful way to move large amounts of data from one step in a workflow to another.
 Depending on the system, some volumes may be accessible concurrently from multiple steps.
 
-In some cases, you want to access an alredy existing volume rather than creating/destroying one dynamically.
+In some cases, you want to access an already existing volume rather than creating/destroying one dynamically.
 ```
 # Define Kubernetes PVC
 kind: PersistentVolumeClaim
