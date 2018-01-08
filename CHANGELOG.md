@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2.0.0-alpha4 (Unreleased)
++ Add a --dry-run option to the installer
 - Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
 
 ## 2.0.0-alpha3 (2018-01-02)

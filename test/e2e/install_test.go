@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -58,6 +59,12 @@ func checkIfInstalled(namespace string) bool {
 func (suite *InstallSuite) TestInstall() {
 	t := suite.T()
 	if !checkIfInstalled(suite.testNamespace) {
+		// Verify --dry-run doesn't install
+		args := newInstallArgs(suite.testNamespace)
+		args.DryRun = true
+		commands.Install(nil, args)
+		assert.Equal(t, false, checkIfInstalled(suite.testNamespace))
+
 		installArgoInNamespace(suite.testNamespace)
 		// Wait a little for the installation to complete.
 		time.Sleep(10 * time.Second)
