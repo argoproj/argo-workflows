@@ -32,13 +32,13 @@ spec:
         template: create-gif
     - - name: step-4
         template: black-and-white
-    - - name: step-5A
+    - - name: step-5
         template: combine-horizontal
-      - name: step-5B
-        template: combine-vertical
     - - name: step-6
-        template: make-bigger
+        template: combine-vertical
     - - name: step-7
+        template: make-bigger
+    - - name: step-8
         template: bundle-up
 
   - name: create-output-dir
