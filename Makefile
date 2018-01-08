@@ -58,11 +58,11 @@ cli:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo ./cmd/argo
 
 cli-linux: builder
-	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG)
+	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE)
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-linux-amd64
 
 cli-darwin: builder
-	${BUILDER_CMD} make cli GOOS=darwin IMAGE_TAG=$(IMAGE_TAG)
+	${BUILDER_CMD} make cli GOOS=darwin IMAGE_TAG=$(IMAGE_TAG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE)
 	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
 
 controller:
@@ -73,7 +73,7 @@ controller-linux: builder
 
 controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
@@ -83,10 +83,10 @@ executor-linux: builder
 
 executor-image: executor-linux
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 lint:
-	gometalinter --deadline 2m --config gometalinter.json --vendor ./...
+	gometalinter --config gometalinter.json ./...
 
 test:
 	go test ./...
@@ -103,11 +103,11 @@ ui-image:
 	docker cp argo-ui-builder:/src/node_modules ./ui/tmp
 	docker rm argo-ui-builder
 	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
 
 release-precheck:
-	@if [ "$(TREE_STATE)" != "clean" ]; then echo 'git tree state is $(TREE_STATE)' ; exit 1; fi
-	@if [ -z "$(TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 
 release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
 

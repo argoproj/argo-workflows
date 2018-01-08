@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -48,7 +48,8 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	ctx.globalParams["workflow.name"] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowName] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowUUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
@@ -71,7 +72,7 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 			return errors.Errorf(errors.CodeBadRequest, "spec.onExit template '%s' undefined", ctx.wf.Spec.OnExit)
 		}
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams["workflow.status"] = placeholderValue
+		ctx.globalParams[GlobalVarWorkflowStatus] = placeholderValue
 		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments)
 		if err != nil {
 			return err
@@ -109,12 +110,15 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if tmpl.Script != nil {
 		tmplTypes++
 	}
+	if tmpl.Resource != nil {
+		tmplTypes++
+	}
 	switch tmplTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script")
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script")
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource")
 	}
 	if tmpl.Steps == nil {
 		err = validateLeaf(scope, tmpl)
@@ -208,6 +212,27 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	err = resolveAllVariables(scope, string(tmplBytes))
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "template '%s' %s", tmpl.Name, err.Error())
+	}
+	if tmpl.Container != nil {
+		// Ensure there are no collisions with volume mountPaths and artifact load paths
+		mountPaths := make(map[string]string)
+		for i, volMount := range tmpl.Container.VolumeMounts {
+			if prev, ok := mountPaths[volMount.MountPath]; ok {
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' container.volumeMounts[%d].mountPath '%s' already mounted in %s", tmpl.Name, i, volMount.MountPath, prev)
+			}
+			mountPaths[volMount.MountPath] = fmt.Sprintf("container.volumeMounts.%s", volMount.Name)
+		}
+		for i, art := range tmpl.Inputs.Artifacts {
+			if prev, ok := mountPaths[art.Path]; ok {
+				return errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
+			}
+			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
+		}
+	}
+	if tmpl.ActiveDeadlineSeconds != nil {
+		if *tmpl.ActiveDeadlineSeconds <= 0 {
+			return errors.Errorf(errors.CodeBadRequest, "template '%s' activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
+		}
 	}
 	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/argoproj/argo/cmd/argoexec/commands"
+	// load the gcp plugin (required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func main() {

@@ -1,32 +1,31 @@
-package client
+package common
 
 import (
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	// load the gcp plugin (required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: wfv1.CRDFullName,
+			Name: workflow.FullName,
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   wfv1.CRDGroup,
+			Group:   workflow.Group,
 			Version: wfv1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     wfv1.CRDPlural,
-				Kind:       wfv1.CRDKind,
-				ShortNames: []string{wfv1.CRDShortName},
+				Plural:     workflow.Plural,
+				Kind:       workflow.Kind,
+				ShortNames: []string{workflow.ShortName},
 			},
 		},
 	}
@@ -38,7 +37,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 
 	// wait for CRD being established
 	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
-		crd, err = clientset.Apiextensions().CustomResourceDefinitions().Get(wfv1.CRDFullName, metav1.GetOptions{})
+		crd, err = clientset.Apiextensions().CustomResourceDefinitions().Get(workflow.FullName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -57,7 +56,7 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 		return false, err
 	})
 	if err != nil {
-		deleteErr := clientset.Apiextensions().CustomResourceDefinitions().Delete(wfv1.CRDFullName, nil)
+		deleteErr := clientset.Apiextensions().CustomResourceDefinitions().Delete(workflow.FullName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
@@ -69,5 +68,5 @@ func CreateCustomResourceDefinition(clientset apiextensionsclient.Interface) (*a
 // DeleteCustomResourceDefinition deletes the Workflow CRD
 func DeleteCustomResourceDefinition(clientset apiextensionsclient.Interface) error {
 	crdClient := clientset.Apiextensions().CustomResourceDefinitions()
-	return crdClient.Delete(wfv1.CRDFullName, nil)
+	return crdClient.Delete(workflow.FullName, nil)
 }

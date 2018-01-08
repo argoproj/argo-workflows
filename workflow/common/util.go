@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -244,12 +244,14 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 
 func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
-	log.Info(cmd.Args)
+	cmdStr := strings.Join(cmd.Args, " ")
+	log.Info(cmdStr)
 	_, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
-		log.Errorf("`%s` failed: %s", strings.Join(cmd.Args, " "), string(exErr.Stderr))
-		return errors.InternalError(string(exErr.Stderr))
+		errOutput := string(exErr.Stderr)
+		log.Errorf("`%s` failed: %s", cmdStr, errOutput)
+		return errors.InternalError(strings.TrimSpace(errOutput))
 	}
 	return nil
 }

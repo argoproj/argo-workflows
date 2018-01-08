@@ -1,22 +1,23 @@
-package v1
+package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
+	"hash/fnv"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// CRD constants
+// TemplateType is the type of a template
+type TemplateType string
+
+// Possible template types
 const (
-	CRDKind      string = "Workflow"
-	CRDSingular  string = "workflow"
-	CRDPlural    string = "workflows"
-	CRDShortName string = "wf"
-	CRDGroup     string = "argoproj.io"
-	CRDVersion   string = "v1alpha1"
-	CRDFullName  string = CRDPlural + "." + CRDGroup
+	TemplateTypeContainer TemplateType = "Container"
+	TemplateTypeSteps     TemplateType = "Steps"
+	TemplateTypeScript    TemplateType = "Script"
+	TemplateTypeResource  TemplateType = "Resource"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -31,8 +32,9 @@ const (
 	NodeError     NodePhase = "Error"
 )
 
-// Create a Rest client with the new CRD Schema
-var SchemeGroupVersion = schema.GroupVersion{Group: CRDGroup, Version: CRDVersion}
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Workflow is the definition of our CRD Workflow class
 type Workflow struct {
@@ -42,6 +44,9 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// WorkflowList is list of Workflow resources
 type WorkflowList struct {
 	metav1.TypeMeta `json:",inline,squash"`
 	metav1.ListMeta `json:"metadata"`
@@ -60,6 +65,9 @@ type WorkflowSpec struct {
 	// Parameters are referencable globally using the 'workflow' variable prefix.
 	// e.g. {{workflow.parameters.myparam}}
 	Arguments Arguments `json:"arguments,omitempty"`
+
+	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	Volumes []apiv1.Volume `json:"volumes,omitempty"`
@@ -80,6 +88,9 @@ type WorkflowSpec struct {
 	OnExit string `json:"onExit,omitempty"`
 }
 
+// +k8s:deepcopy-gen
+
+// Template is a reusable and composable unit of execution in a workflow
 type Template struct {
 	Name    string  `json:"name"`
 	Inputs  Inputs  `json:"inputs,omitempty"`
@@ -104,6 +115,9 @@ type Template struct {
 	// Sidecar containers
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
+	// Resource is the resource template type
+	Resource *ResourceTemplate `json:"resource,omitempty"`
+
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
 	// artifact repository location configured in the controller, appended with the
@@ -127,7 +141,9 @@ type Parameter struct {
 	Name    string  `json:"name"`
 	Value   *string `json:"value,omitempty"`
 	Default *string `json:"default,omitempty"`
-	Path    string  `json:"path,omitempty"`
+
+	// Path describes the location in which to retrieve the output parameter value from
+	Path string `json:"path,omitempty"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -153,17 +169,21 @@ type Artifact struct {
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
-	S3   *S3Artifact   `json:"s3,omitempty"`
-	Git  *GitArtifact  `json:"git,omitempty"`
-	HTTP *HTTPArtifact `json:"http,omitempty"`
+	S3          *S3Artifact          `json:"s3,omitempty"`
+	Git         *GitArtifact         `json:"git,omitempty"`
+	HTTP        *HTTPArtifact        `json:"http,omitempty"`
+	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
 }
 
 type Outputs struct {
+	// Parameters holds the list of output parameters produced by a step
 	Parameters []Parameter `json:"parameters,omitempty"`
-	Artifacts  []Artifact  `json:"artifacts,omitempty"`
-	Result     *string     `json:"result,omitempty"`
-	// TODO:
-	// - Logs (log artifact(s) from the container?)
+
+	// Artifacts holds the list of output artifacts produced by a step
+	Artifacts []Artifact `json:"artifacts,omitempty"`
+
+	// Result holds the result (stdout) of a script template
+	Result *string `json:"result,omitempty"`
 }
 
 // WorkflowStep is a template ref
@@ -309,6 +329,16 @@ type GitArtifact struct {
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
+type ArtifactoryAuth struct {
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+}
+
+type ArtifactoryArtifact struct {
+	ArtifactoryAuth `json:",inline,squash"`
+	URL             string `json:"url"`
+}
+
 type HTTPArtifact struct {
 	URL string `json:"url"`
 }
@@ -318,6 +348,40 @@ type Script struct {
 	Image   string   `json:"image"`
 	Command []string `json:"command"`
 	Source  string   `json:"source"`
+}
+
+// ResourceTemplate is a template subtype to manipulate kubernetes resources
+type ResourceTemplate struct {
+	// Action is the action to perform to the resource.
+	// Must be one of: create, apply, delete
+	Action string `json:"action"`
+
+	// Manifest contains the kubernetes manifest
+	Manifest string `json:"manifest"`
+
+	// SuccessCondition is a label selector expression which describes the conditions
+	// of the k8s resource in which it is acceptable to proceed to the following step
+	SuccessCondition string `json:"successCondition,omitempty"`
+
+	// FailureCondition is a label selector expression which describes the conditions
+	// of the k8s resource in which the step was considered failed
+	FailureCondition string `json:"failureCondition,omitempty"`
+}
+
+func (tmpl *Template) GetType() TemplateType {
+	if tmpl.Container != nil {
+		return TemplateTypeContainer
+	}
+	if tmpl.Steps != nil {
+		return TemplateTypeSteps
+	}
+	if tmpl.Script != nil {
+		return TemplateTypeScript
+	}
+	if tmpl.Resource != nil {
+		return TemplateTypeResource
+	}
+	return "Unknown"
 }
 
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
@@ -371,5 +435,36 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
+	inBytes, err := json.Marshal(in)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(inBytes, out)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (wf *Workflow) GetTemplate(name string) *Template {
+	for _, t := range wf.Spec.Templates {
+		if t.Name == name {
+			return &t
+		}
+	}
+	return nil
+}
+
+// NodeID creates a deterministic node ID based on a node name
+func (wf *Workflow) NodeID(name string) string {
+	if name == wf.ObjectMeta.Name {
+		return wf.ObjectMeta.Name
+	}
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(name))
+	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
 }

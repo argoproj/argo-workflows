@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -86,6 +86,16 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		deadline:      time.Now().UTC().Add(maxOperationTime),
 	}
 	defer woc.persistUpdates()
+	defer func() {
+		if r := recover(); r != nil {
+			if rerr, ok := r.(error); ok {
+				woc.markWorkflowError(rerr, true)
+			} else {
+				woc.markWorkflowPhase(wfv1.NodeError, true, fmt.Sprintf("%v", r))
+			}
+			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
+		}
+	}()
 	woc.log.Infof("Processing workflow")
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -103,7 +113,8 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			return
 		}
 	}
-	woc.globalParams["workflow.name"] = wf.ObjectMeta.Name
+	woc.globalParams[common.GlobalVarWorkflowName] = wf.ObjectMeta.Name
+	woc.globalParams[common.GlobalVarWorkflowUUID] = string(wf.ObjectMeta.UID)
 	for _, param := range wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
@@ -137,9 +148,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	if wf.Spec.OnExit != "" {
 		if node.Phase == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
-			woc.globalParams["workflow.status"] = string(wfv1.NodeSucceeded)
+			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
 		} else {
-			woc.globalParams["workflow.status"] = string(node.Phase)
+			woc.globalParams[common.GlobalVarWorkflowStatus] = string(node.Phase)
 		}
 		woc.log.Infof("Running OnExit handler: %s", wf.Spec.OnExit)
 		onExitNodeName := wf.ObjectMeta.Name + ".onExit"
@@ -217,8 +228,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	if string(patchBytes) != "{}" {
-		wfClient := workflowclient.NewWorkflowClient(woc.controller.restClient, woc.controller.scheme, woc.wf.ObjectMeta.Namespace)
-		_, err = wfClient.PatchWorkflow(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
+		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
 		if err != nil {
 			woc.log.Errorf("Error applying patch %s: %v", string(patchBytes), err)
 			return
@@ -228,7 +239,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if len(woc.completedPods) > 0 {
 		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
 		for podName := range woc.completedPods {
-			err = common.AddPodLabel(woc.controller.clientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
+			err = common.AddPodLabel(woc.controller.kubeclientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
 				woc.log.Errorf("Failed adding completed label to pod %s: %+v", podName, err)
 			}
@@ -319,7 +330,7 @@ func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList,
 	if !includePending {
 		options.FieldSelector = "status.phase!=Pending"
 	}
-	podList, err := woc.controller.clientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
@@ -458,7 +469,8 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 	// We only get one message to set for the overall node status.
-	// If mutiple containers failed, in order of preference: init, main, wait, sidecars
+	// If mutiple containers failed, in order of preference:
+	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		if ctr.State.Terminated == nil {
 			// We should never get here
@@ -506,6 +518,13 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 	}
 	if failMsg, ok := failMessages[common.MainContainerName]; ok {
+		_, ok = failMessages[common.WaitContainerName]
+		isResourceTemplate := !ok
+		if isResourceTemplate && annotatedMsg != "" {
+			// For resource templates, we prefer the annotated message
+			// over the vanilla exit code 1 error
+			return wfv1.NodeFailed, annotatedMsg
+		}
 		return wfv1.NodeFailed, failMsg
 	}
 	if failMsg, ok := failMessages[common.WaitContainerName]; ok {
@@ -542,8 +561,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 	if len(woc.wf.Status.PersistentVolumeClaims) == 0 {
 		woc.wf.Status.PersistentVolumeClaims = make([]apiv1.Volume, len(woc.wf.Spec.VolumeClaimTemplates))
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
-	t := true
+	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	for i, pvcTmpl := range woc.wf.Spec.VolumeClaimTemplates {
 		if pvcTmpl.ObjectMeta.Name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "volumeClaimTemplates[%d].metadata.name is required", i)
@@ -555,13 +573,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			{
-				APIVersion:         wfv1.CRDFullName,
-				Kind:               wfv1.CRDKind,
-				Name:               woc.wf.ObjectMeta.Name,
-				UID:                woc.wf.ObjectMeta.UID,
-				BlockOwnerDeletion: &t,
-			},
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil {
@@ -588,7 +600,7 @@ func (woc *wfOperationCtx) deletePVCs() error {
 		// PVC list already empty. nothing to do
 		return nil
 	}
-	pvcClient := woc.controller.clientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
+	pvcClient := woc.controller.kubeclientset.CoreV1().PersistentVolumeClaims(woc.wf.ObjectMeta.Namespace)
 	newPVClist := make([]apiv1.Volume, 0)
 	// Attempt to delete all PVCs. Record first error encountered
 	var firstErr error
@@ -635,7 +647,8 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		return err
 	}
 
-	if tmpl.Container != nil {
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeContainer:
 		if ok {
 			// There's already a node entry for the container. This means the container was already
 			// scheduled (or had a create pod error). Nothing to more to do with this node.
@@ -643,15 +656,17 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		}
 		// We have not yet created the pod
 		err = woc.executeContainer(nodeName, tmpl)
-	} else if len(tmpl.Steps) > 0 {
+	case wfv1.TemplateTypeSteps:
 		if !ok {
 			node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
 			woc.log.Infof("Initialized workflow node %v", node)
 		}
 		err = woc.executeSteps(nodeName, tmpl)
-	} else if tmpl.Script != nil {
+	case wfv1.TemplateTypeScript:
 		err = woc.executeScript(nodeName, tmpl)
-	} else {
+	case wfv1.TemplateTypeResource:
+		err = woc.executeResource(nodeName, tmpl)
+	default:
 		err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
 		woc.markNodeError(nodeName, err)
 	}
@@ -751,7 +766,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
-	pod, err := woc.createWorkflowPod(nodeName, tmpl)
+	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -1075,7 +1090,12 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {
-	pod, err := woc.createWorkflowPod(nodeName, tmpl)
+	mainCtr := apiv1.Container{
+		Image:   tmpl.Script.Image,
+		Command: tmpl.Script.Command,
+		Args:    []string{common.ExecutorScriptSourcePath},
+	}
+	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -1083,7 +1103,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	node.StartedAt = pod.CreationTimestamp
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Initialized container node %v", node)
+	woc.log.Infof("Initialized script node %v", node)
 	return nil
 }
 
@@ -1183,4 +1203,27 @@ func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
 		}
 	}
 	return firstErr
+}
+
+// executeResource is runs a kubectl command against a manifest
+func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template) error {
+	mainCtr := apiv1.Container{
+		Image:   woc.controller.Config.ExecutorImage,
+		Command: []string{"argoexec"},
+		Args:    []string{"resource", tmpl.Resource.Action},
+		VolumeMounts: []apiv1.VolumeMount{
+			volumeMountPodMetadata,
+		},
+		Env: execEnvVars,
+	}
+	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	if err != nil {
+		woc.markNodeError(nodeName, err)
+		return err
+	}
+	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	node.StartedAt = pod.CreationTimestamp
+	woc.wf.Status.Nodes[node.ID] = *node
+	woc.log.Infof("Initialized resource node %v", node)
+	return nil
 }

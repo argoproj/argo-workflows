@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,12 +11,17 @@ import (
 // validate is a test helper to accept YAML as a string and return
 // its validation result.
 func validate(yamlStr string) error {
+	wf := unmarshalWf(yamlStr)
+	return ValidateWorkflow(wf)
+}
+
+func unmarshalWf(yamlStr string) *wfv1.Workflow {
 	var wf wfv1.Workflow
 	err := yaml.Unmarshal([]byte(yamlStr), &wf)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	return ValidateWorkflow(&wf)
+	return &wf
 }
 
 const invalidErr = "is invalid"
@@ -550,7 +555,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}}"]
+      args: ["echo {{workflow.status}} {{workflow.uuid}}"]
 `
 
 var workflowStatusNotOnExit = `
@@ -576,4 +581,73 @@ func TestExitHandler(t *testing.T) {
 	// ensure {{workflow.status}} is available in exit handler
 	err = validate(exitHandlerWorkflowStatusOnExit)
 	assert.Nil(t, err)
+}
+
+var volumeMountArtifactPathCollision = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: path-collision-
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: workdir
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  entrypoint: pass
+  templates:
+  - name: pass
+    inputs:
+      artifacts:
+      - name: argo-source
+        path: /src
+        git:
+          repo: https://github.com/argoproj/argo.git
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /src
+`
+
+func TestVolumeMountArtifactPathCollision(t *testing.T) {
+	// ensure we detect and reject path collisions
+	wf := unmarshalWf(volumeMountArtifactPathCollision)
+	err := ValidateWorkflow(wf)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "already mounted")
+	}
+	// tweak the mount path and validation should now be successful
+	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
+	err = ValidateWorkflow(wf)
+	assert.Nil(t, err)
+}
+
+var activeDeadlineSeconds = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: active-deadline-seconds-
+spec:
+  entrypoint: pass
+  templates:
+  - name: pass
+    activeDeadlineSeconds: -1
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["exit 0"]
+`
+
+func TestValidActiveDeadlineSeconds(t *testing.T) {
+	// ensure {{workflow.status}} is not available when not in exit handler
+	err := validate(activeDeadlineSeconds)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
+	}
 }

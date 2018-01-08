@@ -12,6 +12,6 @@ export class WorkflowItemComponent {
   public workflow: Workflow;
 
   public get status(): string {
-    return this.workflow && this.workflow.status.nodes[this.workflow.metadata.name].phase;
+    return this.workflow && this.workflow.status && this.workflow.status.phase;
   }
 }

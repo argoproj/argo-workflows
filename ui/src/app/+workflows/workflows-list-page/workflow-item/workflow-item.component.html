@@ -19,11 +19,17 @@
             </div>
             <div class="columns medium-5">
                 <div class="ax-workflow-stream__content-details">
-                    <div class="ax-workflow-stream__content-details-row">
-                        <span>{{ workflow.metadata.name }}</span>
+                    <div class="ax-workflow-stream__content-details-row row">
+                        <div class="columns large-4">NAME:</div>
+                        <div class="columns large-8">{{ workflow.metadata.name }}</div>
                     </div>
-                    <div class="ax-workflow-stream__content-details-row">
-                        <span>{{  workflow.metadata.creationTimestamp | timestamp }}</span>
+                    <div class="ax-workflow-stream__content-details-row row">
+                      <div class="columns large-4">NAMESPACE:</div>
+                      <div class="columns large-8">{{ workflow.metadata.namespace }}</div>
+                  </div>
+                    <div class="ax-workflow-stream__content-details-row row">
+                        <div class="columns large-4">CREATED AT:</div>
+                        <div class="columns large-8">{{ workflow.metadata.creationTimestamp | timestamp }}</div>
                     </div>
                 </div>
             </div>

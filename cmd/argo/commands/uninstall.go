@@ -3,8 +3,7 @@ package commands
 import (
 	"fmt"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -83,14 +82,14 @@ func uninstall(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
-	err = workflowclient.DeleteCustomResourceDefinition(apiextensionsclientset)
+	err = common.DeleteCustomResourceDefinition(apiextensionsclientset)
 	if err != nil {
 		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to delete CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
+			log.Fatalf("Failed to delete CustomResourceDefinition '%s': %v", workflow.FullName, err)
 		}
-		fmt.Printf("CustomResourceDefinition '%s' not found\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' not found\n", workflow.FullName)
 	} else {
-		fmt.Printf("CustomResourceDefinition '%s' deleted\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' deleted\n", workflow.FullName)
 	}
 
 	// Delete role binding

@@ -71,18 +71,18 @@ spec:
 
 	commands.SubmitWorkflows(nil, []string{tmpfile.Name()})
 
-	commands.WaitWorkflows(nil, []string{workflowName})
-
 	wfClient := commands.InitWorkflowClient()
+	wsp := commands.NewWorkflowStatusPoller(wfClient, false, false)
+	wsp.WaitWorkflows([]string{workflowName})
 
-	wf, err := wfClient.GetWorkflow(workflowName)
+	wf, err := wfClient.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, false, wf.Status.FinishedAt.IsZero())
 
 	deleteOptions := metav1.DeleteOptions{}
-	wfClient.DeleteWorkflow(workflowName, &deleteOptions)
+	wfClient.Delete(workflowName, &deleteOptions)
 }
 
 func TestWaitCmd(t *testing.T) {

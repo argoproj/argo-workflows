@@ -1,7 +1,7 @@
 package common
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 const (
@@ -38,25 +38,25 @@ const (
 	DockerSockVolumeName = "docker-sock"
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
-	AnnotationKeyNodeName = wfv1.CRDFullName + "/node-name"
+	AnnotationKeyNodeName = workflow.FullName + "/node-name"
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
-	AnnotationKeyNodeMessage = wfv1.CRDFullName + "/node-message"
+	AnnotationKeyNodeMessage = workflow.FullName + "/node-message"
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	AnnotationKeyTemplate = wfv1.CRDFullName + "/template"
+	AnnotationKeyTemplate = workflow.FullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
-	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
+	AnnotationKeyOutputs = workflow.FullName + "/outputs"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to pod labels
 	// for the purposes of workflow segregation
-	LabelKeyControllerInstanceID = wfv1.CRDFullName + "/controller-instanceid"
+	LabelKeyControllerInstanceID = workflow.FullName + "/controller-instanceid"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
-	LabelKeyCompleted = wfv1.CRDFullName + "/completed"
+	LabelKeyCompleted = workflow.FullName + "/completed"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
-	LabelKeyWorkflow = wfv1.CRDFullName + "/workflow"
+	LabelKeyWorkflow = workflow.FullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
-	LabelKeyPhase = wfv1.CRDFullName + "/phase"
+	LabelKeyPhase = workflow.FullName + "/phase"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -67,21 +67,28 @@ const (
 	// (when there is overlapping paths between artifacts and volume mounts)
 	InitContainerMainFilesystemDir = "/mainctrfs"
 
-	// ScriptTemplateEmptyDir is the path of the emptydir which will be shared between init/main container for script templates
-	ScriptTemplateEmptyDir = "/argo/script"
-	// ScriptTemplateSourcePath is the path which init will write the source file to and the main container will execute
-	ScriptTemplateSourcePath = "/argo/script/source"
+	// ExecutorStagingEmptyDir is the path of the emptydir which is used as a staging area to transfer a file between init/main container for script/resource templates
+	ExecutorStagingEmptyDir = "/argo/staging"
+	// ExecutorScriptSourcePath is the path which init will write the script source file to for script templates
+	ExecutorScriptSourcePath = "/argo/staging/script"
+	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
+	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarHostIP contains the host IP which the container is executing on.
-	// Used to communicate with kubelet directly. Kubelet enables the wait sidecar
-	// to query pod state without burdening the k8s apiserver.
-	EnvVarHostIP = "ARGO_HOST_IP"
 	// EnvVarPodIP contains the IP of the pod (currently unused)
 	EnvVarPodIP = "ARGO_POD_IP"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarNamespace contains the namespace of the pod (currently unused)
 	EnvVarNamespace = "ARGO_NAMESPACE"
+
+	// These are global variables that are added to the scope during template execution and can be referenced using {{}} syntax
+
+	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
+	GlobalVarWorkflowName = "workflow.name"
+	// GlobalVarWorkflowUUID is a global workflow variable referencing the workflow's metadata.uuid field
+	GlobalVarWorkflowUUID = "workflow.uuid"
+	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
+	GlobalVarWorkflowStatus = "workflow.status"
 )

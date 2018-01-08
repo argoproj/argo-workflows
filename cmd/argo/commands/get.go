@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -43,7 +43,7 @@ func GetWorkflow(cmd *cobra.Command, args []string) {
 	}
 
 	wfClient := InitWorkflowClient()
-	wf, err := wfClient.GetWorkflow(args[0])
+	wf, err := wfClient.Get(args[0], metav1.GetOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}

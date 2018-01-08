@@ -11,12 +11,12 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 
 On Mac:
 ```
-$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-darwin-amd64
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha3/argo-darwin-amd64
 $ chmod +x /usr/local/bin/argo
 ```
 On Linux:
 ```
-$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha2/argo-linux-amd64
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha3/argo-linux-amd64
 $ chmod +x /usr/local/bin/argo
 ```
 
@@ -24,27 +24,8 @@ $ chmod +x /usr/local/bin/argo
 ```
 $ argo install
 ```
-Installation command does not configure access for argo UI. Please use following command to create externally accessable Kubernetes service:
 
-```
-$ kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/ui/deploy/service.yaml --namespace kube-system
-```
-
-Service's external IP can be retrieved using following command:
-
-```
-$ kubectl get services --namespace kube-system
-```
-
-Note: service namespace should correspond to namespace chosen during argo installation (kube-system is default namespace).
-
-Note: If you are installing Argo on Minikube, you won't get an external IP on creating the service above. Instead, it will just show `pending`. It should look something like below:
-```
-argo-ui                LoadBalancer   <redacted-IP>   <pending>     80:31185/TCP    1h
-```
-
-So, to access the Argo UI, you need to hit the IP of the Docker environment and the internal port. For instance, in the above case, it would be `192.168.99.100:31185`.
-
+NOTE: the examples below assume the installation of argo into the `kube-system` namespace (the default behavior). Replace `kube-system` with your own namespace, if a different one was chosen during installation.
 
 ## 3. Run Simple Example Workflows
 ```
@@ -71,14 +52,18 @@ Additional examples are availabe [here](https://github.com/argoproj/argo/blob/ma
 
 You'll create the artifact repo using Minio.
 ```
-$ brew install kubernetes-helm #mac. This is not really needed if you already have the kubectl cli installed.
+$ brew install kubernetes-helm # mac
 $ helm init
 $ helm install stable/minio --name argo-artifacts
 ```
 
-Login to Minio using a web browser after obtaining the external IP using `kubectl`.
+Login to the Minio using a web browser (port 9000) after obtaining the external IP using `kubectl`.
 ```
 $ kubectl get service argo-artifacts-minio-svc
+```
+On Minikube:
+```
+$ minikube service --url argo-artifacts-minio-svc
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -89,15 +74,12 @@ which you will use to login to the UI:
 Create a bucket named `my-bucket` from the Minio UI.
 
 ## 5. Reconfigure the workflow controller to use the Minio artifact repository configured in step 4.
-Look at minio created resources:
-```
-# kubectl get all -l release=argo-artifacts
-```
-Edit the workflow-controller config to reference the service name (argo-artifacts-minio-svc) and secret (argo-artifacts-minio-user) created by the helm install:
+
+Edit the workflow-controller config map to reference the service name (argo-artifacts-minio-svc) and secret (argo-artifacts-minio-user) created by the helm install:
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.0.0-alpha2
+    executorImage: argoproj/argoexec:v2.0.0-alpha3
     artifactRepository:
       s3:
         bucket: my-bucket
@@ -116,7 +98,38 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           key: secretkey
 ```
 
+The Minio secret is retrived from the namespace you use to run workflows. If Minio is installed in a different namespace then you will need to create a copy of its secret in the namespace you use for workflows.
+
 ## 6. Run a workflow which uses artifacts
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
+```
+
+## 7. Access the Argo UI
+
+By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the following methods:
+
+#### Method 1: kubectl proxy
+Run:
+```
+$ kubectl proxy
+```
+Then visit the following URL in your browser: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui:80/
+
+#### Method 2: Use a LoadBalancer
+
+Update the argo-ui service to be of type `LoadBalancer`.
+```
+$ kubectl patch svc argo-ui -n kube-system -p '{"spec": {"type": "LoadBalancer"}}'
+```
+Then wait for the external IP to be made available:
+```
+$ kubectl get svc argo-ui -n kube-system
+NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)        AGE
+argo-ui   LoadBalancer   10.19.255.205   35.197.49.167   80:30999/TCP   1m
+```
+
+NOTE: On Minikube, you won't get an external IP after updating the service -- it will always show `pending`. Run the following command to determine the Argo UI URL:
+```
+$ minikube service -n kube-system --url argo-ui
 ```

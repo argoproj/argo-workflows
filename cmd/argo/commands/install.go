@@ -3,11 +3,11 @@ package commands
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
-	workflowclient "github.com/argoproj/argo/workflow/client"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	"github.com/ghodss/yaml"
@@ -50,20 +50,22 @@ func init() {
 	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
+	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows to ssh into running step container using Argo UI")
 }
 
 // InstallFlags has all the required parameters for installing Argo.
 type InstallFlags struct {
-	ControllerName  string // --controller-name
-	InstanceID      string // --instanceid
-	UIName          string // --ui-name
-	Namespace       string // --install-namespace
-	ConfigMap       string // --configmap
-	ControllerImage string // --controller-image
-	UIImage         string // --ui-image
-	ExecutorImage   string // --executor-image
-	ServiceAccount  string // --service-account
-	Upgrade         bool   // --upgrade
+	ControllerName   string // --controller-name
+	InstanceID       string // --instanceid
+	UIName           string // --ui-name
+	Namespace        string // --install-namespace
+	ConfigMap        string // --configmap
+	ControllerImage  string // --controller-image
+	UIImage          string // --ui-image
+	ExecutorImage    string // --executor-image
+	ServiceAccount   string // --service-account
+	Upgrade          bool   // --upgrade
+	EnableWebConsole bool   // --enable-web-console
 }
 
 var installArgs InstallFlags
@@ -236,6 +238,13 @@ func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 				log.Fatalf("ConfigMap '%s' requires upgrade. Rerun with --upgrade to update the configuration", args.ConfigMap)
 			}
 			wfConfig.ExecutorImage = args.ExecutorImage
+			configBytes, err := yaml.Marshal(wfConfig)
+			if err != nil {
+				log.Fatalf("%+v", errors.InternalWrapError(err))
+			}
+			wfConfigMap.Data = map[string]string{
+				common.WorkflowControllerConfigMapKey: string(configBytes),
+			}
 			_, err = cmClient.Update(wfConfigMap)
 			if err != nil {
 				log.Fatalf("Failed to update ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
@@ -328,6 +337,10 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 								{
 									Name:  "IN_CLUSTER",
 									Value: "true",
+								},
+								{
+									Name:  "ENABLE_WEB_CONSOLE",
+									Value: strconv.FormatBool(args.EnableWebConsole),
 								},
 							},
 						},
@@ -434,16 +447,16 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 func installCRD(clientset *kubernetes.Clientset) {
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(restConfig)
 	if err != nil {
-		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
+		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", workflow.FullName, err)
 	}
 
 	// initialize custom resource using a CustomResourceDefinition if it does not exist
-	result, err := workflowclient.CreateCustomResourceDefinition(apiextensionsclientset)
+	result, err := common.CreateCustomResourceDefinition(apiextensionsclientset)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create CustomResourceDefinition: %v", err)
 		}
-		fmt.Printf("CustomResourceDefinition '%s' already exists\n", wfv1.CRDFullName)
+		fmt.Printf("CustomResourceDefinition '%s' already exists\n", workflow.FullName)
 	} else {
 		fmt.Printf("CustomResourceDefinition '%s' created\n", result.GetObjectMeta().GetName())
 	}

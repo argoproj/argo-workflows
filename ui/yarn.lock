@@ -3306,6 +3306,10 @@ json-stable-stringify@^1.0.1:
   dependencies:
     jsonify "~0.0.0"
 
+json-stream@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/json-stream/-/json-stream-1.0.0.tgz#1a3854e28d2bbeeab31cc7ddf683d2ddc5652708"
+
 json-stringify-safe@~5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/json-stringify-safe/-/json-stringify-safe-5.0.1.tgz#1296a2d58fd45f19a0f6ce01d65701e2c735b6eb"
@@ -6085,9 +6089,9 @@ uglifyjs-webpack-plugin@^0.4.6:
     uglify-js "^2.8.29"
     webpack-sources "^1.0.1"
 
-"ui-lib@git+https://github.com/argoproj/ui-lib.git#v2.0.2":
+"ui-lib@git+https://github.com/argoproj/ui-lib.git#v2.0.3":
   version "2.0.2"
-  resolved "git+https://github.com/argoproj/ui-lib.git#6fed9a37fa8149fd659f356b73ae02ae27bc8df6"
+  resolved "git+https://github.com/argoproj/ui-lib.git#a1ede543eff91c5d18ce5d879343fa893fcdda66"
   dependencies:
     "@angular/animations" "^5.0.0"
     "@angular/common" "^5.0.0"
@@ -6105,7 +6109,7 @@ uglifyjs-webpack-plugin@^0.4.6:
     marked "^0.3.6"
     moment "^2.19.2"
     rxjs "^5.5.2"
-    xterm "^2.4.0"
+    xterm "2.4.0"
     zone.js "^0.8.14"
 
 uid-number@^0.0.6:
@@ -6621,10 +6625,6 @@ xtend@^4.0.0, xtend@^4.0.1, xtend@~4.0.1:
 xterm@2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/xterm/-/xterm-2.4.0.tgz#d70227993b74323e36495ab9c7bdee0bc8d0dbba"
-
-xterm@^2.4.0:
-  version "2.9.2"
-  resolved "https://registry.yarnpkg.com/xterm/-/xterm-2.9.2.tgz#ec3e7c636ba67af4a7026be2cff7bdf08e56400a"
 
 y18n@^3.2.1:
   version "3.2.1"
