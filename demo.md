@@ -98,6 +98,8 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           key: secretkey
 ```
 
+The Minio secret is retrived from the namespace you use to run workflows. If Minio is installed in a different namespace then you will need to create a copy of its secret in the namespace you use for workflows.
+
 ## 6. Run a workflow which uses artifacts
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
