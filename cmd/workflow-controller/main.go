@@ -16,6 +16,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// load the oidc plugin (required to authenticate with OpenID Connect).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
