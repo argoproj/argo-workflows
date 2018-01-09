@@ -876,8 +876,9 @@ spec:
       command: ["/bin/sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]
       resources:
-        memory: 32Mi
-        cpu: 100m
+        requests:
+          memory: 32Mi
+          cpu: 100m
 ```
 
 ## Sidecars
