@@ -51,9 +51,13 @@ export class WorkflowTree {
       status: nodeStatus,
       children: (nodeStatus.children || []).map(groupName => {
         const groupStatus = this.workflow.status.nodes[groupName];
-        return (groupStatus.children || []).map(childName => ({
-          status: this.workflow.status.nodes[childName], nodeName: childName
-        })).map(item => this.getNodeInfo(item.status, item.nodeName));
+        if (groupStatus.children) {
+          return (groupStatus.children || []).map(childName => ({
+            status: this.workflow.status.nodes[childName], nodeName: childName
+          })).map(item => this.getNodeInfo(item.status, item.nodeName));
+        } else {
+          return [this.getNodeInfo(groupStatus, groupStatus.name)];
+        }
       })
     };
     if (info.children.length === 0 && root) {
