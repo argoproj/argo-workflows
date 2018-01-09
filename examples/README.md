@@ -866,6 +866,19 @@ spec:
         httpGet:
           path: /ping
           port: 8086
+
+  - name: influxdb-client
+    inputs:
+      parameters:
+      - name: cmd
+    container:
+      image: appropriate/curl:latest
+      command: ["/bin/sh", "-c"]
+      args: ["{{inputs.parameters.cmd}}"]
+      resources:
+        requests:
+          memory: 32Mi
+          cpu: 100m
 ```
 
 ## Sidecars
