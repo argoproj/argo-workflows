@@ -252,7 +252,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation() error {
-	podList, err := woc.getWorkflowPods(false)
+	podList, err := woc.getRunningWorkflowPods()
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// including Pending pods in the query. If one of our nodes does not show up in this list,
 	// it implies that the pod was deleted without the controller seeing the event.
 	woc.log.Info("Checking for deleted pods")
-	podList, err = woc.getWorkflowPods(true)
+	podList, err = woc.getAllWorkflowPods()
 	if err != nil {
 		return err
 	}
@@ -319,16 +319,27 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-// getWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList, error) {
+// getRunningWorkflowPods returns running pods of the current workflow.
+func (woc *wfOperationCtx) getRunningWorkflowPods() (*apiv1.PodList, error) {
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=false",
 			common.LabelKeyWorkflow,
 			woc.wf.ObjectMeta.Name,
 			common.LabelKeyCompleted),
 	}
-	if !includePending {
-		options.FieldSelector = "status.phase!=Pending"
+	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return podList, nil
+}
+
+// getAllWorkflowPods returns all pods related to the current workflow
+func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
+	options := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s",
+			common.LabelKeyWorkflow,
+			woc.wf.ObjectMeta.Name),
 	}
 	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
 	if err != nil {
