@@ -772,9 +772,8 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
 	woc.wf.Status.Nodes[node.ID] = *node
-	woc.log.Infof("Initialized container node %v", node)
+	woc.log.Infof("Initialized container node %v with pod %s", node, pod.Name)
 	return nil
 }
 
