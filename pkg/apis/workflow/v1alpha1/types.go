@@ -129,7 +129,7 @@ type Template struct {
 	// This field is only applicable to container and script templates.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 
-	RetryInfo *RetryInfo `json:"retries,omitempty"`
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -250,19 +250,19 @@ type WorkflowStatus struct {
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 }
 
-// GetNodesWithRetries returns a list of nodes that have maxRetries > 0.
+// GetNodesWithRetries returns a list of nodes that have retries.
 func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
 	var nodesWithRetries []NodeStatus
 	for _, node := range wfs.Nodes {
-		if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+		if node.RetryStrategy != nil {
 			nodesWithRetries = append(nodesWithRetries, node)
 		}
 	}
 	return nodesWithRetries
 }
 
-type RetryInfo struct {
-	Limit int32 `json:"limit"`
+type RetryStrategy struct {
+	Limit *int32 `json:"limit,omitempty"`
 }
 
 type NodeStatus struct {
@@ -293,7 +293,7 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
 
-	RetryInfo *RetryInfo `json:"retries,omitempty"`
+	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
 	Outputs *Outputs `json:"outputs,omitempty"`

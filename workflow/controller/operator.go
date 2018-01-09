@@ -258,9 +258,9 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 }
 
-// processNodesWithRetries checks whether any of the failed nodes had retries left and if so,
-// starts a new pod. It returns whether there are retries left or not.
-func (woc *wfOperationCtx) processNodesWithRetries() (bool, error) {
+// processNodesWithRetries marks the status of the intermediate node if the retried node
+// succeeded or marks it as failed if there are no more retries left.
+func (woc *wfOperationCtx) processNodesWithRetries() error {
 	// TODO(shri): This should be fixed by moving the container execution logic into a
 	// separate layer. Steps, Retries, etc. will be higher layers that call into the
 	// container execution layer.
@@ -270,35 +270,37 @@ func (woc *wfOperationCtx) processNodesWithRetries() (bool, error) {
 		}
 		lastChildNode, err := woc.getLastChildNode(&node)
 		if err != nil {
-			return false, fmt.Errorf("Failed to find last child of node " + node.Name)
+			return fmt.Errorf("Failed to find last child of node " + node.Name)
 		}
 
 		if !lastChildNode.Completed() {
 			// last child node is still running.
-			return false, nil
+			return nil
 		}
 
 		if lastChildNode.Successful() {
+			node.Outputs = lastChildNode.Outputs.DeepCopy()
 			woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
-			return false, nil
+			return nil
 		}
 
 		if !lastChildNode.CanRetry() {
 			woc.log.Infof("Node cannot be retried. Marking it failed")
-			woc.markNodePhase(node.Name, wfv1.NodeFailed)
-			return false, nil
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message)
+			return nil
 		}
 
-		if int32(len(node.Children)) > node.RetryInfo.Limit {
+		if node.RetryStrategy.Limit != nil && int32(len(node.Children)) > *node.RetryStrategy.Limit {
 			woc.log.Infoln("No more retries left. Failing...")
-			woc.markNodePhase(node.Name, wfv1.NodeFailed)
-			return false, nil
+			woc.markNodePhase(node.Name, wfv1.NodeFailed, "No more retries left")
+			return nil
 		}
+
 		woc.log.Infof("%d child nodes failed. Trying again...", len(node.Children))
-		return true, nil
+		return nil
 	}
 
-	return false, nil
+	return nil
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
@@ -326,12 +328,11 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 
-	retriesLeft, err := woc.processNodesWithRetries()
-	if err != nil {
+	if err = woc.processNodesWithRetries(); err != nil {
 		return err
 	}
 
-	if retriesLeft || len(podList.Items) > 0 {
+	if len(podList.Items) > 0 {
 		return nil
 	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
@@ -711,7 +712,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
-		woc.log.Infof("Node %s already completed", nodeName)
+		woc.log.Debugf("Node %s already completed", nodeName)
 		return nil
 	}
 	tmpl := woc.wf.GetTemplate(templateName)
@@ -730,7 +731,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		if ok {
-			if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+			if node.RetryStrategy != nil {
 				lastChild, err := woc.getLastChildNode(&node)
 				if err != nil {
 					err := errors.Errorf("Couldn't find last child of node: %s", node.Name)
@@ -758,15 +759,15 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		// Create a new child node as the first attempt node and
 		// run the template in that node.
 		nodeToExecute := nodeName
-		if tmpl.RetryInfo != nil && tmpl.RetryInfo.Limit > 0 {
+		if tmpl.RetryStrategy != nil {
 			node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-			retries := wfv1.RetryInfo{}
-			node.RetryInfo = &retries
-			node.RetryInfo.Limit = tmpl.RetryInfo.Limit
+			retries := wfv1.RetryStrategy{}
+			node.RetryStrategy = &retries
+			node.RetryStrategy.Limit = tmpl.RetryStrategy.Limit
 			woc.wf.Status.Nodes[nodeID] = *node
 
 			// Create new node as child of 'node'
-			newContainerName := fmt.Sprintf("%s-%d", nodeName, len(node.Children))
+			newContainerName := fmt.Sprintf("%s(%d)", nodeName, len(node.Children))
 			woc.markNodePhase(newContainerName, wfv1.NodeRunning)
 			woc.addChildNode(nodeName, newContainerName)
 			nodeToExecute = newContainerName
@@ -872,7 +873,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.updated = true
-	woc.log.Debugf("Marked node %s %s\n", nodeName, phase)
+	woc.log.Debugf("Marked node %s %s", nodeName, phase)
 	return &node
 }
 

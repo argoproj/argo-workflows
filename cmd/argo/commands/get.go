@@ -143,7 +143,7 @@ func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus,
 		fmt.Fprintf(w, "%s%s\t%s\t%s\n", args...)
 	}
 
-	if node.RetryInfo != nil && node.RetryInfo.Limit > 0 {
+	if node.RetryStrategy != nil {
 		for i, childNodeID := range node.Children {
 			var part1, subp1 string
 			subp1 = "  "

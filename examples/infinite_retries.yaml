@@ -6,8 +6,7 @@ spec:
   entrypoint: container-retries
   templates:
   - name: container-retries
-    retryStrategy:
-      limit: 4
+    retryStrategy: {}
     container:
       image: shrinand/random-fail
       command: ["python"]

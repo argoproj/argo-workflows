@@ -29,8 +29,8 @@ spec:
     inputs:
       parameters:
       - name: failPct
-    retries:
-      limit: 4
+    retryStrategy:
+      limit: 2
     container:
       image: shrinand/random-fail
       command: ["python"]
