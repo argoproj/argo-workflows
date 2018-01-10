@@ -114,7 +114,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		}
 	}
 	woc.globalParams[common.GlobalVarWorkflowName] = wf.ObjectMeta.Name
-	woc.globalParams[common.GlobalVarWorkflowUUID] = string(wf.ObjectMeta.UID)
+	woc.globalParams[common.GlobalVarWorkflowUID] = string(wf.ObjectMeta.UID)
 	for _, param := range wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
@@ -779,8 +779,8 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
+	nodeID := woc.wf.NodeID(nodeName)
 	defer func() {
-		nodeID := woc.wf.NodeID(nodeName)
 		if woc.wf.Status.Nodes[nodeID].Completed() {
 			// TODO: this implementation should be handled via annotating the pod
 			// and signaling the executor to kill the pod instead.
@@ -845,6 +845,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				}
 			}
 		}
+	}
+	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
+	if err != nil {
+		woc.markNodeError(nodeName, err)
+		return err
+	}
+	if outputs != nil {
+		node := woc.wf.Status.Nodes[nodeID]
+		node.Outputs = outputs
+		woc.wf.Status.Nodes[nodeID] = node
 	}
 	woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
@@ -1087,6 +1097,38 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
+}
+
+// getTemplateOutputsFromScope resolves a template's outputs from the scope of the template
+func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Outputs, error) {
+	if !tmpl.Outputs.HasOutputs() {
+		return nil, nil
+	}
+	var outputs wfv1.Outputs
+	if len(tmpl.Outputs.Parameters) > 0 {
+		outputs.Parameters = make([]wfv1.Parameter, 0)
+		for _, param := range tmpl.Outputs.Parameters {
+			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
+			if err != nil {
+				return nil, err
+			}
+			param.Value = &val
+			param.ValueFrom = nil
+			outputs.Parameters = append(outputs.Parameters, param)
+		}
+	}
+	if len(tmpl.Outputs.Artifacts) > 0 {
+		outputs.Artifacts = make([]wfv1.Artifact, 0)
+		for _, art := range tmpl.Outputs.Artifacts {
+			resolvedArt, err := scope.resolveArtifact(art.From)
+			if err != nil {
+				return nil, err
+			}
+			resolvedArt.Name = art.Name
+			outputs.Artifacts = append(outputs.Artifacts, *resolvedArt)
+		}
+	}
+	return &outputs, nil
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) error {

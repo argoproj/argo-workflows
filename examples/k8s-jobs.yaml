@@ -39,3 +39,18 @@ spec:
                 command: ["perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)"]
               restartPolicy: Never
           backoffLimit: 4
+    # Resource templates can have output parameters extracted from fields of the
+    # resource. Two techniques are provided: jsonpath and a jq filter.
+    outputs:
+      parameters:
+      # job-name is extracted using a jsonPath expression and is equivalent to:
+      # `kubectl get job <jobname> -o jsonpath='{.metadata.name}'`
+      - name: job-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      # job-obj is extracted using a jq filter and is equivalent to:
+      # `kubectl get job <jobname> -o json | jq -c '.'
+      # which returns the entire job object in json format
+      - name: job-obj
+        valueFrom:
+          jqFilter: '.'

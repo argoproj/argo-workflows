@@ -28,7 +28,7 @@ func execResource(cmd *cobra.Command, args []string) {
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
-		log.Fatalf("Error staing resource: %+v", err)
+		log.Fatalf("Error staging resource: %+v", err)
 	}
 	resourceName, err := wfExecutor.ExecResource(args[0], common.ExecutorResourceManifestPath)
 	if err != nil {
@@ -39,5 +39,10 @@ func execResource(cmd *cobra.Command, args []string) {
 	if err != nil {
 		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error waiting for resource %s: %+v", resourceName, err)
+	}
+	err = wfExecutor.SaveResourceParameters(resourceName)
+	if err != nil {
+		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
+		log.Fatalf("Error saving output parameters for resource %s: %+v", resourceName, err)
 	}
 }
