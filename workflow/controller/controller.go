@@ -85,14 +85,14 @@ type ArtifactRepository struct {
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 }
 type S3ArtifactRepository struct {
-	wfv1.S3Bucket `json:",inline,squash"`
+	wfv1.S3Bucket `json:",inline"`
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
 type ArtifactoryArtifactRepository struct {
-	wfv1.ArtifactoryAuth `json:",inline,squash"`
+	wfv1.ArtifactoryAuth `json:",inline"`
 	// RepoUrl is the url for artifactory repo .
 	RepoUrl string `json:"RepoUrl,omitempty"`
 }

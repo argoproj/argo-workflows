@@ -1,8 +1,6 @@
 package executor
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,18 +19,16 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 )
 
-// WorkflowExecutor implements the mechanisms within a single Kubernetes pod
+// WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
 	PodName   string
 	Template  wfv1.Template
-	ClientSet *kubernetes.Clientset
+	ClientSet kubernetes.Interface
 	Namespace string
 
 	// memoized container ID to prevent multiple lookups
@@ -54,6 +50,7 @@ func (we *WorkflowExecutor) getSecrets(namespace string, name string, key string
 	return string(val), nil
 }
 
+// LoadArtifacts loads aftifacts from location to a container path
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
@@ -217,17 +214,17 @@ func (we *WorkflowExecutor) SaveParameters() error {
 	}
 
 	for i, param := range we.Template.Outputs.Parameters {
-		log.Infof("Saving out parameter: %s", param.Name)
+		log.Infof("Saving path output parameter: %s", param.Name)
 		// Determine the file path of where to find the parameter
-		if param.Path == "" {
-			return errors.InternalErrorf("Output parameter %s did not specify a file path", param.Name)
+		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
+			continue
 		}
 		// Use docker cp command to print out the content of the file
 		// Node docker cp CONTAINER:SRC_PATH DEST_PATH|- streams the contents of the resource
 		// as a tar archive to STDOUT if using - as DEST_PATH. Thus, we need to extract the
 		// content from the tar archive and output into stdout. In this way, we do not need to
 		// create and copy the content into a file from the wait container.
-		dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", mainCtrID, param.Path)
+		dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", mainCtrID, param.ValueFrom.Path)
 		cmd := exec.Command("sh", "-c", dockerCpCmd)
 		log.Info(cmd.Args)
 		out, err := cmd.Output()
@@ -244,6 +241,7 @@ func (we *WorkflowExecutor) SaveParameters() error {
 	return nil
 }
 
+// InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
 		accessKey, err := we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
@@ -536,139 +534,4 @@ func (we *WorkflowExecutor) killSidecars() error {
 		return errors.InternalWrapError(err)
 	}
 	return err
-}
-
-// ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (string, error) {
-	args := []string{
-		action,
-	}
-	if action == "delete" {
-		args = append(args, "--ignore-not-found")
-	}
-	args = append(args, "-f")
-	args = append(args, manifestPath)
-	args = append(args, "-o")
-	args = append(args, "name")
-	cmd := exec.Command("kubectl", args...)
-	log.Info(strings.Join(cmd.Args, " "))
-	out, err := cmd.Output()
-	if err != nil {
-		exErr := err.(*exec.ExitError)
-		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", errors.New(errors.CodeBadRequest, errMsg)
-	}
-	resourceName := strings.TrimSpace(string(out))
-	log.Infof(resourceName)
-	return resourceName, nil
-}
-
-// gjsonLabels is an implementation of labels.Labels interface
-// which allows us to take advantage of k8s labels library
-// for the purposes of evaluating fail and success conditions
-type gjsonLabels struct {
-	json []byte
-}
-
-// Has returns whether the provided label exists.
-func (g gjsonLabels) Has(label string) bool {
-	return gjson.GetBytes(g.json, label).Exists()
-}
-
-// Get returns the value for the provided label.
-func (g gjsonLabels) Get(label string) string {
-	return gjson.GetBytes(g.json, label).String()
-}
-
-// WaitResource waits for a specific resource to satisfy either the success or failure condition
-func (we *WorkflowExecutor) WaitResource(resourceName string) error {
-	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
-		return nil
-	}
-	var successReqs labels.Requirements
-	if we.Template.Resource.SuccessCondition != "" {
-		successSelector, err := labels.Parse(we.Template.Resource.SuccessCondition)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "success condition '%s' failed to parse: %v", we.Template.Resource.SuccessCondition, err)
-		}
-		log.Infof("Waiting for conditions: %s", successSelector)
-		successReqs, _ = successSelector.Requirements()
-	}
-
-	var failReqs labels.Requirements
-	if we.Template.Resource.FailureCondition != "" {
-		failSelector, err := labels.Parse(we.Template.Resource.FailureCondition)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "fail condition '%s' failed to parse: %v", we.Template.Resource.FailureCondition, err)
-		}
-		log.Infof("Failing for conditions: %s", failSelector)
-		failReqs, _ = failSelector.Requirements()
-	}
-
-	cmd := exec.Command("kubectl", "get", resourceName, "-w", "-o", "json")
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	reader := bufio.NewReader(stdout)
-	log.Info(strings.Join(cmd.Args, " "))
-	if err := cmd.Start(); err != nil {
-		return errors.InternalWrapError(err)
-	}
-	defer func() {
-		_ = cmd.Process.Kill()
-	}()
-	for {
-		jsonBytes, err := readJSON(reader)
-		if err != nil {
-			// TODO: it's possible that kubectl might EOF upon an API disconnect.
-			// In this case, we would want to refork kubectl again.
-			return errors.InternalWrapError(err)
-		}
-		log.Info(string(jsonBytes))
-		ls := gjsonLabels{json: jsonBytes}
-		for _, req := range failReqs {
-			failed := req.Matches(ls)
-			msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
-			log.Infof(msg)
-			if failed {
-				// TODO: need a better error code instead of BadRequest
-				return errors.Errorf(errors.CodeBadRequest, msg)
-			}
-		}
-		numMatched := 0
-		for _, req := range successReqs {
-			matched := req.Matches(ls)
-			log.Infof("success condition '%s' evaluated %v", req, matched)
-			if matched {
-				numMatched++
-			}
-		}
-		log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
-		if numMatched >= len(successReqs) {
-			break
-		}
-	}
-	return nil
-}
-
-// readJSON reads from a reader line-by-line until it reaches "}\n" indicating end of json
-func readJSON(reader *bufio.Reader) ([]byte, error) {
-	var buffer bytes.Buffer
-	for {
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			return nil, err
-		}
-		isDelimiter := len(line) == 2 && line[0] == byte('}')
-		line = bytes.TrimSpace(line)
-		_, err = buffer.Write(line)
-		if err != nil {
-			return nil, err
-		}
-		if isDelimiter {
-			break
-		}
-	}
-	return buffer.Bytes(), nil
 }

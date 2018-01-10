@@ -38,7 +38,7 @@ const (
 
 // Workflow is the definition of our CRD Workflow class
 type Workflow struct {
-	metav1.TypeMeta   `json:",inline,squash"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              WorkflowSpec   `json:"spec"`
 	Status            WorkflowStatus `json:"status"`
@@ -48,7 +48,7 @@ type Workflow struct {
 
 // WorkflowList is list of Workflow resources
 type WorkflowList struct {
-	metav1.TypeMeta `json:",inline,squash"`
+	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	Items           []Workflow `json:"items"`
 }
@@ -103,7 +103,7 @@ type Template struct {
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
 
-	// Workflow fields
+	// Steps define a series of sequential/parallal workflow steps
 	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
 	// Container
@@ -138,12 +138,34 @@ type Inputs struct {
 
 // Parameter indicate a passed string parameter to a service template with an optional default value
 type Parameter struct {
-	Name    string  `json:"name"`
-	Value   *string `json:"value,omitempty"`
+	// Name is the parameter name
+	Name string `json:"name"`
+
+	// Default is the default value to use for an input parameter if a value was not supplied
 	Default *string `json:"default,omitempty"`
 
-	// Path describes the location in which to retrieve the output parameter value from
+	// Value is the literal value to use for the parameter.
+	// If specified in the context of an input parameter, the value takes precedence over any passed values
+	Value *string `json:"value,omitempty"`
+
+	// ValueFrom is the source for the output parameter's value
+	ValueFrom *ValueFrom `json:"valueFrom,omitempty"`
+}
+
+// ValueFrom describes a location in which to obtain the value to a parameter
+type ValueFrom struct {
+	// Path in the container to retrieve an output parameter value from in container templates
 	Path string `json:"path,omitempty"`
+
+	// JSONPath of a resource to retrieve an output parameter value from in resource templates
+	JSONPath string `json:"jsonPath,omitempty"`
+
+	// JQFilter expression against the resource object in resource templates
+	JQFilter string `json:"jqFilter,omitempty"`
+
+	// Parameter reference to a step or dag task in which to retrieve an output parameter value from
+	// (e.g. '{{steps.mystep.outputs.myparam}}')
+	Parameter string `json:"parameter,omitempty"`
 }
 
 // Artifact indicates an artifact to place at a specified path
@@ -161,7 +183,8 @@ type Artifact struct {
 	// From allows an artifact to reference an artifact from a previous step
 	From string `json:"from,omitempty"`
 
-	ArtifactLocation `json:",inline,squash"`
+	// ArtifactLocation contains the location of the artifact
+	ArtifactLocation `json:",inline"`
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -175,6 +198,7 @@ type ArtifactLocation struct {
 	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
 }
 
+// Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
 	Parameters []Parameter `json:"parameters,omitempty"`
@@ -207,9 +231,9 @@ type Arguments struct {
 
 // Sidecar is a container which runs alongside the main container
 type Sidecar struct {
-	apiv1.Container `json:",inline,squash"`
+	apiv1.Container `json:",inline"`
 
-	SidecarOptions `json:",inline,squash"`
+	SidecarOptions `json:",inline"`
 }
 
 // SidecarOptions provide a way to customize the behavior of a sidecar and how it
@@ -318,7 +342,7 @@ type S3Bucket struct {
 }
 
 type S3Artifact struct {
-	S3Bucket `json:",inline,squash"`
+	S3Bucket `json:",inline"`
 	Key      string `json:"key"`
 }
 
@@ -335,7 +359,7 @@ type ArtifactoryAuth struct {
 }
 
 type ArtifactoryArtifact struct {
-	ArtifactoryAuth `json:",inline,squash"`
+	ArtifactoryAuth `json:",inline"`
 	URL             string `json:"url"`
 }
 
