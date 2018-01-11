@@ -188,6 +188,11 @@ STEP                                     PODNAME
 
 ## Artifacts
 
+```
+Note:
+You will need to have installed and configured an artifact repository for this example to run. Please refer to the [Getting Started Documentation](../demo.md#5-install-an-artifact-repository).
+```
+
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
 The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template which will be consumed by the second step named `print-message` that consumes the generated artifact. 
