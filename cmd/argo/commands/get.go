@@ -71,6 +71,11 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 	const fmtStr = "%-17s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
+	serviceAccount := wf.Spec.ServiceAccountName
+	if serviceAccount == "" {
+		serviceAccount = "default"
+	}
+	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
 	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
