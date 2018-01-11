@@ -38,7 +38,7 @@ func getKubernetesClient() *kubernetes.Clientset {
 func newInstallArgs(namespace string) commands.InstallFlags {
 	return commands.InstallFlags{
 		ControllerName:  common.DefaultControllerDeploymentName,
-		UIName:          common.DefaultUiDeploymentName,
+		UIName:          commands.ArgoUIDeploymentName,
 		Namespace:       namespace,
 		ConfigMap:       common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
 		ControllerImage: "argoproj/workflow-controller:latest",
@@ -55,7 +55,7 @@ func createNamespaceForTest() string {
 			GenerateName: "argo-e2e-test-",
 		},
 	}
-	cns, err := clientset.Core().Namespaces().Create(ns)
+	cns, err := clientset.CoreV1().Namespaces().Create(ns)
 	if err != nil {
 		panic(err)
 	}
@@ -66,7 +66,7 @@ func createNamespaceForTest() string {
 func deleteTestNamespace(namespace string) error {
 	clientset := getKubernetesClient()
 	deleteOptions := metav1.DeleteOptions{}
-	return clientset.Core().Namespaces().Delete(namespace, &deleteOptions)
+	return clientset.CoreV1().Namespaces().Delete(namespace, &deleteOptions)
 }
 
 func installArgoInNamespace(namespace string) {

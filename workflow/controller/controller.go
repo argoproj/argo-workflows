@@ -359,7 +359,7 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 }
 
 func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.Core().RESTClient()
+	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	name := wfc.ConfigMap
 	namespace := wfc.ConfigMapNS
@@ -386,7 +386,7 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.Core().RESTClient()
+	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
 	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")

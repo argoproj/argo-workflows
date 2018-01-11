@@ -23,7 +23,12 @@ $ chmod +x /usr/local/bin/argo
 ```
 $ argo install
 ```
-NOTE: the instructions below assume the installation of argo into the `kube-system` namespace (the default behavior). A different namespace can be chosen using the `argo install --install-namespace <name>` flag, in which case you should substitute `kube-system` with your chosen namespace in the examples below.
+NOTE:
+* On GKE with RBAC enabled, you may need to grant your account the ability to create new cluster roles
+```
+$ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
+```
+* The subsequent instructions below assume the installation of argo into the `kube-system` namespace (the default behavior). A different namespace can be chosen using the `argo install --install-namespace <name>` flag, in which case you should substitute `kube-system` with your chosen namespace in the examples below.
 
 ## 3. Configure the service account to run workflows (required for RBAC clusters)
 For clusters with RBAC enabled, the 'default' service account is too limited to do any kind of meaningful work. Run the following command to grant admin privileges to the 'default' service account in the namespace 'default':
@@ -114,14 +119,23 @@ $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/ar
 
 By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the following methods:
 
-#### Method 1: kubectl proxy
+#### Method 1: kubectl port-forward
+Run:
+```
+$ kubectl port-forward $(kubectl get pods -n kube-system -l app=argo-ui -o jsonpath='{.items[0].metadata.name}') -n kube-system 8001:8001
+```
+Then visit: http://127.0.0.1:8001/
+
+#### Method 2: kubectl proxy
 Run:
 ```
 $ kubectl proxy
 ```
-Then visit the following URL in your browser: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui/
+Then visit: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui/
 
-#### Method 2: Use a LoadBalancer
+NOTE: artifact download and webconsole is not supported using this method
+
+#### Method 3: Use a LoadBalancer
 
 Update the argo-ui service to be of type `LoadBalancer`.
 ```
