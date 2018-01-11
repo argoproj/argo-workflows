@@ -501,13 +501,20 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			continue
 		}
 		if ctr.Name == common.WaitContainerName {
-			errMsg := fmt.Sprintf("failed to save artifacts")
+			errDetails := ""
 			for _, msg := range []string{annotatedMsg, ctr.State.Terminated.Message} {
 				if msg != "" {
-					errMsg += ": " + msg
+					errDetails = msg
 					break
 				}
 			}
+			if errDetails == "" {
+				// executor is expected to annotate a message to the pod upon any errors.
+				// If we failed to see the annotated message, it is likely the pod ran with
+				// insufficient privileges. Give a hint to that effect.
+				errDetails = fmt.Sprintf("verify serviceaccount %s:%s has necessary privileges", pod.ObjectMeta.Namespace, pod.Spec.ServiceAccountName)
+			}
+			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
 			failMessages[ctr.Name] = errMsg
 		} else {
 			if ctr.State.Terminated.Message != "" {
