@@ -281,7 +281,7 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 		return errors.InternalWrapError(err)
 	}
 	for attempt := 0; attempt < patchRetries; attempt++ {
-		_, err = c.Core().Pods(namespace).Patch(podName, types.MergePatchType, patch)
+		_, err = c.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patch)
 		if err != nil {
 			if !apierr.IsConflict(err) {
 				return err
