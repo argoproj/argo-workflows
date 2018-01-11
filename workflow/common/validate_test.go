@@ -129,8 +129,34 @@ spec:
       image: docker/whalesay:{{inputs.parameters.unresolved}}
 `
 
+var unresolvedOutput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: unresolved-output-steps
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+  - name: unresolved-output-steps
+    steps:
+    - - name: whalesay
+        template: whalesay
+    outputs:
+      parameters:
+      - name: unresolved
+        valueFrom:
+          parameter: "{{steps.whalesay.outputs.parameters.unresolved}}"
+`
+
 func TestUnresolved(t *testing.T) {
 	err := validate(unresolvedInput)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve")
+	}
+	err = validate(unresolvedOutput)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve")
 	}
@@ -555,7 +581,7 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo {{workflow.status}} {{workflow.uuid}}"]
+      args: ["echo {{workflow.status}} {{workflow.uid}}"]
 `
 
 var workflowStatusNotOnExit = `

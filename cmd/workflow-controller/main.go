@@ -11,16 +11,17 @@ import (
 	"github.com/argoproj/argo/workflow/controller"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	// load the oidc plugin (required to authenticate with OpenID Connect).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
+	// CLIName is the name of the CLI
 	CLIName = "workflow-controller"
 )
 
@@ -67,30 +68,13 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
-
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		log.Fatalf("%+v", err)
-	}
 	common.RegisterStackDumper()
 
-	// initialize custom resource using a CustomResourceDefinition if it does not exist
-	log.Infof("Creating Workflow CRD")
-	_, err = common.CreateCustomResourceDefinition(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		log.Fatalf("%+v", err)
-	}
-
-	// make a new config for our extension's API group, using the first config as a baseline
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-
-	wfcs := wfclientset.NewForConfigOrDie(config)
+	kubeclientset := kubernetes.NewForConfigOrDie(config)
+	wflientset := wfclientset.NewForConfigOrDie(config)
 
 	// start a controller on instances of our custom resource
-	wfController := controller.NewWorkflowController(config, clientset, wfcs, rootArgs.configMap)
+	wfController := controller.NewWorkflowController(config, kubeclientset, wflientset, rootArgs.configMap)
 	err = wfController.ResyncConfig()
 	if err != nil {
 		log.Fatalf("%+v", err)
