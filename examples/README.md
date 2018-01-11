@@ -188,8 +188,7 @@ STEP                                     PODNAME
 
 ## Artifacts
 
-**Note:**
-
+**Note:** 
 You will need to have installed and configured an artifact repository for this example to run.
 [Installing an artifact repository here](https://github.com/argoproj/argo/blob/master/demo.md#5-install-an-artifact-repository).
 
