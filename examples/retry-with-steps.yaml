@@ -12,25 +12,25 @@ spec:
         arguments:
           parameters:
           - name: failPct
-            value: "80"
+            value: "40"
     - - name: hello2a
         template: random-fail
         arguments:
           parameters:
           - name: failPct
-            value: "90"
+            value: "60"
       - name: hello2b
         template: random-fail
         arguments:
           parameters:
           - name: failPct
-            value: "90"
+            value: "60"
   - name: random-fail
     inputs:
       parameters:
       - name: failPct
     retryStrategy:
-      limit: 2
+      limit: 4
     container:
       image: shrinand/random-fail
       command: ["python"]

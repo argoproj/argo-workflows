@@ -258,48 +258,43 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 }
 
-// processNodesWithRetries marks the status of the intermediate node if the retried node
-// succeeded or marks it as failed if there are no more retries left.
-func (woc *wfOperationCtx) processNodesWithRetries() error {
-	// TODO(shri): This should be fixed by moving the container execution logic into a
-	// separate layer. Steps, Retries, etc. will be higher layers that call into the
-	// container execution layer.
-	for _, node := range woc.wf.Status.GetNodesWithRetries() {
-		if node.Completed() {
-			continue
-		}
-		lastChildNode, err := woc.getLastChildNode(&node)
-		if err != nil {
-			return fmt.Errorf("Failed to find last child of node " + node.Name)
-		}
+func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
+	if node.Completed() {
+		return nil
+	}
+	lastChildNode, err := woc.getLastChildNode(node)
+	if err != nil {
+		return fmt.Errorf("Failed to find last child of node " + node.Name)
+	}
 
-		if !lastChildNode.Completed() {
-			// last child node is still running.
-			return nil
-		}
-
-		if lastChildNode.Successful() {
-			node.Outputs = lastChildNode.Outputs.DeepCopy()
-			woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
-			return nil
-		}
-
-		if !lastChildNode.CanRetry() {
-			woc.log.Infof("Node cannot be retried. Marking it failed")
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message)
-			return nil
-		}
-
-		if node.RetryStrategy.Limit != nil && int32(len(node.Children)) > *node.RetryStrategy.Limit {
-			woc.log.Infoln("No more retries left. Failing...")
-			woc.markNodePhase(node.Name, wfv1.NodeFailed, "No more retries left")
-			return nil
-		}
-
-		woc.log.Infof("%d child nodes failed. Trying again...", len(node.Children))
+	if lastChildNode == nil {
 		return nil
 	}
 
+	if !lastChildNode.Completed() {
+		// last child node is still running.
+		return nil
+	}
+
+	if lastChildNode.Successful() {
+		node.Outputs = lastChildNode.Outputs.DeepCopy()
+		woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
+		return nil
+	}
+
+	if !lastChildNode.CanRetry() {
+		woc.log.Infof("Node cannot be retried. Marking it failed")
+		woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message)
+		return nil
+	}
+
+	if node.RetryStrategy.Limit != nil && int32(len(node.Children)) > *node.RetryStrategy.Limit {
+		woc.log.Infoln("No more retries left. Failing...")
+		woc.markNodePhase(node.Name, wfv1.NodeFailed, "No more retries left")
+		return nil
+	}
+
+	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
 	return nil
 }
 
@@ -326,10 +321,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
-	}
-
-	if err = woc.processNodesWithRetries(); err != nil {
-		return err
 	}
 
 	if len(podList.Items) > 0 {
@@ -707,6 +698,16 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 	return &lastChildNode, nil
 }
 
+func (woc *wfOperationCtx) getNode(nodeName string) wfv1.NodeStatus {
+	nodeID := woc.wf.NodeID(nodeName)
+	node, ok := woc.wf.Status.Nodes[nodeID]
+	if !ok {
+		panic("Failed to find node " + nodeName)
+	}
+
+	return node
+}
+
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
 	woc.log.Infof("Evaluating node %s: template: %s", nodeName, templateName)
 	nodeID := woc.wf.NodeID(nodeName)
@@ -732,13 +733,21 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	case wfv1.TemplateTypeContainer:
 		if ok {
 			if node.RetryStrategy != nil {
-				lastChild, err := woc.getLastChildNode(&node)
-				if err != nil {
-					err := errors.Errorf("Couldn't find last child of node: %s", node.Name)
-					woc.markNodeError(nodeName, err)
+				if err = woc.processNodeRetries(&node); err != nil {
 					return err
 				}
-				if !lastChild.Completed() {
+
+				// The updated node status could've changed. Get the latest copy of the node.
+				node = woc.getNode(node.Name)
+				fmt.Printf("Node %s: Status: %s\n", node.Name, node.Phase)
+				if node.Completed() {
+					return nil
+				}
+				lastChildNode, err := woc.getLastChildNode(&node)
+				if err != nil {
+					return err
+				}
+				if !lastChildNode.Completed() {
 					// last child node is still running.
 					return nil
 				}
