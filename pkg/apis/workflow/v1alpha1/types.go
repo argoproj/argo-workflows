@@ -103,7 +103,7 @@ type Template struct {
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
 
-	// Steps define a series of sequential/parallal workflow steps
+	// Steps define a series of sequential/parallel workflow steps
 	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
 	// Container
@@ -250,7 +250,7 @@ type SidecarOptions struct {
 
 	// Other sidecar options to consider:
 	// * Lifespan - allow a sidecar to live longer than the main container and run to completion.
-	// * PropogateFailure - if a sidecar fails, also fail the step
+	// * PropagateFailure - if a sidecar fails, also fail the step
 }
 
 type WorkflowStatus struct {
