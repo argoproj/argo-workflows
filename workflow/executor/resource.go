@@ -150,11 +150,11 @@ func readJSON(reader *bufio.Reader) ([]byte, error) {
 
 // SaveResourceParameters will save any resource output parameters
 func (we *WorkflowExecutor) SaveResourceParameters(resourceName string) error {
-	log.Infof("Saving resource output parameters")
 	if len(we.Template.Outputs.Parameters) == 0 {
-		log.Infof("No output parameters, nothing to do")
+		log.Infof("No output parameters")
 		return nil
 	}
+	log.Infof("Saving resource output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
 			continue
