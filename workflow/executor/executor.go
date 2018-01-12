@@ -1,13 +1,19 @@
 package executor
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/argoproj/argo/errors"
@@ -18,6 +24,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,10 +33,12 @@ import (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	PodName   string
-	Template  wfv1.Template
-	ClientSet kubernetes.Interface
-	Namespace string
+	PodName            string
+	Template           wfv1.Template
+	ClientSet          kubernetes.Interface
+	Namespace          string
+	PodAnnotationsPath string
+	ExecutionControl   *common.ExecutionControl
 
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
@@ -132,11 +141,11 @@ func (we *WorkflowExecutor) StageFiles() error {
 
 // SaveArtifacts uploads artifacts to the archive location
 func (we *WorkflowExecutor) SaveArtifacts() error {
-	log.Infof("Saving output artifacts")
 	if len(we.Template.Outputs.Artifacts) == 0 {
-		log.Infof("No output artifacts, nothing to do")
+		log.Infof("No output artifacts")
 		return nil
 	}
+	log.Infof("Saving output artifacts")
 	mainCtrID, err := we.GetMainContainerID()
 	if err != nil {
 		return err
@@ -203,11 +212,11 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 
 // SaveParameters will save the content in the specified file path as output parameter value
 func (we *WorkflowExecutor) SaveParameters() error {
-	log.Infof("Saving output parameters")
 	if len(we.Template.Outputs.Parameters) == 0 {
-		log.Infof("No output parameters, nothing to do")
+		log.Infof("No output parameters")
 		return nil
 	}
+	log.Infof("Saving output parameters")
 	mainCtrID, err := we.GetMainContainerID()
 	if err != nil {
 		return err
@@ -304,12 +313,22 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
 
-// GetMainContainerStatus returns the container status of the main container, nil if the main container does not exist
-func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, error) {
+// getPod is a wrapper around the pod interface to get the current pod from kube API server
+func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
+	// TODO(jessesuen): harden this as part of issue #653
 	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
+	}
+	return pod, nil
+}
+
+// GetMainContainerStatus returns the container status of the main container, nil if the main container does not exist
+func (we *WorkflowExecutor) GetMainContainerStatus() (*apiv1.ContainerStatus, error) {
+	pod, err := we.getPod()
+	if err != nil {
+		return nil, err
 	}
 	for _, ctrStatus := range pod.Status.ContainerStatuses {
 		if ctrStatus.Name == common.MainContainerName {
@@ -331,10 +350,8 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 	if ctrStatus == nil {
 		return "", nil
 	}
-	mainCtrID := strings.Replace(ctrStatus.ContainerID, "docker://", "", 1)
-	we.mainContainerID = mainCtrID
-	log.Infof("'main' container identified as: %s", mainCtrID)
-	return mainCtrID, nil
+	we.mainContainerID = containerID(ctrStatus.ContainerID)
+	return we.mainContainerID, nil
 }
 
 func archivePath(containerID string, sourcePath string, destPath string) error {
@@ -439,38 +456,27 @@ func containerID(ctrID string) string {
 	return strings.Replace(ctrID, "docker://", "", 1)
 }
 
-// Wait is the sidecar container waits for the main container to complete and kills any sidecars after it finishes
+// Wait is the sidecar container logic which waits for the main container to complete.
+// Also monitors for updates in the pod annotations which may change (e.g. terminate)
+// Upon completion, kills any sidecars after it finishes.
 func (we *WorkflowExecutor) Wait() error {
 	log.Infof("Waiting on main container")
-	var mainContainerID string
-	for {
-		ctrStatus, err := we.GetMainContainerStatus()
-		if err != nil {
-			return err
-		}
-		if ctrStatus != nil {
-			log.Debug(ctrStatus)
-			if ctrStatus.ContainerID != "" {
-				mainContainerID = containerID(ctrStatus.ContainerID)
-				break
-			} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
-				// status still not ready, wait
-				time.Sleep(5)
-			} else if ctrStatus.State.Waiting != nil {
-				// main container is still in waiting status
-				time.Sleep(5)
-			} else {
-				// main container in running or terminated state but missing container ID
-				return errors.InternalError("Container ID cannot be found")
-			}
-		}
-	}
-
-	err := common.RunCommand("docker", "wait", mainContainerID)
+	mainContainerID, err := we.waitMainContainerStart()
 	if err != nil {
 		return err
 	}
-	log.Infof("Waiting completed")
+	log.Infof("main container started with container ID: %s", mainContainerID)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	annotationUpdatesCh := we.monitorAnnotations(ctx)
+	go we.monitorDeadline(ctx, annotationUpdatesCh)
+
+	err = common.RunCommand("docker", "wait", mainContainerID)
+	if err != nil {
+		return err
+	}
+	log.Infof("Main container completed")
 	err = we.killSidecars()
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -478,20 +484,188 @@ func (we *WorkflowExecutor) Wait() error {
 	return nil
 }
 
+// waitMainContainerStart waits for the main container to start and returns its container ID.
+func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
+	for {
+		ctrStatus, err := we.GetMainContainerStatus()
+		if err != nil {
+			return "", err
+		}
+		if ctrStatus != nil {
+			log.Debug(ctrStatus)
+			if ctrStatus.ContainerID != "" {
+				we.mainContainerID = containerID(ctrStatus.ContainerID)
+				return containerID(ctrStatus.ContainerID), nil
+			} else if ctrStatus.State.Waiting == nil && ctrStatus.State.Running == nil && ctrStatus.State.Terminated == nil {
+				// status still not ready, wait
+				time.Sleep(1 * time.Second)
+			} else if ctrStatus.State.Waiting != nil {
+				// main container is still in waiting status
+				time.Sleep(1 * time.Second)
+			} else {
+				// main container in running or terminated state but missing container ID
+				return "", errors.InternalError("Main container ID cannot be found")
+			}
+		}
+	}
+}
+
+// monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.
+// Emits an event on the returned channel upon any updates
+func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struct{} {
+	log.Infof("Starting annotations monitor")
+	// Create a fsnotify watcher on the local annotations file to listen for updates from the Downward API
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = watcher.Add(we.PodAnnotationsPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create a channel to listen for a SIGUSR2. Upon receiving of the signal, we force reload our annotations
+	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
+	// instead of waiting for the volume file to get updated (which can take minutes)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGUSR2)
+
+	// Create a channel which will notify a listener on new updates to the annotations
+	annotationUpdateCh := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Infof("Annotations monitor stopped")
+				_ = watcher.Close()
+				signal.Stop(sigs)
+				close(sigs)
+				close(annotationUpdateCh)
+				return
+			case <-sigs:
+				log.Infof("Received update signal. Reloading annotations from API")
+				annotationUpdateCh <- struct{}{}
+				pod, err := we.getPod()
+				if err != nil {
+					log.Warnf("Failed to reload execution control from API server: %v", err)
+					continue
+				}
+				execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
+				if !ok {
+					we.ExecutionControl = nil
+				} else {
+					var execCtl common.ExecutionControl
+					err = json.Unmarshal([]byte(execCtlString), &execCtl)
+					if err != nil {
+						log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
+						continue
+					}
+					we.ExecutionControl = &execCtl
+					log.Infof("Execution control reloaded from API: %v", *we.ExecutionControl)
+				}
+			case <-watcher.Events:
+				log.Infof("%s updated", we.PodAnnotationsPath)
+				err := we.LoadExecutionControl()
+				if err != nil {
+					log.Warnf("Failed to reload execution control from annotations: %v", err)
+					continue
+				}
+				if we.ExecutionControl != nil {
+					log.Infof("Execution control reloaded from annotations: %v", *we.ExecutionControl)
+				}
+				annotationUpdateCh <- struct{}{}
+			}
+		}
+	}()
+	return annotationUpdateCh
+}
+
+// monitorDeadline checks to see if we exceeded the deadline for the step and
+// terminates the main container if we did
+func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpdate <-chan struct{}) {
+	log.Infof("Starting deadline monitor")
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Deadline monitor stopped")
+			return
+		case <-annotationsUpdate:
+		default:
+			// TODO(jessesuen): we do not effectively use the annotations update channel yet. Ideally, we
+			// should optimize this logic so that we use some type of mutable timer against the deadline
+			// value instead of polling.
+			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
+				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
+					if !we.ExecutionControl.Deadline.IsZero() {
+						// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
+						// timeouts as a failure and the pod should be annotated with that error
+						errMsg := fmt.Sprintf("step exceeded deadline %s", *we.ExecutionControl.Deadline)
+						log.Warnf(errMsg)
+						// TODO(jessesuen): we do not have workflow or step level timeouts (yet) so do not annotate yet
+						//_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, errMsg)
+					} else {
+						log.Info("step has been cancelled")
+					}
+					log.Infof("Killing main container")
+					mainContainerID, _ := we.GetMainContainerID()
+					err := killContainers([]string{mainContainerID})
+					if err != nil {
+						log.Warnf("Failed to kill main container: %v", err)
+					}
+					return
+				}
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
 // killGracePeriod is the time in seconds after sending SIGTERM before
 // forcefully killing the sidcar with SIGKILL (value matches k8s)
 const killGracePeriod = 30
 
-func (we *WorkflowExecutor) killSidecars() error {
-	log.Infof("Killing sidecars")
-	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
-	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+// killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
+func killContainers(containerIDs []string) error {
+	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
+	err := common.RunCommand("docker", killArgs...)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+	waitArgs := append([]string{"wait"}, containerIDs...)
+	waitCmd := exec.Command("docker", waitArgs...)
+	log.Info(waitCmd.Args)
+	if err := waitCmd.Start(); err != nil {
+		return errors.InternalWrapError(err)
+	}
+	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
+		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", killGracePeriod)
+		_ = waitCmd.Process.Kill()
+		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
+		forceKillCmd := exec.Command("docker", forceKillArgs...)
+		log.Info(forceKillCmd.Args)
+		_ = forceKillCmd.Run()
+	})
+	err = waitCmd.Wait()
+	_ = timer.Stop()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return nil
+}
+
+// killSidecars kills any sidecars to the main container
+func (we *WorkflowExecutor) killSidecars() error {
+	if len(we.Template.Sidecars) == 0 {
+		log.Infof("No sidecars")
+		return nil
+	}
+	log.Infof("Killing sidecars")
+	pod, err := we.getPod()
+	if err != nil {
+		return err
+	}
 	sidecarIDs := make([]string, 0)
-	killArgs := []string{"kill"}
-	waitArgs := []string{"wait"}
 	for _, ctrStatus := range pod.Status.ContainerStatuses {
 		if ctrStatus.Name == common.MainContainerName || ctrStatus.Name == common.WaitContainerName {
 			continue
@@ -502,36 +676,107 @@ func (we *WorkflowExecutor) killSidecars() error {
 		containerID := containerID(ctrStatus.ContainerID)
 		log.Infof("Killing sidecar %s (%s)", ctrStatus.Name, containerID)
 		sidecarIDs = append(sidecarIDs, containerID)
-		killArgs = append(killArgs, containerID)
-		waitArgs = append(waitArgs, containerID)
 	}
 	if len(sidecarIDs) == 0 {
 		return nil
 	}
-	killArgs = append(killArgs, "--signal", "TERM")
-	err = common.RunCommand("docker", killArgs...)
+	return killContainers(sidecarIDs)
+}
+
+// LoadTemplate reads the template definition from the the Kubernetes downward api annotations volume file
+func (we *WorkflowExecutor) LoadTemplate() error {
+	err := unmarshalAnnotationField(we.PodAnnotationsPath, common.AnnotationKeyTemplate, &we.Template)
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
-	log.Infof("Waiting (%ds) for sidecars to terminate", killGracePeriod)
-	cmd := exec.Command("docker", waitArgs...)
-	log.Info(cmd.Args)
-	if err := cmd.Start(); err != nil {
-		return errors.InternalWrapError(err)
-	}
-	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
-		log.Infof("Timed out (%ds) for sidecars to terminate gracefully. Killing forcefully", killGracePeriod)
-		_ = cmd.Process.Kill()
-		killArgs[len(waitArgs)-1] = "KILL"
-		cmd = exec.Command("docker", killArgs...)
-		log.Info(cmd.Args)
-		_ = cmd.Run()
-	})
-	err = cmd.Wait()
-	timer.Stop()
+// LoadExecutionControl reads the execution control definition from the the Kubernetes downward api annotations volume file
+func (we *WorkflowExecutor) LoadExecutionControl() error {
+	err := unmarshalAnnotationField(we.PodAnnotationsPath, common.AnnotationKeyExecutionControl, &we.ExecutionControl)
 	if err != nil {
+		if errors.IsCode(errors.CodeNotFound, err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+// unmarshalAnnotationField unmarshals the value of an annotation key into the supplied interface
+// from the downward api annotation volume file
+func unmarshalAnnotationField(filePath string, key string, into interface{}) error {
+	// Read the annotation file
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Errorf("ERROR opening annotation file from %s", filePath)
 		return errors.InternalWrapError(err)
 	}
-	return err
+
+	defer func() {
+		_ = file.Close()
+	}()
+	reader := bufio.NewReader(file)
+
+	// Prefix of key property in the annotation file
+	prefix := fmt.Sprintf("%s=", key)
+
+	for {
+		// Read line-by-line
+		var buffer bytes.Buffer
+		var l []byte
+		var isPrefix bool
+		for {
+			l, isPrefix, err = reader.ReadLine()
+			buffer.Write(l)
+			// If we've reached the end of the line, stop reading.
+			if !isPrefix {
+				break
+			}
+			// If we're just at the EOF, break
+			if err != nil {
+				break
+			}
+		}
+		// The end of the annotation file
+		if err == io.EOF {
+			break
+		}
+		line := buffer.String()
+
+		// Read property
+		if strings.HasPrefix(line, prefix) {
+			// Trim the prefix
+			content := strings.TrimPrefix(line, prefix)
+
+			// This part is a bit tricky in terms of unmarshalling
+			// The content in the file will be something like,
+			// `"{\"type\":\"container\",\"inputs\":{},\"outputs\":{}}"`
+			// which is required to unmarshal twice
+
+			// First unmarshal to a string without escaping characters
+			var fieldString string
+			err = json.Unmarshal([]byte(content), &fieldString)
+			if err != nil {
+				log.Errorf("Error unmarshalling annotation into string, %s, %v\n", content, err)
+				return errors.InternalWrapError(err)
+			}
+
+			// Second unmarshal to a template
+			err = json.Unmarshal([]byte(fieldString), into)
+			if err != nil {
+				log.Errorf("Error unmarshalling annotation into datastructure, %s, %v\n", fieldString, err)
+				return errors.InternalWrapError(err)
+			}
+			return nil
+		}
+	}
+
+	if err != io.EOF {
+		return errors.InternalWrapError(err)
+	}
+
+	// If we reach here, then the key does not exist in the file
+	return errors.Errorf(errors.CodeNotFound, "Key %s not found in annotation file: %s", key, filePath)
 }

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"time"
+
 	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
@@ -45,6 +47,10 @@ const (
 	AnnotationKeyTemplate = workflow.FullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
 	AnnotationKeyOutputs = workflow.FullName + "/outputs"
+	// AnnotationKeyExecutionControl is the pod metadata annotation key containing execution control parameters
+	// set by the controller and obeyed by the executor. For example, the controller will use this annotation to
+	// signal the executors of daemoned containers that it should terminate.
+	AnnotationKeyExecutionControl = workflow.FullName + "/execution"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to pod labels
 	// for the purposes of workflow segregation
@@ -91,3 +97,11 @@ const (
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
 )
+
+// ExecutionControl contains execution control parameters for executor to decide how to execute the container
+type ExecutionControl struct {
+	// Deadline is a max timestamp in which an executor can run the container before terminating it
+	// It is used to signal the executor to terminate a daemoned container. In the future it will be
+	// used to support workflow or steps/dag level timeouts.
+	Deadline *time.Time `json:"deadline,omitempty"`
+}
