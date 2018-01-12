@@ -36,7 +36,8 @@ spec:
     outputs:
       parameters:
       - name: hello-param
-        path: /tmp/hello_world.txt
+        valueFrom:
+          path: /tmp/hello_world.txt
 
   - name: print-message
     inputs:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-alpha4 (Unreleased)
++ Add a --dry-run option to the installer
++ Add ability for steps and resource templates to have outputs
+- Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
+* {{workflow.uuid}} variable corrected to {{workflow.uid}}
+
 ## 2.0.0-alpha3 (2018-01-02)
 + Introduce the "resource" template type for performing CRUD operations on k8s resources
 + Support for workflow exit handlers

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
@@ -17,10 +19,12 @@ import (
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -51,6 +55,7 @@ func init() {
 	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
 	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows to ssh into running step container using Argo UI")
+	installCmd.Flags().BoolVar(&installArgs.DryRun, "dry-run", false, "print the kubernetes manifests to stdout instead of installing")
 }
 
 // InstallFlags has all the required parameters for installing Argo.
@@ -66,6 +71,7 @@ type InstallFlags struct {
 	ServiceAccount   string // --service-account
 	Upgrade          bool   // --upgrade
 	EnableWebConsole bool   // --enable-web-console
+	DryRun           bool   // --dry-run
 }
 
 var installArgs InstallFlags
@@ -76,12 +82,22 @@ var installCmd = &cobra.Command{
 	Run:   install,
 }
 
+func printYAML(obj interface{}) {
+	objBytes, err := yaml.Marshal(obj)
+	if err != nil {
+		log.Fatalf("Failed to marshal %v", obj)
+	}
+	fmt.Printf("---\n%s\n", string(objBytes))
+}
+
 // Install installs the Argo controller and UI in the given Namespace
 func Install(cmd *cobra.Command, args InstallFlags) {
-	fmt.Printf("Installing Argo %s into namespace '%s'\n", argo.GetVersion(), args.Namespace)
 	clientset = initKubeClient()
-	kubernetesVersionCheck(clientset)
-	installCRD(clientset)
+	if !args.DryRun {
+		fmt.Printf("Installing Argo %s into namespace '%s'\n", argo.GetVersion(), args.Namespace)
+		kubernetesVersionCheck(clientset)
+	}
+	installCRD(clientset, args)
 	if args.ServiceAccount == "" {
 		if clusterAdminExists(clientset) {
 			seviceAccountName := ArgoServiceAccount
@@ -91,10 +107,12 @@ func Install(cmd *cobra.Command, args InstallFlags) {
 		}
 	}
 	installConfigMap(clientset, args)
-	if args.ServiceAccount == "" {
-		fmt.Printf("Using default service account for deployments\n")
-	} else {
-		fmt.Printf("Using service account '%s' for deployments\n", args.ServiceAccount)
+	if !args.DryRun {
+		if args.ServiceAccount == "" {
+			fmt.Printf("Using default service account for deployments\n")
+		} else {
+			fmt.Printf("Using service account '%s' for deployments\n", args.ServiceAccount)
+		}
 	}
 	installController(clientset, args)
 	installUI(clientset, args)
@@ -127,6 +145,10 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 			Name:      serviceAccountName,
 			Namespace: args.Namespace,
 		},
+	}
+	if args.DryRun {
+		printYAML(serviceAccount)
+		return
 	}
 	_, err := clientset.CoreV1().ServiceAccounts(args.Namespace).Create(&serviceAccount)
 	if err != nil {
@@ -161,7 +183,10 @@ func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountNam
 			},
 		},
 	}
-
+	if args.DryRun {
+		printYAML(roleBinding)
+		return
+	}
 	_, err := clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
@@ -199,67 +224,82 @@ func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
 
 func installConfigMap(clientset *kubernetes.Clientset, args InstallFlags) {
 	cmClient := clientset.CoreV1().ConfigMaps(args.Namespace)
-	var wfConfig controller.WorkflowControllerConfig
-
-	// install ConfigMap if non-existent
-	wfConfigMap, err := cmClient.Get(args.ConfigMap, metav1.GetOptions{})
+	wfConfig := controller.WorkflowControllerConfig{
+		ExecutorImage: args.ExecutorImage,
+		InstanceID:    args.InstanceID,
+	}
+	configBytes, err := yaml.Marshal(wfConfig)
 	if err != nil {
-		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed lookup of ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
-		}
-		// Create the config map
-		wfConfig.ExecutorImage = args.ExecutorImage
-		wfConfig.InstanceID = args.InstanceID
-		configBytes, err := yaml.Marshal(wfConfig)
-		if err != nil {
-			log.Fatalf("%+v", errors.InternalWrapError(err))
-		}
-		wfConfigMap.ObjectMeta.Name = args.ConfigMap
-		wfConfigMap.Data = map[string]string{
+		log.Fatalf("%+v", errors.InternalWrapError(err))
+	}
+	wfConfigMap := apiv1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      args.ConfigMap,
+			Namespace: args.Namespace,
+		},
+		Data: map[string]string{
 			common.WorkflowControllerConfigMapKey: string(configBytes),
-		}
-		wfConfigMap, err = cmClient.Create(wfConfigMap)
-		if err != nil {
+		},
+	}
+	if args.DryRun {
+		printYAML(wfConfigMap)
+		return
+	}
+	_, err = cmClient.Create(&wfConfigMap)
+	if err != nil {
+		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
 		}
-		fmt.Printf("ConfigMap '%s' created\n", args.ConfigMap)
-	} else {
-		// Check if existing configmap needs upgrade to a new executor image
-		configStr, ok := wfConfigMap.Data[common.WorkflowControllerConfigMapKey]
+		// Configmap already exists. Check if existing configmap needs an update to a new executor image
+		existingCM, err := cmClient.Get(args.ConfigMap, metav1.GetOptions{})
+		if err != nil {
+			log.Fatalf("Failed to retrieve ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
+		}
+		configStr, ok := existingCM.Data[common.WorkflowControllerConfigMapKey]
 		if !ok {
 			log.Fatalf("ConfigMap '%s' missing key '%s'", args.ConfigMap, common.WorkflowControllerConfigMapKey)
 		}
-		err = yaml.Unmarshal([]byte(configStr), &wfConfig)
+		var existingConfig controller.WorkflowControllerConfig
+		err = yaml.Unmarshal([]byte(configStr), &existingConfig)
 		if err != nil {
 			log.Fatalf("Failed to load controller configuration: %v", err)
 		}
-		if wfConfig.ExecutorImage != args.ExecutorImage {
-			if !args.Upgrade {
-				log.Fatalf("ConfigMap '%s' requires upgrade. Rerun with --upgrade to update the configuration", args.ConfigMap)
-			}
-			wfConfig.ExecutorImage = args.ExecutorImage
-			configBytes, err := yaml.Marshal(wfConfig)
-			if err != nil {
-				log.Fatalf("%+v", errors.InternalWrapError(err))
-			}
-			wfConfigMap.Data = map[string]string{
-				common.WorkflowControllerConfigMapKey: string(configBytes),
-			}
-			_, err = cmClient.Update(wfConfigMap)
-			if err != nil {
-				log.Fatalf("Failed to update ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
-			}
-			fmt.Printf("ConfigMap '%s' updated\n", args.ConfigMap)
-		} else {
+		if existingConfig.ExecutorImage == wfConfig.ExecutorImage {
 			fmt.Printf("Existing ConfigMap '%s' up-to-date\n", args.ConfigMap)
+			return
 		}
+		if !args.Upgrade {
+			log.Fatalf("ConfigMap '%s' requires upgrade. Rerun with --upgrade to update the configuration", args.ConfigMap)
+		}
+		existingConfig.ExecutorImage = args.ExecutorImage
+		configBytes, err := yaml.Marshal(existingConfig)
+		if err != nil {
+			log.Fatalf("%+v", errors.InternalWrapError(err))
+		}
+		existingCM.Data = map[string]string{
+			common.WorkflowControllerConfigMapKey: string(configBytes),
+		}
+		_, err = cmClient.Update(existingCM)
+		if err != nil {
+			log.Fatalf("Failed to update ConfigMap '%s' in namespace '%s': %v", args.ConfigMap, args.Namespace, err)
+		}
+		fmt.Printf("ConfigMap '%s' updated\n", args.ConfigMap)
 	}
 }
 
 func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 	controllerDeployment := appsv1beta2.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1beta2",
+			Kind:       "Deployment",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: args.ControllerName,
+			Name:      args.ControllerName,
+			Namespace: args.Namespace,
 		},
 		Spec: appsv1beta2.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -303,8 +343,13 @@ func installController(clientset *kubernetes.Clientset, args InstallFlags) {
 
 func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 	uiDeployment := appsv1beta2.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1beta2",
+			Kind:       "Deployment",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: args.UIName,
+			Name:      args.UIName,
+			Namespace: args.Namespace,
 		},
 		Spec: appsv1beta2.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -357,6 +402,10 @@ func createDeploymentHelper(deployment *appsv1beta2.Deployment, args InstallFlag
 	depClient := clientset.AppsV1beta2().Deployments(args.Namespace)
 	var result *appsv1beta2.Deployment
 	var err error
+	if args.DryRun {
+		printYAML(deployment)
+		return
+	}
 	result, err = depClient.Create(deployment)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
@@ -418,8 +467,13 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 	svcName := ArgoServiceName
 	svcClient := clientset.CoreV1().Services(args.Namespace)
 	uiSvc := apiv1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: svcName,
+			Name:      svcName,
+			Namespace: args.Namespace,
 		},
 		Spec: apiv1.ServiceSpec{
 			Ports: []apiv1.ServicePort{
@@ -433,6 +487,10 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 			},
 		},
 	}
+	if args.DryRun {
+		printYAML(uiSvc)
+		return
+	}
 	_, err := svcClient.Create(&uiSvc)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
@@ -444,20 +502,60 @@ func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
 	}
 }
 
-func installCRD(clientset *kubernetes.Clientset) {
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(restConfig)
-	if err != nil {
-		log.Fatalf("Failed to create CustomResourceDefinition '%s': %v", wfv1.CRDFullName, err)
+func installCRD(clientset *kubernetes.Clientset, args InstallFlags) {
+	workflowCRD := apiextensionsv1beta1.CustomResourceDefinition{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apiextensions.k8s.io/v1beta1",
+			Kind:       "CustomResourceDefinition",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: workflow.FullName,
+		},
+		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
+			Group:   workflow.Group,
+			Version: wfv1.SchemeGroupVersion.Version,
+			Scope:   apiextensionsv1beta1.NamespaceScoped,
+			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+				Plural:     workflow.Plural,
+				Kind:       workflow.Kind,
+				ShortNames: []string{workflow.ShortName},
+			},
+		},
 	}
-
-	// initialize custom resource using a CustomResourceDefinition if it does not exist
-	result, err := common.CreateCustomResourceDefinition(apiextensionsclientset)
+	if args.DryRun {
+		printYAML(workflowCRD)
+		return
+	}
+	apiextensionsclientset := apiextensionsclient.NewForConfigOrDie(restConfig)
+	_, err := apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(&workflowCRD)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
 			log.Fatalf("Failed to create CustomResourceDefinition: %v", err)
 		}
-		fmt.Printf("CustomResourceDefinition '%s' already exists\n", wfv1.CRDFullName)
-	} else {
-		fmt.Printf("CustomResourceDefinition '%s' created\n", result.GetObjectMeta().GetName())
+		fmt.Printf("CustomResourceDefinition '%s' already exists\n", workflow.FullName)
+	}
+	// wait for CRD being established
+	var crd *apiextensionsv1beta1.CustomResourceDefinition
+	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
+		crd, err = apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(workflow.FullName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		for _, cond := range crd.Status.Conditions {
+			switch cond.Type {
+			case apiextensionsv1beta1.Established:
+				if cond.Status == apiextensionsv1beta1.ConditionTrue {
+					return true, err
+				}
+			case apiextensionsv1beta1.NamesAccepted:
+				if cond.Status == apiextensionsv1beta1.ConditionFalse {
+					log.Errorf("Name conflict: %v", cond.Reason)
+				}
+			}
+		}
+		return false, err
+	})
+	if err != nil {
+		log.Fatalf("Failed to wait for CustomResourceDefinition: %v", err)
 	}
 }

@@ -11,8 +11,7 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 
 On Mac:
 ```
-$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha3/argo-darwin-amd64
-$ chmod +x /usr/local/bin/argo
+$ brew install argoproj/tap/argo
 ```
 On Linux:
 ```
@@ -24,10 +23,16 @@ $ chmod +x /usr/local/bin/argo
 ```
 $ argo install
 ```
+NOTE: the instructions below assume the installation of argo into the `kube-system` namespace (the default behavior). A different namespace can be chosen using the `argo install --install-namespace <name>` flag, in which case you should substitute `kube-system` with your chosen namespace in the examples below.
 
-NOTE: the examples below assume the installation of argo into the `kube-system` namespace (the default behavior). Replace `kube-system` with your own namespace, if a different one was chosen during installation.
+## 3. Configure the service account to run workflows (required for RBAC clusters)
+For clusters with RBAC enabled, the 'default' service account is too limited to do any kind of meaningful work. Run the following command to grant admin privileges to the 'default' service account in the namespace 'default':
+```
+$ kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
+```
+NOTE: You can also submit workflows using a different service account using the `argo submit --serviceaccount <name>` flag.
 
-## 3. Run Simple Example Workflows
+## 4. Run Simple Example Workflows
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/coinflip.yaml
@@ -48,16 +53,16 @@ $ kubectl logs hello-world-yyy -c main
 
 Additional examples are availabe [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
 
-## 4. Install an Artifact Repository
+## 5. Install an Artifact Repository
 
-You'll create the artifact repo using Minio.
+Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositories. This tutorial uses Minio for the sake of portability.
 ```
 $ brew install kubernetes-helm # mac
 $ helm init
 $ helm install stable/minio --name argo-artifacts
 ```
 
-Login to the Minio using a web browser (port 9000) after obtaining the external IP using `kubectl`.
+Login to the Minio UI using a web browser (port 9000) after obtaining the external IP using `kubectl`.
 ```
 $ kubectl get service argo-artifacts-minio-svc
 ```
@@ -73,7 +78,7 @@ which you will use to login to the UI:
 
 Create a bucket named `my-bucket` from the Minio UI.
 
-## 5. Reconfigure the workflow controller to use the Minio artifact repository configured in step 4.
+## 6. Reconfigure the workflow controller to use the Minio artifact repository
 
 Edit the workflow-controller config map to reference the service name (argo-artifacts-minio-svc) and secret (argo-artifacts-minio-user) created by the helm install:
 ```
@@ -98,12 +103,14 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           key: secretkey
 ```
 
-## 6. Run a workflow which uses artifacts
+The Minio secret is retrived from the namespace you use to run workflows. If Minio is installed in a different namespace then you will need to create a copy of its secret in the namespace you use for workflows.
+
+## 7. Run a workflow which uses artifacts
 ```
 $ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
 
-## 7. Access the Argo UI
+## 8. Access the Argo UI
 
 By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the following methods:
 
@@ -112,7 +119,7 @@ Run:
 ```
 $ kubectl proxy
 ```
-Then visit the following URL in your browser: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui:80/
+Then visit the following URL in your browser: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui/
 
 #### Method 2: Use a LoadBalancer
 

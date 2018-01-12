@@ -38,6 +38,9 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 		controller:    newController(),
 		completedPods: make(map[string]bool),
 	}
+	if woc.wf.Status.Nodes == nil {
+		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	}
 	return &woc
 }
 

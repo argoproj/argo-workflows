@@ -1,7 +1,7 @@
 package common
 
 import (
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 const (
@@ -38,25 +38,25 @@ const (
 	DockerSockVolumeName = "docker-sock"
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
-	AnnotationKeyNodeName = wfv1.CRDFullName + "/node-name"
+	AnnotationKeyNodeName = workflow.FullName + "/node-name"
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
-	AnnotationKeyNodeMessage = wfv1.CRDFullName + "/node-message"
+	AnnotationKeyNodeMessage = workflow.FullName + "/node-message"
 	// AnnotationKeyTemplate is the pod metadata annotation key containing the container template as JSON
-	AnnotationKeyTemplate = wfv1.CRDFullName + "/template"
+	AnnotationKeyTemplate = workflow.FullName + "/template"
 	// AnnotationKeyOutputs is the pod metadata annotation key containing the container outputs
-	AnnotationKeyOutputs = wfv1.CRDFullName + "/outputs"
+	AnnotationKeyOutputs = workflow.FullName + "/outputs"
 
 	// LabelKeyControllerInstanceID is the label the controller will carry forward to pod labels
 	// for the purposes of workflow segregation
-	LabelKeyControllerInstanceID = wfv1.CRDFullName + "/controller-instanceid"
+	LabelKeyControllerInstanceID = workflow.FullName + "/controller-instanceid"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
 	// Workflows and pods with a completed=true label will be ignored by the controller
-	LabelKeyCompleted = wfv1.CRDFullName + "/completed"
+	LabelKeyCompleted = workflow.FullName + "/completed"
 	// LabelKeyWorkflow is the pod metadata label to indicate the associated workflow name
-	LabelKeyWorkflow = wfv1.CRDFullName + "/workflow"
+	LabelKeyWorkflow = workflow.FullName + "/workflow"
 	// LabelKeyPhase is a label applied to workflows to indicate the current phase of the workflow (for filtering purposes)
-	LabelKeyPhase = wfv1.CRDFullName + "/phase"
+	LabelKeyPhase = workflow.FullName + "/phase"
 
 	// ExecutorArtifactBaseDir is the base directory in the init container in which artifacts will be copied to.
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
@@ -87,8 +87,8 @@ const (
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
-	// GlobalVarWorkflowUUID is a global workflow variable referencing the workflow's metadata.uuid field
-	GlobalVarWorkflowUUID = "workflow.uuid"
+	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
+	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
 )

@@ -49,7 +49,7 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	ctx.globalParams[GlobalVarWorkflowName] = placeholderValue
-	ctx.globalParams[GlobalVarWorkflowUUID] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
@@ -88,7 +88,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	ctx.results[tmpl.Name] = true
 	_, err := ProcessArgs(tmpl, args, ctx.globalParams, true)
 	if err != nil {
-		return err
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 	scope, err := validateInputs(tmpl)
 	if err != nil {
@@ -132,7 +132,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(tmpl)
+	err = validateOutputs(scope, tmpl)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 			}
 		}
 		if art.From != "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from only valid in arguments", tmpl.Name, artRef)
+			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
 		}
 		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art)
@@ -340,7 +340,7 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string
 	}
 }
 
-func validateOutputs(tmpl *wfv1.Template) error {
+func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters%s", tmpl.Name, err.Error())
@@ -348,6 +348,14 @@ func validateOutputs(tmpl *wfv1.Template) error {
 	err = validateWorkflowFieldNames(tmpl.Outputs.Artifacts)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts%s", tmpl.Name, err.Error())
+	}
+	outputBytes, err := json.Marshal(tmpl.Outputs)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	err = resolveAllVariables(scope, string(outputBytes))
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs %s", tmpl.Name, err.Error())
 	}
 
 	isLeaf := tmpl.Container != nil || tmpl.Script != nil
@@ -361,9 +369,6 @@ func validateOutputs(tmpl *wfv1.Template) error {
 			if art.Path != "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 			}
-		}
-		if art.From != "" {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from only valid in arguments", tmpl.Name, artRef)
 		}
 	}
 	return nil

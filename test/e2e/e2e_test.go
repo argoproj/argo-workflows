@@ -9,6 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	// load the gcp plugin (required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
@@ -33,6 +35,19 @@ func getKubernetesClient() *kubernetes.Clientset {
 	return clientSet
 }
 
+func newInstallArgs(namespace string) commands.InstallFlags {
+	return commands.InstallFlags{
+		ControllerName:  common.DefaultControllerDeploymentName,
+		UIName:          common.DefaultUiDeploymentName,
+		Namespace:       namespace,
+		ConfigMap:       common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
+		ControllerImage: "argoproj/workflow-controller:latest",
+		UIImage:         "argoproj/argoui:latest",
+		ExecutorImage:   "argoproj/argoexec:latest",
+		ServiceAccount:  "",
+	}
+}
+
 func createNamespaceForTest() string {
 	clientset := getKubernetesClient()
 	ns := &v1.Namespace{
@@ -55,17 +70,6 @@ func deleteTestNamespace(namespace string) error {
 }
 
 func installArgoInNamespace(namespace string) {
-	args := commands.InstallFlags{
-		ControllerName: common.DefaultControllerDeploymentName,
-		UIName:         common.DefaultUiDeploymentName,
-		Namespace:      namespace,
-		ConfigMap:      common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
-		//TODO(shri): Use better defaults that don't need Makefiles
-		ControllerImage: "argoproj/workflow-controller:v2.0.0-alpha3",
-		UIImage:         "argoproj/argoui:v2.0.0-alpha3",
-		ExecutorImage:   "argoproj/argoexec:v2.0.0-alpha3",
-		ServiceAccount:  "",
-	}
-
+	args := newInstallArgs(namespace)
 	commands.Install(nil, args)
 }
