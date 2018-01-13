@@ -189,8 +189,8 @@ STEP                                     PODNAME
 ## Artifacts
 
 **Note:** 
-You will need to have installed and configured an artifact repository for this example to run.
-[Installing an artifact repository here](https://github.com/argoproj/argo/blob/master/demo.md#5-install-an-artifact-repository).
+You will need to have configured an artifact repository to run this example.
+[Configuring an artifact repository here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
