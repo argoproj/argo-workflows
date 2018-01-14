@@ -5,6 +5,12 @@ metadata:
 
 spec:
   entrypoint: influxdb-ci
+  arguments:
+    parameters:
+    - name: repo
+      value: https://github.com/influxdata/influxdb.git
+    - name: revision
+      value: master
 
   templates:
   - name: influxdb-ci
@@ -42,8 +48,8 @@ spec:
       - name: source
         path: /src
         git:
-          repo: https://github.com/argoproj/influxdb.git
-          revision: "master"
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
     outputs:
       artifacts:
       - name: source
