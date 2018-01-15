@@ -87,8 +87,8 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
       }
     }));
     this.subscriptions.push(Observable.combineLatest(treeSrc, Observable.interval(1000)).subscribe(() => {
-      if (this.workflow) {
-        Object.keys(this.workflow.status.nodes || {})
+      if (this.tree) {
+        Object.keys(this.tree.workflowStatusNodes)
             .map(name => this.workflow.status.nodes[name]).filter(node => node.startedAt).forEach(node => {
           const endTime = node.finishedAt ? moment(node.finishedAt) : moment();
           node['runDuration'] = endTime.diff(moment(node.startedAt)) / 1000;
@@ -158,13 +158,13 @@ export class WorkflowDetailsPageComponent implements OnInit, OnDestroy {
       });
     }
 
-    for (const nodeName of Object.keys(this.tree.workflow.status.nodes || {})) {
+    for (const nodeName of Object.keys(this.tree.workflowStatusNodes)) {
       let settings = this.actionSettingsByNodeName.get(nodeName);
       if (!settings) {
         settings = new DropdownMenuSettings([]);
         this.actionSettingsByNodeName.set(nodeName, settings);
       }
-      const status = (this.tree.workflow.status.nodes || {})[nodeName];
+      const status = (this.tree.workflowStatusNodes)[nodeName];
       if (status.phase === NODE_PHASE.RUNNING && this.isWebConsoleEnabled) {
         settings.menu.push({
           title: 'View Console',

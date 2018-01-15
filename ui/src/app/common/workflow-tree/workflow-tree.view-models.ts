@@ -25,8 +25,8 @@ export class WorkflowTree {
 
   private createRoot(): NodeInfo {
     const status: models.NodeStatus = this.workflow.status &&
-        this.workflow.status.nodes &&
-        this.workflow.status.nodes[this.workflow.metadata.name] || {
+        this.workflowStatusNodes &&
+        this.workflowStatusNodes[this.workflow.metadata.name] || {
           id: '',
           name: this.workflow.metadata.name,
           phase: '',
@@ -50,10 +50,10 @@ export class WorkflowTree {
       stepName: meta.stepName,
       status: nodeStatus,
       children: (nodeStatus.children || []).map(groupName => {
-        const groupStatus = this.workflow.status.nodes[groupName];
+        const groupStatus = this.workflowStatusNodes[groupName];
         if (groupStatus.children) {
           return (groupStatus.children || []).map(childName => ({
-            status: this.workflow.status.nodes[childName], nodeName: childName
+            status: this.workflowStatusNodes[childName], nodeName: childName
           })).map(item => this.getNodeInfo(item.status, item.nodeName));
         } else {
           return [this.getNodeInfo(groupStatus, groupStatus.name)];
@@ -87,14 +87,18 @@ export class WorkflowTree {
     return null;
   }
 
+  public get workflowStatusNodes() {
+    return this.workflow.status && this.workflow.status.nodes || {};
+  }
+
   public get root(): NodeInfo {
     return this.rootNode;
   }
 
   public getArtifacts(): ArtifactInfo[] {
-    return Object.keys(this.workflow.status.nodes || {})
+    return Object.keys(this.workflowStatusNodes)
     .map(nodeName => {
-      const node = this.workflow.status.nodes[nodeName];
+      const node = this.workflowStatusNodes[nodeName];
       const items = (node.outputs || { artifacts: [] }).artifacts || <models.Artifact[]>[];
       return items.map(item => Object.assign({}, item, {
         downloadUrl: `/api/workflows/${this.workflow.metadata.namespace}/${this.workflow.metadata.name}/artifacts/${nodeName}/${item.name}`,
