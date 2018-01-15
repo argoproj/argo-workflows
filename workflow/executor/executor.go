@@ -22,6 +22,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
 	"github.com/argoproj/argo/workflow/artifacts/http"
+	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/fsnotify/fsnotify"
@@ -309,6 +310,9 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		}
 		return &driver, nil
 
+	}
+	if art.Raw != nil {
+		return &raw.RawArtifactDriver{}, nil
 	}
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
