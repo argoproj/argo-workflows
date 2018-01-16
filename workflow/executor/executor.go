@@ -12,12 +12,14 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
@@ -29,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -43,21 +46,35 @@ type WorkflowExecutor struct {
 
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
+	// memoized secrets
+	memoizedSecrets map[string]string
 }
 
-// Use Kubernetes client to retrieve the Kubernetes secrets
-func (we *WorkflowExecutor) getSecrets(namespace string, name string, key string) (string, error) {
-	secrets, err := we.ClientSet.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-
-	if err != nil {
-		return "", errors.InternalWrapError(err)
+// NewExecutor instantiates a new workflow executor
+func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string) WorkflowExecutor {
+	return WorkflowExecutor{
+		PodName:            podName,
+		ClientSet:          clientset,
+		Namespace:          namespace,
+		PodAnnotationsPath: podAnnotationsPath,
+		memoizedSecrets:    map[string]string{},
 	}
+}
 
-	val, ok := secrets.Data[key]
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
+// AnnotatePanic is a helper to annotate the pod with an error message upon a unexpected executor panic
+func (we *WorkflowExecutor) AnnotatePanic() {
+	if r := recover(); r != nil {
+		_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
+		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	}
-	return string(val), nil
+}
+
+// DefaultRetry is a default retry backoff settings when retrying API calls
+var DefaultRetry = wait.Backoff{
+	Steps:    5,
+	Duration: 10 * time.Millisecond,
+	Factor:   1.0,
+	Jitter:   0.1,
 }
 
 // LoadArtifacts loads aftifacts from location to a container path
@@ -319,13 +336,59 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 
 // getPod is a wrapper around the pod interface to get the current pod from kube API server
 func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
-	// TODO(jessesuen): harden this as part of issue #653
-	podIf := we.ClientSet.CoreV1().Pods(we.Namespace)
-	pod, err := podIf.Get(we.PodName, metav1.GetOptions{})
+	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
+	var pod *apiv1.Pod
+	var err error
+	_ = wait.ExponentialBackoff(DefaultRetry, func() (bool, error) {
+		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
+		if err != nil {
+			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
+			if !retry.IsRetryableKubeAPIError(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
 	return pod, nil
+}
+
+// getSecrets retrieves a secret value and memoizes the result
+func (we *WorkflowExecutor) getSecrets(namespace, name, key string) (string, error) {
+	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
+	if val, ok := we.memoizedSecrets[cachedKey]; ok {
+		return val, nil
+	}
+	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
+	var secret *apiv1.Secret
+	var err error
+	_ = wait.ExponentialBackoff(DefaultRetry, func() (bool, error) {
+		secret, err = secretsIf.Get(name, metav1.GetOptions{})
+		if err != nil {
+			log.Warnf("Failed to get secret '%s': %v", name, err)
+			if !retry.IsRetryableKubeAPIError(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return "", errors.InternalWrapError(err)
+	}
+	// memoize all keys in the secret since it's highly likely we will need to get a
+	// subsequent key in the secret (e.g. username + password) and we can save an API call
+	for k, v := range secret.Data {
+		we.memoizedSecrets[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = string(v)
+	}
+	val, ok := we.memoizedSecrets[cachedKey]
+	if !ok {
+		return "", errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
+	}
+	return val, nil
 }
 
 // GetMainContainerStatus returns the container status of the main container, nil if the main container does not exist

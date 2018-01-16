@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/stats"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	log "github.com/sirupsen/logrus"
@@ -72,7 +74,8 @@ func Run(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
-	common.RegisterStackDumper()
+	stats.RegisterStackDumper()
+	stats.StartStatsTicker(5 * time.Minute)
 
 	kubeclientset := kubernetes.NewForConfigOrDie(config)
 	wflientset := wfclientset.NewForConfigOrDie(config)

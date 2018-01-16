@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	goruntime "runtime"
 	"time"
 
 	"github.com/argoproj/argo"
@@ -136,7 +135,6 @@ func (wfc *WorkflowController) Run(ctx context.Context) {
 		}
 	}
 
-	wfc.StartStatsTicker(5 * time.Minute)
 	for i := 0; i < 4; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 	}
@@ -446,18 +444,4 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
-}
-
-// StartStatsTicker starts a goroutine which dumps stats at a specified interval
-func (wfc *WorkflowController) StartStatsTicker(d time.Duration) {
-	ticker := time.NewTicker(d)
-	go func() {
-		for {
-			<-ticker.C
-			var m goruntime.MemStats
-			goruntime.ReadMemStats(&m)
-			log.Infof("Alloc=%v TotalAlloc=%v Sys=%v NumGC=%v Goroutines=%d",
-				m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, goruntime.NumGoroutine())
-		}
-	}()
 }
