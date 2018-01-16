@@ -419,14 +419,14 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		}
 	} else if woc.controller.Config.ArtifactRepository.Artifactory != nil {
 		log.Debugf("Setting artifactory artifact repository information")
-		repoUrl := ""
-		if woc.controller.Config.ArtifactRepository.Artifactory.RepoUrl != "" {
-			repoUrl = woc.controller.Config.ArtifactRepository.Artifactory.RepoUrl + "/"
+		repoURL := ""
+		if woc.controller.Config.ArtifactRepository.Artifactory.RepoURL != "" {
+			repoURL = woc.controller.Config.ArtifactRepository.Artifactory.RepoURL + "/"
 		}
-		artUrl := fmt.Sprintf("%s%s/%s", repoUrl, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
+		artURL := fmt.Sprintf("%s%s/%s", repoURL, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
-			URL:             artUrl,
+			URL:             artURL,
 		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
