@@ -390,7 +390,7 @@ type ArtifactoryArtifact struct {
 }
 
 type RawArtifact struct {
-	Contents string `json:"contents"`
+	Data string `json:"data"`
 }
 
 type HTTPArtifact struct {

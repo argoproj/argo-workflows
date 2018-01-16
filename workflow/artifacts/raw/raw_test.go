@@ -23,7 +23,7 @@ func TestLoad(t *testing.T) {
 
 	art := &wfv1.Artifact{}
 	art.Raw = &wfv1.RawArtifact{
-		Contents: content,
+		Data: content,
 	}
 	driver := &raw.RawArtifactDriver{}
 	driver.Load(art, lf.Name())
