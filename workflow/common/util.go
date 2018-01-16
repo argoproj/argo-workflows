@@ -5,14 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"os/signal"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/argoproj/argo/errors"
@@ -292,25 +288,6 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
-}
-
-// RegisterStackDumper spawns a goroutine which dumps stack trace upon a SIGUSR1
-func RegisterStackDumper() {
-	go func() {
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1)
-		for {
-			<-sigs
-			LogStack()
-		}
-	}()
-}
-
-// LogStack will log the current stack
-func LogStack() {
-	buf := make([]byte, 1<<20)
-	stacklen := runtime.Stack(buf, true)
-	log.Printf("*** goroutine dump...\n%s\n*** end\n", buf[:stacklen])
 }
 
 const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"

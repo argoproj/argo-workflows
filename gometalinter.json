@@ -1,7 +1,7 @@
 {
     "Vendor": true,
     "DisableAll": true,
-    "Deadline": "2m",
+    "Deadline": "3m",
     "Enable": [
         "vet",
         "gofmt",
