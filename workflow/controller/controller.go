@@ -93,8 +93,8 @@ type S3ArtifactRepository struct {
 
 type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
-	// RepoUrl is the url for artifactory repo .
-	RepoUrl string `json:"RepoUrl,omitempty"`
+	// RepoURL is the url for artifactory repo.
+	RepoURL string `json:"repoURL,omitempty"`
 }
 
 // NewWorkflowController instantiates a new WorkflowController
