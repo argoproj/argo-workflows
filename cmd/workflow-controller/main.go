@@ -6,7 +6,7 @@ import (
 	"os"
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/util/cmd"
+	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +35,7 @@ var RootCmd = &cobra.Command{
 type rootFlags struct {
 	kubeConfig string // --kubeconfig
 	configMap  string // --configmap
+	logLevel   string // --loglevel
 }
 
 var (
@@ -42,10 +43,11 @@ var (
 )
 
 func init() {
-	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
+	RootCmd.AddCommand(cmdutil.NewVersionCmd(CLIName))
 
 	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
 	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "Name of K8s configmap to retrieve workflow controller configuration")
+	RootCmd.Flags().StringVar(&rootArgs.logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 }
 
 // GetClientConfig return rest config, if path not specified, assume in cluster config
@@ -64,6 +66,8 @@ func main() {
 }
 
 func Run(cmd *cobra.Command, args []string) {
+	cmdutil.SetLogLevel(rootArgs.logLevel)
+
 	config, err := GetClientConfig(rootArgs.kubeConfig)
 	if err != nil {
 		log.Fatalf("%+v", err)
