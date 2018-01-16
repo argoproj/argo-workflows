@@ -10,12 +10,10 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -139,10 +137,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			// A timeout indicates we took too long operating on the workflow.
 			// Return so we can persist all the work we have done so far, and
 			// requeue the workflow for another day. TODO: move this into the caller
-			key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-			if err == nil {
-				wfc.wfQueue.Add(key)
-			}
+			woc.requeue()
 			return
 		}
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
@@ -165,10 +160,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		err = woc.executeTemplate(wf.Spec.OnExit, wf.Spec.Arguments, onExitNodeName)
 		if err != nil {
 			if errors.IsCode(errors.CodeTimeout, err) {
-				key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-				}
+				woc.requeue()
 				return
 			}
 			woc.log.Errorf("%s error: %+v", onExitNodeName, err)
@@ -214,37 +206,27 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	}
 }
 
-// persistUpdates will PATCH a workflow with any updates made during workflow operation.
+// persistUpdates will update a workflow with any updates made during workflow operation.
 // It also labels any pods as completed if we have extracted everything we need from it.
 func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	oldData, err := json.Marshal(woc.orig)
+	// NOTE: a previous implementation of persistUpdates attempted to use JSON Merge Patch
+	// instead of Update. But it was discovered in issue #686 that a Patch against the
+	// resource would sometimes not have any affect, resulting in inconsistent state.
+	// TODO(jessesuen): investigate JSON Patch instead of Merge patch.
+	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+	_, err := wfClient.Update(woc.wf)
 	if err != nil {
-		woc.log.Errorf("Error marshalling orig wf for patch: %+v", err)
+		woc.log.Errorf("Error updating workflow: %v. Requeueing...", err)
+		woc.requeue()
 		return
 	}
-	newData, err := json.Marshal(woc.wf)
-	if err != nil {
-		woc.log.Errorf("Error marshalling wf for patch: %+v", err)
-		return
-	}
-	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		woc.log.Errorf("Error creating patch: %+v", err)
-		return
-	}
-	if string(patchBytes) != "{}" {
-		woc.log.Debugf("Applying patch: %s", patchBytes)
-		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
-		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
-		if err != nil {
-			woc.log.Errorf("Error applying patch %s: %v", patchBytes, err)
-			return
-		}
-		woc.log.Info("Patch successful")
-	}
+	woc.log.Info("Workflow update successful")
+
+	// It is important that we *never* label pods as completed until we successfully updated the workflow
+	// Failing to do so means we can have inconsistent state.
 	if len(woc.completedPods) > 0 {
 		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
 		for podName := range woc.completedPods {
@@ -254,6 +236,16 @@ func (woc *wfOperationCtx) persistUpdates() {
 			}
 		}
 	}
+}
+
+// requeue this workflow onto the workqueue for later processing
+func (woc *wfOperationCtx) requeue() {
+	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+	if err != nil {
+		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
+		return
+	}
+	woc.controller.wfQueue.Add(key)
 }
 
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
