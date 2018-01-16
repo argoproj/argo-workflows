@@ -1,3 +1,10 @@
+required = [
+  "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+  "k8s.io/code-generator/cmd/informer-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+]
+
 [[constraint]]
   name = "k8s.io/api"
   branch = "release-1.9"
