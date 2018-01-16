@@ -346,13 +346,13 @@
 [[projects]]
   branch = "release-1.9"
   name = "k8s.io/code-generator"
-  packages = ["cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types"]
+  packages = ["cmd/client-gen","cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types","cmd/deepcopy-gen","cmd/informer-gen","cmd/informer-gen/generators","cmd/lister-gen","cmd/lister-gen/generators"]
   revision = "91d3f6a57905178524105a085085901bb73bd3dc"
 
 [[projects]]
   branch = "master"
   name = "k8s.io/gengo"
-  packages = ["args","generator","namer","parser","types"]
+  packages = ["args","examples/deepcopy-gen/generators","examples/set-gen/sets","generator","namer","parser","types"]
   revision = "1ef560bbde5195c01629039ad3b337ce63e7b321"
 
 [[projects]]
@@ -364,6 +364,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f32620bd72497f6137958c0bd5e9b92c209ebfdc01f68c7bd047a6f49ea3ebc3"
+  inputs-digest = "6eda994cb9f9aa22b81e1d421255810c4e5af1ff4741166de5aaf725c98d4023"
   solver-name = "gps-cdcl"
   solver-version = 1
