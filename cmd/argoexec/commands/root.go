@@ -79,13 +79,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		log.Fatalf("Unable to determine pod namespace from environment variable %s", common.EnvVarNamespace)
 	}
 
-	// Initialize workflow executor
-	wfExecutor := executor.WorkflowExecutor{
-		PodName:            podName,
-		ClientSet:          clientset,
-		Namespace:          namespace,
-		PodAnnotationsPath: podAnnotationsPath,
-	}
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath)
 	err = wfExecutor.LoadTemplate()
 	if err != nil {
 		panic(err.Error())

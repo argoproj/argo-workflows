@@ -2,7 +2,9 @@ package commands
 
 import (
 	"os"
+	"time"
 
+	"github.com/argoproj/argo/util/stats"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,6 +22,10 @@ var waitCmd = &cobra.Command{
 
 func waitContainer(cmd *cobra.Command, args []string) {
 	wfExecutor := initExecutor()
+	defer wfExecutor.AnnotatePanic()
+	defer stats.LogStats()
+	stats.StartStatsTicker(5 * time.Minute)
+
 	// Wait for main container to complete and kill sidecars
 	err := wfExecutor.Wait()
 	if err != nil {
