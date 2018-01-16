@@ -105,12 +105,13 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
-	woc.log.Debugf("Creating Pod: %s", nodeName)
+	nodeID := woc.wf.NodeID(nodeName)
+	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	mainCtr.Name = common.MainContainerName
 	pod := apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: woc.wf.NodeID(nodeName),
+			Name: nodeID,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
@@ -205,13 +206,13 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
 			// controller fails to persist the workflow after creating the pod.
-			woc.log.Infof("Skipped pod %s creation: already exists", nodeName)
+			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
-		woc.log.Infof("Failed to create pod %s: %v", nodeName, err)
+		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s", created.Name)
+	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	return created, nil
 }
 
