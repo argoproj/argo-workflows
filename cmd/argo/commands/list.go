@@ -83,7 +83,7 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	switch listArgs.output {
-	case "wide":
+	case "", "wide":
 		printTable(wfList)
 	case "name":
 		for _, wf := range wfList.Items {
