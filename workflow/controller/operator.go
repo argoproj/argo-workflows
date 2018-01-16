@@ -239,13 +239,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	if string(patchBytes) != "{}" {
+		woc.log.Debugf("Applying patch: %s", patchBytes)
 		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
 		if err != nil {
-			woc.log.Errorf("Error applying patch %s: %v", string(patchBytes), err)
+			woc.log.Errorf("Error applying patch %s: %v", patchBytes, err)
 			return
 		}
-		woc.log.Infof("Patch successful")
+		woc.log.Info("Patch successful")
 	}
 	if len(woc.completedPods) > 0 {
 		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
@@ -716,7 +717,7 @@ func (woc *wfOperationCtx) getNode(nodeName string) wfv1.NodeStatus {
 }
 
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
-	woc.log.Infof("Evaluating node %s: template: %s", nodeName, templateName)
+	woc.log.Debugf("Evaluating node %s: template: %s", nodeName, templateName)
 	nodeID := woc.wf.NodeID(nodeName)
 	node, ok := woc.wf.Status.Nodes[nodeID]
 	if ok && node.Completed() {
