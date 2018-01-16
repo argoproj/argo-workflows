@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -22,11 +24,12 @@ import (
 
 func init() {
 	RootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "show workflows from all namespaces")
-	listCmd.Flags().StringVar(&listArgs.status, "status", "", "filter by status (comma separated)")
-	listCmd.Flags().BoolVar(&listArgs.completed, "completed", false, "show only completed workflows")
-	listCmd.Flags().BoolVar(&listArgs.running, "running", false, "show only running workflows")
+	listCmd.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	listCmd.Flags().StringVar(&listArgs.status, "status", "", "Filter by status (comma separated)")
+	listCmd.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
+	listCmd.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	listCmd.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	listCmd.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 }
 
 type listFlags struct {
@@ -35,6 +38,7 @@ type listFlags struct {
 	completed     bool   // --completed
 	running       bool   // --running
 	output        string // --output
+	since         string // --since
 }
 
 var listArgs listFlags
@@ -44,6 +48,8 @@ var listCmd = &cobra.Command{
 	Short: "list workflows",
 	Run:   listWorkflows,
 }
+
+var sinceRegex = regexp.MustCompile("^(\\d+)([smhd])$")
 
 var timeMagnitudes = []humanize.RelTimeMagnitude{
 	{D: time.Second, Format: "0s", DivBy: time.Second},
@@ -82,11 +88,25 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var workflows []wfv1.Workflow
+	if listArgs.since == "" {
+		workflows = wfList.Items
+	} else {
+		workflows = make([]wfv1.Workflow, 0)
+		minTime := parseSince(listArgs.since)
+		for _, wf := range wfList.Items {
+			if wf.ObjectMeta.CreationTimestamp.After(minTime) {
+				workflows = append(workflows, wf)
+			}
+		}
+	}
+	sort.Sort(ByFinishedAt(workflows))
+
 	switch listArgs.output {
 	case "", "wide":
-		printTable(wfList)
+		printTable(workflows)
 	case "name":
-		for _, wf := range wfList.Items {
+		for _, wf := range workflows {
 			fmt.Println(wf.ObjectMeta.Name)
 		}
 	default:
@@ -94,7 +114,7 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 	}
 }
 
-func printTable(wfList *wfv1.WorkflowList) {
+func printTable(wfList []wfv1.Workflow) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")
@@ -104,8 +124,7 @@ func printTable(wfList *wfv1.WorkflowList) {
 		fmt.Fprint(w, "\tPARAMETERS")
 	}
 	fmt.Fprint(w, "\n")
-	sort.Sort(ByFinishedAt(wfList.Items))
-	for _, wf := range wfList.Items {
+	for _, wf := range wfList {
 		cTime := time.Unix(wf.ObjectMeta.CreationTimestamp.Unix(), 0)
 		ageStr := humanize.CustomRelTime(cTime, time.Now(), "", "", timeMagnitudes)
 		durationStr := humanizeDurationShort(wf.Status.StartedAt, wf.Status.FinishedAt)
@@ -174,4 +193,29 @@ func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 		return "Pending"
 	}
 	return "Unknown"
+}
+
+// parseSince parses a since string and returns the time.Time in UTC
+func parseSince(since string) time.Time {
+	matches := sinceRegex.FindStringSubmatch(since)
+	if len(matches) != 3 {
+		log.Fatalf("Invalid since format '%s'. Expected format <duration><unit> (e.g. 3h)\n", since)
+	}
+	amount, err := strconv.ParseInt(matches[1], 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var unit time.Duration
+	switch matches[2] {
+	case "s":
+		unit = time.Second
+	case "m":
+		unit = time.Minute
+	case "h":
+		unit = time.Hour
+	case "d":
+		unit = time.Hour * 24
+	}
+	ago := unit * time.Duration(amount)
+	return time.Now().UTC().Add(-ago)
 }
