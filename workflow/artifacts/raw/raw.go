@@ -15,9 +15,12 @@ func (a *RawArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	if err != nil {
 		return err
 	}
-	defer lf.Close()
-	lf.WriteString(artifact.Raw.Contents)
-	return nil
+	defer func() {
+		_ = lf.Close()
+	}()
+
+	_, err = lf.WriteString(artifact.Raw.Data)
+	return err
 }
 
 // Save is unsupported for raw output artifacts
