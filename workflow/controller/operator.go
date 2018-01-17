@@ -950,14 +950,12 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
-	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
@@ -1000,14 +998,12 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 		Command: tmpl.Script.Command,
 		Args:    []string{common.ExecutorScriptSourcePath},
 	}
-	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
-	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Initialized script node %v", node)
 	return nil
 }
@@ -1096,14 +1092,12 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template)
 		},
 		Env: execEnvVars,
 	}
-	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
-	woc.wf.Status.Nodes[node.ID] = *node
 	woc.log.Infof("Initialized resource node %v", node)
 	return nil
 }
