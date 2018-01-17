@@ -121,7 +121,7 @@ func printTable(wfList []wfv1.Workflow) {
 	}
 	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION")
 	if listArgs.output == "wide" {
-		fmt.Fprint(w, "\tPARAMETERS")
+		fmt.Fprint(w, "\tR/C\tPARAMETERS")
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
@@ -133,11 +133,31 @@ func printTable(wfList []wfv1.Workflow) {
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr)
 		if listArgs.output == "wide" {
+			running, completed := countCompletedRunning(&wf)
+			fmt.Fprintf(w, "\t%d/%d", running, completed)
 			fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
 		}
 		fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()
+}
+
+func countCompletedRunning(wf *wfv1.Workflow) (int, int) {
+	completed := 0
+	running := 0
+	for _, node := range wf.Status.Nodes {
+		if len(node.Children) > 0 {
+			// not a pod
+			// TODO: this will change after DAG implementation
+			continue
+		}
+		if node.Completed() {
+			completed++
+		} else {
+			running++
+		}
+	}
+	return running, completed
 }
 
 // parameterString returns a human readable display string of the parameters, truncating if necessary
