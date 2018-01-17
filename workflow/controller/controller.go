@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/argoproj/argo"
@@ -43,10 +44,11 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer  cache.SharedIndexInformer
-	podInformer cache.SharedIndexInformer
-	wfQueue     workqueue.RateLimitingInterface
-	podQueue    workqueue.RateLimitingInterface
+	wfInformer    cache.SharedIndexInformer
+	podInformer   cache.SharedIndexInformer
+	wfQueue       workqueue.RateLimitingInterface
+	podQueue      workqueue.RateLimitingInterface
+	completedPods chan string
 }
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -105,6 +107,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		ConfigMap:     configMap,
 		wfQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		completedPods: make(chan string, 128),
 	}
 	return &wfc
 }
@@ -126,6 +129,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	wfc.podInformer = wfc.newPodInformer()
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.podLabeler(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
@@ -142,6 +146,30 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+// podLabeler will label all pods on the controllers completedPod channel as completed
+func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
+	for {
+		select {
+		case <-stopCh:
+			return
+		case pod := <-wfc.completedPods:
+			parts := strings.Split(pod, "/")
+			if len(parts) != 2 {
+				log.Warnf("Unexpected item on completed pod channel: %s", pod)
+				continue
+			}
+			namespace := parts[0]
+			podName := parts[1]
+			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
+			if err != nil {
+				log.Errorf("Failed to label pod %s completed: %+v", podName, err)
+			} else {
+				log.Infof("Labeled pod %s completed", podName)
+			}
+		}
+	}
 }
 
 func (wfc *WorkflowController) runWorker() {
