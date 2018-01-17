@@ -99,6 +99,8 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 	go checkResourceState(ctrlChannel, resultChannel, resourceName, successReqs, failReqs)
 
 	// Start the condition result reader using ExponentialBackoff
+	// Exponential backoff is for steps of 0, 5, 20, 80, 320 seconds since the first step is without
+	// delay in the ExponentialBackoff
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: (time.Second * 5), Factor: 4.0, Steps: 5},
 		func() (bool, error) {
 			ctrlChannel <- startStr
