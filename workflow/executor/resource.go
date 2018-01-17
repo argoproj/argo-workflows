@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ExecResource will run kubectl action against a manifest
@@ -80,26 +82,77 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 		failReqs, _ = failSelector.Requirements()
 	}
 
-	cmd := exec.Command("kubectl", "get", resourceName, "-w", "-o", "json")
-	stdout, err := cmd.StdoutPipe()
+	// Start the condition result reader using ExponentialBackoff
+	// Exponential backoff is for steps of 0, 5, 20, 80, 320 seconds since the first step is without
+	// delay in the ExponentialBackoff
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: (time.Second * 5), Factor: 4.0, Steps: 5},
+		func() (bool, error) {
+			isErrRetry, err := checkResourceState(resourceName, successReqs, failReqs)
+
+			if err == nil {
+				log.Infof("Returning from successful wait for resource %s", resourceName)
+				return true, nil
+			}
+
+			if isErrRetry {
+				log.Infof("Waiting for resource %s resulted in retryable error %v", resourceName, err)
+				return false, nil
+			}
+
+			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, err)
+			return false, err
+		})
+
 	if err != nil {
-		return errors.InternalWrapError(err)
+		if err == wait.ErrWaitTimeout {
+			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
+		} else {
+			log.Warnf("Waiting for resource %s resulted in error %v", err)
+		}
 	}
-	reader := bufio.NewReader(stdout)
-	log.Info(strings.Join(cmd.Args, " "))
-	if err := cmd.Start(); err != nil {
-		return errors.InternalWrapError(err)
+
+	return err
+}
+
+// Function to do the kubectl get -w command and then waiting on json reading.
+func checkResourceState(resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+
+	cmd, reader, err := startKubectlWaitCmd(resourceName)
+	if err != nil {
+		return false, err
 	}
 	defer func() {
 		_ = cmd.Process.Kill()
 	}()
+
 	for {
 		jsonBytes, err := readJSON(reader)
+
 		if err != nil {
-			// TODO: it's possible that kubectl might EOF upon an API disconnect.
-			// In this case, we would want to refork kubectl again.
-			return errors.InternalWrapError(err)
+			resultErr := err
+			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
+			// We don't want to write OS specific code so we don't want to call syscall package code. But that means
+			// there is no way to figure out if a process is running or not in an asynchronous manner. exec.Wait will
+			// always block and we need to call that to get the exit code of the process. So we will unconditionally
+			// call exec.Process.Kill and then assume that wait will not block after that. Two things may happen:
+			// 1. Process already exited and kill does nothing (returns error which we ignore) and then we call
+			//    Wait and get the proper return value
+			// 2. Process is running gets, killed with exec.Process.Kill call and Wait returns an error code and we give up
+			//    and don't retry
+			_ = cmd.Process.Kill()
+
+			log.Warnf("Command for kubectl get -w for %s exited. Getting return value using Wait", resourceName)
+			err = cmd.Wait()
+			if err != nil {
+				log.Warnf("cmd.Wait for kubectl get -w command for resource %s returned error %v",
+					resourceName, err)
+				resultErr = err
+			} else {
+				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
+			}
+			return true, resultErr
 		}
+
 		log.Info(string(jsonBytes))
 		ls := gjsonLabels{json: jsonBytes}
 		for _, req := range failReqs {
@@ -108,7 +161,7 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 			log.Infof(msg)
 			if failed {
 				// TODO: need a better error code instead of BadRequest
-				return errors.Errorf(errors.CodeBadRequest, msg)
+				return false, errors.Errorf(errors.CodeBadRequest, msg)
 			}
 		}
 		numMatched := 0
@@ -121,10 +174,25 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 		}
 		log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
 		if numMatched >= len(successReqs) {
-			break
+			return false, nil
 		}
 	}
-	return nil
+}
+
+// Start Kubectl command Get with -w return error if unable to start command
+func startKubectlWaitCmd(resourceName string) (*exec.Cmd, *bufio.Reader, error) {
+	cmd := exec.Command("kubectl", "get", resourceName, "-w", "-o", "json")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, errors.InternalWrapError(err)
+	}
+	reader := bufio.NewReader(stdout)
+	log.Info(strings.Join(cmd.Args, " "))
+	if err := cmd.Start(); err != nil {
+		return nil, nil, errors.InternalWrapError(err)
+	}
+
+	return cmd, reader, nil
 }
 
 // readJSON reads from a reader line-by-line until it reaches "}\n" indicating end of json
