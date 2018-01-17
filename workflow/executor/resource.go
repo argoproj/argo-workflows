@@ -57,16 +57,6 @@ func (g gjsonLabels) Get(label string) string {
 	return gjson.GetBytes(g.json, label).String()
 }
 
-type waitResult struct {
-	err    error
-	result string
-}
-
-const startStr = "start"
-const successStr = "success"
-const failStr = "fail"
-const retryStr = "retry"
-
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
 func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
@@ -92,43 +82,26 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 		failReqs, _ = failSelector.Requirements()
 	}
 
-	ctrlChannel := make(chan string)
-	resultChannel := make(chan waitResult)
-
-	// Startup the routine which will do the kubectl get -w and wait for json
-	go checkResourceState(ctrlChannel, resultChannel, resourceName, successReqs, failReqs)
-
 	// Start the condition result reader using ExponentialBackoff
 	// Exponential backoff is for steps of 0, 5, 20, 80, 320 seconds since the first step is without
 	// delay in the ExponentialBackoff
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: (time.Second * 5), Factor: 4.0, Steps: 5},
 		func() (bool, error) {
-			ctrlChannel <- startStr
+			isErrRetry, err := checkResourceState(resourceName, successReqs, failReqs)
 
-			result := <-resultChannel
-
-			if result.result == "" {
-				msg := fmt.Sprintf("Waiting for resource %s resulted in channel close", resourceName)
-				log.Warnf(msg)
-				return false, errors.InternalError(msg)
-			}
-
-			if result.err == nil {
+			if err == nil {
 				log.Infof("Returning from successful wait for resource %s", resourceName)
 				return true, nil
 			}
 
-			if result.result == retryStr {
-				log.Infof("Waiting for resource %s resulted in retryable error %v", resourceName, result.err)
+			if isErrRetry {
+				log.Infof("Waiting for resource %s resulted in retryable error %v", resourceName, err)
 				return false, nil
 			}
 
-			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, result.err)
-			return false, result.err
+			log.Warnf("Waiting for resource %s resulted in non-retryable error %v", resourceName, err)
+			return false, err
 		})
-
-	// Close the channel to tell the go routine to exit
-	close(ctrlChannel)
 
 	if err != nil {
 		if err == wait.ErrWaitTimeout {
@@ -141,84 +114,67 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 	return err
 }
 
-// Go routine to do the kubectl get -w command and then waiting on json reading. It starts when ExponentialBackoff routine tells
-// it to start. It communicates the results back to the ExponentialBackoff conditional function using the resultChannel
-func checkResourceState(ctrlChannel <-chan string, resultChannel chan<- waitResult, resourceName string,
-	successReqs labels.Requirements, failReqs labels.Requirements) {
+// Function to do the kubectl get -w command and then waiting on json reading.
+func checkResourceState(resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+
+	cmd, reader, err := startKubectlWaitCmd(resourceName)
+	if err != nil {
+		return false, err
+	}
+	defer func() {
+		_ = cmd.Process.Kill()
+	}()
 
 	for {
-		ctrlMsg := <-ctrlChannel
+		jsonBytes, err := readJSON(reader)
 
-		if ctrlMsg != startStr {
-			log.Warnf("checkResourceState received a non start message '%s' on control Channel, when waiting for resource %s",
-				ctrlMsg, resourceName)
-			return
-		}
-
-		cmd, reader, err := startKubectlWaitCmd(resourceName)
 		if err != nil {
-			resultChannel <- waitResult{err: err, result: failStr}
-			return
-		}
-		defer func() {
+			resultErr := err
+			log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
+			// We don't want to write OS specific code so we don't want to call syscall package code. But that means
+			// there is no way to figure out if a process is running or not in an asynchronous manner. exec.Wait will
+			// always block and we need to call that to get the exit code of the process. So we will unconditionally
+			// call exec.Process.Kill and then assume that wait will not block after that. Two things may happen:
+			// 1. Process already exited and kill does nothing (returns error which we ignore) and then we call
+			//    Wait and get the proper return value
+			// 2. Process is running gets, killed with exec.Process.Kill call and Wait returns an error code and we give up
+			//    and don't retry
 			_ = cmd.Process.Kill()
-		}()
 
-		for {
-			jsonBytes, err := readJSON(reader)
-
+			log.Warnf("Command for kubectl get -w for %s exited. Getting return value using Wait", resourceName)
+			err = cmd.Wait()
 			if err != nil {
-				resultErr := err
-				log.Warnf("Json reader returned error %v. Calling kill (usually superfluous)", err)
-				// We don't want to write OS specific code so we don't want to call syscall package code. But that means
-				// there is no way to figure out if a process is running or not in an asynchronous manner. exec.Wait will
-				// always block and we need to call that to get the exit code of the process. So we will unconditionally
-				// call exec.Process.Kill and then assume that wait will not block after that. Two things may happen:
-				// 1. Process already exited and kill does nothing (returns error which we ignore) and then we call
-				//    Wait and get the proper return value
-				// 2. Process is running gets, killed with exec.Process.Kill call and Wait returns an error code and we give up
-				//    and don't retry
-				_ = cmd.Process.Kill()
+				log.Warnf("cmd.Wait for kubectl get -w command for resource %s returned error %v",
+					resourceName, err)
+				resultErr = err
+			} else {
+				log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
+			}
+			return true, resultErr
+		}
 
-				log.Warnf("Command for kubectl get -w for %s exited. Getting return value using Wait", resourceName)
-				err = cmd.Wait()
-				if err != nil {
-					log.Warnf("cmd.Wait for kubectl get -w command for resource %s returned error %v",
-						resourceName, err)
-					resultErr = err
-				} else {
-					log.Infof("readJSon failed for resource %s but cmd.Wait for kubectl get -w command did not error", resourceName)
-				}
-				// Break out of the json reading loop and wait for our timing control to start us again
-				resultChannel <- waitResult{err: resultErr, result: retryStr}
-				break
+		log.Info(string(jsonBytes))
+		ls := gjsonLabels{json: jsonBytes}
+		for _, req := range failReqs {
+			failed := req.Matches(ls)
+			msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
+			log.Infof(msg)
+			if failed {
+				// TODO: need a better error code instead of BadRequest
+				return false, errors.Errorf(errors.CodeBadRequest, msg)
 			}
-
-			log.Info(string(jsonBytes))
-			ls := gjsonLabels{json: jsonBytes}
-			for _, req := range failReqs {
-				failed := req.Matches(ls)
-				msg := fmt.Sprintf("failure condition '%s' evaluated %v", req, failed)
-				log.Infof(msg)
-				if failed {
-					// TODO: need a better error code instead of BadRequest
-					resultChannel <- waitResult{err: errors.Errorf(errors.CodeBadRequest, msg), result: failStr}
-					return
-				}
+		}
+		numMatched := 0
+		for _, req := range successReqs {
+			matched := req.Matches(ls)
+			log.Infof("success condition '%s' evaluated %v", req, matched)
+			if matched {
+				numMatched++
 			}
-			numMatched := 0
-			for _, req := range successReqs {
-				matched := req.Matches(ls)
-				log.Infof("success condition '%s' evaluated %v", req, matched)
-				if matched {
-					numMatched++
-				}
-			}
-			log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
-			if numMatched >= len(successReqs) {
-				resultChannel <- waitResult{err: nil, result: successStr}
-				return
-			}
+		}
+		log.Infof("%d/%d success conditions matched", numMatched, len(successReqs))
+		if numMatched >= len(successReqs) {
+			return false, nil
 		}
 	}
 }
