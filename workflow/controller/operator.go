@@ -9,7 +9,10 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -212,28 +215,85 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	// NOTE: a previous implementation of persistUpdates attempted to use JSON Merge Patch
-	// instead of Update. But it was discovered in issue #686 that a Patch against the
-	// resource would sometimes not have any affect, resulting in inconsistent state.
-	// TODO(jessesuen): investigate JSON Patch instead of Merge patch.
+	// When persisting workflow updates, we first attempt to Update() the workflow with
+	// our modifications. However, in highly parallized workflows (seemingly relative to
+	// the number of pod ownership references), the resourceVersion of the workflow
+	// increments at a very rapid rate, resulting in the API conflict error:
+	// Error updating workflow: Operation cannot be fulfilled on workflows.argoproj.io
+	// \"pod-limits-2w8rl\": the object has been modified; please apply your changes to
+	// the latest version and try again.
+	// When the conflict error occurs, we reapply the changes on the current version of
+	// the resource.
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	_, err := wfClient.Update(woc.wf)
 	if err != nil {
-		woc.log.Errorf("Error updating workflow: %v. Requeueing...", err)
-		woc.requeue()
-		return
+		woc.log.Warnf("Error updating workflow: %v", err)
+		if !apierr.IsConflict(err) {
+			return
+		}
+		woc.log.Info("Re-appying updates on latest version and retrying update")
+		err = woc.reapplyUpdate(wfClient)
+		if err != nil {
+			woc.log.Infof("Failed to re-apply update: %+v", err)
+			return
+		}
 	}
 	woc.log.Info("Workflow update successful")
-
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	if len(woc.completedPods) > 0 {
-		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
 		for podName := range woc.completedPods {
-			err = common.AddPodLabel(woc.controller.kubeclientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
-			if err != nil {
-				woc.log.Errorf("Failed adding completed label to pod %s: %+v", podName, err)
-			}
+			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+		}
+	}
+}
+
+// reapplyUpdate GETs the latest version of the workflow, re-applies the updates and
+// retries the UPDATE multiple times. For reasoning behind this technique, see:
+// https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
+func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) error {
+	// First generate the patch
+	oldData, err := json.Marshal(woc.orig)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	newData, err := json.Marshal(woc.wf)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	// Next get latest version of the workflow, apply the patch and retyr the Update
+	attempt := 1
+	for {
+		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
+		if !retry.IsRetryableKubeAPIError(err) {
+			return errors.InternalWrapError(err)
+		}
+		currWfBytes, err := json.Marshal(currWf)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		newWfBytes, err := jsonpatch.MergePatch(currWfBytes, patchBytes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		var newWf wfv1.Workflow
+		err = json.Unmarshal(newWfBytes, &newWf)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		_, err = wfClient.Update(&newWf)
+		if err == nil {
+			woc.log.Infof("Update retry attempt %d successful", attempt)
+			return nil
+		}
+		attempt++
+		woc.log.Warnf("Update retry attempt %d failed: %v", attempt, err)
+		if attempt > 5 {
+			return err
 		}
 	}
 }
@@ -889,7 +949,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template) error {
-	woc.log.Infof("Executing node %s with container template: %v\n", nodeName, tmpl)
+	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
