@@ -526,9 +526,20 @@ func containerID(ctrID string) string {
 // Wait is the sidecar container logic which waits for the main container to complete.
 // Also monitors for updates in the pod annotations which may change (e.g. terminate)
 // Upon completion, kills any sidecars after it finishes.
-func (we *WorkflowExecutor) Wait() error {
+func (we *WorkflowExecutor) Wait() (err error) {
+	defer func() {
+		killSidecarsErr := we.killSidecars()
+		if killSidecarsErr != nil {
+			log.Errorf("Failed to kill sidecars: %v", killSidecarsErr)
+			if err == nil {
+				// set error only if not already set
+				err = killSidecarsErr
+			}
+		}
+	}()
 	log.Infof("Waiting on main container")
-	mainContainerID, err := we.waitMainContainerStart()
+	var mainContainerID string
+	mainContainerID, err = we.waitMainContainerStart()
 	if err != nil {
 		return err
 	}
@@ -540,15 +551,8 @@ func (we *WorkflowExecutor) Wait() error {
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
 	err = common.RunCommand("docker", "wait", mainContainerID)
-	if err != nil {
-		return err
-	}
 	log.Infof("Main container completed")
-	err = we.killSidecars()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return nil
+	return
 }
 
 // waitMainContainerStart waits for the main container to start and returns its container ID.
@@ -718,6 +722,7 @@ func killContainers(containerIDs []string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+	log.Infof("Containers %s killed successfully", containerIDs)
 	return nil
 }
 

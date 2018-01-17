@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"os"
 	"time"
 
 	"github.com/argoproj/argo/util/stats"
@@ -54,5 +53,4 @@ func waitContainer(cmd *cobra.Command, args []string) {
 		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
 		log.Fatalf("Error annotating outputs, %+v", err)
 	}
-	os.Exit(0)
 }
