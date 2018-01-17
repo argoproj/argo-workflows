@@ -60,7 +60,7 @@ Additional examples are availabe [here](https://github.com/argoproj/argo/blob/ma
 
 ## 5. Install an Artifact Repository
 
-Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositories. This tutorial uses Minio for the sake of portability.
+Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositories. This tutorial uses Minio for the sake of portability. Instructions on how to configure other artifact repositories are [here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 ```
 $ brew install kubernetes-helm # mac
 $ helm init
