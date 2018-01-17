@@ -69,13 +69,15 @@ func main() {
 
 func Run(cmd *cobra.Command, args []string) {
 	cmdutil.SetLogLevel(rootArgs.logLevel)
+	stats.RegisterStackDumper()
+	stats.StartStatsTicker(5 * time.Minute)
 
 	config, err := GetClientConfig(rootArgs.kubeConfig)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
-	stats.RegisterStackDumper()
-	stats.StartStatsTicker(5 * time.Minute)
+	config.Burst = 30
+	config.QPS = 20.0
 
 	kubeclientset := kubernetes.NewForConfigOrDie(config)
 	wflientset := wfclientset.NewForConfigOrDie(config)
@@ -89,7 +91,7 @@ func Run(cmd *cobra.Command, args []string) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go wfController.Run(ctx)
+	go wfController.Run(ctx, 8, 8)
 
 	// Wait forever
 	select {}

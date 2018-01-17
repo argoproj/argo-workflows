@@ -110,7 +110,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
@@ -135,10 +135,10 @@ func (wfc *WorkflowController) Run(ctx context.Context) {
 		}
 	}
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 	}
-	for i := 0; i < 8; i++ {
+	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
