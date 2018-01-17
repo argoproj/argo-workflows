@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -53,11 +54,9 @@ func lintYAML(cmd *cobra.Command, args []string) {
 		}
 	}
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	fmt.Printf("YAML validated\n")
-	os.Exit(0)
 }
 
 func lintYAMLDir(dirPath string) error {
