@@ -95,7 +95,7 @@ func listWorkflows(cmd *cobra.Command, args []string) {
 		workflows = make([]wfv1.Workflow, 0)
 		minTime := parseSince(listArgs.since)
 		for _, wf := range wfList.Items {
-			if wf.ObjectMeta.CreationTimestamp.After(minTime) {
+			if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(minTime) {
 				workflows = append(workflows, wf)
 			}
 		}
