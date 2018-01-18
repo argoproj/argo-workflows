@@ -15,7 +15,7 @@ $ brew install argoproj/tap/argo
 ```
 On Linux:
 ```
-$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-alpha3/argo-linux-amd64
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0-beta1/argo-linux-amd64
 $ chmod +x /usr/local/bin/argo
 ```
 
@@ -89,7 +89,7 @@ Edit the workflow-controller config map to reference the service name (argo-arti
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.0.0-alpha3
+    executorImage: argoproj/argoexec:v2.0.0-beta1
     artifactRepository:
       s3:
         bucket: my-bucket
