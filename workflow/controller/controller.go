@@ -164,9 +164,9 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 			podName := parts[1]
 			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
-				log.Errorf("Failed to label pod %s completed: %+v", podName, err)
+				log.Errorf("Failed to label pod %s/%s completed: %+v", namespace, podName, err)
 			} else {
-				log.Infof("Labeled pod %s completed", podName)
+				log.Infof("Labeled pod %s/%s completed", namespace, podName)
 			}
 		}
 	}
