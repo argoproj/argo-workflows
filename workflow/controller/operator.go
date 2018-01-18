@@ -239,12 +239,19 @@ func (woc *wfOperationCtx) persistUpdates() {
 		}
 	}
 	woc.log.Info("Workflow update successful")
+
+	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+	// cache is now invalid. It's very common that we will need to immediately re-operate on a
+	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+	// informer's cache to catch up to the version of the workflow we just persisted. Without
+	// this sleep, the next worker to work on this workflow will very likely operate on a stale
+	// object.
+	time.Sleep(1 * time.Second)
+
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	if len(woc.completedPods) > 0 {
-		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-		}
+	for podName := range woc.completedPods {
+		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 	}
 }
 
@@ -848,9 +855,13 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		}
 		err = woc.executeSteps(nodeName, tmpl)
 	case wfv1.TemplateTypeScript:
-		err = woc.executeScript(nodeName, tmpl)
+		if !ok {
+			err = woc.executeScript(nodeName, tmpl)
+		}
 	case wfv1.TemplateTypeResource:
-		err = woc.executeResource(nodeName, tmpl)
+		if !ok {
+			err = woc.executeResource(nodeName, tmpl)
+		}
 	default:
 		err = errors.Errorf("Template '%s' missing specification", tmpl.Name)
 		woc.markNodeError(nodeName, err)
