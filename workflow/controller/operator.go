@@ -9,14 +9,13 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -215,93 +214,43 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	// When persisting workflow updates, we first attempt to Update() the workflow with
-	// our modifications. However, in highly parallized workflows (seemingly relative to
-	// the number of pod ownership references), the resourceVersion of the workflow
-	// increments at a very rapid rate, resulting in the API conflict error:
-	// Error updating workflow: Operation cannot be fulfilled on workflows.argoproj.io
-	// \"pod-limits-2w8rl\": the object has been modified; please apply your changes to
-	// the latest version and try again.
-	// When the conflict error occurs, we reapply the changes on the current version of
-	// the resource.
-	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
-	_, err := wfClient.Update(woc.wf)
+	oldData, err := json.Marshal(woc.orig)
 	if err != nil {
-		woc.log.Warnf("Error updating workflow: %v", err)
-		if !apierr.IsConflict(err) {
-			return
-		}
-		woc.log.Info("Re-appying updates on latest version and retrying update")
-		err = woc.reapplyUpdate(wfClient)
-		if err != nil {
-			woc.log.Infof("Failed to re-apply update: %+v", err)
-			return
-		}
+		woc.log.Errorf("Error marshalling orig wf for patch: %+v", err)
+		return
 	}
-	woc.log.Info("Workflow update successful")
-
-	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
-	// cache is now invalid. It's very common that we will need to immediately re-operate on a
-	// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
-	// informer's cache to catch up to the version of the workflow we just persisted. Without
-	// this sleep, the next worker to work on this workflow will very likely operate on a stale
-	// object.
-	time.Sleep(1 * time.Second)
+	newData, err := json.Marshal(woc.wf)
+	if err != nil {
+		woc.log.Errorf("Error marshalling wf for patch: %+v", err)
+		return
+	}
+	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		woc.log.Errorf("Error creating patch: %+v", err)
+		return
+	}
+	if string(patchBytes) != "{}" {
+		woc.log.Debugf("Applying patch: %s", patchBytes)
+		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
+		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
+		if err != nil {
+			woc.log.Errorf("Error applying patch %s: %v", patchBytes, err)
+			return
+		}
+		woc.log.Info("Patch successful")
+		// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+		// cache is now invalid. It's very common that we will need to immediately re-operate on a
+		// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+		// informer's cache to catch up to the version of the workflow we just persisted. Without
+		// this sleep, the next worker to work on this workflow will very likely operate on a stale
+		// object and redo work.
+		time.Sleep(1 * time.Second)
+	}
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
 	for podName := range woc.completedPods {
 		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
-	}
-}
-
-// reapplyUpdate GETs the latest version of the workflow, re-applies the updates and
-// retries the UPDATE multiple times. For reasoning behind this technique, see:
-// https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#concurrency-control-and-consistency
-func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) error {
-	// First generate the patch
-	oldData, err := json.Marshal(woc.orig)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	newData, err := json.Marshal(woc.wf)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	patchBytes, err := jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	// Next get latest version of the workflow, apply the patch and retyr the Update
-	attempt := 1
-	for {
-		currWf, err := wfClient.Get(woc.wf.ObjectMeta.Name, metav1.GetOptions{})
-		if !retry.IsRetryableKubeAPIError(err) {
-			return errors.InternalWrapError(err)
-		}
-		currWfBytes, err := json.Marshal(currWf)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		newWfBytes, err := jsonpatch.MergePatch(currWfBytes, patchBytes)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		var newWf wfv1.Workflow
-		err = json.Unmarshal(newWfBytes, &newWf)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		_, err = wfClient.Update(&newWf)
-		if err == nil {
-			woc.log.Infof("Update retry attempt %d successful", attempt)
-			return nil
-		}
-		attempt++
-		woc.log.Warnf("Update retry attempt %d failed: %v", attempt, err)
-		if attempt > 5 {
-			return err
-		}
 	}
 }
 
@@ -360,7 +309,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation() error {
-	podList, err := woc.getWorkflowPods(false)
+	podList, err := woc.getRunningWorkflowPods()
 	if err != nil {
 		return err
 	}
@@ -381,23 +330,28 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 
 	if len(podList.Items) > 0 {
+		// if we saw related pods, no need to check for deleted pods yet.
+		// we will get to them eventually.
 		return nil
 	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
-	// (note that our initial query excludes Pending pods for performance reasons since
-	// there's generally no action needed to be taken on pods in a Pending state).
-	// There are only a few scenarios where the pod list would have been empty:
-	//  1. this workflow's pods are still pending (ideal case)
-	//  2. this workflow's pods were deleted unbeknownst to the controller
-	//  3. combination of 1 and 2
-	// In order to detect scenario 2, we repeat the pod reconciliation process, this time
-	// including Pending pods in the query. If one of our nodes does not show up in this list,
-	// it implies that the pod was deleted without the controller seeing the event.
+	// Note that our initial query excludes Pending/completed=true pods for performance reasons
+	// since there's generally no action needed to be taken on pending pods or ones we have
+	// already processed (completed=true).
+	// There are a few scenarios where the pod list would have been empty:
+	//  1. workflow's pods are still pending (best case scenario)
+	//  2. workflow's pods were deleted unbeknownst to the controller
+	//  3. workflow's pods were marked completed=true, but we are operating on a stale workflow object
+	//  4. combination of any the above scenarios
+	// In order to detect deleted pods, we repeat the pod reconciliation process, this time
+	// including ALL workflow pods in the query. If any one of our nodes does not show up in this
+	// returned list, it implies that the pod was deleted without the controller seeing the event.
 	woc.log.Info("Checking for deleted pods")
-	podList, err = woc.getWorkflowPods(true)
+	podList, err = woc.getAllWorkflowPods()
 	if err != nil {
 		return err
 	}
+	// Repeat the node assessment
 	for _, pod := range podList.Items {
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
@@ -434,16 +388,28 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-// getWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList, error) {
+// getRunningWorkflowPods returns running pods of the current workflow.
+func (woc *wfOperationCtx) getRunningWorkflowPods() (*apiv1.PodList, error) {
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=false",
 			common.LabelKeyWorkflow,
 			woc.wf.ObjectMeta.Name,
 			common.LabelKeyCompleted),
+		FieldSelector: "status.phase!=Pending",
 	}
-	if !includePending {
-		options.FieldSelector = "status.phase!=Pending"
+	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return podList, nil
+}
+
+// getAllWorkflowPods returns all pods related to the current workflow
+func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
+	options := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s",
+			common.LabelKeyWorkflow,
+			woc.wf.ObjectMeta.Name),
 	}
 	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
 	if err != nil {

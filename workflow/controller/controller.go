@@ -107,7 +107,7 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		ConfigMap:     configMap,
 		wfQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		completedPods: make(chan string, 128),
+		completedPods: make(chan string, 512),
 	}
 	return &wfc
 }
