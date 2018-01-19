@@ -16,7 +16,11 @@ import (
 )
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
+	node := woc.getNodeByName(nodeName)
 	nodeID := woc.wf.NodeID(nodeName)
+	if node == nil {
+		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	}
 	defer func() {
 		if woc.wf.Status.Nodes[nodeID].Completed() {
 			_ = woc.killDeamonedChildren(nodeID)
@@ -28,29 +32,45 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 	}
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		woc.addChildNode(nodeName, sgNodeName)
+		sgNode := woc.getNodeByName(sgNodeName)
+		if sgNode == nil {
+			// initialize the step group
+			sgNode = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
+			if i == 0 {
+				woc.addChildNode(nodeName, sgNodeName)
+			} else {
+				// This logic will connect all the outbound nodes of the previous
+				// step group as parents to the current step group node
+				prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
+				prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
+				for _, childID := range prevStepGroupNode.Children {
+					outboundNodeIDs := woc.getOutboundNodes(childID)
+					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+					for _, outNodeID := range outboundNodeIDs {
+						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
+					}
+				}
+			}
+		}
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
 		if err != nil {
-			if errors.IsCode(errors.CodeTimeout, err) {
-				return err
+			if !errors.IsCode(errors.CodeTimeout, err) {
+				woc.markNodeError(nodeName, err)
 			}
-			woc.markNodeError(nodeName, err)
 			return err
 		}
-		sgNodeID := woc.wf.NodeID(sgNodeName)
-		if !woc.wf.Status.Nodes[sgNodeID].Completed() {
-			woc.log.Infof("Workflow step group node %v not yet completed", woc.wf.Status.Nodes[sgNodeID])
+		if !sgNode.Completed() {
+			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
 			return nil
 		}
 
-		if !woc.wf.Status.Nodes[sgNodeID].Successful() {
-			failMessage := fmt.Sprintf("step group %s was unsuccessful", sgNodeName)
+		if !sgNode.Successful() {
+			failMessage := fmt.Sprintf("step group %s was unsuccessful", sgNode)
 			woc.log.Info(failMessage)
 			woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
 			return nil
 		}
 
-		// HACK: need better way to add children to scope
 		for _, step := range stepGroup {
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			childNodeID := woc.wf.NodeID(childNodeName)
@@ -61,26 +81,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				// are not easily referenceable by user.
 				continue
 			}
-			if childNode.PodIP != "" {
-				key := fmt.Sprintf("steps.%s.ip", step.Name)
-				scope.addParamToScope(key, childNode.PodIP)
-			}
-			if childNode.Outputs != nil {
-				if childNode.Outputs.Result != nil {
-					key := fmt.Sprintf("steps.%s.outputs.result", step.Name)
-					scope.addParamToScope(key, *childNode.Outputs.Result)
-				}
-				for _, outParam := range childNode.Outputs.Parameters {
-					key := fmt.Sprintf("steps.%s.outputs.parameters.%s", step.Name, outParam.Name)
-					scope.addParamToScope(key, *outParam.Value)
-				}
-				for _, outArt := range childNode.Outputs.Artifacts {
-					key := fmt.Sprintf("steps.%s.outputs.artifacts.%s", step.Name, outArt.Name)
-					scope.addArtifactToScope(key, outArt)
-				}
-			}
+			prefix := fmt.Sprintf("steps.%s", step.Name)
+			scope.addNodeOutputsToScope(prefix, &childNode)
 		}
 	}
+	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
@@ -91,6 +96,21 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[nodeID] = node
 	}
+	// Now that we have completed, set the outbound nodes from the last step group
+	outbound := make([]string, 0)
+	lastSGNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, len(tmpl.Steps)-1))
+	for _, childID := range lastSGNode.Children {
+		outboundNodeIDs := woc.getOutboundNodes(childID)
+		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
+		for _, outNodeID := range outboundNodeIDs {
+			outbound = append(outbound, outNodeID)
+		}
+	}
+	node = woc.getNodeByName(nodeName)
+	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
+	node.OutboundNodes = outbound
+	woc.wf.Status.Nodes[node.ID] = *node
+
 	woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
 }
