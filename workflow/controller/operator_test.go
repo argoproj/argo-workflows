@@ -47,40 +47,40 @@ func TestProcessNodesWithRetries(t *testing.T) {
 		woc.addChildNode(nodeName, childNode)
 	}
 
-	n := woc.getNode(nodeName)
-	lastChild, err = woc.getLastChildNode(&n)
+	n := woc.getNodeByName(nodeName)
+	lastChild, err = woc.getLastChildNode(n)
 	assert.Nil(t, err)
 	assert.NotNil(t, lastChild)
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	err = woc.processNodeRetries(&n)
+	err = woc.processNodeRetries(n)
 	assert.Nil(t, err)
-	n = woc.getNode(nodeName)
+	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	err = woc.processNodeRetries(&n)
+	err = woc.processNodeRetries(n)
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
-	n = woc.getNode(nodeName)
+	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
 
 	// Mark the parent node as running again and the lastChild as failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
-	woc.processNodeRetries(&n)
-	n = woc.getNode(nodeName)
+	woc.processNodeRetries(n)
+	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
 	woc.markNodePhase(childNode, wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
-	n = woc.getNode(nodeName)
-	err = woc.processNodeRetries(&n)
+	n = woc.getNodeByName(nodeName)
+	err = woc.processNodeRetries(n)
 	assert.Nil(t, err)
-	n = woc.getNode(nodeName)
+	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }

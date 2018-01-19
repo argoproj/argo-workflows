@@ -18,6 +18,7 @@ const (
 	TemplateTypeSteps     TemplateType = "Steps"
 	TemplateTypeScript    TemplateType = "Script"
 	TemplateTypeResource  TemplateType = "Resource"
+	TemplateTypeDAG       TemplateType = "DAG"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -115,8 +116,11 @@ type Template struct {
 	// Sidecar containers
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
-	// Resource is the resource template type
+	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty"`
+
+	// DAG template subtype which runs a DAG
+	DAG *DAG `json:"dag,omitempty"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
@@ -312,6 +316,9 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty"`
 
+	// IsPod indicates if this node is a pod or not
+	IsPod bool `json:"isPod,omitempty"`
+
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty"`
 
@@ -325,6 +332,20 @@ type NodeStatus struct {
 
 	// Children is a list of child node IDs
 	Children []string `json:"children,omitempty"`
+
+	// OutboundNodes tracks the node IDs which are considered "outbound" nodes to a template invocation.
+	// For every invocation of a template, there are nodes which we considered as "outbound". Essentially,
+	// these are last nodes in the execution sequence to run, before the template is considered completed.
+	// These nodes are then connected as parents to a following step.
+	//
+	// In the case of single pod steps (i.e. container, script, resource templates), this list will be nil
+	// since the pod itself is already considered the "outbound" node.
+	// In the case of DAGs, outbound nodes are the "target" tasks (tasks with no children).
+	// In the case of steps, outbound nodes are all the containers involved in the last step group.
+	// NOTE: since templates are composable, the list of outbound nodes are carried upwards when
+	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
+	// a template, will be a superset of the outbound nodes of its last children.
+	OutboundNodes []string `json:"outboundNodes,omitempty"`
 }
 
 func (n NodeStatus) String() string {
@@ -429,6 +450,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Steps != nil {
 		return TemplateTypeSteps
 	}
+	if tmpl.DAG != nil {
+		return TemplateTypeDAG
+	}
 	if tmpl.Script != nil {
 		return TemplateTypeScript
 	}
@@ -436,6 +460,30 @@ func (tmpl *Template) GetType() TemplateType {
 		return TemplateTypeResource
 	}
 	return "Unknown"
+}
+
+// DAG is a template subtype for directed acyclic graph templates
+type DAG struct {
+	// Target are one or more names of targets to execute in a DAG
+	Targets string `json:"target,omitempty"`
+
+	// Tasks are a list of DAG tasks
+	Tasks []DAGTask `json:"tasks"`
+}
+
+// DAGTask represents a node in the graph during DAG execution
+type DAGTask struct {
+	// Name is the name of the target
+	Name string `json:"name"`
+
+	// Name of template to execute
+	Template string `json:"template"`
+
+	// Arguments are the parameter and artifact arguments to the template
+	Arguments Arguments `json:"arguments,omitempty"`
+
+	// Dependencies are name of other targets which this depends on
+	Dependencies []string `json:"dependencies,omitempty"`
 }
 
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
