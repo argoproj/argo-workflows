@@ -1,10 +1,24 @@
 # Changelog
 
-## 2.0.0-alpha4 (Unreleased)
-+ Add a --dry-run option to the installer
-+ Add ability for steps and resource templates to have outputs
-- Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
+## 2.0.0-beta1 (2018-01-18)
+
++ Use and install minimal RBAC ClusterRoles for workflow-controller and argo-ui deployments
++ Introduce `retryStrategy` field to control set retries for failed/errored containers
++ Introduce `raw` input artifacts
++ Add `argo install --dry-run` to print Kubernetes YAML manifests without installing
++ Add `argo list` sorts by running pods, then by completion time
++ Add `argo list -o wide` to show pod counts and parameter information
++ Add `argo list --running --completed --status` workflow filtering
++ Add `argo list --since DURATION` to filter workflows based on a time duration
++ Add ability for steps and resource templates to have outputs parameters
++ OpenID Connect auth support (@mthx)
+* Increase controller rate limits for much faster processing of highly parallized workflows
+* Executor sidecar hardening (retrying of Kube API queries)
+* Switch to k8s-codegen generated workflow client and informer
 * {{workflow.uuid}} variable corrected to {{workflow.uid}}
+* Documentation fixes (@reasonthearchitect, @mtx)
+- Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
+- Fix issues in controller operating on stale workflow state, and incorrectly identifying deleted pods
 
 ## 2.0.0-alpha3 (2018-01-02)
 + Introduce the "resource" template type for performing CRUD operations on k8s resources
@@ -17,6 +31,7 @@
 * Scalability improvements for highly parallelized workflows
 * Improved validation of volume mounts with input artifacts
 * Argo UI bug fixes and improvements
+* Documentation fixes (@javierbq, @anshumanbh)
 - Recover from unexpected panics when operating on workflows
 - Fix a controller panic when using a script templates with input artifacts
 - Fix issue preventing ability to pass JSON as a command line argument

@@ -15,7 +15,7 @@ import (
 func init() {
 	RootCmd.AddCommand(uninstallCmd)
 	uninstallCmd.Flags().StringVar(&uninstallArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
-	uninstallCmd.Flags().StringVar(&uninstallArgs.uiName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
+	uninstallCmd.Flags().StringVar(&uninstallArgs.uiName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
 	uninstallCmd.Flags().StringVar(&uninstallArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "name of configmap to uninstall")
 	uninstallCmd.Flags().StringVar(&uninstallArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "uninstall from a specific namespace")
 }
@@ -40,14 +40,14 @@ func uninstall(cmd *cobra.Command, args []string) {
 	fmt.Printf("Uninstalling from namespace '%s'\n", uninstallArgs.namespace)
 	// Delete the UI service
 	svcClient := clientset.CoreV1().Services(uninstallArgs.namespace)
-	err := svcClient.Delete(ArgoServiceName, &metav1.DeleteOptions{})
+	err := svcClient.Delete(ArgoUIServiceName, &metav1.DeleteOptions{})
 	if err != nil {
 		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to delete service '%s': %v", ArgoServiceName, err)
+			log.Fatalf("Failed to delete service '%s': %v", ArgoUIServiceName, err)
 		}
-		fmt.Printf("Service '%s' in namespace '%s' not found\n", ArgoServiceName, uninstallArgs.namespace)
+		fmt.Printf("Service '%s' in namespace '%s' not found\n", ArgoUIServiceName, uninstallArgs.namespace)
 	} else {
-		fmt.Printf("Service '%s' deleted\n", ArgoServiceName)
+		fmt.Printf("Service '%s' deleted\n", ArgoUIServiceName)
 	}
 
 	// Delete the UI and workflow-controller deployment
@@ -77,24 +77,40 @@ func uninstall(cmd *cobra.Command, args []string) {
 		fmt.Printf("ConfigMap '%s' deleted\n", uninstallArgs.configMap)
 	}
 
-	// Delete role binding
-	if err := clientset.RbacV1beta1().ClusterRoleBindings().Delete(ArgoClusterRole, &metav1.DeleteOptions{}); err != nil {
-		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to check clusterRoleBinding: %v\n", err)
+	// Delete controller and UI role binding
+	for _, bindingName := range []string{ArgoControllerClusterRoleBinding, ArgoUIClusterRoleBinding} {
+		if err := clientset.RbacV1().ClusterRoleBindings().Delete(bindingName, &metav1.DeleteOptions{}); err != nil {
+			if !apierr.IsNotFound(err) {
+				log.Fatalf("Failed to delete ClusterRoleBinding: %v\n", err)
+			}
+			fmt.Printf("ClusterRoleBinding '%s' not found\n", bindingName)
+		} else {
+			fmt.Printf("ClusterRoleBinding '%s' deleted\n", bindingName)
 		}
-		fmt.Printf("ClusterRoleBinding '%s' not found\n", ArgoClusterRole)
-	} else {
-		fmt.Printf("ClusterRoleBinding '%s' deleted\n", ArgoClusterRole)
 	}
 
-	// Delete service account
-	if err := clientset.CoreV1().ServiceAccounts(uninstallArgs.namespace).Delete(ArgoServiceAccount, &metav1.DeleteOptions{}); err != nil {
-		if !apierr.IsNotFound(err) {
-			log.Fatalf("Failed to get service accounts: %v\n", err)
+	// Delete controller and UI the cluster role
+	for _, roleName := range []string{ArgoControllerClusterRole, ArgoUIClusterRole} {
+		if err := clientset.RbacV1().ClusterRoles().Delete(roleName, &metav1.DeleteOptions{}); err != nil {
+			if !apierr.IsNotFound(err) {
+				log.Fatalf("Failed to delete ClusterRole: %v\n", err)
+			}
+			fmt.Printf("ClusterRole '%s' not found\n", roleName)
+		} else {
+			fmt.Printf("ClusterRole '%s' deleted\n", roleName)
 		}
-		fmt.Printf("ServiceAccount '%s' in namespace '%s' not found\n", ArgoServiceAccount, uninstallArgs.namespace)
-	} else {
-		fmt.Printf("ServiceAccount '%s' deleted\n", ArgoServiceAccount)
+	}
+
+	// Delete controller and UI service account
+	for _, serviceAccount := range []string{ArgoControllerServiceAccount, ArgoUIServiceAccount} {
+		if err := clientset.CoreV1().ServiceAccounts(uninstallArgs.namespace).Delete(serviceAccount, &metav1.DeleteOptions{}); err != nil {
+			if !apierr.IsNotFound(err) {
+				log.Fatalf("Failed to delete ServiceAccount: %v\n", err)
+			}
+			fmt.Printf("ServiceAccount '%s' in namespace '%s' not found\n", serviceAccount, uninstallArgs.namespace)
+		} else {
+			fmt.Printf("ServiceAccount '%s' deleted\n", serviceAccount)
+		}
 	}
 
 	// Delete the workflow CRD

@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
-	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
-
-const clusterAdmin = "cluster-admin"
 
 var (
 	// These values may be overridden by the link flags during build
@@ -44,34 +42,36 @@ var (
 
 func init() {
 	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
-	installCmd.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
-	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", common.DefaultUiDeploymentName, "name of ui deployment")
-	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
-	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
-	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
-	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
-	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
-	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
 	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
-	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows to ssh into running step container using Argo UI")
 	installCmd.Flags().BoolVar(&installArgs.DryRun, "dry-run", false, "print the kubernetes manifests to stdout instead of installing")
+	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
+	installCmd.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
+	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
+	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
+	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
+	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
+	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
+	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
+	installCmd.Flags().StringVar(&installArgs.UIServiceAccount, "ui-service-account", "", "use a specified service account for the argo-ui deployment")
+	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows exec access into running step container using Argo UI")
 }
 
 // InstallFlags has all the required parameters for installing Argo.
 type InstallFlags struct {
-	ControllerName   string // --controller-name
-	InstanceID       string // --instanceid
-	UIName           string // --ui-name
-	Namespace        string // --install-namespace
-	ConfigMap        string // --configmap
-	ControllerImage  string // --controller-image
-	UIImage          string // --ui-image
-	ExecutorImage    string // --executor-image
-	ServiceAccount   string // --service-account
 	Upgrade          bool   // --upgrade
-	EnableWebConsole bool   // --enable-web-console
 	DryRun           bool   // --dry-run
+	Namespace        string // --install-namespace
+	InstanceID       string // --instanceid
+	ConfigMap        string // --configmap
+	ControllerName   string // --controller-name
+	ControllerImage  string // --controller-image
+	ServiceAccount   string // --service-account
+	ExecutorImage    string // --executor-image
+	UIName           string // --ui-name
+	UIImage          string // --ui-image
+	UIServiceAccount string // --ui-service-account
+	EnableWebConsole bool   // --enable-web-console
 }
 
 var installArgs InstallFlags
@@ -98,22 +98,19 @@ func Install(cmd *cobra.Command, args InstallFlags) {
 		kubernetesVersionCheck(clientset)
 	}
 	installCRD(clientset, args)
-	if args.ServiceAccount == "" {
-		if clusterAdminExists(clientset) {
-			seviceAccountName := ArgoServiceAccount
-			createServiceAccount(clientset, seviceAccountName, args)
-			createClusterRoleBinding(clientset, seviceAccountName, args)
-			args.ServiceAccount = seviceAccountName
-		}
+	if args.ServiceAccount == "" && clusterAdminExists(clientset) {
+		createServiceAccount(clientset, ArgoControllerServiceAccount, args)
+		createClusterRole(clientset, ArgoControllerClusterRole, ArgoControllerPolicyRules, args)
+		createClusterRoleBinding(clientset, ArgoControllerClusterRoleBinding, ArgoControllerServiceAccount, ArgoControllerClusterRole, args)
+		args.ServiceAccount = ArgoControllerServiceAccount
+	}
+	if args.UIServiceAccount == "" && clusterAdminExists(clientset) {
+		createServiceAccount(clientset, ArgoUIServiceAccount, args)
+		createClusterRole(clientset, ArgoUIClusterRole, ArgoUIPolicyRules, args)
+		createClusterRoleBinding(clientset, ArgoUIClusterRoleBinding, ArgoUIServiceAccount, ArgoUIClusterRole, args)
+		args.UIServiceAccount = ArgoUIServiceAccount
 	}
 	installConfigMap(clientset, args)
-	if !args.DryRun {
-		if args.ServiceAccount == "" {
-			fmt.Printf("Using default service account for deployments\n")
-		} else {
-			fmt.Printf("Using service account '%s' for deployments\n", args.ServiceAccount)
-		}
-	}
 	installController(clientset, args)
 	installUI(clientset, args)
 	installUIService(clientset, args)
@@ -124,8 +121,9 @@ func install(cmd *cobra.Command, args []string) {
 }
 
 func clusterAdminExists(clientset *kubernetes.Clientset) bool {
-	clusterRoles := clientset.RbacV1beta1().ClusterRoles()
-	_, err := clusterRoles.Get(clusterAdmin, metav1.GetOptions{})
+	// TODO: change this method to check if RBAC is enabled
+	clusterRoles := clientset.RbacV1().ClusterRoles()
+	_, err := clusterRoles.Get("cluster-admin", metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			return false
@@ -161,23 +159,65 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 	fmt.Printf("ServiceAccount '%s' created\n", serviceAccountName)
 }
 
-func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountName string, args InstallFlags) {
-	roleBinding := rbacv1beta1.ClusterRoleBinding{
+func createClusterRole(clientset *kubernetes.Clientset, clusterRoleName string, rules []rbacv1.PolicyRule, args InstallFlags) {
+	clusterRole := rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterRoleName,
+		},
+		Rules: rules,
+	}
+	if args.DryRun {
+		printYAML(clusterRole)
+		return
+	}
+	crclient := clientset.RbacV1().ClusterRoles()
+	_, err := crclient.Create(&clusterRole)
+	if err != nil {
+		if !apierr.IsAlreadyExists(err) {
+			log.Fatalf("Failed to create ClusterRole '%s': %v\n", clusterRoleName, err)
+		}
+		existingClusterRole, err := crclient.Get(clusterRoleName, metav1.GetOptions{})
+		if err != nil {
+			log.Fatalf("Failed to get ClusterRole '%s': %v\n", clusterRoleName, err)
+		}
+		if !reflect.DeepEqual(existingClusterRole.Rules, clusterRole.Rules) {
+			if !args.Upgrade {
+				log.Fatalf("ClusterRole '%s' requires upgrade. Rerun with --upgrade to update the configuration", clusterRoleName)
+			}
+			_, err = crclient.Update(&clusterRole)
+			if err != nil {
+				log.Fatalf("Failed to update ClusterRole '%s': %v\n", clusterRoleName, err)
+			}
+			fmt.Printf("ClusterRole '%s' updated\n", clusterRoleName)
+		} else {
+			fmt.Printf("Existing ClusterRole '%s' up-to-date\n", clusterRoleName)
+		}
+	} else {
+		fmt.Printf("ClusterRole '%s' created\n", clusterRoleName)
+	}
+}
+
+func createClusterRoleBinding(clientset *kubernetes.Clientset, clusterBindingRoleName, serviceAccountName, clusterRoleName string, args InstallFlags) {
+	roleBinding := rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1beta1",
 			Kind:       "ClusterRoleBinding",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ArgoClusterRole,
+			Name: clusterBindingRoleName,
 		},
-		RoleRef: rbacv1beta1.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     clusterAdmin,
+			Name:     clusterRoleName,
 		},
-		Subjects: []rbacv1beta1.Subject{
+		Subjects: []rbacv1.Subject{
 			{
-				Kind:      rbacv1beta1.ServiceAccountKind,
+				Kind:      rbacv1.ServiceAccountKind,
 				Name:      serviceAccountName,
 				Namespace: args.Namespace,
 			},
@@ -187,15 +227,15 @@ func createClusterRoleBinding(clientset *kubernetes.Clientset, serviceAccountNam
 		printYAML(roleBinding)
 		return
 	}
-	_, err := clientset.RbacV1beta1().ClusterRoleBindings().Create(&roleBinding)
+	_, err := clientset.RbacV1().ClusterRoleBindings().Create(&roleBinding)
 	if err != nil {
 		if !apierr.IsAlreadyExists(err) {
-			log.Fatalf("Failed to create ClusterRoleBinding %s: %v\n", ArgoClusterRole, err)
+			log.Fatalf("Failed to create ClusterRoleBinding %s: %v\n", clusterBindingRoleName, err)
 		}
-		fmt.Printf("ClusterRoleBinding '%s' already exists\n", ArgoClusterRole)
+		fmt.Printf("ClusterRoleBinding '%s' already exists\n", clusterBindingRoleName)
 		return
 	}
-	fmt.Printf("ClusterRoleBinding '%s' created, bound '%s' to '%s'\n", ArgoClusterRole, serviceAccountName, clusterAdmin)
+	fmt.Printf("ClusterRoleBinding '%s' created, bound '%s' to '%s'\n", clusterBindingRoleName, serviceAccountName, clusterRoleName)
 }
 
 func kubernetesVersionCheck(clientset *kubernetes.Clientset) {
@@ -364,7 +404,7 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 					},
 				},
 				Spec: apiv1.PodSpec{
-					ServiceAccountName: args.ServiceAccount,
+					ServiceAccountName: args.UIServiceAccount,
 					Containers: []apiv1.Container{
 						{
 							Name:  args.UIName,
@@ -464,7 +504,7 @@ func upgradeNeeded(dep1, dep2 *appsv1beta2.Deployment) bool {
 }
 
 func installUIService(clientset *kubernetes.Clientset, args InstallFlags) {
-	svcName := ArgoServiceName
+	svcName := ArgoUIServiceName
 	svcClient := clientset.CoreV1().Services(args.Namespace)
 	uiSvc := apiv1.Service{
 		TypeMeta: metav1.TypeMeta{

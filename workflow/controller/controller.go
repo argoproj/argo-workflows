@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	goruntime "runtime"
+	"strings"
 	"time"
 
 	"github.com/argoproj/argo"
@@ -44,10 +44,11 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer  cache.SharedIndexInformer
-	podInformer cache.SharedIndexInformer
-	wfQueue     workqueue.RateLimitingInterface
-	podQueue    workqueue.RateLimitingInterface
+	wfInformer    cache.SharedIndexInformer
+	podInformer   cache.SharedIndexInformer
+	wfQueue       workqueue.RateLimitingInterface
+	podQueue      workqueue.RateLimitingInterface
+	completedPods chan string
 }
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -93,8 +94,8 @@ type S3ArtifactRepository struct {
 
 type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
-	// RepoUrl is the url for artifactory repo .
-	RepoUrl string `json:"RepoUrl,omitempty"`
+	// RepoURL is the url for artifactory repo.
+	RepoURL string `json:"repoURL,omitempty"`
 }
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -106,12 +107,13 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 		ConfigMap:     configMap,
 		wfQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		completedPods: make(chan string, 512),
 	}
 	return &wfc
 }
 
 // Run starts an Workflow resource controller
-func (wfc *WorkflowController) Run(ctx context.Context) {
+func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers int) {
 	defer wfc.wfQueue.ShutDown()
 	defer wfc.podQueue.ShutDown()
 
@@ -127,6 +129,7 @@ func (wfc *WorkflowController) Run(ctx context.Context) {
 	wfc.podInformer = wfc.newPodInformer()
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
+	go wfc.podLabeler(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
@@ -136,14 +139,37 @@ func (wfc *WorkflowController) Run(ctx context.Context) {
 		}
 	}
 
-	wfc.StartStatsTicker(5 * time.Minute)
-	for i := 0; i < 4; i++ {
+	for i := 0; i < wfWorkers; i++ {
 		go wait.Until(wfc.runWorker, time.Second, ctx.Done())
 	}
-	for i := 0; i < 8; i++ {
+	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
 	<-ctx.Done()
+}
+
+// podLabeler will label all pods on the controllers completedPod channel as completed
+func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
+	for {
+		select {
+		case <-stopCh:
+			return
+		case pod := <-wfc.completedPods:
+			parts := strings.Split(pod, "/")
+			if len(parts) != 2 {
+				log.Warnf("Unexpected item on completed pod channel: %s", pod)
+				continue
+			}
+			namespace := parts[0]
+			podName := parts[1]
+			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
+			if err != nil {
+				log.Errorf("Failed to label pod %s/%s completed: %+v", namespace, podName, err)
+			} else {
+				log.Infof("Labeled pod %s/%s completed", namespace, podName)
+			}
+		}
+	}
 }
 
 func (wfc *WorkflowController) runWorker() {
@@ -359,7 +385,7 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 }
 
 func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.Core().RESTClient()
+	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
 	name := wfc.ConfigMap
 	namespace := wfc.ConfigMapNS
@@ -386,7 +412,7 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 }
 
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.Core().RESTClient()
+	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
 	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
@@ -446,18 +472,4 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
-}
-
-// StartStatsTicker starts a goroutine which dumps stats at a specified interval
-func (wfc *WorkflowController) StartStatsTicker(d time.Duration) {
-	ticker := time.NewTicker(d)
-	go func() {
-		for {
-			<-ticker.C
-			var m goruntime.MemStats
-			goruntime.ReadMemStats(&m)
-			log.Infof("Alloc=%v TotalAlloc=%v Sys=%v NumGC=%v Goroutines=%d",
-				m.Alloc/1024, m.TotalAlloc/1024, m.Sys/1024, m.NumGC, goruntime.NumGoroutine())
-		}
-	}()
 }

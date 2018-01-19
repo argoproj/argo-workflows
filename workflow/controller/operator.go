@@ -3,9 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"runtime/debug"
-	"sort"
 	"strings"
 	"time"
 
@@ -14,7 +12,6 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -144,10 +141,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			// A timeout indicates we took too long operating on the workflow.
 			// Return so we can persist all the work we have done so far, and
 			// requeue the workflow for another day. TODO: move this into the caller
-			key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-			if err == nil {
-				wfc.wfQueue.Add(key)
-			}
+			woc.requeue()
 			return
 		}
 		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
@@ -172,10 +166,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 		err = woc.executeTemplate(wf.Spec.OnExit, wf.Spec.Arguments, onExitNodeName)
 		if err != nil {
 			if errors.IsCode(errors.CodeTimeout, err) {
-				key, err := cache.MetaNamespaceKeyFunc(woc.wf)
-				if err == nil {
-					wfc.wfQueue.Add(key)
-				}
+				woc.requeue()
 				return
 			}
 			woc.log.Errorf("%s error: %+v", onExitNodeName, err)
@@ -252,23 +243,38 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	if string(patchBytes) != "{}" {
+		woc.log.Debugf("Applying patch: %s", patchBytes)
 		wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 		_, err = wfClient.Patch(woc.wf.ObjectMeta.Name, types.MergePatchType, patchBytes)
 		if err != nil {
-			woc.log.Errorf("Error applying patch %s: %v", string(patchBytes), err)
+			woc.log.Errorf("Error applying patch %s: %v", patchBytes, err)
 			return
 		}
-		woc.log.Infof("Patch successful")
+		woc.log.Info("Patch successful")
+		// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
+		// cache is now invalid. It's very common that we will need to immediately re-operate on a
+		// workflow due to queuing by the pod workers. The following sleep gives a *chance* for the
+		// informer's cache to catch up to the version of the workflow we just persisted. Without
+		// this sleep, the next worker to work on this workflow will very likely operate on a stale
+		// object and redo work.
+		time.Sleep(1 * time.Second)
 	}
-	if len(woc.completedPods) > 0 {
-		woc.log.Infof("Labeling %d completed pods", len(woc.completedPods))
-		for podName := range woc.completedPods {
-			err = common.AddPodLabel(woc.controller.kubeclientset, podName, woc.wf.ObjectMeta.Namespace, common.LabelKeyCompleted, "true")
-			if err != nil {
-				woc.log.Errorf("Failed adding completed label to pod %s: %+v", podName, err)
-			}
-		}
+
+	// It is important that we *never* label pods as completed until we successfully updated the workflow
+	// Failing to do so means we can have inconsistent state.
+	for podName := range woc.completedPods {
+		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
 	}
+}
+
+// requeue this workflow onto the workqueue for later processing
+func (woc *wfOperationCtx) requeue() {
+	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
+	if err != nil {
+		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
+		return
+	}
+	woc.controller.wfQueue.Add(key)
 }
 
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
@@ -316,7 +322,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation() error {
-	podList, err := woc.getWorkflowPods(false)
+	podList, err := woc.getRunningWorkflowPods()
 	if err != nil {
 		return err
 	}
@@ -337,23 +343,28 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 
 	if len(podList.Items) > 0 {
+		// if we saw related pods, no need to check for deleted pods yet.
+		// we will get to them eventually.
 		return nil
 	}
 	// If we get here, our initial query for pods related to this workflow returned nothing.
-	// (note that our initial query excludes Pending pods for performance reasons since
-	// there's generally no action needed to be taken on pods in a Pending state).
-	// There are only a few scenarios where the pod list would have been empty:
-	//  1. this workflow's pods are still pending (ideal case)
-	//  2. this workflow's pods were deleted unbeknownst to the controller
-	//  3. combination of 1 and 2
-	// In order to detect scenario 2, we repeat the pod reconciliation process, this time
-	// including Pending pods in the query. If one of our nodes does not show up in this list,
-	// it implies that the pod was deleted without the controller seeing the event.
+	// Note that our initial query excludes Pending/completed=true pods for performance reasons
+	// since there's generally no action needed to be taken on pending pods or ones we have
+	// already processed (completed=true).
+	// There are a few scenarios where the pod list would have been empty:
+	//  1. workflow's pods are still pending (best case scenario)
+	//  2. workflow's pods were deleted unbeknownst to the controller
+	//  3. workflow's pods were marked completed=true, but we are operating on a stale workflow object
+	//  4. combination of any the above scenarios
+	// In order to detect deleted pods, we repeat the pod reconciliation process, this time
+	// including ALL workflow pods in the query. If any one of our nodes does not show up in this
+	// returned list, it implies that the pod was deleted without the controller seeing the event.
 	woc.log.Info("Checking for deleted pods")
-	podList, err = woc.getWorkflowPods(true)
+	podList, err = woc.getAllWorkflowPods()
 	if err != nil {
 		return err
 	}
+	// Repeat the node assessment
 	for _, pod := range podList.Items {
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
@@ -390,16 +401,28 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	return nil
 }
 
-// getWorkflowPods returns all pods related to the current workflow
-func (woc *wfOperationCtx) getWorkflowPods(includePending bool) (*apiv1.PodList, error) {
+// getRunningWorkflowPods returns running pods of the current workflow.
+func (woc *wfOperationCtx) getRunningWorkflowPods() (*apiv1.PodList, error) {
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s=false",
 			common.LabelKeyWorkflow,
 			woc.wf.ObjectMeta.Name,
 			common.LabelKeyCompleted),
+		FieldSelector: "status.phase!=Pending",
 	}
-	if !includePending {
-		options.FieldSelector = "status.phase!=Pending"
+	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return podList, nil
+}
+
+// getAllWorkflowPods returns all pods related to the current workflow
+func (woc *wfOperationCtx) getAllWorkflowPods() (*apiv1.PodList, error) {
+	options := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s",
+			common.LabelKeyWorkflow,
+			woc.wf.ObjectMeta.Name),
 	}
 	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
 	if err != nil {
@@ -718,16 +741,6 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 	return &lastChildNode, nil
 }
 
-func (woc *wfOperationCtx) getNode(nodeName string) wfv1.NodeStatus {
-	nodeID := woc.wf.NodeID(nodeName)
-	node, ok := woc.wf.Status.Nodes[nodeID]
-	if !ok {
-		panic("Failed to find node " + nodeName)
-	}
-
-	return node
-}
-
 func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string) error {
 	woc.log.Debugf("Evaluating node %s: template: %s", nodeName, templateName)
 	node := woc.getNodeByName(nodeName)
@@ -755,7 +768,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 				if err = woc.processNodeRetries(node); err != nil {
 					return err
 				}
-
 				// The updated node status could've changed. Get the latest copy of the node.
 				node = woc.getNodeByName(node.Name)
 				fmt.Printf("Node %s: Status: %s\n", node.Name, node.Phase)
@@ -806,9 +818,13 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	case wfv1.TemplateTypeSteps:
 		err = woc.executeSteps(nodeName, tmpl)
 	case wfv1.TemplateTypeScript:
-		err = woc.executeScript(nodeName, tmpl)
+		if node == nil {
+			err = woc.executeScript(nodeName, tmpl)
+		}
 	case wfv1.TemplateTypeResource:
-		err = woc.executeResource(nodeName, tmpl)
+		if node == nil {
+			err = woc.executeResource(nodeName, tmpl)
+		}
 	case wfv1.TemplateTypeDAG:
 		_ = woc.executeDAG(nodeName, tmpl)
 	default:
@@ -924,120 +940,16 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		// we already marked the node running. pod should have already been created
 		return nil
 	}
-	woc.log.Infof("Executing node %s with container template: %v\n", nodeName, tmpl)
-	pod, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
+	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
 	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
-	return nil
-}
-
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
-	node := woc.getNodeByName(nodeName)
-	nodeID := woc.wf.NodeID(nodeName)
-	if node == nil {
-		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	}
-	defer func() {
-		if woc.wf.Status.Nodes[nodeID].Completed() {
-			// TODO: this implementation should be handled via annotating the pod
-			// and signaling the executor to kill the pod instead.
-			_ = woc.killDeamonedChildren(node.ID)
-		}
-	}()
-	scope := wfScope{
-		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
-	}
-	for i, stepGroup := range tmpl.Steps {
-		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		sgNode := woc.getNodeByName(sgNodeName)
-		if sgNode == nil {
-			// initialize the step group
-			sgNode = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
-			if i == 0 {
-				woc.addChildNode(nodeName, sgNodeName)
-			} else {
-				// This logic will connect all the outbound nodes of the previous
-				// step group as parents to the current step group node
-				prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
-				prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
-				for _, childID := range prevStepGroupNode.Children {
-					outboundNodeIDs := woc.getOutboundNodes(childID)
-					woc.log.Infof("SG Outbound nodes of %s is %s", childID, outboundNodeIDs)
-					for _, outNodeID := range outboundNodeIDs {
-						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
-					}
-				}
-			}
-		}
-		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
-		if err != nil {
-			if !errors.IsCode(errors.CodeTimeout, err) {
-				woc.markNodeError(nodeName, err)
-			}
-			return err
-		}
-		sgNode = woc.getNodeByName(sgNodeName)
-		if !sgNode.Completed() {
-			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
-			return nil
-		}
-
-		if !sgNode.Successful() {
-			failMessage := fmt.Sprintf("step group %s was unsuccessful", sgNode)
-			woc.log.Info(failMessage)
-			woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
-			return nil
-		}
-
-		for _, step := range stepGroup {
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-			childNodeID := woc.wf.NodeID(childNodeName)
-			childNode, ok := woc.wf.Status.Nodes[childNodeID]
-			if !ok {
-				// This can happen if there was `withItem` expansion
-				// it is okay to ignore this because these expanded steps
-				// are not easily referenceable by user.
-				continue
-			}
-			prefix := fmt.Sprintf("steps.%s", step.Name)
-			scope.addNodeOutputsToScope(prefix, &childNode)
-		}
-	}
-	// If this template has outputs from any of its steps, copy them to this node here
-	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
-	if err != nil {
-		woc.markNodeError(nodeName, err)
-		return err
-	}
-	if outputs != nil {
-		node := woc.wf.Status.Nodes[nodeID]
-		node.Outputs = outputs
-		woc.wf.Status.Nodes[nodeID] = node
-	}
-
-	// Now that we have completed, set the outbound nodes from the last step group
-	outbound := make([]string, 0)
-	lastSGNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, len(tmpl.Steps)-1))
-	for _, childID := range lastSGNode.Children {
-		outboundNodeIDs := woc.getOutboundNodes(childID)
-		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
-		for _, outNodeID := range outboundNodeIDs {
-			outbound = append(outbound, outNodeID)
-		}
-	}
-	node = woc.getNodeByName(nodeName)
-	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
-	node.OutboundNodes = outbound
-	woc.wf.Status.Nodes[node.ID] = *node
-
-	woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
 
@@ -1059,232 +971,6 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 		}
 	}
 	return outbound
-}
-
-// executeStepGroup examines a map of parallel steps and executes them in parallel.
-// Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
-	node := woc.getNodeByName(sgNodeName)
-	if node.Completed() {
-		woc.log.Debugf("Step group node %v already marked completed", node)
-		return nil
-	}
-	// First, resolve any references to outputs from previous steps, and perform substitution
-	stepGroup, err := woc.resolveReferences(stepGroup, scope)
-	if err != nil {
-		woc.markNodeError(sgNodeName, err)
-		return err
-	}
-
-	// Next, expand the step's withItems (if any)
-	stepGroup, err = woc.expandStepGroup(stepGroup)
-	if err != nil {
-		woc.markNodeError(sgNodeName, err)
-		return err
-	}
-
-	// Kick off all parallel steps in the group asynchronously
-	for _, step := range stepGroup {
-		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-		woc.addChildNode(sgNodeName, childNodeName)
-
-		// Check the step's when clause to decide if it should execute
-		proceed, err := shouldExecute(step.When)
-		if err != nil {
-			woc.markNodeError(childNodeName, err)
-			woc.markNodeError(sgNodeName, err)
-			return err
-		}
-		if !proceed {
-			skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
-			woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-			woc.markNodePhase(childNodeName, wfv1.NodeSkipped, skipReason)
-			continue
-		}
-		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
-		if err != nil {
-			if !errors.IsCode(errors.CodeTimeout, err) {
-				woc.markNodeError(childNodeName, err)
-				woc.markNodeError(sgNodeName, err)
-			}
-			return err
-		}
-	}
-
-	// Return if not all children completed
-	node = woc.getNodeByName(sgNodeName)
-	for _, childNodeID := range node.Children {
-		if !woc.wf.Status.Nodes[childNodeID].Completed() {
-			return nil
-		}
-	}
-	// All children completed. Determine step group status as a whole
-	for _, childNodeID := range node.Children {
-		childNode := woc.wf.Status.Nodes[childNodeID]
-		if !childNode.Successful() {
-			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
-			woc.markNodePhase(sgNodeName, wfv1.NodeFailed, failMessage)
-			woc.log.Infof("Step group node %s deemed failed: %s", childNode, failMessage)
-			return nil
-		}
-	}
-	node = woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
-	woc.log.Infof("Step group node %v successful", node)
-	return nil
-}
-
-var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
-
-// shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
-func shouldExecute(when string) (bool, error) {
-	if when == "" {
-		return true, nil
-	}
-	parts := whenExpression.FindStringSubmatch(when)
-	if len(parts) == 0 {
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression: %s", when)
-	}
-	var1 := strings.TrimSpace(parts[1])
-	operator := parts[2]
-	var2 := strings.TrimSpace(parts[3])
-	switch operator {
-	case "==":
-		return var1 == var2, nil
-	case "!=":
-		return var1 != var2, nil
-	default:
-		return false, errors.Errorf(errors.CodeBadRequest, "Unknown operator: %s", operator)
-	}
-}
-
-// resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
-// NOTE: by now, input parameters should have been substituted throughout the template, so we only
-// are concerned with:
-// 1) dereferencing output.parameters from previous steps
-// 2) dereferencing output.result from previous steps
-// 2) dereferencing artifacts from previous steps
-// 3) dereferencing artifacts from inputs
-func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
-	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
-
-	for i, step := range stepGroup {
-		// Step 1: replace all parameter scope references in the step
-		// TODO: improve this
-		stepBytes, err := json.Marshal(step)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
-		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true, "")
-		if err != nil {
-			return nil, err
-		}
-		var newStep wfv1.WorkflowStep
-		err = json.Unmarshal([]byte(newStepStr), &newStep)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
-
-		// Step 2: replace all artifact references
-		for j, art := range newStep.Arguments.Artifacts {
-			if art.From == "" {
-				continue
-			}
-			resolvedArt, err := scope.resolveArtifact(art.From)
-			if err != nil {
-				return nil, err
-			}
-			resolvedArt.Name = art.Name
-			newStep.Arguments.Artifacts[j] = *resolvedArt
-		}
-
-		newStepGroup[i] = newStep
-	}
-	return newStepGroup, nil
-}
-
-// expandStepGroup looks at each step in a collection of parallel steps, and expands all steps using withItems/withParam
-func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
-	newStepGroup := make([]wfv1.WorkflowStep, 0)
-	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" {
-			newStepGroup = append(newStepGroup, step)
-			continue
-		}
-		expandedStep, err := woc.expandStep(step)
-		if err != nil {
-			return nil, err
-		}
-		for _, newStep := range expandedStep {
-			newStepGroup = append(newStepGroup, newStep)
-		}
-	}
-	return newStepGroup, nil
-}
-
-// expandStep expands a step containing withItems or withParams into multiple parallel steps
-func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
-	stepBytes, err := json.Marshal(step)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-	expandedStep := make([]wfv1.WorkflowStep, 0)
-	var items []wfv1.Item
-	if len(step.WithItems) > 0 {
-		items = step.WithItems
-	} else if step.WithParam != "" {
-		err = json.Unmarshal([]byte(step.WithParam), &items)
-		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value not be parsed as a JSON list: %s", step.WithParam)
-		}
-	} else {
-		// this should have been prevented in expandStepGroup()
-		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
-	}
-
-	for i, item := range items {
-		replaceMap := make(map[string]string)
-		var newStepName string
-		switch val := item.(type) {
-		case string, int32, int64, float32, float64:
-			replaceMap["item"] = fmt.Sprintf("%v", val)
-			newStepName = fmt.Sprintf("%s(%v)", step.Name, val)
-		case map[string]interface{}:
-			// Handle the case when withItems is a list of maps.
-			// vals holds stringified versions of the map items which are incorporated as part of the step name.
-			// For example if the item is: {"name": "jesse","group":"developer"}
-			// the vals would be: ["name:jesse", "group:developer"]
-			// This would eventually be part of the step name (group:developer,name:jesse)
-			vals := make([]string, 0)
-			for itemKey, itemValIf := range val {
-				switch itemVal := itemValIf.(type) {
-				case string, int32, int64, float32, float64:
-					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
-				default:
-					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", i, itemKey, itemVal)
-				}
-			}
-			// sort the values so that the name is deterministic
-			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%v)", step.Name, strings.Join(vals, ","))
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
-		}
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, false, "")
-		if err != nil {
-			return nil, err
-		}
-		var newStep wfv1.WorkflowStep
-		err = json.Unmarshal([]byte(newStepStr), &newStep)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
-		newStep.Name = newStepName
-		expandedStep = append(expandedStep, newStep)
-	}
-	return expandedStep, nil
 }
 
 // getTemplateOutputsFromScope resolves a template's outputs from the scope of the template
@@ -1325,15 +1011,15 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template) e
 		Command: tmpl.Script.Command,
 		Args:    []string{common.ExecutorScriptSourcePath},
 	}
-	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
 	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
+	woc.log.Infof("Initialized script node %v", node)
 	return nil
 }
 
@@ -1423,7 +1109,7 @@ func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
 }
 
 // addChildNode adds a nodeID as a child to a parent
-// parent and childe are both node names
+// parent and child are both node names
 func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	parentID := woc.wf.NodeID(parent)
 	childID := woc.wf.NodeID(child)
@@ -1445,31 +1131,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
-// killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
-// We only need to check grandchildren instead of children because the direct children of a step
-// template are actually stepGroups, which are nodes that cannot represent actual containers.
-// Returns the first error that occurs (if any)
-func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
-	woc.log.Infof("Checking deamon children of %s", nodeID)
-	var firstErr error
-	for _, childNodeID := range woc.wf.Status.Nodes[nodeID].Children {
-		for _, grandChildID := range woc.wf.Status.Nodes[childNodeID].Children {
-			gcNode := woc.wf.Status.Nodes[grandChildID]
-			if gcNode.Daemoned == nil || !*gcNode.Daemoned {
-				continue
-			}
-			err := common.KillPodContainer(woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, gcNode.ID, common.MainContainerName)
-			if err != nil {
-				woc.log.Errorf("Failed to kill %s: %+v", gcNode, err)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	return firstErr
-}
-
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template) error {
 	mainCtr := apiv1.Container{
@@ -1481,14 +1142,14 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template)
 		},
 		Env: execEnvVars,
 	}
-	pod, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
 	}
 	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	node.StartedAt = pod.CreationTimestamp
 	node.IsPod = true
 	woc.wf.Status.Nodes[node.ID] = *node
+	woc.log.Infof("Initialized resource node %v", node)
 	return nil
 }

@@ -5,11 +5,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: container-retries-
+  generateName: retry-container-
 spec:
-  entrypoint: container-retries
+  entrypoint: retry-container
   templates:
-  - name: container-retries
+  - name: retry-container
     retryStrategy:
       limit: 4
     container:

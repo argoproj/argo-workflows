@@ -114,7 +114,7 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 		if getArgs.output == "wide" {
 			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		} else {
-			fmt.Fprintf(w, "%s\tPODNAME\tMESSAGE\n", ansiFormat("STEP", FgDefault))
+			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		}
 		node, ok := wf.Status.Nodes[wf.ObjectMeta.Name]
 		if ok {
@@ -133,19 +133,19 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 func printNodeTree(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) {
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.Name)
 	var args []interface{}
+	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
 	if len(node.Children) == 0 && node.Phase != wfv1.NodeSkipped {
-		args = []interface{}{nodePrefix, nodeName, node.ID, node.Message}
+		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, "", ""}
+		args = []interface{}{nodePrefix, nodeName, "", "", ""}
 	}
 	if getArgs.output == "wide" {
 		msg := args[len(args)-1]
-		args[len(args)-1] = humanizeDurationShort(node.StartedAt, node.FinishedAt)
-		args = append(args, getArtifactsString(node))
+		args[len(args)-1] = getArtifactsString(node)
 		args = append(args, msg)
 		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
 	} else {
-		fmt.Fprintf(w, "%s%s\t%s\t%s\n", args...)
+		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
 	}
 
 	if node.RetryStrategy != nil {

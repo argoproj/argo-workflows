@@ -40,14 +40,20 @@
 [[projects]]
   name = "github.com/emicklei/go-restful"
   packages = [".","log"]
-  revision = "5741799b275a3c4a5a9623a993576d7545cf7b5c"
-  version = "v2.4.0"
+  revision = "2dd44038f0b95ae693b266c5f87593b5d2fdd78d"
+  version = "v2.5.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/evanphx/json-patch"
   packages = ["."]
   revision = "944e07253867aacae43c04b2e6a239005443f33a"
+
+[[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -148,8 +154,8 @@
 [[projects]]
   name = "github.com/imdario/mergo"
   packages = ["."]
-  revision = "7fe0c75c13abdee74b09fcacef5ea1c6bba6a874"
-  version = "0.2.4"
+  revision = "f1ac5984e69fed03e0574a92f70c59f132616ea2"
+  version = "0.3.0"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -227,7 +233,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "b95ab734e27d33e0d8fbabf71ca990568d4e2020"
+  revision = "0c34d16c3123764e413b9ed982ada58b1c3d53ea"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -269,25 +275,25 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "0fcca4842a8d74bfddc2c96a073bd2a4d2a7a2e8"
+  revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","http2","http2/hpack","idna","lex/httplex"]
-  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
+  revision = "5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "876b1c6ee618a9f8fa31ded3b27708d44b3153af"
+  revision = "30785a2c434e431ef7c507b54617d6a951d5f2b4"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "28a7276518d399b9634904daad79e18b44d481bc"
+  revision = "fff93fa7cd278d84afc205751523809c464168ab"
 
 [[projects]]
   branch = "master"
@@ -299,7 +305,7 @@
   branch = "master"
   name = "golang.org/x/tools"
   packages = ["go/ast/astutil","imports"]
-  revision = "96b5a5404f303f074e6117d832a9873c439508f0"
+  revision = "8ea45f96742f825c49e900f42a01928554b5a6a0"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -317,7 +323,7 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "c95af922eae69f190717a0b7148960af8c55a072"
+  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
 
 [[projects]]
   branch = "release-1.9"
@@ -329,7 +335,7 @@
   branch = "release-1.9"
   name = "k8s.io/apiextensions-apiserver"
   packages = ["pkg/apis/apiextensions","pkg/apis/apiextensions/v1beta1","pkg/client/clientset/clientset","pkg/client/clientset/clientset/scheme","pkg/client/clientset/clientset/typed/apiextensions/v1beta1"]
-  revision = "097c49c1906b3527571b6876c7bf47c4487f6c61"
+  revision = "6f29dd12234812844d29f52bd520bb01374619ce"
 
 [[projects]]
   branch = "release-1.9"
@@ -346,24 +352,24 @@
 [[projects]]
   branch = "release-1.9"
   name = "k8s.io/code-generator"
-  packages = ["cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types"]
+  packages = ["cmd/client-gen","cmd/client-gen/args","cmd/client-gen/generators","cmd/client-gen/generators/fake","cmd/client-gen/generators/scheme","cmd/client-gen/generators/util","cmd/client-gen/path","cmd/client-gen/types","cmd/deepcopy-gen","cmd/informer-gen","cmd/informer-gen/generators","cmd/lister-gen","cmd/lister-gen/generators"]
   revision = "91d3f6a57905178524105a085085901bb73bd3dc"
 
 [[projects]]
   branch = "master"
   name = "k8s.io/gengo"
-  packages = ["args","generator","namer","parser","types"]
+  packages = ["args","examples/deepcopy-gen/generators","examples/set-gen/sets","generator","namer","parser","types"]
   revision = "1ef560bbde5195c01629039ad3b337ce63e7b321"
 
 [[projects]]
   branch = "master"
   name = "k8s.io/kube-openapi"
   packages = ["pkg/common"]
-  revision = "b16ebc07f5cad97831f961e4b5a9cc1caed33b7e"
+  revision = "a07b7bbb58e7fdc5144f8d7046331d29fc9ad3b3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f32620bd72497f6137958c0bd5e9b92c209ebfdc01f68c7bd047a6f49ea3ebc3"
+  inputs-digest = "37a8421fecc4292a16b7a657cdc862fcc8e4471472309d1aaaf1b8444fa415be"
   solver-name = "gps-cdcl"
   solver-version = 1
