@@ -284,6 +284,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
 
 	if lastChildNode.Successful() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
+		woc.wf.Status.Nodes[node.ID] = *node
 		woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 		return nil
 	}
