@@ -56,6 +56,9 @@ type wfScope struct {
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
+	// NEVER modify objects from the store. It's a read-only, local cache.
+	// You can use DeepCopy() to make a deep copy of original object and modify this copy
+	// Or create a copy manually for better performance
 	woc := wfOperationCtx{
 		wf:      wf.DeepCopyObject().(*wfv1.Workflow),
 		orig:    wf,
@@ -77,22 +80,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	return &woc
 }
 
-// operateWorkflow is the main operator logic of a workflow.
+// operate is the main operator logic of a workflow.
 // It evaluates the current state of the workflow, and its pods
 // and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeing the
 // workflow to be retried at a later time
-func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
-	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
-		// can get here if we already added the completed=true label,
-		// but we are still draining the controller's workflow workqueue
-		return
-	}
-	var err error
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use DeepCopy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
-	woc := newWorkflowOperationCtx(wf, wfc)
+func (woc *wfOperationCtx) operate() {
 	defer woc.persistUpdates()
 	defer func() {
 		if r := recover(); r != nil {
@@ -114,28 +107,28 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			return
 		}
 	} else {
-		err = woc.podReconciliation()
+		err := woc.podReconciliation()
 		if err != nil {
-			woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
 	}
-	woc.globalParams[common.GlobalVarWorkflowName] = wf.ObjectMeta.Name
-	woc.globalParams[common.GlobalVarWorkflowUID] = string(wf.ObjectMeta.UID)
-	for _, param := range wf.Spec.Arguments.Parameters {
+	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
+	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
+	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
 
-	err = woc.createPVCs()
+	err := woc.createPVCs()
 	if err != nil {
-		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 		return
 	}
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	err = woc.executeTemplate(wf.Spec.Entrypoint, wf.Spec.Arguments, wf.ObjectMeta.Name)
+	err = woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name)
 	if err != nil {
 		if errors.IsCode(errors.CodeTimeout, err) {
 			// A timeout indicates we took too long operating on the workflow.
@@ -144,9 +137,9 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 			woc.requeue()
 			return
 		}
-		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 	}
-	node := woc.getNodeByName(wf.ObjectMeta.Name)
+	node := woc.getNodeByName(woc.wf.ObjectMeta.Name)
 	if !node.Completed() {
 		return
 	}
@@ -154,16 +147,16 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	workflowMessage = node.Message
 
 	var onExitNode *wfv1.NodeStatus
-	if wf.Spec.OnExit != "" {
+	if woc.wf.Spec.OnExit != "" {
 		if workflowStatus == wfv1.NodeSkipped {
 			// treat skipped the same as Succeeded for workflow.status
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(wfv1.NodeSucceeded)
 		} else {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
-		woc.log.Infof("Running OnExit handler: %s", wf.Spec.OnExit)
-		onExitNodeName := wf.ObjectMeta.Name + ".onExit"
-		err = woc.executeTemplate(wf.Spec.OnExit, wf.Spec.Arguments, onExitNodeName)
+		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
+		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
+		err = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName)
 		if err != nil {
 			if errors.IsCode(errors.CodeTimeout, err) {
 				woc.requeue()
@@ -180,7 +173,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 
 	err = woc.deletePVCs()
 	if err != nil {
-		woc.log.Errorf("%s error: %+v", wf.ObjectMeta.Name, err)
+		woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 		// Mark the workflow with an error message and return, but intentionally do not
 		// markCompletion so that we can retry PVC deletion (TODO: use workqueue.ReAdd())
 		// This error phase may be cleared if a subsequent delete attempt is successful.
@@ -207,7 +200,7 @@ func (wfc *WorkflowController) operateWorkflow(wf *wfv1.Workflow) {
 	default:
 		// NOTE: we should never make it here because if the the node was 'Running'
 		// we should have returned earlier.
-		err = errors.InternalErrorf("Unexpected node phase %s: %+v", wf.ObjectMeta.Name, err)
+		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 	}
 }
@@ -297,6 +290,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus) error {
 
 	if lastChildNode.Successful() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
+		woc.wf.Status.Nodes[node.ID] = *node
 		woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 		return nil
 	}
@@ -614,7 +608,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			if ctr.State.Terminated.Message != "" {
 				failMessages[ctr.Name] = ctr.State.Terminated.Message
 			} else {
-				failMessages[ctr.Name] = fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
+				errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
+				if ctr.Name != common.MainContainerName {
+					errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
+				}
+				failMessages[ctr.Name] = errMsg
 			}
 		}
 	}
