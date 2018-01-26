@@ -74,7 +74,7 @@ script:
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
-	err := newWoc().executeScript(tmpl.Name, tmpl)
+	err := newWoc().executeScript(tmpl.Name, tmpl, "")
 	assert.Nil(t, err)
 }
 
@@ -83,7 +83,7 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 func TestServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.ServiceAccountName = "foo"
-	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0])
+	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
 	assert.Nil(t, err)
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
