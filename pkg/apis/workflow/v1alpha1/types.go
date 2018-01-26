@@ -33,6 +33,19 @@ const (
 	NodeError     NodePhase = "Error"
 )
 
+// NodeType is the type of a node
+type NodeType string
+
+// Node types
+const (
+	NodeTypePod       NodeType = "Pod"
+	NodeTypeSteps     NodeType = "Steps"
+	NodeTypeStepGroup NodeType = "StepGroup"
+	NodeTypeDAG       NodeType = "DAG"
+	NodeTypeRetry     NodeType = "Retry"
+	NodeTypeSkipped   NodeType = "Skipped"
+)
+
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -303,6 +316,9 @@ type NodeStatus struct {
 	// It can represent a container, step group, or the entire workflow
 	Name string `json:"name"`
 
+	// Type indicates type of node
+	Type NodeType `json:"type"`
+
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
 	Phase NodePhase `json:"phase"`
@@ -316,15 +332,13 @@ type NodeStatus struct {
 	// Time at which this node completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty"`
 
-	// IsPod indicates if this node is a pod or not
-	IsPod bool `json:"isPod,omitempty"`
-
 	// PodIP captures the IP of the pod for daemoned steps
 	PodIP string `json:"podIP,omitempty"`
 
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
 
+	// RetryStrategy controls how to retry a step
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
