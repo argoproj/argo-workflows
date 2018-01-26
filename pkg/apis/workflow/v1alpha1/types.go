@@ -86,6 +86,12 @@ type WorkflowSpec struct {
 	// Can be overridden by an affinity specified in the template
 	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
+	// ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
+	// in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
+	// can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.
+	// More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+	ImagePullSecrets []apiv1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.

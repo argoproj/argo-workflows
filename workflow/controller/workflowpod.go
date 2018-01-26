@@ -135,6 +135,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
 			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {
