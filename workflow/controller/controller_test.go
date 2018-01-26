@@ -6,12 +6,10 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/ghodss/yaml"
-	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -61,20 +59,4 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 		panic(err)
 	}
 	return &wf
-}
-
-// TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
-func TestOperateWorkflowPanicRecover(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fail()
-		}
-	}()
-	controller := newController()
-	// intentionally set clientset to nil to induce panic
-	controller.kubeclientset = nil
-	wf := unmarshalWF(helloWorldWf)
-	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
-	assert.Nil(t, err)
-	controller.operateWorkflow(wf)
 }

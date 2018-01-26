@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	// Global CLI flags
+	// GlobalArgs hold global CLI flags
 	GlobalArgs globalFlags
 )
 
