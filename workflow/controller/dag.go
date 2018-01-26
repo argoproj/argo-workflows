@@ -13,9 +13,10 @@ import (
 
 // dagContext holds context information about this context's DAG
 type dagContext struct {
-	// encompasser is the node name of the encompassing node to this DAG.
+	// boundaryName is the node name of the boundary node to this DAG.
 	// This is used to incorporate into each of the task's node names.
-	encompasser string
+	boundaryName string
+	boundaryID   string
 
 	// tasks are all the tasks in the template
 	tasks []wfv1.DAGTask
@@ -42,7 +43,7 @@ func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
 
 // taskNodeName formulates the nodeName for a dag task
 func (d *dagContext) taskNodeName(taskName string) string {
-	return fmt.Sprintf("%s.%s", d.encompasser, taskName)
+	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
 }
 
 // taskNodeID formulates the node ID for a dag task
@@ -60,17 +61,18 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
 		return node
 	}
 	dagCtx := &dagContext{
-		encompasser: nodeName,
-		tasks:       tmpl.DAG.Tasks,
-		visited:     make(map[string]bool),
-		tmpl:        tmpl,
-		wf:          woc.wf,
+		boundaryName: nodeName,
+		boundaryID:   woc.wf.NodeID(nodeName),
+		tasks:        tmpl.DAG.Tasks,
+		visited:      make(map[string]bool),
+		tmpl:         tmpl,
+		wf:           woc.wf,
 	}
 	var targetTasks []string
 	if tmpl.DAG.Targets == "" {
@@ -80,7 +82,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv
 	}
 
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, boundaryID, wfv1.NodeRunning)
 		rootTasks := findRootTaskNames(dagCtx, targetTasks)
 		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
 		for _, rootTaskName := range rootTasks {
@@ -208,7 +210,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	if !dependenciesSuccessful {
 		woc.log.Infof("Task %s being marked %s due to dependency failure", taskName, wfv1.NodeFailed)
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, wfv1.NodeFailed)
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagCtx.boundaryID, wfv1.NodeFailed)
 		return
 	}
 
@@ -216,10 +218,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// Substitute params/artifacts from our dependencies and execute the template
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		return
 	}
-	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName)
+	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName, dagCtx.boundaryID)
 }
 
 // resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
