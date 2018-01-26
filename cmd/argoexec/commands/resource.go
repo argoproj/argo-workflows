@@ -25,24 +25,25 @@ func execResource(cmd *cobra.Command, args []string) {
 	}
 
 	wfExecutor := initExecutor()
+	defer wfExecutor.HandleError()
 	err := wfExecutor.StageFiles()
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
+		wfExecutor.AddError(err)
 		log.Fatalf("Error staging resource: %+v", err)
 	}
 	resourceName, err := wfExecutor.ExecResource(args[0], common.ExecutorResourceManifestPath)
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
+		wfExecutor.AddError(err)
 		log.Fatalf("Error running %s resource: %+v", args[0], err)
 	}
 	err = wfExecutor.WaitResource(resourceName)
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
+		wfExecutor.AddError(err)
 		log.Fatalf("Error waiting for resource %s: %+v", resourceName, err)
 	}
 	err = wfExecutor.SaveResourceParameters(resourceName)
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
+		wfExecutor.AddError(err)
 		log.Fatalf("Error saving output parameters for resource %s: %+v", resourceName, err)
 	}
 }

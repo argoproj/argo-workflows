@@ -272,21 +272,45 @@ func (woc *wfOperationCtx) addNodeSelectors(pod *apiv1.Pod, tmpl *wfv1.Template)
 	}
 }
 
-// addVolumeReferences adds any volumeMounts that a container is referencing, to the pod.spec.volumes
+// addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.Container == nil {
+	if tmpl.Container == nil && len(tmpl.Sidecars) == 0 {
 		return nil
 	}
-	for _, volMnt := range tmpl.Container.VolumeMounts {
-		vol := getVolByName(volMnt.Name, woc.wf)
-		if vol == nil {
-			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
+	addVolumeRef := func(volMounts []apiv1.VolumeMount) error {
+		for _, volMnt := range volMounts {
+			vol := getVolByName(volMnt.Name, woc.wf)
+			if vol == nil {
+				return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
+			}
+			found := false
+			for _, v := range pod.Spec.Volumes {
+				if v.Name == vol.Name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				if pod.Spec.Volumes == nil {
+					pod.Spec.Volumes = make([]apiv1.Volume, 0)
+				}
+				pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
+			}
 		}
-		if len(pod.Spec.Volumes) == 0 {
-			pod.Spec.Volumes = make([]apiv1.Volume, 0)
+		return nil
+	}
+	if tmpl.Container != nil {
+		err := addVolumeRef(tmpl.Container.VolumeMounts)
+		if err != nil {
+			return err
 		}
-		pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
+	}
+	for _, sidecar := range tmpl.Sidecars {
+		err := addVolumeRef(sidecar.VolumeMounts)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

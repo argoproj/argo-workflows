@@ -6,7 +6,99 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
+func TestOperateWorkflowPanicRecover(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fail()
+		}
+	}()
+	controller := newController()
+	// intentionally set clientset to nil to induce panic
+	controller.kubeclientset = nil
+	wf := unmarshalWF(helloWorldWf)
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+}
+
+var sidecarWithVol = `
+# Verifies sidecars can reference volumeClaimTemplates
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: sidecar-with-volumes
+spec:
+  entrypoint: sidecar-with-volumes
+  volumeClaimTemplates:
+  - metadata:
+      name: claim-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  volumes:
+  - name: existing-vol
+    persistentVolumeClaim:
+      claimName: my-existing-volume
+  templates:
+  - name: sidecar-with-volumes
+    script:
+      image: python:3.6
+      command: [python]
+      source: |
+        print("hello world")
+    sidecars:
+    - name: sidevol
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt; sleep 9999"]
+      volumeMounts:
+      - name: claim-vol
+        mountPath: /mnt/vol
+      - name: existing-vol
+        mountPath: /mnt/existing-vol
+`
+
+// TestSidecarWithVolume verifies ia sidecar can have a volumeMount reference to both existing or volumeClaimTemplate volumes
+func TestSidecarWithVolume(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(sidecarWithVol)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+	pod := pods.Items[0]
+
+	claimVolFound := false
+	existingVolFound := false
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name == "sidevol" {
+			for _, vol := range ctr.VolumeMounts {
+				if vol.Name == "claim-vol" {
+					claimVolFound = true
+				}
+				if vol.Name == "existing-vol" {
+					existingVolFound = true
+				}
+			}
+		}
+	}
+	assert.True(t, claimVolFound, "claim vol was not referenced by sidecar")
+	assert.True(t, existingVolFound, "existing vol was not referenced by sidecar")
+}
 
 // TestProcessNodesWithRetries tests the processNodesWithRetries() method.
 func TestProcessNodesWithRetries(t *testing.T) {

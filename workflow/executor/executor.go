@@ -48,6 +48,9 @@ type WorkflowExecutor struct {
 	mainContainerID string
 	// memoized secrets
 	memoizedSecrets map[string]string
+	// list of errors that occurred during execution.
+	// the first of these is used as the overall message of the node
+	errors []error
 }
 
 // NewExecutor instantiates a new workflow executor
@@ -58,14 +61,19 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		memoizedSecrets:    map[string]string{},
+		errors:             []error{},
 	}
 }
 
-// AnnotatePanic is a helper to annotate the pod with an error message upon a unexpected executor panic
-func (we *WorkflowExecutor) AnnotatePanic() {
+// HandleError is a helper to annotate the pod with the error message upon a unexpected executor panic or error
+func (we *WorkflowExecutor) HandleError() {
 	if r := recover(); r != nil {
 		_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
+	} else {
+		if len(we.errors) > 0 {
+			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, we.errors[0].Error())
+		}
 	}
 }
 
@@ -461,6 +469,11 @@ func (we *WorkflowExecutor) AnnotateOutputs() error {
 		return errors.InternalWrapError(err)
 	}
 	return we.AddAnnotation(common.AnnotationKeyOutputs, string(outputBytes))
+}
+
+// AddError adds an error to the list of encountered errors durign execution
+func (we *WorkflowExecutor) AddError(err error) {
+	we.errors = append(we.errors, err)
 }
 
 // AddAnnotation adds an annotation to the workflow pod

@@ -1,7 +1,10 @@
 # Changelog
 
-## 2.0.0-beta1 (2018-01-18)
+## 2.0.0-beta2 (Unreleased)
+- Fix issue preventing the referencing of artifacts in a container with retries
+- Fix issue preventing the use of volumes in a sidecar
 
+## 2.0.0-beta1 (2018-01-18)
 + Use and install minimal RBAC ClusterRoles for workflow-controller and argo-ui deployments
 + Introduce `retryStrategy` field to control set retries for failed/errored containers
 + Introduce `raw` input artifacts
