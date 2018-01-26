@@ -92,6 +92,22 @@ func TestServiceAccount(t *testing.T) {
 	assert.Equal(t, pod.Spec.ServiceAccountName, "foo")
 }
 
+// TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
+func TestImagePullSecrets(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
+		{
+			Name: "secret-name",
+		},
+	}
+	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0])
+	assert.Nil(t, err)
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, pod.Spec.ImagePullSecrets[0].Name, "secret-name")
+}
+
 // TestAffinity verifies the ability to carry forward affinity rules
 func TestAffinity(t *testing.T) {
 	woc := newWoc()
