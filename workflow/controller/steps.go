@@ -15,26 +15,38 @@ import (
 	"github.com/valyala/fasttemplate"
 )
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) error {
+// stepsContext holds context information about this context's steps
+type stepsContext struct {
+	// boundaryID is the node ID of the boundary which all immediate child steps are bound to
+	boundaryID string
+
+	// scope holds parameter and artifacts which are referenceable in scope during execution
+	scope *wfScope
+}
+
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, boundaryID, wfv1.NodeRunning)
 	}
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
 			_ = woc.killDeamonedChildren(node.ID)
 		}
 	}()
-	scope := wfScope{
-		tmpl:  tmpl,
-		scope: make(map[string]interface{}),
+	stepsCtx := stepsContext{
+		boundaryID: node.ID,
+		scope: &wfScope{
+			tmpl:  tmpl,
+			scope: make(map[string]interface{}),
+		},
 	}
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
 			// initialize the step group
-			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, wfv1.NodeRunning)
+			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepsCtx.boundaryID, wfv1.NodeRunning)
 			if i == 0 {
 				woc.addChildNode(nodeName, sgNodeName)
 			} else {
@@ -51,7 +63,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				}
 			}
 		}
-		err := woc.executeStepGroup(stepGroup, sgNodeName, &scope)
+		err := woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
 		if err != nil {
 			if !errors.IsCode(errors.CodeTimeout, err) {
 				woc.markNodeError(nodeName, err)
@@ -81,11 +93,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 				continue
 			}
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			scope.addNodeOutputsToScope(prefix, &childNode)
+			stepsCtx.scope.addNodeOutputsToScope(prefix, &childNode)
 		}
 	}
 	// If this template has outputs from any of its steps, copy them to this node here
-	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
+	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
 		woc.markNodeError(nodeName, err)
 		return err
@@ -116,14 +128,14 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template) er
 
 // executeStepGroup examines a map of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, scope *wfScope) error {
+func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) error {
 	node := woc.getNodeByName(sgNodeName)
 	if node.Completed() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return nil
 	}
 	// First, resolve any references to outputs from previous steps, and perform substitution
-	stepGroup, err := woc.resolveReferences(stepGroup, scope)
+	stepGroup, err := woc.resolveReferences(stepGroup, stepsCtx.scope)
 	if err != nil {
 		woc.markNodeError(sgNodeName, err)
 		return err
@@ -151,10 +163,10 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !proceed {
 			skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 			woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, wfv1.NodeSkipped, skipReason)
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 			continue
 		}
-		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName)
+		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
 		if err != nil {
 			if !errors.IsCode(errors.CodeTimeout, err) {
 				woc.markNodeError(childNodeName, err)

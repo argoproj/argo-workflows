@@ -323,6 +323,9 @@ type NodeStatus struct {
 	// Can be used as a state machine.
 	Phase NodePhase `json:"phase"`
 
+	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
+	BoundaryID string `json:"boundaryID,omitempty"`
+
 	// A human readable message indicating details about why the node is in this condition.
 	Message string `json:"message,omitempty"`
 
