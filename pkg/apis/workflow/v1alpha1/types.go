@@ -82,6 +82,10 @@ type WorkflowSpec struct {
 	// a nodeSelector specified in the template.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
+	// Affinity sets the scheduling constraints for all pods in the workflow.
+	// Can be overridden by an affinity specified in the template
+	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
+
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
@@ -99,6 +103,10 @@ type Template struct {
 	// NodeSelector is a selector to schedule this step of the workflow to be
 	// run on the selected node(s). Overrides the selector set at the workflow level.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Affinity sets the pod's scheduling constraints
+	// Overrides the affinity set at the workflow level (if any)
+	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
