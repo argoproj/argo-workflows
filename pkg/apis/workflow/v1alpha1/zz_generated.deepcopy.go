@@ -566,6 +566,15 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*out)[key] = val
 		}
 	}
+	if in.Affinity != nil {
+		in, out := &in.Affinity, &out.Affinity
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.Affinity)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	if in.Daemon != nil {
 		in, out := &in.Daemon, &out.Daemon
 		if *in == nil {
@@ -771,6 +780,15 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
+		}
+	}
+	if in.Affinity != nil {
+		in, out := &in.Affinity, &out.Affinity
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.Affinity)
+			(*in).DeepCopyInto(*out)
 		}
 	}
 	return
