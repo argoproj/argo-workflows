@@ -200,8 +200,15 @@ func (wfc *WorkflowController) processNextItem() bool {
 		log.Warnf("Key '%s' in index is not a workflow", key)
 		return true
 	}
-	wfc.operateWorkflow(wf)
-	// TODO: operateWorkflow should return error if it was unable to operate properly
+
+	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
+		// can get here if we already added the completed=true label,
+		// but we are still draining the controller's workflow workqueue
+		return true
+	}
+	woc := newWorkflowOperationCtx(wf, wfc)
+	woc.operate()
+	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
 	//c.handleErr(err, key)
