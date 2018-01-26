@@ -61,10 +61,9 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv1.NodeStatus {
-	nodeID := woc.wf.NodeID(nodeName)
-	node, nodeInitialized := woc.wf.Status.Nodes[nodeID]
-	if nodeInitialized && node.Completed() {
-		return &node
+	node := woc.getNodeByName(nodeName)
+	if node != nil && node.Completed() {
+		return node
 	}
 	dagCtx := &dagContext{
 		encompasser: nodeName,
@@ -80,8 +79,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv
 		targetTasks = strings.Split(tmpl.DAG.Targets, " ")
 	}
 
-	if !nodeInitialized {
-		node = *woc.markNodePhase(nodeName, wfv1.NodeRunning)
+	if node == nil {
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, wfv1.NodeRunning)
 		rootTasks := findRootTaskNames(dagCtx, targetTasks)
 		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
 		for _, rootTaskName := range rootTasks {
@@ -96,20 +95,21 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(depName)
 		if depNode == nil || !depNode.Completed() {
-			return &node
+			return node
 		}
 	}
 	// all desired tasks completed. now it is time to assess state
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(depName)
 		if !depNode.Successful() {
+			// One of our dependencies failed/errored. Mark this failed
 			// TODO: consider creating a virtual fan-in node
 			return woc.markNodePhase(nodeName, depNode.Phase)
 		}
 	}
 
 	// set the outbound nodes from the target tasks
-	node = *woc.getNodeByName(nodeName)
+	node = woc.getNodeByName(nodeName)
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(depName)
@@ -120,7 +120,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template) *wfv
 	}
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
 	node.OutboundNodes = outbound
-	woc.wf.Status.Nodes[node.ID] = node
+	woc.wf.Status.Nodes[node.ID] = *node
 
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 }
@@ -196,7 +196,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		for _, depName := range task.Dependencies {
 			depNode := dagCtx.getTaskNode(depName)
 			woc.log.Infof("node %s outbound nodes: %s", depNode, depNode.OutboundNodes)
-			if depNode.IsPod {
+			if depNode.Type == wfv1.NodeTypePod {
 				woc.addChildNode(depNode.Name, nodeName)
 			} else {
 				for _, outNodeID := range depNode.OutboundNodes {
@@ -207,8 +207,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	if !dependenciesSuccessful {
-		woc.log.Infof("Task %s being marked %s due to dependency failure", taskName, wfv1.NodeSkipped)
-		_ = woc.markNodePhase(nodeName, wfv1.NodeSkipped)
+		woc.log.Infof("Task %s being marked %s due to dependency failure", taskName, wfv1.NodeFailed)
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, wfv1.NodeFailed)
 		return
 	}
 
@@ -216,7 +216,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// Substitute params/artifacts from our dependencies and execute the template
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.markNodeError(nodeName, err)
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, wfv1.NodeError, err.Error())
 		return
 	}
 	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName)
