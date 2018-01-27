@@ -3,7 +3,7 @@
 ![Argo Image](argo.png)
 
 ## What is Argo?
-Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Customer Resource Definition).
+Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Custom Resource Definition).
 
 * Define workflows where each step in the workflow is a container.
   * Soon, you will also be able to define workflows as a dependency graph (DAG).
