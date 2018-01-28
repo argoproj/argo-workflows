@@ -2,6 +2,11 @@
 
 ![Argo Image](argo.png)
 
+## News
+The core Argo team is joining Intuit! We are super excited to take Argo to the next level as a part of Intuit. We remain firmly committed to Open Source, Kubernetes, and our AWESOME users!
+
+https://blog.argoproj.io/applatix-joins-intuit-7ab587270573
+
 ## What is Argo?
 Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Custom Resource Definition).
 
