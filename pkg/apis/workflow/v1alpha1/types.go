@@ -89,6 +89,9 @@ type WorkflowSpec struct {
 	// and delete the claims upon completion of the workflow
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 
+	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
+	Parallelism *int64 `json:"parallelism,omitempty"`
+
 	// NodeSelector is a selector which will result in all pods of the workflow
 	// to be scheduled on the selected node(s). This is able to be overridden by
 	// a nodeSelector specified in the template.

@@ -1257,6 +1257,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								},
 							},
 						},
+						"parallelism": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
+								Type:        []string{"integer"},
+								Format:      "int64",
+							},
+						},
 						"nodeSelector": {
 							SchemaProps: spec.SchemaProps{
 								Description: "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",

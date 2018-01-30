@@ -214,6 +214,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
+	woc.activePods = woc.activePods + 1
 	return created, nil
 }
 
