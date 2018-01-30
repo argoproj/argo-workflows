@@ -42,7 +42,17 @@ type wfOperationCtx struct {
 	// and starve other workqueue items. It also enables workflow progress to
 	// be periodically synced to the database.
 	deadline time.Time
+	// activePods tracks the number of active (Running/Pending) pods for controlling
+	// parallelism
+	activePods int64
 }
+
+var (
+	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
+	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
+	// ErrParallismReached indicates this workflow reached its parallism limit
+	ErrParallismReached = errors.New(errors.CodeForbidden, "Max parallism reached")
+)
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
@@ -113,6 +123,7 @@ func (woc *wfOperationCtx) operate() {
 			// TODO: we need to re-add to the workqueue, but should happen in caller
 			return
 		}
+		woc.countActivePods()
 	}
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
@@ -128,17 +139,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	err = woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
-	if err != nil {
-		if errors.IsCode(errors.CodeTimeout, err) {
-			// A timeout indicates we took too long operating on the workflow.
-			// Return so we can persist all the work we have done so far, and
-			// requeue the workflow for another day. TODO: move this into the caller
-			woc.requeue()
-			return
-		}
-		woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
-	}
+	woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	node := woc.getNodeByName(woc.wf.ObjectMeta.Name)
 	if !node.Completed() {
 		return
@@ -156,16 +157,8 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		err = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
-		if err != nil {
-			if errors.IsCode(errors.CodeTimeout, err) {
-				woc.requeue()
-				return
-			}
-			woc.log.Errorf("%s error: %+v", onExitNodeName, err)
-		}
-		xitNode := woc.wf.Status.Nodes[woc.wf.NodeID(onExitNodeName)]
-		onExitNode = &xitNode
+		woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
+		onExitNode = woc.getNodeByName(onExitNodeName)
 		if !onExitNode.Completed() {
 			return
 		}
@@ -202,6 +195,16 @@ func (woc *wfOperationCtx) operate() {
 		// we should have returned earlier.
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
+	}
+}
+
+// isRetryableError returns if the error is retryable
+func isRetryableError(err error) bool {
+	switch err {
+	case ErrDeadlineExceeded, ErrParallismReached:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -393,6 +396,20 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 	return nil
+}
+
+// countActivePods counts the number of active (Pending/Running) pods
+func (woc *wfOperationCtx) countActivePods() {
+	var activePods int64
+	for _, node := range woc.wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
+			activePods++
+		}
+	}
+	if woc.wf.Spec.Parallelism != nil {
+		woc.log.Infof("%d/%d active pods running", activePods, *woc.wf.Spec.Parallelism)
+	}
+	woc.activePods = activePods
 }
 
 // getRunningWorkflowPods returns running pods of the current workflow.
@@ -782,7 +799,8 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	}
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		return errors.New(errors.CodeTimeout, "Deadline exceeded")
+		woc.requeue()
+		return ErrDeadlineExceeded
 	}
 	return nil
 }
@@ -894,6 +912,14 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
+func (woc *wfOperationCtx) checkParallism() error {
+	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
+		woc.log.Infof("active pod parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
+		return ErrParallismReached
+	}
+	return nil
+}
+
 // If the user has specified retries, a special "retries" non-leaf node
 // is created. This node acts as the parent of all retries that will be
 // done for the container. The status of this node should be "Success"
@@ -934,6 +960,9 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	if node != nil {
 		return nil
 	}
+	if err := woc.checkParallism(); err != nil {
+		return err
+	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
@@ -941,7 +970,6 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		return err
 	}
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, boundaryID, wfv1.NodeRunning)
-	woc.log.Infof("Initialized container node %v", node)
 	return nil
 }
 
@@ -1001,6 +1029,9 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return nil
+	}
+	if err := woc.checkParallism(); err != nil {
+		return err
 	}
 	mainCtr := apiv1.Container{
 		Image:   tmpl.Script.Image,
@@ -1130,6 +1161,9 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return nil
+	}
+	if err := woc.checkParallism(); err != nil {
+		return err
 	}
 	mainCtr := apiv1.Container{
 		Image:   woc.controller.Config.ExecutorImage,

@@ -750,6 +750,11 @@
           "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary workflow.",
           "type": "string"
         },
+        "parallelism": {
+          "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
+          "type": "integer",
+          "format": "int64"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"

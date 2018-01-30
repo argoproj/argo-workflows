@@ -834,6 +834,15 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Parallelism != nil {
+		in, out := &in.Parallelism, &out.Parallelism
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int64)
+			**out = **in
+		}
+	}
 	if in.NodeSelector != nil {
 		in, out := &in.NodeSelector, &out.NodeSelector
 		*out = make(map[string]string, len(*in))

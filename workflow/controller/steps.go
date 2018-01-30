@@ -65,7 +65,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		}
 		err := woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
 		if err != nil {
-			if !errors.IsCode(errors.CodeTimeout, err) {
+			if !isRetryableError(err) {
+				// carry back the step level error
 				woc.markNodeError(nodeName, err)
 			}
 			return err
@@ -170,7 +171,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
 		if err != nil {
-			if !errors.IsCode(errors.CodeTimeout, err) {
+			if !isRetryableError(err) {
 				woc.markNodeError(childNodeName, err)
 				woc.markNodeError(sgNodeName, err)
 			}
