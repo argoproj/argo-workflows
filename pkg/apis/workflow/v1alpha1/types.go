@@ -46,11 +46,10 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 )
 
+// Workflow is the definition of our CRD Workflow class
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// Workflow is the definition of our CRD Workflow class
 type Workflow struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -58,9 +57,8 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // WorkflowList is list of Workflow resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -96,13 +94,21 @@ type WorkflowSpec struct {
 	// a nodeSelector specified in the template.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
+	// Affinity sets the scheduling constraints for all pods in the workflow.
+	// Can be overridden by an affinity specified in the template
+	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
+
+	// ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
+	// in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
+	// can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.
+	// More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
+	ImagePullSecrets []apiv1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty"`
 }
-
-// +k8s:deepcopy-gen
 
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
@@ -113,6 +119,10 @@ type Template struct {
 	// NodeSelector is a selector to schedule this step of the workflow to be
 	// run on the selected node(s). Overrides the selector set at the workflow level.
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Affinity sets the pod's scheduling constraints
+	// Overrides the affinity set at the workflow level (if any)
+	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
@@ -235,9 +245,11 @@ type WorkflowStep struct {
 	Name      string    `json:"name,omitempty"`
 	Template  string    `json:"template,omitempty"`
 	Arguments Arguments `json:"arguments,omitempty"`
-	WithItems []Item    `json:"withItems,omitempty"`
 	WithParam string    `json:"withParam,omitempty"`
 	When      string    `json:"when,omitempty"`
+	// TODO(jessesuen): kube-openapi cannot handle interfaces{}
+	// +k8s:openapi-gen=false
+	WithItems []Item `json:"withItems,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -271,6 +283,8 @@ type SidecarOptions struct {
 	// * PropagateFailure - if a sidecar fails, also fail the step
 }
 
+// WorkflowStatus contains overall status information about a workflow
+// +k8s:openapi-gen=false
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
 	Phase NodePhase `json:"phase"`
@@ -303,10 +317,13 @@ func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
 	return nodesWithRetries
 }
 
+// RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	Limit *int32 `json:"limit,omitempty"`
 }
 
+// NodeStatus contains status information about an individual node in the workflow
+// +k8s:openapi-gen=false
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
 	// It is implemented as a hash of the node name, which makes the ID deterministic
@@ -396,6 +413,7 @@ func (n NodeStatus) CanRetry() bool {
 	return n.Completed() && !n.Successful()
 }
 
+// S3Bucket contains the access information required for iterfacing with an S3 bucket
 type S3Bucket struct {
 	Endpoint        string                  `json:"endpoint"`
 	Bucket          string                  `json:"bucket"`
@@ -405,11 +423,13 @@ type S3Bucket struct {
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
 }
 
+// S3Artifact is the location of an S3 artifact
 type S3Artifact struct {
 	S3Bucket `json:",inline"`
 	Key      string `json:"key"`
 }
 
+// GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	Repo           string                   `json:"repo"`
 	Revision       string                   `json:"revision,omitempty"`
@@ -417,20 +437,24 @@ type GitArtifact struct {
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
+// ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
 type ArtifactoryAuth struct {
 	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
+// ArtifactoryArtifact is the location of an artifactory artifact
 type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline"`
 	URL             string `json:"url"`
 }
 
+// RawArtifact allows raw string content to be placed as an artifact in a container
 type RawArtifact struct {
 	Data string `json:"data"`
 }
 
+// HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	URL string `json:"url"`
 }
@@ -460,6 +484,7 @@ type ResourceTemplate struct {
 	FailureCondition string `json:"failureCondition,omitempty"`
 }
 
+// GetType returns the type of this template
 func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Container != nil {
 		return TemplateTypeContainer
@@ -503,6 +528,7 @@ type DAGTask struct {
 	Dependencies []string `json:"dependencies,omitempty"`
 }
 
+// GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
 	for _, art := range in.Artifacts {
 		if art.Name == name {
@@ -512,6 +538,7 @@ func (in *Inputs) GetArtifactByName(name string) *Artifact {
 	return nil
 }
 
+// GetParameterByName returns an input parameter by its name
 func (in *Inputs) GetParameterByName(name string) *Parameter {
 	for _, param := range in.Parameters {
 		if param.Name == name {
@@ -521,6 +548,7 @@ func (in *Inputs) GetParameterByName(name string) *Parameter {
 	return nil
 }
 
+// HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
 		return true
@@ -534,6 +562,7 @@ func (out *Outputs) HasOutputs() bool {
 	return false
 }
 
+// GetArtifactByName retrieves an artifact by its name
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
 	for _, art := range args.Artifacts {
 		if art.Name == name {
@@ -543,6 +572,7 @@ func (args *Arguments) GetArtifactByName(name string) *Artifact {
 	return nil
 }
 
+// GetParameterByName retrieves a parameter by its name
 func (args *Arguments) GetParameterByName(name string) *Parameter {
 	for _, param := range args.Parameters {
 		if param.Name == name {
@@ -557,7 +587,7 @@ func (a *Artifact) HasLocation() bool {
 	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
 }
 
-// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
 func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 	inBytes, err := json.Marshal(in)
 	if err != nil {
@@ -569,6 +599,7 @@ func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
 	}
 }
 
+// GetTemplate retrieves a defined template by its name
 func (wf *Workflow) GetTemplate(name string) *Template {
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
