@@ -365,11 +365,11 @@
   branch = "master"
   name = "k8s.io/kube-openapi"
   packages = ["pkg/common"]
-  revision = "a07b7bbb58e7fdc5144f8d7046331d29fc9ad3b3"
+  revision = "ebe1c38352a6121e0446d4fa098e76a528921e0c"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "37a8421fecc4292a16b7a657cdc862fcc8e4471472309d1aaaf1b8444fa415be"
+  inputs-digest = "c3667a43a4e12217a5a5525259ca0480d692c43d6962b0a9a373901066e1ed79"
   solver-name = "gps-cdcl"
   solver-version = 1

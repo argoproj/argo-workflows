@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2.0.0-beta2 (Unreleased)
++ Add ability to specify affinity rules at both the workflow and template level
++ Add ability to specify imagePullSecrets in the workflow.spec
++ Generate OpenAPI models for the workflow spec
 - Fix issue preventing the referencing of artifacts in a container with retries
 - Fix issue preventing the use of volumes in a sidecar
 

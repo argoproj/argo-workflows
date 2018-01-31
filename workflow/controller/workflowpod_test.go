@@ -7,6 +7,7 @@ import (
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -89,4 +90,51 @@ func TestServiceAccount(t *testing.T) {
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, pod.Spec.ServiceAccountName, "foo")
+}
+
+// TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
+func TestImagePullSecrets(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.ImagePullSecrets = []apiv1.LocalObjectReference{
+		{
+			Name: "secret-name",
+		},
+	}
+	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	assert.Nil(t, err)
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, pod.Spec.ImagePullSecrets[0].Name, "secret-name")
+}
+
+// TestAffinity verifies the ability to carry forward affinity rules
+func TestAffinity(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Affinity = &apiv1.Affinity{
+		NodeAffinity: &apiv1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &apiv1.NodeSelector{
+				NodeSelectorTerms: []apiv1.NodeSelectorTerm{
+					{
+						MatchExpressions: []apiv1.NodeSelectorRequirement{
+							{
+								Key:      "kubernetes.io/e2e-az-name",
+								Operator: apiv1.NodeSelectorOpIn,
+								Values: []string{
+									"e2e-az1",
+									"e2e-az2",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	assert.Nil(t, err)
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.Affinity)
 }

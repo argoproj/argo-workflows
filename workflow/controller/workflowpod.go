@@ -135,6 +135,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
 			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {
@@ -159,7 +160,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
-	woc.addNodeSelectors(&pod, tmpl)
+	woc.addSchedulingConstraints(&pod, tmpl)
 
 	err := woc.addVolumeReferences(&pod, tmpl)
 	if err != nil {
@@ -260,15 +261,19 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 	return &exec
 }
 
-// addNodeSelectors applies any node selectors, either set in the workflow or the template, to the pod
-func (woc *wfOperationCtx) addNodeSelectors(pod *apiv1.Pod, tmpl *wfv1.Template) {
+// addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
+func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, tmpl *wfv1.Template) {
+	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = tmpl.NodeSelector
-		return
-	}
-	if len(woc.wf.Spec.NodeSelector) > 0 {
+	} else if len(woc.wf.Spec.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = woc.wf.Spec.NodeSelector
-		return
+	}
+	// Set affinity (if specified)
+	if tmpl.Affinity != nil {
+		pod.Spec.Affinity = tmpl.Affinity
+	} else if woc.wf.Spec.Affinity != nil {
+		pod.Spec.Affinity = woc.wf.Spec.Affinity
 	}
 }
 

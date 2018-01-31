@@ -35,7 +35,7 @@ spec:
         withItems:
         - dep ensure && make lint
         - dep ensure && make test
-        - dep ensure && ./hack/verify-codegen.sh
+        - dep ensure && make verify-codegen
 
   - name: ci-builder
     inputs:

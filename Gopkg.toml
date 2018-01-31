@@ -22,6 +22,10 @@ required = [
   branch = "release-1.9"
 
 [[constraint]]
+  name = "k8s.io/kube-openapi"
+  branch = "master"
+
+[[constraint]]
   name = "k8s.io/client-go"
   branch = "release-6.0"
 
