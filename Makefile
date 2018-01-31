@@ -91,6 +91,11 @@ lint:
 test:
 	go test ./...
 
+verify-codegen:
+	./hack/verify-codegen.sh
+	# TODO(jessesuen) uncomment this when types.go is more stable and we are satisfied with the documentation
+	#./hack/update-openapigen.sh --verify-only
+
 clean:
 	-rm -rf ${CURRENT_DIR}/dist
 
