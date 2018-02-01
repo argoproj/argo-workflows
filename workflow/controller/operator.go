@@ -901,7 +901,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 func (woc *wfOperationCtx) executeRetryContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, boundaryID, wfv1.NodeRunning)
 		node.RetryStrategy = tmpl.RetryStrategy
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
@@ -918,7 +918,7 @@ func (woc *wfOperationCtx) executeRetryContainer(nodeName string, tmpl *wfv1.Tem
 	if err != nil {
 		return err
 	}
-	if !lastChildNode.Completed() {
+	if lastChildNode != nil && !lastChildNode.Completed() {
 		// last child node is still running.
 		return nil
 	}
