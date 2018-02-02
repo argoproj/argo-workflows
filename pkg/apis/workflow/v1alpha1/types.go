@@ -46,7 +46,7 @@ const (
 	NodeTypeSkipped   NodeType = "Skipped"
 )
 
-// Workflow is the definition of our CRD Workflow class
+// Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -112,8 +112,13 @@ type WorkflowSpec struct {
 
 // Template is a reusable and composable unit of execution in a workflow
 type Template struct {
-	Name    string  `json:"name"`
-	Inputs  Inputs  `json:"inputs,omitempty"`
+	// Name is the name of the template
+	Name string `json:"name"`
+
+	// Inputs describe what inputs parameters and artifacts are supplied to this template
+	Inputs Inputs `json:"inputs,omitempty"`
+
+	// Outputs describe the parameters and artifacts that this template produces
 	Outputs Outputs `json:"outputs,omitempty"`
 
 	// NodeSelector is a selector to schedule this step of the workflow to be
@@ -130,20 +135,21 @@ type Template struct {
 	// Steps define a series of sequential/parallel workflow steps
 	Steps [][]WorkflowStep `json:"steps,omitempty"`
 
-	// Container
+	// Container is the main container image to run in the pod
 	Container *apiv1.Container `json:"container,omitempty"`
 
-	// Script
+	// Script runs a portion of code against an interpreter
 	Script *Script `json:"script,omitempty"`
-
-	// Sidecar containers
-	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty"`
 
 	// DAG template subtype which runs a DAG
 	DAG *DAG `json:"dag,omitempty"`
+
+	// Sidecars is a list of containers which run alongside the main container
+	// Sidecars are automatically killed when the main container completes
+	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
@@ -156,13 +162,17 @@ type Template struct {
 	// This field is only applicable to container and script templates.
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 
+	// RetryStrategy describes how to retry a template when it fails
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
+	// Parameters are a list of parameters passed as inputs
 	Parameters []Parameter `json:"parameters,omitempty"`
-	Artifacts  []Artifact  `json:"artifacts,omitempty"`
+
+	// Artifact are a list of artifacts passed as inputs
+	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
 
 // Parameter indicate a passed string parameter to a service template with an optional default value
@@ -221,11 +231,20 @@ type Artifact struct {
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
-	S3          *S3Artifact          `json:"s3,omitempty"`
-	Git         *GitArtifact         `json:"git,omitempty"`
-	HTTP        *HTTPArtifact        `json:"http,omitempty"`
+	// S3 contains S3 artifact location details
+	S3 *S3Artifact `json:"s3,omitempty"`
+
+	// Git contains git artifact location details
+	Git *GitArtifact `json:"git,omitempty"`
+
+	// HTTP contains HTTP artifact location details
+	HTTP *HTTPArtifact `json:"http,omitempty"`
+
+	// Artifactory contains artifactory artifact location details
 	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
-	Raw         *RawArtifact         `json:"raw,omitempty"`
+
+	// Raw contains raw artifact location details
+	Raw *RawArtifact `json:"raw,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -240,16 +259,29 @@ type Outputs struct {
 	Result *string `json:"result,omitempty"`
 }
 
-// WorkflowStep is a template ref
+// WorkflowStep is a reference to a template to execute in a series of step
 type WorkflowStep struct {
-	Name      string    `json:"name,omitempty"`
-	Template  string    `json:"template,omitempty"`
+	// Name of the step
+	Name string `json:"name,omitempty"`
+
+	// Template is a reference to the template to execute as the step
+	Template string `json:"template,omitempty"`
+
+	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
-	WithParam string    `json:"withParam,omitempty"`
-	When      string    `json:"when,omitempty"`
+
+	// WithItems expands a step into multiple parallel steps from the items in the list
 	// TODO(jessesuen): kube-openapi cannot handle interfaces{}
+	// The right solution is to create a new MapOrString struct like IntOrString
+	// See: k8s.io/apimachinery/pkg/util/intstr/intstr.go
 	// +k8s:openapi-gen=false
 	WithItems []Item `json:"withItems,omitempty"`
+
+	// WithParam expands a step into from the value in the parameter
+	WithParam string `json:"withParam,omitempty"`
+
+	// When is an expression in which the step should conditionally execute
+	When string `json:"when,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -257,8 +289,11 @@ type Item interface{}
 
 // Arguments to a template
 type Arguments struct {
+	// Parameters is the list of parameters to pass to the template or workflow
 	Parameters []Parameter `json:"parameters,omitempty"`
-	Artifacts  []Artifact  `json:"artifacts,omitempty"`
+
+	// Artifacts is the list of artifacts to pass to the template or workflow
+	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
 
 // Sidecar is a container which runs alongside the main container
@@ -319,6 +354,7 @@ func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
 
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
+	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty"`
 }
 
@@ -358,7 +394,7 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
 
-	// RetryStrategy controls how to retry a step
+	// RetryStrategy contains retry information about the node
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
@@ -413,63 +449,94 @@ func (n NodeStatus) CanRetry() bool {
 	return n.Completed() && !n.Successful()
 }
 
-// S3Bucket contains the access information required for iterfacing with an S3 bucket
+// S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
-	Endpoint        string                  `json:"endpoint"`
-	Bucket          string                  `json:"bucket"`
-	Region          string                  `json:"region,omitempty"`
-	Insecure        *bool                   `json:"insecure,omitempty"`
+	// Endpoint is the hostname of the bucket endpoint
+	Endpoint string `json:"endpoint"`
+
+	// Bucket is the name of the bucket
+	Bucket string `json:"bucket"`
+
+	// Region contains the optional bucket region
+	Region string `json:"region,omitempty"`
+
+	// Insecure will connect to the service with TLS
+	Insecure *bool `json:"insecure,omitempty"`
+
+	// AccessKeySecret is the secret selector to the bucket's access key
 	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
+
+	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
 }
 
 // S3Artifact is the location of an S3 artifact
 type S3Artifact struct {
 	S3Bucket `json:",inline"`
-	Key      string `json:"key"`
+
+	// Key is the key in the bucket where the artifact resides
+	Key string `json:"key"`
 }
 
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
-	Repo           string                   `json:"repo"`
-	Revision       string                   `json:"revision,omitempty"`
+	// Repo is the git repository
+	Repo string `json:"repo"`
+
+	// Revision is the git commit, tag, branch to checkout
+	Revision string `json:"revision,omitempty"`
+
+	// UsernameSecret is the secret selector to the repository username
 	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+
+	// PasswordSecret is the secret selector to the repository password
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
 type ArtifactoryAuth struct {
+	// UsernameSecret is the secret selector to the repository username
 	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+
+	// PasswordSecret is the secret selector to the repository password
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
 }
 
 // ArtifactoryArtifact is the location of an artifactory artifact
 type ArtifactoryArtifact struct {
-	ArtifactoryAuth `json:",inline"`
+	// URL of the artifact
 	URL             string `json:"url"`
+	ArtifactoryAuth `json:",inline"`
 }
 
 // RawArtifact allows raw string content to be placed as an artifact in a container
 type RawArtifact struct {
+	// Data is the string contents of the artifact
 	Data string `json:"data"`
 }
 
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
+	// URL of the artifact
 	URL string `json:"url"`
 }
 
 // Script is a template subtype to enable scripting through code steps
 type Script struct {
-	Image   string   `json:"image"`
+	// Image is the container image to run
+	Image string `json:"image"`
+
+	// Command is the interpreter coommand to run (e.g. [python])
 	Command []string `json:"command"`
-	Source  string   `json:"source"`
+
+	// Source contains the source code of the script to execute
+	Source string `json:"source"`
 }
 
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
 type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
-	// Must be one of: create, apply, delete
+	// Must be one of: get, create, apply, delete, replace
 	Action string `json:"action"`
 
 	// Manifest contains the kubernetes manifest
