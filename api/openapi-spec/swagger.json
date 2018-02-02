@@ -1,0 +1,806 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Argo",
+    "version": "v2.0.0"
+  },
+  "paths": {},
+  "definitions": {
+    "io.argoproj.workflow.v1alpha1.Arguments": {
+      "description": "Arguments to a template",
+      "properties": {
+        "artifacts": {
+          "description": "Artifacts is the list of artifacts to pass to the template or workflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+          }
+        },
+        "parameters": {
+          "description": "Parameters is the list of parameters to pass to the template or workflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Artifact": {
+      "description": "Artifact indicates an artifact to place at a specified path",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "artifactory": {
+          "description": "Artifactory contains artifactory artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "from": {
+          "description": "From allows an artifact to reference an artifact from a previous step",
+          "type": "string"
+        },
+        "git": {
+          "description": "Git contains git artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
+        },
+        "http": {
+          "description": "HTTP contains HTTP artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
+        },
+        "mode": {
+          "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "name": {
+          "description": "name of the artifact. must be unique within a template's inputs/outputs.",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path is the container path to the artifact",
+          "type": "string"
+        },
+        "raw": {
+          "description": "Raw contains raw artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
+        },
+        "s3": {
+          "description": "S3 contains S3 artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
+      "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
+      "properties": {
+        "artifactory": {
+          "description": "Artifactory contains artifactory artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "git": {
+          "description": "Git contains git artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
+        },
+        "http": {
+          "description": "HTTP contains HTTP artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
+        },
+        "raw": {
+          "description": "Raw contains raw artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RawArtifact"
+        },
+        "s3": {
+          "description": "S3 contains S3 artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryArtifact": {
+      "description": "ArtifactoryArtifact is the location of an artifactory artifact",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "url": {
+          "description": "URL of the artifact",
+          "type": "string"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ArtifactoryAuth": {
+      "description": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory",
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.DAG": {
+      "description": "DAG is a template subtype for directed acyclic graph templates",
+      "required": [
+        "tasks"
+      ],
+      "properties": {
+        "target": {
+          "description": "Target are one or more names of targets to execute in a DAG",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "Tasks are a list of DAG tasks",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.DAGTask": {
+      "description": "DAGTask represents a node in the graph during DAG execution",
+      "required": [
+        "name",
+        "template"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments are the parameter and artifact arguments to the template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "dependencies": {
+          "description": "Dependencies are name of other targets which this depends on",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "description": "Name is the name of the target",
+          "type": "string"
+        },
+        "template": {
+          "description": "Name of template to execute",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GitArtifact": {
+      "description": "GitArtifact is the location of an git artifact",
+      "required": [
+        "repo"
+      ],
+      "properties": {
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the repository password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "repo": {
+          "description": "Repo is the git repository",
+          "type": "string"
+        },
+        "revision": {
+          "description": "Revision is the git commit, tag, branch to checkout",
+          "type": "string"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the repository username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
+      "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "description": "URL of the artifact",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Inputs": {
+      "description": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
+      "properties": {
+        "artifacts": {
+          "description": "Artifact are a list of artifacts passed as inputs",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+          }
+        },
+        "parameters": {
+          "description": "Parameters are a list of parameters passed as inputs",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Outputs": {
+      "description": "Outputs hold parameters, artifacts, and results from a step",
+      "properties": {
+        "artifacts": {
+          "description": "Artifacts holds the list of output artifacts produced by a step",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+          }
+        },
+        "parameters": {
+          "description": "Parameters holds the list of output parameters produced by a step",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
+          }
+        },
+        "result": {
+          "description": "Result holds the result (stdout) of a script template",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Parameter": {
+      "description": "Parameter indicate a passed string parameter to a service template with an optional default value",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "default": {
+          "description": "Default is the default value to use for an input parameter if a value was not supplied",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the parameter name",
+          "type": "string"
+        },
+        "value": {
+          "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
+          "type": "string"
+        },
+        "valueFrom": {
+          "description": "ValueFrom is the source for the output parameter's value",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ValueFrom"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.RawArtifact": {
+      "description": "RawArtifact allows raw string content to be placed as an artifact in a container",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "data": {
+          "description": "Data is the string contents of the artifact",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ResourceTemplate": {
+      "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
+      "required": [
+        "action",
+        "manifest"
+      ],
+      "properties": {
+        "action": {
+          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
+          "type": "string"
+        },
+        "failureCondition": {
+          "description": "FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed",
+          "type": "string"
+        },
+        "manifest": {
+          "description": "Manifest contains the kubernetes manifest",
+          "type": "string"
+        },
+        "successCondition": {
+          "description": "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.RetryStrategy": {
+      "description": "RetryStrategy provides controls on how to retry a workflow step",
+      "properties": {
+        "limit": {
+          "description": "Limit is the maximum number of attempts when retrying a container",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.S3Artifact": {
+      "description": "S3Artifact is the location of an S3 artifact",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret",
+        "key"
+      ],
+      "properties": {
+        "accessKeySecret": {
+          "description": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "insecure": {
+          "description": "Insecure will connect to the service with TLS",
+          "type": "boolean"
+        },
+        "key": {
+          "description": "Key is the key in the bucket where the artifact resides",
+          "type": "string"
+        },
+        "region": {
+          "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.S3Bucket": {
+      "description": "S3Bucket contains the access information required for interfacing with an S3 bucket",
+      "required": [
+        "endpoint",
+        "bucket",
+        "accessKeySecret",
+        "secretKeySecret"
+      ],
+      "properties": {
+        "accessKeySecret": {
+          "description": "AccessKeySecret is the secret selector to the bucket's access key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "bucket": {
+          "description": "Bucket is the name of the bucket",
+          "type": "string"
+        },
+        "endpoint": {
+          "description": "Endpoint is the hostname of the bucket endpoint",
+          "type": "string"
+        },
+        "insecure": {
+          "description": "Insecure will connect to the service with TLS",
+          "type": "boolean"
+        },
+        "region": {
+          "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "secretKeySecret": {
+          "description": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Script": {
+      "description": "Script is a template subtype to enable scripting through code steps",
+      "required": [
+        "image",
+        "command",
+        "source"
+      ],
+      "properties": {
+        "command": {
+          "description": "Command is the interpreter coommand to run (e.g. [python])",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "image": {
+          "description": "Image is the container image to run",
+          "type": "string"
+        },
+        "source": {
+          "description": "Source contains the source code of the script to execute",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Sidecar": {
+      "description": "Sidecar is a container which runs alongside the main container",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "args": {
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command": {
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "description": "List of environment variables to set in the container. Cannot be updated.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "envFrom": {
+          "description": "List of sources to populate environment variables in the container. The keys defined within a source must be a C_IDENTIFIER. All invalid keys will be reported as an event when the container is starting. When a key exists in multiple sources, the value associated with the last source will take precedence. Values defined by an Env with a duplicate key will take precedence. Cannot be updated.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
+          }
+        },
+        "image": {
+          "description": "Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.",
+          "type": "string"
+        },
+        "imagePullPolicy": {
+          "description": "Image pull policy. One of Always, Never, IfNotPresent. Defaults to Always if :latest tag is specified, or IfNotPresent otherwise. Cannot be updated. More info: https://kubernetes.io/docs/concepts/containers/images#updating-images",
+          "type": "string"
+        },
+        "lifecycle": {
+          "description": "Actions that the management system should take in response to container lifecycle events. Cannot be updated.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Lifecycle"
+        },
+        "livenessProbe": {
+          "description": "Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "mirrorVolumeMounts": {
+          "description": "MirrorVolumeMounts will mount the same volumes specified in the main container to the sidecar (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Name of the container specified as a DNS_LABEL. Each container in a pod must have a unique name (DNS_LABEL). Cannot be updated.",
+          "type": "string"
+        },
+        "ports": {
+          "description": "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
+          },
+          "x-kubernetes-patch-merge-key": "containerPort",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "readinessProbe": {
+          "description": "Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "resources": {
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "securityContext": {
+          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
+        },
+        "stdin": {
+          "description": "Whether this container should allocate a buffer for stdin in the container runtime. If this is not set, reads from stdin in the container will always result in EOF. Default is false.",
+          "type": "boolean"
+        },
+        "stdinOnce": {
+          "description": "Whether the container runtime should close the stdin channel after it has been opened by a single attach. When stdin is true the stdin stream will remain open across multiple attach sessions. If stdinOnce is set to true, stdin is opened on container start, is empty until the first client attaches to stdin, and then remains open and accepts data until the client disconnects, at which time stdin is closed and remains closed until the container is restarted. If this flag is false, a container processes that reads from stdin will never receive an EOF. Default is false",
+          "type": "boolean"
+        },
+        "terminationMessagePath": {
+          "description": "Optional: Path at which the file to which the container's termination message will be written is mounted into the container's filesystem. Message written is intended to be brief final status, such as an assertion failure message. Will be truncated by the node if greater than 4096 bytes. The total message length across all containers will be limited to 12kb. Defaults to /dev/termination-log. Cannot be updated.",
+          "type": "string"
+        },
+        "terminationMessagePolicy": {
+          "description": "Indicate how the termination message should be populated. File will use the contents of terminationMessagePath to populate the container status message on both success and failure. FallbackToLogsOnError will use the last chunk of container log output if the termination message file is empty and the container exited with an error. The log output is limited to 2048 bytes or 80 lines, whichever is smaller. Defaults to File. Cannot be updated.",
+          "type": "string"
+        },
+        "tty": {
+          "description": "Whether this container should allocate a TTY for itself, also requires 'stdin' to be true. Default is false.",
+          "type": "boolean"
+        },
+        "volumeDevices": {
+          "description": "volumeDevices is the list of block devices to be used by the container. This is an alpha feature and may change in the future.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
+          },
+          "x-kubernetes-patch-merge-key": "devicePath",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "volumeMounts": {
+          "description": "Pod volumes to mount into the container's filesystem. Cannot be updated.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "x-kubernetes-patch-merge-key": "mountPath",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "workingDir": {
+          "description": "Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.SidecarOptions": {
+      "description": "SidecarOptions provide a way to customize the behavior of a sidecar and how it affects the main container.",
+      "properties": {
+        "mirrorVolumeMounts": {
+          "description": "MirrorVolumeMounts will mount the same volumes specified in the main container to the sidecar (including artifacts), at the same mountPaths. This enables dind daemon to partially see the same filesystem as the main container in order to use features such as docker volume binding",
+          "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Template": {
+      "description": "Template is a reusable and composable unit of execution in a workflow",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "activeDeadlineSeconds": {
+          "description": "Optional duration in seconds relative to the StartTime that the pod may be active on a node before the system actively tries to terminate the pod; value must be positive integer This field is only applicable to container and script templates.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "affinity": {
+          "description": "Affinity sets the pod's scheduling constraints Overrides the affinity set at the workflow level (if any)",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "archiveLocation": {
+          "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
+        },
+        "container": {
+          "description": "Container is the main container image to run in the pod",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Container"
+        },
+        "daemon": {
+          "description": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
+          "type": "boolean"
+        },
+        "dag": {
+          "description": "DAG template subtype which runs a DAG",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAG"
+        },
+        "inputs": {
+          "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "name": {
+          "description": "Name is the name of the template",
+          "type": "string"
+        },
+        "nodeSelector": {
+          "description": "NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "description": "Outputs describe the parameters and artifacts that this template produces",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "resource": {
+          "description": "Resource template subtype which can run k8s resources",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
+        },
+        "retryStrategy": {
+          "description": "RetryStrategy describes how to retry a template when it fails",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"
+        },
+        "script": {
+          "description": "Script runs a portion of code against an interpreter",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Script"
+        },
+        "sidecars": {
+          "description": "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sidecar"
+          }
+        },
+        "steps": {
+          "description": "Steps define a series of sequential/parallel workflow steps",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
+            }
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ValueFrom": {
+      "description": "ValueFrom describes a location in which to obtain the value to a parameter",
+      "properties": {
+        "jqFilter": {
+          "description": "JQFilter expression against the resource object in resource templates",
+          "type": "string"
+        },
+        "jsonPath": {
+          "description": "JSONPath of a resource to retrieve an output parameter value from in resource templates",
+          "type": "string"
+        },
+        "parameter": {
+          "description": "Parameter reference to a step or dag task in which to retrieve an output parameter value from (e.g. '{{steps.mystep.outputs.myparam}}')",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path in the container to retrieve an output parameter value from in container templates",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Workflow": {
+      "description": "Workflow is the definition of a workflow resource",
+      "required": [
+        "metadata",
+        "spec",
+        "status"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowList": {
+      "description": "WorkflowList is list of Workflow resources",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Workflow"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowSpec": {
+      "description": "WorkflowSpec is the specification of a Workflow.",
+      "required": [
+        "templates",
+        "entrypoint"
+      ],
+      "properties": {
+        "affinity": {
+          "description": "Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template",
+          "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "arguments": {
+          "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "entrypoint": {
+          "description": "Entrypoint is a template reference to the starting point of the workflow",
+          "type": "string"
+        },
+        "imagePullSecrets": {
+          "description": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
+          }
+        },
+        "nodeSelector": {
+          "description": "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary workflow.",
+          "type": "string"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
+          "type": "string"
+        },
+        "templates": {
+          "description": "Templates is a list of workflow templates used in a workflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          }
+        },
+        "volumeClaimTemplates": {
+          "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
+          }
+        },
+        "volumes": {
+          "description": "Volumes is a list of volumes that can be mounted by containers in a workflow.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowStep": {
+      "description": "WorkflowStep is a reference to a template to execute in a series of step",
+      "properties": {
+        "arguments": {
+          "description": "Arguments hold arguments to the template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "name": {
+          "description": "Name of the step",
+          "type": "string"
+        },
+        "template": {
+          "description": "Template is a reference to the template to execute as the step",
+          "type": "string"
+        },
+        "when": {
+          "description": "When is an expression in which the step should conditionally execute",
+          "type": "string"
+        },
+        "withParam": {
+          "description": "WithParam expands a step into from the value in the parameter",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
