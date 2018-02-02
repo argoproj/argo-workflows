@@ -94,6 +94,7 @@ test:
 update-codegen:
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/api/openapi-spec/swagger.json
 
 verify-codegen:
 	./hack/verify-codegen.sh
