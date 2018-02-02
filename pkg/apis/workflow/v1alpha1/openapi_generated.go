@@ -18,7 +18,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"parameters": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Parameters is the list of parameters to pass to the template or workflow",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -30,7 +31,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"artifacts": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Artifacts is the list of artifacts to pass to the template or workflow",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -152,20 +154,23 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				SchemaProps: spec.SchemaProps{
 					Description: "ArtifactoryArtifact is the location of an artifactory artifact",
 					Properties: map[string]spec.Schema{
+						"url": {
+							SchemaProps: spec.SchemaProps{
+								Description: "URL of the artifact",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
 						"usernameSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "UsernameSecret is the secret selector to the repository username",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"passwordSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
-							},
-						},
-						"url": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "PasswordSecret is the secret selector to the repository password",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 					},
@@ -182,12 +187,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"usernameSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "UsernameSecret is the secret selector to the repository username",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"passwordSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "PasswordSecret is the secret selector to the repository password",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 					},
@@ -203,24 +210,28 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"repo": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Repo is the git repository",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"revision": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Revision is the git commit, tag, branch to checkout",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"usernameSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "UsernameSecret is the secret selector to the repository username",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"passwordSecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "PasswordSecret is the secret selector to the repository password",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 					},
@@ -237,8 +248,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"url": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "URL of the artifact",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -254,7 +266,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"parameters": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Parameters are a list of parameters passed as inputs",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -266,7 +279,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"artifacts": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Artifact are a list of artifacts passed as inputs",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -372,8 +386,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"data": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Data is the string contents of the artifact",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -389,7 +404,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"action": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Action is the action to perform to the resource. Must be one of: create, apply, delete",
+								Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -428,8 +443,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"limit": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"integer"},
-								Format: "int32",
+								Description: "Limit is the maximum number of attempts when retrying a container",
+								Type:        []string{"integer"},
+								Format:      "int32",
 							},
 						},
 					},
@@ -444,42 +460,49 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"endpoint": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Endpoint is the hostname of the bucket endpoint",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"bucket": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Bucket is the name of the bucket",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"region": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Region contains the bucket region (optional)",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"insecure": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"boolean"},
-								Format: "",
+								Description: "Insecure will connect to the service with TLS",
+								Type:        []string{"boolean"},
+								Format:      "",
 							},
 						},
 						"accessKeySecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "AccessKeySecret is the secret selector to the bucket's access key",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"secretKeySecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"key": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Key is the key in the bucket where the artifact resides",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -496,36 +519,42 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"endpoint": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Endpoint is the hostname of the bucket endpoint",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"bucket": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Bucket is the name of the bucket",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"region": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Region contains the bucket region (optional)",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"insecure": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"boolean"},
-								Format: "",
+								Description: "Insecure will connect to the service with TLS",
+								Type:        []string{"boolean"},
+								Format:      "",
 							},
 						},
 						"accessKeySecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "AccessKeySecret is the secret selector to the bucket's access key",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 						"secretKeySecret": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+								Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
 					},
@@ -542,13 +571,15 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"image": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Image is the container image to run",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"command": {
 							SchemaProps: spec.SchemaProps{
-								Type: []string{"array"},
+								Description: "Command is the interpreter coommand to run (e.g. [python])",
+								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
 										SchemaProps: spec.SchemaProps{
@@ -561,8 +592,9 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"source": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Source contains the source code of the script to execute",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
@@ -824,18 +856,21 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"name": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Name is the name of the template",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"inputs": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs"),
+								Description: "Inputs describe what inputs parameters and artifacts are supplied to this template",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs"),
 							},
 						},
 						"outputs": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
+								Description: "Outputs describe the parameters and artifacts that this template produces",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
 							},
 						},
 						"nodeSelector": {
@@ -887,19 +922,25 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"container": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Container",
+								Description: "Container is the main container image to run in the pod",
 								Ref:         ref("k8s.io/api/core/v1.Container"),
 							},
 						},
 						"script": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Script",
+								Description: "Script runs a portion of code against an interpreter",
 								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script"),
+							},
+						},
+						"resource": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Resource template subtype which can run k8s resources",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
 							},
 						},
 						"sidecars": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Sidecar containers",
+								Description: "Sidecar is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
 								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{
@@ -908,12 +949,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 										},
 									},
 								},
-							},
-						},
-						"resource": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Resource is the resource template type",
-								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
 							},
 						},
 						"archiveLocation": {
@@ -931,7 +966,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"retryStrategy": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy"),
+								Description: "RetryStrategy describes how to retry a template when it fails",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy"),
 							},
 						},
 					},
@@ -982,7 +1018,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "Workflow is the definition of our CRD Workflow class",
+					Description: "Workflow is the definition of a workflow resource",
 					Properties: map[string]spec.Schema{
 						"kind": {
 							SchemaProps: spec.SchemaProps{
@@ -1177,35 +1213,40 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "WorkflowStep is a template ref",
+					Description: "WorkflowStep is a reference to a template to execute in a series of step",
 					Properties: map[string]spec.Schema{
 						"name": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Name of the step",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"template": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "Template is a reference to the template to execute as the step",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"arguments": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
+								Description: "Arguments hold arguments to the template",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 							},
 						},
 						"withParam": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "WithParam expands a step into from the value in the parameter",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 						"when": {
 							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
+								Description: "When is an expression in which the step should conditionally execute",
+								Type:        []string{"string"},
+								Format:      "",
 							},
 						},
 					},
