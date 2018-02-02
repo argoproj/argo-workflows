@@ -665,13 +665,6 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in).DeepCopyInto(*out)
 		}
 	}
-	if in.Sidecars != nil {
-		in, out := &in.Sidecars, &out.Sidecars
-		*out = make([]Sidecar, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	if in.Resource != nil {
 		in, out := &in.Resource, &out.Resource
 		if *in == nil {
@@ -688,6 +681,13 @@ func (in *Template) DeepCopyInto(out *Template) {
 		} else {
 			*out = new(DAG)
 			(*in).DeepCopyInto(*out)
+		}
+	}
+	if in.Sidecars != nil {
+		in, out := &in.Sidecars, &out.Sidecars
+		*out = make([]Sidecar, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.ArchiveLocation != nil {
