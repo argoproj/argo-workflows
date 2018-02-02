@@ -83,27 +83,32 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"s3": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"),
+								Description: "S3 contains S3 artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"),
 							},
 						},
 						"git": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact"),
+								Description: "Git contains git artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact"),
 							},
 						},
 						"http": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
+								Description: "HTTP contains HTTP artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
 							},
 						},
 						"artifactory": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
+								Description: "Artifactory contains artifactory artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
 							},
 						},
 						"raw": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
+								Description: "Raw contains raw artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
 							},
 						},
 					},
@@ -120,27 +125,32 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 					Properties: map[string]spec.Schema{
 						"s3": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"),
+								Description: "S3 contains S3 artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"),
 							},
 						},
 						"git": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact"),
+								Description: "Git contains git artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact"),
 							},
 						},
 						"http": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
+								Description: "HTTP contains HTTP artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact"),
 							},
 						},
 						"artifactory": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
+								Description: "Artifactory contains artifactory artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact"),
 							},
 						},
 						"raw": {
 							SchemaProps: spec.SchemaProps{
-								Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
+								Description: "Raw contains raw artifact location details",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
 							},
 						},
 					},
@@ -474,7 +484,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"region": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Region contains the bucket region (optional)",
+								Description: "Region contains the optional bucket region",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -515,7 +525,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "S3Bucket contains the access information required for iterfacing with an S3 bucket",
+					Description: "S3Bucket contains the access information required for interfacing with an S3 bucket",
 					Properties: map[string]spec.Schema{
 						"endpoint": {
 							SchemaProps: spec.SchemaProps{
@@ -533,7 +543,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"region": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Region contains the bucket region (optional)",
+								Description: "Region contains the optional bucket region",
 								Type:        []string{"string"},
 								Format:      "",
 							},
@@ -940,7 +950,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						},
 						"sidecars": {
 							SchemaProps: spec.SchemaProps{
-								Description: "Sidecar is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
+								Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
 								Type:        []string{"array"},
 								Items: &spec.SchemaOrArray{
 									Schema: &spec.Schema{

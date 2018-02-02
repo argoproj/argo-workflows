@@ -130,7 +130,7 @@ type Template struct {
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty"`
 
-	// Sidecar is a list of containers which run alongside the main container
+	// Sidecars is a list of containers which run alongside the main container
 	// Sidecars are automatically killed when the main container completes
 	Sidecars []Sidecar `json:"sidecars,omitempty"`
 
@@ -214,11 +214,20 @@ type Artifact struct {
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
-	S3          *S3Artifact          `json:"s3,omitempty"`
-	Git         *GitArtifact         `json:"git,omitempty"`
-	HTTP        *HTTPArtifact        `json:"http,omitempty"`
+	// S3 contains S3 artifact location details
+	S3 *S3Artifact `json:"s3,omitempty"`
+
+	// Git contains git artifact location details
+	Git *GitArtifact `json:"git,omitempty"`
+
+	// HTTP contains HTTP artifact location details
+	HTTP *HTTPArtifact `json:"http,omitempty"`
+
+	// Artifactory contains artifactory artifact location details
 	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
-	Raw         *RawArtifact         `json:"raw,omitempty"`
+
+	// Raw contains raw artifact location details
+	Raw *RawArtifact `json:"raw,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -362,6 +371,7 @@ type NodeStatus struct {
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
 
+	// RetryStrategy contains retry information about the node
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
 	// Outputs captures output parameter values and artifact locations
@@ -402,7 +412,7 @@ func (n NodeStatus) CanRetry() bool {
 	return n.Completed() && !n.Successful()
 }
 
-// S3Bucket contains the access information required for iterfacing with an S3 bucket
+// S3Bucket contains the access information required for interfacing with an S3 bucket
 type S3Bucket struct {
 	// Endpoint is the hostname of the bucket endpoint
 	Endpoint string `json:"endpoint"`
@@ -410,7 +420,7 @@ type S3Bucket struct {
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket"`
 
-	// Region contains the bucket region (optional)
+	// Region contains the optional bucket region
 	Region string `json:"region,omitempty"`
 
 	// Insecure will connect to the service with TLS
