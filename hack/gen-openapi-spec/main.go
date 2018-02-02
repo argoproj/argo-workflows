@@ -26,7 +26,7 @@ func main() {
 	})
 	defs := spec.Definitions{}
 	for defName, val := range oAPIDefs {
-		defs[defName] = val.Schema
+		defs[swaggify(defName)] = val.Schema
 	}
 	swagger := spec.Swagger{
 		SwaggerProps: spec.SwaggerProps{
@@ -41,7 +41,7 @@ func main() {
 			},
 		},
 	}
-	jsonBytes, err := json.MarshalIndent(swagger, "", "    ")
+	jsonBytes, err := json.MarshalIndent(swagger, "", "  ")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
