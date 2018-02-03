@@ -204,7 +204,7 @@ func (nodeInfo *executionNode) getStartTime(wf *wfv1.Workflow) metav1.Time {
 
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {
 	insertTime := item.getStartTime(wf)
-	index := 0
+	var index int
 	for index = 0; index < len(sortedArray); index++ {
 		existingItem := sortedArray[index]
 		t := existingItem.getStartTime(wf)
