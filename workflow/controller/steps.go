@@ -161,9 +161,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return err
 		}
 		if !proceed {
-			skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
-			woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+			if woc.getNodeByName(childNodeName) == nil {
+				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
+				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+			}
 			continue
 		}
 		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
