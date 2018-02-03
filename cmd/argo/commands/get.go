@@ -210,9 +210,16 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 		t := existingItem.getStartTime(wf)
 		if insertTime.Before(&t) {
 			break
+		} else if insertTime.Equal(&t) {
+			// If they are equal apply alphabetical order so we
+			// get some consistent printing
+			insertName := renameNode(wf, item.getNodeStatus(wf))
+			equalName := renameNode(wf, existingItem.getNodeStatus(wf))
+			if insertName < equalName {
+				break
+			}
 		}
 	}
-
 	sortedArray = append(sortedArray, nil)
 	copy(sortedArray[index+1:], sortedArray[index:])
 	sortedArray[index] = item
@@ -299,7 +306,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 			}
 			// Attach nodes who are in my boundary already seen before me to me
 			for _, val := range parentBoundaryMap[id] {
-				n.boundaryContained = append(n.boundaryContained, val)
+				n.boundaryContained = insertSorted(wf, n.boundaryContained, val)
 			}
 		case isNonBoundaryParentNode(status.Type):
 			nPtr, ok := nonBoundaryParentMap[id]
@@ -339,85 +346,120 @@ func (nodeInfo *executionNode) getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus 
 	return wf.Status.Nodes[nodeInfo.node]
 }
 
-func filterNode(node wfv1.NodeStatus) bool {
+func filterNode(node wfv1.NodeStatus) (bool, bool) {
 	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
-		return true
+		return true, false
+	} else if node.Type == wfv1.NodeTypeStepGroup {
+		return true, true
 	}
-	return false
+	return false, false
 }
 
 func renameNode(wf *wfv1.Workflow, node wfv1.NodeStatus) string {
 	if node.Name == (wf.ObjectMeta.Name + onExitSuffix) {
 		return onExitSuffix
 	}
-	return node.Name
+	parts := strings.Split(node.Name, ".")
+	return parts[len(parts)-1]
 }
 
 func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth int,
-	nodePrefix string, childPrefix string, lastItem bool, parentFiltered bool) {
-	var part1, subp1 string
-	if lastItem {
-		part1 = "└-"
-		subp1 = "  "
-	} else {
-		part1 = "├-"
-		subp1 = "| "
+	nodePrefix string, childPrefix string, parentFiltered bool,
+	childIndex int, maxIndex int, childIndent bool) {
+	var part, subp string
+	if parentFiltered && childIndent {
+		if maxIndex == 0 {
+			part = "--"
+			subp = "  "
+		} else if childIndex == 0 {
+			part = ".-"
+			subp = "  "
+		} else if childIndex == maxIndex {
+			part = "└-"
+			subp = "  "
+		} else {
+			part = "├-"
+			subp = "  "
+		}
+	} else if !parentFiltered {
+		if childIndex == maxIndex {
+			part = "└-"
+			subp = "  "
+		} else {
+			part = "├-"
+			subp = "| "
+		}
 	}
-	childNodePrefix := nodePrefix
-	childChldPrefix := childPrefix
+	var childNodePrefix, childChldPrefix string
 	if !parentFiltered {
-		childNodePrefix = childPrefix + part1
-		childChldPrefix = childPrefix + subp1
 		depth = depth + 1
+		childNodePrefix = childPrefix + part
+		childChldPrefix = childPrefix + subp
+	} else {
+		if childIndex == 0 {
+			childNodePrefix = nodePrefix + part
+		} else {
+			childNodePrefix = childPrefix + part
+		}
+		childChldPrefix = childPrefix + subp
 	}
 	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix)
 }
 
-func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string) bool {
-	filtered := filterNode(node)
-	if !filtered {
-		nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], renameNode(wf, node))
-		var args []interface{}
-		duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
-		if isExecutionNode(node.Type) && node.Phase != wfv1.NodeSkipped {
-			args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
-		} else {
-			args = []interface{}{nodePrefix, nodeName, "", "", ""}
-		}
-		if getArgs.output == "wide" {
-			msg := args[len(args)-1]
-			args[len(args)-1] = getArtifactsString(node)
-			args = append(args, msg)
-			fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
-		} else {
-			fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
-		}
+func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int,
+	nodePrefix string, childPrefix string) {
+
+	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], renameNode(wf, node))
+	var args []interface{}
+	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
+	if isExecutionNode(node.Type) && node.Phase != wfv1.NodeSkipped {
+		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
+	} else {
+		args = []interface{}{nodePrefix, nodeName, "", "", ""}
 	}
-	return filtered
+	if getArgs.output == "wide" {
+		msg := args[len(args)-1]
+		args[len(args)-1] = getArtifactsString(node)
+		args = append(args, msg)
+		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\t%s\n", args...)
+	} else {
+		fmt.Fprintf(w, "%s%s\t%s\t%s\t%s\n", args...)
+	}
 }
 
-func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string) {
+func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
+	nodePrefix string, childPrefix string) {
 
-	filtered := printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	if !filtered {
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+	}
 
 	for i, nInfo := range nodeInfo.boundaryContained {
-		lastItem := bool(i == len(nodeInfo.boundaryContained)-1)
-		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, lastItem, filtered)
+		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
+			len(nodeInfo.boundaryContained)-1, childIndent)
 	}
 }
 
-func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string) {
-
-	filtered := printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
+	nodePrefix string, childPrefix string) {
+	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
+	if !filtered {
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+	}
 
 	for i, nInfo := range nodeInfo.children {
-		lastItem := bool(i == len(nodeInfo.children)-1)
-		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, lastItem, filtered)
+		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
+			len(nodeInfo.children)-1, childIndent)
 	}
 }
 
-func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string) {
-	_ = printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
+	nodePrefix string, childPrefix string) {
+	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
+	if !filtered {
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+	}
 }
 
 func getArtifactsString(node wfv1.NodeStatus) string {
