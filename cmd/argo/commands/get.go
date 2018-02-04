@@ -136,46 +136,51 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 	}
 }
 
+type nodeInfoInterface interface {
+	getID() string
+	getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus
+	getStartTime(wf *wfv1.Workflow) metav1.Time
+}
+
+type nodeInfo struct {
+	id string
+}
+
+func (n *nodeInfo) getID() string {
+	return n.id
+}
+
+func (n *nodeInfo) getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus {
+	return wf.Status.Nodes[n.id]
+}
+
+func (n *nodeInfo) getStartTime(wf *wfv1.Workflow) metav1.Time {
+	return wf.Status.Nodes[n.id].StartedAt
+}
+
 // Interface to represent Nodes in render form types
 type renderNode interface {
 	// Render this renderNode and its children
 	renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
 		nodePrefix string, childPrefix string)
-	// Get the start Time for this Render Node
-	getStartTime(wf *wfv1.Workflow) metav1.Time
-	// Get the whole Node Status for this Render Node
-	getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus
-	// Get Render node id
-	getID() string
+	nodeInfoInterface
 }
 
 // Currently this is Pod or Resource Nodes
 type executionNode struct {
-	node string
+	nodeInfo
 }
 
 // Currently this is the step groups or retry nodes
 type nonBoundaryParentNode struct {
-	node     string
+	nodeInfo
 	children []renderNode // Can be boundaryNode or executionNode
 }
 
 // Currently this is the virtual Template node
 type boundaryNode struct {
-	node              string
+	nodeInfo
 	boundaryContained []renderNode // Can be nonBoundaryParent or executionNode or boundaryNode
-}
-
-func (nodeInfo *boundaryNode) getID() string {
-	return nodeInfo.node
-}
-
-func (nodeInfo *nonBoundaryParentNode) getID() string {
-	return nodeInfo.node
-}
-
-func (nodeInfo *executionNode) getID() string {
-	return nodeInfo.node
 }
 
 func isBoundaryNode(node wfv1.NodeType) bool {
@@ -190,18 +195,6 @@ func isExecutionNode(node wfv1.NodeType) bool {
 	return (node == wfv1.NodeTypePod) || (node == wfv1.NodeTypeSkipped)
 }
 
-func (nodeInfo *boundaryNode) getStartTime(wf *wfv1.Workflow) metav1.Time {
-	return wf.Status.Nodes[nodeInfo.node].StartedAt
-}
-
-func (nodeInfo *nonBoundaryParentNode) getStartTime(wf *wfv1.Workflow) metav1.Time {
-	return wf.Status.Nodes[nodeInfo.node].StartedAt
-}
-
-func (nodeInfo *executionNode) getStartTime(wf *wfv1.Workflow) metav1.Time {
-	return wf.Status.Nodes[nodeInfo.node].StartedAt
-}
-
 func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) []renderNode {
 	insertTime := item.getStartTime(wf)
 	var index int
@@ -213,8 +206,8 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 		} else if insertTime.Equal(&t) {
 			// If they are equal apply alphabetical order so we
 			// get some consistent printing
-			insertName := renameNode(wf, item.getNodeStatus(wf))
-			equalName := renameNode(wf, existingItem.getNodeStatus(wf))
+			insertName := humanizeNodeName(wf, item.getNodeStatus(wf))
+			equalName := humanizeNodeName(wf, existingItem.getNodeStatus(wf))
 			if insertName < equalName {
 				break
 			}
@@ -258,6 +251,8 @@ func attachToParent(wf *wfv1.Workflow, n renderNode,
 	return false
 }
 
+// This takes the map of NodeStatus and converts them into a forrest
+// of trees of renderNodes and returns the set of roots for each tree
 func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 
 	renderTreeRoots := make(map[string]renderNode)
@@ -284,7 +279,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	// 1st Pass Process enough of nonBoundaryParent nodes to know all their children
 	for id, status := range wf.Status.Nodes {
 		if isNonBoundaryParentNode(status.Type) {
-			n := nonBoundaryParentNode{node: id}
+			n := nonBoundaryParentNode{nodeInfo: nodeInfo{id: id}}
 			nonBoundaryParentMap[id] = &n
 
 			for _, child := range status.Children {
@@ -297,7 +292,7 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 	for id, status := range wf.Status.Nodes {
 		switch {
 		case isBoundaryNode(status.Type):
-			n := boundaryNode{node: id}
+			n := boundaryNode{nodeInfo: nodeInfo{id: id}}
 			boundaryNodeMap[id] = &n
 			// Attach to my parent if needed
 			if attachToParent(wf, &n, nonBoundaryParentChildrenMap,
@@ -322,30 +317,23 @@ func convertToRenderTrees(wf *wfv1.Workflow) map[string]renderNode {
 			// All children attach directly to the nonBoundaryParents since they are already created
 			// in pass 1 so no need to do that here
 		case isExecutionNode(status.Type):
-			n := executionNode{node: id}
+			n := executionNode{nodeInfo: nodeInfo{id: id}}
 			// Attach to my parent if needed
 			if attachToParent(wf, &n, nonBoundaryParentChildrenMap,
 				status.BoundaryID, boundaryNodeMap, parentBoundaryMap) {
 				renderTreeRoots[n.getID()] = &n
 			}
-			// Execution nodes don't have children
+			// Execution nodes don't have other render nodes as children
 		}
 	}
 
 	return renderTreeRoots
 }
 
-func (nodeInfo *boundaryNode) getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus {
-	return wf.Status.Nodes[nodeInfo.node]
-}
-
-func (nodeInfo *nonBoundaryParentNode) getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus {
-	return wf.Status.Nodes[nodeInfo.node]
-}
-func (nodeInfo *executionNode) getNodeStatus(wf *wfv1.Workflow) wfv1.NodeStatus {
-	return wf.Status.Nodes[nodeInfo.node]
-}
-
+// This function decides if a Node will be filtered from rendering and returns
+// two things. First argument tells if the node is filtered and second argument
+// tells whether the children need special indentation due to filtering
+// Return Values: (is node filtered, do children need special indent)
 func filterNode(node wfv1.NodeStatus) (bool, bool) {
 	if node.Type == wfv1.NodeTypeRetry && len(node.Children) == 1 {
 		return true, false
@@ -355,14 +343,8 @@ func filterNode(node wfv1.NodeStatus) (bool, bool) {
 	return false, false
 }
 
-func renameNode(wf *wfv1.Workflow, node wfv1.NodeStatus) string {
-	if node.Name == (wf.ObjectMeta.Name + onExitSuffix) {
-		return onExitSuffix
-	}
-	parts := strings.Split(node.Name, ".")
-	return parts[len(parts)-1]
-}
-
+// Render the child of a given node based on information about the parent such as:
+// whether it was filtered and does this child need special indent
 func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth int,
 	nodePrefix string, childPrefix string, parentFiltered bool,
 	childIndex int, maxIndex int, childIndent bool) {
@@ -372,7 +354,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 			part = "--"
 			subp = "  "
 		} else if childIndex == 0 {
-			part = ".-"
+			part = "·-"
 			subp = "  "
 		} else if childIndex == maxIndex {
 			part = "└-"
@@ -406,10 +388,11 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix)
 }
 
+// Main method to print information of node in get
 func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int,
 	nodePrefix string, childPrefix string) {
 
-	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], renameNode(wf, node))
+	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], humanizeNodeName(wf, node))
 	var args []interface{}
 	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
 	if isExecutionNode(node.Type) && node.Phase != wfv1.NodeSkipped {
@@ -427,6 +410,8 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	}
 }
 
+// renderNodes for each renderNode Type
+// boundaryNode
 func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
 	nodePrefix string, childPrefix string) {
 
@@ -441,6 +426,7 @@ func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow
 	}
 }
 
+// nonBoundaryParentNode
 func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
 	nodePrefix string, childPrefix string) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
@@ -454,6 +440,7 @@ func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1
 	}
 }
 
+// executionNode
 func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
 	nodePrefix string, childPrefix string) {
 	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
@@ -471,6 +458,16 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 		artNames = append(artNames, art.Name)
 	}
 	return strings.Join(artNames, ",")
+}
+
+// Will take the printed name for a node to be the last part after a '.'
+// Will also special case wfName.onExit nodes to onExit
+func humanizeNodeName(wf *wfv1.Workflow, node wfv1.NodeStatus) string {
+	if node.Name == (wf.ObjectMeta.Name + onExitSuffix) {
+		return onExitSuffix
+	}
+	parts := strings.Split(node.Name, ".")
+	return parts[len(parts)-1]
 }
 
 func humanizeTimestamp(epoch int64) string {
