@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0-beta2 (Unreleased)
+## 2.0.0 (2018-02-06)
 + Add ability to specify affinity rules at both the workflow and template level
 + Add ability to specify imagePullSecrets in the workflow.spec
 + Generate OpenAPI models for the workflow spec
