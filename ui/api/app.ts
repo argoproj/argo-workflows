@@ -13,6 +13,7 @@ import * as moment from 'moment';
 import * as http from 'http';
 import * as consoleProxy from './console-proxy';
 import * as JSONStream from 'json-stream';
+import * as fs from 'fs';
 
 import { decodeBase64, reactifyStringStream, streamServerEvents } from './utils';
 
@@ -22,6 +23,7 @@ function serve<T>(res: express.Response, action: () => Promise<T>) {
 
 export function create(
     uiDist: string,
+    uiBaseHref: string,
     inCluster: boolean,
     namespace: string,
     version,
@@ -101,8 +103,16 @@ export function create(
     streamServerEvents(req, res, logsSource, item => item.toString());
   });
   app.get('/api/system/settings', (req, res) => res.send({ isWebConsoleEnabled }));
-  app.use(express.static(uiDist));
-  app.use(fallback('index.html', { root: uiDist }));
+  const indexContent = fs.readFileSync(`${uiDist}/index.html`, 'utf-8').replace(`<base href="/">`, `<base href="${uiBaseHref}">`);
+  app.get('/index.html', (req, res) => res.send(indexContent));
+  app.use(express.static(uiDist, { index: false }));
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.accepts('html')) {
+        res.send(indexContent);
+      } else {
+        next();
+      }
+  });
 
   const server = http.createServer(app);
   if (isWebConsoleEnabled) {

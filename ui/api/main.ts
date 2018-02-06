@@ -8,6 +8,7 @@ const argv = yargs.argv;
 
 app.create(
   argv.uiDist || path.join(__dirname, '..', 'dist'),
+  argv.uiBaseHref || '/',
   argv.inCluster === 'true',
   argv.namespace || 'default',
   argv.crdVersion || 'v1alpha1',

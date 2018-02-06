@@ -53,6 +53,7 @@ func init() {
 	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
 	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
 	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
+	installCmd.Flags().StringVar(&installArgs.UIBaseHref, "ui-base-href", "/", "UI base url")
 	installCmd.Flags().StringVar(&installArgs.UIServiceAccount, "ui-service-account", "", "use a specified service account for the argo-ui deployment")
 	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows exec access into running step container using Argo UI")
 }
@@ -70,6 +71,7 @@ type InstallFlags struct {
 	ExecutorImage    string // --executor-image
 	UIName           string // --ui-name
 	UIImage          string // --ui-image
+	UIBaseHref       string // --ui-base-href
 	UIServiceAccount string // --ui-service-account
 	EnableWebConsole bool   // --enable-web-console
 }
@@ -426,6 +428,10 @@ func installUI(clientset *kubernetes.Clientset, args InstallFlags) {
 								{
 									Name:  "ENABLE_WEB_CONSOLE",
 									Value: strconv.FormatBool(args.EnableWebConsole),
+								},
+								{
+									Name:  "BASE_HREF",
+									Value: args.UIBaseHref,
 								},
 							},
 						},
