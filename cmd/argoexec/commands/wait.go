@@ -15,10 +15,15 @@ func init() {
 var waitCmd = &cobra.Command{
 	Use:   "wait",
 	Short: "wait for main container to finish and save artifacts",
-	Run:   waitContainer,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := waitContainer()
+		if err != nil {
+			log.Fatal(err)
+		}
+	},
 }
 
-func waitContainer(cmd *cobra.Command, args []string) {
+func waitContainer() error {
 	wfExecutor := initExecutor()
 	defer wfExecutor.HandleError()
 	defer stats.LogStats()
@@ -28,28 +33,29 @@ func waitContainer(cmd *cobra.Command, args []string) {
 	err := wfExecutor.Wait()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Errorf("Error on wait, %+v", err)
+		// do not return here so we can still try to save outputs
 	}
 	err = wfExecutor.SaveArtifacts()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error saving output artifacts, %+v", err)
+		return err
 	}
 	// Saving output parameters
 	err = wfExecutor.SaveParameters()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error saving output parameters, %+v", err)
+		return err
 	}
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error capturing script output, %+v", err)
+		return err
 	}
 	err = wfExecutor.AnnotateOutputs()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error annotating outputs, %+v", err)
+		return err
 	}
+	return nil
 }

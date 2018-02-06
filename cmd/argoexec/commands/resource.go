@@ -15,35 +15,40 @@ func init() {
 var resourceCmd = &cobra.Command{
 	Use:   "resource (get|create|apply|delete) MANIFEST",
 	Short: "update a resource and wait for resource conditions",
-	Run:   execResource,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			cmd.HelpFunc()(cmd, args)
+			os.Exit(1)
+		}
+		err := execResource(args[0])
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+	},
 }
 
-func execResource(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-
+func execResource(action string) error {
 	wfExecutor := initExecutor()
 	defer wfExecutor.HandleError()
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error staging resource: %+v", err)
+		return err
 	}
-	resourceName, err := wfExecutor.ExecResource(args[0], common.ExecutorResourceManifestPath)
+	resourceName, err := wfExecutor.ExecResource(action, common.ExecutorResourceManifestPath)
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error running %s resource: %+v", args[0], err)
+		return err
 	}
 	err = wfExecutor.WaitResource(resourceName)
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error waiting for resource %s: %+v", resourceName, err)
+		return err
 	}
 	err = wfExecutor.SaveResourceParameters(resourceName)
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error saving output parameters for resource %s: %+v", resourceName, err)
+		return err
 	}
+	return nil
 }

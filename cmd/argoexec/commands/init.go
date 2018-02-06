@@ -13,10 +13,15 @@ func init() {
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Load artifacts",
-	Run:   loadArtifacts,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := loadArtifacts()
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+	},
 }
 
-func loadArtifacts(cmd *cobra.Command, args []string) {
+func loadArtifacts() error {
 	wfExecutor := initExecutor()
 	defer wfExecutor.HandleError()
 	defer stats.LogStats()
@@ -25,11 +30,12 @@ func loadArtifacts(cmd *cobra.Command, args []string) {
 	err := wfExecutor.StageFiles()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error loading staging files: %+v", err)
+		return err
 	}
 	err = wfExecutor.LoadArtifacts()
 	if err != nil {
 		wfExecutor.AddError(err)
-		log.Fatalf("Error downloading input artifacts: %+v", err)
+		return err
 	}
+	return nil
 }
