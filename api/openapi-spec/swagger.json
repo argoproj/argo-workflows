@@ -128,6 +128,53 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.DAG": {
+      "description": "DAG is a template subtype for directed acyclic graph templates",
+      "required": [
+        "tasks"
+      ],
+      "properties": {
+        "target": {
+          "description": "Target are one or more names of targets to execute in a DAG",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "Tasks are a list of DAG tasks",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
+          }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.DAGTask": {
+      "description": "DAGTask represents a node in the graph during DAG execution",
+      "required": [
+        "name",
+        "template"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments are the parameter and artifact arguments to the template",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "dependencies": {
+          "description": "Dependencies are name of other targets which this depends on",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "description": "Name is the name of the target",
+          "type": "string"
+        },
+        "template": {
+          "description": "Name of template to execute",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "required": [
@@ -537,6 +584,10 @@
         "daemon": {
           "description": "Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness",
           "type": "boolean"
+        },
+        "dag": {
+          "description": "DAG template subtype which runs a DAG",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAG"
         },
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
