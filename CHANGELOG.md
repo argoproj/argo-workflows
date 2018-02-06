@@ -4,6 +4,7 @@
 + Add ability to specify affinity rules at both the workflow and template level
 + Add ability to specify imagePullSecrets in the workflow.spec
 + Generate OpenAPI models for the workflow spec
++ Support setting the UI base url
 - Fix issue preventing the referencing of artifacts in a container with retries
 - Fix issue preventing the use of volumes in a sidecar
 
@@ -22,7 +23,7 @@
 * Executor sidecar hardening (retrying of Kube API queries)
 * Switch to k8s-codegen generated workflow client and informer
 * {{workflow.uuid}} variable corrected to {{workflow.uid}}
-* Documentation fixes (@reasonthearchitect, @mtx)
+* Documentation fixes (@reasonthearchitect, @mthx)
 - Prevent a potential k8s scheduler panic from incomplete setting of pod ownership reference
 - Fix issues in controller operating on stale workflow state, and incorrectly identifying deleted pods
 
