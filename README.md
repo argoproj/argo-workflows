@@ -22,7 +22,7 @@ Argo is an open source container-native workflow engine for getting work done on
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
 * We want to make it as easy to run Argo workflows on Kubernetes as it is to run jobs on you laptop.
 
-## Argo 2.0 Alpha 
+## Argo 2.0 Beta 
 Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows using kubectl commands.
 
 * [Get started here](https://github.com/argoproj/argo/blob/master/demo.md)
@@ -34,6 +34,6 @@ Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflow
 
 ## Resources
 * Argo GitHub:  https://github.com/argoproj
-* Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMjkyNjcxMDg5NTM2LWFiMDJlZWVhYWI2NmI3OWQyNTZjZThjN2UwNGFlYTJkNGM5ODg0MGJkZTFjMGRhZjQ1MzAzNWY1NzlhZjI2MDg)
+* Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLTA5MTFjNjI0Nzg3NzNiMDZiNmRiODM4Y2M1NWQxOGYzMzZkNTc1YWVkYTZkNzdlNmYyZjMxNWI3NjY2MDc1MzI)
 * Argo website: https://argoproj.github.io/argo-site
 * Argo forum:   https://groups.google.com/forum/#!forum/argoproj
