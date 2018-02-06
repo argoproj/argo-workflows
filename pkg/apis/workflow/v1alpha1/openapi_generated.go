@@ -213,6 +213,84 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/api/core/v1.SecretKeySelector"},
 		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "DAG is a template subtype for directed acyclic graph templates",
+					Properties: map[string]spec.Schema{
+						"target": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Target are one or more names of targets to execute in a DAG",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"tasks": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Tasks are a list of DAG tasks",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"tasks"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"},
+		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "DAGTask represents a node in the graph during DAG execution",
+					Properties: map[string]spec.Schema{
+						"name": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Name is the name of the target",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"template": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Name of template to execute",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"arguments": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Arguments are the parameter and artifact arguments to the template",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
+							},
+						},
+						"dependencies": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Dependencies are name of other targets which this depends on",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Type:   []string{"string"},
+											Format: "",
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"name", "template"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"},
+		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -948,6 +1026,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate"),
 							},
 						},
+						"dag": {
+							SchemaProps: spec.SchemaProps{
+								Description: "DAG template subtype which runs a DAG",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG"),
+							},
+						},
 						"sidecars": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
@@ -985,7 +1069,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
 		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom": {
 			Schema: spec.Schema{

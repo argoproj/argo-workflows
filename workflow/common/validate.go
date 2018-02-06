@@ -53,7 +53,6 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
-
 	if ctx.wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
@@ -61,7 +60,6 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 	if entryTmpl == nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
 	}
-
 	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
 	if err != nil {
 		return err
@@ -113,17 +111,23 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if tmpl.Resource != nil {
 		tmplTypes++
 	}
+	if tmpl.DAG != nil {
+		tmplTypes++
+	}
 	switch tmplTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource")
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource, dag")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource")
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource, dag")
 	}
-	if tmpl.Steps == nil {
-		err = validateLeaf(scope, tmpl)
-	} else {
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeSteps:
 		err = ctx.validateSteps(scope, tmpl)
+	case wfv1.TemplateTypeDAG:
+		err = ctx.validateDAG(scope, tmpl)
+	default:
+		err = validateLeaf(scope, tmpl)
 	}
 	if err != nil {
 		return err
@@ -138,11 +142,11 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
 	if err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.parameters%s", tmpl.Name, err.Error())
+		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.parameters%s", tmpl.Name, err.Error())
 	}
 	err = validateWorkflowFieldNames(tmpl.Inputs.Artifacts)
 	if err != nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.artifacts%s", tmpl.Name, err.Error())
+		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts%s", tmpl.Name, err.Error())
 	}
 	scope := make(map[string]interface{})
 	for _, param := range tmpl.Inputs.Parameters {
@@ -154,17 +158,17 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		scope[artRef] = true
 		if isLeaf {
 			if art.Path == "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' %s.path not specified", tmpl.Name, artRef)
+				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
 			}
 		} else {
 			if art.Path != "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' %s.path only valid in container/script templates", tmpl.Name, artRef)
+				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 			}
 		}
 		if art.From != "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "template '%s' %s.from not valid in inputs", tmpl.Name, artRef)
+			return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.from not valid in inputs", tmpl.Name, artRef)
 		}
-		errPrefix := fmt.Sprintf("template '%s' %s", tmpl.Name, artRef)
+		errPrefix := fmt.Sprintf("templates.%s.%s", tmpl.Name, artRef)
 		err = validateArtifactLocation(errPrefix, art)
 		if err != nil {
 			return nil, err
@@ -211,7 +215,7 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	err = resolveAllVariables(scope, string(tmplBytes))
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template '%s' %s", tmpl.Name, err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "template.%s: %s", tmpl.Name, err.Error())
 	}
 	if tmpl.Container != nil {
 		// Ensure there are no collisions with volume mountPaths and artifact load paths
@@ -256,19 +260,19 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 	for i, stepGroup := range tmpl.Steps {
 		for _, step := range stepGroup {
 			if step.Name == "" {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name is required", tmpl.Name, i)
+				return errors.Errorf(errors.CodeBadRequest, "template.%s.steps[%d].name is required", tmpl.Name, i)
 			}
 			_, ok := stepNames[step.Name]
 			if ok {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
+				return errors.Errorf(errors.CodeBadRequest, "template.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
 			}
 			if errs := IsValidWorkflowFieldName(step.Name); len(errs) != 0 {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
+				return errors.Errorf(errors.CodeBadRequest, "template.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
 			err := addItemsToScope(&step, scope)
 			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
+				return errors.Errorf(errors.CodeBadRequest, "template.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 			stepBytes, err := json.Marshal(stepGroup)
 			if err != nil {
@@ -276,13 +280,13 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			}
 			err = resolveAllVariables(scope, string(stepBytes))
 			if err != nil {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
+				return errors.Errorf(errors.CodeBadRequest, "template.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
 			childTmpl := ctx.wf.GetTemplate(step.Template)
 			if childTmpl == nil {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
 			}
-			err = validateArguments(fmt.Sprintf("template '%s' steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
+			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
 			if err != nil {
 				return err
 			}
@@ -292,7 +296,7 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			}
 		}
 		for _, step := range stepGroup {
-			ctx.addOutputsToScope(step.Template, step.Name, scope)
+			ctx.addOutputsToScope(step.Template, fmt.Sprintf("steps.%s", step.Name), scope)
 		}
 	}
 	return nil
@@ -320,30 +324,30 @@ func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) erro
 	return nil
 }
 
-func (ctx *wfValidationCtx) addOutputsToScope(templateName string, stepName string, scope map[string]interface{}) {
+func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string, scope map[string]interface{}) {
 	tmpl := ctx.wf.GetTemplate(templateName)
 	if tmpl.Daemon != nil && *tmpl.Daemon {
-		scope[fmt.Sprintf("steps.%s.ip", stepName)] = true
+		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
 	if tmpl.Script != nil {
-		scope[fmt.Sprintf("steps.%s.outputs.result", stepName)] = true
+		scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
 	}
 	for _, param := range tmpl.Outputs.Parameters {
-		scope[fmt.Sprintf("steps.%s.outputs.parameters.%s", stepName, param.Name)] = true
+		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
-		scope[fmt.Sprintf("steps.%s.outputs.artifacts.%s", stepName, art.Name)] = true
+		scope[fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)] = true
 	}
 }
 
 func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs.parameters%s", tmpl.Name, err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters%s", tmpl.Name, err.Error())
 	}
 	err = validateWorkflowFieldNames(tmpl.Outputs.Artifacts)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs.artifacts%s", tmpl.Name, err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts%s", tmpl.Name, err.Error())
 	}
 	outputBytes, err := json.Marshal(tmpl.Outputs)
 	if err != nil {
@@ -359,11 +363,11 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		artRef := fmt.Sprintf("outputs.artifacts.%s", art.Name)
 		if isLeaf {
 			if art.Path == "" {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' %s.path not specified", tmpl.Name, artRef)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
 			}
 		} else {
 			if art.Path != "" {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' %s.path only valid in container/script templates", tmpl.Name, artRef)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 			}
 		}
 	}
@@ -412,6 +416,110 @@ func validateWorkflowFieldNames(slice interface{}) error {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
 		}
 		names[name] = true
+	}
+	return nil
+}
+
+func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1.Template) error {
+	err := validateWorkflowFieldNames(tmpl.DAG.Tasks)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
+	}
+	nameToTask := make(map[string]wfv1.DAGTask)
+	for _, task := range tmpl.DAG.Tasks {
+		nameToTask[task.Name] = task
+	}
+
+	// Verify dependencies for all tasks can be resolved as well as template names
+	for _, task := range tmpl.DAG.Tasks {
+		if task.Template == "" {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s.template is required", tmpl.Name, task.Name)
+		}
+		taskTmpl := ctx.wf.GetTemplate(task.Template)
+		if taskTmpl == nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s.template '%s' undefined", tmpl.Name, task.Name, task.Template)
+		}
+		dupDependencies := make(map[string]bool)
+		for j, depName := range task.Dependencies {
+			if _, ok := dupDependencies[depName]; ok {
+				return errors.Errorf(errors.CodeBadRequest,
+					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' duplicated",
+					tmpl.Name, task.Name, j, depName)
+			}
+			dupDependencies[depName] = true
+			if _, ok := nameToTask[depName]; !ok {
+				return errors.Errorf(errors.CodeBadRequest,
+					"templates.%s.tasks.%s.dependencies[%d] dependency '%s' not defined",
+					tmpl.Name, task.Name, j, depName)
+			}
+		}
+	}
+
+	err = verifyNoCycles(tmpl, nameToTask)
+	if err != nil {
+		return err
+	}
+
+	for _, task := range tmpl.DAG.Tasks {
+		taskBytes, err := json.Marshal(task)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		// add outputs of all our dependencies to scope
+		taskScope := make(map[string]interface{})
+		for k, v := range scope {
+			taskScope[k] = v
+		}
+		for _, depName := range task.Dependencies {
+			ctx.addOutputsToScope(nameToTask[depName].Template, fmt.Sprintf("dependencies.%s", depName), taskScope)
+		}
+		err = resolveAllVariables(taskScope, string(taskBytes))
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "template.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
+		}
+		taskTmpl := ctx.wf.GetTemplate(task.Template)
+		err = ctx.validateTemplate(taskTmpl, task.Arguments)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// verifyNoCycles verifies there are no cycles in the DAG graph
+func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) error {
+	visited := make(map[string]bool)
+	var noCyclesHelper func(taskName string, cycle []string) error
+	noCyclesHelper = func(taskName string, cycle []string) error {
+		if _, ok := visited[taskName]; ok {
+			return nil
+		}
+		task := nameToTask[taskName]
+		for _, depName := range task.Dependencies {
+			for _, name := range cycle {
+				if name == depName {
+					return errors.Errorf(errors.CodeBadRequest,
+						"templates.%s.tasks dependency cycle detected: %s->%s",
+						tmpl.Name, strings.Join(cycle, "->"), name)
+				}
+			}
+			cycle = append(cycle, depName)
+			err := noCyclesHelper(depName, cycle)
+			if err != nil {
+				return err
+			}
+			cycle = cycle[0 : len(cycle)-1]
+		}
+		visited[taskName] = true
+		return nil
+	}
+
+	for _, task := range tmpl.DAG.Tasks {
+		err := noCyclesHelper(task.Name, []string{})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
