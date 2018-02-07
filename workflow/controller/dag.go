@@ -61,6 +61,41 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
+// assessDAGPhase assesses the over dag status
+func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
+	var phase wfv1.NodePhase
+	// First check all our nodes to see if any thing is still running. If any thing is still running
+	// then the DAG is considered still running (even if there are failures). Remember any failures
+	for _, node := range nodes {
+		if node.BoundaryID != d.boundaryID {
+			continue
+		}
+		if !node.Completed() {
+			return wfv1.NodeRunning
+		}
+		if !node.Successful() && phase == "" {
+			phase = node.Phase
+		}
+	}
+	// If we get here, then there are no running tasks. Propagate the failure/error if one was found
+	if phase != "" {
+		return phase
+	}
+	// There are no currently running tasks. Now check if our dependencies were met
+	for _, depName := range targetTasks {
+		depNode := d.getTaskNode(depName)
+		if depNode == nil {
+			return wfv1.NodeRunning
+		}
+		if !depNode.Successful() {
+			// we should theoretically never get here since it would have been caught in first loop
+			return depNode.Phase
+		}
+	}
+	// If we get here, all our dependencies were completed and successful
+	return wfv1.NodeSucceeded
+}
+
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
@@ -93,21 +128,13 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	for _, taskNames := range targetTasks {
 		woc.executeDAGTask(dagCtx, taskNames)
 	}
-	// return early if we have yet to complete execution of any one of our dependencies
-	for _, depName := range targetTasks {
-		depNode := dagCtx.getTaskNode(depName)
-		if depNode == nil || !depNode.Completed() {
-			return node
-		}
-	}
-	// all desired tasks completed. now it is time to assess state
-	for _, depName := range targetTasks {
-		depNode := dagCtx.getTaskNode(depName)
-		if !depNode.Successful() {
-			// One of our dependencies failed/errored. Mark this failed
-			// TODO: consider creating a virtual fan-in node
-			return woc.markNodePhase(nodeName, depNode.Phase)
-		}
+	// check if we are still running any tasks in this dag and return early if we do
+	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
+	switch dagPhase {
+	case wfv1.NodeRunning:
+		return node
+	case wfv1.NodeError, wfv1.NodeFailed:
+		return woc.markNodePhase(nodeName, dagPhase)
 	}
 
 	// set the outbound nodes from the target tasks
@@ -115,6 +142,9 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
 		depNode := dagCtx.getTaskNode(depName)
+		if depNode == nil {
+			woc.log.Println(depName)
+		}
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 		for _, outNodeID := range outboundNodeIDs {
 			outbound = append(outbound, outNodeID)
@@ -189,6 +219,13 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		return
 	}
 
+	if !dependenciesSuccessful {
+		// TODO: in the future we may support some more sophisticated syntax for deciding on how
+		// to proceed if at least one dependency succeeded, analogous to airflow's trigger rules,
+		// (e.g. one_success, all_done, one_failed, etc...). This decision would be made here.
+		return
+	}
+
 	// All our dependencies completed. Now add the child relationship from our dependency's
 	// outbound nodes to this node.
 	node = dagCtx.getTaskNode(taskName)
@@ -206,12 +243,6 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				}
 			}
 		}
-	}
-
-	if !dependenciesSuccessful {
-		woc.log.Infof("Task %s being marked %s due to dependency failure", taskName, wfv1.NodeFailed)
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagCtx.boundaryID, wfv1.NodeFailed)
-		return
 	}
 
 	// All our dependencies were satisfied and successful. It's our turn to run
