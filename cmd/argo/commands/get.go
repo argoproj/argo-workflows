@@ -395,7 +395,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], humanizeNodeName(wf, node))
 	var args []interface{}
 	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
-	if isExecutionNode(node.Type) && node.Phase != wfv1.NodeSkipped {
+	if node.Type == wfv1.NodeTypePod {
 		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, "", "", ""}
