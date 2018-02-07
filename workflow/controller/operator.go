@@ -1033,11 +1033,8 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	if err := woc.checkParallism(); err != nil {
 		return err
 	}
-	mainCtr := apiv1.Container{
-		Image:   tmpl.Script.Image,
-		Command: tmpl.Script.Command,
-		Args:    []string{common.ExecutorScriptSourcePath},
-	}
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypePod, boundaryID, wfv1.NodeError, err.Error())
