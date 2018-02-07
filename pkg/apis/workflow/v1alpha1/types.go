@@ -303,22 +303,11 @@ type Arguments struct {
 type Sidecar struct {
 	apiv1.Container `json:",inline"`
 
-	SidecarOptions `json:",inline"`
-}
-
-// SidecarOptions provide a way to customize the behavior of a sidecar and how it
-// affects the main container.
-type SidecarOptions struct {
-
 	// MirrorVolumeMounts will mount the same volumes specified in the main container
 	// to the sidecar (including artifacts), at the same mountPaths. This enables
 	// dind daemon to partially see the same filesystem as the main container in
 	// order to use features such as docker volume binding
 	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty"`
-
-	// Other sidecar options to consider:
-	// * Lifespan - allow a sidecar to live longer than the main container and run to completion.
-	// * PropagateFailure - if a sidecar fails, also fail the step
 }
 
 // WorkflowStatus contains overall status information about a workflow
@@ -526,11 +515,7 @@ type HTTPArtifact struct {
 
 // Script is a template subtype to enable scripting through code steps
 type Script struct {
-	// Image is the container image to run
-	Image string `json:"image"`
-
-	// Command is the interpreter coommand to run (e.g. [python])
-	Command []string `json:"command"`
+	apiv1.Container `json:",inline"`
 
 	// Source contains the source code of the script to execute
 	Source string `json:"source"`
