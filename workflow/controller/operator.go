@@ -139,7 +139,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
+	_ = woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	node := woc.getNodeByName(woc.wf.ObjectMeta.Name)
 	if !node.Completed() {
 		return
@@ -157,7 +157,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
+		_ = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
 		onExitNode = woc.getNodeByName(onExitNodeName)
 		if !onExitNode.Completed() {
 			return
@@ -969,7 +969,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		woc.initializeNode(nodeName, wfv1.NodeTypePod, boundaryID, wfv1.NodeError, err.Error())
 		return err
 	}
-	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, boundaryID, wfv1.NodeRunning)
+	woc.initializeNode(nodeName, wfv1.NodeTypePod, boundaryID, wfv1.NodeRunning)
 	return nil
 }
 
