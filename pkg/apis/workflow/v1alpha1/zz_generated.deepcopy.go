@@ -696,6 +696,15 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in).DeepCopyInto(*out)
 		}
 	}
+	if in.Parallelism != nil {
+		in, out := &in.Parallelism, &out.Parallelism
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(int64)
+			**out = **in
+		}
+	}
 	return
 }
 

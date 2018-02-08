@@ -22,6 +22,12 @@ type stepsContext struct {
 
 	// scope holds parameter and artifacts which are referenceable in scope during execution
 	scope *wfScope
+
+	// tracks how the max number of parallel containers that should execute within this template
+	parallelism *int64
+
+	// activePods tracks the number of active (Running/Pending) pods within this template for controlling parallelism
+	activePods int64
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
@@ -40,6 +46,20 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			tmpl:  tmpl,
 			scope: make(map[string]interface{}),
 		},
+		parallelism: tmpl.Parallelism,
+	}
+	if stepsCtx.parallelism != nil {
+		// if we care about parallism, count the active pods at the template level
+		for _, node := range woc.wf.Status.Nodes {
+			if node.BoundaryID == stepsCtx.boundaryID && node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
+				stepsCtx.activePods++
+			}
+		}
+		woc.log.Debugf("counted %d active pods in boundary %s", stepsCtx.activePods, stepsCtx.boundaryID)
+		if stepsCtx.activePods >= *stepsCtx.parallelism {
+			woc.log.Infof("template active pod parallelism reached %d/%d", stepsCtx.activePods, *stepsCtx.parallelism)
+			return ErrParallismReached
+		}
 	}
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
@@ -176,6 +196,17 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				woc.markNodeError(sgNodeName, err)
 			}
 			return err
+		}
+		// Check if we reached max pod parallelism for the template and return if we did
+		if stepsCtx.parallelism != nil {
+			childNode := woc.getNodeByName(childNodeName)
+			if childNode.Type == wfv1.NodeTypePod && childNode.Phase == wfv1.NodeRunning {
+				stepsCtx.activePods++
+			}
+			if stepsCtx.activePods >= *stepsCtx.parallelism {
+				woc.log.Infof("template active pod parallelism reached %d/%d", stepsCtx.activePods, *stepsCtx.parallelism)
+				return ErrParallismReached
+			}
 		}
 	}
 

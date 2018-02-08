@@ -167,6 +167,11 @@ type Template struct {
 
 	// RetryStrategy describes how to retry a template when it fails
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
+
+	// Parallelism limits the max total parallel pods that can execute at the same time within the
+	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
+	// pods created by those templates will not be counted towards this total.
+	Parallelism *int64 `json:"parallelism,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

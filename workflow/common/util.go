@@ -308,3 +308,11 @@ func IsValidWorkflowFieldName(name string) []string {
 	}
 	return errs
 }
+
+// IsPodTemplate returns whether the template corresponds to a pod
+func IsPodTemplate(tmpl *wfv1.Template) bool {
+	if tmpl.Container != nil || tmpl.Script != nil || tmpl.Resource != nil {
+		return true
+	}
+	return false
+}
