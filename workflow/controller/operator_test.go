@@ -6,6 +6,8 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -175,4 +177,36 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Nil(t, err)
 	n = woc.getNode(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
+}
+
+// TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
+func TestSidecarResourceLimits(t *testing.T) {
+	controller := newController()
+	controller.Config.ExecutorResources = &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.5"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.1"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
+	}
+	wf := unmarshalWF(helloWorldWf)
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("hello-world", metav1.GetOptions{})
+	assert.Nil(t, err)
+	var waitCtr *apiv1.Container
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name == "wait" {
+			waitCtr = &ctr
+			break
+		}
+	}
+	assert.NotNil(t, waitCtr)
+	assert.Equal(t, 2, len(waitCtr.Resources.Limits))
+	assert.Equal(t, 2, len(waitCtr.Resources.Requests))
 }
