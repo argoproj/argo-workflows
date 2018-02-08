@@ -56,6 +56,9 @@ type WorkflowControllerConfig struct {
 	// ExecutorImage is the image name of the executor to use when running pods
 	ExecutorImage string `json:"executorImage,omitempty"`
 
+	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
+	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
+
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
