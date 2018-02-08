@@ -914,7 +914,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 func (woc *wfOperationCtx) checkParallism() error {
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
-		woc.log.Infof("active pod parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
+		woc.log.Infof("workflow active pod parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
 		return ErrParallismReached
 	}
 	return nil

@@ -1237,6 +1237,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy"),
 							},
 						},
+						"parallelism": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Parallelism limits the max total parallel pods that can execute at the same time within the boundaries of this template invocation. If additional steps/dag templates are invoked, the pods created by those templates will not be counted towards this total.",
+								Type:        []string{"integer"},
+								Format:      "int64",
+							},
+						},
 					},
 					Required: []string{"name"},
 				},

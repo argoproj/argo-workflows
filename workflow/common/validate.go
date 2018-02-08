@@ -215,28 +215,31 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	err = resolveAllVariables(scope, string(tmplBytes))
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template.%s: %s", tmpl.Name, err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s: %s", tmpl.Name, err.Error())
 	}
 	if tmpl.Container != nil {
 		// Ensure there are no collisions with volume mountPaths and artifact load paths
 		mountPaths := make(map[string]string)
 		for i, volMount := range tmpl.Container.VolumeMounts {
 			if prev, ok := mountPaths[volMount.MountPath]; ok {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' container.volumeMounts[%d].mountPath '%s' already mounted in %s", tmpl.Name, i, volMount.MountPath, prev)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.container.volumeMounts[%d].mountPath '%s' already mounted in %s", tmpl.Name, i, volMount.MountPath, prev)
 			}
 			mountPaths[volMount.MountPath] = fmt.Sprintf("container.volumeMounts.%s", volMount.Name)
 		}
 		for i, art := range tmpl.Inputs.Artifacts {
 			if prev, ok := mountPaths[art.Path]; ok {
-				return errors.Errorf(errors.CodeBadRequest, "template '%s' inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
 		if *tmpl.ActiveDeadlineSeconds <= 0 {
-			return errors.Errorf(errors.CodeBadRequest, "template '%s' activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds must be a positive integer > 0", tmpl.Name)
 		}
+	}
+	if tmpl.Parallelism != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates ", tmpl.Name)
 	}
 	return nil
 }
@@ -256,6 +259,9 @@ func validateArguments(prefix string, arguments wfv1.Arguments) error {
 }
 
 func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wfv1.Template) error {
+	if tmpl.RetryStrategy != nil {
+		return errors.Errorf(errors.CodeBadRequest, "template.%s.retryStrategy is only valid for container templates", tmpl.Name)
+	}
 	stepNames := make(map[string]bool)
 	for i, stepGroup := range tmpl.Steps {
 		for _, step := range stepGroup {
@@ -355,7 +361,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	err = resolveAllVariables(scope, string(outputBytes))
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template '%s' outputs %s", tmpl.Name, err.Error())
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
 
 	isLeaf := tmpl.Container != nil || tmpl.Script != nil
@@ -424,6 +430,9 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 	err := validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
+	}
+	if tmpl.RetryStrategy != nil {
+		return errors.Errorf(errors.CodeBadRequest, "template.%s.retryStrategy is only valid for container templates", tmpl.Name)
 	}
 	nameToTask := make(map[string]wfv1.DAGTask)
 	for _, task := range tmpl.DAG.Tasks {

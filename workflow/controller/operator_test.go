@@ -210,11 +210,58 @@ spec:
       command: [sh, -c, sleep 10]
 `
 
-// TestWorkflowParallismLimit verifies parallism is honored.
+// TestWorkflowParallismLimit verifies parallism at a workflow level is honored.
 func TestWorkflowParallismLimit(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(workflowParallismLimit)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+}
+
+var stepsTemplateParallismLimit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-limit-
+spec:
+  entrypoint: parallelism-limit
+  templates:
+  - name: parallelism-limit
+    parallelism: 2
+    steps:
+    - - name: sleep
+        template: sleep
+        withItems:
+        - this
+        - workflow
+        - should
+        - take
+        - at
+        - least
+        - 60
+        - seconds
+        - to
+        - complete
+
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c, sleep 10]
+`
+
+// TestStepsTemplateParallismLimit verifies parallism at a steps level is honored.
+func TestStepsTemplateParallismLimit(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(stepsTemplateParallismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
