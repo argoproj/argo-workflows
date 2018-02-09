@@ -6,11 +6,16 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/ghodss/yaml"
+	"github.com/stretchr/testify/assert"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -36,6 +41,7 @@ func newController() *WorkflowController {
 		},
 		kubeclientset: fake.NewSimpleClientset(),
 		wfclientset:   fakewfclientset.NewSimpleClientset(),
+		completedPods: make(chan string, 512),
 	}
 }
 func defaultHeader() http.Header {
@@ -59,4 +65,15 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 		panic(err)
 	}
 	return &wf
+}
+
+// makePodsRunning acts like a pod controller and simulates the transition of pods transitioning into a running state
+func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace string) {
+	podcs := kubeclientset.CoreV1().Pods(namespace)
+	pods, err := podcs.List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	for _, pod := range pods.Items {
+		pod.Status.Phase = apiv1.PodRunning
+		_, _ = podcs.Update(&pod)
+	}
 }
