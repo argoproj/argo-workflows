@@ -205,14 +205,22 @@ func (f ByFinishedAt) Less(i, j int) bool {
 	return jFinish.Before(&iFinish)
 }
 
+// workflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
 func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
-	if wf.Status.Phase != "" {
+	switch wf.Status.Phase {
+	case wfv1.NodeRunning:
+		if common.IsWorkflowPaused(wf) {
+			return "Running (Paused)"
+		}
+		return wf.Status.Phase
+	case "":
+		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
+			return "Pending"
+		}
+		return "Unknown"
+	default:
 		return wf.Status.Phase
 	}
-	if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-		return "Pending"
-	}
-	return "Unknown"
 }
 
 // parseSince parses a since string and returns the time.Time in UTC

@@ -125,9 +125,8 @@ func (woc *wfOperationCtx) operate() {
 			return
 		}
 	}
-	if woc.wf.Spec.Parallelism != nil {
+	if woc.wf.Spec.Parallelism != nil || woc.wf.Status.Parallelism != nil {
 		woc.activePods = woc.countActivePods()
-		woc.log.Infof("%d/%d active pods running", woc.activePods, *woc.wf.Spec.Parallelism)
 	}
 
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
@@ -146,7 +145,8 @@ func (woc *wfOperationCtx) operate() {
 	var workflowMessage string
 	_ = woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	node := woc.getNodeByName(woc.wf.ObjectMeta.Name)
-	if !node.Completed() {
+	if node == nil || !node.Completed() {
+		// node can be nil if a workflow created immediately in a parallism == 0 state
 		return
 	}
 	workflowStatus = node.Phase
@@ -978,8 +978,12 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 // checkParallism checks if the given template is able to be executed, considering the current active pods and workflow/template parallism
 func (woc *wfOperationCtx) checkParallism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+	if woc.wf.Status.Parallelism != nil && woc.activePods >= *woc.wf.Status.Parallelism {
+		woc.log.Infof("workflow active pod status parallism reached %d/%d", woc.activePods, *woc.wf.Status.Parallelism)
+		return ErrParallismReached
+	}
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
-		woc.log.Infof("workflow active pod parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
+		woc.log.Infof("workflow active pod spec parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
 		return ErrParallismReached
 	}
 	// TODO: repeated calls to countActivePods is not optimal

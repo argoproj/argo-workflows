@@ -336,6 +336,10 @@ type WorkflowStatus struct {
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
+
+	// Parallelism allows the ability to restrict the execution of the workflow at runtime, as in a pause/resume
+	// A value here overrides the .spec.parallelism value.
+	Parallelism *int64 `json:"parallelism,omitempty"`
 }
 
 // GetNodesWithRetries returns a list of nodes that have retries.
