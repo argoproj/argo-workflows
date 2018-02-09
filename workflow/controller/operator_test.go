@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -382,4 +383,39 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.NotNil(t, waitCtr)
 	assert.Equal(t, 2, len(waitCtr.Resources.Limits))
 	assert.Equal(t, 2, len(waitCtr.Resources.Requests))
+}
+
+// TestPauseResume tests the pause and resume feature
+func TestPauseResume(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(stepsTemplateParallismLimit)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+
+	// pause the workflow
+	err = common.PauseWorkflow(wfcset, wf.ObjectMeta.Name)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), *wf.Status.Parallelism)
+
+	// operate should not result in no workflows being created since it is paused
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// resume the workflow and operate again. two pods should be able to be scheduled
+	err = common.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Nil(t, wf.Status.Parallelism)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
 }

@@ -13,12 +13,15 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -342,4 +345,76 @@ func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
 		ancestry = append(ancestry, ancestor)
 	}
 	return ancestry
+}
+
+// backoff policy for resource conflict errors
+var conflictBackoff = wait.Backoff{Duration: 100 * time.Millisecond, Factor: 1.0, Steps: 5}
+
+var errPausedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot pause completed workflows")
+
+// IsWorkflowPaused returns whether or not a workflow is considered paused
+func IsWorkflowPaused(wf *wfv1.Workflow) bool {
+	return wf.Status.Parallelism != nil && *wf.Status.Parallelism == 0
+}
+
+// IsWorkflowCompleted returns whether or not a workflow is considered completed
+func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
+	if wf.ObjectMeta.Labels != nil {
+		return wf.ObjectMeta.Labels[LabelKeyCompleted] == "true"
+	}
+	return false
+}
+
+// PauseWorkflow pauses a workflow by setting status.parallelism to 0. Retries conflict errors
+func PauseWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
+	err := wait.ExponentialBackoff(conflictBackoff, func() (bool, error) {
+		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if IsWorkflowCompleted(wf) {
+			return false, errPausedCompletedWorkflow
+		}
+		if !IsWorkflowPaused(wf) {
+			var zero int64
+			wf.Status.Parallelism = &zero
+			wf, err = wfIf.Update(wf)
+			if err != nil {
+				if apierr.IsConflict(err) {
+					return false, nil
+				}
+				return false, err
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ResumeWorkflow resumes a workflow by setting status.parallelism to nil. Retries conflict errors
+func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
+	err := wait.ExponentialBackoff(conflictBackoff, func() (bool, error) {
+		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		if IsWorkflowPaused(wf) {
+			wf.Status.Parallelism = nil
+			wf, err = wfIf.Update(wf)
+			if err != nil {
+				if apierr.IsConflict(err) {
+					return false, nil
+				}
+				return false, err
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
