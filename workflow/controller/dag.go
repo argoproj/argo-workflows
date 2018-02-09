@@ -117,7 +117,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	}
 
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl.Name, boundaryID, wfv1.NodeRunning)
 		rootTasks := findRootTaskNames(dagCtx, targetTasks)
 		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
 		for _, rootTaskName := range rootTasks {
@@ -249,7 +249,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// Substitute params/artifacts from our dependencies and execute the template
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		return
 	}
 	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName, dagCtx.boundaryID)
