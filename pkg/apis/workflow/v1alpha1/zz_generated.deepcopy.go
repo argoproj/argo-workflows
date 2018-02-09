@@ -325,6 +325,15 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 			(*in).DeepCopyInto(*out)
 		}
 	}
+	if in.Inputs != nil {
+		in, out := &in.Inputs, &out.Inputs
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(Inputs)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	if in.Outputs != nil {
 		in, out := &in.Outputs, &out.Outputs
 		if *in == nil {

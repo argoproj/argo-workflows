@@ -852,6 +852,15 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", tmpl.Name)
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
 	}
+
+	// Set the input values to the node. UI presents this
+	node = woc.getNodeByName(nodeName)
+	if tmpl.Inputs.HasInputs() && node.Inputs == nil {
+		node.Inputs = &tmpl.Inputs
+		woc.wf.Status.Nodes[node.ID] = *node
+		woc.updated = true
+	}
+
 	if err != nil {
 		return err
 	}
