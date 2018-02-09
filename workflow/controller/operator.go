@@ -915,7 +915,7 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 	woc.markWorkflowPhase(wfv1.NodeError, markCompleted, err.Error())
 }
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateName string, boundaryID string, phase wfv1.NodePhase, message ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateName string, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	nodeID := woc.wf.NodeID(nodeName)
 	_, ok := woc.wf.Status.Nodes[nodeID]
 	if ok {
@@ -933,8 +933,13 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	if node.Completed() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
+	var message string
+	if len(messages) > 0 {
+		message = fmt.Sprintf(" (message: %s)", messages[0])
+		node.Message = messages[0]
+	}
 	woc.wf.Status.Nodes[nodeID] = node
-	woc.log.Infof("node %s initialized %s", node, node.Phase)
+	woc.log.Infof("node %s initialized %s%s", node, node.Phase, message)
 	woc.updated = true
 	return &node
 }
@@ -1171,7 +1176,7 @@ func (wfs *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
 func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
 	v = strings.TrimPrefix(v, "{{")
 	v = strings.TrimSuffix(v, "}}")
-	if strings.HasPrefix(v, "steps.") {
+	if strings.HasPrefix(v, "steps.") || strings.HasPrefix(v, "tasks.") {
 		val, ok := wfs.scope[v]
 		if !ok {
 			return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)

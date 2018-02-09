@@ -61,7 +61,7 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
-// assessDAGPhase assesses the over dag status
+// assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
 	var phase wfv1.NodePhase
 	// First check all our nodes to see if any thing is still running. If any thing is still running
@@ -263,10 +263,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		tmpl:  dagCtx.tmpl,
 		scope: make(map[string]interface{}),
 	}
-	for _, depName := range task.Dependencies {
-		depNode := dagCtx.getTaskNode(depName)
-		prefix := fmt.Sprintf("dependencies.%s", depName)
-		scope.addNodeOutputsToScope(prefix, depNode)
+	ancestors := common.GetTaskAncestry(task.Name, dagCtx.tasks)
+	for _, ancestor := range ancestors {
+		ancestorNode := dagCtx.getTaskNode(ancestor)
+		prefix := fmt.Sprintf("tasks.%s", ancestor)
+		scope.addNodeOutputsToScope(prefix, ancestorNode)
 	}
 
 	// Perform replacement
@@ -275,7 +276,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
-	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), false, "")
+	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), true, "")
 	if err != nil {
 		return nil, err
 	}
