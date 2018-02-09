@@ -180,6 +180,8 @@ spec:
     outputs:
       parameters:
       - name: outparam
+        valueFrom:
+          path: /etc/hosts
   - name: stepref
     steps:
     - - name: one
@@ -524,13 +526,117 @@ spec:
     outputs:
       parameters:
       - name: blah-122lsfj}
-        path: /tmp/hello_world.txt
+        valueFrom:
+          path: /tmp/hello_world.txt
 `
 
-func TestInvalidOutputParamName(t *testing.T) {
+var invalidOutputMissingValueFrom = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-param-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: outparam
+`
+var invalidOutputMultipleValueFrom = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-param-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /abc
+          jqFilter: abc
+`
+
+var invalidOutputIncompatibleValueFromPath = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-param-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          parameter: abc
+`
+
+var invalidOutputIncompatibleValueFromParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-param-
+spec:
+  entrypoint: my-steps
+  templates:
+  - name: my-steps
+    steps:
+    - - name: step1
+        template: whalesay
+    outputs:
+      parameters:
+      - name: myoutput
+        valueFrom:
+          path: /abc
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /abc
+`
+
+func TestInvalidOutputParam(t *testing.T) {
 	err := validate(invalidOutputParamNames)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), invalidErr)
+	}
+	err = validate(invalidOutputMissingValueFrom)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "valueFrom not specified")
+	}
+	err = validate(invalidOutputMultipleValueFrom)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "multiple valueFrom")
+	}
+	err = validate(invalidOutputIncompatibleValueFromPath)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), ".path must be specified for Container templates")
+	}
+	err = validate(invalidOutputIncompatibleValueFromParam)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), ".parameter must be specified for Steps templates")
 	}
 }
 
@@ -726,5 +832,104 @@ func TestNonLeafWithRetryStrategy(t *testing.T) {
 	err := validate(nonLeafWithRetryStrategy)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "is only valid")
+	}
+}
+
+var invalidStepsArgumentNoFromOrLocation = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-
+spec:
+  entrypoint: no-location-or-from
+  templates:
+  - name: no-location-or-from
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          artifacts:
+          - name: art
+
+  - name: whalesay
+    input:
+      artifacts:
+      - name: art
+        path: /tmp/art
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world"]
+`
+
+var invalidDAGArgumentNoFromOrLocation = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-
+spec:
+  entrypoint: no-location-or-from
+  templates:
+  - name: no-location-or-from
+    dag:
+      tasks:
+      - name: whalesay
+        template: whalesay
+        arguments:
+          artifacts:
+          - name: art
+
+  - name: whalesay
+    input:
+      artifacts:
+      - name: art
+        path: /tmp/art
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world"]
+`
+
+func TestInvalidArgumentNoFromOrLocation(t *testing.T) {
+	err := validate(invalidStepsArgumentNoFromOrLocation)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "from or artifact location is required")
+	}
+	err = validate(invalidDAGArgumentNoFromOrLocation)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "from or artifact location is required")
+	}
+}
+
+var invalidArgumentNoValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-
+spec:
+  entrypoint: no-location-or-from
+  templates:
+  - name: no-location-or-from
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: art
+
+  - name: whalesay
+    input:
+      parameters:
+      - name: art
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world"]
+`
+
+func TestInvalidArgumentNoValue(t *testing.T) {
+	err := validate(invalidArgumentNoValue)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), ".value is required")
 	}
 }

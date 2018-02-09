@@ -29,16 +29,16 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+// WorkflowController is the controller for workflow resources
 type WorkflowController struct {
 	// ConfigMap is the name of the config map in which to derive configuration of the controller from
 	ConfigMap string
 	// namespace for config map
 	ConfigMapNS string
-	Config      WorkflowControllerConfig
+	// Config is the workflow controller's configuration
+	Config WorkflowControllerConfig
 
-	// restConfig is needed for the controller to perform manual kills of daemoned containers
-	// using remotecommand.NewSPDYExecutor().
-	// TODO(jessesuen): remove this in favor of signaling the executor (via annotation) to perform the kill
+	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
 	kubeclientset kubernetes.Interface
 	wfclientset   wfclientset.Interface
@@ -88,6 +88,8 @@ type ArtifactRepository struct {
 	// Future artifact repository support here
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 }
+
+// S3ArtifactRepository defines the controller configuration for an S3 artifact repository
 type S3ArtifactRepository struct {
 	wfv1.S3Bucket `json:",inline"`
 
@@ -95,6 +97,7 @@ type S3ArtifactRepository struct {
 	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
+// ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
 type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
 	// RepoURL is the url for artifactory repo.

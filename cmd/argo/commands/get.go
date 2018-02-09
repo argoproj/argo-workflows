@@ -398,7 +398,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	if node.Type == wfv1.NodeTypePod {
 		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
 	} else {
-		args = []interface{}{nodePrefix, nodeName, "", "", ""}
+		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
 	}
 	if getArgs.output == "wide" {
 		msg := args[len(args)-1]

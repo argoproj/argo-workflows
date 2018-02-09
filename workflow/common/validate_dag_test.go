@@ -108,7 +108,8 @@ spec:
     outputs:
       parameters:
       - name: hosts
-        path: /etc/hosts
+        valueFrom:
+          path: /etc/hosts
   - name: unresolved
     dag:
       tasks:
@@ -124,7 +125,7 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{dependencies.A.outputs.parameters.unresolvable}}"
+            value: "{{tasks.A.outputs.parameters.unresolvable}}"
 `
 
 var dagResolvedVar = `
@@ -145,7 +146,8 @@ spec:
     outputs:
       parameters:
       - name: hosts
-        path: /etc/hosts
+        valueFrom:
+          path: /etc/hosts
   - name: unresolved
     dag:
       tasks:
@@ -159,16 +161,131 @@ spec:
         dependencies: [A]
         template: echo
         arguments:
+          parameters: 
+          - name: message
+            value: "{{tasks.A.outputs.parameters.hosts}}"
+      - name: C
+        dependencies: [B]
+        template: echo
+        arguments:
           parameters:
           - name: message
-            value: "{{dependencies.A.outputs.parameters.hosts}}"
+            value: "{{tasks.A.outputs.parameters.hosts}}"
+`
+
+var dagResolvedVarNotAncestor = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-cycle-
+spec:
+  entrypoint: unresolved
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+  - name: unresolved
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: 
+          - name: message
+            value: val
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: 
+          - name: message
+            value: "{{tasks.A.outputs.parameters.hosts}}"
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.outputs.parameters.unresolvable}}"
 `
 
 func TestDAGVariableResolution(t *testing.T) {
 	err := validate(dagUnresolvedVar)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "failed to resolve {{dependencies.A.outputs.parameters.unresolvable}}")
+		assert.Contains(t, err.Error(), "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 	}
 	err = validate(dagResolvedVar)
+	assert.Nil(t, err)
+
+	err = validate(dagResolvedVarNotAncestor)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.outputs.parameters.unresolvable}}")
+	}
+}
+
+var dagResolvedArt = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: generate
+    container:
+      image: alpine:3.7
+      command: [echo, generate]
+    outputs:
+      artifacts:
+      - name: hosts
+        path: /etc/hosts
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+      artifacts:
+      - name: passthrough
+        path: /tmp/passthrough
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+      artifacts:
+      - name: someoutput
+        path: /tmp/passthrough
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: generate
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: val
+          artifacts:
+          - name: passthrough
+            from: "{{tasks.A.outputs.artifacts.hosts}}"
+`
+
+func TestDAGArtifactResolution(t *testing.T) {
+	err := validate(dagResolvedArt)
 	assert.Nil(t, err)
 }
