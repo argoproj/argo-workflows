@@ -1,3 +1,4 @@
+# Test to ensure parameters and artifacts can be passed from an ancestor
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

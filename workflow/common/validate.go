@@ -533,6 +533,9 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 	}
 
 	for _, task := range tmpl.DAG.Tasks {
+		// add all tasks outputs to scope so that DAGs can have outputs
+		ctx.addOutputsToScope(task.Template, fmt.Sprintf("tasks.%s", task.Name), scope)
+
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
 			return errors.InternalWrapError(err)

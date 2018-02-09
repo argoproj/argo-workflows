@@ -137,6 +137,24 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		return woc.markNodePhase(nodeName, dagPhase)
 	}
 
+	// set outputs from tasks in order for DAG templates to support outputs
+	scope := wfScope{
+		tmpl:  tmpl,
+		scope: make(map[string]interface{}),
+	}
+	for _, task := range tmpl.DAG.Tasks {
+		scope.addNodeOutputsToScope(fmt.Sprintf("tasks.%s", task.Name), dagCtx.getTaskNode(task.Name))
+	}
+	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
+	if err != nil {
+		return woc.markNodeError(nodeName, err)
+	}
+	if outputs != nil {
+		node = woc.getNodeByName(nodeName)
+		node.Outputs = outputs
+		woc.wf.Status.Nodes[node.ID] = *node
+	}
+
 	// set the outbound nodes from the target tasks
 	node = woc.getNodeByName(nodeName)
 	outbound := make([]string, 0)
