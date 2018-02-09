@@ -225,19 +225,16 @@ func TestWorkflowParallismLimit(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 	// operate again and make sure we don't schedule any more pods
-	// TODO(jessesuen): for some reason, when we GET the workflow again, it does not reflect
-	// the changes we just made. I believe this is because of our use of Patch instead of Update.
-	// Try switching the persistUpdates() implementation to Update to enable better unit testing
-	// wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
-	// assert.Nil(t, err)
+	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
 	// log.Printf("%s", wfBytes)
-	// woc = newWorkflowOperationCtx(wf, controller)
-	// woc.operate()
-	// pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	// assert.Nil(t, err)
-	// assert.Equal(t, 2, len(pods.Items))
-
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
 }
 
 var stepsTemplateParallismLimit = `
@@ -285,6 +282,18 @@ func TestStepsTemplateParallismLimit(t *testing.T) {
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
+
+	// operate again and make sure we don't schedule any more pods
+	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
+	// log.Printf("%s", wfBytes)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
 }
 
 var dagTemplateParallismLimit = `
@@ -327,6 +336,18 @@ func TestDAGTemplateParallismLimit(t *testing.T) {
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+
+	// operate again and make sure we don't schedule any more pods
+	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
+	// log.Printf("%s", wfBytes)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
