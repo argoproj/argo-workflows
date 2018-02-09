@@ -401,7 +401,10 @@ type NodeStatus struct {
 	// RetryStrategy contains retry information about the node
 	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
-	// Outputs captures output parameter values and artifact locations
+	// Inputs captures input parameter values and artifact locations supplied to this template invocation
+	Inputs *Inputs `json:"inputs,omitempty"`
+
+	// Outputs captures output parameter values and artifact locations produced by this template invocation
 	Outputs *Outputs `json:"outputs,omitempty"`
 
 	// Children is a list of child node IDs
@@ -613,6 +616,17 @@ func (in *Inputs) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
+}
+
+// HasInputs returns whether or not there are any inputs
+func (in *Inputs) HasInputs() bool {
+	if len(in.Artifacts) > 0 {
+		return true
+	}
+	if len(in.Parameters) > 0 {
+		return true
+	}
+	return false
 }
 
 // HasOutputs returns whether or not there are any outputs

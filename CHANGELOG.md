@@ -2,7 +2,9 @@
 
 ## 2.1.0-alpha1 (Unreleased)
 + Support for DAG based definition of workflows
-+ Add spec.parallism field to limit concurrent pod execution at a workflow level
++ Add `spec.parallism` field to limit concurrent pod execution at a workflow level
++ Add `template.parallism` field to limit concurrent pod execution at a template level
++ Add `argo pause`, `argo resume` to pause and resume workflows
 
 ## 2.0.0 (2018-02-06)
 + Add ability to specify affinity rules at both the workflow and template level
