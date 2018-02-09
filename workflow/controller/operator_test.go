@@ -117,7 +117,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	var retryLimit int32
 	retryLimit = 2
@@ -137,7 +137,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, "", "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -170,7 +170,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", wfv1.NodeFailed)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, "", "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
 	err = woc.processNodeRetries(n)
@@ -183,7 +183,7 @@ var workflowParallismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-limit-
+  name: parallelism-limit
 spec:
   entrypoint: parallelism-limit
   parallelism: 2
@@ -224,17 +224,31 @@ func TestWorkflowParallismLimit(t *testing.T) {
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
+	// operate again and make sure we don't schedule any more pods
+	// TODO(jessesuen): for some reason, when we GET the workflow again, it does not reflect
+	// the changes we just made. I believe this is because of our use of Patch instead of Update.
+	// Try switching the persistUpdates() implementation to Update to enable better unit testing
+	// wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	// assert.Nil(t, err)
+	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
+	// log.Printf("%s", wfBytes)
+	// woc = newWorkflowOperationCtx(wf, controller)
+	// woc.operate()
+	// pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	// assert.Nil(t, err)
+	// assert.Equal(t, 2, len(pods.Items))
+
 }
 
 var stepsTemplateParallismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: parallelism-limit-
+  name: steps-parallelism-limit
 spec:
-  entrypoint: parallelism-limit
+  entrypoint: steps-parallelism-limit
   templates:
-  - name: parallelism-limit
+  - name: steps-parallelism-limit
     parallelism: 2
     steps:
     - - name: sleep
@@ -262,6 +276,50 @@ func TestStepsTemplateParallismLimit(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsTemplateParallismLimit)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods.Items))
+}
+
+var dagTemplateParallismLimit = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: dag-parallelism-limit
+spec:
+  entrypoint: dag-parallelism-limit
+  templates:
+  - name: dag-parallelism-limit
+    parallelism: 2
+    dag:
+      tasks:
+      - name: a
+        template: sleep
+      - name: b
+        template: sleep
+      - name: c
+        template: sleep
+      - name: d
+        template: sleep
+      - name: e
+        template: sleep
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c, sleep 10]
+`
+
+// TestDAGTemplateParallismLimit verifies parallism at a dag level is honored.
+func TestDAGTemplateParallismLimit(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(dagTemplateParallismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})

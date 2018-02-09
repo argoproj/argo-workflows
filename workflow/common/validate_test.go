@@ -677,3 +677,54 @@ func TestValidActiveDeadlineSeconds(t *testing.T) {
 		assert.Contains(t, err.Error(), "activeDeadlineSeconds must be a positive integer > 0")
 	}
 }
+
+var leafWithParallelism = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: leaf-with-parallelism
+spec:
+  entrypoint: leaf-with-parallelism
+  templates:
+  - name: leaf-with-parallelism
+    parallelism: 2
+    container:
+      image: debian:9.1
+      command: [sh, -c]
+      args: ["kubectl version"]
+`
+
+func TestLeafWithParallelism(t *testing.T) {
+	err := validate(leafWithParallelism)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "is only valid")
+	}
+}
+
+var nonLeafWithRetryStrategy = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: non-leaf-with-retry-strategy
+spec:
+  entrypoint: non-leaf-with-retry-strategy
+  templates:
+  - name: non-leaf-with-retry-strategy
+    retryStrategy:
+      limit: 4
+    steps:
+    - - name: try
+        template: try
+  - name: try
+    container:
+      image: debian:9.1
+      command: [sh, -c]
+      args: ["kubectl version"]
+`
+
+func TestNonLeafWithRetryStrategy(t *testing.T) {
+	err := validate(nonLeafWithRetryStrategy)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "is only valid")
+	}
+}

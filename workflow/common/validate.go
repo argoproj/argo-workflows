@@ -208,6 +208,16 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	return unresolvedErr
 }
 
+func validateNonLeaf(tmpl *wfv1.Template) error {
+	if tmpl.ActiveDeadlineSeconds != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.activeDeadlineSeconds is only valid for leaf templates", tmpl.Name)
+	}
+	if tmpl.RetryStrategy != nil {
+		return errors.Errorf(errors.CodeBadRequest, "template.%s.retryStrategy is only valid for container templates", tmpl.Name)
+	}
+	return nil
+}
+
 func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
@@ -239,7 +249,7 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		}
 	}
 	if tmpl.Parallelism != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates ", tmpl.Name)
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
 	}
 	return nil
 }
@@ -259,8 +269,9 @@ func validateArguments(prefix string, arguments wfv1.Arguments) error {
 }
 
 func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wfv1.Template) error {
-	if tmpl.RetryStrategy != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template.%s.retryStrategy is only valid for container templates", tmpl.Name)
+	err := validateNonLeaf(tmpl)
+	if err != nil {
+		return err
 	}
 	stepNames := make(map[string]bool)
 	for i, stepGroup := range tmpl.Steps {
@@ -427,12 +438,13 @@ func validateWorkflowFieldNames(slice interface{}) error {
 }
 
 func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1.Template) error {
-	err := validateWorkflowFieldNames(tmpl.DAG.Tasks)
+	err := validateNonLeaf(tmpl)
+	if err != nil {
+		return err
+	}
+	err = validateWorkflowFieldNames(tmpl.DAG.Tasks)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks%s", tmpl.Name, err.Error())
-	}
-	if tmpl.RetryStrategy != nil {
-		return errors.Errorf(errors.CodeBadRequest, "template.%s.retryStrategy is only valid for container templates", tmpl.Name)
 	}
 	nameToTask := make(map[string]wfv1.DAGTask)
 	for _, task := range tmpl.DAG.Tasks {

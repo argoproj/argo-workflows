@@ -22,18 +22,12 @@ type stepsContext struct {
 
 	// scope holds parameter and artifacts which are referenceable in scope during execution
 	scope *wfScope
-
-	// tracks how the max number of parallel containers that should execute within this template
-	parallelism *int64
-
-	// activePods tracks the number of active (Running/Pending) pods within this template for controlling parallelism
-	activePods int64
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmpl.Name, boundaryID, wfv1.NodeRunning)
 	}
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -46,27 +40,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			tmpl:  tmpl,
 			scope: make(map[string]interface{}),
 		},
-		parallelism: tmpl.Parallelism,
 	}
-	if stepsCtx.parallelism != nil {
-		// if we care about parallism, count the active pods at the template level
-		for _, node := range woc.wf.Status.Nodes {
-			if node.BoundaryID == stepsCtx.boundaryID && node.Type == wfv1.NodeTypePod && node.Phase == wfv1.NodeRunning {
-				stepsCtx.activePods++
-			}
-		}
-		woc.log.Debugf("counted %d active pods in boundary %s", stepsCtx.activePods, stepsCtx.boundaryID)
-		if stepsCtx.activePods >= *stepsCtx.parallelism {
-			woc.log.Infof("template active pod parallelism reached %d/%d", stepsCtx.activePods, *stepsCtx.parallelism)
-			return ErrParallismReached
-		}
+	if stepsCtx.boundaryID == "" {
+		panic("asdfdf")
 	}
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
 			// initialize the step group
-			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, stepsCtx.boundaryID, wfv1.NodeRunning)
+			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
 			if i == 0 {
 				woc.addChildNode(nodeName, sgNodeName)
 			} else {
@@ -185,7 +168,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if woc.getNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, "", stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 			}
 			continue
 		}
@@ -196,17 +179,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				woc.markNodeError(sgNodeName, err)
 			}
 			return err
-		}
-		// Check if we reached max pod parallelism for the template and return if we did
-		if stepsCtx.parallelism != nil {
-			childNode := woc.getNodeByName(childNodeName)
-			if childNode.Type == wfv1.NodeTypePod && childNode.Phase == wfv1.NodeRunning {
-				stepsCtx.activePods++
-			}
-			if stepsCtx.activePods >= *stepsCtx.parallelism {
-				woc.log.Infof("template active pod parallelism reached %d/%d", stepsCtx.activePods, *stepsCtx.parallelism)
-				return ErrParallismReached
-			}
 		}
 	}
 
