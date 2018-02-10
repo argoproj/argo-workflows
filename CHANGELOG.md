@@ -5,6 +5,9 @@
 + Add `spec.parallism` field to limit concurrent pod execution at a workflow level
 + Add `template.parallism` field to limit concurrent pod execution at a template level
 + Add `argo pause`, `argo resume` to pause and resume workflows
++ Add `argo resubmit` to resubmit a failed workflow
++ Experimental support for resubmitting workflows with memoized steps
++ Improved parameters and output validation
 
 ## 2.0.0 (2018-02-06)
 + Add ability to specify affinity rules at both the workflow and template level

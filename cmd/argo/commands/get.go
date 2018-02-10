@@ -108,8 +108,13 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 			fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
 		}
 	}
-
-	if wf.Status.Nodes != nil {
+	printTree := true
+	if wf.Status.Nodes == nil {
+		printTree = false
+	} else if _, ok := wf.Status.Nodes[wf.ObjectMeta.Name]; !ok {
+		printTree = false
+	}
+	if printTree {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Println()
 		// apply a dummy FgDefault format to align tabwriter with the rest of the columns

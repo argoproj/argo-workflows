@@ -77,14 +77,6 @@ func (we *WorkflowExecutor) HandleError() {
 	}
 }
 
-// DefaultRetry is a default retry backoff settings when retrying API calls
-var DefaultRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 10 * time.Millisecond,
-	Factor:   1.0,
-	Jitter:   0.1,
-}
-
 // LoadArtifacts loads aftifacts from location to a container path
 func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
@@ -347,7 +339,7 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 	podsIf := we.ClientSet.CoreV1().Pods(we.Namespace)
 	var pod *apiv1.Pod
 	var err error
-	_ = wait.ExponentialBackoff(DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		pod, err = podsIf.Get(we.PodName, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get pod '%s': %v", we.PodName, err)
@@ -373,7 +365,7 @@ func (we *WorkflowExecutor) getSecrets(namespace, name, key string) (string, err
 	secretsIf := we.ClientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
 	var err error
-	_ = wait.ExponentialBackoff(DefaultRetry, func() (bool, error) {
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		secret, err = secretsIf.Get(name, metav1.GetOptions{})
 		if err != nil {
 			log.Warnf("Failed to get secret '%s': %v", name, err)

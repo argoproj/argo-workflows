@@ -52,7 +52,7 @@ const (
 	// signal the executors of daemoned containers that it should terminate.
 	AnnotationKeyExecutionControl = workflow.FullName + "/execution"
 
-	// LabelKeyControllerInstanceID is the label the controller will carry forward to pod labels
+	// LabelKeyControllerInstanceID is the label the controller will carry forward to workflows/pod labels
 	// for the purposes of workflow segregation
 	LabelKeyControllerInstanceID = workflow.FullName + "/controller-instanceid"
 	// LabelKeyCompleted is the metadata label applied on worfklows and workflow pods to indicates if resource is completed
