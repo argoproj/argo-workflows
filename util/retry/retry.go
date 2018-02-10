@@ -4,10 +4,20 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	argoerrs "github.com/argoproj/argo/errors"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+// DefaultRetry is a default retry backoff settings when retrying API calls
+var DefaultRetry = wait.Backoff{
+	Steps:    5,
+	Duration: 10 * time.Millisecond,
+	Factor:   1.0,
+	Jitter:   0.1,
+}
 
 // IsRetryableKubeAPIError returns if the error is a retryable kubernetes error
 func IsRetryableKubeAPIError(err error) bool {
