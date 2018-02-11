@@ -367,7 +367,7 @@ type WorkflowStatus struct {
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 
-	// Parallelism allows the ability to restrict the execution of the workflow at runtime, as in a pause/resume
+	// Parallelism allows the ability to restrict the execution of the workflow at runtime, as in a suspend/resume
 	// A value here overrides the .spec.parallelism value.
 	Parallelism *int64 `json:"parallelism,omitempty"`
 }

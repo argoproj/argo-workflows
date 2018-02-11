@@ -385,22 +385,22 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.Equal(t, 2, len(waitCtr.Resources.Requests))
 }
 
-// TestPauseResume tests the pause and resume feature
-func TestPauseResume(t *testing.T) {
+// TestSuspendResume tests the suspend and resume feature
+func TestSuspendResume(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(stepsTemplateParallismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 
-	// pause the workflow
-	err = common.PauseWorkflow(wfcset, wf.ObjectMeta.Name)
+	// suspend the workflow
+	err = common.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), *wf.Status.Parallelism)
 
-	// operate should not result in no workflows being created since it is paused
+	// operate should not result in no workflows being created since it is suspended
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
