@@ -42,5 +42,8 @@ func ResubmitWorkflow(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	submitWorkflow(newWF)
+	_, err = submitWorkflow(newWF)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
