@@ -419,3 +419,98 @@ func TestPauseResume(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 }
+
+var expandWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items
+spec:
+  entrypoint: expand-with-items
+  templates:
+  - name: expand-with-items
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+        - string
+        - 0
+        - 0
+        - false
+        - 1.3
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}}"]
+`
+
+func TestExpandWithItems(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(expandWithItems)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0][0])
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(newSteps))
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(pods.Items))
+}
+
+var expandWithItemsMap = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items
+spec:
+  entrypoint: expand-with-items
+  templates:
+  - name: expand-with-items
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item.os}} {{item.version}}"
+        withItems:
+        - {os: debian, version: 9.1}
+        - {os: debian, version: 9.1}
+        - {os: ubuntu, version: 16.10}
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}}"]
+`
+
+func TestExpandWithItemsMap(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(expandWithItemsMap)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0][0])
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(newSteps))
+}

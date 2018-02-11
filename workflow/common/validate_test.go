@@ -933,3 +933,76 @@ func TestInvalidArgumentNoValue(t *testing.T) {
 		assert.Contains(t, err.Error(), ".value is required")
 	}
 }
+
+var validWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-
+spec:
+  entrypoint: loop-example
+  templates:
+  - name: loop-example
+    steps:
+    - - name: print-message
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+        - 0
+        - false
+        - string
+        - 1.2
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+var invalidWithItems = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-
+spec:
+  entrypoint: loop-example
+  templates:
+  - name: loop-example
+    steps:
+    - - name: print-message
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withItems:
+        - hello world
+        - goodbye world
+        - [a, b, c]
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+`
+
+func TestValidWithItems(t *testing.T) {
+	err := validate(validWithItems)
+	assert.Nil(t, err)
+
+	err = validate(invalidWithItems)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "withItems")
+	}
+}

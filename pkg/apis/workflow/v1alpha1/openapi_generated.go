@@ -384,6 +384,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"},
 		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Type:   Item{}.OpenAPISchemaType(),
+					Format: Item{}.OpenAPISchemaFormat(),
+				},
+			},
+		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1516,6 +1524,19 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
 							},
 						},
+						"withItems": {
+							SchemaProps: spec.SchemaProps{
+								Description: "WithItems expands a step into multiple parallel steps from the items in the list",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
+										},
+									},
+								},
+							},
+						},
 						"withParam": {
 							SchemaProps: spec.SchemaProps{
 								Description: "WithParam expands a step into from the value in the parameter",
@@ -1534,7 +1555,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"},
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"},
 		},
 	}
 }
