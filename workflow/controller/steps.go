@@ -321,10 +321,10 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	for i, item := range items {
 		replaceMap := make(map[string]string)
 		var newStepName string
-		switch val := item.(type) {
-		case string, int32, int64, float32, float64:
+		switch val := item.Value.(type) {
+		case string, int32, int64, float32, float64, bool:
 			replaceMap["item"] = fmt.Sprintf("%v", val)
-			newStepName = fmt.Sprintf("%s(%v)", step.Name, val)
+			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, val)
 		case map[string]interface{}:
 			// Handle the case when withItems is a list of maps.
 			// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -334,7 +334,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			vals := make([]string, 0)
 			for itemKey, itemValIf := range val {
 				switch itemVal := itemValIf.(type) {
-				case string, int32, int64, float32, float64:
+				case string, int32, int64, float32, float64, bool:
 					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 				default:
@@ -343,7 +343,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			}
 			// sort the values so that the name is deterministic
 			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%v)", step.Name, strings.Join(vals, ","))
+			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, strings.Join(vals, ","))
 		default:
 			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
 		}

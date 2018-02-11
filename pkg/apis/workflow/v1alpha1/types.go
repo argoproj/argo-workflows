@@ -279,10 +279,6 @@ type WorkflowStep struct {
 	Arguments Arguments `json:"arguments,omitempty"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
-	// TODO(jessesuen): kube-openapi cannot handle interfaces{}
-	// The right solution is to create a new MapOrString struct like IntOrString
-	// See: k8s.io/apimachinery/pkg/util/intstr/intstr.go
-	// +k8s:openapi-gen=false
 	WithItems []Item `json:"withItems,omitempty"`
 
 	// WithParam expands a step into from the value in the parameter
@@ -293,7 +289,41 @@ type WorkflowStep struct {
 }
 
 // Item expands a single workflow step into multiple parallel steps
-type Item interface{}
+// The value of Item can be a map, string, bool, or number
+type Item struct {
+	Value interface{}
+}
+
+// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
+func (i *Item) DeepCopyInto(out *Item) {
+	inBytes, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	err = json.Unmarshal(inBytes, out)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// UnmarshalJSON implements the json.Unmarshaller interface.
+func (i *Item) UnmarshalJSON(value []byte) error {
+	return json.Unmarshal(value, &i.Value)
+}
+
+// MarshalJSON implements the json.Marshaller interface.
+func (i Item) MarshalJSON() ([]byte, error) {
+	return json.Marshal(i.Value)
+}
+
+// OpenAPISchemaType is used by the kube-openapi generator when constructing
+// the OpenAPI spec of this type.
+// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
+func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
+
+// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
+// the OpenAPI spec of this type.
+func (i Item) OpenAPISchemaFormat() string { return "item" }
 
 // Arguments to a template
 type Arguments struct {
@@ -666,18 +696,6 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
 	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
-}
-
-// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
-func (in *WorkflowStep) DeepCopyInto(out *WorkflowStep) {
-	inBytes, err := json.Marshal(in)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(inBytes, out)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // GetTemplate retrieves a defined template by its name

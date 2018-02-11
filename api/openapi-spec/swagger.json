@@ -230,6 +230,10 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Item": {
+      "type": "string",
+      "format": "item"
+    },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
       "properties": {
@@ -897,6 +901,13 @@
         "when": {
           "description": "When is an expression in which the step should conditionally execute",
           "type": "string"
+        },
+        "withItems": {
+          "description": "WithItems expands a step into multiple parallel steps from the items in the list",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+          }
         },
         "withParam": {
           "description": "WithParam expands a step into from the value in the parameter",
