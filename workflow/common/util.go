@@ -352,10 +352,10 @@ func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
 	return ancestry
 }
 
-var errPausedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot pause completed workflows")
+var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
 
-// IsWorkflowPaused returns whether or not a workflow is considered paused
-func IsWorkflowPaused(wf *wfv1.Workflow) bool {
+// IsWorkflowSuspended returns whether or not a workflow is considered suspended
+func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return wf.Status.Parallelism != nil && *wf.Status.Parallelism == 0
 }
 
@@ -367,17 +367,17 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// PauseWorkflow pauses a workflow by setting status.parallelism to 0. Retries conflict errors
-func PauseWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
+// SuspendWorkflow suspends a workflow by setting status.parallelism to 0. Retries conflict errors
+func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
 		if IsWorkflowCompleted(wf) {
-			return false, errPausedCompletedWorkflow
+			return false, errSuspendedCompletedWorkflow
 		}
-		if !IsWorkflowPaused(wf) {
+		if !IsWorkflowSuspended(wf) {
 			var zero int64
 			wf.Status.Parallelism = &zero
 			wf, err = wfIf.Update(wf)
@@ -403,7 +403,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		if err != nil {
 			return false, err
 		}
-		if IsWorkflowPaused(wf) {
+		if IsWorkflowSuspended(wf) {
 			wf.Status.Parallelism = nil
 			wf, err = wfIf.Update(wf)
 			if err != nil {

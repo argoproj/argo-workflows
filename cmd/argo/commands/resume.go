@@ -25,7 +25,7 @@ var resumeCmd = &cobra.Command{
 	},
 }
 
-// ResumeWorkflows resumes a list of paused workflows
+// ResumeWorkflows resumes a list of suspended workflows
 func ResumeWorkflows(workflows []string) {
 	InitWorkflowClient()
 	for _, wfName := range workflows {

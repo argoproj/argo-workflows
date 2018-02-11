@@ -209,8 +209,8 @@ func (f ByFinishedAt) Less(i, j int) bool {
 func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	switch wf.Status.Phase {
 	case wfv1.NodeRunning:
-		if common.IsWorkflowPaused(wf) {
-			return "Running (Paused)"
+		if common.IsWorkflowSuspended(wf) {
+			return "Running (Suspended)"
 		}
 		return wf.Status.Phase
 	case "":

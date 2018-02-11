@@ -4,7 +4,7 @@
 + Support for DAG based definition of workflows
 + Add `spec.parallism` field to limit concurrent pod execution at a workflow level
 + Add `template.parallism` field to limit concurrent pod execution at a template level
-+ Add `argo pause`, `argo resume` to pause and resume workflows
++ Add `argo suspend`, `argo resume` to suspend and resume workflows
 + Add `argo resubmit` to resubmit a failed workflow
 + Experimental support for resubmitting workflows with memoized steps
 + Improved parameters and output validation
