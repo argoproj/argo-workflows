@@ -92,6 +92,8 @@ const (
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
+	// GlobalVarWorkflowNamespace is a global workflow variable referencing the workflow's metadata.namespace field
+	GlobalVarWorkflowNamespace = "workflow.namespace"
 	// GlobalVarWorkflowUID is a global workflow variable referencing the workflow's metadata.uid field
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field

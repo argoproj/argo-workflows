@@ -49,6 +49,7 @@ func ValidateWorkflow(wf *wfv1.Workflow) error {
 		return err
 	}
 	ctx.globalParams[GlobalVarWorkflowName] = placeholderValue
+	ctx.globalParams[GlobalVarWorkflowNamespace] = placeholderValue
 	ctx.globalParams[GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
