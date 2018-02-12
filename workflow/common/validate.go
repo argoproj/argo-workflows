@@ -121,17 +121,17 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 // validateTemplateType validates that only one template type is defined
 func validateTemplateType(tmpl *wfv1.Template) error {
 	numTypes := 0
-	for _, tmplType := range []interface{}{tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG} {
+	for _, tmplType := range []interface{}{tmpl.Container, tmpl.Steps, tmpl.Script, tmpl.Resource, tmpl.DAG, tmpl.Suspend} {
 		if !reflect.ValueOf(tmplType).IsNil() {
 			numTypes++
 		}
 	}
 	switch numTypes {
 	case 0:
-		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource, dag")
+		return errors.New(errors.CodeBadRequest, "template type unspecified. choose one of: container, steps, script, resource, dag, suspend")
 	case 1:
 	default:
-		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource, dag")
+		return errors.New(errors.CodeBadRequest, "multiple template types specified. choose one of: container, steps, script, resource, dag, suspend")
 	}
 	return nil
 }

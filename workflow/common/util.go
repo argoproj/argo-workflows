@@ -261,11 +261,12 @@ func RunCommand(name string, arg ...string) error {
 
 const patchRetries = 5
 
-// AddPodAnnotation
+// AddPodAnnotation adds an annotation to pod
 func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "annotations", podName, namespace, key, value)
 }
 
+// AddPodLabel adds an label to pod
 func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "labels", podName, namespace, key, value)
 }
@@ -356,7 +357,15 @@ var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot
 
 // IsWorkflowSuspended returns whether or not a workflow is considered suspended
 func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
-	return wf.Status.Parallelism != nil && *wf.Status.Parallelism == 0
+	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+		return true
+	}
+	for _, node := range wf.Status.Nodes {
+		if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+			return true
+		}
+	}
+	return false
 }
 
 // IsWorkflowCompleted returns whether or not a workflow is considered completed
@@ -367,7 +376,7 @@ func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
 	return false
 }
 
-// SuspendWorkflow suspends a workflow by setting status.parallelism to 0. Retries conflict errors
+// SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
 func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
@@ -377,9 +386,9 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		if IsWorkflowCompleted(wf) {
 			return false, errSuspendedCompletedWorkflow
 		}
-		if !IsWorkflowSuspended(wf) {
-			var zero int64
-			wf.Status.Parallelism = &zero
+		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
+			t := true
+			wf.Spec.Suspend = &t
 			wf, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
@@ -396,15 +405,29 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 	return nil
 }
 
-// ResumeWorkflow resumes a workflow by setting status.parallelism to nil. Retries conflict errors
+// ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
+// Retries conflict errors
 func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
 	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
 		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		if IsWorkflowSuspended(wf) {
-			wf.Status.Parallelism = nil
+		updated := false
+		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
+			wf.Spec.Suspend = nil
+			updated = true
+		}
+		// To resume a workflow with a suspended node we simply mark the node as Successful
+		for nodeID, node := range wf.Status.Nodes {
+			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+				node.Phase = wfv1.NodeSucceeded
+				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
+				wf.Status.Nodes[nodeID] = node
+				updated = true
+			}
+		}
+		if updated {
 			wf, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
@@ -435,7 +458,7 @@ func randString(n int) string {
 	return string(b)
 }
 
-// FormulateResubmitWorkflow formulate a new workflow from a previous workflow optionally re-using successful nodes
+// FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
 func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
 	newWF := wfv1.Workflow{}
 	newWF.TypeMeta = wf.TypeMeta
