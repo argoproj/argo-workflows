@@ -31,7 +31,7 @@ func SuspendWorkflows(workflows []string) {
 	for _, wfName := range workflows {
 		err := common.SuspendWorkflow(wfClient, wfName)
 		if err != nil {
-			log.Fatalf("Failed to suspend %s: %+v", wfName, err)
+			log.Fatalf("Failed to suspend %s: %v", wfName, err)
 		}
 		fmt.Printf("workflow %s suspended\n", wfName)
 	}

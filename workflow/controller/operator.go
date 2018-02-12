@@ -125,7 +125,11 @@ func (woc *wfOperationCtx) operate() {
 			return
 		}
 	}
-	if woc.wf.Spec.Parallelism != nil || woc.wf.Status.Parallelism != nil {
+	if woc.wf.Spec.Suspend != nil && *woc.wf.Spec.Suspend {
+		woc.log.Infof("workflow suspended")
+		return
+	}
+	if woc.wf.Spec.Parallelism != nil {
 		woc.activePods = woc.countActivePods()
 	}
 
@@ -848,6 +852,8 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		err = woc.executeResource(nodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeDAG:
 		_ = woc.executeDAG(nodeName, tmpl, boundaryID)
+	case wfv1.TemplateTypeSuspend:
+		_ = woc.executeSuspend(nodeName, tmpl, boundaryID)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", tmpl.Name)
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
@@ -987,10 +993,6 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 // checkParallism checks if the given template is able to be executed, considering the current active pods and workflow/template parallism
 func (woc *wfOperationCtx) checkParallism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
-	if woc.wf.Status.Parallelism != nil && woc.activePods >= *woc.wf.Status.Parallelism {
-		woc.log.Infof("workflow active pod status parallism reached %d/%d", woc.activePods, *woc.wf.Status.Parallelism)
-		return ErrParallismReached
-	}
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
 		return ErrParallismReached

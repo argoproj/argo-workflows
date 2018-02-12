@@ -71,6 +71,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			}
 			return err
 		}
+		sgNode = woc.getNodeByName(sgNodeName)
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
 			return nil

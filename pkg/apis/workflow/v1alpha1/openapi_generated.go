@@ -1118,6 +1118,15 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Lifecycle", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeDevice", "k8s.io/api/core/v1.VolumeMount"},
 		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
+					Properties:  map[string]spec.Schema{},
+				},
+			},
+			Dependencies: []string{},
+		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -1213,6 +1222,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG"),
 							},
 						},
+						"suspend": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Suspend template subtype which can suspend a workflow when reaching the step",
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate"),
+							},
+						},
 						"sidecars": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
@@ -1257,7 +1272,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
 		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom": {
 			Schema: spec.Schema{
@@ -1450,6 +1465,13 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Description: "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
 								Type:        []string{"integer"},
 								Format:      "int64",
+							},
+						},
+						"suspend": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
+								Type:        []string{"boolean"},
+								Format:      "",
 							},
 						},
 						"nodeSelector": {

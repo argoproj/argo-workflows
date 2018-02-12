@@ -19,6 +19,7 @@ const (
 	TemplateTypeScript    TemplateType = "Script"
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
+	TemplateTypeSuspend   TemplateType = "Suspend"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -44,6 +45,7 @@ const (
 	NodeTypeDAG       NodeType = "DAG"
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
+	NodeTypeSuspend   NodeType = "Suspend"
 )
 
 // Workflow is the definition of a workflow resource
@@ -91,6 +93,9 @@ type WorkflowSpec struct {
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty"`
+
+	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+	Suspend *bool `json:"suspend,omitempty"`
 
 	// NodeSelector is a selector which will result in all pods of the workflow
 	// to be scheduled on the selected node(s). This is able to be overridden by
@@ -149,6 +154,9 @@ type Template struct {
 
 	// DAG template subtype which runs a DAG
 	DAG *DAG `json:"dag,omitempty"`
+
+	// Suspend template subtype which can suspend a workflow when reaching the step
+	Suspend *SuspendTemplate `json:"suspend,omitempty"`
 
 	// Sidecars is a list of containers which run alongside the main container
 	// Sidecars are automatically killed when the main container completes
@@ -366,10 +374,6 @@ type WorkflowStatus struct {
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
-
-	// Parallelism allows the ability to restrict the execution of the workflow at runtime, as in a suspend/resume
-	// A value here overrides the .spec.parallelism value.
-	Parallelism *int64 `json:"parallelism,omitempty"`
 }
 
 // GetNodesWithRetries returns a list of nodes that have retries.
@@ -601,6 +605,9 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Resource != nil {
 		return TemplateTypeResource
 	}
+	if tmpl.Suspend != nil {
+		return TemplateTypeSuspend
+	}
 	return "Unknown"
 }
 
@@ -626,6 +633,10 @@ type DAGTask struct {
 
 	// Dependencies are name of other targets which this depends on
 	Dependencies []string `json:"dependencies,omitempty"`
+}
+
+// SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
+type SuspendTemplate struct {
 }
 
 // GetArtifactByName returns an input artifact by its name
