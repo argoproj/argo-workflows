@@ -134,6 +134,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
+	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
