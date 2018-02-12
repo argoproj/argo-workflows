@@ -128,25 +128,6 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.DAG": {
-      "description": "DAG is a template subtype for directed acyclic graph templates",
-      "required": [
-        "tasks"
-      ],
-      "properties": {
-        "target": {
-          "description": "Target are one or more names of targets to execute in a DAG",
-          "type": "string"
-        },
-        "tasks": {
-          "description": "Tasks are a list of DAG tasks",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
-          }
-        }
-      }
-    },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
       "description": "DAGTask represents a node in the graph during DAG execution",
       "required": [
@@ -172,6 +153,25 @@
         "template": {
           "description": "Name of template to execute",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.DAGTemplate": {
+      "description": "DAGTemplate is a template subtype for directed acyclic graph templates",
+      "required": [
+        "tasks"
+      ],
+      "properties": {
+        "target": {
+          "description": "Target are one or more names of targets to execute in a DAG",
+          "type": "string"
+        },
+        "tasks": {
+          "description": "Tasks are a list of DAG tasks",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
+          }
         }
       }
     },
@@ -403,8 +403,8 @@
         }
       }
     },
-    "io.argoproj.workflow.v1alpha1.Script": {
-      "description": "Script is a template subtype to enable scripting through code steps",
+    "io.argoproj.workflow.v1alpha1.ScriptTemplate": {
+      "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
       "required": [
         "name",
         "source"
@@ -686,7 +686,7 @@
         },
         "dag": {
           "description": "DAG template subtype which runs a DAG",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAG"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
@@ -722,7 +722,7 @@
         },
         "script": {
           "description": "Script runs a portion of code against an interpreter",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Script"
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "sidecars": {
           "description": "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",

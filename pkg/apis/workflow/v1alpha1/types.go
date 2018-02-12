@@ -147,13 +147,13 @@ type Template struct {
 	Container *apiv1.Container `json:"container,omitempty"`
 
 	// Script runs a portion of code against an interpreter
-	Script *Script `json:"script,omitempty"`
+	Script *ScriptTemplate `json:"script,omitempty"`
 
 	// Resource template subtype which can run k8s resources
 	Resource *ResourceTemplate `json:"resource,omitempty"`
 
 	// DAG template subtype which runs a DAG
-	DAG *DAG `json:"dag,omitempty"`
+	DAG *DAGTemplate `json:"dag,omitempty"`
 
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty"`
@@ -562,8 +562,8 @@ type HTTPArtifact struct {
 	URL string `json:"url"`
 }
 
-// Script is a template subtype to enable scripting through code steps
-type Script struct {
+// ScriptTemplate is a template subtype to enable scripting through code steps
+type ScriptTemplate struct {
 	apiv1.Container `json:",inline"`
 
 	// Source contains the source code of the script to execute
@@ -611,8 +611,8 @@ func (tmpl *Template) GetType() TemplateType {
 	return "Unknown"
 }
 
-// DAG is a template subtype for directed acyclic graph templates
-type DAG struct {
+// DAGTemplate is a template subtype for directed acyclic graph templates
+type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
 	Targets string `json:"target,omitempty"`
 

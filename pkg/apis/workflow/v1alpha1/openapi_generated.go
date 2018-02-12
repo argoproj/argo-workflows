@@ -213,38 +213,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/api/core/v1.SecretKeySelector"},
 		},
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "DAG is a template subtype for directed acyclic graph templates",
-					Properties: map[string]spec.Schema{
-						"target": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Target are one or more names of targets to execute in a DAG",
-								Type:        []string{"string"},
-								Format:      "",
-							},
-						},
-						"tasks": {
-							SchemaProps: spec.SchemaProps{
-								Description: "Tasks are a list of DAG tasks",
-								Type:        []string{"array"},
-								Items: &spec.SchemaOrArray{
-									Schema: &spec.Schema{
-										SchemaProps: spec.SchemaProps{
-											Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"),
-										},
-									},
-								},
-							},
-						},
-					},
-					Required: []string{"tasks"},
-				},
-			},
-			Dependencies: []string{
-				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"},
-		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
@@ -290,6 +258,38 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			},
 			Dependencies: []string{
 				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"},
+		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Description: "DAGTemplate is a template subtype for directed acyclic graph templates",
+					Properties: map[string]spec.Schema{
+						"target": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Target are one or more names of targets to execute in a DAG",
+								Type:        []string{"string"},
+								Format:      "",
+							},
+						},
+						"tasks": {
+							SchemaProps: spec.SchemaProps{
+								Description: "Tasks are a list of DAG tasks",
+								Type:        []string{"array"},
+								Items: &spec.SchemaOrArray{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"tasks"},
+				},
+			},
+			Dependencies: []string{
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask"},
 		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact": {
 			Schema: spec.Schema{
@@ -660,10 +660,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 			Dependencies: []string{
 				"k8s.io/api/core/v1.SecretKeySelector"},
 		},
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script": {
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Description: "Script is a template subtype to enable scripting through code steps",
+					Description: "ScriptTemplate is a template subtype to enable scripting through code steps",
 					Properties: map[string]spec.Schema{
 						"name": {
 							SchemaProps: spec.SchemaProps{
@@ -1207,7 +1207,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						"script": {
 							SchemaProps: spec.SchemaProps{
 								Description: "Script runs a portion of code against an interpreter",
-								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script"),
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate"),
 							},
 						},
 						"resource": {
@@ -1219,7 +1219,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 						"dag": {
 							SchemaProps: spec.SchemaProps{
 								Description: "DAG template subtype which runs a DAG",
-								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG"),
+								Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate"),
 							},
 						},
 						"suspend": {
@@ -1272,7 +1272,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 				},
 			},
 			Dependencies: []string{
-				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAG", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Script", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container"},
 		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom": {
 			Schema: spec.Schema{
