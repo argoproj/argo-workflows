@@ -180,6 +180,9 @@ type Template struct {
 	// boundaries of this template invocation. If additional steps/dag templates are invoked, the
 	// pods created by those templates will not be counted towards this total.
 	Parallelism *int64 `json:"parallelism,omitempty"`
+
+	// Tolerations to apply to workflow pods.
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
