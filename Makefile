@@ -1,6 +1,7 @@
 PACKAGE=github.com/argoproj/argo
 CURRENT_DIR=$(shell pwd)
 DIST_DIR=${CURRENT_DIR}/dist
+ARGO_CLI_NAME=argo
 
 VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
 BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -16,7 +17,7 @@ BUILDER_CMD=docker run --rm \
   -v ${DIST_DIR}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
 
-LDFLAGS = \
+override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \
   -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
@@ -47,62 +48,87 @@ IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
+.PHONY: all
 all: no_ui ui-image
 
+.PHONY: no_ui
 no_ui: cli controller-image executor-image
 
+.PHONY: builder
 builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
 
+.PHONY: cli
 cli:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo ./cmd/argo
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
 
+.PHONY: cli-linux
 cli-linux: builder
-	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE)
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-linux-amd64
+	${BUILDER_CMD} make cli \
+		CGO_ENABLED=0 \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-linux-amd64
 
+.PHONY: cli
 cli-darwin: builder
-	${BUILDER_CMD} make cli GOOS=darwin IMAGE_TAG=$(IMAGE_TAG) IMAGE_NAMESPACE=$(IMAGE_NAMESPACE)
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
+	${BUILDER_CMD} make cli \
+		GOOS=darwin \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		ARGO_CLI_NAME=argo-linux-amd64
 
+.PHONY: controller
 controller:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
+.PHONY: controller-linux
 controller-linux: builder
 	${BUILDER_CMD} make controller
 
+.PHONY: controller-image
 controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
+.PHONY: executor
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
+.PHONY: executor-linux
 executor-linux: builder
 	${BUILDER_CMD} make executor
 
+.PHONY: executor-image
 executor-image: executor-linux
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
+.PHONY: lint
 lint:
 	gometalinter --config gometalinter.json ./...
 
+.PHONY: test
 test:
 	go test ./...
 
+.PHONY: update-codegen
 update-codegen:
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
 	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/api/openapi-spec/swagger.json
 
+.PHONY: verify-codegen
 verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
 
+.PHONY: clean
 clean:
 	-rm -rf ${CURRENT_DIR}/dist
 
+.PHONY: ui-image
 ui-image:
 	docker build -t argo-ui-builder -f ui/Dockerfile.builder ui && \
 	docker create --name argo-ui-builder argo-ui-builder && \
@@ -114,18 +140,14 @@ ui-image:
 	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
 
+.PHONY: precheckin
 precheckin: test lint verify-codegen
 
+.PHONY: release-precheck
 release-precheck:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 
+.PHONY: release
 release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
 
-.PHONY: builder \
-	cli cli-linux cli-darwin \
-	controller controller-linux controller-image \
-	executor executor-linux executor-image \
-	ui-image \
-	release-precheck release \
-	lint clean test
