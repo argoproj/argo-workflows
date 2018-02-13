@@ -400,9 +400,11 @@ type NodeStatus struct {
 	// It is implemented as a hash of the node name, which makes the ID deterministic
 	ID string `json:"id"`
 
-	// Name is a human readable representation of the node in the node tree
-	// It can represent a container, step group, or the entire workflow
+	// Name is unique name in the node tree used to generate the node ID
 	Name string `json:"name"`
+
+	// DisplayName is a human readable representation of the node. Unique within a template boundary
+	DisplayName string `json:"displayName"`
 
 	// Type indicates type of node
 	Type NodeType `json:"type"`

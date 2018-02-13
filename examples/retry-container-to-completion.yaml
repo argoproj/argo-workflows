@@ -1,8 +1,4 @@
-# This example demonstrates the use of infinite retries for running
-# the container to completion. It uses the `random-fail` container.
-# For more details, see
-# https://github.com/shrinandj/random-fail
-
+# This example demonstrates the use of infinite retries for running the container to completion.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -13,7 +9,7 @@ spec:
   - name: retry-to-completion
     retryStrategy: {}
     container:
-      image: shrinand/random-fail
+      image: python
       command: ["python"]
-      args: ["/run.py", "40"]
-
+      # fail with a 66% probability
+      args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]

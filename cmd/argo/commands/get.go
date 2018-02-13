@@ -211,8 +211,8 @@ func insertSorted(wf *wfv1.Workflow, sortedArray []renderNode, item renderNode) 
 		} else if insertTime.Equal(&t) {
 			// If they are equal apply alphabetical order so we
 			// get some consistent printing
-			insertName := humanizeNodeName(wf, item.getNodeStatus(wf))
-			equalName := humanizeNodeName(wf, existingItem.getNodeStatus(wf))
+			insertName := item.getNodeStatus(wf).DisplayName
+			equalName := existingItem.getNodeStatus(wf).DisplayName
 			if insertName < equalName {
 				break
 			}
@@ -397,7 +397,7 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int,
 	nodePrefix string, childPrefix string) {
 
-	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], humanizeNodeName(wf, node))
+	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	var args []interface{}
 	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
 	if node.Type == wfv1.NodeTypePod {
@@ -463,16 +463,6 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 		artNames = append(artNames, art.Name)
 	}
 	return strings.Join(artNames, ",")
-}
-
-// Will take the printed name for a node to be the last part after a '.'
-// Will also special case wfName.onExit nodes to onExit
-func humanizeNodeName(wf *wfv1.Workflow, node wfv1.NodeStatus) string {
-	if node.Name == (wf.ObjectMeta.Name + onExitSuffix) {
-		return onExitSuffix
-	}
-	parts := strings.Split(node.Name, ".")
-	return parts[len(parts)-1]
 }
 
 func humanizeTimestamp(epoch int64) string {

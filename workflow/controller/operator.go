@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -930,6 +931,10 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 	woc.markWorkflowPhase(wfv1.NodeError, markCompleted, err.Error())
 }
 
+// stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
+// DAG or steps templates. Will match stings with prefix like: [0]. or .
+var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
+
 func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateName string, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	nodeID := woc.wf.NodeID(nodeName)
 	_, ok := woc.wf.Status.Nodes[nodeID]
@@ -945,6 +950,15 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		Phase:        phase,
 		StartedAt:    metav1.Time{Time: time.Now().UTC()},
 	}
+	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
+		node.DisplayName = strings.TrimPrefix(node.Name, boundaryNode.Name)
+		if stepsOrDagSeparator.MatchString(node.DisplayName) {
+			node.DisplayName = stepsOrDagSeparator.ReplaceAllString(node.DisplayName, "")
+		}
+	} else {
+		node.DisplayName = nodeName
+	}
+
 	if node.Completed() && node.FinishedAt.IsZero() {
 		node.FinishedAt = node.StartedAt
 	}
