@@ -138,3 +138,20 @@ func TestAffinity(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, pod.Spec.Affinity)
 }
+
+// TestTolerations verifies the ability to carry forward tolerations.
+func TestTolerations(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].Tolerations = []apiv1.Toleration{{
+		Key:      "nvidia.com/gpu",
+		Operator: "Exists",
+		Effect:   "NoSchedule",
+	}}
+	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	assert.Nil(t, err)
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.Tolerations)
+	assert.Equal(t, pod.Spec.Tolerations[0].Key, "nvidia.com/gpu")
+}
