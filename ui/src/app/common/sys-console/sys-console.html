@@ -1,9 +1,0 @@
-<div class="sys-console">
-    <div class="sys-console__exec-container">
-        <form role="form" [formGroup]="bashForm" (ngSubmit)="exec(bashForm)">
-            <input class="sys-console__exec-input" type="text" formControlName="bashCommand" value="bash">
-            <button axButtonWave class="ax-button ax-button--base sys-console__exec-button">Execute</button>
-        </form>
-    </div>
-    <div class="sys-console__container" #container></div>
-</div>
