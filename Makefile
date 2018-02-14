@@ -49,10 +49,7 @@ endif
 
 # Build the project
 .PHONY: all
-all: no_ui ui-image
-
-.PHONY: no_ui
-no_ui: cli controller-image executor-image
+all: cli controller-image executor-image
 
 .PHONY: builder
 builder:
@@ -127,18 +124,6 @@ verify-codegen:
 .PHONY: clean
 clean:
 	-rm -rf ${CURRENT_DIR}/dist
-
-.PHONY: ui-image
-ui-image:
-	docker build -t argo-ui-builder -f ui/Dockerfile.builder ui && \
-	docker create --name argo-ui-builder argo-ui-builder && \
-	mkdir -p ui/tmp && rm -rf ui/tmp/dist ui/tmp/api-dist ui/tmp/node_modules && \
-	docker cp argo-ui-builder:/src/dist ./ui/tmp && \
-	docker cp argo-ui-builder:/src/api-dist ./ui/tmp && \
-	docker cp argo-ui-builder:/src/node_modules ./ui/tmp
-	docker rm argo-ui-builder
-	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen

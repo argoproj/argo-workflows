@@ -23,7 +23,6 @@ spec:
         withItems:
         - make controller-image
         - make executor-image
-        - make ui-image
         - make cli-linux
         - make cli-darwin
       - name: test
