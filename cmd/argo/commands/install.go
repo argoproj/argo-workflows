@@ -164,7 +164,7 @@ func createServiceAccount(clientset *kubernetes.Clientset, serviceAccountName st
 func createClusterRole(clientset *kubernetes.Clientset, clusterRoleName string, rules []rbacv1.PolicyRule, args InstallFlags) {
 	clusterRole := rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
+			APIVersion: "rbac.authorization.k8s.io/v1",
 			Kind:       "ClusterRole",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -206,7 +206,7 @@ func createClusterRole(clientset *kubernetes.Clientset, clusterRoleName string, 
 func createClusterRoleBinding(clientset *kubernetes.Clientset, clusterBindingRoleName, serviceAccountName, clusterRoleName string, args InstallFlags) {
 	roleBinding := rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rbac.authorization.k8s.io/v1beta1",
+			APIVersion: "rbac.authorization.k8s.io/v1",
 			Kind:       "ClusterRoleBinding",
 		},
 		ObjectMeta: metav1.ObjectMeta{
