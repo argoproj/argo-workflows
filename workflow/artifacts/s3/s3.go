@@ -5,6 +5,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	minio "github.com/minio/minio-go"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -20,6 +21,8 @@ type S3ArtifactDriver struct {
 func (s3Driver *S3ArtifactDriver) newMinioClient() (*minio.Client, error) {
 	var minioClient *minio.Client
 	var err error
+	s3Driver.AccessKey = strings.TrimSpace(s3Driver.AccessKey)
+	s3Driver.SecretKey = strings.TrimSpace(s3Driver.SecretKey)
 	if s3Driver.Region != "" {
 		minioClient, err = minio.NewWithRegion(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure, s3Driver.Region)
 	} else {
