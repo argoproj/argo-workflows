@@ -20,9 +20,11 @@ func init() {
 	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
 	submitCmd.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
+	submitCmd.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
 }
 
 type submitFlags struct {
+	instanceID     string   // --instanceid
 	entrypoint     string   // --entrypoint
 	parameters     []string // --parameter
 	output         string   // --output
@@ -93,6 +95,14 @@ func submitWorkflow(wf *wfv1.Workflow) (string, error) {
 	}
 	if submitArgs.serviceAccount != "" {
 		wf.Spec.ServiceAccountName = submitArgs.serviceAccount
+	}
+	if submitArgs.instanceID != "" {
+		labels := wf.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels[common.LabelKeyControllerInstanceID] = submitArgs.instanceID
+		wf.SetLabels(labels)
 	}
 	if len(submitArgs.parameters) > 0 {
 		newParams := make([]wfv1.Parameter, 0)
