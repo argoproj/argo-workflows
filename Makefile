@@ -43,6 +43,12 @@ $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argopro
 endif
 endif
 
+ifeq (${GCP_PUSH},true)
+ifndef GOOGLE_PROJECT_ID
+$(error GOOGLE_PROJECT_ID must be set to push images to GCP)
+endif
+endif
+
 ifdef IMAGE_NAMESPACE
 IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
@@ -88,6 +94,7 @@ controller-linux: builder
 controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
+	@if [ "$(GCP_PUSH)" = "true" ] ; then docker tag $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) "gcr.io/$(GOOGLE_PROJECT_ID)/workflow-controller:$(IMAGE_TAG)"; gcloud docker -- push gcr.io/$(GOOGLE_PROJECT_ID)/workflow-controller:$(IMAGE_TAG) ; fi
 
 .PHONY: executor
 executor:
@@ -101,6 +108,7 @@ executor-linux: builder
 executor-image: executor-linux
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
+	@if [ "$(GCP_PUSH)" = "true" ] ; then docker tag $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) "gcr.io/$(GOOGLE_PROJECT_ID)/argoexec:$(IMAGE_TAG)"; gcloud docker -- push gcr.io/$(GOOGLE_PROJECT_ID)/argoexec:$(IMAGE_TAG) ; fi
 
 .PHONY: lint
 lint:
