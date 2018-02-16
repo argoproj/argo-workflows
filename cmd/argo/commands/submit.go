@@ -20,7 +20,7 @@ func init() {
 	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
 	submitCmd.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	submitCmd.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "label selector which limits the controller's watch to a specific instance")
+	submitCmd.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
 }
 
 type submitFlags struct {
