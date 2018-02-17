@@ -57,6 +57,21 @@ $ aws iam put-user-policy --user-name $mybucket-user --policy-name $mybucket-pol
 $ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
 
+
+NOTE: if you want argo to figure out which region your buckets belong in, you must additionally set the following statement policy. Otherwise, you must specificy a bucket region in your workflow configuration.
+
+```
+    ...
+      {
+         "Effect":"Allow",
+         "Action":[
+            "s3:GetBucketLocation"
+         ],
+         "Resource":"arn:aws:s3:::*"
+      }
+    ...
+```
+
 ## Configuring GCS (Google Cloud Storage)
 Create a bucket from the GCP Console (https://console.cloud.google.com/storage/browser).
 
