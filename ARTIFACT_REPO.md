@@ -95,6 +95,7 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
     artifactRepository:
       s3:
         bucket: my-bucket
+	keyPrefix: prefix/in/bucket	#optional
         endpoint: my-minio-endpoint.default:9000
         insecure: true
         accessKeySecret:
@@ -104,7 +105,7 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
           name: my-minio-cred
           key: secretkey
 ```
-The secrets are retrieve from the namespace you use to run your workflows.
+The secrets are retrieve from the namespace you use to run your workflows. Note that you can specify a `keyPrefix`.
 
 # Accessing Non-Default Artifact Repositories
 
