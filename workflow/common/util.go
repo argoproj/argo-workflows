@@ -130,6 +130,7 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams map[stri
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
 	tmpl = tmpl.DeepCopy()
+
 	for i, inParam := range tmpl.Inputs.Parameters {
 		if inParam.Default != nil {
 			// first set to default value
@@ -146,6 +147,14 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams map[stri
 		}
 		tmpl.Inputs.Parameters[i] = inParam
 	}
+
+	// ensure no unused arguments are provided
+	for _, param := range args.Parameters {
+		if tmpl.Inputs.GetParameterByName(param.Name) == nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s supplied but no such parameter declared", param.Name)
+		}
+	}
+
 	tmpl, err := substituteParams(tmpl, globalParams)
 	if err != nil {
 		return nil, err

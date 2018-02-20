@@ -222,6 +222,34 @@ func TestUnsatisfiedParam(t *testing.T) {
 	}
 }
 
+var undeclaredParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: call
+  templates:
+  - name: call
+    steps:
+      - - name: call
+          template: no-params
+          arguments:
+            parameters:
+              - name: undeclared
+                value: undeclaredValue
+  - name: no-params
+    container:
+      image: docker/whalesay:latest
+`
+
+func TestUndeclaredParam(t *testing.T) {
+	err := validate(undeclaredParam)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "inputs.parameters.undeclared supplied but no such parameter declared")
+	}
+}
+
 var globalParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
