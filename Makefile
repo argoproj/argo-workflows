@@ -75,7 +75,7 @@ cli-darwin: builder
 		GOOS=darwin \
 		IMAGE_TAG=$(IMAGE_TAG) \
 		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
-		ARGO_CLI_NAME=argo-linux-amd64
+		ARGO_CLI_NAME=argo-darwin-amd64
 
 .PHONY: controller
 controller:
@@ -136,4 +136,3 @@ release-precheck:
 
 .PHONY: release
 release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
-
