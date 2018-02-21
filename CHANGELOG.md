@@ -6,6 +6,7 @@
 + Add `template.parallism` field to limit concurrent pod execution at a template level
 + Add `argo suspend`, `argo resume` to suspend and resume workflows
 + Add `argo resubmit` to resubmit a failed workflow
++ Add `instanceid` parameter support to `argo submit` command to submit workflow with controller's specific instance id label
 + Experimental support for resubmitting workflows with memoized steps
 + Improved parameters and output validation
 + UI migrated to React.
