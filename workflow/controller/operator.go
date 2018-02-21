@@ -52,8 +52,8 @@ type wfOperationCtx struct {
 var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
-	// ErrParallismReached indicates this workflow reached its parallism limit
-	ErrParallismReached = errors.New(errors.CodeForbidden, "Max parallism reached")
+	// ErrParallelismReached indicates this workflow reached its parallelism limit
+	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) operate() {
 	_ = woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	node := woc.getNodeByName(woc.wf.ObjectMeta.Name)
 	if node == nil || !node.Completed() {
-		// node can be nil if a workflow created immediately in a parallism == 0 state
+		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
 	}
 	workflowStatus = node.Phase
@@ -212,7 +212,7 @@ func (woc *wfOperationCtx) operate() {
 // isRetryableError returns if the error is retryable
 func isRetryableError(err error) bool {
 	switch err {
-	case ErrDeadlineExceeded, ErrParallismReached:
+	case ErrDeadlineExceeded, ErrParallelismReached:
 		return true
 	default:
 		return false
@@ -460,7 +460,7 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 		boundaryID = boundaryIDs[0]
 	}
 	var activePods int64
-	// if we care about parallism, count the active pods at the template level
+	// if we care about parallelism, count the active pods at the template level
 	for _, node := range woc.wf.Status.Nodes {
 		if node.Type != wfv1.NodeTypePod || node.Phase != wfv1.NodeRunning {
 			continue
@@ -829,7 +829,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, "", boundaryID, wfv1.NodeError, err.Error())
 		return err
 	}
-	if err := woc.checkParallism(tmpl, node, boundaryID); err != nil {
+	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
 		return err
 	}
 
@@ -1006,11 +1006,11 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
-// checkParallism checks if the given template is able to be executed, considering the current active pods and workflow/template parallism
-func (woc *wfOperationCtx) checkParallism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
+// checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
+func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
-		woc.log.Infof("workflow active pod spec parallism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
-		return ErrParallismReached
+		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
+		return ErrParallelismReached
 	}
 	// TODO: repeated calls to countActivePods is not optimal
 	switch tmpl.GetType() {
@@ -1019,8 +1019,8 @@ func (woc *wfOperationCtx) checkParallism(tmpl *wfv1.Template, node *wfv1.NodeSt
 		if tmpl.Parallelism != nil && node != nil {
 			templateActivePods := woc.countActivePods(node.ID)
 			if templateActivePods >= *tmpl.Parallelism {
-				woc.log.Infof("template (node %s) active pod parallism reached %d/%d", node.ID, templateActivePods, *tmpl.Parallelism)
-				return ErrParallismReached
+				woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", node.ID, templateActivePods, *tmpl.Parallelism)
+				return ErrParallelismReached
 			}
 		}
 	default:
@@ -1032,8 +1032,8 @@ func (woc *wfOperationCtx) checkParallism(tmpl *wfv1.Template, node *wfv1.NodeSt
 				templateActivePods := woc.countActivePods(boundaryID)
 				woc.log.Debugf("counted %d active pods in boundary %s", templateActivePods, boundaryID)
 				if templateActivePods >= *boundaryTemplate.Parallelism {
-					woc.log.Infof("template (node %s) active pod parallism reached %d/%d", boundaryID, templateActivePods, *boundaryTemplate.Parallelism)
-					return ErrParallismReached
+					woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", boundaryID, templateActivePods, *boundaryTemplate.Parallelism)
+					return ErrParallelismReached
 				}
 			}
 		}
