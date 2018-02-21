@@ -135,4 +135,4 @@ release-precheck:
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 
 .PHONY: release
-release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
+release: release-precheck controller-image cli-darwin cli-linux executor-image
