@@ -8,6 +8,11 @@
 + Add `argo resubmit` to resubmit a failed workflow
 + Experimental support for resubmitting workflows with memoized steps
 + Improved parameters and output validation
++ Support for pod tolerations (@discordianfish)
++ Make `workflow.namespace` available as a global variable (@vreon)
+* Trim spaces from aws keys (@bodepd)
+* Documentation fixes (@bodepd)
+- Fix rbac resource versions in install (@dvavili)
 
 ## 2.0.0 (2018-02-06)
 + Add ability to specify affinity rules at both the workflow and template level
