@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0-alpha1 (Unreleased)
+## 2.1.0-alpha1 (2018-02-21)
 + Support for DAG based definition of workflows
 + Add `spec.parallelism` field to limit concurrent pod execution at a workflow level
 + Add `template.parallelism` field to limit concurrent pod execution at a template level
