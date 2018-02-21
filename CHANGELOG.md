@@ -2,8 +2,8 @@
 
 ## 2.1.0-alpha1 (Unreleased)
 + Support for DAG based definition of workflows
-+ Add `spec.parallism` field to limit concurrent pod execution at a workflow level
-+ Add `template.parallism` field to limit concurrent pod execution at a template level
++ Add `spec.parallelism` field to limit concurrent pod execution at a workflow level
++ Add `template.parallelism` field to limit concurrent pod execution at a template level
 + Add `argo suspend`, `argo resume` to suspend and resume workflows
 + Add `argo resubmit` to resubmit a failed workflow
 + Add `instanceid` parameter support to `argo submit` command to submit workflow with controller's specific instance id label

@@ -180,7 +180,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
 
-var workflowParallismLimit = `
+var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -211,11 +211,11 @@ spec:
       command: [sh, -c, sleep 10]
 `
 
-// TestWorkflowParallismLimit verifies parallism at a workflow level is honored.
-func TestWorkflowParallismLimit(t *testing.T) {
+// TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
+func TestWorkflowParallelismLimit(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(workflowParallismLimit)
+	wf := unmarshalWF(workflowParallelismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -238,7 +238,7 @@ func TestWorkflowParallismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 }
 
-var stepsTemplateParallismLimit = `
+var stepsTemplateParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -269,11 +269,11 @@ spec:
       command: [sh, -c, sleep 10]
 `
 
-// TestStepsTemplateParallismLimit verifies parallism at a steps level is honored.
-func TestStepsTemplateParallismLimit(t *testing.T) {
+// TestStepsTemplateParallelismLimit verifies parallelism at a steps level is honored.
+func TestStepsTemplateParallelismLimit(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(stepsTemplateParallismLimit)
+	wf := unmarshalWF(stepsTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -297,7 +297,7 @@ func TestStepsTemplateParallismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 }
 
-var dagTemplateParallismLimit = `
+var dagTemplateParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -325,11 +325,11 @@ spec:
       command: [sh, -c, sleep 10]
 `
 
-// TestDAGTemplateParallismLimit verifies parallism at a dag level is honored.
-func TestDAGTemplateParallismLimit(t *testing.T) {
+// TestDAGTemplateParallelismLimit verifies parallelism at a dag level is honored.
+func TestDAGTemplateParallelismLimit(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(dagTemplateParallismLimit)
+	wf := unmarshalWF(dagTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -389,7 +389,7 @@ func TestSidecarResourceLimits(t *testing.T) {
 func TestSuspendResume(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-	wf := unmarshalWF(stepsTemplateParallismLimit)
+	wf := unmarshalWF(stepsTemplateParallelismLimit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 
