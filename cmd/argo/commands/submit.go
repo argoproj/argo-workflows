@@ -40,7 +40,7 @@ var submitCmd = &cobra.Command{
 	Run:   SubmitWorkflows,
 }
 
-// SubmitWorkflows submits the the specified worfklow manifest files
+// SubmitWorkflows submits the the specified workflow manifest files
 func SubmitWorkflows(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		cmd.HelpFunc()(cmd, args)
