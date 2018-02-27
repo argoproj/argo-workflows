@@ -654,7 +654,7 @@ spec:
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         import random
