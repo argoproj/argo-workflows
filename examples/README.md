@@ -334,7 +334,7 @@ spec:
 
   - name: gen-random-int-python
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         import random
@@ -547,7 +547,7 @@ spec:
   # Generate a list of numbers in JSON format
   - name: gen-number-list
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         import json
@@ -590,7 +590,7 @@ spec:
   # Return heads or tails based on a random number
   - name: flip-coin
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         import random
@@ -635,7 +635,7 @@ spec:
     
   - name: flip-coin
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         import random

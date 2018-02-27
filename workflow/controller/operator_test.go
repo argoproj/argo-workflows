@@ -52,7 +52,7 @@ spec:
   templates:
   - name: sidecar-with-volumes
     script:
-      image: python:3.6
+      image: python:alpine3.6
       command: [python]
       source: |
         print("hello world")
