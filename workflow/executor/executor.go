@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-        "net/url"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -198,12 +198,12 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 			} else if we.Template.ArchiveLocation.Artifactory != nil {
 				shallowCopy := *we.Template.ArchiveLocation.Artifactory
 				art.Artifactory = &shallowCopy
-                                artifactoryUrl, urlParseErr := url.Parse(art.Artifactory.URL)
-                                if urlParseErr != nil {
-                                        return urlParseErr
-                                }
-                                artifactoryUrl.Path = path.Join(artifactoryUrl.Path, fileName)
-                                art.Artifactory.URL = artifactoryUrl.String()
+				artifactoryUrl, urlParseErr := url.Parse(art.Artifactory.URL)
+				if urlParseErr != nil {
+					return urlParseErr
+				}
+				artifactoryUrl.Path = path.Join(artifactoryUrl.Path, fileName)
+				art.Artifactory.URL = artifactoryUrl.String()
 			} else {
 				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 			}
