@@ -170,6 +170,7 @@ func (woc *wfOperationCtx) operate() {
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
 		_ = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
 		onExitNode = woc.getNodeByName(onExitNodeName)
+		woc.addChildNode(woc.wf.ObjectMeta.Name, onExitNode.Name)
 		if !onExitNode.Completed() {
 			return
 		}
