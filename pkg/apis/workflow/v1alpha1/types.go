@@ -616,6 +616,15 @@ func (tmpl *Template) GetType() TemplateType {
 	return "Unknown"
 }
 
+// IsPodType returns whether or not the template is a pod type
+func (tmpl *Template) IsPodType() bool {
+	switch tmpl.GetType() {
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
+		return true
+	}
+	return false
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG

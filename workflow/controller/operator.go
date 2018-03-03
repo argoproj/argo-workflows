@@ -832,8 +832,11 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
 		return err
 	}
-
-	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, false)
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams["pod.name"] = woc.wf.NodeID(nodeName)
+	}
+	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
 		return err

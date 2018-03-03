@@ -1006,3 +1006,38 @@ func TestValidWithItems(t *testing.T) {
 		assert.Contains(t, err.Error(), "withItems")
 	}
 }
+
+var podNameVariable = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: pod-name-variable
+spec:
+  entrypoint: pod-name-variable
+  templates:
+  - name: pod-name-variable
+    container:
+      image: debian:9.1
+      command: [sh, -c]
+      args: ["kubectl {{pod.name}}"]
+    outputs:
+      artifacts:
+      - name: my-out
+        path: /tmp/hello_world.txt
+        s3:
+          endpoint: s3.amazonaws.com
+          bucket: my-bucket
+          key: path/{{pod.name}}/hello_world.tgz
+          accessKeySecret:
+            name: my-s3-credentials
+            key: accessKey
+          secretKeySecret:
+            name: my-s3-credentials
+            key: secretKey
+`
+
+func TestPodNameVariable(t *testing.T) {
+	err := validate(podNameVariable)
+
+	assert.Nil(t, err)
+}

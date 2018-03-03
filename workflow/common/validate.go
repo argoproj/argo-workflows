@@ -90,13 +90,18 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
-	_, err := ProcessArgs(tmpl, args, ctx.globalParams, true)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
-	}
 	scope, err := validateInputs(tmpl)
 	if err != nil {
 		return err
+	}
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams["pod.name"] = placeholderValue
+		scope["pod.name"] = placeholderValue
+	}
+	_, err = ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
