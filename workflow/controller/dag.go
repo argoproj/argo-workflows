@@ -294,7 +294,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		return nil, errors.InternalWrapError(err)
 	}
 	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
-	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), true, "")
+	newTaskStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
 	if err != nil {
 		return nil, err
 	}
