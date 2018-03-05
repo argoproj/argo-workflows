@@ -107,6 +107,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
+	wfSpec, err := substituteGlobals(&woc.wf.Spec, woc.globalParams)
+	if err != nil {
+		return nil, err
+	}
 	mainCtr.Name = common.MainContainerName
 	pod := apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -133,9 +137,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				volumeDockerSock,
 			},
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
-			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
-			Tolerations:           tmpl.Tolerations,
+			// TODO: consider allowing service account and image pull secrets to reference global vars
+			ServiceAccountName: woc.wf.Spec.ServiceAccountName,
+			ImagePullSecrets:   woc.wf.Spec.ImagePullSecrets,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {
@@ -160,9 +164,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
-	woc.addSchedulingConstraints(&pod, tmpl)
+	addSchedulingConstraints(&pod, wfSpec, tmpl)
 
-	err := woc.addVolumeReferences(&pod, tmpl)
+	err = addVolumeReferences(&pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +222,25 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	return created, nil
 }
 
+// substituteGlobals returns a workflow spec with global parameter references substituted
+func substituteGlobals(wfSpec *wfv1.WorkflowSpec, globalParams map[string]string) (*wfv1.WorkflowSpec, error) {
+	specBytes, err := json.Marshal(wfSpec)
+	if err != nil {
+		return nil, err
+	}
+	fstTmpl := fasttemplate.New(string(specBytes), "{{", "}}")
+	newSpecBytes, err := common.Replace(fstTmpl, globalParams, true)
+	if err != nil {
+		return nil, err
+	}
+	var newWfSpec wfv1.WorkflowSpec
+	err = json.Unmarshal([]byte(newSpecBytes), &newWfSpec)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &newWfSpec, nil
+}
+
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"argoexec"}
@@ -256,30 +279,52 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
-func (woc *wfOperationCtx) addSchedulingConstraints(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template) {
 	// Set nodeSelector (if specified)
 	if len(tmpl.NodeSelector) > 0 {
 		pod.Spec.NodeSelector = tmpl.NodeSelector
-	} else if len(woc.wf.Spec.NodeSelector) > 0 {
-		pod.Spec.NodeSelector = woc.wf.Spec.NodeSelector
+	} else if len(wfSpec.NodeSelector) > 0 {
+		pod.Spec.NodeSelector = wfSpec.NodeSelector
 	}
 	// Set affinity (if specified)
 	if tmpl.Affinity != nil {
 		pod.Spec.Affinity = tmpl.Affinity
-	} else if woc.wf.Spec.Affinity != nil {
-		pod.Spec.Affinity = woc.wf.Spec.Affinity
+	} else if wfSpec.Affinity != nil {
+		pod.Spec.Affinity = wfSpec.Affinity
+	}
+	// Set tolerations (if specified)
+	if len(tmpl.Tolerations) > 0 {
+		pod.Spec.Tolerations = tmpl.Tolerations
+	} else if len(wfSpec.Tolerations) > 0 {
+		pod.Spec.Tolerations = wfSpec.Tolerations
 	}
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	if tmpl.Container == nil && len(tmpl.Sidecars) == 0 {
 		return nil
 	}
+
+	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
+	getVolByName := func(name string) *apiv1.Volume {
+		for _, vol := range wfSpec.Volumes {
+			if vol.Name == name {
+				return &vol
+			}
+		}
+		for _, pvc := range pvcs {
+			if pvc.Name == name {
+				return &pvc
+			}
+		}
+		return nil
+	}
+
 	addVolumeRef := func(volMounts []apiv1.VolumeMount) error {
 		for _, volMnt := range volMounts {
-			vol := getVolByName(volMnt.Name, woc.wf)
+			vol := getVolByName(volMnt.Name)
 			if vol == nil {
 				return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
 			}
@@ -309,21 +354,6 @@ func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Templa
 		err := addVolumeRef(sidecar.VolumeMounts)
 		if err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
-func getVolByName(name string, wf *wfv1.Workflow) *apiv1.Volume {
-	for _, vol := range wf.Spec.Volumes {
-		if vol.Name == name {
-			return &vol
-		}
-	}
-	for _, pvc := range wf.Status.PersistentVolumeClaims {
-		if pvc.Name == name {
-			return &pvc
 		}
 	}
 	return nil

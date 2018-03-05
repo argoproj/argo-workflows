@@ -92,11 +92,10 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 	return &woc
 }
 
-// operate is the main operator logic of a workflow.
-// It evaluates the current state of the workflow, and its pods
-// and decides how to proceed down the execution path.
-// TODO: an error returned by this method should result in requeing the
-// workflow to be retried at a later time
+// operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
+// and its pods and decides how to proceed down the execution path.
+// TODO: an error returned by this method should result in requeing the workflow to be retried at a
+// later time
 func (woc *wfOperationCtx) operate() {
 	defer woc.persistUpdates()
 	defer func() {
