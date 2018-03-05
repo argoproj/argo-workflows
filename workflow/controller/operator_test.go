@@ -652,3 +652,61 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(pods.Items))
 }
+
+var volumeWithParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: volume-with-param
+spec:
+  entrypoint: append-to-accesslog
+  arguments:
+    parameters:
+    - name: volname
+      value: my-volume
+    - name: node-selctor
+      value: my-node
+
+  nodeSelector:
+    kubernetes.io/hostname: my-host
+
+  volumes:
+  - name: workdir
+    persistentVolumeClaim:
+      claimName: "{{workflow.parameters.volname}}"
+
+  templates:
+  - name: append-to-accesslog
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo accessed at: $(date) | tee -a /mnt/vol/accesslog"]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+`
+
+// Tests ability to reference workflow parameters from within top level spec fields (e.g. spec.volumes)
+func TestWorkflowSpecParam(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(volumeWithParam)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get(wf.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	found := false
+	for _, vol := range pod.Spec.Volumes {
+		if vol.Name == "workdir" {
+			assert.Equal(t, "my-volume", vol.PersistentVolumeClaim.ClaimName)
+			found = true
+		}
+	}
+	assert.True(t, found)
+
+	assert.Equal(t, "my-host", pod.Spec.NodeSelector["kubernetes.io/hostname"])
+}

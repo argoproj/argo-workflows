@@ -106,6 +106,9 @@ type WorkflowSpec struct {
 	// Can be overridden by an affinity specified in the template
 	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
+	// Tolerations to apply to workflow pods.
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
+
 	// ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
 	// in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
 	// can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.

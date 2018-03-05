@@ -885,6 +885,13 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
           }
         },
+        "tolerations": {
+          "description": "Tolerations to apply to workflow pods.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
+          }
+        },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
           "type": "array",
