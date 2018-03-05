@@ -270,7 +270,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		return
 	}
-	_ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName, dagCtx.boundaryID)
+	_, _ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName, dagCtx.boundaryID)
 }
 
 // resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs

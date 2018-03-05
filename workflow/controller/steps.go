@@ -24,7 +24,7 @@ type stepsContext struct {
 	scope *wfScope
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmpl.Name, boundaryID, wfv1.NodeRunning)
@@ -48,9 +48,10 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			// initialize the step group
 			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
 			if i == 0 {
+				// Connect the boundary node with the first step group
 				woc.addChildNode(nodeName, sgNodeName)
 			} else {
-				// This logic will connect all the outbound nodes of the previous
+				// Otherwise connect all the outbound nodes of the previous
 				// step group as parents to the current step group node
 				prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
 				prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
@@ -63,25 +64,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 				}
 			}
 		}
-		err := woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
-		if err != nil {
-			if !isRetryableError(err) {
-				// carry back the step level error
-				woc.markNodeError(nodeName, err)
-			}
-			return err
-		}
-		sgNode = woc.getNodeByName(sgNodeName)
+		sgNode = woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
-			return nil
+			return node
 		}
 
 		if !sgNode.Successful() {
-			failMessage := fmt.Sprintf("step group %s was unsuccessful", sgNode)
+			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode, sgNode.Message)
 			woc.log.Info(failMessage)
-			woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
-			return nil
+			return woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
 		}
 
 		for _, step := range stepGroup {
@@ -101,8 +93,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
-		woc.markNodeError(nodeName, err)
-		return err
+		return woc.markNodeError(nodeName, err)
 	}
 	if outputs != nil {
 		node = woc.getNodeByName(nodeName)
@@ -124,30 +115,27 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
-	node = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return nil
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 }
 
-// executeStepGroup examines a map of parallel steps and executes them in parallel.
+// executeStepGroup examines a list of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
-func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) error {
+func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
 	node := woc.getNodeByName(sgNodeName)
 	if node.Completed() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
-		return nil
+		return node
 	}
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	stepGroup, err := woc.resolveReferences(stepGroup, stepsCtx.scope)
 	if err != nil {
-		woc.markNodeError(sgNodeName, err)
-		return err
+		return woc.markNodeError(sgNodeName, err)
 	}
 
 	// Next, expand the step's withItems (if any)
 	stepGroup, err = woc.expandStepGroup(stepGroup)
 	if err != nil {
-		woc.markNodeError(sgNodeName, err)
-		return err
+		return woc.markNodeError(sgNodeName, err)
 	}
 
 	// Kick off all parallel steps in the group
@@ -159,8 +147,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
 			woc.markNodeError(childNodeName, err)
-			woc.markNodeError(sgNodeName, err)
-			return err
+			return woc.markNodeError(sgNodeName, err)
 		}
 		if !proceed {
 			if woc.getNodeByName(childNodeName) == nil {
@@ -170,13 +157,20 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
-		err = woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
+		childNode, err := woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
 		if err != nil {
-			if !isRetryableError(err) {
-				woc.markNodeError(childNodeName, err)
-				woc.markNodeError(sgNodeName, err)
+			switch err {
+			case ErrDeadlineExceeded:
+				return node
+			case ErrParallelismReached:
+			default:
+				errMsg := fmt.Sprintf("child '%s' errored", childNode)
+				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
+				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
-			return err
+		}
+		if childNode != nil && childNode.Completed() && !childNode.Successful() {
+			break
 		}
 	}
 
@@ -184,7 +178,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Return if not all children completed
 	for _, childNodeID := range node.Children {
 		if !woc.wf.Status.Nodes[childNodeID].Completed() {
-			return nil
+			return node
 		}
 	}
 	// All children completed. Determine step group status as a whole
@@ -192,14 +186,12 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		childNode := woc.wf.Status.Nodes[childNodeID]
 		if !childNode.Successful() {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
-			woc.markNodePhase(sgNodeName, wfv1.NodeFailed, failMessage)
-			woc.log.Infof("Step group node %s deemed failed: %s", childNode, failMessage)
-			return nil
+			woc.log.Infof("Step group node %s deemed failed: %s", node, failMessage)
+			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
 		}
 	}
-	node = woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 	woc.log.Infof("Step group node %v successful", node)
-	return nil
+	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
 var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
@@ -312,7 +304,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	} else if step.WithParam != "" {
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value not be parsed as a JSON list: %s", step.WithParam)
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()

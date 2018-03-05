@@ -4,7 +4,7 @@ metadata:
   generateName: parallelism-limit-
 spec:
   entrypoint: parallelism-limit
-  parallelism: 100
+  parallelism: 2
   templates:
   - name: parallelism-limit
     steps:

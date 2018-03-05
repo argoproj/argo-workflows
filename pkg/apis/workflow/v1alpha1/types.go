@@ -379,17 +379,6 @@ type WorkflowStatus struct {
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
 }
 
-// GetNodesWithRetries returns a list of nodes that have retries.
-func (wfs *WorkflowStatus) GetNodesWithRetries() []NodeStatus {
-	var nodesWithRetries []NodeStatus
-	for _, node := range wfs.Nodes {
-		if node.RetryStrategy != nil {
-			nodesWithRetries = append(nodesWithRetries, node)
-		}
-	}
-	return nodesWithRetries
-}
-
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
@@ -436,9 +425,6 @@ type NodeStatus struct {
 
 	// Daemoned tracks whether or not this node was daemoned and need to be terminated
 	Daemoned *bool `json:"daemoned,omitempty"`
-
-	// RetryStrategy contains retry information about the node
-	RetryStrategy *RetryStrategy `json:"retryStrategy,omitempty"`
 
 	// Inputs captures input parameter values and artifact locations supplied to this template invocation
 	Inputs *Inputs `json:"inputs,omitempty"`

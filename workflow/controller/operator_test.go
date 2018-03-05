@@ -123,11 +123,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	var retryLimit int32
 	retryLimit = 2
 	retries.Limit = &retryLimit
-	node.RetryStrategy = &retries
 	woc.wf.Status.Nodes[nodeID] = *node
 
-	retryNodes := woc.wf.Status.GetNodesWithRetries()
-	assert.Equal(t, len(retryNodes), 1)
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 
 	// Ensure there are no child nodes yet.
@@ -149,14 +146,14 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	err = woc.processNodeRetries(n)
+	err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	err = woc.processNodeRetries(n)
+	err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
 	n = woc.getNodeByName(nodeName)
@@ -165,7 +162,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Mark the parent node as running again and the lastChild as failed.
 	woc.markNodePhase(n.Name, wfv1.NodeRunning)
 	woc.markNodePhase(lastChild.Name, wfv1.NodeFailed)
-	woc.processNodeRetries(n)
+	woc.processNodeRetries(n, retries)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
@@ -174,7 +171,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, "", "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	err = woc.processNodeRetries(n)
+	err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
 	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
@@ -351,6 +348,87 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(pods.Items))
+}
+
+var nestedParallelism = `
+# Example with vertical and horizontal scalability                                                                                                                                                                                      
+#                                                                                                                                                                                                                                                            
+# Imagine we have 'M' workers which work in parallel,                                                                                                                                                                                                        
+# each worker should performs 'N' loops sequentially                                                                                                                                                                                                         
+#                                                                                                                                                                                                                                                            
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-nested-
+spec:
+  arguments:
+    parameters:
+    - name: seq-list
+      value: |
+        ["a","b","c","d"]
+    - name: parallel-list
+      value: |
+        [1,2,3,4]
+
+  entrypoint: parallel-worker
+  templates:
+  - name: parallel-worker
+    inputs:
+      parameters:
+      - name: seq-list
+      - name: parallel-list
+    steps:
+    - - name: parallel-worker
+        template: seq-worker
+        arguments:
+          parameters:
+          - name: seq-list
+            value: "{{inputs.parameters.seq-list}}"
+          - name: parallel-id
+            value: "{{item}}"
+        withParam: "{{inputs.parameters.parallel-list}}"
+
+  - name: seq-worker
+    parallelism: 1
+    inputs:
+      parameters:
+      - name: seq-list
+      - name: parallel-id
+    steps:
+    - - name: seq-step
+        template: one-job
+        arguments:
+          parameters:
+          - name: parallel-id
+            value: "{{inputs.parameters.parallel-id}}"
+          - name: seq-id
+            value: "{{item}}"
+        withParam: "{{inputs.parameters.seq-list}}"
+
+  - name: one-job
+    inputs:
+      parameters:
+      - name: seq-id
+      - name: parallel-id
+    container:
+      image: alpine
+      command: ['/bin/sh', '-c']
+      args: ["echo {{inputs.parameters.parallel-id}} {{inputs.parameters.seq-id}}; sleep 10"]
+`
+
+func TestNestedTemplateParallelismLimit(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(nestedParallelism)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(pods.Items))
 }
 
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
@@ -573,5 +651,4 @@ func TestSuspendTemplate(t *testing.T) {
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(pods.Items))
-
 }
