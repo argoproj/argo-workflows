@@ -1,0 +1,63 @@
+# Example with vertical and horizontal scalability                                                                                                                                                                                      
+#                                                                                                                                                                                                                                                            
+# Imagine we have 'M' workers which work in parallel,                                                                                                                                                                                                        
+# each worker should performs 'N' loops sequentially                                                                                                                                                                                                         
+#                                                                                                                                                                                                                                                            
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-nested-
+spec:
+  arguments:
+    parameters:
+    - name: seq-list
+      value: |
+        ["a","b","c","d"]
+    - name: parallel-list
+      value: |
+        [1,2,3,4]
+
+  entrypoint: parallel-worker
+  templates:
+  - name: parallel-worker
+    inputs:
+      parameters:
+      - name: seq-list
+      - name: parallel-list
+    steps:
+    - - name: parallel-worker
+        template: seq-worker
+        arguments:
+          parameters:
+          - name: seq-list
+            value: "{{inputs.parameters.seq-list}}"
+          - name: parallel-id
+            value: "{{item}}"
+        withParam: "{{inputs.parameters.parallel-list}}"
+
+  - name: seq-worker
+    parallelism: 1
+    inputs:
+      parameters:
+      - name: seq-list
+      - name: parallel-id
+    steps:
+    - - name: seq-step
+        template: one-job
+        arguments:
+          parameters:
+          - name: parallel-id
+            value: "{{inputs.parameters.parallel-id}}"
+          - name: seq-id
+            value: "{{item}}"
+        withParam: "{{inputs.parameters.seq-list}}"
+
+  - name: one-job
+    inputs:
+      parameters:
+      - name: seq-id
+      - name: parallel-id
+    container:
+      image: alpine
+      command: ['/bin/sh', '-c']
+      args: ["echo {{inputs.parameters.parallel-id}} {{inputs.parameters.seq-id}}; sleep 10"]

@@ -326,15 +326,6 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 			**out = **in
 		}
 	}
-	if in.RetryStrategy != nil {
-		in, out := &in.RetryStrategy, &out.RetryStrategy
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(RetryStrategy)
-			(*in).DeepCopyInto(*out)
-		}
-	}
 	if in.Inputs != nil {
 		in, out := &in.Inputs, &out.Inputs
 		if *in == nil {

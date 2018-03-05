@@ -744,6 +744,13 @@
         "suspend": {
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
+        },
+        "tolerations": {
+          "description": "Tolerations to apply to workflow pods.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
+          }
         }
       }
     },

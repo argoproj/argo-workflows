@@ -75,8 +75,8 @@ script:
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
-	err := newWoc().executeScript(tmpl.Name, tmpl, "")
-	assert.Nil(t, err)
+	node := newWoc().executeScript(tmpl.Name, tmpl, "")
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
 }
 
 // TestServiceAccount verifies the ability to carry forward the service account name
@@ -84,8 +84,7 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 func TestServiceAccount(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.ServiceAccountName = "foo"
-	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	assert.Nil(t, err)
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -100,8 +99,7 @@ func TestImagePullSecrets(t *testing.T) {
 			Name: "secret-name",
 		},
 	}
-	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	assert.Nil(t, err)
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -131,8 +129,7 @@ func TestAffinity(t *testing.T) {
 			},
 		},
 	}
-	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	assert.Nil(t, err)
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -147,8 +144,7 @@ func TestTolerations(t *testing.T) {
 		Operator: "Exists",
 		Effect:   "NoSchedule",
 	}}
-	err := woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	assert.Nil(t, err)
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
