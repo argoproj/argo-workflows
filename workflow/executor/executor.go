@@ -44,6 +44,7 @@ type WorkflowExecutor struct {
 	Namespace          string
 	PodAnnotationsPath string
 	ExecutionControl   *common.ExecutionControl
+	RuntimeExecutor    ContainerRuntimeExecutor
 
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
@@ -54,13 +55,33 @@ type WorkflowExecutor struct {
 	errors []error
 }
 
+// ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
+type ContainerRuntimeExecutor interface {
+	// GetFileContents returns the file contents of a file in a container as a string
+	GetFileContents(containerID string, sourcePath string) (string, error)
+
+	// CopyFile copies a source file in a container to a local path
+	CopyFile(containerID string, sourcePath string, destPath string) error
+
+	// GetOutput returns the entirety of the container output as a string
+	// Used to capturing script results as an output parameter
+	GetOutput(containerID string) (string, error)
+
+	// Wait for the container to complete
+	Wait(containerID string) error
+
+	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
+	Kill(containerIDs []string) error
+}
+
 // NewExecutor instantiates a new workflow executor
-func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string) WorkflowExecutor {
+func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotationsPath string, cre ContainerRuntimeExecutor) WorkflowExecutor {
 	return WorkflowExecutor{
 		PodName:            podName,
 		ClientSet:          clientset,
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
+		RuntimeExecutor:    cre,
 		memoizedSecrets:    map[string]string{},
 		errors:             []error{},
 	}
@@ -198,19 +219,19 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 			} else if we.Template.ArchiveLocation.Artifactory != nil {
 				shallowCopy := *we.Template.ArchiveLocation.Artifactory
 				art.Artifactory = &shallowCopy
-				artifactoryUrl, urlParseErr := url.Parse(art.Artifactory.URL)
+				artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
 				if urlParseErr != nil {
 					return urlParseErr
 				}
-				artifactoryUrl.Path = path.Join(artifactoryUrl.Path, fileName)
-				art.Artifactory.URL = artifactoryUrl.String()
+				artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+				art.Artifactory.URL = artifactoryURL.String()
 			} else {
 				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 			}
 		}
 
 		tempArtPath := path.Join(tempOutArtDir, fileName)
-		err = archivePath(mainCtrID, art.Path, tempArtPath)
+		err = we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, tempArtPath)
 		if err != nil {
 			return err
 		}
@@ -252,22 +273,15 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
 			continue
 		}
-		// Use docker cp command to print out the content of the file
-		// Node docker cp CONTAINER:SRC_PATH DEST_PATH|- streams the contents of the resource
-		// as a tar archive to STDOUT if using - as DEST_PATH. Thus, we need to extract the
-		// content from the tar archive and output into stdout. In this way, we do not need to
-		// create and copy the content into a file from the wait container.
-		dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", mainCtrID, param.ValueFrom.Path)
-		cmd := exec.Command("sh", "-c", dockerCpCmd)
-		log.Info(cmd.Args)
-		out, err := cmd.Output()
+		output, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
 		if err != nil {
-			if exErr, ok := err.(*exec.ExitError); ok {
-				log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-			}
-			return errors.InternalWrapError(err)
+			return err
 		}
-		output := string(out)
+		outputLen := len(output)
+		// Trims off a single newline for user convenience
+		if outputLen > 0 && output[outputLen-1] == '\n' {
+			output = output[0 : outputLen-1]
+		}
 		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
@@ -427,17 +441,6 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 	return we.mainContainerID, nil
 }
 
-func archivePath(containerID string, sourcePath string, destPath string) error {
-	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
-	err := common.RunCommand("sh", "-c", dockerCpCmd)
-	if err != nil {
-		return err
-	}
-	log.Infof("Archiving completed")
-	return nil
-}
-
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult() error {
 	if we.Template.Script == nil {
@@ -448,11 +451,11 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("docker", "logs", mainContainerID)
-	log.Info(cmd.Args)
-	outBytes, _ := cmd.Output()
-	outStr := strings.TrimSpace(string(outBytes))
-	we.Template.Outputs.Result = &outStr
+	out, err := we.RuntimeExecutor.GetOutput(mainContainerID)
+	if err != nil {
+		return err
+	}
+	we.Template.Outputs.Result = &out
 	return nil
 }
 
@@ -561,7 +564,7 @@ func (we *WorkflowExecutor) Wait() (err error) {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	err = common.RunCommand("docker", "wait", mainContainerID)
+	err = we.RuntimeExecutor.Wait(mainContainerID)
 	log.Infof("Main container completed")
 	return
 }
@@ -691,7 +694,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 					}
 					log.Infof("Killing main container")
 					mainContainerID, _ := we.GetMainContainerID()
-					err := killContainers([]string{mainContainerID})
+					err := we.RuntimeExecutor.Kill([]string{mainContainerID})
 					if err != nil {
 						log.Warnf("Failed to kill main container: %v", err)
 					}
@@ -701,40 +704,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 			time.Sleep(1 * time.Second)
 		}
 	}
-}
-
-// killGracePeriod is the time in seconds after sending SIGTERM before
-// forcefully killing the sidcar with SIGKILL (value matches k8s)
-const killGracePeriod = 30
-
-// killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
-func killContainers(containerIDs []string) error {
-	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
-	err := common.RunCommand("docker", killArgs...)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	waitArgs := append([]string{"wait"}, containerIDs...)
-	waitCmd := exec.Command("docker", waitArgs...)
-	log.Info(waitCmd.Args)
-	if err := waitCmd.Start(); err != nil {
-		return errors.InternalWrapError(err)
-	}
-	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", killGracePeriod)
-		_ = waitCmd.Process.Kill()
-		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
-		forceKillCmd := exec.Command("docker", forceKillArgs...)
-		log.Info(forceKillCmd.Args)
-		_ = forceKillCmd.Run()
-	})
-	err = waitCmd.Wait()
-	_ = timer.Stop()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	log.Infof("Containers %s killed successfully", containerIDs)
-	return nil
 }
 
 // killSidecars kills any sidecars to the main container
@@ -763,7 +732,7 @@ func (we *WorkflowExecutor) killSidecars() error {
 	if len(sidecarIDs) == 0 {
 		return nil
 	}
-	return killContainers(sidecarIDs)
+	return we.RuntimeExecutor.Kill(sidecarIDs)
 }
 
 // LoadTemplate reads the template definition from the the Kubernetes downward api annotations volume file
