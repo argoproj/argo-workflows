@@ -40,24 +40,6 @@ var (
 	DefaultUiImage         = imageNamespace + "/argoui:" + imageTag
 )
 
-func init() {
-	RootCmd.AddCommand(installCmd)
-	installCmd.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
-	installCmd.Flags().BoolVar(&installArgs.DryRun, "dry-run", false, "print the kubernetes manifests to stdout instead of installing")
-	installCmd.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
-	installCmd.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
-	installCmd.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
-	installCmd.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
-	installCmd.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
-	installCmd.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
-	installCmd.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
-	installCmd.Flags().StringVar(&installArgs.UIName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
-	installCmd.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
-	installCmd.Flags().StringVar(&installArgs.UIBaseHref, "ui-base-href", "/", "UI base url")
-	installCmd.Flags().StringVar(&installArgs.UIServiceAccount, "ui-service-account", "", "use a specified service account for the argo-ui deployment")
-	installCmd.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows exec access into running step container using Argo UI")
-}
-
 // InstallFlags has all the required parameters for installing Argo.
 type InstallFlags struct {
 	Upgrade          bool   // --upgrade
@@ -76,12 +58,32 @@ type InstallFlags struct {
 	EnableWebConsole bool   // --enable-web-console
 }
 
-var installArgs InstallFlags
-
-var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "install Argo",
-	Run:   install,
+func NewInstallCommand() *cobra.Command {
+	var (
+		installArgs InstallFlags
+	)
+	var command = &cobra.Command{
+		Use:   "install",
+		Short: "install Argo",
+		Run: func(cmd *cobra.Command, args []string) {
+			Install(installArgs)
+		},
+	}
+	command.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
+	command.Flags().BoolVar(&installArgs.DryRun, "dry-run", false, "print the kubernetes manifests to stdout instead of installing")
+	command.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
+	command.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
+	command.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
+	command.Flags().StringVar(&installArgs.ControllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	command.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
+	command.Flags().StringVar(&installArgs.ServiceAccount, "service-account", "", "use a specified service account for the workflow-controller deployment")
+	command.Flags().StringVar(&installArgs.ExecutorImage, "executor-image", DefaultExecutorImage, "use a specified executor image")
+	command.Flags().StringVar(&installArgs.UIName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
+	command.Flags().StringVar(&installArgs.UIImage, "ui-image", DefaultUiImage, "use a specified ui image")
+	command.Flags().StringVar(&installArgs.UIBaseHref, "ui-base-href", "/", "UI base url")
+	command.Flags().StringVar(&installArgs.UIServiceAccount, "ui-service-account", "", "use a specified service account for the argo-ui deployment")
+	command.Flags().BoolVar(&installArgs.EnableWebConsole, "enable-web-console", false, "allows exec access into running step container using Argo UI")
+	return command
 }
 
 func printYAML(obj interface{}) {
@@ -93,7 +95,7 @@ func printYAML(obj interface{}) {
 }
 
 // Install installs the Argo controller and UI in the given Namespace
-func Install(cmd *cobra.Command, args InstallFlags) {
+func Install(args InstallFlags) {
 	clientset = initKubeClient()
 	if !args.DryRun {
 		fmt.Printf("Installing Argo %s into namespace '%s'\n", argo.GetVersion(), args.Namespace)
@@ -116,10 +118,6 @@ func Install(cmd *cobra.Command, args InstallFlags) {
 	installController(clientset, args)
 	installUI(clientset, args)
 	installUIService(clientset, args)
-}
-
-func install(cmd *cobra.Command, args []string) {
-	Install(cmd, installArgs)
 }
 
 func clusterAdminExists(clientset *kubernetes.Clientset) bool {

@@ -12,14 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func init() {
-	RootCmd.AddCommand(uninstallCmd)
-	uninstallCmd.Flags().StringVar(&uninstallArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
-	uninstallCmd.Flags().StringVar(&uninstallArgs.uiName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
-	uninstallCmd.Flags().StringVar(&uninstallArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "name of configmap to uninstall")
-	uninstallCmd.Flags().StringVar(&uninstallArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "uninstall from a specific namespace")
-}
-
 type uninstallFlags struct {
 	controllerName string // --controller-name
 	uiName         string // --ui-name
@@ -27,15 +19,25 @@ type uninstallFlags struct {
 	namespace      string // --install-namespace
 }
 
-var uninstallArgs uninstallFlags
-
-var uninstallCmd = &cobra.Command{
-	Use:   "uninstall",
-	Short: "uninstall Argo",
-	Run:   uninstall,
+func NewUninstallCommand() *cobra.Command {
+	var (
+		uninstallArgs uninstallFlags
+	)
+	var command = &cobra.Command{
+		Use:   "uninstall",
+		Short: "uninstall Argo",
+		Run: func(cmd *cobra.Command, args []string) {
+			uninstall(&uninstallArgs)
+		},
+	}
+	command.Flags().StringVar(&uninstallArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
+	command.Flags().StringVar(&uninstallArgs.uiName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
+	command.Flags().StringVar(&uninstallArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "name of configmap to uninstall")
+	command.Flags().StringVar(&uninstallArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "uninstall from a specific namespace")
+	return command
 }
 
-func uninstall(cmd *cobra.Command, args []string) {
+func uninstall(uninstallArgs *uninstallFlags) {
 	clientset = initKubeClient()
 	fmt.Printf("Uninstalling from namespace '%s'\n", uninstallArgs.namespace)
 	// Delete the UI service

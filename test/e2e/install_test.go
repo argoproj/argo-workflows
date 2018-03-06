@@ -62,7 +62,7 @@ func (suite *InstallSuite) TestInstall() {
 		// Verify --dry-run doesn't install
 		args := newInstallArgs(suite.testNamespace)
 		args.DryRun = true
-		commands.Install(nil, args)
+		commands.Install(args)
 		assert.Equal(t, false, checkIfInstalled(suite.testNamespace))
 
 		installArgoInNamespace(suite.testNamespace)

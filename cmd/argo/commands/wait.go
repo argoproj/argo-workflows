@@ -15,21 +15,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func init() {
-	RootCmd.AddCommand(waitCmd)
-	waitCmd.Flags().BoolVar(&waitArgs.ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
-}
+func NewWaitCommand() *cobra.Command {
+	var (
+		ignoreNotFound bool
+	)
+	var command = &cobra.Command{
+		Use:   "wait WORKFLOW1 WORKFLOW2..,",
+		Short: "waits for all workflows specified on command line to complete",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 
-type waitFlags struct {
-	ignoreNotFound bool
-}
-
-var waitArgs waitFlags
-
-var waitCmd = &cobra.Command{
-	Use:   "wait WORKFLOW1 WORKFLOW2..,",
-	Short: "waits for all workflows specified on command line to complete",
-	Run:   WaitWorkflowsRun,
+			wfc := InitWorkflowClient()
+			wsp := NewWorkflowStatusPoller(wfc, ignoreNotFound, false)
+			wsp.WaitWorkflows(args)
+		},
+	}
+	command.Flags().BoolVar(&ignoreNotFound, "ignore-not-found", false, "Ignore the wait if the workflow is not found")
+	return command
 }
 
 // VersionChecker checks the Kubernetes version and currently logs a message if wait should
@@ -120,18 +125,5 @@ func (wsp *WorkflowStatusPoller) WaitWorkflows(workflowNames []string) {
 		wg.Add(1)
 		go wsp.waitUpdateWaitGroup(workflowName, &wg)
 	}
-
 	wg.Wait()
-}
-
-// WaitWorkflowsRun is the handler for the wait command.
-func WaitWorkflowsRun(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-
-	wfc := InitWorkflowClient()
-	wsp := NewWorkflowStatusPoller(wfc, waitArgs.ignoreNotFound, false)
-	wsp.WaitWorkflows(args)
 }
