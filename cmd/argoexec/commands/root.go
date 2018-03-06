@@ -7,6 +7,7 @@ import (
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
+	"github.com/argoproj/argo/workflow/executor/docker"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -79,7 +80,7 @@ func initExecutor() *executor.WorkflowExecutor {
 		log.Fatalf("Unable to determine pod namespace from environment variable %s", common.EnvVarNamespace)
 	}
 
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath)
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, &docker.DockerExecutor{})
 	err = wfExecutor.LoadTemplate()
 	if err != nil {
 		panic(err.Error())
