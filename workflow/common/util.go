@@ -513,9 +513,13 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	for _, node := range wf.Status.Nodes {
 		switch node.Phase {
 		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
+			if strings.HasPrefix(node.Name, onExitNodeName) {
+				continue
+			}
 			originalID := node.ID
 			node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
 			node.ID = newWF.NodeID(node.Name)
@@ -554,4 +558,53 @@ func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string,
 	node := oldNodes[oldNodeID]
 	newNodeName := regex.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
 	return newWf.NodeID(newNodeName)
+}
+
+// RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
+func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
+	switch wf.Status.Phase {
+	case wfv1.NodeFailed, wfv1.NodeError:
+	default:
+		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
+	}
+	newWF := wf.DeepCopy()
+	podIf := kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace)
+
+	// Delete/reset fields which indicate workflow completed
+	delete(newWF.Labels, LabelKeyCompleted)
+	delete(newWF.Labels, LabelKeyPhase)
+	newWF.Status.Phase = wfv1.NodeRunning
+	newWF.Status.Message = ""
+	newWF.Status.FinishedAt = metav1.Time{}
+
+	// Iterate the previous nodes. If it was successful Pod carry it forward
+	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
+	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
+	for _, node := range wf.Status.Nodes {
+		switch node.Phase {
+		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
+			if !strings.HasPrefix(node.Name, onExitNodeName) {
+				newWF.Status.Nodes[node.ID] = node
+				continue
+			}
+		case wfv1.NodeError, wfv1.NodeFailed:
+			// do not add this status to the node. pretend as if this node never existed.
+			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
+			// mismanages state (e.g. panic when operating on a workflow)
+		default:
+			return nil, errors.InternalErrorf("Workflow cannot be retried with nodes in %s phase", node, node.Phase)
+		}
+		if node.Type == wfv1.NodeTypePod {
+			log.Infof("Deleting pod: %s", node.ID)
+			err := podIf.Delete(node.ID, &metav1.DeleteOptions{})
+			if err != nil && !apierr.IsNotFound(err) {
+				return nil, errors.InternalWrapError(err)
+			}
+		}
+	}
+	newWF, err := wfClient.Update(newWF)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return newWF, nil
 }
