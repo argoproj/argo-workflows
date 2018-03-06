@@ -71,5 +71,5 @@ func deleteTestNamespace(namespace string) error {
 
 func installArgoInNamespace(namespace string) {
 	args := newInstallArgs(namespace)
-	commands.Install(nil, args)
+	commands.Install(args)
 }

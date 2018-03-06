@@ -27,6 +27,7 @@ var (
 	clientset        *kubernetes.Clientset
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
+	noColor          bool
 )
 
 func init() {
@@ -107,7 +108,7 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 // color, it provides more consistent string lengths so that tabwriter can calculate
 // widths correctly.
 func ansiFormat(s string, codes ...int) string {
-	if globalArgs.noColor || os.Getenv("TERM") == "dumb" || len(codes) == 0 {
+	if noColor || os.Getenv("TERM") == "dumb" || len(codes) == 0 {
 		return s
 	}
 	codeStrs := make([]string, len(codes))

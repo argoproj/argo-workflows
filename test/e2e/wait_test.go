@@ -69,7 +69,7 @@ spec:
 		log.Fatal(err)
 	}
 
-	commands.SubmitWorkflows(nil, []string{tmpfile.Name()})
+	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil)
 
 	wfClient := commands.InitWorkflowClient()
 	wsp := commands.NewWorkflowStatusPoller(wfClient, false, false)

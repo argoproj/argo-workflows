@@ -9,41 +9,37 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func init() {
-	RootCmd.AddCommand(resubmitCmd)
-	resubmitCmd.Flags().BoolVar(&resubmitArgs.memoized, "memoized", false, "re-use successful steps & outputs from the previous run (experimental)")
-}
+func NewResubmitCommand() *cobra.Command {
+	var (
+		memoized   bool
+		submitArgs submitFlags
+	)
+	var command = &cobra.Command{
+		Use:   "resubmit WORKFLOW",
+		Short: "resubmit a workflow",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
 
-var resubmitCmd = &cobra.Command{
-	Use:   "resubmit WORKFLOW",
-	Short: "resubmit a workflow",
-	Run:   ResubmitWorkflow,
-}
-
-type resubmitFlags struct {
-	memoized bool // --memoized
-}
-
-var resubmitArgs resubmitFlags
-
-// ResubmitWorkflow resubmits a previous workflow
-func ResubmitWorkflow(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
+			wfClient := InitWorkflowClient()
+			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			newWF, err := common.FormulateResubmitWorkflow(wf, memoized)
+			if err != nil {
+				log.Fatal(err)
+			}
+			_, err = submitWorkflow(newWF, &submitArgs)
+			if err != nil {
+				log.Fatal(err)
+			}
+		},
 	}
-
-	wfClient := InitWorkflowClient()
-	wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	newWF, err := common.FormulateResubmitWorkflow(wf, resubmitArgs.memoized)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = submitWorkflow(newWF)
-	if err != nil {
-		log.Fatal(err)
-	}
+	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&memoized, "memoized", false, "re-use successful steps & outputs from the previous run (experimental)")
+	return command
 }

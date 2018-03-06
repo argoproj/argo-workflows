@@ -22,16 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 )
 
-func init() {
-	RootCmd.AddCommand(listCmd)
-	listCmd.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
-	listCmd.Flags().StringVar(&listArgs.status, "status", "", "Filter by status (comma separated)")
-	listCmd.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
-	listCmd.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
-	listCmd.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
-	listCmd.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
-}
-
 type listFlags struct {
 	allNamespaces bool   // --all-namespaces
 	status        string // --status
@@ -41,12 +31,72 @@ type listFlags struct {
 	since         string // --since
 }
 
-var listArgs listFlags
+func NewListCommand() *cobra.Command {
+	var (
+		listArgs listFlags
+	)
+	var command = &cobra.Command{
+		Use:   "list",
+		Short: "list workflows",
+		Run: func(cmd *cobra.Command, args []string) {
+			var wfClient v1alpha1.WorkflowInterface
+			if listArgs.allNamespaces {
+				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
+			} else {
+				wfClient = InitWorkflowClient()
+			}
+			listOpts := metav1.ListOptions{}
+			labelSelector := labels.NewSelector()
+			if listArgs.status != "" {
+				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, strings.Split(listArgs.status, ","))
+				labelSelector = labelSelector.Add(*req)
+			}
+			if listArgs.completed {
+				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
+				labelSelector = labelSelector.Add(*req)
+			}
+			if listArgs.running {
+				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
+				labelSelector = labelSelector.Add(*req)
+			}
+			listOpts.LabelSelector = labelSelector.String()
+			wfList, err := wfClient.List(listOpts)
+			if err != nil {
+				log.Fatal(err)
+			}
+			var workflows []wfv1.Workflow
+			if listArgs.since == "" {
+				workflows = wfList.Items
+			} else {
+				workflows = make([]wfv1.Workflow, 0)
+				minTime := parseSince(listArgs.since)
+				for _, wf := range wfList.Items {
+					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(minTime) {
+						workflows = append(workflows, wf)
+					}
+				}
+			}
+			sort.Sort(ByFinishedAt(workflows))
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list workflows",
-	Run:   listWorkflows,
+			switch listArgs.output {
+			case "", "wide":
+				printTable(workflows, &listArgs)
+			case "name":
+				for _, wf := range workflows {
+					fmt.Println(wf.ObjectMeta.Name)
+				}
+			default:
+				log.Fatalf("Unknown output mode: %s", listArgs.output)
+			}
+		},
+	}
+	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().StringVar(&listArgs.status, "status", "", "Filter by status (comma separated)")
+	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
+	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
+	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
+	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
+	return command
 }
 
 var sinceRegex = regexp.MustCompile("^(\\d+)([smhd])$")
@@ -62,59 +112,7 @@ var timeMagnitudes = []humanize.RelTimeMagnitude{
 	{D: 2 * humanize.Day, Format: "1d %s", DivBy: 1},
 }
 
-func listWorkflows(cmd *cobra.Command, args []string) {
-	var wfClient v1alpha1.WorkflowInterface
-	if listArgs.allNamespaces {
-		wfClient = InitWorkflowClient(apiv1.NamespaceAll)
-	} else {
-		wfClient = InitWorkflowClient()
-	}
-	listOpts := metav1.ListOptions{}
-	labelSelector := labels.NewSelector()
-	if listArgs.status != "" {
-		req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, strings.Split(listArgs.status, ","))
-		labelSelector = labelSelector.Add(*req)
-	}
-	if listArgs.completed {
-		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
-		labelSelector = labelSelector.Add(*req)
-	}
-	if listArgs.running {
-		req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.NotEquals, []string{"true"})
-		labelSelector = labelSelector.Add(*req)
-	}
-	listOpts.LabelSelector = labelSelector.String()
-	wfList, err := wfClient.List(listOpts)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var workflows []wfv1.Workflow
-	if listArgs.since == "" {
-		workflows = wfList.Items
-	} else {
-		workflows = make([]wfv1.Workflow, 0)
-		minTime := parseSince(listArgs.since)
-		for _, wf := range wfList.Items {
-			if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(minTime) {
-				workflows = append(workflows, wf)
-			}
-		}
-	}
-	sort.Sort(ByFinishedAt(workflows))
-
-	switch listArgs.output {
-	case "", "wide":
-		printTable(workflows)
-	case "name":
-		for _, wf := range workflows {
-			fmt.Println(wf.ObjectMeta.Name)
-		}
-	default:
-		log.Fatalf("Unknown output mode: %s", listArgs.output)
-	}
-}
-
-func printTable(wfList []wfv1.Workflow) {
+func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")

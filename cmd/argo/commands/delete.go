@@ -10,44 +10,41 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func init() {
-	RootCmd.AddCommand(deleteCmd)
-	deleteCmd.Flags().BoolVar(&deleteArgs.all, "all", false, "Delete all workflows")
-	deleteCmd.Flags().BoolVar(&deleteArgs.completed, "completed", false, "Delete completed workflows")
-}
+// NewDeleteCommand returns a new instance of an `argocd repo` command
+func NewDeleteCommand() *cobra.Command {
+	var (
+		all       bool
+		completed bool
+	)
 
-type deleteFlags struct {
-	all       bool // --all
-	completed bool // --completed
-}
-
-var deleteArgs deleteFlags
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete WORKFLOW",
-	Short: "delete a workflow and its associated pods",
-	Run:   deleteWorkflowCmd,
-}
-
-func deleteWorkflowCmd(cmd *cobra.Command, args []string) {
-	wfClient = InitWorkflowClient()
-	if deleteArgs.all {
-		deleteWorkflows(metav1.ListOptions{})
-		return
-	} else if deleteArgs.completed {
-		options := metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
-		}
-		deleteWorkflows(options)
-		return
+	var command = &cobra.Command{
+		Use:   "delete WORKFLOW",
+		Short: "delete a workflow and its associated pods",
+		Run: func(cmd *cobra.Command, args []string) {
+			wfClient = InitWorkflowClient()
+			if all {
+				deleteWorkflows(metav1.ListOptions{})
+				return
+			} else if completed {
+				options := metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
+				}
+				deleteWorkflows(options)
+				return
+			}
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
+			for _, wfName := range args {
+				deleteWorkflow(wfName)
+			}
+		},
 	}
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
-	for _, wfName := range args {
-		deleteWorkflow(wfName)
-	}
+
+	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
+	command.Flags().BoolVar(&completed, "completed", false, "Delete completed workflows")
+	return command
 }
 
 func deleteWorkflow(wfName string) {

@@ -19,40 +19,34 @@ import (
 
 const onExitSuffix = "onExit"
 
-func init() {
-	RootCmd.AddCommand(getCmd)
-	getCmd.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
-	getCmd.Flags().BoolVar(&globalArgs.noColor, "no-color", false, "Disable colorized output")
-}
+func NewGetCommand() *cobra.Command {
+	var (
+		output string
+	)
 
-type getFlags struct {
-	output string // --output
-}
-
-var getArgs getFlags
-
-var getCmd = &cobra.Command{
-	Use:   "get WORKFLOW",
-	Short: "display details about a workflow",
-	Run:   GetWorkflow,
-}
-
-// GetWorkflow gets the workflow passed in as args
-func GetWorkflow(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
+	var command = &cobra.Command{
+		Use:   "get WORKFLOW",
+		Short: "display details about a workflow",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
+			wfClient := InitWorkflowClient()
+			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			printWorkflow(wf, output)
+		},
 	}
 
-	wfClient := InitWorkflowClient()
-	wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	printWorkflow(getArgs.output, wf)
+	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	return command
 }
 
-func printWorkflow(outFmt string, wf *wfv1.Workflow) {
+func printWorkflow(wf *wfv1.Workflow, outFmt string) {
 	switch outFmt {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
@@ -63,13 +57,13 @@ func printWorkflow(outFmt string, wf *wfv1.Workflow) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflowHelper(wf)
+		printWorkflowHelper(wf, outFmt)
 	default:
 		log.Fatalf("Unknown output format: %s", outFmt)
 	}
 }
 
-func printWorkflowHelper(wf *wfv1.Workflow) {
+func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 	const fmtStr = "%-17s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
@@ -118,7 +112,7 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Println()
 		// apply a dummy FgDefault format to align tabwriter with the rest of the columns
-		if getArgs.output == "wide" {
+		if outFmt == "wide" {
 			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		} else {
 			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
@@ -132,7 +126,7 @@ func printWorkflowHelper(wf *wfv1.Workflow) {
 		for _, id := range rootNodeIDs {
 			if node, ok := wf.Status.Nodes[id]; ok {
 				if root, ok := roots[node.ID]; ok {
-					root.renderNodes(w, wf, 0, " ", " ")
+					root.renderNodes(w, wf, 0, " ", " ", outFmt)
 				}
 			}
 		}
@@ -166,8 +160,7 @@ func (n *nodeInfo) getStartTime(wf *wfv1.Workflow) metav1.Time {
 // Interface to represent Nodes in render form types
 type renderNode interface {
 	// Render this renderNode and its children
-	renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
-		nodePrefix string, childPrefix string)
+	renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string)
 	nodeInfoInterface
 }
 
@@ -352,7 +345,7 @@ func filterNode(node wfv1.NodeStatus) (bool, bool) {
 // whether it was filtered and does this child need special indent
 func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth int,
 	nodePrefix string, childPrefix string, parentFiltered bool,
-	childIndex int, maxIndex int, childIndent bool) {
+	childIndex int, maxIndex int, childIndent bool, outFmt string) {
 	var part, subp string
 	if parentFiltered && childIndent {
 		if maxIndex == 0 {
@@ -390,12 +383,11 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 		}
 		childChldPrefix = childPrefix + subp
 	}
-	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix)
+	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix, outFmt)
 }
 
 // Main method to print information of node in get
-func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int,
-	nodePrefix string, childPrefix string) {
+func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string, outFmt string) {
 
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	var args []interface{}
@@ -405,7 +397,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	} else {
 		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
 	}
-	if getArgs.output == "wide" {
+	if outFmt == "wide" {
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
 		args = append(args, msg)
@@ -417,40 +409,36 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 
 // renderNodes for each renderNode Type
 // boundaryNode
-func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
-	nodePrefix string, childPrefix string) {
-
+func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
 	}
 
 	for i, nInfo := range nodeInfo.boundaryContained {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.boundaryContained)-1, childIndent)
+			len(nodeInfo.boundaryContained)-1, childIndent, outFmt)
 	}
 }
 
 // nonBoundaryParentNode
-func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
-	nodePrefix string, childPrefix string) {
+func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
 	}
 
 	for i, nInfo := range nodeInfo.children {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.children)-1, childIndent)
+			len(nodeInfo.children)-1, childIndent, outFmt)
 	}
 }
 
 // executionNode
-func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int,
-	nodePrefix string, childPrefix string) {
+func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
 	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
 	}
 }
 

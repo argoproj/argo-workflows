@@ -13,16 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	RootCmd.AddCommand(submitCmd)
-	submitCmd.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
-	submitCmd.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
-	submitCmd.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	submitCmd.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
-	submitCmd.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	submitCmd.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
-}
-
 type submitFlags struct {
 	instanceID     string   // --instanceid
 	entrypoint     string   // --entrypoint
@@ -32,24 +22,34 @@ type submitFlags struct {
 	serviceAccount string   // --serviceaccount
 }
 
-var submitArgs submitFlags
-
-var submitCmd = &cobra.Command{
-	Use:   "submit FILE1 FILE2...",
-	Short: "submit a workflow",
-	Run:   SubmitWorkflows,
+func NewSubmitCommand() *cobra.Command {
+	var (
+		submitArgs submitFlags
+	)
+	var command = &cobra.Command{
+		Use:   "submit FILE1 FILE2...",
+		Short: "submit a workflow",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				cmd.HelpFunc()(cmd, args)
+				os.Exit(1)
+			}
+			SubmitWorkflows(args, &submitArgs)
+		},
+	}
+	command.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
+	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
+	command.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	return command
 }
 
-// SubmitWorkflows submits the the specified workflow manifest files
-func SubmitWorkflows(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		cmd.HelpFunc()(cmd, args)
-		os.Exit(1)
-	}
+func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 	InitWorkflowClient()
-
 	var workflowNames []string
-	for _, filePath := range args {
+	for _, filePath := range filePaths {
 		var body []byte
 		var err error
 		if cmdutil.IsURL(filePath) {
@@ -73,7 +73,7 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 			log.Fatalf("%s failed to parse: %v", filePath, err)
 		}
 		for _, wf := range workflows {
-			wfName, err := submitWorkflow(&wf)
+			wfName, err := submitWorkflow(&wf, submitArgs)
 			if err != nil {
 				log.Fatalf("Workflow manifest %s failed submission: %v", filePath, err)
 			}
@@ -89,7 +89,7 @@ func SubmitWorkflows(cmd *cobra.Command, args []string) {
 }
 
 // submitWorkflow is a helper to validate and submit a single workflow and override the entrypoint/params supplied from command line
-func submitWorkflow(wf *wfv1.Workflow) (string, error) {
+func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) {
 	if submitArgs.entrypoint != "" {
 		wf.Spec.Entrypoint = submitArgs.entrypoint
 	}
@@ -136,7 +136,6 @@ func submitWorkflow(wf *wfv1.Workflow) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	printWorkflow(submitArgs.output, created)
-
+	printWorkflow(created, submitArgs.output)
 	return created.Name, nil
 }
