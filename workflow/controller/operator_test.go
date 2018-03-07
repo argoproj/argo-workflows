@@ -710,3 +710,82 @@ func TestWorkflowSpecParam(t *testing.T) {
 
 	assert.Equal(t, "my-host", pod.Spec.NodeSelector["kubernetes.io/hostname"])
 }
+
+func TestAddGlobalParamToScope(t *testing.T) {
+	woc := newWoc()
+	woc.globalParams = make(map[string]string)
+	testVal := "test-value"
+	param := wfv1.Parameter{
+		Name:  "test-param",
+		Value: &testVal,
+	}
+	// Make sure if the param is not global, don't add to scope
+	woc.addParamToGlobalScope(param)
+	assert.Nil(t, woc.wf.Status.Outputs)
+
+	// Now set it as global. Verify it is added to workflow outputs
+	param.GlobalName = "global-param"
+	woc.addParamToGlobalScope(param)
+	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
+	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
+	assert.Equal(t, testVal, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, testVal, woc.globalParams["workflow.outputs.parameters.global-param"])
+
+	// Change the value and verify it is reflected in workflow outputs
+	newValue := "new-value"
+	param.Value = &newValue
+	woc.addParamToGlobalScope(param)
+	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Parameters))
+	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[0].Name)
+	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[0].Value)
+	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param"])
+
+	// Add a new global parameter
+	param.GlobalName = "global-param2"
+	woc.addParamToGlobalScope(param)
+	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Parameters))
+	assert.Equal(t, param.GlobalName, woc.wf.Status.Outputs.Parameters[1].Name)
+	assert.Equal(t, newValue, *woc.wf.Status.Outputs.Parameters[1].Value)
+	assert.Equal(t, newValue, woc.globalParams["workflow.outputs.parameters.global-param2"])
+
+}
+
+func TestAddGlobalArtifactToScope(t *testing.T) {
+	woc := newWoc()
+	art := wfv1.Artifact{
+		Name: "test-art",
+		ArtifactLocation: wfv1.ArtifactLocation{
+			S3: &wfv1.S3Artifact{
+				S3Bucket: wfv1.S3Bucket{
+					Bucket: "my-bucket",
+				},
+				Key: "some/key",
+			},
+		},
+	}
+	// Make sure if the artifact is not global, don't add to scope
+	woc.addArtifactToGlobalScope(art)
+	assert.Nil(t, woc.wf.Status.Outputs)
+
+	// Now mark it as global. Verify it is added to workflow outputs
+	art.GlobalName = "global-art"
+	woc.addArtifactToGlobalScope(art)
+	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
+	assert.Equal(t, "some/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
+
+	// Change the value and verify update is reflected
+	art.S3.Key = "new/key"
+	woc.addArtifactToGlobalScope(art)
+	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
+	assert.Equal(t, "new/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
+
+	// Add a new global artifact
+	art.GlobalName = "global-art2"
+	art.S3.Key = "new/new/key"
+	woc.addArtifactToGlobalScope(art)
+	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Artifacts))
+	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[1].Name)
+	assert.Equal(t, "new/new/key", woc.wf.Status.Outputs.Artifacts[1].S3.Key)
+}

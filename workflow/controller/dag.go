@@ -143,7 +143,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		scope: make(map[string]interface{}),
 	}
 	for _, task := range tmpl.DAG.Tasks {
-		scope.addNodeOutputsToScope(fmt.Sprintf("tasks.%s", task.Name), dagCtx.getTaskNode(task.Name))
+		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), dagCtx.getTaskNode(task.Name))
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -285,7 +285,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ancestor)
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
-		scope.addNodeOutputsToScope(prefix, ancestorNode)
+		woc.processNodeOutputs(&scope, prefix, ancestorNode)
 	}
 
 	// Perform replacement

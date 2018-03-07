@@ -133,12 +133,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.activePods = woc.countActivePods()
 	}
 
-	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
-	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
-	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
-	for _, param := range woc.wf.Spec.Arguments.Parameters {
-		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
-	}
+	woc.setGlobalParameters()
 
 	err := woc.createPVCs()
 	if err != nil {
@@ -203,6 +198,21 @@ func (woc *wfOperationCtx) operate() {
 		// we should have returned earlier.
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
+	}
+}
+
+// setGlobalParameters sets the globalParam map with global parameters
+func (woc *wfOperationCtx) setGlobalParameters() {
+	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
+	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
+	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
+	for _, param := range woc.wf.Spec.Arguments.Parameters {
+		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
+	}
+	if woc.wf.Status.Outputs != nil {
+		for _, param := range woc.wf.Status.Outputs.Parameters {
+			woc.globalParams["workflow.outputs.parameters."+param.Name] = *param.Value
+		}
 	}
 }
 
@@ -365,19 +375,32 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		return err
 	}
 	seenPods := make(map[string]bool)
-	for _, pod := range podList.Items {
+
+	performAssessment := func(pod *apiv1.Pod) {
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
 		seenPods[nodeID] = true
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := assessNodeStatus(&pod, &node); newState != nil {
+			if newState := assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
+				if node.Outputs != nil {
+					for _, param := range node.Outputs.Parameters {
+						woc.addParamToGlobalScope(param)
+					}
+					for _, art := range node.Outputs.Artifacts {
+						woc.addArtifactToGlobalScope(art)
+					}
+				}
 				woc.updated = true
 			}
 			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
+	}
+
+	for _, pod := range podList.Items {
+		performAssessment(&pod)
 	}
 
 	if len(podList.Items) > 0 {
@@ -404,18 +427,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 	// Repeat the node assessment
 	for _, pod := range podList.Items {
-		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
-		nodeID := woc.wf.NodeID(nodeNameForPod)
-		seenPods[nodeID] = true
-		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			if newState := assessNodeStatus(&pod, &node); newState != nil {
-				woc.wf.Status.Nodes[nodeID] = *newState
-				woc.updated = true
-			}
-			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
-				woc.completedPods[pod.ObjectMeta.Name] = true
-			}
-		}
+		performAssessment(&pod)
 	}
 
 	// Now iterate the workflow pod nodes which we still believe to be incomplete.
@@ -427,7 +439,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// node is not a pod, or it is already complete
 			continue
 		}
-
 		if _, ok := seenPods[nodeID]; !ok {
 			node.Message = "pod deleted"
 			node.Phase = wfv1.NodeError
@@ -1147,26 +1158,90 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
 }
 
-// addNodeOutputsToScope adds all of a nodes outputs to the scope with the given prefix
-func (wfs *wfScope) addNodeOutputsToScope(prefix string, node *wfv1.NodeStatus) {
+// processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
+// as the global scope, if specified with a globalName
+func (woc *wfOperationCtx) processNodeOutputs(wfs *wfScope, prefix string, node *wfv1.NodeStatus) {
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		wfs.addParamToScope(key, node.PodIP)
 	}
-	if node.Outputs != nil {
-		if node.Outputs.Result != nil {
-			key := fmt.Sprintf("%s.outputs.result", prefix)
-			wfs.addParamToScope(key, *node.Outputs.Result)
-		}
-		for _, outParam := range node.Outputs.Parameters {
-			key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, outParam.Name)
-			wfs.addParamToScope(key, *outParam.Value)
-		}
-		for _, outArt := range node.Outputs.Artifacts {
-			key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, outArt.Name)
-			wfs.addArtifactToScope(key, outArt)
-		}
+	if node.Outputs == nil {
+		return
 	}
+	if node.Outputs.Result != nil {
+		key := fmt.Sprintf("%s.outputs.result", prefix)
+		wfs.addParamToScope(key, *node.Outputs.Result)
+	}
+	for _, outParam := range node.Outputs.Parameters {
+		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, outParam.Name)
+		wfs.addParamToScope(key, *outParam.Value)
+		woc.addParamToGlobalScope(outParam)
+	}
+	for _, outArt := range node.Outputs.Artifacts {
+		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, outArt.Name)
+		wfs.addArtifactToScope(key, outArt)
+		woc.addArtifactToGlobalScope(outArt)
+	}
+}
+
+// addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
+func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
+	if param.GlobalName == "" {
+		return
+	}
+	index := -1
+	if woc.wf.Status.Outputs != nil {
+		for i, gParam := range woc.wf.Status.Outputs.Parameters {
+			if gParam.Name == param.GlobalName {
+				index = i
+				break
+			}
+		}
+	} else {
+		woc.wf.Status.Outputs = &wfv1.Outputs{}
+	}
+	woc.updated = true
+	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+	woc.globalParams[paramName] = *param.Value
+	if index == -1 {
+		woc.log.Infof("setting %s: '%s'", paramName, *param.Value)
+		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
+		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
+	} else {
+		woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, *woc.wf.Status.Outputs.Parameters[index].Value, *param.Value)
+		woc.wf.Status.Outputs.Parameters[index].Value = param.Value
+	}
+}
+
+// addArtifactToGlobalScope exports any desired node outputs to the global scope
+// Optionally adds to a local scope if supplied
+func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
+	if art.GlobalName == "" {
+		return
+	}
+	woc.updated = true
+	globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
+	if woc.wf.Status.Outputs != nil {
+		for i, gArt := range woc.wf.Status.Outputs.Artifacts {
+			if gArt.Name == art.GlobalName {
+				// global output already exists. overwrite the value
+				art.Name = art.GlobalName
+				art.GlobalName = ""
+				art.Path = ""
+				woc.wf.Status.Outputs.Artifacts[i] = art
+				woc.log.Infof("overwriting %s: %s", globalArtName, art)
+				return
+			}
+		}
+	} else {
+		woc.wf.Status.Outputs = &wfv1.Outputs{}
+	}
+	// global output does not yet exist
+	art.Name = art.GlobalName
+	art.GlobalName = ""
+	art.Path = ""
+	woc.log.Infof("setting %s: %s", globalArtName, art)
+	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
 }
 
 // replaceMap returns a replacement map of strings intended to be used simple string substitution

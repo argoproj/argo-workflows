@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
@@ -1038,6 +1039,10 @@ spec:
 
 func TestPodNameVariable(t *testing.T) {
 	err := validate(podNameVariable)
+	assert.Nil(t, err)
+}
 
+func TestGlobalParamWithVariable(t *testing.T) {
+	err := ValidateWorkflow(test.GetWorkflow("functional/global-outputs-variable.yaml"))
 	assert.Nil(t, err)
 }

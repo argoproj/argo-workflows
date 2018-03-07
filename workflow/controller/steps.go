@@ -73,7 +73,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		if !sgNode.Successful() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode, sgNode.Message)
 			woc.log.Info(failMessage)
-			return woc.markNodePhase(nodeName, wfv1.NodeFailed, failMessage)
+			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 		}
 
 		for _, step := range stepGroup {
@@ -87,7 +87,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 				continue
 			}
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			stepsCtx.scope.addNodeOutputsToScope(prefix, &childNode)
+			woc.processNodeOutputs(stepsCtx.scope, prefix, &childNode)
 		}
 	}
 	// If this template has outputs from any of its steps, copy them to this node here
