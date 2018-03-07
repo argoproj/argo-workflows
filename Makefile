@@ -8,7 +8,7 @@ BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-PACKR_CMD=$(shell if [ -f "vendor/github.com/gobuffalo/packr/packr/main.go" ]; then echo "go run vendor/github.com/gobuffalo/packr/packr/main.go"; else echo "go run /root/go/src/github.com/gobuffalo/packr/packr/main.go"; fi)
+PACKR_CMD=$(shell if [ "`which packr`" ]; then echo "packr"; else echo "go run vendor/github.com/gobuffalo/packr/packr/main.go"; fi)
 
 BUILDER_IMAGE=argo-builder
 # NOTE: the volume mount of ${DIST_DIR}/pkg below is optional and serves only
