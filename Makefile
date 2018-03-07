@@ -58,7 +58,7 @@ builder:
 
 .PHONY: cli
 cli:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
+	CGO_ENABLED=0 go run vendor/github.com/gobuffalo/packr/packr/main.go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
 
 .PHONY: cli-linux
 cli-linux: builder

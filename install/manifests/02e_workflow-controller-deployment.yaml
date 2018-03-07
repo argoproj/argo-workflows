@@ -1,0 +1,29 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: workflow-controller
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      serviceAccountName: argo
+      containers:
+      - name: workflow-controller
+        image: argoproj/workflow-controller:latest
+        command:
+        - workflow-controller
+        args:
+        - --configmap
+        - workflow-controller-configmap
+        env:
+        - name: ARGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
