@@ -944,6 +944,15 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Outputs != nil {
+		in, out := &in.Outputs, &out.Outputs
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(Outputs)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 

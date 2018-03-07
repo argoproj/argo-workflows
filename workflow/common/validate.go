@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/argoproj/argo/errors"
@@ -369,9 +370,17 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		scope[fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)] = true
+		if param.GlobalName != "" && !isParameter(param.GlobalName) {
+			globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
+			scope[globalParamName] = true
+			ctx.globalParams[globalParamName] = placeholderValue
+		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
 		scope[fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)] = true
+		if art.GlobalName != "" && !isParameter(art.GlobalName) {
+			scope[fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)] = true
+		}
 	}
 }
 
@@ -405,6 +414,12 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
 			}
 		}
+		if art.GlobalName != "" && !isParameter(art.GlobalName) {
+			errs := IsValidWorkflowFieldName(art.GlobalName)
+			if len(errs) > 0 {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.globalName: %s", tmpl.Name, artRef, errs[0])
+			}
+		}
 	}
 	for _, param := range tmpl.Outputs.Parameters {
 		paramRef := fmt.Sprintf("templates.%s.outputs.parameters.%s", tmpl.Name, param.Name)
@@ -425,6 +440,12 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
 			if param.ValueFrom.Parameter == "" {
 				return errors.Errorf(errors.CodeBadRequest, "%s.parameter must be specified for %s templates", paramRef, tmplType)
+			}
+		}
+		if param.GlobalName != "" && !isParameter(param.GlobalName) {
+			errs := IsValidWorkflowFieldName(param.GlobalName)
+			if len(errs) > 0 {
+				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
 			}
 		}
 	}
@@ -611,4 +632,13 @@ func verifyNoCycles(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) err
 		}
 	}
 	return nil
+}
+
+var (
+	// paramRegex matches a parameter. e.g. {{inputs.parameters.blah}}
+	paramRegex = regexp.MustCompile(`{{[-a-zA-Z0-9]+(\.[-a-zA-Z0-9]+)*}}`)
+)
+
+func isParameter(p string) bool {
+	return paramRegex.MatchString(p)
 }

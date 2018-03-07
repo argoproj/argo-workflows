@@ -211,6 +211,10 @@ type Parameter struct {
 
 	// ValueFrom is the source for the output parameter's value
 	ValueFrom *ValueFrom `json:"valueFrom,omitempty"`
+
+	// GlobalName exports an output parameter to the global scope, making it available as
+	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
+	GlobalName string `json:"globalName,omitempty"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -246,6 +250,10 @@ type Artifact struct {
 
 	// ArtifactLocation contains the location of the artifact
 	ArtifactLocation `json:",inline"`
+
+	// GlobalName exports an output artifact to the global scope, making it available as
+	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
+	GlobalName string `json:"globalName,omitempty"`
 }
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
@@ -380,6 +388,9 @@ type WorkflowStatus struct {
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
+
+	// Outputs captures output values and artifact locations produced by the workflow via global outputs
+	Outputs *Outputs `json:"outputs,omitempty"`
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -513,6 +524,14 @@ type S3Artifact struct {
 	Key string `json:"key"`
 }
 
+func (s *S3Artifact) String() string {
+	protocol := "https"
+	if s.Insecure != nil && *s.Insecure {
+		protocol = "http"
+	}
+	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -542,6 +561,10 @@ type ArtifactoryArtifact struct {
 	// URL of the artifact
 	URL             string `json:"url"`
 	ArtifactoryAuth `json:",inline"`
+}
+
+func (a *ArtifactoryArtifact) String() string {
+	return a.URL
 }
 
 // RawArtifact allows raw string content to be placed as an artifact in a container

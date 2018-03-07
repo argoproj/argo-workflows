@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-outputs-
+spec:
+  entrypoint: generate-globals
+  onExit: consume-globals
+
+  templates:
+  - name: generate-globals
+    steps:
+    - - name: generate
+        template: global-output
+
+  - name: global-output
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["echo -n hello world > /tmp/hello_world.txt"]
+    outputs:
+      parameters:
+      # export a global parameter. The parameter will be programaticallyavailable in the completed
+      # workflow object under: workflow.status.outputs.parameters
+      - name: hello-param
+        valueFrom:
+          path: /tmp/hello_world.txt
+        globalName: my-global-param
+      # export a global artifact. The artifact will be programatically available in the completed
+      # workflow object under: workflow.status.outputs.artifacts
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+        globalName: my-global-art
+
+  # Once exported, global output parameters are also referenceable in later parts of the workflow.
+  # In this example, the consume-globals is invoked from the onExit handler, and can reference the
+  # global variable, my-global-param
+  - name: consume-globals
+    container:
+      image: alpine:3.7
+      command: [sh, -c]
+      args: ["echo {{workflow.outputs.parameters.my-global-param}}"]

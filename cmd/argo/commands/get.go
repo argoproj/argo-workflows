@@ -64,7 +64,7 @@ func printWorkflow(wf *wfv1.Workflow, outFmt string) {
 }
 
 func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
-	const fmtStr = "%-17s %v\n"
+	const fmtStr = "%-20s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	serviceAccount := wf.Spec.ServiceAccountName
@@ -102,6 +102,25 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 			fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
 		}
 	}
+	if wf.Status.Outputs != nil {
+		//fmt.Printf(fmtStr, "Outputs:", "")
+		if len(wf.Status.Outputs.Parameters) > 0 {
+			fmt.Printf(fmtStr, "Output Parameters:", "")
+			for _, param := range wf.Status.Outputs.Parameters {
+				fmt.Printf(fmtStr, "  "+param.Name+":", *param.Value)
+			}
+		}
+		if len(wf.Status.Outputs.Artifacts) > 0 {
+			fmt.Printf(fmtStr, "Output Artifacts:", "")
+			for _, art := range wf.Status.Outputs.Artifacts {
+				if art.S3 != nil {
+					fmt.Printf(fmtStr, "  "+art.Name+":", art.S3.String())
+				} else if art.Artifactory != nil {
+					fmt.Printf(fmtStr, "  "+art.Name+":", art.Artifactory.String())
+				}
+			}
+		}
+	}
 	printTree := true
 	if wf.Status.Nodes == nil {
 		printTree = false
@@ -122,15 +141,14 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 		roots := convertToRenderTrees(wf)
 
 		// Print main and onExit Trees
-		rootNodeIDs := [2]string{wf.NodeID(wf.ObjectMeta.Name), wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)}
-		for _, id := range rootNodeIDs {
-			if node, ok := wf.Status.Nodes[id]; ok {
-				if root, ok := roots[node.ID]; ok {
-					root.renderNodes(w, wf, 0, " ", " ", outFmt)
-				}
-			}
-		}
+		mainRoot := roots[wf.ObjectMeta.Name]
+		mainRoot.renderNodes(w, wf, 0, " ", " ", outFmt)
 
+		onExitID := wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)
+		if onExitRoot, ok := roots[onExitID]; ok {
+			fmt.Fprintf(w, "\t\t\t\t\t\n")
+			onExitRoot.renderNodes(w, wf, 0, " ", " ", outFmt)
+		}
 		_ = w.Flush()
 	}
 }

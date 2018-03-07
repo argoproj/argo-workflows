@@ -43,6 +43,10 @@
           "description": "Git contains git artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
         },
+        "globalName": {
+          "description": "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
+          "type": "string"
+        },
         "http": {
           "description": "HTTP contains HTTP artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
@@ -265,6 +269,10 @@
       "properties": {
         "default": {
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
+          "type": "string"
+        },
+        "globalName": {
+          "description": "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
           "type": "string"
         },
         "name": {
