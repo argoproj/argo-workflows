@@ -3,6 +3,8 @@ required = [
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/code-generator/cmd/lister-gen",
+  # required by packr build (which we don't import as a package)
+  "golang.org/x/sync/errgroup",
 ]
 
 [[constraint]]
