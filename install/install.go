@@ -151,10 +151,12 @@ func (i *Installer) InstallWorkflowController() {
 	i.unmarshalManifest("02e_workflow-controller-deployment.yaml", &workflowControllerDeployment)
 	workflowControllerDeployment.Spec.Template.Spec.Containers[0].Image = i.ControllerImage
 	workflowControllerDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = apiv1.PullPolicy(i.ImagePullPolicy)
-	if i.ServiceAccount == "" && i.IsRBACSupported() {
+	if i.ServiceAccount == "" {
 		i.MustInstallResource(kube.MustToUnstructured(&workflowControllerServiceAccount))
-		i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRole))
-		i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRoleBinding))
+		if i.IsRBACSupported() {
+			i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRole))
+			i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRoleBinding))
+		}
 	}
 	if i.ServiceAccount != "" {
 		workflowControllerDeployment.Spec.Template.Spec.ServiceAccountName = i.ServiceAccount
@@ -179,10 +181,12 @@ func (i *Installer) InstallArgoUI() {
 	argoUIDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = apiv1.PullPolicy(i.ImagePullPolicy)
 	setEnv(&argoUIDeployment, "ENABLE_WEB_CONSOLE", strconv.FormatBool(i.EnableWebConsole))
 	setEnv(&argoUIDeployment, "BASE_HREF", i.UIBaseHref)
-	if i.UIServiceAccount == "" && i.IsRBACSupported() {
+	if i.UIServiceAccount == "" {
 		i.MustInstallResource(kube.MustToUnstructured(&argoUIServiceAccount))
-		i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRole))
-		i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRoleBinding))
+		if i.IsRBACSupported() {
+			i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRole))
+			i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRoleBinding))
+		}
 	}
 	if i.UIServiceAccount != "" {
 		argoUIDeployment.Spec.Template.Spec.ServiceAccountName = i.UIServiceAccount
