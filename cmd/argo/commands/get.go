@@ -371,13 +371,13 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 			subp = "  "
 		} else if childIndex == 0 {
 			part = "·-"
-			subp = "  "
+			subp = "| "
 		} else if childIndex == maxIndex {
 			part = "└-"
 			subp = "  "
 		} else {
 			part = "├-"
-			subp = "  "
+			subp = "| "
 		}
 	} else if !parentFiltered {
 		if childIndex == maxIndex {
