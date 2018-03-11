@@ -215,8 +215,8 @@ func (p *logPrinter) getPodLogs(
 					}
 				}
 			}
-			close(logs)
 		}
+		close(logs)
 	}()
 	return logs
 }
