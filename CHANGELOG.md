@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.1.0-beta1 (Unreleased)
++ Support for exported global output parameters and artifacts
++ Introduce `argo retry` to retry a failed workflow with the same name
++ Trim a trailing newline from path-based output parameters
++ Add ability to reference global parameters in spec level fields
++ Make {{pod.name}} available as a parameter in pod templates
+* Rewrite the installer
+* Abstract the container runtime as an interface to support mocking and future runtimes
+* Documentation and examples fixes (@IronPan, @dmonakhov)
+- Global parameters were not referenceable from artifact arguments
+- spec.arguments are optionally supplied during linting
+- Fix for CLI not rendering edges correctly for nested workflows
+- Fix template.parallelism limiting parallelism of entire workflow
+- Fix artifact saving to artifactory (@dougsc)
+
 ## 2.1.0-alpha1 (2018-02-21)
 + Support for DAG based definition of workflows
 + Add `spec.parallelism` field to limit concurrent pod execution at a workflow level
