@@ -5,7 +5,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,21 +27,13 @@ func newWoc(wfs ...wfv1.Workflow) *wfOperationCtx {
 	} else {
 		wf = &wfs[0]
 	}
-	woc := wfOperationCtx{
-		wf:      wf,
-		orig:    wf.DeepCopyObject().(*wfv1.Workflow),
-		updated: false,
-		log: log.WithFields(log.Fields{
-			"workflow":  wf.ObjectMeta.Name,
-			"namespace": wf.ObjectMeta.Namespace,
-		}),
-		controller:    newController(),
-		completedPods: make(map[string]bool),
+	fakeController := newController()
+	_, err := fakeController.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace).Create(wf)
+	if err != nil {
+		panic(err)
 	}
-	if woc.wf.Status.Nodes == nil {
-		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	}
-	return &woc
+	woc := newWorkflowOperationCtx(wf, fakeController)
+	return woc
 }
 
 // getPodName returns the podname of the created pod of a workflow

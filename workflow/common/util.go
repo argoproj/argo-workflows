@@ -121,9 +121,10 @@ func DefaultConfigMapName(controllerName string) string {
 }
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
-// It also substitutes parameters in the template from the arguments
-// It will also substitute any global variables referenced in template
-// (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+// It substitutes:
+// * parameters in the template from the arguments
+// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+// * local parameters (e.g. {{pod.name}})
 func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
@@ -146,12 +147,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		}
 		tmpl.Inputs.Parameters[i] = inParam
 	}
-	tmpl, err := substituteParams(tmpl, globalParams, localParams)
-	if err != nil {
-		return nil, err
-	}
 
-	// Performs susbstitution of input artifacts
+	// Performs substitutions of input artifacts
 	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
 	for i, inArt := range tmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
@@ -172,7 +169,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
-	return tmpl, nil
+
+	return substituteParams(tmpl, globalParams, localParams)
 }
 
 // substituteParams returns a new copy of the template with global, pod, and input parameters substituted

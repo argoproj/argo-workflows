@@ -1046,3 +1046,30 @@ func TestGlobalParamWithVariable(t *testing.T) {
 	err := ValidateWorkflow(test.GetWorkflow("functional/global-outputs-variable.yaml"))
 	assert.Nil(t, err)
 }
+
+var specArgumentNoValue = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: spec-arg-no-value-
+spec:
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: required-param
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+`
+
+// TestSpecArgumentNoValue we allow parameters to have no value at the spec level during linting
+func TestSpecArgumentNoValue(t *testing.T) {
+	wf := unmarshalWf(specArgumentNoValue)
+	err := ValidateWorkflow(wf, true)
+	assert.Nil(t, err)
+	err = ValidateWorkflow(wf)
+	assert.NotNil(t, err)
+}

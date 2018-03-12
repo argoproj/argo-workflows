@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -788,4 +789,28 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[1].Name)
 	assert.Equal(t, "new/new/key", woc.wf.Status.Outputs.Artifacts[1].S3.Key)
+}
+
+func TestParamSubstitutionWithArtifact(t *testing.T) {
+	wf := test.GetWorkflow("functional/param-sub-with-artifacts.yaml")
+	woc := newWoc(*wf)
+	woc.operate()
+	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, wf.Status.Phase, wfv1.NodeRunning)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, len(pods.Items), 1)
+}
+
+func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
+	wf := test.GetWorkflow("functional/global-param-sub-with-artifacts.yaml")
+	woc := newWoc(*wf)
+	woc.operate()
+	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, wf.Status.Phase, wfv1.NodeRunning)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, len(pods.Items), 1)
 }
