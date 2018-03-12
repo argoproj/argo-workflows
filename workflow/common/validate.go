@@ -33,19 +33,27 @@ const (
 	anyItemMagicValue = "item.*"
 )
 
-// ValidateWorkflow accepts a workflow and performs validation against it
-func ValidateWorkflow(wf *wfv1.Workflow) error {
+// ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
+// true, will skip some validations which is permissible during linting but not submission
+func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	ctx := wfValidationCtx{
 		wf:           wf,
 		globalParams: make(map[string]string),
 		results:      make(map[string]bool),
 	}
+	linting := len(lint) > 0 && lint[0]
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
-	err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+	if linting {
+		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
+		// explicit value. workflows without a default value is a desired use case
+		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
+	} else {
+		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+	}
 	if err != nil {
 		return err
 	}
@@ -259,6 +267,14 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 }
 
 func validateArguments(prefix string, arguments wfv1.Arguments) error {
+	err := validateArgumentsFieldNames(prefix, arguments)
+	if err != nil {
+		return err
+	}
+	return validateArgumentsValues(prefix, arguments)
+}
+
+func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error {
 	fieldToSlices := map[string]interface{}{
 		"parameters": arguments.Parameters,
 		"artifacts":  arguments.Artifacts,
@@ -269,12 +285,16 @@ func validateArguments(prefix string, arguments wfv1.Arguments) error {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s%s", prefix, fieldName, err.Error())
 		}
 	}
+	return nil
+}
+
+// validateArgumentsValues ensures that all arguments have parameter values or artifact locations
+func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
 		if param.Value == nil {
 			return errors.Errorf(errors.CodeBadRequest, "%svalue is required", prefix)
 		}
 	}
-
 	for _, art := range arguments.Artifacts {
 		if art.From == "" && !art.HasLocation() {
 			return errors.Errorf(errors.CodeBadRequest, "%sfrom or artifact location is required", prefix)
