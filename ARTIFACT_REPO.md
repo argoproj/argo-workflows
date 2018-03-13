@@ -32,7 +32,7 @@ Create a bucket named `my-bucket` from the Minio UI.
 
 ## Configuring AWS S3
 
-Create your bucket and access keys for the bucket. AWS access keys have the same permissions as the user they are associated with. In particular, you cannot create access keys with reduced scope. If you want to limit the permissions for an access key, you will need to create a user with just the permissions you want to associate with the access key. Otherwise, you can just create an access key using your esiting user account.
+Create your bucket and access keys for the bucket. AWS access keys have the same permissions as the user they are associated with. In particular, you cannot create access keys with reduced scope. If you want to limit the permissions for an access key, you will need to create a user with just the permissions you want to associate with the access key. Otherwise, you can just create an access key using your existing user account.
 
 ```
 $ export mybucket=bucket249
@@ -58,7 +58,7 @@ $ aws iam create-access-key --user-name $mybucket-user > access-key.json
 ```
 
 
-NOTE: if you want argo to figure out which region your buckets belong in, you must additionally set the following statement policy. Otherwise, you must specificy a bucket region in your workflow configuration.
+NOTE: if you want argo to figure out which region your buckets belong in, you must additionally set the following statement policy. Otherwise, you must specify a bucket region in your workflow configuration.
 
 ```
     ...
@@ -94,6 +94,8 @@ Use the `endpoint` corresponding to your S3 provider:
 The `key` is name of the object in the `bucket` The `accessKeySecret` and `secretKeySecret` are secret selectors that reference the specified kubernetes secret.  The secret is expected to have have the keys 'accessKey' and 'secretKey', containing the base64 encoded credentials to the bucket.
 
 For AWS, the `accessKeySecret` and `secretKeySecret` correspond to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY respectively.
+
+EC2 provides a metadata API via which applications using the AWS SDK may assume IAM roles associated with the instance. If you are running argo on EC2 and the instance role allows access to your S3 bucket, you can configure the workflow step pods to assume the role. To do so, simply omit the `accessKeySecret` and `secretKeySecret` fields.
 
 For GCS, the `accessKeySecret` and `secretKeySecret` for S3 compatible access can be obtained from the GCP Console. Note that S3 compatible access is on a per project rather than per bucket basis.
 - Navigate to Storage > Settings (https://console.cloud.google.com/storage/settings).
@@ -131,7 +133,7 @@ The `endpoint`, `accessKeySecret` and `secretKeySecret` are the same as for conf
 ```
   templates:
   - name: artifact-example
-    inputs: 
+    inputs:
       artifacts:
       - name: my-input-artifact
         path: /my-input-artifact
@@ -152,7 +154,7 @@ The `endpoint`, `accessKeySecret` and `secretKeySecret` are the same as for conf
         s3:
           endpoint: storage.googleapis.com
           bucket: my-aws-bucket-name
-          # NOTE that all output artifacts are automatically tarred and 
+          # NOTE that all output artifacts are automatically tarred and
           # gzipped before saving. So as a best practice, .tgz or .tar.gz
           # should be incorporated into the key name so the resulting file
           # has an accurate file extension.
