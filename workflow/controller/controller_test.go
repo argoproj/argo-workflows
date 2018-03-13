@@ -28,6 +28,13 @@ spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
+    metadata:
+      annotations:
+        annotationKey1: "annotationValue1"
+        annotationKey2: "annotationValue2"
+      labels:
+        labelKey1: "labelValue1"
+        labelKey2: "labelValue2"
     container:
       image: docker/whalesay:latest
       command: [cowsay]
