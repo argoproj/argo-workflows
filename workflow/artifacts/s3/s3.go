@@ -1,11 +1,13 @@
 package s3
 
 import (
+	"strings"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	minio "github.com/minio/minio-go"
+	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/pkg/credentials"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -17,17 +19,32 @@ type S3ArtifactDriver struct {
 	SecretKey string
 }
 
+const nullIAMEndpoint = ""
+
 // newMinioClient instantiates a new minio client object.
 func (s3Driver *S3ArtifactDriver) newMinioClient() (*minio.Client, error) {
 	var minioClient *minio.Client
 	var err error
+
 	s3Driver.AccessKey = strings.TrimSpace(s3Driver.AccessKey)
 	s3Driver.SecretKey = strings.TrimSpace(s3Driver.SecretKey)
-	if s3Driver.Region != "" {
-		minioClient, err = minio.NewWithRegion(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure, s3Driver.Region)
+
+	log.Infof("creating minio client %s\n", s3Driver.Endpoint)
+
+	if s3Driver.AccessKey != "" {
+		log.Debugf("using static credentials")
+		if s3Driver.Region != "" {
+			minioClient, err = minio.NewWithRegion(
+				s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure, s3Driver.Region)
+		} else {
+			minioClient, err = minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
+		}
 	} else {
-		minioClient, err = minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
+		log.Debugf("using credentials for IAM role")
+		credentials := credentials.NewIAM(nullIAMEndpoint)
+		minioClient, err = minio.NewWithCredentials(s3Driver.Endpoint, credentials, s3Driver.Secure, s3Driver.Region)
 	}
+
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
