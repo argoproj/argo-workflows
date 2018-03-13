@@ -291,14 +291,21 @@ func (we *WorkflowExecutor) SaveParameters() error {
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
-		accessKey, err := we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
-		if err != nil {
-			return nil, err
+		var accessKey string
+		var secretKey string
+
+		if art.S3.AccessKeySecret.Name != "" {
+			var err error
+			accessKey, err = we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			secretKey, err = we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
 		}
-		secretKey, err := we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
-		if err != nil {
-			return nil, err
-		}
+
 		driver := s3.S3ArtifactDriver{
 			Endpoint:  art.S3.Endpoint,
 			AccessKey: accessKey,
