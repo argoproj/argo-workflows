@@ -202,8 +202,8 @@ type Inputs struct {
 
 // Pod metdata
 type Metadata struct {
-	Annotations map[string]string `json"annotations,omitempty"`
-	Labels      map[string]string `json"labels,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty"`
+	Labels      map[string]string `json:"labels,omitempty"`
 }
 
 // Parameter indicate a passed string parameter to a service template with an optional default value
