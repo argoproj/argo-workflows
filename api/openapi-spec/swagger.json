@@ -240,18 +240,14 @@
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
-      "required": [
-        "Annotations",
-        "Labels"
-      ],
       "properties": {
-        "Annotations": {
+        "annotations": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
-        "Labels": {
+        "labels": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
