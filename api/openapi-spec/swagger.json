@@ -238,6 +238,23 @@
       "type": "string",
       "format": "item"
     },
+    "io.argoproj.workflow.v1alpha1.Metadata": {
+      "description": "Pod metdata",
+      "properties": {
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
       "properties": {
@@ -699,6 +716,10 @@
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "metadata": {
+          "description": "Metdata sets the pods's metadata, i.e. annotations and labels",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Metadata"
         },
         "name": {
           "description": "Name is the name of the template",

@@ -140,6 +140,9 @@ type Template struct {
 	// Overrides the affinity set at the workflow level (if any)
 	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
+	// Metdata sets the pods's metadata, i.e. annotations and labels
+	Metadata Metadata `json:"metadata,omitempty"`
+
 	// Deamon will allow a workflow to proceed to the next step so long as the container reaches readiness
 	Daemon *bool `json:"daemon,omitempty"`
 
@@ -195,6 +198,12 @@ type Inputs struct {
 
 	// Artifact are a list of artifacts passed as inputs
 	Artifacts []Artifact `json:"artifacts,omitempty"`
+}
+
+// Pod metdata
+type Metadata struct {
+	Annotations map[string]string `json:"annotations,omitempty"`
+	Labels      map[string]string `json:"labels,omitempty"`
 }
 
 // Parameter indicate a passed string parameter to a service template with an optional default value
