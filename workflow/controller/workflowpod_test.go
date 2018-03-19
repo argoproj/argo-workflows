@@ -142,3 +142,22 @@ func TestTolerations(t *testing.T) {
 	assert.NotNil(t, pod.Spec.Tolerations)
 	assert.Equal(t, pod.Spec.Tolerations[0].Key, "nvidia.com/gpu")
 }
+
+// TestMetadata verifies ability to carry forward annotations and labels
+func TestMetadata(t *testing.T) {
+	woc := newWoc()
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.ObjectMeta)
+	assert.NotNil(t, pod.ObjectMeta.Annotations)
+	assert.NotNil(t, pod.ObjectMeta.Labels)
+	for k, v := range woc.wf.Spec.Templates[0].Metadata.Annotations {
+		assert.Equal(t, pod.ObjectMeta.Annotations[k], v)
+	}
+	for k, v := range woc.wf.Spec.Templates[0].Metadata.Labels {
+		assert.Equal(t, pod.ObjectMeta.Labels[k], v)
+	}
+}

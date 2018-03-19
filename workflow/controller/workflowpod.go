@@ -165,6 +165,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(&pod, wfSpec, tmpl)
+	addMetadata(&pod, tmpl)
 
 	err = addVolumeReferences(&pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -276,6 +277,17 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 		exec.Resources = *woc.controller.Config.ExecutorResources
 	}
 	return &exec
+}
+
+// addMetadata applies metadata specified in the template
+func addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
+	for k, v := range tmpl.Metadata.Annotations {
+		pod.ObjectMeta.Annotations[k] = v
+	}
+
+	for k, v := range tmpl.Metadata.Labels {
+		pod.ObjectMeta.Labels[k] = v
+	}
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
