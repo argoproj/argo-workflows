@@ -44,6 +44,7 @@ var (
 	}
 
 	hostPathDir = apiv1.HostPathDirectory
+	hostPathSocket = apiv1.HostPathSocket
 
 	// volumeDockerLib provides the wait container access to the minion's host docker containers
 	// runtime files (e.g. /var/lib/docker/container). This is used by the executor to access
@@ -71,8 +72,8 @@ var (
 		Name: common.DockerSockVolumeName,
 		VolumeSource: apiv1.VolumeSource{
 			HostPath: &apiv1.HostPathVolumeSource{
-				Path: "/var/run",
-				Type: &hostPathDir,
+				Path: "/var/run/docker.sock",
+				Type: &hostPathSocket,
 			},
 		},
 	}
@@ -80,7 +81,6 @@ var (
 		Name:      volumeDockerSock.Name,
 		MountPath: "/var/run/docker.sock",
 		ReadOnly:  true,
-		SubPath:   "docker.sock",
 	}
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
