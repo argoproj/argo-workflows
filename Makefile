@@ -51,7 +51,7 @@ endif
 
 # Build the project
 .PHONY: all
-all: cli controller-image executor-image
+all: cli cli-image controller-image executor-image
 
 .PHONY: builder
 builder:
@@ -81,6 +81,11 @@ cli-darwin: builder
 .PHONY: controller
 controller:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+
+.PHONY: cli-image
+cli-image: cli
+	docker build -t $(IMAGE_PREFIX)cli:$(IMAGE_TAG) -f Dockerfile-cli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)cli:$(IMAGE_TAG) ; fi
 
 .PHONY: controller-linux
 controller-linux: builder
