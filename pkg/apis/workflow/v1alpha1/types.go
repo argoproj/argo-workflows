@@ -380,7 +380,7 @@ type Sidecar struct {
 // +k8s:openapi-gen=false
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
-	Phase NodePhase `json:"phase"`
+	Phase NodePhase `json:"phase,omitempty"`
 
 	// Time at which this workflow started
 	StartedAt metav1.Time `json:"startedAt,omitempty"`
@@ -392,7 +392,7 @@ type WorkflowStatus struct {
 	Message string `json:"message,omitempty"`
 
 	// Nodes is a mapping between a node ID and the node's status.
-	Nodes map[string]NodeStatus `json:"nodes"`
+	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
@@ -429,7 +429,7 @@ type NodeStatus struct {
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
-	Phase NodePhase `json:"phase"`
+	Phase NodePhase `json:"phase,omitempty"`
 
 	// BoundaryID indicates the node ID of the associated template root node in which this node belongs to
 	BoundaryID string `json:"boundaryID,omitempty"`
