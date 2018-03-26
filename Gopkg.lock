@@ -23,6 +23,7 @@
   branch = "master"
   name = "github.com/argoproj/argo-cd"
   packages = [
+    "errors",
     "util/diff",
     "util/kube"
   ]
@@ -697,6 +698,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0518996e667ff6aaf9dc0d71f9ee3fca5a5094a69018dd74653db8d1b313a738"
+  inputs-digest = "f40e815194569c806be00af4b6659bccba40dd39d6fd32c1fb871853b62ed544"
   solver-name = "gps-cdcl"
   solver-version = 1
