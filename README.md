@@ -29,8 +29,9 @@ Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflow
 * [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
 
-## Presentations
+## Presentations & Blogs
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
+* [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 
 ## Resources
 * Argo GitHub:  https://github.com/argoproj
