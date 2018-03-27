@@ -23,6 +23,7 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
+	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewInstallCommand())
