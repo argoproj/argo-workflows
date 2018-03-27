@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -26,15 +28,19 @@ variable.
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			var shell = args[0]
+			shell := args[0]
 			rootCommand := NewCommand()
-			if shell == "bash" {
-				rootCommand.GenBashCompletion(os.Stdout)
-			} else if shell == "zsh" {
-				rootCommand.GenZshCompletion(os.Stdout)
-			} else {
+			availableCompletions := map[string]func(io.Writer) error{
+				"bash": rootCommand.GenBashCompletion,
+				"zsh":  rootCommand.GenZshCompletion,
+			}
+			completion, ok := availableCompletions[shell]
+			if !ok {
 				fmt.Printf("Invalid shell '%s'. The supported shells are bash and zsh.\n", shell)
 				os.Exit(1)
+			}
+			if err := completion(os.Stdout); err != nil {
+				log.Fatal(err)
 			}
 		},
 	}
