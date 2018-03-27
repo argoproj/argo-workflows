@@ -13,10 +13,10 @@ func NewCompletionCommand() *cobra.Command {
 		Short: "output shell completion code for the specified shell (bash or zsh)",
 		Long: `Write bash or zsh shell completion code to standard output.
 
-For bash, ensure you have bash completions installed & enabled.
-Either run
+For bash, ensure you have bash completions installed and enabled.
+To access completions in your current shell, run
 $ source <(argo completion bash)
-Or write it to a file and source in .bash_profile
+Alternatively, write it to a file and source in .bash_profile
 
 For zsh, output to a file in a directory referenced by the $fpath shell
 variable.
