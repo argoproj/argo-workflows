@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0-beta1 (Unreleased)
+## 2.1.0-beta1 (2018-03-29)
 + Support for exported global output parameters and artifacts
 + Introduce `argo retry` to retry a failed workflow with the same name
 + Trim a trailing newline from path-based output parameters
