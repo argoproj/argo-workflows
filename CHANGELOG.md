@@ -6,6 +6,10 @@
 + Trim a trailing newline from path-based output parameters
 + Add ability to reference global parameters in spec level fields
 + Make {{pod.name}} available as a parameter in pod templates
++ Argo CLI shell completion support (@mthx)
++ Support rendering combined workflow logs using `argo logs -w`
++ Add ability to pass pod annotations and labels at the template levels (@wookasz)
++ Add ability to use IAM role from EC2 instance for AWS S3 credentials (@wookasz)
 * Rewrite the installer
 * Abstract the container runtime as an interface to support mocking and future runtimes
 * Documentation and examples fixes (@IronPan, @dmonakhov)
@@ -14,6 +18,7 @@
 - Fix for CLI not rendering edges correctly for nested workflows
 - Fix template.parallelism limiting parallelism of entire workflow
 - Fix artifact saving to artifactory (@dougsc)
+- Use socket type for hostPath to mount docker.sock (@DSchmidtDev)
 
 ## 2.1.0-alpha1 (2018-02-21)
 + Support for DAG based definition of workflows
