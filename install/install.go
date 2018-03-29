@@ -191,6 +191,7 @@ func (i *Installer) InstallArgoUI() {
 	if i.UIServiceAccount != "" {
 		argoUIDeployment.Spec.Template.Spec.ServiceAccountName = i.UIServiceAccount
 	}
+	i.MustInstallResource(kube.MustToUnstructured(&argoUIDeployment))
 	i.MustInstallResource(kube.MustToUnstructured(&argoUIService))
 }
 
