@@ -29,12 +29,7 @@ func NewInstallCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = initKubeClient()
 
-			namespace, _, err := clientConfig.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-			installArgs.Namespace = namespace
-
+			installArgs.Namespace = InstallNamespace()
 			installer, err := install.NewInstaller(restConfig, installArgs)
 			if err != nil {
 				log.Fatal(err)

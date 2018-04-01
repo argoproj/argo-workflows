@@ -13,6 +13,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -142,4 +143,17 @@ func splitYAMLFile(body []byte) ([]wfv1.Workflow, error) {
 		manifests = append(manifests, wf)
 	}
 	return manifests, nil
+}
+
+//InstallNamespace returns either the namespace specified via the --namespace
+//flag or the default argo installation namespace (kube-system)
+func InstallNamespace() string {
+	namespace, wasSpecified, err := clientConfig.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if wasSpecified {
+		return namespace
+	}
+	return common.DefaultControllerNamespace
 }

@@ -27,11 +27,7 @@ func NewUninstallCommand() *cobra.Command {
 		Use:   "uninstall",
 		Short: "uninstall Argo",
 		Run: func(cmd *cobra.Command, args []string) {
-			namespace, _, err := clientConfig.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-			uninstallArgs.namespace = namespace
+			uninstallArgs.namespace = InstallNamespace()
 			uninstall(&uninstallArgs)
 		},
 	}
