@@ -28,7 +28,7 @@ NOTE:
 ```
 $ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
 ```
-* The subsequent instructions below assume the installation of argo into the `kube-system` namespace (the default behavior). A different namespace can be chosen using the `argo install --install-namespace <name>` flag, in which case you should substitute `kube-system` with your chosen namespace in the examples below.
+* The subsequent instructions below assume the installation of argo into the `kube-system` namespace (the default behavior). A different namespace can be chosen using the `argo install --namespace <name>` flag, in which case you should substitute `kube-system` with your chosen namespace in the examples below.
 
 ## 3. Configure the service account to run workflows (required for RBAC clusters)
 For clusters with RBAC enabled, the 'default' service account is too limited to do any kind of meaningful work. Run the following command to grant admin privileges to the 'default' service account in the namespace 'default':

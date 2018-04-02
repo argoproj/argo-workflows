@@ -16,7 +16,7 @@ type uninstallFlags struct {
 	controllerName string // --controller-name
 	uiName         string // --ui-name
 	configMap      string // --configmap
-	namespace      string // --install-namespace
+	namespace      string // --namespace
 }
 
 func NewUninstallCommand() *cobra.Command {
@@ -27,13 +27,13 @@ func NewUninstallCommand() *cobra.Command {
 		Use:   "uninstall",
 		Short: "uninstall Argo",
 		Run: func(cmd *cobra.Command, args []string) {
+			uninstallArgs.namespace = InstallNamespace()
 			uninstall(&uninstallArgs)
 		},
 	}
 	command.Flags().StringVar(&uninstallArgs.controllerName, "controller-name", common.DefaultControllerDeploymentName, "name of controller deployment")
 	command.Flags().StringVar(&uninstallArgs.uiName, "ui-name", ArgoUIDeploymentName, "name of ui deployment")
 	command.Flags().StringVar(&uninstallArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "name of configmap to uninstall")
-	command.Flags().StringVar(&uninstallArgs.namespace, "install-namespace", common.DefaultControllerNamespace, "uninstall from a specific namespace")
 	return command
 }
 

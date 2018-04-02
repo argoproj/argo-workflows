@@ -28,6 +28,8 @@ func NewInstallCommand() *cobra.Command {
 		Short: "install Argo",
 		Run: func(cmd *cobra.Command, args []string) {
 			_ = initKubeClient()
+
+			installArgs.Namespace = InstallNamespace()
 			installer, err := install.NewInstaller(restConfig, installArgs)
 			if err != nil {
 				log.Fatal(err)
@@ -37,7 +39,6 @@ func NewInstallCommand() *cobra.Command {
 	}
 	command.Flags().BoolVar(&installArgs.Upgrade, "upgrade", false, "upgrade controller/ui deployments and configmap if already installed")
 	command.Flags().BoolVar(&installArgs.DryRun, "dry-run", false, "print the kubernetes manifests to stdout instead of installing")
-	command.Flags().StringVar(&installArgs.Namespace, "install-namespace", common.DefaultControllerNamespace, "install into a specific Namespace")
 	command.Flags().StringVar(&installArgs.InstanceID, "instanceid", "", "optional instance id to use for the controller (for multi-controller environments)")
 	command.Flags().StringVar(&installArgs.ConfigMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "install controller using preconfigured configmap")
 	command.Flags().StringVar(&installArgs.ControllerImage, "controller-image", DefaultControllerImage, "use a specified controller image")
