@@ -73,6 +73,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		if !sgNode.Successful() {
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode, sgNode.Message)
 			woc.log.Info(failMessage)
+			woc.updateOutboundNodes(nodeName, tmpl)
 			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 		}
 
@@ -90,6 +91,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			woc.processNodeOutputs(stepsCtx.scope, prefix, &childNode)
 		}
 	}
+	woc.updateOutboundNodes(nodeName, tmpl)
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
@@ -100,7 +102,12 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-	// Now that we have completed, set the outbound nodes from the last step group
+
+	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+}
+
+// updateOutboundNodes set the outbound nodes from the last step group
+func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Template) {
 	outbound := make([]string, 0)
 	lastSGNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, len(tmpl.Steps)-1))
 	for _, childID := range lastSGNode.Children {
@@ -110,12 +117,10 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			outbound = append(outbound, outNodeID)
 		}
 	}
-	node = woc.getNodeByName(nodeName)
+	node := woc.getNodeByName(nodeName)
 	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
-
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 }
 
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
