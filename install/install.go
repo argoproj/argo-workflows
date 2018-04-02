@@ -31,7 +31,7 @@ import (
 type InstallOptions struct {
 	Upgrade          bool   // --upgrade
 	DryRun           bool   // --dry-run
-	Namespace        string // --install-namespace
+	Namespace        string // --namespace
 	InstanceID       string // --instanceid
 	ConfigMap        string // --configmap
 	ControllerImage  string // --controller-image
