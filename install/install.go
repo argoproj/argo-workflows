@@ -154,11 +154,11 @@ func (i *Installer) InstallWorkflowController() {
 	if i.ServiceAccount == "" {
 		i.MustInstallResource(kube.MustToUnstructured(&workflowControllerServiceAccount))
 		if i.IsRBACSupported() {
+			workflowControllerClusterRoleBinding.Subjects[0].Namespace = i.Namespace
 			i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRole))
 			i.MustInstallResource(kube.MustToUnstructured(&workflowControllerClusterRoleBinding))
 		}
-	}
-	if i.ServiceAccount != "" {
+	} else {
 		workflowControllerDeployment.Spec.Template.Spec.ServiceAccountName = i.ServiceAccount
 	}
 	//i.MustInstallResource(kube.MustToUnstructured(&workflowControllerConfigMap))
@@ -184,11 +184,11 @@ func (i *Installer) InstallArgoUI() {
 	if i.UIServiceAccount == "" {
 		i.MustInstallResource(kube.MustToUnstructured(&argoUIServiceAccount))
 		if i.IsRBACSupported() {
+			argoUIClusterRoleBinding.Subjects[0].Namespace = i.Namespace
 			i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRole))
 			i.MustInstallResource(kube.MustToUnstructured(&argoUIClusterRoleBinding))
 		}
-	}
-	if i.UIServiceAccount != "" {
+	} else {
 		argoUIDeployment.Spec.Template.Spec.ServiceAccountName = i.UIServiceAccount
 	}
 	i.MustInstallResource(kube.MustToUnstructured(&argoUIDeployment))
