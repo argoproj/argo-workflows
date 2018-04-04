@@ -55,7 +55,7 @@ spec:
       - name: source
         path: /src
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["cd /src && git status && ls -l"]
 
@@ -69,12 +69,12 @@ spec:
       - name: influxd
         path: /go/bin
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
         go install -v ./...
       "]
       resources:
@@ -88,18 +88,14 @@ spec:
       - name: source
         path: /go/src/github.com/influxdata/influxdb
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
-        go test -v ./...
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
+        go test -parallel=1 ./...
       "]
-      resources:
-        requests:
-          memory: 5120Mi
-          cpu: 200m
 
   - name: test-cov
     inputs:
@@ -124,16 +120,6 @@ spec:
           artifacts:
           - name: source
             from: "{{inputs.artifacts.source}}"
-      - name: test-cov-influxql
-        template: test-cov-base
-        arguments:
-          parameters:
-          - name: package
-            value: "influxql"
-          artifacts:
-          - name: source
-            from: "{{inputs.artifacts.source}}"
-
   - name: test-cov-base
     inputs:
       parameters:
@@ -146,12 +132,12 @@ spec:
       - name: covreport
         path: /tmp/index.html
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
         go test -v -coverprofile /tmp/cov.out ./{{inputs.parameters.package}} &&
         go tool cover -html=/tmp/cov.out -o /tmp/index.html
       "]
