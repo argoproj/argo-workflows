@@ -52,7 +52,7 @@ spec:
   - name: download-images
     container:
       image: mesosphere/aws-cli
-      command: ["aws", "--no-sign-request", "s3", "cp", "--recursive", "s3://argo-sample-data-public/cricket_gif_images", "/mnt/data/"]
+      command: ["aws", "--no-sign-request", "s3", "cp", "--recursive", "s3://ax-public/cricket_gif_images", "/mnt/data/"]
       volumeMounts:
       - name: workdir
         mountPath: /mnt/data
