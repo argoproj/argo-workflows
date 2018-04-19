@@ -380,7 +380,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			File:     art.FTP.File,
 			Password: password,
 			Endpoint: art.FTP.Endpoint,
-			Secure:   *art.FTP.Insecure,
+			Secure:   art.FTP.Insecure == nil || *art.FTP.Insecure == false,
 		}
 
 		return &ftpDriver, nil
