@@ -50,6 +50,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			if i == 0 {
 				// Connect the boundary node with the first step group
 				woc.addChildNode(nodeName, sgNodeName)
+				node = woc.getNodeByName(nodeName)
 			} else {
 				// Otherwise connect all the outbound nodes of the previous
 				// step group as parents to the current step group node
