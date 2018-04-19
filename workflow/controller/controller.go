@@ -87,6 +87,8 @@ type ArtifactRepository struct {
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Future artifact repository support here
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
+
+	FTP *FTPArtifactRepository `json:"ftp,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -95,6 +97,11 @@ type S3ArtifactRepository struct {
 
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
 	KeyPrefix string `json:"keyPrefix,omitempty"`
+}
+
+// FTPArtifactRepository defines the controller configuration for an FTP artifact repository
+type FTPArtifactRepository struct {
+	wfv1.FTPArtifact `json:",inline"`
 }
 
 // ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository

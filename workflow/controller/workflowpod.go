@@ -494,6 +494,15 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
 		}
+	} else if woc.controller.Config.ArtifactRepository.FTP != nil {
+		log.Debugf("Setting FTP artifact repository information")
+		tmpl.ArchiveLocation.FTP = &wfv1.FTPArtifact{
+			Endpoint: woc.controller.Config.ArtifactRepository.FTP.Endpoint,
+			File:     woc.controller.Config.ArtifactRepository.FTP.File,
+			UsernameSecret: woc.controller.Config.ArtifactRepository.FTP.UsernameSecret,
+			PasswordSecret: woc.controller.Config.ArtifactRepository.FTP.PasswordSecret,
+			Insecure: woc.controller.Config.ArtifactRepository.FTP.Insecure,
+		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if !art.HasLocation() {

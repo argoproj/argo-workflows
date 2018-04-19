@@ -284,6 +284,9 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
+
+	// FTP contains FTP artifact location details
+	FTP *FTPArtifact `json:"ftp,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -588,6 +591,24 @@ type HTTPArtifact struct {
 	URL string `json:"url"`
 }
 
+// FTPArtifact allows a file sto be server or loaded to a FTP server
+type FTPArtifact struct {
+	// Endpoint is the FTP server address
+	Endpoint string `json:"endpoint"`
+
+	// File to download
+	File string `json:"file"`
+
+	// Username is the username for the FTP server
+	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
+
+	// Password is the FTP server password for the given username
+	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+
+	// Insecure will connect to the service with TLS
+	Insecure *bool `json:"insecure,omitempty"`
+}
+
 // ScriptTemplate is a template subtype to enable scripting through code steps
 type ScriptTemplate struct {
 	apiv1.Container `json:",inline"`
@@ -741,7 +762,7 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.FTP != nil
 }
 
 // GetTemplate retrieves a defined template by its name

@@ -51,6 +51,10 @@
           "description": "HTTP contains HTTP artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.HTTPArtifact"
         },
+        "ftp": {
+          "description": "FTP contains FTP artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.FTPArtifact"
+        },
         "mode": {
           "description": "mode bits to use on this file, must be a value between 0 and 0777 set when loading input artifacts.",
           "type": "integer",
@@ -215,6 +219,37 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.FTPArtifact": {
+      "description": "FTPArtifact allows a file sto be server or loaded to a FTP server",
+      "required": [
+        "endpoint",
+        "file",
+        "username",
+        "password"
+      ],
+      "properties": {
+        "endpoint": {
+          "description": "Endpoint is the FTP server address",
+          "type": "string"
+        },
+        "file": {
+          "description": "File is the file to download",
+          "type": "string"
+        },
+        "usernameSecret": {
+          "description": "UsernameSecret is the secret selector to the FTP server username",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "passwordSecret": {
+          "description": "PasswordSecret is the secret selector to the user's FTP server password",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "insecure": {
+          "description": "insecure will connect to the service with TLS",
+          "type": "boolean"
+        }
+      }
+    },   
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "description": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
       "properties": {

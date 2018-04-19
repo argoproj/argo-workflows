@@ -451,6 +451,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "v1"
+  name = "gopkg.in/dutchcoders/goftp.v1"
+  packages = ["."]
+  revision = "ed59a591ce14ff6c19c49be14294528d11a88c37"
+
+[[projects]]
   name = "gopkg.in/inf.v0"
   packages = ["."]
   revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
@@ -698,6 +704,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f40e815194569c806be00af4b6659bccba40dd39d6fd32c1fb871853b62ed544"
+  inputs-digest = "b00fa3a8cf3d6871f69066aec11ece8116aefbc8614b37f48f60c0b6acc4fbbf"
   solver-name = "gps-cdcl"
   solver-version = 1

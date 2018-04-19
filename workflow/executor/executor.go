@@ -23,6 +23,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo/workflow/artifacts/ftp"
 	"github.com/argoproj/argo/workflow/artifacts/git"
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/raw"
@@ -216,6 +217,9 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 				shallowCopy := *we.Template.ArchiveLocation.S3
 				art.S3 = &shallowCopy
 				art.S3.Key = path.Join(art.S3.Key, fileName)
+			} else if we.Template.ArchiveLocation.FTP != nil {
+				shallowCopy := *we.Template.ArchiveLocation.FTP
+				art.FTP = &shallowCopy
 			} else if we.Template.ArchiveLocation.Artifactory != nil {
 				shallowCopy := *we.Template.ArchiveLocation.Artifactory
 				art.Artifactory = &shallowCopy
@@ -354,6 +358,32 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		}
 		return &driver, nil
 
+	}
+	if art.FTP != nil {
+		var username string
+		var password string
+
+		if art.FTP.UsernameSecret.Name != "" {
+			var err error
+			username, err = we.getSecrets(we.Namespace, art.FTP.UsernameSecret.Name, art.FTP.UsernameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			password, err = we.getSecrets(we.Namespace, art.FTP.PasswordSecret.Name, art.FTP.PasswordSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		ftpDriver := ftp.FTPArtifactDriver{
+			Username: username,
+			File:     art.FTP.File,
+			Password: password,
+			Endpoint: art.FTP.Endpoint,
+			Secure:   *art.FTP.Insecure,
+		}
+
+		return &ftpDriver, nil
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
