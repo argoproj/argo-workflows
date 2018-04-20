@@ -282,6 +282,9 @@ type ArtifactLocation struct {
 	// Artifactory contains artifactory artifact location details
 	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
 
+	// AzureBlob Storage contains Azure Blob Storage artifact location details
+	AzureBlob *AzureBlobArtifact `json:"azureBlob,omitempty"`
+
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
 }
@@ -541,6 +544,31 @@ func (s *S3Artifact) String() string {
 	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
 }
 
+// AzureBlobArtifact is the location of a Azure Blob Storage artifact
+type AzureBlobArtifact struct {
+	// DefaultEndpointsProtocol is the default list of network protocols to use in the connection
+	DefaultEndpointsProtocol string `json:"defaultEndpointsProtocol"`
+
+	// EndpointSuffix is the url suffix to the resources
+	EndpointSuffix string `json:"endpointSuffix"`
+
+	// Container is the place where reources are stored together, as a S3 bucket
+	Container string `json:"container"`
+
+	// Key is the key in the bucket where the artifact resides
+	Key string `json:"key"`
+
+	// AccountName is the secret selector to the Azure blob storage account name
+	AccountNameSecret *apiv1.SecretKeySelector `json:"accountNameSecret,omitempty"`
+
+	// AccountKey is the secret selector to the Azurer blob storage account key
+	AccountKeySecret *apiv1.SecretKeySelector `json:"accountKeySecret,omitempty"`
+}
+
+func (ab *AzureBlobArtifact) String() string {
+	return fmt.Sprintf("%s %s %s/%s", ab.DefaultEndpointsProtocol, ab.EndpointSuffix, ab.Container)
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -741,7 +769,7 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.AzureBlob != nil
 }
 
 // GetTemplate retrieves a defined template by its name

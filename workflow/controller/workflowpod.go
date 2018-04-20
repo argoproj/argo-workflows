@@ -494,6 +494,15 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
 		}
+	} else if woc.controller.Config.ArtifactRepository.AzureBlob != nil {
+		tmpl.ArchiveLocation.AzureBlob = &wfv1.AzureBlobArtifact{
+			DefaultEndpointsProtocol: woc.controller.Config.ArtifactRepository.AzureBlob.DefaultEndpointsProtocol,
+			EndpointSuffix:           woc.controller.Config.ArtifactRepository.AzureBlob.EndpointSuffix,
+			Container:                woc.controller.Config.ArtifactRepository.AzureBlob.Container,
+			Key:                      woc.controller.Config.ArtifactRepository.AzureBlob.Key,
+			AccountNameSecret:        woc.controller.Config.ArtifactRepository.AzureBlob.AccountNameSecret,
+			AccountKeySecret:         woc.controller.Config.ArtifactRepository.AzureBlob.AccountKeySecret,
+		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if !art.HasLocation() {

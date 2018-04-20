@@ -23,6 +23,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo/workflow/artifacts/azureblob"
 	"github.com/argoproj/argo/workflow/artifacts/git"
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/raw"
@@ -225,6 +226,9 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 				}
 				artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 				art.Artifactory.URL = artifactoryURL.String()
+			} else if we.Template.ArchiveLocation.AzureBlob != nil {
+				shallowCopy := *we.Template.ArchiveLocation.AzureBlob
+				art.AzureBlob = &shallowCopy
 			} else {
 				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 			}
@@ -354,6 +358,31 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		}
 		return &driver, nil
 
+	}
+	if art.AzureBlob != nil {
+		azblobDriver := &azureblob.AzureBlobArtifactDriver{
+			DefaultEndpointsProtocol: art.AzureBlob.DefaultEndpointsProtocol,
+			EndpointSuffix:           art.AzureBlob.EndpointSuffix,
+			Container:                art.AzureBlob.Container,
+			Key:                      art.AzureBlob.Key,
+		}
+
+		if art.AzureBlob.AccountNameSecret != nil {
+			accountName, err := we.getSecrets(we.Namespace, art.AzureBlob.AccountNameSecret.Name, art.AzureBlob.AccountNameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			azblobDriver.AccountName = accountName
+		}
+		if art.AzureBlob.AccountKeySecret != nil {
+			accountKey, err := we.getSecrets(we.Namespace, art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			azblobDriver.AccountKey = accountKey
+		}
+
+		return azblobDriver, nil
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
