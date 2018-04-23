@@ -353,6 +353,43 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1. AzureBlobArtifact": {
+      "description": "AzureBlobArtifact is the location of an Azurer Blob Storage artifact",
+      "required": [
+        "defaultEndpointsProtocol",
+        "endpointSuffix",
+        "container",
+        "key",
+        "accountName",
+        "accountKey"
+      ],
+      "properties": {
+        "defaultEndpointsProtocol": {
+          "description": "DefaultEndpointsProtocol is the default hostname",
+          "$ref": "string"
+        },
+        "endpointSuffix": {
+          "description": "Endpoint Suffix is the hostname suffix",
+          "type": "string"
+        },
+        "container": {
+          "description": "Container is the Azure bucket",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key is the ffile name will be stored",
+          "type": "string"
+        },
+        "accountName": {
+          "description": "Account Name Secret is the secret selector to the Azure account's name",
+          "type": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "accountKey": {
+          "description": "Account Key Secret is the secret selector to the Azure account's key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.S3Artifact": {
       "description": "S3Artifact is the location of an S3 artifact",
       "required": [
