@@ -346,7 +346,7 @@ spec:
       artifacts:
       - name: -kubectl
         path: /usr/local/bin/kubectl
-        mode: 755
+        mode: 0755
     container:
       image: debian:9.1
       command: [sh, -c]

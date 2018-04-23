@@ -976,7 +976,7 @@ spec:
       # Download kubectl 1.8.0 and place it at /bin/kubectl
       - name: kubectl
         path: /bin/kubectl
-        mode: 755
+        mode: 0755
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
       # Copy an s3 bucket and place it at /s3

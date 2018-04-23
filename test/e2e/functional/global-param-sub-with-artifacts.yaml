@@ -19,7 +19,7 @@ spec:
       artifacts:
       - name: foo-artifact
         path: /tmp/foo.txt
-        mode: 755
+        mode: 0644
     container:
       image: alpine:latest
       command: ["cat"]
