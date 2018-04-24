@@ -5,11 +5,11 @@ Welcome to the Argo community!
 Argo is an open, community driven project to make it easy to use Kubernetes for getting useful work done.  This document describes the organizational structure of the Argo Community including the roles, responsibilities and processes that govern Argo projects and community.
 
 
-We will have out **first community meeting on May 9th 10 am PST**.
+We will have our **first community meeting on May 9th 10 am PST**.
 
 Map that to your local time with this [timezone table](https://www.google.com/search?q=1800+in+utc)
 
-See it on the web at [calendar.google.com](put url here) , or paste this [iCal url](put url here) into any iCal client. 
+See it on the web as [Google Calendar](https://calendar.google.com/calendar/embed?src=argoproj%40gmail.com&ctz=America%2FLos_Angeles) , or paste this [iCal url](https://calendar.google.com/calendar/ical/argoproj%40gmail.com/private-52229421c00ee71c176517df5bf1941e/basic.ics) into any iCal client. 
 
 
 ## Projects
