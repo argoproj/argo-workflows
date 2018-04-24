@@ -6,12 +6,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -110,7 +108,18 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 // updateOutboundNodes set the outbound nodes from the last step group
 func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Template) {
 	outbound := make([]string, 0)
-	lastSGNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, len(tmpl.Steps)-1))
+	// Find the last, initialized stepgroup node
+	var lastSGNode *wfv1.NodeStatus
+	for i := len(tmpl.Steps) - 1; i >= 0; i-- {
+		sgNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
+		if sgNode != nil {
+			lastSGNode = sgNode
+		}
+	}
+	if lastSGNode == nil {
+		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", nodeName)
+		return
+	}
 	for _, childID := range lastSGNode.Children {
 		outboundNodeIDs := woc.getOutboundNodes(childID)
 		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
@@ -359,79 +368,4 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
-}
-
-// killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
-// We only need to check grandchildren instead of children because the direct children of a step
-// template are actually stepGroups, which are nodes that cannot represent actual containers.
-// Returns the first error that occurs (if any)
-// TODO(jessesuen): this logic will need to change with DAGs
-func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
-	woc.log.Infof("Checking deamon children of %s", nodeID)
-	var firstErr error
-	execCtl := common.ExecutionControl{
-		Deadline: &time.Time{},
-	}
-	for _, childNodeID := range woc.wf.Status.Nodes[nodeID].Children {
-		for _, grandChildID := range woc.wf.Status.Nodes[childNodeID].Children {
-			gcNode := woc.wf.Status.Nodes[grandChildID]
-			if gcNode.Daemoned == nil || !*gcNode.Daemoned {
-				continue
-			}
-			err := woc.updateExecutionControl(gcNode.ID, execCtl)
-			if err != nil {
-				woc.log.Errorf("Failed to update execution control of %s: %+v", gcNode, err)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	return firstErr
-}
-
-// updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common.ExecutionControl) error {
-	execCtlBytes, err := json.Marshal(execCtl)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-
-	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	err = common.AddPodAnnotation(
-		woc.controller.kubeclientset,
-		podName,
-		woc.wf.ObjectMeta.Namespace,
-		common.AnnotationKeyExecutionControl,
-		string(execCtlBytes),
-	)
-	if err != nil {
-		return err
-	}
-
-	// Ideally we would simply annotate the pod with the updates and be done with it, allowing
-	// the executor to notice the updates naturally via the Downward API annotations volume
-	// mounted file. However, updates to the Downward API volumes take a very long time to
-	// propagate (minutes). The following code fast-tracks this by signaling the executor
-	// using SIGUSR2 that something changed.
-	woc.log.Infof("Signalling %s of updates", podName)
-	exec, err := common.ExecPodContainer(
-		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
-		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 1",
-	)
-	if err != nil {
-		return err
-	}
-	go func() {
-		// This call is necessary to actually send the exec. Since signalling is best effort,
-		// it is launched as a goroutine and the error is discarded
-		_, _, err = common.GetExecutorOutput(exec)
-		if err != nil {
-			log.Warnf("Signal command failed: %v", err)
-			return
-		}
-		log.Infof("Signal of %s (%s) successfully issued", podName, common.WaitContainerName)
-	}()
-
-	return nil
 }
