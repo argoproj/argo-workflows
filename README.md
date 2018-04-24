@@ -36,7 +36,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
-1. Cyrus Biotechnolgy
+1. Cyrus Biotechnology
 1. Google
 1. Intuit [[@mukulikak](https://github.com/mukulikak)]
 1. NVIDIA
