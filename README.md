@@ -4,7 +4,7 @@
 
 ## News
 
-We are excited to welcome Cyrus Biotechnolgy, Google and NVIDIA as corporate members of the Argo Community! They have been active users of Argo for some time now and have decided to increase their participation in both the use and development of Argo. If you actively use Argo at your company and believe that your company may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
+We are excited to welcome [Cyrus Biotechnology](https://cyrusbio.com/), Google and NVIDIA as corporate members of the Argo Community! They have been active users of Argo for some time now and have decided to increase their participation in both the use and development of Argo. If you actively use Argo at your company and believe that your company may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
 
 Updated community documents, including CLAs, are available [here](https://github.com/argoproj/argo/tree/master/community). These documents are essentially identical to those used by CNCF projects such as Kubernetes and are designed to protect Argo's contributors, users and Intuit, the current custodian of the Argo Project.
 
@@ -36,7 +36,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
-1. Cyrus Biotechnolgy
+1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. Google
 1. Intuit [[@mukulikak](https://github.com/mukulikak)]
 1. NVIDIA
