@@ -9,17 +9,17 @@ This section shows how to configure the artifact repository. Subsequent sections
 ```
 $ brew install kubernetes-helm # mac
 $ helm init
-$ helm install stable/minio --name argo-artifacts
+$ helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer
 ```
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the external IP using `kubectl`.
 ```
-$ kubectl get service argo-artifacts-minio-svc
+$ kubectl get service argo-artifacts-minio
 ```
 
 On Minikube:
 ```
-$ minikube service --url argo-artifacts-minio-svc
+$ minikube service --url argo-artifacts-minio
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,

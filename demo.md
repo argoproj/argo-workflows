@@ -64,16 +64,16 @@ Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositori
 ```
 $ brew install kubernetes-helm # mac
 $ helm init
-$ helm install stable/minio --name argo-artifacts
+$ helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer
 ```
 
-Login to the Minio UI using a web browser (port 9000) after obtaining the external IP using `kubectl`.
+Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-$ kubectl get service argo-artifacts-minio-svc
+$ kubectl get service argo-artifacts-minio -o wide
 ```
 On Minikube:
 ```
-$ minikube service --url argo-artifacts-minio-svc
+$ minikube service --url argo-artifacts-minio
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -85,7 +85,7 @@ Create a bucket named `my-bucket` from the Minio UI.
 
 ## 6. Reconfigure the workflow controller to use the Minio artifact repository
 
-Edit the workflow-controller config map to reference the service name (argo-artifacts-minio-svc) and secret (argo-artifacts-minio-user) created by the helm install:
+Edit the workflow-controller config map to reference the service name (argo-artifacts-minio) and secret (argo-artifacts-minio) created by the helm install:
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
@@ -93,18 +93,18 @@ $ kubectl edit configmap workflow-controller-configmap -n kube-system
     artifactRepository:
       s3:
         bucket: my-bucket
-        endpoint: argo-artifacts-minio-svc.default:9000
+        endpoint: argo-artifacts-minio.default:9000
         insecure: true
         # accessKeySecret and secretKeySecret are secret selectors.
-        # It references the k8s secret named 'argo-artifacts-minio-user'
+        # It references the k8s secret named 'argo-artifacts-minio'
         # which was created during the minio helm install. The keys,
         # 'accesskey' and 'secretkey', inside that secret are where the
         # actual minio credentials are stored.
         accessKeySecret:
-          name: argo-artifacts-minio-user
+          name: argo-artifacts-minio
           key: accesskey
         secretKeySecret:
-          name: argo-artifacts-minio-user
+          name: argo-artifacts-minio
           key: secretkey
 ```
 
