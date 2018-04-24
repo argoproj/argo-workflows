@@ -70,7 +70,7 @@ cli-linux: builder
 		LDFLAGS='-extldflags "-static"' \
 		ARGO_CLI_NAME=argo-linux-amd64
 
-.PHONY: cli
+.PHONY: cli-darwin
 cli-darwin: builder
 	${BUILDER_CMD} make cli \
 		GOOS=darwin \
