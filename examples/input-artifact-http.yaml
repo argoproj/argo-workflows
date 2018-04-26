@@ -15,6 +15,6 @@ spec:
         http:
           url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl version"]

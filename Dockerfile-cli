@@ -1,4 +1,4 @@
-FROM debian:9.1
+FROM debian:9.4
 
 COPY dist/argo /bin/
 
