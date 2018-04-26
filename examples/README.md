@@ -1043,6 +1043,8 @@ spec:
           backoffLimit: 4
 ```
 
+Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
+
 ## Docker-in-Docker (aka. DinD) Using Sidecars
 An application of sidecars is to implement DinD (Docker-in-Docker).
 DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
