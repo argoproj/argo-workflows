@@ -272,7 +272,7 @@ func (p *logPrinter) printLogEntry(entry logEntry) {
 		colorIndex := int(math.Mod(float64(h.Sum32()), float64(len(colors))))
 		line = ansiFormat(entry.displayName, colors[colorIndex]) + ":	" + line
 	}
-	println(line)
+	fmt.Println(line)
 }
 
 func (p *logPrinter) ensureContainerStarted(podName string, podNamespace string, container string, retryCnt int, retryTimeout time.Duration) error {
