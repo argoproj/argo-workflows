@@ -1094,7 +1094,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
-	if node.Type == wfv1.NodeTypePod {
+	if node.Type == wfv1.NodeTypePod || node.Type == wfv1.NodeTypeSkipped {
 		return []string{node.ID}
 	}
 	outbound := make([]string, 0)
