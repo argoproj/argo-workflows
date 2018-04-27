@@ -14,6 +14,8 @@ import (
 )
 
 type submitFlags struct {
+	name           string   // --name
+	generateName   string   // --generate-name
 	instanceID     string   // --instanceid
 	entrypoint     string   // --entrypoint
 	parameters     []string // --parameter
@@ -37,6 +39,8 @@ func NewSubmitCommand() *cobra.Command {
 			SubmitWorkflows(args, &submitArgs)
 		},
 	}
+	command.Flags().StringVar(&submitArgs.name, "name", "", "override metadata.name")
+	command.Flags().StringVar(&submitArgs.generateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -127,6 +131,12 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 			newParams = append(newParams, param)
 		}
 		wf.Spec.Arguments.Parameters = newParams
+	}
+	if submitArgs.generateName != "" {
+		wf.ObjectMeta.GenerateName = submitArgs.generateName
+	}
+	if submitArgs.name != "" {
+		wf.ObjectMeta.Name = submitArgs.name
 	}
 	err := common.ValidateWorkflow(wf)
 	if err != nil {
