@@ -327,7 +327,7 @@ spec:
 
   - name: gen-random-int-bash
     script:
-      image: debian:9.1
+      image: debian:9.4
       command: [bash]
       source: |                                         # Contents of the here-script
         cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'

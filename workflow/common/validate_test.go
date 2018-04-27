@@ -348,7 +348,7 @@ spec:
         path: /usr/local/bin/kubectl
         mode: 0755
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl version"]
 `
@@ -796,7 +796,7 @@ spec:
   - name: leaf-with-parallelism
     parallelism: 2
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl version"]
 `
@@ -824,7 +824,7 @@ spec:
         template: try
   - name: try
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl version"]
 `
@@ -1018,7 +1018,7 @@ spec:
   templates:
   - name: pod-name-variable
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl {{pod.name}}"]
     outputs:
