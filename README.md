@@ -37,6 +37,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 Currently **officially** using Argo:
 
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
+1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Intuit](https://www.intuit.com/) [[@mukulikak](https://github.com/mukulikak)]
 1. [NVIDIA](http://www.nvidia.com/)
