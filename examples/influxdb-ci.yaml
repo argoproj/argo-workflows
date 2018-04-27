@@ -195,7 +195,7 @@ spec:
         path: /app
     daemon: true
     container:
-      image: debian:9.1
+      image: debian:9.4
       restartPolicy: Always
       readinessProbe:
         httpGet:
