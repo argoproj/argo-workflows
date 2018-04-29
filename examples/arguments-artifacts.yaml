@@ -24,6 +24,6 @@ spec:
         path: /usr/local/bin/kubectl
         mode: 0755
     container:
-      image: debian:9.1
+      image: debian:9.4
       command: [sh, -c]
       args: ["kubectl version"]

@@ -327,7 +327,7 @@ spec:
 
   - name: gen-random-int-bash
     script:
-      image: debian:9.1
+      image: debian:9.4
       command: [bash]
       source: |                                         # Contents of the here-script
         cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
@@ -1042,6 +1042,8 @@ spec:
               restartPolicy: Never
           backoffLimit: 4
 ```
+
+Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
 
 ## Docker-in-Docker (aka. DinD) Using Sidecars
 An application of sidecars is to implement DinD (Docker-in-Docker).
