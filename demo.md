@@ -1,4 +1,4 @@
-# Argo v2.0 Getting Started
+# Argo Getting Started
 
 To see how Argo works, you can run examples of simple workflows and workflows that use artifacts. For the latter, you'll set up an artifact repository for storing the artifacts that are passed in the workflows. Here are the requirements and steps to run the workflows.
 
@@ -15,7 +15,7 @@ $ brew install argoproj/tap/argo
 ```
 On Linux:
 ```
-$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.0.0/argo-linux-amd64
+$ curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.1.0/argo-linux-amd64
 $ chmod +x /usr/local/bin/argo
 ```
 
@@ -89,7 +89,7 @@ Edit the workflow-controller config map to reference the service name (argo-arti
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.0.0
+    executorImage: argoproj/argoexec:v2.1.0
     artifactRepository:
       s3:
         bucket: my-bucket
