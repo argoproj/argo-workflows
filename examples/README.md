@@ -18,6 +18,7 @@ In case you want to follow along with this walkthrough, here's a quick overview 
 argo submit hello-world.yaml    #submit a workflow spec to Kubernetes
 argo list                       #list current workflows
 argo get hello-world-xxx        #get info about a specific workflow
+argo logs -w hello-world-xxx    #get logs from all steps in a workflow
 argo logs hello-world-xxx-yyy   #get logs from a specific step in a workflow
 argo delete hello-world-xxx     #delete workflow
 ```
@@ -186,6 +187,57 @@ STEP                                     PODNAME
    └-✔ hello2b                  steps-rbm92-634838500
 ```
 
+## DAG
+
+As an alternative to specifying sequences of steps, you can define the workflow as a graph by specifying the dependencies of each task.
+This can be simpler to maintain for complex workflows and allows for maximum parallelism when running tasks.
+
+In the following workflow, step `A` runs first, as it has no dependencies.
+Once `A` has finished, steps `B` and `C` run in parallel.
+Finally, once `B` and `C` have completed, step `D` can run.
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-diamond-
+spec:
+  entrypoint: diamond
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: C}]
+      - name: D
+        dependencies: [B, C]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: D}]
+```
+
+The dependency graph may have [multiple roots](./dag-multiroot.yaml).
+The templates called from a dag or steps template can themselves be dag or steps templates. This can allow for complex workflows to be split into managable pieces.
+
 ## Artifacts
 
 **Note:** 
@@ -243,6 +295,7 @@ spec:
 The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file.
 The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
 The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step.
+DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
 ## The Structure of Workflow Specs
 
@@ -405,6 +458,8 @@ spec:
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
 ```
+
+DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-parameter.outputs.parameters.hello-param}}`.
 
 ## Loops
 
@@ -928,6 +983,8 @@ spec:
           memory: 32Mi
           cpu: 100m
 ```
+
+DAG templates use the tasks prefix to refer to another task, for example `{{tasks.influx.ip}}`.
 
 ## Sidecars
 A sidecar is another container that executes concurrently in the same pod as the "main" container and is useful
