@@ -32,15 +32,15 @@ Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflow
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
 
 ## Who uses Argo?
-As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your company name and @githubhandle if you may.
+As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
 Currently **officially** using Argo:
 
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
-1. [Intuit](https://www.intuit.com/) [[@mukulikak](https://github.com/mukulikak)]
-1. [NVIDIA](http://www.nvidia.com/)
+1. [Intuit](https://www.intuit.com/)
+1. [NVIDIA](https://www.nvidia.com/)
 
 ## Presentations
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
