@@ -14,7 +14,7 @@ We will be scheduling the first Argo Community Meeting for the beginning of May 
 Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Custom Resource Definition).
 
 * Define workflows where each step in the workflow is a container.
-  * Soon, you will also be able to define workflows as a dependency graph (DAG).
+* Model multi-step workflows as a sequence of steps or capture the dependencies between tasks using a graph (DAG).
 * Easily leverage Kubernetes to run compute intensive jobs like data processing or machine learning jobs in a fraction of the time using Argo workflows.
 * Run rich CI/CD pipelines using Docker-in-Docker, built-in artifact management, secret management and native access to other Kubernetes resources.
 
@@ -24,9 +24,7 @@ Argo is an open source container-native workflow engine for getting work done on
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
 * We want to make it as easy to run Argo workflows on Kubernetes as it is to run jobs on you laptop.
 
-## Argo 2.0
-Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows using kubectl commands.
-
+## Documentation
 * [Get started here](https://github.com/argoproj/argo/blob/master/demo.md)
 * [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
