@@ -11,6 +11,7 @@ Map that to your local time with this [timezone table](https://www.google.com/se
 
 See it on the web as [Google Calendar](https://calendar.google.com/calendar/embed?src=argoproj%40gmail.com&ctz=America%2FLos_Angeles) , or paste this [iCal url](https://calendar.google.com/calendar/ical/argoproj%40gmail.com/private-52229421c00ee71c176517df5bf1941e/basic.ics) into any iCal client. 
 
+Meeting notes is available [here](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE/edit?usp=sharing).
 
 ## Projects
 
