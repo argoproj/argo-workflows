@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"encoding/json"
 	"fmt"
 	"hash/fnv"
 
@@ -319,42 +318,36 @@ type WorkflowStep struct {
 	When string `json:"when,omitempty"`
 }
 
-// Item expands a single workflow step into multiple parallel steps
-// The value of Item can be a map, string, bool, or number
-type Item struct {
-	Value interface{}
-}
+// // DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
+// func (i *Item) DeepCopyInto(out *Item) {
+// 	inBytes, err := json.Marshal(i)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	err = json.Unmarshal(inBytes, out)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
 
-// DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
-func (i *Item) DeepCopyInto(out *Item) {
-	inBytes, err := json.Marshal(i)
-	if err != nil {
-		panic(err)
-	}
-	err = json.Unmarshal(inBytes, out)
-	if err != nil {
-		panic(err)
-	}
-}
+// // UnmarshalJSON implements the json.Unmarshaller interface.
+// func (i *Item) UnmarshalJSON(value []byte) error {
+// 	return json.Unmarshal(value, &i.Value)
+// }
 
-// UnmarshalJSON implements the json.Unmarshaller interface.
-func (i *Item) UnmarshalJSON(value []byte) error {
-	return json.Unmarshal(value, &i.Value)
-}
+// // MarshalJSON implements the json.Marshaller interface.
+// func (i Item) MarshalJSON() ([]byte, error) {
+// 	return json.Marshal(i.Value)
+// }
 
-// MarshalJSON implements the json.Marshaller interface.
-func (i Item) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i.Value)
-}
+// // OpenAPISchemaType is used by the kube-openapi generator when constructing
+// // the OpenAPI spec of this type.
+// // See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
+// func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
 
-// OpenAPISchemaType is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-// See: https://github.com/kubernetes/kube-openapi/tree/master/pkg/generators
-func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
-
-// OpenAPISchemaFormat is used by the kube-openapi generator when constructing
-// the OpenAPI spec of this type.
-func (i Item) OpenAPISchemaFormat() string { return "item" }
+// // OpenAPISchemaFormat is used by the kube-openapi generator when constructing
+// // the OpenAPI spec of this type.
+// func (i Item) OpenAPISchemaFormat() string { return "item" }
 
 // Arguments to a template
 type Arguments struct {

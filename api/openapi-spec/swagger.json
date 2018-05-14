@@ -235,8 +235,58 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
-      "type": "string",
-      "format": "item"
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
+      "required": [
+        "Type",
+        "NumVal",
+        "BoolVal",
+        "StrVal",
+        "MapVal"
+      ],
+      "properties": {
+        "BoolVal": {
+          "type": "boolean"
+        },
+        "MapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ItemValue"
+          }
+        },
+        "NumVal": {
+          "type": "string"
+        },
+        "StrVal": {
+          "type": "string"
+        },
+        "Type": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ItemValue": {
+      "required": [
+        "Type",
+        "NumVal",
+        "BoolVal",
+        "StrVal"
+      ],
+      "properties": {
+        "BoolVal": {
+          "type": "boolean"
+        },
+        "NumVal": {
+          "type": "string"
+        },
+        "StrVal": {
+          "type": "string"
+        },
+        "Type": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
