@@ -23,7 +23,7 @@ argo logs hello-world-xxx-yyy   #get logs from a specific step in a workflow
 argo delete hello-world-xxx     #delete workflow
 ```
 
-You can also run workflow specs directly using kubectl but the argo cli provides syntax checking, nicer output, and requires less typing.
+You can also run workflow specs directly using kubectl but the argo CLI provides syntax checking, nicer output, and requires less typing.
 ```
 kubectl create -f hello-world.yaml
 kubectl get wf
@@ -178,7 +178,7 @@ spec:
 The above workflow spec prints three different flavors of "hello".
 The `hello-hello-hello` template consists of three `steps`.
 The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other.
-Using the argo cli command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
+Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
 ```
 STEP                                     PODNAME
  ✔ arguments-parameters-rbm92   
@@ -236,7 +236,7 @@ spec:
 ```
 
 The dependency graph may have [multiple roots](./dag-multiroot.yaml).
-The templates called from a dag or steps template can themselves be dag or steps templates. This can allow for complex workflows to be split into managable pieces.
+The templates called from a dag or steps template can themselves be dag or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
 ## Artifacts
 
@@ -434,7 +434,7 @@ spec:
         template: print-message
         arguments:
           parameters:
-          # Pass the hello-param output from the gnererate-parameter step as the message input to print-message
+          # Pass the hello-param output from the generate-parameter step as the message input to print-message
           - name: message
             value: "{{steps.generate-parameter.outputs.parameters.hello-param}}"
 
@@ -563,7 +563,7 @@ spec:
             value: "{{item.image}}"
           - name: tag
             value: "{{item.tag}}"
-        withParam: "{{inputs.parameters.os-list}}"      #parameter specifies the list to intereate over
+        withParam: "{{inputs.parameters.os-list}}"      #parameter specifies the list to iterate over
 
   # This template is the same as in the previous example
   - name: cat-os-release
@@ -577,7 +577,7 @@ spec:
       args: [/etc/os-release]
 ```
 
-We can even dynamically generate the list of items to interate over!
+We can even dynamically generate the list of items to iterate over!
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -913,7 +913,7 @@ spec:
 ```
 
 ## Daemon Containers
-Argo workflows can start containers that run in the background (aka. daemon containers) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existance can persist across multiple steps or even the entire workflow.
+Argo workflows can start containers that run in the background (aka. daemon containers) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
 ```
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1058,7 +1058,7 @@ spec:
 
 ## Kubernetes Resources
 
-In many cases, you will want to manage Kuberenetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of kubernetes resource.
+In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.
 ```
 # in a workflow. The resource template type accepts any k8s manifest
 # (including CRDs) and can perform any kubectl action against it (e.g. create,
@@ -1134,7 +1134,7 @@ spec:
 ```
 
 ## Continuous integration example
-Continuous integration is a popular appication for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
+Continuous integration is a popular application for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
 
 A good example of a CI workflow spec is provided at https://github.com/argoproj/argo/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.
 
