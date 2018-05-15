@@ -78,6 +78,16 @@ cli-darwin: builder
 		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
 		ARGO_CLI_NAME=argo-darwin-amd64
 
+.PHONY: cli-windows
+cli-windows: builder
+	${BUILDER_CMD} make cli \
+                GOARCH=amd64 \
+		GOOS=windows \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-windows-amd64
+
 .PHONY: controller
 controller:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
