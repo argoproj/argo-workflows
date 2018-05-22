@@ -34,6 +34,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
+1. [CoreFiling](https://www.corefiling.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
