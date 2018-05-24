@@ -124,6 +124,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	}
+	if len(node.Children) == 0 {
 		rootTasks := findRootTaskNames(dagCtx, targetTasks)
 		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
 		for _, rootTaskName := range rootTasks {
