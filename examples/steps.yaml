@@ -13,21 +13,15 @@ spec:
     - - name: hello1
         template: whalesay
         arguments:
-          parameters:
-          - name: message
-            value: "hello1"
+          parameters: [{name: message, value: "hello1"}]
     - - name: hello2a
         template: whalesay
         arguments:
-          parameters:
-          - name: message
-            value: "hello2a"
+          parameters: [{name: message, value: "hello2a"}]
       - name: hello2b
         template: whalesay
         arguments:
-          parameters:
-          - name: message
-            value: "hello2b"
+          parameters: [{name: message, value: "hello2b"}]
 
   - name: whalesay
     inputs:
