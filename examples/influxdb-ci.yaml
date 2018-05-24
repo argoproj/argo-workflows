@@ -163,7 +163,7 @@ spec:
           parameters:
           - name: cmd
             value: curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/query' --data-urlencode "q=CREATE DATABASE mydb"
-      - name: producer1
+    - - name: producer1
         template: influxdb-client
         arguments:
           parameters:
