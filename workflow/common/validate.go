@@ -578,8 +578,15 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		}
 	}
 
-	err = verifyNoCycles(tmpl, nameToTask)
+	if err = verifyNoCycles(tmpl, nameToTask); err != nil {
+		return err
+	}
+
+	err = resolveAllVariables(scope, tmpl.DAG.Targets)
 	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
+	}
+	if err = validateDAGTargets(tmpl, nameToTask); err != nil {
 		return err
 	}
 
@@ -614,6 +621,21 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		}
 	}
 
+	return nil
+}
+
+func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) error {
+	if tmpl.DAG.Targets == "" {
+		return nil
+	}
+	for _, targetName := range strings.Split(tmpl.DAG.Targets, " ") {
+		if isParameter(targetName) {
+			continue
+		}
+		if _, ok := nameToTask[targetName]; !ok {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets: target '%s' is not defined", tmpl.Name, targetName)
+		}
+	}
 	return nil
 }
 

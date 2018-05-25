@@ -151,7 +151,12 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		scope: make(map[string]interface{}),
 	}
 	for _, task := range tmpl.DAG.Tasks {
-		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), dagCtx.getTaskNode(task.Name))
+		taskNode := dagCtx.getTaskNode(task.Name)
+		if taskNode == nil {
+			// Can happen when dag.target was specified
+			continue
+		}
+		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -186,7 +191,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 // findRootTaskNames finds the names of all tasks which have no dependencies.
 // Once identified, these root tasks are marked as children to the encompassing node.
 func findRootTaskNames(dagCtx *dagContext, targetTasks []string) []string {
-	//rootTaskNames := make(map[string]bool)
 	rootTaskNames := make([]string, 0)
 	visited := make(map[string]bool)
 	var findRootHelper func(s string)
