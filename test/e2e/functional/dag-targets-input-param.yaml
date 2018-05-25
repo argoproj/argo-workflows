@@ -1,19 +1,22 @@
-# The following workflow executes a diamond workflow
-# 
-#   A
-#  / \
-# B   C
-#  \ /
-#   D
+# verifies targets can come from inputs.parameters
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-diamond-
+  generateName: dag-target-
 spec:
-  entrypoint: diamond
+  entrypoint: dag-target
+  arguments:
+    parameters:
+    - name: target
+      value: E
+
   templates:
-  - name: diamond
+  - name: dag-target
+    inputs:
+      parameters:
+      - name: target
     dag:
+      target: "{{inputs.parameters.target}}"
       tasks:
       - name: A
         template: echo
@@ -34,6 +37,11 @@ spec:
         template: echo
         arguments:
           parameters: [{name: message, value: D}]
+      - name: E
+        dependencies: [C]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: E}]
 
   - name: echo
     inputs:

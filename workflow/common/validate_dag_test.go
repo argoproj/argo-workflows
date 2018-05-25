@@ -289,3 +289,113 @@ func TestDAGArtifactResolution(t *testing.T) {
 	err := validate(dagResolvedArt)
 	assert.Nil(t, err)
 }
+
+var dagNonexistantTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  templates:
+  - name: dag-target
+    dag:
+      target: DOESNTEXIST
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+func TestDAGNonExistantTarget(t *testing.T) {
+	err := validate(dagNonexistantTarget)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "target 'DOESNTEXIST' is not defined")
+	}
+}
+
+var dagTargetSubstitution = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  arguments:
+    parameters:
+    - name: target
+      value: B
+  templates:
+  - name: dag-target
+    dag:
+      target: "{{workflow.parameters.target}}"
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+func TestDAGTargetSubstitution(t *testing.T) {
+	err := validate(dagTargetSubstitution)
+	assert.Nil(t, err)
+}
+
+var dagTargetMissingInputParam = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  arguments:
+    parameters:
+    - name: target
+      value: A
+  templates:
+  - name: dag-target
+    dag:
+      target: "{{inputs.parameters.target}}"
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+`
+
+func TestDAGTargetMissingInputParam(t *testing.T) {
+	err := validate(dagTargetMissingInputParam)
+	assert.NotNil(t, err)
+}
