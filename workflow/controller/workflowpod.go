@@ -315,7 +315,9 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
 func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
-	if tmpl.Container == nil && len(tmpl.Sidecars) == 0 {
+	switch tmpl.GetType() {
+	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
+	default:
 		return nil
 	}
 
@@ -358,6 +360,12 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 	}
 	if tmpl.Container != nil {
 		err := addVolumeRef(tmpl.Container.VolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+	if tmpl.Script != nil {
+		err := addVolumeRef(tmpl.Script.VolumeMounts)
 		if err != nil {
 			return err
 		}
