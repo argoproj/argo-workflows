@@ -93,9 +93,9 @@ controller:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 .PHONY: cli-image
-cli-image: cli
-	docker build -t $(IMAGE_PREFIX)cli:$(IMAGE_TAG) -f Dockerfile-cli .
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)cli:$(IMAGE_TAG) ; fi
+cli-image: cli-linux
+	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) -f Dockerfile-cli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) ; fi
 
 .PHONY: controller-linux
 controller-linux: builder
@@ -151,4 +151,4 @@ release-precheck:
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 
 .PHONY: release
-release: release-precheck controller-image cli-darwin cli-linux executor-image
+release: release-precheck controller-image cli-darwin cli-linux executor-image cli-image
