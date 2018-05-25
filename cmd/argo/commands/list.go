@@ -110,6 +110,7 @@ var timeMagnitudes = []humanize.RelTimeMagnitude{
 	{D: 2 * time.Hour, Format: "1h %s", DivBy: 1},
 	{D: humanize.Day, Format: "%dh %s", DivBy: time.Hour},
 	{D: 2 * humanize.Day, Format: "1d %s", DivBy: 1},
+	{D: humanize.Week, Format: "%dd %s", DivBy: humanize.Day},
 }
 
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
