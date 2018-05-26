@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -38,6 +40,7 @@ type rootFlags struct {
 	kubeConfig string // --kubeconfig
 	configMap  string // --configmap
 	logLevel   string // --loglevel
+	glogLevel  int    // --gloglevel
 }
 
 var (
@@ -50,6 +53,7 @@ func init() {
 	RootCmd.Flags().StringVar(&rootArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
 	RootCmd.Flags().StringVar(&rootArgs.configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "Name of K8s configmap to retrieve workflow controller configuration")
 	RootCmd.Flags().StringVar(&rootArgs.logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
+	RootCmd.Flags().IntVar(&rootArgs.glogLevel, "gloglevel", 0, "Set the glog logging level")
 }
 
 // GetClientConfig return rest config, if path not specified, assume in cluster config
@@ -71,6 +75,11 @@ func Run(cmd *cobra.Command, args []string) {
 	cmdutil.SetLogLevel(rootArgs.logLevel)
 	stats.RegisterStackDumper()
 	stats.StartStatsTicker(5 * time.Minute)
+
+	// Set the glog level for the k8s go-client
+	_ = flag.CommandLine.Parse([]string{})
+	_ = flag.Lookup("logtostderr").Value.Set("true")
+	_ = flag.Lookup("v").Value.Set(strconv.Itoa(rootArgs.glogLevel))
 
 	config, err := GetClientConfig(rootArgs.kubeConfig)
 	if err != nil {
