@@ -30,11 +30,11 @@ type wfOperationCtx struct {
 	// updated indicates whether or not the workflow object itself was updated
 	// and needs to be persisted back to kubernetes
 	updated bool
-	// log is an logrus logging context to corrolate logs with a workflow
+	// log is an logrus logging context to corralate logs with a workflow
 	log *log.Entry
 	// controller reference to workflow controller
 	controller *WorkflowController
-	// globalParms holds any parameters that are available to be referenced
+	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams map[string]string
 	// map of pods which need to be labeled with completed=true
@@ -94,7 +94,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 
 // operate is the main operator logic of a workflow. It evaluates the current state of the workflow,
 // and its pods and decides how to proceed down the execution path.
-// TODO: an error returned by this method should result in requeing the workflow to be retried at a
+// TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
 func (woc *wfOperationCtx) operate() {
 	defer woc.persistUpdates()
@@ -633,7 +633,7 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 	}
 	annotatedMsg := pod.Annotations[common.AnnotationKeyNodeMessage]
 	// We only get one message to set for the overall node status.
-	// If mutiple containers failed, in order of preference:
+	// If multiple containers failed, in order of preference:
 	// init, main (annotated), main (exit code), wait, sidecars
 	for _, ctr := range pod.Status.InitContainerStatuses {
 		if ctr.State.Terminated == nil {
