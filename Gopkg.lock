@@ -566,6 +566,7 @@
     "discovery",
     "discovery/fake",
     "dynamic",
+    "informers/internalinterfaces",
     "kubernetes",
     "kubernetes/fake",
     "kubernetes/scheme",
@@ -698,6 +699,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d5771a2f5caa7eb900b0c2d94c1a505bb1f7252788926cfe3eae3880ff3c65d3"
+  inputs-digest = "4f165a903e4805d10641dca63ab8ab1a6e4605c254f49183ec6bcd3ca4c07983"
   solver-name = "gps-cdcl"
   solver-version = 1
