@@ -264,13 +264,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		// Add all outbound nodes of our dependencies as parents to this node
 		for _, depName := range task.Dependencies {
 			depNode := dagCtx.getTaskNode(depName)
-			woc.log.Infof("node %s outbound nodes: %s", depNode, depNode.OutboundNodes)
-			if depNode.Type == wfv1.NodeTypePod {
-				woc.addChildNode(depNode.Name, nodeName)
-			} else {
-				for _, outNodeID := range depNode.OutboundNodes {
-					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, nodeName)
-				}
+			outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
+			woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
+			for _, outNodeID := range outboundNodeIDs {
+				woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, nodeName)
 			}
 		}
 	}
