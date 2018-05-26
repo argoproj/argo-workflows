@@ -156,11 +156,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-		woc.addChildNode(sgNodeName, childNodeName)
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
+			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
 		}
@@ -169,6 +169,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, "", stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
 		}
@@ -181,11 +182,15 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNode)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
+				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
 		}
-		if childNode != nil && childNode.Completed() && !childNode.Successful() {
-			break
+		if childNode != nil {
+			woc.addChildNode(sgNodeName, childNodeName)
+			if childNode.Completed() && !childNode.Successful() {
+				break
+			}
 		}
 	}
 
