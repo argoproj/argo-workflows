@@ -76,18 +76,17 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 		}
 
+		// Add all outputs of each step in the group to the scope
 		for _, step := range stepGroup {
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-			childNodeID := woc.wf.NodeID(childNodeName)
-			childNode, ok := woc.wf.Status.Nodes[childNodeID]
-			if !ok {
+			childNode := woc.getNodeByName(fmt.Sprintf("%s.%s", sgNodeName, step.Name))
+			if childNode == nil {
 				// This can happen if there was `withItem` expansion
 				// it is okay to ignore this because these expanded steps
 				// are not easily referenceable by user.
 				continue
 			}
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			woc.processNodeOutputs(stepsCtx.scope, prefix, &childNode)
+			woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
 		}
 	}
 	woc.updateOutboundNodes(nodeName, tmpl)
