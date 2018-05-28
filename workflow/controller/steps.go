@@ -43,23 +43,23 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
-			// initialize the step group
 			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
-			if i == 0 {
-				// Connect the boundary node with the first step group
-				woc.addChildNode(nodeName, sgNodeName)
-				node = woc.getNodeByName(nodeName)
-			} else {
-				// Otherwise connect all the outbound nodes of the previous
-				// step group as parents to the current step group node
-				prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
-				prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
-				for _, childID := range prevStepGroupNode.Children {
-					outboundNodeIDs := woc.getOutboundNodes(childID)
-					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
-					for _, outNodeID := range outboundNodeIDs {
-						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
-					}
+		}
+		// The following will connect the step group node to its parents.
+		if i == 0 {
+			// If this is the first step group, the boundary node is the parent
+			woc.addChildNode(nodeName, sgNodeName)
+			node = woc.getNodeByName(nodeName)
+		} else {
+			// Otherwise connect all the outbound nodes of the previous step group as parents to
+			// the current step group node.
+			prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
+			prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
+			for _, childID := range prevStepGroupNode.Children {
+				outboundNodeIDs := woc.getOutboundNodes(childID)
+				woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+				for _, outNodeID := range outboundNodeIDs {
+					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
 				}
 			}
 		}
