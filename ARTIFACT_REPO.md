@@ -108,7 +108,7 @@ Example:
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.1.0
+    executorImage: argoproj/argoexec:v2.1.1
     artifactRepository:
       s3:
         bucket: my-bucket
