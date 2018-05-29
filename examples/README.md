@@ -129,6 +129,37 @@ argo submit arguments-parameters.yaml --entrypoint whalesay2
 
 By using a combination of the `--entrypoint` and `-p` parameters, you can invoke any template in the workflow spec with any parameter that you like.
 
+The values set in the `spec.arguments.parameters` are globally scoped and can be accessed via `{{workflow.parameters.parameter_name}}`.  This can be useful to pass information to multiple steps in a workflow.  For example, if you wanted to run your workflows with different logging levels, set in environment of each container, you could have a set up similar to this:
+
+```
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: global-parameters-
+spec:
+  entrypoint: A
+  arguments:
+    parameters:
+    - name: log_level
+      value: INFO
+
+  templates:
+  - name: A
+    container:
+      image: containerA
+      env:
+        - "LOG_LEVEL={{workflow.parameters.log_level}}"
+      command: [runA]
+  - - name: B
+      container:
+        image: containerB
+        env:
+          - "LOG_LEVEL={{workflow.parameters.log_level}}"
+        command: [runB]
+```
+
+In this workflow, both steps `A` and `B` would have the same log level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
+
 ## Steps
 
 In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.  Be sure to read the comments. They provide useful explanations.
