@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.1.1 (2018-05-29)
+
+### Changelog since v2.1.0
+- Switch to an UnstructuredInformer to guard controller against malformed workflow manifests (issue #632)
+- Fix issue where suspend templates were not properly being connected to their children (issue #869)
+- Fix issue where a failed step in a template with parallelism would not complete (issue #868)
+- Fix issue where `argo list` age column maxed out at 1d (issue #857)
+- Fix issue where volumes were not supported in script templates (issue #852)
+- Fix implementation of DAG task targets (issue #865)
+- Retrying failed steps templates could potentially result in disconnected children
+- [UI] Fix crash while rendering failed workflow with exit handler (issue #815)
+- [UI] Fix locating outbound nodes for skipped node
+- [UI] Fix JS crash caused by inconsistent workflow state
+- [UI] Fix blank help page when using browser navigation
+- [UI] API server can filter workflows managed by specific workflow controller (@kzadorozhny)
+- [UI] Restore support for accessing the UI using `kubectl proxy` (@mthx)
+- [UI] Pass the namespace when querying the logs (issue #777) (@mthx)
+- [UI] Improve workflow sorting (issue #866)
++ Add windows support for Argo CLI (@cuericlee)
+* Documentation fixes (@mthx, @bodepd)
+
 ## 2.1.0 (2018-05-01)
 
 ### Changelog since v2.0
