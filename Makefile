@@ -81,7 +81,7 @@ cli-darwin: builder
 .PHONY: cli-windows
 cli-windows: builder
 	${BUILDER_CMD} make cli \
-                GOARCH=amd64 \
+		GOARCH=amd64 \
 		GOOS=windows \
 		IMAGE_TAG=$(IMAGE_TAG) \
 		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
@@ -151,4 +151,4 @@ release-precheck:
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 
 .PHONY: release
-release: release-precheck controller-image cli-darwin cli-linux executor-image cli-image
+release: release-precheck controller-image cli-darwin cli-linux cli-windows executor-image cli-image
