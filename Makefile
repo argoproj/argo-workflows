@@ -137,6 +137,8 @@ update-codegen:
 verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/dist/swagger.json
+	diff ${CURRENT_DIR}/dist/swagger.json ${CURRENT_DIR}/api/openapi-spec/swagger.json
 
 .PHONY: clean
 clean:
@@ -146,9 +148,10 @@ clean:
 precheckin: test lint verify-codegen
 
 .PHONY: release-precheck
-release-precheck:
+release-precheck: precheckin
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 
 .PHONY: release
 release: release-precheck controller-image cli-darwin cli-linux cli-windows executor-image cli-image
