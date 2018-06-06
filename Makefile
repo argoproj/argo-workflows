@@ -70,7 +70,7 @@ cli-linux: builder
 		LDFLAGS='-extldflags "-static"' \
 		ARGO_CLI_NAME=argo-linux-amd64
 
-.PHONY: cli
+.PHONY: cli-darwin
 cli-darwin: builder
 	${BUILDER_CMD} make cli \
 		GOOS=darwin \
@@ -78,14 +78,24 @@ cli-darwin: builder
 		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
 		ARGO_CLI_NAME=argo-darwin-amd64
 
+.PHONY: cli-windows
+cli-windows: builder
+	${BUILDER_CMD} make cli \
+		GOARCH=amd64 \
+		GOOS=windows \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-windows-amd64
+
 .PHONY: controller
 controller:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 .PHONY: cli-image
-cli-image: cli
-	docker build -t $(IMAGE_PREFIX)cli:$(IMAGE_TAG) -f Dockerfile-cli .
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)cli:$(IMAGE_TAG) ; fi
+cli-image: cli-linux
+	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) -f Dockerfile-cli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) ; fi
 
 .PHONY: controller-linux
 controller-linux: builder
@@ -127,6 +137,9 @@ update-codegen:
 verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
+	mkdir -p ${CURRENT_DIR}/dist
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/dist/swagger.json
+	diff ${CURRENT_DIR}/dist/swagger.json ${CURRENT_DIR}/api/openapi-spec/swagger.json
 
 .PHONY: clean
 clean:
@@ -136,9 +149,10 @@ clean:
 precheckin: test lint verify-codegen
 
 .PHONY: release-precheck
-release-precheck:
+release-precheck: precheckin
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 
 .PHONY: release
-release: release-precheck controller-image cli-darwin cli-linux executor-image
+release: release-precheck controller-image cli-darwin cli-linux cli-windows executor-image cli-image

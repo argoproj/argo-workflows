@@ -9,20 +9,23 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfinformers "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -208,9 +211,20 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// or was deleted, but the work queue still had an entry for it.
 		return true
 	}
-	wf, ok := obj.(*wfv1.Workflow)
+	// The workflow informer receives unstructured objects to deal with the possibility of invalid
+	// workflow manifests that are unable to unmarshal to workflow objects
+	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("Key '%s' in index is not a workflow", key)
+		log.Warnf("Key '%s' in index is not an unstructured", key)
+		return true
+	}
+	var wf wfv1.Workflow
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
+	if err != nil {
+		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
+		woc := newWorkflowOperationCtx(&wf, wfc)
+		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.persistUpdates()
 		return true
 	}
 
@@ -219,7 +233,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-	woc := newWorkflowOperationCtx(wf, wfc)
+	woc := newWorkflowOperationCtx(&wf, wfc)
 	woc.operate()
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
@@ -338,14 +352,33 @@ func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.LabelSelector = labelSelector.String()
 }
 
+// newWorkflowInformer returns the workflow informer used by the controller. This is actually
+// a custom built UnstructuredInformer which is in actuality returning unstructured.Unstructured
+// objects. We no longer return WorkflowInformer due to:
+// https://github.com/kubernetes/kubernetes/issues/57705
+// https://github.com/argoproj/argo/issues/632
 func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
-	wfInformerFactory := wfinformers.NewFilteredSharedInformerFactory(
-		wfc.wfclientset,
-		workflowResyncPeriod,
+	dynClientPool := dynamic.NewDynamicClientPool(wfc.restConfig)
+	dclient, err := dynClientPool.ClientForGroupVersionKind(wfv1.SchemaGroupVersionKind)
+	if err != nil {
+		panic(err)
+	}
+	resource := &metav1.APIResource{
+		Name:         workflow.Plural,
+		SingularName: workflow.Singular,
+		Namespaced:   true,
+		Group:        workflow.Group,
+		Version:      "v1alpha1",
+		ShortNames:   []string{"wf"},
+	}
+	informer := unstructutil.NewFilteredUnstructuredInformer(
+		resource,
+		dclient,
 		wfc.Config.Namespace,
+		workflowResyncPeriod,
+		cache.Indexers{},
 		wfc.tweakWorkflowlist,
 	)
-	informer := wfInformerFactory.Argoproj().V1alpha1().Workflows().Informer()
 	informer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {

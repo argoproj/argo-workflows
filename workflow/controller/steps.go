@@ -6,12 +6,10 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -45,22 +43,23 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
-			// initialize the step group
 			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
-			if i == 0 {
-				// Connect the boundary node with the first step group
-				woc.addChildNode(nodeName, sgNodeName)
-			} else {
-				// Otherwise connect all the outbound nodes of the previous
-				// step group as parents to the current step group node
-				prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
-				prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
-				for _, childID := range prevStepGroupNode.Children {
-					outboundNodeIDs := woc.getOutboundNodes(childID)
-					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
-					for _, outNodeID := range outboundNodeIDs {
-						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
-					}
+		}
+		// The following will connect the step group node to its parents.
+		if i == 0 {
+			// If this is the first step group, the boundary node is the parent
+			woc.addChildNode(nodeName, sgNodeName)
+			node = woc.getNodeByName(nodeName)
+		} else {
+			// Otherwise connect all the outbound nodes of the previous step group as parents to
+			// the current step group node.
+			prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
+			prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
+			for _, childID := range prevStepGroupNode.Children {
+				outboundNodeIDs := woc.getOutboundNodes(childID)
+				woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+				for _, outNodeID := range outboundNodeIDs {
+					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
 				}
 			}
 		}
@@ -77,18 +76,17 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 		}
 
+		// Add all outputs of each step in the group to the scope
 		for _, step := range stepGroup {
-			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-			childNodeID := woc.wf.NodeID(childNodeName)
-			childNode, ok := woc.wf.Status.Nodes[childNodeID]
-			if !ok {
+			childNode := woc.getNodeByName(fmt.Sprintf("%s.%s", sgNodeName, step.Name))
+			if childNode == nil {
 				// This can happen if there was `withItem` expansion
 				// it is okay to ignore this because these expanded steps
 				// are not easily referenceable by user.
 				continue
 			}
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			woc.processNodeOutputs(stepsCtx.scope, prefix, &childNode)
+			woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
 		}
 	}
 	woc.updateOutboundNodes(nodeName, tmpl)
@@ -109,7 +107,18 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 // updateOutboundNodes set the outbound nodes from the last step group
 func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Template) {
 	outbound := make([]string, 0)
-	lastSGNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, len(tmpl.Steps)-1))
+	// Find the last, initialized stepgroup node
+	var lastSGNode *wfv1.NodeStatus
+	for i := len(tmpl.Steps) - 1; i >= 0; i-- {
+		sgNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
+		if sgNode != nil {
+			lastSGNode = sgNode
+		}
+	}
+	if lastSGNode == nil {
+		woc.log.Warnf("node '%s' had no initialized StepGroup nodes", nodeName)
+		return
+	}
 	for _, childID := range lastSGNode.Children {
 		outboundNodeIDs := woc.getOutboundNodes(childID)
 		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
@@ -146,11 +155,11 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-		woc.addChildNode(sgNodeName, childNodeName)
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
+			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
 		}
@@ -159,6 +168,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
 				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, "", stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
 		}
@@ -171,11 +181,15 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNode)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
+				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
 			}
 		}
-		if childNode != nil && childNode.Completed() && !childNode.Successful() {
-			break
+		if childNode != nil {
+			woc.addChildNode(sgNodeName, childNodeName)
+			if childNode.Completed() && !childNode.Successful() {
+				break
+			}
 		}
 	}
 
@@ -358,79 +372,4 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil
-}
-
-// killDeamonedChildren kill any granchildren of a step template node, which have been daemoned.
-// We only need to check grandchildren instead of children because the direct children of a step
-// template are actually stepGroups, which are nodes that cannot represent actual containers.
-// Returns the first error that occurs (if any)
-// TODO(jessesuen): this logic will need to change with DAGs
-func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
-	woc.log.Infof("Checking deamon children of %s", nodeID)
-	var firstErr error
-	execCtl := common.ExecutionControl{
-		Deadline: &time.Time{},
-	}
-	for _, childNodeID := range woc.wf.Status.Nodes[nodeID].Children {
-		for _, grandChildID := range woc.wf.Status.Nodes[childNodeID].Children {
-			gcNode := woc.wf.Status.Nodes[grandChildID]
-			if gcNode.Daemoned == nil || !*gcNode.Daemoned {
-				continue
-			}
-			err := woc.updateExecutionControl(gcNode.ID, execCtl)
-			if err != nil {
-				woc.log.Errorf("Failed to update execution control of %s: %+v", gcNode, err)
-				if firstErr == nil {
-					firstErr = err
-				}
-			}
-		}
-	}
-	return firstErr
-}
-
-// updateExecutionControl updates the execution control parameters
-func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common.ExecutionControl) error {
-	execCtlBytes, err := json.Marshal(execCtl)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-
-	woc.log.Infof("Updating execution control of %s: %s", podName, execCtlBytes)
-	err = common.AddPodAnnotation(
-		woc.controller.kubeclientset,
-		podName,
-		woc.wf.ObjectMeta.Namespace,
-		common.AnnotationKeyExecutionControl,
-		string(execCtlBytes),
-	)
-	if err != nil {
-		return err
-	}
-
-	// Ideally we would simply annotate the pod with the updates and be done with it, allowing
-	// the executor to notice the updates naturally via the Downward API annotations volume
-	// mounted file. However, updates to the Downward API volumes take a very long time to
-	// propagate (minutes). The following code fast-tracks this by signaling the executor
-	// using SIGUSR2 that something changed.
-	woc.log.Infof("Signalling %s of updates", podName)
-	exec, err := common.ExecPodContainer(
-		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
-		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 1",
-	)
-	if err != nil {
-		return err
-	}
-	go func() {
-		// This call is necessary to actually send the exec. Since signalling is best effort,
-		// it is launched as a goroutine and the error is discarded
-		_, _, err = common.GetExecutorOutput(exec)
-		if err != nil {
-			log.Warnf("Signal command failed: %v", err)
-			return
-		}
-		log.Infof("Signal of %s (%s) successfully issued", podName, common.WaitContainerName)
-	}()
-
-	return nil
 }

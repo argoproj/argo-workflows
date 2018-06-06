@@ -572,6 +572,7 @@
     "discovery",
     "discovery/fake",
     "dynamic",
+    "informers/internalinterfaces",
     "kubernetes",
     "kubernetes/fake",
     "kubernetes/scheme",

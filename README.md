@@ -3,18 +3,20 @@
 ![Argo Image](argo.png)
 
 ## News
-The core Argo team is joining Intuit! We are super excited to take Argo to the next level as a part of Intuit. We remain firmly committed to Open Source, Kubernetes, and our AWESOME users!
 
-Blog post [here](https://blog.argoproj.io/applatix-joins-intuit-7ab587270573).
+We are excited to welcome [Cyrus Biotechnology](https://cyrusbio.com/), [Google](https://www.google.com/intl/en/about/our-company/) and [NVIDIA](http://www.nvidia.com/) as corporate members of the Argo Community! They have been active users of Argo for some time now and have decided to increase their participation in both the use and development of Argo. If you actively use Argo at your company and believe that your company may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
+
+Updated community documents, including CLAs, are available [here](https://github.com/argoproj/argo/tree/master/community). These documents are essentially identical to those used by CNCF projects such as Kubernetes and are designed to protect Argo's contributors, users and Intuit, the current custodian of the Argo Project.
+
+We will be scheduling the first Argo Community Meeting for the beginning of May to get to know each other, review the current Argo projects, and gather feedback for future projects. Please stay tuned for additional details.
 
 ## What is Argo?
 Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Custom Resource Definition).
 
 * Define workflows where each step in the workflow is a container.
-  * Soon, you will also be able to define workflows as a dependency graph (DAG).
+* Model multi-step workflows as a sequence of steps or capture the dependencies between tasks using a graph (DAG).
 * Easily leverage Kubernetes to run compute intensive jobs like data processing or machine learning jobs in a fraction of the time using Argo workflows.
 * Run rich CI/CD pipelines using Docker-in-Docker, built-in artifact management, secret management and native access to other Kubernetes resources.
-
 
 ## Why Argo?
 * Argo is designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
@@ -22,12 +24,23 @@ Argo is an open source container-native workflow engine for getting work done on
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
 * We want to make it as easy to run Argo workflows on Kubernetes as it is to run jobs on you laptop.
 
-## Argo 2.0
-Argo 2.0 is a Kubernetes Custom Resource Definition (CRD) which can run workflows using kubectl commands.
-
+## Documentation
 * [Get started here](https://github.com/argoproj/argo/blob/master/demo.md)
 * [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
+
+## Who uses Argo?
+As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
+
+Currently **officially** using Argo:
+
+1. [CoreFiling](https://www.corefiling.com/)
+1. [Cyrus Biotechnology](https://cyrusbio.com/)
+1. [Gladly](https://gladly.com/)
+1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [Intuit](https://www.intuit.com/)
+1. [NVIDIA](https://www.nvidia.com/)
+1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 
 ## Presentations
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)

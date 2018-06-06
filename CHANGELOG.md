@@ -1,6 +1,78 @@
 # Changelog
 
+## 2.1.1 (2018-05-29)
+
+### Changelog since v2.1.0
+- Switch to an UnstructuredInformer to guard controller against malformed workflow manifests (issue #632)
+- Fix issue where suspend templates were not properly being connected to their children (issue #869)
+- Fix issue where a failed step in a template with parallelism would not complete (issue #868)
+- Fix issue where `argo list` age column maxed out at 1d (issue #857)
+- Fix issue where volumes were not supported in script templates (issue #852)
+- Fix implementation of DAG task targets (issue #865)
+- Retrying failed steps templates could potentially result in disconnected children
+- [UI] Fix crash while rendering failed workflow with exit handler (issue #815)
+- [UI] Fix locating outbound nodes for skipped node
+- [UI] Fix JS crash caused by inconsistent workflow state
+- [UI] Fix blank help page when using browser navigation
+- [UI] API server can filter workflows managed by specific workflow controller (@kzadorozhny)
+- [UI] Restore support for accessing the UI using `kubectl proxy` (@mthx)
+- [UI] Pass the namespace when querying the logs (issue #777) (@mthx)
+- [UI] Improve workflow sorting (issue #866)
++ Add windows support for Argo CLI (@cuericlee)
+* Documentation fixes (@mthx, @bodepd)
+
+## 2.1.0 (2018-05-01)
+
+### Changelog since v2.0
++ Support for DAG based definition of workflows
++ Add `spec.parallelism` field to limit concurrent pod execution at a workflow level
++ Add `template.parallelism` field to limit concurrent pod execution at a template level
++ Add `argo suspend`, `argo resume` to suspend and resume workflows
++ Add `argo resubmit` to resubmit a failed workflow
++ Add `argo retry` to retry a failed workflow with the same name
++ Add `--instanceid` flag to `argo submit` command to submit workflow with controller's specific instance id label
++ Add `--name` and `--generate-name` to override metadata.name and/or metadata.generateName during submission
++ Add `argo logs -w` to support rendering combined workflow logs
++ Experimental support for resubmitting workflows with memoized steps
++ Improved parameters and output validation
++ UI migrated to React
++ Workflow details page redesigned: added DAG view support, added workflow timeline tab.
++ Workflow details page enhancements: added sidecar containers details; workflow exist handler is available on DAG diagram and timeline view.
++ Support for pod tolerations (@discordianfish)
++ Make `workflow.namespace` available as a global variable (@vreon)
++ Support for exported global output parameters and artifacts
++ Trim a trailing newline from path-based output parameters
++ Add ability to reference global parameters in spec level fields
++ Make {{pod.name}} available as a parameter in pod templates
++ Argo CLI shell completion support (@mthx)
++ Add ability to pass pod annotations and labels at the template levels (@wookasz)
++ Add ability to use IAM role from EC2 instance for AWS S3 credentials (@wookasz)
+* Abstract the container runtime as an interface to support mocking and future runtimes
+* Documentation and examples fixes (@IronPan, @dmonakhov, @bodepd, @mthx, @javierbq, @sebdoido)
+* Rewrite the installer
+* install & uninstall commands use --namespace flag (@Fitzse)
+* Trim spaces from aws keys (@bodepd)
+* Update base image to debian 9.4 (from 9.1) (@mthx)
+- Global parameters were not referenceable from artifact arguments
+- spec.arguments are optionally supplied during linting
+- Fix for CLI not rendering edges correctly for nested workflows
+- Fix template.parallelism limiting parallelism of entire workflow
+- Fix artifact saving to artifactory (@dougsc)
+- Use socket type for hostPath to mount docker.sock (@DSchmidtDev)
+- Fix rbac resource versions in install (@dvavili)
+- Fix input parameters on a steps template prevent daemon pods from terminating (@adampearse)
+- Fix locating outbound nodes for skipped node (issue #825)
+- Avoid `println` which outputs to stderr (@mthx)
+- Fix issue where daemoned steps were not terminated properly in DAG templates
+
+## 2.1.0-beta2 (2018-03-29)
+
+### Changelog since 2.1.0-beta1
+- Fix `argo install` does not install argo ui deployment
+
 ## 2.1.0-beta1 (2018-03-29)
+
+### Changelog since 2.1.0-alpha1
 + Support for exported global output parameters and artifacts
 + Introduce `argo retry` to retry a failed workflow with the same name
 + Trim a trailing newline from path-based output parameters
@@ -21,6 +93,8 @@
 - Use socket type for hostPath to mount docker.sock (@DSchmidtDev)
 
 ## 2.1.0-alpha1 (2018-02-21)
+
+### Changelog since 2.0
 + Support for DAG based definition of workflows
 + Add `spec.parallelism` field to limit concurrent pod execution at a workflow level
 + Add `template.parallelism` field to limit concurrent pod execution at a template level

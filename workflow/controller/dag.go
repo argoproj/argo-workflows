@@ -101,6 +101,12 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	if node != nil && node.Completed() {
 		return node
 	}
+	defer func() {
+		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
+			_ = woc.killDeamonedChildren(node.ID)
+		}
+	}()
+
 	dagCtx := &dagContext{
 		boundaryName: nodeName,
 		boundaryID:   woc.wf.NodeID(nodeName),
@@ -118,6 +124,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	}
+	if len(node.Children) == 0 {
 		rootTasks := findRootTaskNames(dagCtx, targetTasks)
 		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
 		for _, rootTaskName := range rootTasks {
@@ -143,7 +151,12 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		scope: make(map[string]interface{}),
 	}
 	for _, task := range tmpl.DAG.Tasks {
-		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), dagCtx.getTaskNode(task.Name))
+		taskNode := dagCtx.getTaskNode(task.Name)
+		if taskNode == nil {
+			// Can happen when dag.target was specified
+			continue
+		}
+		woc.processNodeOutputs(&scope, fmt.Sprintf("tasks.%s", task.Name), taskNode)
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
@@ -178,7 +191,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 // findRootTaskNames finds the names of all tasks which have no dependencies.
 // Once identified, these root tasks are marked as children to the encompassing node.
 func findRootTaskNames(dagCtx *dagContext, targetTasks []string) []string {
-	//rootTaskNames := make(map[string]bool)
 	rootTaskNames := make([]string, 0)
 	visited := make(map[string]bool)
 	var findRootHelper func(s string)
@@ -252,13 +264,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		// Add all outbound nodes of our dependencies as parents to this node
 		for _, depName := range task.Dependencies {
 			depNode := dagCtx.getTaskNode(depName)
-			woc.log.Infof("node %s outbound nodes: %s", depNode, depNode.OutboundNodes)
-			if depNode.Type == wfv1.NodeTypePod {
-				woc.addChildNode(depNode.Name, nodeName)
-			} else {
-				for _, outNodeID := range depNode.OutboundNodes {
-					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, nodeName)
-				}
+			outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
+			woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
+			for _, outNodeID := range outboundNodeIDs {
+				woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, nodeName)
 			}
 		}
 	}
