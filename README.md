@@ -41,6 +41,7 @@ Currently **officially** using Argo:
 1. [Intuit](https://www.intuit.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
+1. [Datadog](https://www.datadoghq.com/)
 
 ## Presentations
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
