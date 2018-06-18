@@ -10,7 +10,7 @@ spec:
     - name: repo
       value: https://github.com/influxdata/influxdb.git
     - name: revision
-      value: master
+      value: 1.6
 
   templates:
   - name: influxdb-ci
