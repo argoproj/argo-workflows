@@ -292,12 +292,12 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
 		if param.Value == nil {
-			return errors.Errorf(errors.CodeBadRequest, "%svalue is required", prefix)
+			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
 	}
 	for _, art := range arguments.Artifacts {
 		if art.From == "" && !art.HasLocation() {
-			return errors.Errorf(errors.CodeBadRequest, "%sfrom or artifact location is required", prefix)
+			return errors.Errorf(errors.CodeBadRequest, "%s%s.from or artifact location is required", prefix, art.Name)
 		}
 	}
 	return nil
