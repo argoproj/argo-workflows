@@ -81,7 +81,7 @@ func lintYAMLFile(filePath string) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, wf := range workflows {
-		err = common.ValidateWorkflow(&wf)
+		err = common.ValidateWorkflow(&wf, true)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}
