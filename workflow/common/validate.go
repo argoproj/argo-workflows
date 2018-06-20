@@ -164,11 +164,11 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	for _, param := range tmpl.Inputs.Parameters {
 		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 	}
-	isLeaf := tmpl.Container != nil || tmpl.Script != nil
+
 	for _, art := range tmpl.Inputs.Artifacts {
 		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)
 		scope[artRef] = true
-		if isLeaf {
+		if tmpl.IsLeaf() {
 			if art.Path == "" {
 				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
 			}
@@ -422,10 +422,9 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
 
-	isLeaf := tmpl.Container != nil || tmpl.Script != nil
 	for _, art := range tmpl.Outputs.Artifacts {
 		artRef := fmt.Sprintf("outputs.artifacts.%s", art.Name)
-		if isLeaf {
+		if tmpl.IsLeaf() {
 			if art.Path == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
 			}

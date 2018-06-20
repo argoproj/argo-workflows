@@ -853,26 +853,63 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error()), err
 	}
 
+	// If the user has specified retries, node becomes a special retry node.
+	// This node acts as a parent of all retries that will be done for
+	// the container. The status of this node should be "Success" if any
+	// of the retries succeed. Otherwise, it is "Failed".
+	workNodeName := nodeName
+	retryNodeName := ""
+	if tmpl.IsLeaf() && tmpl.RetryStrategy != nil {
+		retryNodeName = nodeName
+		if node == nil {
+			node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", boundaryID, wfv1.NodeRunning)
+		}
+		if err := woc.processNodeRetries(node, *tmpl.RetryStrategy); err != nil {
+			woc.markNodeError(nodeName, err)
+			return node, err
+		}
+		node = woc.getNodeByName(retryNodeName)
+		woc.log.Infof("Node %s: Status: %s", retryNodeName, node.Phase)
+		// The retry node might have completed by now.
+		if node.Completed() {
+			return node, nil
+		}
+		lastChildNode, err := woc.getLastChildNode(node)
+		if err != nil {
+			woc.markNodeError(retryNodeName, err)
+			return node, err
+		}
+		if lastChildNode != nil && !lastChildNode.Completed() {
+			// Last child node is still running.
+			return node, nil
+		}
+		childNodeName := fmt.Sprintf("%s(%d)", retryNodeName, len(node.Children))
+		// All work is done in a child
+		workNodeName = childNodeName
+	}
+
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
-		if tmpl.RetryStrategy != nil {
-			node = woc.executeRetryContainer(nodeName, tmpl, boundaryID)
-		} else {
-			node = woc.executeContainer(nodeName, tmpl, boundaryID)
-		}
+		node = woc.executeContainer(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeSteps:
-		node = woc.executeSteps(nodeName, tmpl, boundaryID)
+		node = woc.executeSteps(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
-		node = woc.executeScript(nodeName, tmpl, boundaryID)
+		node = woc.executeScript(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeResource:
-		node = woc.executeResource(nodeName, tmpl, boundaryID)
+		node = woc.executeResource(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeDAG:
-		node = woc.executeDAG(nodeName, tmpl, boundaryID)
+		node = woc.executeDAG(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeSuspend:
-		node = woc.executeSuspend(nodeName, tmpl, boundaryID)
+		node = woc.executeSuspend(workNodeName, tmpl, boundaryID)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", tmpl.Name)
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
+		node = woc.initializeNode(workNodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
+	}
+
+	// Swap the node back to retry node and add worker node as child.
+	if retryNodeName != "" {
+		woc.addChildNode(retryNodeName, workNodeName)
+		node = woc.getNodeByName(retryNodeName)
 	}
 
 	// Set the input values to the node. This is presented in the UI
@@ -1044,39 +1081,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 	}
 	return nil
-}
-
-// If the user has specified retries, a special "retries" non-leaf node
-// is created. This node acts as the parent of all retries that will be
-// done for the container. The status of this node should be "Success"
-// if any of the retries succeed. Otherwise, it is "Failed".
-func (woc *wfOperationCtx) executeRetryContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
-	node := woc.getNodeByName(nodeName)
-	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", boundaryID, wfv1.NodeRunning)
-	}
-	if err := woc.processNodeRetries(node, *tmpl.RetryStrategy); err != nil {
-		return woc.markNodeError(nodeName, err)
-	}
-	// The updated node status could've changed. Get the latest copy of the node.
-	node = woc.getNodeByName(node.Name)
-	woc.log.Infof("Node %s: Status: %s", node.Name, node.Phase)
-	if node.Completed() {
-		return node
-	}
-	lastChildNode, err := woc.getLastChildNode(node)
-	if err != nil {
-		return woc.markNodeError(nodeName, err)
-	}
-	if lastChildNode != nil && !lastChildNode.Completed() {
-		// last child node is still running.
-		return node
-	}
-	// Create new node as child of 'node'
-	childNodeName := fmt.Sprintf("%s(%d)", nodeName, len(node.Children))
-	woc.executeContainer(childNodeName, tmpl, boundaryID)
-	woc.addChildNode(nodeName, childNodeName)
-	return woc.getNodeByName(nodeName)
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {

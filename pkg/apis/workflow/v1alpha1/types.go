@@ -646,6 +646,15 @@ func (tmpl *Template) IsPodType() bool {
 	return false
 }
 
+// IsLeaf returns whether or not the template is a leaf
+func (tmpl *Template) IsLeaf() bool {
+	switch tmpl.GetType() {
+	case TemplateTypeContainer, TemplateTypeScript:
+		return true
+	}
+	return false
+}
+
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
