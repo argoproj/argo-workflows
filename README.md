@@ -4,7 +4,7 @@
 
 ## News
 
-We are excited to welcome [BlackRock](https://www.blackrock.com/) as the latest corporate member of the Argo Community! We are also thrilled that they have developed an eventing framework for Argo and have decided to contribute it to the Argo Community. Please check out the new repo and try Argo Events!
+We are excited to welcome [BlackRock](https://www.blackrock.com/) as the latest corporate member of the Argo Community! We are also thrilled that they have developed an eventing framework for Argo and have decided to contribute it to the Argo Community. Please check out the new repo and try [Argo Events](https://github.com/argoproj/argo-events)!
 
 If you actively use Argo in your organization and believe that your organization may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
 
@@ -40,8 +40,6 @@ Currently **officially** using Argo:
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
 1. [NVIDIA](https://www.nvidia.com/)
-
-## Presentations
 
 ## Community Blogs and Presentations
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
