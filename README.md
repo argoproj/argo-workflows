@@ -4,7 +4,7 @@
 
 ## News
 
-We are excited to welcome [BlackRock](https://www.blackrock.com/) as the latest corporate member of the Argo Community! We are also thrilled that they have developed an eventing framework for Argo and have decided to contribute it to the Argo Community. Please check out the new repo and try [Argo Events](https://github.com/argoproj/argo-events)!
+We are excited to welcome [Adobe](https://www.adobe.com/) and [BlackRock](https://www.blackrock.com/) as the latest corporate members of the Argo Community! We are also thrilled that BlackRock has developed an eventing framework for Argo and has decided to contribute it to the Argo Community. Please check out the new repo and try [Argo Events](https://github.com/argoproj/argo-events)!
 
 If you actively use Argo in your organization and believe that your organization may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
 
@@ -31,6 +31,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
+1. [Adobe](https://www.adobe.com/) 
 1. [BlackRock](https://www.blackrock.com/)
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
