@@ -330,23 +330,23 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
 
-	for i, item := range items {
+	for i, itm := range items {
 		replaceMap := make(map[string]string)
 		var newStepName string
-		switch val := item.Value.(type) {
-		case string, int32, int64, float32, float64, bool:
-			replaceMap["item"] = fmt.Sprintf("%v", val)
-			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, val)
-		case map[string]interface{}:
+		switch itm.Type {
+		case wfv1.String, wfv1.Number, wfv1.Bool:
+			replaceMap["item"] = fmt.Sprintf("%v", itm)
+			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, itm)
+		case wfv1.Map:
 			// Handle the case when withItems is a list of maps.
 			// vals holds stringified versions of the map items which are incorporated as part of the step name.
 			// For example if the item is: {"name": "jesse","group":"developer"}
 			// the vals would be: ["name:jesse", "group:developer"]
 			// This would eventually be part of the step name (group:developer,name:jesse)
 			vals := make([]string, 0)
-			for itemKey, itemValIf := range val {
-				switch itemVal := itemValIf.(type) {
-				case string, int32, int64, float32, float64, bool:
+			for itemKey, itemVal := range itm.MapVal {
+				switch itemVal.Type {
+				case wfv1.String, wfv1.Number, wfv1.Bool:
 					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 				default:
@@ -357,7 +357,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			sort.Strings(vals)
 			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, strings.Join(vals, ","))
 		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
+			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, itm)
 		}
 		newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 		if err != nil {
