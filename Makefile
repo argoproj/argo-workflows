@@ -133,6 +133,10 @@ update-codegen:
 	./hack/update-openapigen.sh
 	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/api/openapi-spec/swagger.json
 
+.PHONY: generate-proto
+generate-proto:
+	./hack/generate-proto.sh
+
 .PHONY: verify-codegen
 verify-codegen:
 	./hack/verify-codegen.sh
