@@ -466,7 +466,9 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,16,rep,name=outboundNodes"`
 }
 
-func (n NodeStatus) String() string {
+// String2
+// TODO: Decide what to name this since the generated proto declares a String method on Nodestatus.
+func (n NodeStatus) String2() string {
 	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
 }
 
@@ -526,7 +528,9 @@ type S3Artifact struct {
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
 
-func (s *S3Artifact) String() string {
+// String2
+// TODO: Decide what to name this since the generated proto declares a String method on S3Artifact.
+func (s *S3Artifact) String2() string {
 	protocol := "https"
 	if s.Insecure != nil && *s.Insecure {
 		protocol = "http"
@@ -565,7 +569,9 @@ type ArtifactoryArtifact struct {
 	ArtifactoryAuth `json:",inline" protobuf:"bytes,2,opt,name=artifactoryAuth"`
 }
 
-func (a *ArtifactoryArtifact) String() string {
+// String2
+// TODO: Decide what to name this since the generated proto declares a String method on *ArtifactoryArtifact.
+func (a *ArtifactoryArtifact) String2() string {
 	return a.URL
 }
 
