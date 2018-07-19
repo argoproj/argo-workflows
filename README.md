@@ -46,6 +46,7 @@ Currently **officially** using Argo:
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
+* [Community meeting minutes and recordings](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE)
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
