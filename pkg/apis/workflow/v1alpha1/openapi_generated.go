@@ -394,10 +394,84 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item": {
 			Schema: spec.Schema{
 				SchemaProps: spec.SchemaProps{
-					Type:   Item{}.OpenAPISchemaType(),
-					Format: Item{}.OpenAPISchemaFormat(),
+					Description: "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
+					Properties: map[string]spec.Schema{
+						"Type": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"integer"},
+								Format: "int32",
+							},
+						},
+						"NumVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"BoolVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"boolean"},
+								Format: "",
+							},
+						},
+						"StrVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"MapVal": {
+							SchemaProps: spec.SchemaProps{
+								Type: []string{"object"},
+								AdditionalProperties: &spec.SchemaOrBool{
+									Schema: &spec.Schema{
+										SchemaProps: spec.SchemaProps{
+											Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue"),
+										},
+									},
+								},
+							},
+						},
+					},
+					Required: []string{"Type", "NumVal", "BoolVal", "StrVal", "MapVal"},
 				},
 			},
+			Dependencies: []string{
+				"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue"},
+		},
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue": {
+			Schema: spec.Schema{
+				SchemaProps: spec.SchemaProps{
+					Properties: map[string]spec.Schema{
+						"Type": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"integer"},
+								Format: "int32",
+							},
+						},
+						"NumVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+						"BoolVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"boolean"},
+								Format: "",
+							},
+						},
+						"StrVal": {
+							SchemaProps: spec.SchemaProps{
+								Type:   []string{"string"},
+								Format: "",
+							},
+						},
+					},
+					Required: []string{"Type", "NumVal", "BoolVal", "StrVal"},
+				},
+			},
+			Dependencies: []string{},
 		},
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata": {
 			Schema: spec.Schema{
