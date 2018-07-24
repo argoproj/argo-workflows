@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"path"
 
 	"github.com/argoproj/argo/errors"
@@ -198,10 +197,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// that all variables have been resolved. Do this last, after all
 	// template manipulations have been performed.
 	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, err
-	}
-	err = verifyResolvedVariables(string(tmplBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -587,15 +582,4 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
 	return nil
-}
-
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved
-func verifyResolvedVariables(tmplStr string) error {
-	var unresolvedErr error
-	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
-	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
-		return 0, nil
-	})
-	return unresolvedErr
 }
