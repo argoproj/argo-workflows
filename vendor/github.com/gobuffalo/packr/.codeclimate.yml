@@ -1,0 +1,20 @@
+---
+engines:
+  golint:
+    enabled: true
+    checks:
+      GoLint/Naming/MixedCaps:
+        enabled: false
+  govet:
+    enabled: true
+  gofmt:
+    enabled: true
+  fixme:
+    enabled: true
+ratings:
+  paths:
+    - "**.go"
+exclude_paths:
+  - "**/*_test.go"
+  - "*_test.go"
+  - "fixtures/"

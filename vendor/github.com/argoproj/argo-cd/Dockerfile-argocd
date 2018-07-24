@@ -1,0 +1,58 @@
+FROM debian:9.3 as builder
+
+RUN apt-get update && apt-get install -y \
+    git \
+    make \
+    wget \
+    gcc \
+    zip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install go
+ENV GO_VERSION 1.9.3
+ENV GO_ARCH amd64
+ENV GOPATH /root/go
+ENV PATH ${GOPATH}/bin:/usr/local/go/bin:${PATH}
+RUN wget https://storage.googleapis.com/golang/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    tar -C /usr/local/ -xf /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    rm /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz
+
+# Install protoc and dep
+ENV PROTOBUF_VERSION 3.5.1
+RUN cd /usr/local && \
+    wget https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protoc-${PROTOBUF_VERSION}-linux-x86_64.zip && \
+    unzip protoc-*.zip && \
+    wget https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 -O /usr/local/bin/dep && \
+    chmod +x /usr/local/bin/dep
+
+# A dummy directory is created under $GOPATH/src/dummy so we are able to use dep
+# to install all the packages of our dep lock file
+COPY Gopkg.toml ${GOPATH}/src/dummy/Gopkg.toml
+COPY Gopkg.lock ${GOPATH}/src/dummy/Gopkg.lock
+
+RUN cd ${GOPATH}/src/dummy && \
+    dep ensure -vendor-only && \
+    mv vendor/* ${GOPATH}/src/ && \
+    rmdir vendor
+
+ARG MAKE_TARGET
+
+# Perform the build
+WORKDIR /root/go/src/github.com/argoproj/argo-cd
+COPY . .
+RUN make ${MAKE_TARGET}
+RUN rm -rf /root/go/src/github.com/ksonnet/ksonnet && \
+    go get -u github.com/ksonnet/ksonnet
+
+FROM debian:9.3
+RUN apt-get update && apt-get install -y git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ARG BINARY
+COPY --from=builder /root/go/src/github.com/argoproj/argo-cd/dist/${BINARY} /${BINARY}
+COPY --from=builder /root/go/bin/ksonnet /usr/local/bin/ks
+# workaround ksonnet issue https://github.com/ksonnet/ksonnet/issues/298
+ENV USER=root
+ENV BINARY=$BINARY
+CMD /$BINARY

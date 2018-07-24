@@ -1,0 +1,40 @@
+required = [
+  "github.com/gogo/protobuf/protoc-gen-gofast",
+  "k8s.io/code-generator/cmd/go-to-protobuf",
+]
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.9.2"
+
+[[constraint]]
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  version = "v1.3.1"
+
+[[constraint]]
+  branch = "release-1.9"
+  name = "k8s.io/apimachinery"
+
+[[constraint]]
+  branch = "release-1.9"
+  name = "k8s.io/api"
+
+[[constraint]]
+  name = "k8s.io/apiextensions-apiserver"
+  branch = "release-1.9"
+
+[[constraint]]
+  branch = "release-1.9"
+  name = "k8s.io/code-generator"
+
+[[constraint]]
+  branch = "release-6.0"
+  name = "k8s.io/client-go"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  version = "1.2.1"
+
+[[constraint]]
+  name = "github.com/ksonnet/ksonnet"
+  branch = "master"

@@ -1,0 +1,26 @@
+default:
+  deps: [test]
+
+dl-deps:
+  desc: Downloads cli dependencies
+  cmds:
+    - go get -u github.com/golang/lint/golint
+    - go get -u github.com/golang/dep/cmd/dep
+
+update-deps:
+  desc: Updates dependencies
+  cmds:
+    - dep ensure
+    - dep ensure -update
+    - dep prune
+
+lint:
+  desc: Runs golint
+  cmds:
+    - golint $(ls *.go | grep -v "doc.go")
+  silent: true
+
+test:
+  desc: Runs go tests
+  cmds:
+    - go test -race  .
