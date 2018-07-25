@@ -329,6 +329,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 							},
 						},
+						"sshPrivateKeySecret": {
+							SchemaProps: spec.SchemaProps{
+								Description: "SSHPrivateKeySecret",
+								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+							},
+						},
 					},
 					Required: []string{"repo"},
 				},
