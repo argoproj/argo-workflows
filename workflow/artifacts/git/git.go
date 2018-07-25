@@ -3,15 +3,18 @@ package git
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"os/user"
 	"regexp"
-	"strings"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"golang.org/x/crypto/ssh"
+	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport"
+	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
+	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 )
 
 // GitArtifactDriver is the artifact driver for a git repo
@@ -27,76 +30,28 @@ type GitArtifactDriver struct {
 // leaking such as in the repo_dir/.git/config or logging an insecure url.
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if g.SSHPrivateKey != "" {
-		sshKeyFile, err := ioutil.TempFile("", "ssh-key-")
+		tmpfile, err := ioutil.TempFile("", "ssh-know-hosts")
 		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		defer func() {
-			_ = os.Remove(sshKeyFile.Name())
-		}()
-		content := []byte(g.SSHPrivateKey)
-		if _, err := sshKeyFile.Write(content); err != nil {
-			return errors.InternalWrapError(err)
-		}
-		if err := sshKeyFile.Close(); err != nil {
-			return errors.InternalWrapError(err)
-		}
-		err = common.RunCommand("sh", "-c", "eval $(ssh-agent)")
-		if err != nil {
-			return err
-		}
-		usr, err := user.Current()
-		if err != nil {
-			return err
-		}
-		err = common.RunCommand("ssh-add", sshKeyFile.Name())
-		if err != nil {
-			return err
-		}
-		re := regexp.MustCompile("@(.*):")
-		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)
-		err = common.RunCommand("mkdir", fmt.Sprint(usr.HomeDir, "/.ssh"))
-		if err != nil {
-			return err
-		}
-		err = common.RunCommand("ssh-keyscan", fmt.Sprintf("%s", repoHost), ">", fmt.Sprint(usr.HomeDir, "/.ssh/know_hosts"))
-		if err != nil {
-			return err
-		}
-
-		return gitClone(path, inputArtifact)
-	}
-	if g.Username != "" || g.Password != "" {
-		// Formulate an insecure repo URL which incorporates the credentials which
-		// we temporarily store it to a git-credentials file during the clone.
-		insecureURL, err := url.Parse(inputArtifact.Git.Repo)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		insecureURL.User = url.UserPassword(g.Username, g.Password)
-		tmpfile, err := ioutil.TempFile("", "git-cred-")
-		if err != nil {
-			return errors.InternalWrapError(err)
+			fmt.Println(err)
 		}
 		defer func() {
 			_ = os.Remove(tmpfile.Name())
 		}()
-		content := []byte(insecureURL.String() + "\n")
-		if _, err := tmpfile.Write(content); err != nil {
-			return errors.InternalWrapError(err)
-		}
-		if err := tmpfile.Close(); err != nil {
-			return errors.InternalWrapError(err)
-		}
-		err = common.RunCommand("git", "config", "--global", "credential.helper", fmt.Sprintf("store --file=%s", tmpfile.Name()))
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = common.RunCommand("git", "config", "--global", "--remove-section", "credential")
-		}()
+		re := regexp.MustCompile("@(.*):")
+		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)[1]
+		os.Setenv("SSH_KNOWN_HOSTS", tmpfile.Name())
+		err = common.RunCommand("sh", "-c", fmt.Sprintf("ssh-keyscan %s > %s", repoHost, tmpfile.Name()))
+		signer, _ := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
+		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
+
+		return gitClone(path, inputArtifact, auth)
+
 	}
-	return gitClone(path, inputArtifact)
+	if g.Username != "" || g.Password != "" {
+		auth := &http.BasicAuth{Username: g.Username, Password: g.Password}
+		return gitClone(path, inputArtifact, auth)
+	}
+	return gitClone(path, inputArtifact, nil)
 }
 
 // Save is unsupported for git output artifacts
@@ -104,20 +59,26 @@ func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
 }
 
-func gitClone(path string, inputArtifact *wfv1.Artifact) error {
-	err := common.RunCommand("git", "clone", inputArtifact.Git.Repo, path)
+func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod) error {
+	repo, err := git.PlainClone(path, false, &git.CloneOptions{
+		URL:               inputArtifact.Git.Repo,
+		Depth:             1,
+		Auth:              auth,
+		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
+	})
 	if err != nil {
-		lines := strings.Split(err.Error(), "\n")
-		if len(lines) > 1 {
-			// give only the last, most-useful error line from git
-			return errors.New(errors.CodeBadRequest, lines[len(lines)-1])
-		}
-		return err
+		return errors.InternalWrapError(err)
 	}
 	if inputArtifact.Git.Revision != "" {
-		err := common.RunCommand("git", "-C", path, "checkout", inputArtifact.Git.Revision)
+		w, err := repo.Worktree()
 		if err != nil {
-			return err
+			return errors.InternalWrapError(err)
+		}
+		err = w.Checkout(&git.CheckoutOptions{
+			Hash: plumbing.NewHash(inputArtifact.Git.Revision),
+		})
+		if err != nil {
+			return errors.InternalWrapError(err)
 		}
 	}
 	return nil
