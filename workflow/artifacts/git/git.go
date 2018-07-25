@@ -40,6 +40,10 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		if err := sshKeyFile.Close(); err != nil {
 			return errors.InternalWrapError(err)
 		}
+		err = common.RunCommand("eval", "$(ssh-agent)")
+		if err != nil {
+			return err
+		}
 		err = common.RunCommand("ssh-add", sshKeyFile.Name())
 		if err != nil {
 			return err
