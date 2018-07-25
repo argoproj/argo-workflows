@@ -554,6 +554,8 @@ type GitArtifact struct {
 
 	// PasswordSecret is the secret selector to the repository password
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	// SSHPrivateKeySecret
+	SSHPrivateKeySecret *apiv1.SecretKeySelector `json:"sshPrivateKeySecret,omitempty"`
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory

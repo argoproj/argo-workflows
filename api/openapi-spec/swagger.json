@@ -129,6 +129,10 @@
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "sshPrivateKeySecret": {
+          "description": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }
     },
