@@ -32,16 +32,25 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 	if g.SSHPrivateKey != "" {
 		tmpfile, err := ioutil.TempFile("", "ssh-know-hosts")
 		if err != nil {
-			fmt.Println(err)
+			return errors.InternalWrapError(err)
 		}
 		defer func() {
 			_ = os.Remove(tmpfile.Name())
 		}()
 		re := regexp.MustCompile("@(.*):")
 		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)[1]
-		os.Setenv("SSH_KNOWN_HOSTS", tmpfile.Name())
+		err = os.Setenv("SSH_KNOWN_HOSTS", tmpfile.Name())
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
 		err = common.RunCommand("sh", "-c", fmt.Sprintf("ssh-keyscan %s > %s", repoHost, tmpfile.Name()))
-		signer, _ := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
 		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
 
 		return gitClone(path, inputArtifact, auth)
