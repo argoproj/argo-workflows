@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/user"
 	"regexp"
 	"strings"
 
@@ -40,7 +41,11 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		if err := sshKeyFile.Close(); err != nil {
 			return errors.InternalWrapError(err)
 		}
-		err = common.RunCommand("eval", "$(ssh-agent)")
+		err = common.RunCommand("sh", "-c", "eval $(ssh-agent)")
+		if err != nil {
+			return err
+		}
+		usr, err := user.Current()
 		if err != nil {
 			return err
 		}
@@ -50,11 +55,11 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 		}
 		re := regexp.MustCompile("@(.*):")
 		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)
-		err = common.RunCommand("mkdir", "~/.ssh")
+		err = common.RunCommand("mkdir", fmt.Sprint(usr.HomeDir, "/.ssh"))
 		if err != nil {
 			return err
 		}
-		err = common.RunCommand("ssh-keyscan", fmt.Sprintf("%s", repoHost), ">", "~/.ssh/know_hosts")
+		err = common.RunCommand("ssh-keyscan", fmt.Sprintf("%s", repoHost), ">", fmt.Sprint(usr.HomeDir, "/.ssh/know_hosts"))
 		if err != nil {
 			return err
 		}

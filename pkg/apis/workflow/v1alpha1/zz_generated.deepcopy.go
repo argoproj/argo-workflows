@@ -243,6 +243,15 @@ func (in *GitArtifact) DeepCopyInto(out *GitArtifact) {
 			(*in).DeepCopyInto(*out)
 		}
 	}
+	if in.SSHPrivateKeySecret != nil {
+		in, out := &in.SSHPrivateKeySecret, &out.SSHPrivateKeySecret
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(v1.SecretKeySelector)
+			(*in).DeepCopyInto(*out)
+		}
+	}
 	return
 }
 
