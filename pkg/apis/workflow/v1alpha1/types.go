@@ -322,7 +322,7 @@ type WorkflowStep struct {
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 type Item struct {
-	Value interface{}
+	Value interface{} `json:"value,omitempty"`
 }
 
 // DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
@@ -658,7 +658,7 @@ func (tmpl *Template) IsLeaf() bool {
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
-	Targets string `json:"target,omitempty"`
+	Target string `json:"target,omitempty"`
 
 	// Tasks are a list of DAG tasks
 	Tasks []DAGTask `json:"tasks"`

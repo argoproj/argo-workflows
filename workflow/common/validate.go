@@ -581,7 +581,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		return err
 	}
 
-	err = resolveAllVariables(scope, tmpl.DAG.Targets)
+	err = resolveAllVariables(scope, tmpl.DAG.Target)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.targets %s", tmpl.Name, err.Error())
 	}
@@ -624,10 +624,10 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 }
 
 func validateDAGTargets(tmpl *wfv1.Template, nameToTask map[string]wfv1.DAGTask) error {
-	if tmpl.DAG.Targets == "" {
+	if tmpl.DAG.Target == "" {
 		return nil
 	}
-	for _, targetName := range strings.Split(tmpl.DAG.Targets, " ") {
+	for _, targetName := range strings.Split(tmpl.DAG.Target, " ") {
 		if isParameter(targetName) {
 			continue
 		}
