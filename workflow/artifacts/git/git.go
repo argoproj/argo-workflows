@@ -71,16 +71,10 @@ func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod) error {
 	cloneOptions := git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
-		Depth:             1,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 	}
 	if auth != nil {
-		cloneOptions = git.CloneOptions{
-			URL:               inputArtifact.Git.Repo,
-			Depth:             1,
-			Auth:              auth,
-			RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-		}
+		cloneOptions.Auth = auth
 	}
 	repo, err := git.PlainClone(path, false, &cloneOptions)
 	if err != nil {
