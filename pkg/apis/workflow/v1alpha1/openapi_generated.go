@@ -383,11 +383,11 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Description: "PasswordSecret is the secret selector to the repository password",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
-						"sshPrivateKeySecret": {
-							SchemaProps: spec.SchemaProps{
-								Description: "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
-								Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
-							},
+					},
+					"sshPrivateKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 				},
