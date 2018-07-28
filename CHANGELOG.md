@@ -1,7 +1,7 @@
 # Changelog
-## 2.1.2 (2017-06-25)
+## 2.2.0
 
-- Github ssh keys
+- Github login using go-git, with support for ssh keys (@andreimc)
 
 ## 2.1.1 (2018-05-29)
 
