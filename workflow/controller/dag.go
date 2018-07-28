@@ -116,10 +116,10 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		wf:           woc.wf,
 	}
 	var targetTasks []string
-	if tmpl.DAG.Targets == "" {
+	if tmpl.DAG.Target == "" {
 		targetTasks = findLeafTaskNames(tmpl.DAG.Tasks)
 	} else {
-		targetTasks = strings.Split(tmpl.DAG.Targets, " ")
+		targetTasks = strings.Split(tmpl.DAG.Target, " ")
 	}
 
 	if node == nil {
