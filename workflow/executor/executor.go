@@ -334,6 +334,13 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			}
 			gitDriver.Password = password
 		}
+		if art.Git.SSHPrivateKeySecret != nil {
+			sshPrivateKey, err := we.getSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.SSHPrivateKey = sshPrivateKey
+		}
 
 		return &gitDriver, nil
 	}
