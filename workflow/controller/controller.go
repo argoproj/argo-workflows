@@ -14,6 +14,7 @@ import (
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -154,6 +155,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	for i := 0; i < podWorkers; i++ {
 		go wait.Until(wfc.podWorker, time.Second, ctx.Done())
 	}
+	go metrics.ServeMetrics()
 	<-ctx.Done()
 }
 
