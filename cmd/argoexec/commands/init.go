@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/util/stats"
+	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
