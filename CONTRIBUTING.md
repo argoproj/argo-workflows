@@ -21,7 +21,7 @@ Go to https://groups.google.com/forum/#!forum/argoproj
 ## How to setup your dev environment
 
 ### Requirements
-* Golang 1.9
+* Golang 1.10
 * Docker
 * dep
    * Mac Install: `brew install dep`
