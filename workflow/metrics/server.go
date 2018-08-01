@@ -5,21 +5,22 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 )
 
-var (
-	addr       = ":8080"
-	namespaces = []string{"default"}
-)
+// PrometheusConfig defines a config for a metrics server
+type PrometheusConfig struct {
+	Enabled bool   `json:"enabled,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Port    string `json:"port,omitempty"`
+}
 
-// ServeMetrics registers workflow collector and starts a /metrics server.
-func ServeMetrics() {
-	kubeClient, err := createKubeClient()
-	if err != nil {
-		return
+// Server starts a metrics server
+func Server(config PrometheusConfig, registry *prometheus.Registry) {
+	if config.Enabled {
+		mux := http.NewServeMux()
+		mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+		log.Infof("Starting prometheus metrics server at 0.0.0.0%s%s", config.Port, config.Path)
+		http.ListenAndServe(config.Port, mux)
 	}
-	registry := prometheus.NewRegistry()
-	registerWfCollector(registry, kubeClient, namespaces)
-	http.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-	http.ListenAndServe(addr, nil)
 }

@@ -1,27 +1,23 @@
 package metrics
 
 import (
-	"time"
+	"os"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/net/context"
-	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
 var (
-	resyncPeriod = 5 * time.Minute
-
 	descWorkflowDefaultLabels = []string{"namespace", "name"}
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"kube_wf_info",
 		"Information about workflow.",
-		append(descWorkflowDefaultLabels, "entrypoint"),
+		append(descWorkflowDefaultLabels, "entrypoint", "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
@@ -38,7 +34,7 @@ var (
 	)
 	descWorkflowCreated = prometheus.NewDesc(
 		"kube_wf_created",
-		"Unix creation timestamp",
+		"Creation time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
@@ -63,66 +59,39 @@ func (l workflowLister) List() ([]wfv1.Workflow, error) {
 	return l()
 }
 
-type sharedInformerList []cache.SharedInformer
-
-func newsharedInformerList(client rest.Interface, resource string, namespaces []string, objType runtime.Object) *sharedInformerList {
-	sinfs := sharedInformerList{}
-	for _, namespace := range namespaces {
-		slw := cache.NewListWatchFromClient(client, resource, namespace, fields.Everything())
-		sinfs = append(sinfs, cache.NewSharedInformer(slw, objType, resyncPeriod))
-	}
-	return &sinfs
-}
-
-func (sil sharedInformerList) Run(stopCh <-chan struct{}) {
-	for _, sinf := range sil {
-		go sinf.Run(stopCh)
-	}
-}
-
-func registerWfCollector(registry prometheus.Registerer, kubeClient wfclientset.Interface, namespaces []string) {
-	client := kubeClient.ArgoprojV1alpha1().RESTClient()
-	winfs := newsharedInformerList(client, "workflows", namespaces, &wfv1.Workflow{})
-
-	workflowLister := workflowLister(func() (workflows []wfv1.Workflow, err error) {
-		for _, pinf := range *winfs {
-			for _, m := range pinf.GetStore().List() {
-				workflows = append(workflows, *m.(*wfv1.Workflow))
-			}
-		}
-		return workflows, nil
-	})
-
-	registry.MustRegister(&workflowCollector{store: workflowLister})
-	winfs.Run(context.Background().Done())
-}
-
 type wfStore interface {
 	List() (workflows []wfv1.Workflow, err error)
 }
 
-// workflowCollector collects metrics about all workflows in the cluster.
+// workflowCollector collects metrics about all workflows in the cluster
 type workflowCollector struct {
 	store wfStore
 }
 
-func createKubeClient() (wfclientset.Interface, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	config.UserAgent = rest.DefaultKubernetesUserAgent()
-	config.ContentConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
-	config.ContentConfig.ContentType = "application/vnd.kubernetes.protobuf"
-	config.ContentConfig.GroupVersion = &wfv1.SchemeGroupVersion
-
-	kubeClient := wfclientset.NewForConfigOrDie(config)
-
-	return kubeClient, nil
+// NewWorkflowRegistry creates a new prometheus registry that collects workflows
+func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registry {
+	workflowLister := workflowLister(func() (workflows []wfv1.Workflow, err error) {
+		for _, m := range informer.GetStore().List() {
+			var wf wfv1.Workflow
+			runtime.DefaultUnstructuredConverter.FromUnstructured(m.(*unstructured.Unstructured).Object, &wf)
+			workflows = append(workflows, wf)
+		}
+		return workflows, nil
+	})
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(&workflowCollector{store: workflowLister})
+	return registry
 }
 
-// Describe implements the prometheus.Collector interface.
+// NewTelemetryRegistry creates a new prometheus registry that collects telemetry
+func NewTelemetryRegistry() *prometheus.Registry {
+	registry := prometheus.NewRegistry()
+	registry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
+	registry.Register(prometheus.NewGoCollector())
+	return registry
+}
+
+// Describe implements the prometheus.Collector interface
 func (wc *workflowCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descWorkflowInfo
 	ch <- descWorkflowStartedAt
@@ -131,7 +100,7 @@ func (wc *workflowCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- descWorkflowStatusPhase
 }
 
-// Collect implements the prometheus.Collector interface.
+// Collect implements the prometheus.Collector interface
 func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 	workflows, err := wc.store.List()
 	if err != nil {
@@ -140,7 +109,6 @@ func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 	for _, wf := range workflows {
 		wc.collectWorkflow(ch, wf)
 	}
-
 }
 
 func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv1.Workflow) {
@@ -151,8 +119,15 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+	joinTemplates := func(spec []wfv1.Template) string {
+		var templates []string
+		for _, t := range spec {
+			templates = append(templates, t.Name)
+		}
+		return strings.Join(templates, ",")
+	}
 
-	addGauge(descWorkflowInfo, 1, wf.Spec.Entrypoint)
+	addGauge(descWorkflowInfo, 1, wf.Spec.Entrypoint, wf.Spec.ServiceAccountName, joinTemplates(wf.Spec.Templates))
 
 	if phase := wf.Status.Phase; phase != "" {
 		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeRunning), string(wfv1.NodeRunning))
