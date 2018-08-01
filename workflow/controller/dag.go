@@ -63,9 +63,8 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
-	var phase wfv1.NodePhase
-	// First check all our nodes to see if any thing is still running. If any thing is still running
-	// then the DAG is considered still running (even if there are failures). Remember any failures
+	// First check all our nodes to see if anything is still running. If so, then the DAG is
+	// considered still running (even if there are failures)
 	for _, node := range nodes {
 		if node.BoundaryID != d.boundaryID {
 			continue
@@ -73,22 +72,14 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if !node.Completed() {
 			return wfv1.NodeRunning
 		}
-		if !node.Successful() && phase == "" {
-			phase = node.Phase
-		}
 	}
-	// If we get here, then there are no running tasks. Propagate the failure/error if one was found
-	if phase != "" {
-		return phase
-	}
-	// There are no currently running tasks. Now check if our dependencies were met
+	// There are no currently running tasks. Now check if our dependencies were met and successful
 	for _, depName := range targetTasks {
 		depNode := d.getTaskNode(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
 		if !depNode.Successful() {
-			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
 	}
