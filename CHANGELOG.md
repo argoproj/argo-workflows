@@ -1,7 +1,8 @@
 # Changelog
-## 2.2.0
 
-- Github login using go-git, with support for ssh keys (@andreimc)
+## 2.2.0
++ Github login using go-git, with support for ssh keys (@andreimc)
+- Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
 
 ## 2.1.1 (2018-05-29)
 
