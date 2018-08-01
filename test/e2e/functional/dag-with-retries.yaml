@@ -11,11 +11,6 @@ spec:
       - arguments: {}
         name: step1
         template: randomly-fail
-      - arguments: {}
-        dependencies:
-        - step1
-        name: step2
-        template: randomly-fail
     inputs: {}
     metadata: {}
     outputs: {}
