@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install go
-ENV GO_VERSION 1.9.3
+ENV GO_VERSION 1.10.3
 ENV GO_ARCH amd64
 ENV GOPATH /root/go
 ENV PATH ${GOPATH}/bin:/usr/local/go/bin:${PATH}
 RUN wget https://storage.googleapis.com/golang/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
     tar -C /usr/local/ -xf /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
     rm /go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
-    wget https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 -O /usr/local/bin/dep && \
+    wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -O /usr/local/bin/dep && \
     chmod +x /usr/local/bin/dep && \
     wget https://github.com/gobuffalo/packr/releases/download/v1.10.4/packr_1.10.4_linux_amd64.tar.gz && \
     tar -vxf packr*.tar.gz -C /tmp/ && \
