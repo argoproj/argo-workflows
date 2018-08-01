@@ -39,6 +39,17 @@
   version = "v0.6.2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:5bc8a5e894176d06300d8a45c7e14eb658bc9305371170b3c7df3f605691db8d"
+  name = "github.com/argoproj/pkg"
+  packages = [
+    "kube/cli",
+    "stats",
+  ]
+  pruneopts = ""
+  revision = "ef006c16e59d517e163410913d962f990b89ccb5"
+
+[[projects]]
   digest = "1:56c130d885a4aacae1dd9c7b71cfe39912c7ebc1ff7d2b46083c8812996dc43b"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -1058,6 +1069,8 @@
     "github.com/argoproj/argo-cd/errors",
     "github.com/argoproj/argo-cd/util/diff",
     "github.com/argoproj/argo-cd/util/kube",
+    "github.com/argoproj/pkg/kube/cli",
+    "github.com/argoproj/pkg/stats",
     "github.com/dustin/go-humanize",
     "github.com/evanphx/json-patch",
     "github.com/fsnotify/fsnotify",
