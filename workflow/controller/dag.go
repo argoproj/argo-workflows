@@ -64,7 +64,10 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
-	// considered still running (even if there are failures)
+	// considered still running (even if there are failures). Remember any failures and if retry
+	// nodes have been exhausted.
+	var unsuccessfulPhase wfv1.NodePhase
+	retriesExhausted := true
 	for _, node := range nodes {
 		if node.BoundaryID != d.boundaryID {
 			continue
@@ -72,19 +75,48 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if !node.Completed() {
 			return wfv1.NodeRunning
 		}
+		if !node.Successful() && unsuccessfulPhase == "" {
+			unsuccessfulPhase = node.Phase
+		}
+		if node.Type == wfv1.NodeTypeRetry {
+			if hasMoreRetries(&node, d.wf) {
+				retriesExhausted = false
+			}
+		}
 	}
-	// There are no currently running tasks. Now check if our dependencies were met and successful
+	if unsuccessfulPhase != "" {
+		// if we were unsuccessful, we can return *only* if all retry nodes have ben exhausted.
+		if retriesExhausted {
+			return unsuccessfulPhase
+		}
+	}
+	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
 		depNode := d.getTaskNode(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
 		if !depNode.Successful() {
+			// we should theoretically never get here since it would have been caught in first loop
 			return depNode.Phase
 		}
 	}
 	// If we get here, all our dependencies were completed and successful
 	return wfv1.NodeSucceeded
+}
+
+func hasMoreRetries(node *wfv1.NodeStatus, wf *wfv1.Workflow) bool {
+	if len(node.Children) == 0 {
+		return true
+	}
+	// pick the first child to determine it's template type
+	childNode := wf.Status.Nodes[node.Children[0]]
+	tmpl := wf.GetTemplate(childNode.TemplateName)
+
+	if tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
+		return false
+	}
+	return true
 }
 
 func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {

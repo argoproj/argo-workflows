@@ -1,6 +1,8 @@
 package test
 
 import (
+	"io/ioutil"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/gobuffalo/packr"
@@ -21,6 +23,19 @@ func GetWorkflow(path string) *wfv1.Workflow {
 	// Set the workflow name explicitly since generateName doesn't work in unit tests
 	if wf.Name == "" {
 		wf.Name = wf.GenerateName
+	}
+	return &wf
+}
+
+func LoadTestWorkflow(path string) *wfv1.Workflow {
+	yamlBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	var wf wfv1.Workflow
+	err = yaml.Unmarshal(yamlBytes, &wf)
+	if err != nil {
+		panic(err)
 	}
 	return &wf
 }
