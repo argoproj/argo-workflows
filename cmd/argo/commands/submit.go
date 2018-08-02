@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"bufio"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -52,44 +54,66 @@ func NewSubmitCommand() *cobra.Command {
 
 func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 	InitWorkflowClient()
-	var workflowNames []string
-	for _, filePath := range filePaths {
-		var body []byte
-		var err error
-		if cmdutil.IsURL(filePath) {
-			response, err := http.Get(filePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-			body, err = ioutil.ReadAll(response.Body)
-			_ = response.Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			body, err = ioutil.ReadFile(filePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		workflows, err := splitYAMLFile(body)
+	var workflows []wfv1.Workflow
+	if len(filePaths) == 1 && filePaths[0] == "-" {
+		reader := bufio.NewReader(os.Stdin)
+		body, err := ioutil.ReadAll(reader)
 		if err != nil {
-			log.Fatalf("%s failed to parse: %v", filePath, err)
+			log.Fatal(err)
 		}
-		for _, wf := range workflows {
-			wfName, err := submitWorkflow(&wf, submitArgs)
-			if err != nil {
-				log.Fatalf("Workflow manifest %s failed submission: %v", filePath, err)
+		workflows = unmarshalWorkflows(body)
+	} else {
+		for _, filePath := range filePaths {
+			var body []byte
+			var err error
+			if cmdutil.IsURL(filePath) {
+				response, err := http.Get(filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
+				body, err = ioutil.ReadAll(response.Body)
+				_ = response.Body.Close()
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				body, err = ioutil.ReadFile(filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
-
-			workflowNames = append(workflowNames, wfName)
+			wfs := unmarshalWorkflows(body)
+			workflows = append(workflows, wfs...)
 		}
 	}
 
+	var workflowNames []string
+	for _, wf := range workflows {
+		wfName, err := submitWorkflow(&wf, submitArgs)
+		if err != nil {
+			log.Fatalf("Failed to submit workflow: %v", err)
+		}
+		workflowNames = append(workflowNames, wfName)
+	}
 	if submitArgs.wait {
 		wsp := NewWorkflowStatusPoller(wfClient, false, submitArgs.output == "json")
 		wsp.WaitWorkflows(workflowNames)
 	}
+}
+
+// unmarshalWorkflows unmarshals the input bytes as either json or yaml
+func unmarshalWorkflows(wfBytes []byte) []wfv1.Workflow {
+	var wf wfv1.Workflow
+	err := json.Unmarshal(wfBytes, &wf)
+	if err == nil {
+		return []wfv1.Workflow{wf}
+	}
+	yamlWfs, err := splitYAMLFile(wfBytes)
+	if err == nil {
+		return yamlWfs
+	}
+	log.Fatalf("Failed to parse workflow: %v", err)
+	return nil
 }
 
 // submitWorkflow is a helper to validate and submit a single workflow and override the entrypoint/params supplied from command line
