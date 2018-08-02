@@ -13,7 +13,7 @@ const (
 	CLIName = "argo"
 )
 
-// NewCommand returns a new instance of an argocd command
+// NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   CLIName,

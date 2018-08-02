@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
+	argotime "github.com/argoproj/pkg/time"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 type listFlags struct {
@@ -69,9 +69,12 @@ func NewListCommand() *cobra.Command {
 				workflows = wfList.Items
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
-				minTime := parseSince(listArgs.since)
+				minTime, err := argotime.ParseSince(listArgs.since)
+				if err != nil {
+					log.Fatal(err)
+				}
 				for _, wf := range wfList.Items {
-					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(minTime) {
+					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
 				}
@@ -98,8 +101,6 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	return command
 }
-
-var sinceRegex = regexp.MustCompile("^(\\d+)([smhd])$")
 
 var timeMagnitudes = []humanize.RelTimeMagnitude{
 	{D: time.Second, Format: "0s", DivBy: time.Second},
@@ -220,29 +221,4 @@ func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	default:
 		return wf.Status.Phase
 	}
-}
-
-// parseSince parses a since string and returns the time.Time in UTC
-func parseSince(since string) time.Time {
-	matches := sinceRegex.FindStringSubmatch(since)
-	if len(matches) != 3 {
-		log.Fatalf("Invalid since format '%s'. Expected format <duration><unit> (e.g. 3h)\n", since)
-	}
-	amount, err := strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var unit time.Duration
-	switch matches[2] {
-	case "s":
-		unit = time.Second
-	case "m":
-		unit = time.Minute
-	case "h":
-		unit = time.Hour
-	case "d":
-		unit = time.Hour * 24
-	}
-	ago := unit * time.Duration(amount)
-	return time.Now().UTC().Add(-ago)
 }
