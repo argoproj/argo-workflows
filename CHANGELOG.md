@@ -5,6 +5,7 @@
 ### Changelog since v2.1
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
++ Support submission of workflows as json, and from stdin (issue #926)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
 * Update argo-cluster-role to work with OpenShift
