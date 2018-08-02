@@ -4,17 +4,27 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
-	"github.com/argoproj/argo/workflow/common"
+	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/workflow/common"
 )
 
-// NewDeleteCommand returns a new instance of an `argocd repo` command
+var (
+	completedWorkflowListOption = metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
+	}
+)
+
+// NewDeleteCommand returns a new instance of an `argo delete` command
 func NewDeleteCommand() *cobra.Command {
 	var (
 		all       bool
 		completed bool
+		older     string
 	)
 
 	var command = &cobra.Command{
@@ -23,27 +33,30 @@ func NewDeleteCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			wfClient = InitWorkflowClient()
 			if all {
-				deleteWorkflows(metav1.ListOptions{})
-				return
-			} else if completed {
-				options := metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("%s=true", common.LabelKeyCompleted),
+				deleteWorkflows(metav1.ListOptions{}, nil)
+			} else if older != "" {
+				olderTime, err := argotime.ParseSince(older)
+				if err != nil {
+					log.Fatal(err)
 				}
-				deleteWorkflows(options)
-				return
-			}
-			if len(args) == 0 {
-				cmd.HelpFunc()(cmd, args)
-				os.Exit(1)
-			}
-			for _, wfName := range args {
-				deleteWorkflow(wfName)
+				deleteWorkflows(completedWorkflowListOption, olderTime)
+			} else if completed {
+				deleteWorkflows(completedWorkflowListOption, nil)
+			} else {
+				if len(args) == 0 {
+					cmd.HelpFunc()(cmd, args)
+					os.Exit(1)
+				}
+				for _, wfName := range args {
+					deleteWorkflow(wfName)
+				}
 			}
 		},
 	}
 
 	command.Flags().BoolVar(&all, "all", false, "Delete all workflows")
 	command.Flags().BoolVar(&completed, "completed", false, "Delete completed workflows")
+	command.Flags().StringVar(&older, "older", "", "Delete completed workflows older than the specified duration (e.g. 10m, 3h, 1d)")
 	return command
 }
 
@@ -55,12 +68,17 @@ func deleteWorkflow(wfName string) {
 	fmt.Printf("Workflow '%s' deleted\n", wfName)
 }
 
-func deleteWorkflows(options metav1.ListOptions) {
+func deleteWorkflows(options metav1.ListOptions, older *time.Time) {
 	wfList, err := wfClient.List(options)
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, wf := range wfList.Items {
+		if older != nil {
+			if wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*older) {
+				continue
+			}
+		}
 		deleteWorkflow(wf.ObjectMeta.Name)
 	}
 }

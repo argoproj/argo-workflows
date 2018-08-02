@@ -1,8 +1,15 @@
 # Changelog
 
-## 2.2.0
+## 2.2.0 (TBD)
+
+### Changelog since v2.1
 + Github login using go-git, with support for ssh keys (@andreimc)
++ Add `argo delete --older` flag to delete completed workflows older than a duration
+* Update golang compiler to v1.10.3
+* Update k8s dependencies to v1.10 and client-go to v7.0
+* Update argo-cluster-role to work with OpenShift
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
+- Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
 
 ## 2.1.1 (2018-05-29)
 
