@@ -3,6 +3,7 @@
 ## 2.2.0 (TBD)
 
 ### Changelog since v2.1
++ Add ability to aggregate and reference output parameters expanded by loops (issue #861)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support submission of workflows as json, and from stdin (issue #926)

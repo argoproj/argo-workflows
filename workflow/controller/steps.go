@@ -78,15 +78,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 
 		// Add all outputs of each step in the group to the scope
 		for _, step := range stepGroup {
-			childNode := woc.getNodeByName(fmt.Sprintf("%s.%s", sgNodeName, step.Name))
-			if childNode == nil {
-				// This can happen if there was `withItem` expansion
-				// it is okay to ignore this because these expanded steps
-				// are not easily referenceable by user.
-				continue
-			}
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			childNode := woc.getNodeByName(childNodeName)
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
+			if childNode == nil {
+				// This happens when there was `withItem/withParam` expansion. We add the aggregate
+				// outputs to the scope as a JSON list
+				woc.processAggregateNodeOutputs(&stepsCtx, prefix, childNodeName)
+			} else {
+				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
+			}
 		}
 	}
 	woc.updateOutboundNodes(nodeName, tmpl)

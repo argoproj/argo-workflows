@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"runtime/debug"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1187,6 +1189,62 @@ func (woc *wfOperationCtx) processNodeOutputs(wfs *wfScope, prefix string, node 
 		wfs.addArtifactToScope(key, outArt)
 		woc.addArtifactToGlobalScope(outArt)
 	}
+}
+
+type loopNodes []wfv1.NodeStatus
+
+func (n loopNodes) Len() int {
+	return len(n)
+}
+
+func parseLoopIndex(s string) int {
+	s = strings.SplitN(s, "(", 2)[1]
+	s = strings.SplitN(s, ":", 2)[0]
+	val, err := strconv.Atoi(s)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse '%s' as int: %v", s, err))
+	}
+	return val
+}
+func (n loopNodes) Less(i, j int) bool {
+	left := parseLoopIndex(n[i].DisplayName)
+	right := parseLoopIndex(n[j].DisplayName)
+	return left < right
+}
+func (n loopNodes) Swap(i, j int) {
+	n[i], n[j] = n[j], n[i]
+}
+
+// processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
+// parameter in the form of a JSON list
+func (woc *wfOperationCtx) processAggregateNodeOutputs(stepsCtx *stepsContext, prefix, childNodePrefix string) {
+	paramList := make([]map[string]string, 0)
+	var childNodes []wfv1.NodeStatus
+	for _, node := range woc.wf.Status.Nodes {
+		if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodePrefix) {
+			childNodes = append(childNodes, node)
+		}
+	}
+	if len(childNodes) == 0 {
+		return
+	}
+
+	// need to sort the child node list so that the order of outputs are preserved
+	sort.Sort(loopNodes(childNodes))
+
+	for _, node := range childNodes {
+		if node.Outputs == nil || len(node.Outputs.Parameters) == 0 {
+			continue
+		}
+		param := make(map[string]string)
+		for _, p := range node.Outputs.Parameters {
+			param[p.Name] = *p.Value
+		}
+		paramList = append(paramList, param)
+	}
+	outputsJSON, _ := json.Marshal(paramList)
+	key := fmt.Sprintf("%s.outputs.parameters", prefix)
+	stepsCtx.scope.addParamToScope(key, string(outputsJSON))
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
