@@ -377,6 +377,7 @@ func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) erro
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
 	}
+	scope[fmt.Sprintf("steps.%s.outputs.parameters", step.Name)] = true
 	return nil
 }
 
