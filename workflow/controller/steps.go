@@ -114,6 +114,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 		sgNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
 		if sgNode != nil {
 			lastSGNode = sgNode
+			break
 		}
 	}
 	if lastSGNode == nil {
