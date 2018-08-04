@@ -1103,6 +1103,11 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	switch node.Type {
 	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
+	case wfv1.NodeTypeRetry:
+		numChildren := len(node.Children)
+		if numChildren > 0 {
+			return []string{node.Children[numChildren-1]}
+		}
 	}
 	outbound := make([]string, 0)
 	for _, outboundNodeID := range node.OutboundNodes {
