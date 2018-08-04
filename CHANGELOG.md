@@ -12,6 +12,9 @@
 * Update argo-cluster-role to work with OpenShift
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
 - Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
+- Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
+- Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI
+- Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
 
 ## 2.1.1 (2018-05-29)
 
