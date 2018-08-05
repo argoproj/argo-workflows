@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strconv"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -128,11 +129,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			Containers: []apiv1.Container{
 				mainCtr,
 			},
-			Volumes: []apiv1.Volume{
-				volumePodMetadata,
-				volumeDockerLib,
-				volumeDockerSock,
-			},
+			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
 			// TODO: consider allowing service account and image pull secrets to reference global vars
 			ServiceAccountName: woc.wf.Spec.ServiceAccountName,
@@ -249,19 +246,63 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"argoexec"}
 	ctr.Args = []string{"wait"}
-	ctr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-		volumeMountDockerLib,
-		volumeMountDockerSock,
-	}
+	ctr.VolumeMounts = woc.createVolumeMounts()
 	return ctr, nil
+}
+
+func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
+	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+		return execEnvVars
+	}
+	return append(execEnvVars,
+		apiv1.EnvVar{
+			Name:  common.EnvVarContainerRuntimeExecutor,
+			Value: woc.controller.Config.ContainerRuntimeExecutor,
+		},
+		apiv1.EnvVar{
+			Name: common.EnvVarDownwardAPINodeIP,
+			ValueFrom: &apiv1.EnvVarSource{
+				FieldRef: &apiv1.ObjectFieldSelector{
+					FieldPath: "status.hostIP",
+				},
+			},
+		},
+		apiv1.EnvVar{
+			Name:  common.EnvVarKubeletPort,
+			Value: strconv.Itoa(woc.controller.Config.KubeletPort),
+		},
+		apiv1.EnvVar{
+			Name:  common.EnvVarKubeletInsecure,
+			Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
+		},
+	)
+}
+
+func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
+	volumeMounts := []apiv1.VolumeMount{
+		volumeMountPodMetadata,
+	}
+	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+		return append(volumeMounts, volumeMountDockerLib, volumeMountDockerSock)
+	}
+	return volumeMounts
+}
+
+func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
+	volumes := []apiv1.Volume{
+		volumePodMetadata,
+	}
+	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+		return append(volumes, volumeDockerLib, volumeDockerSock)
+	}
+	return volumes
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:  name,
 		Image: woc.controller.executorImage(),
-		Env:   execEnvVars,
+		Env:   woc.createEnvVars(),
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
 		},
