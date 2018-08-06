@@ -288,22 +288,34 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	for _, t := range expandedTasks {
-		// Add the child relationship from our dependency's outbound nodes to this node.
 		node = dagCtx.getTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, task.Dependencies)
+			// Add the child relationship from our dependency's outbound nodes to this node.
 			connectDependencies(taskNodeName)
+
+			// Check the task's when clause to decide if it should execute
+			proceed, err := shouldExecute(t.When)
+			if err != nil {
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				continue
+			}
+			if !proceed {
+				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				continue
+			}
 		}
 		// Finally execute the template
 		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID)
 	}
 
 	// If we expanded the task, we still need to create the task entry for the non-expanded node,
-	// since dependant tasks will look to it, to decide when when to execute. For example, if we had
+	// since dependant tasks will look to it, when deciding when to execute. For example, if we had
 	// task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
 	// need to create a node for A, after the withItems have completed.
-	if len(expandedTasks) > 1 {
+	if len(task.WithItems) > 0 || task.WithParam != "" {
 		nodeStatus := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
@@ -316,8 +328,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			}
 		}
 		woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task.Template, dagCtx.boundaryID, nodeStatus, "")
-		for _, t := range expandedTasks {
-			woc.addChildNode(dagCtx.taskNodeName(t.Name), nodeName)
+		if len(expandedTasks) > 0 {
+			for _, t := range expandedTasks {
+				woc.addChildNode(dagCtx.taskNodeName(t.Name), nodeName)
+			}
+		} else {
+			connectDependencies(nodeName)
 		}
 	}
 }
@@ -341,7 +357,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			woc.processAggregateNodeOutputs(&scope, prefix, ancestorNodes)
+			woc.processAggregateNodeOutputs(ancestorNode.TemplateName, &scope, prefix, ancestorNodes)
 		} else {
 			woc.processNodeOutputs(&scope, prefix, ancestorNode)
 		}
@@ -426,6 +442,7 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 			return nil, err
 		}
 		newTask.Name = newTaskName
+		newTask.Template = task.Template
 		expandedTasks = append(expandedTasks, newTask)
 	}
 	return expandedTasks, nil

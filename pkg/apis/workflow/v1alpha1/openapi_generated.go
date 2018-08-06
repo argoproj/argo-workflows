@@ -328,6 +328,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"when": {
+						SchemaProps: spec.SchemaProps{
+							Description: "When is an expression in which the task should conditionally execute",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "template"},
 			},

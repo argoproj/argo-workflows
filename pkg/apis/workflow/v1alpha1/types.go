@@ -688,6 +688,9 @@ type DAGTask struct {
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty"`
+
+	// When is an expression in which the task should conditionally execute
+	When string `json:"when,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
