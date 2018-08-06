@@ -6,7 +6,7 @@ metadata:
 spec:
   entrypoint: ui-nested-steps
   templates:
-  - name: nested-steps
+  - name: ui-nested-steps
     steps:       
     - - name: LOCATE-FACES
         template: locate-faces

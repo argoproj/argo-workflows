@@ -43,6 +43,7 @@ const (
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
 	NodeTypeDAG       NodeType = "DAG"
+	NodeTypeTaskGroup NodeType = "TaskGroup"
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
@@ -312,7 +313,8 @@ type WorkflowStep struct {
 	// WithItems expands a step into multiple parallel steps from the items in the list
 	WithItems []Item `json:"withItems,omitempty"`
 
-	// WithParam expands a step into from the value in the parameter
+	// WithParam expands a step into multiple parallel steps from the value in the parameter,
+	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty"`
 
 	// When is an expression in which the step should conditionally execute
@@ -679,6 +681,13 @@ type DAGTask struct {
 
 	// Dependencies are name of other targets which this depends on
 	Dependencies []string `json:"dependencies,omitempty"`
+
+	// WithItems expands a task into multiple parallel tasks from the items in the list
+	WithItems []Item `json:"withItems,omitempty"`
+
+	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
+	// which is expected to be a JSON list.
+	WithParam string `json:"withParam,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
