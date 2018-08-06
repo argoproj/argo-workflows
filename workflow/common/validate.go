@@ -405,7 +405,12 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string
 		}
 	}
 	if aggregate {
-		scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
+		switch tmpl.GetType() {
+		case wfv1.TemplateTypeScript:
+			scope[fmt.Sprintf("%s.outputs.result", prefix)] = true
+		default:
+			scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
+		}
 	}
 }
 

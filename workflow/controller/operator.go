@@ -1197,6 +1197,7 @@ func (woc *wfOperationCtx) processNodeOutputs(wfs *wfScope, prefix string, node 
 	}
 }
 
+// loopNodes is a node list which supports sorting by loop index
 type loopNodes []wfv1.NodeStatus
 
 func (n loopNodes) Len() int {
@@ -1223,22 +1224,34 @@ func (n loopNodes) Swap(i, j int) {
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) {
+func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) {
 	if len(childNodes) == 0 {
 		return
 	}
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
 	paramList := make([]map[string]string, 0)
+	resultsList := make([]string, 0)
 	for _, node := range childNodes {
-		if node.Outputs == nil || len(node.Outputs.Parameters) == 0 {
+		if node.Outputs == nil {
 			continue
 		}
-		param := make(map[string]string)
-		for _, p := range node.Outputs.Parameters {
-			param[p.Name] = *p.Value
+		if len(node.Outputs.Parameters) > 0 {
+			param := make(map[string]string)
+			for _, p := range node.Outputs.Parameters {
+				param[p.Name] = *p.Value
+			}
+			paramList = append(paramList, param)
 		}
-		paramList = append(paramList, param)
+		if node.Outputs.Result != nil {
+			resultsList = append(resultsList, *node.Outputs.Result)
+		}
+	}
+	tmplType := woc.wf.GetTemplate(templateName).GetType()
+	if tmplType == wfv1.TemplateTypeScript {
+		resultsJSON, _ := json.Marshal(resultsList)
+		key := fmt.Sprintf("%s.outputs.result", prefix)
+		scope.addParamToScope(key, string(resultsJSON))
 	}
 	outputsJSON, _ := json.Marshal(paramList)
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
