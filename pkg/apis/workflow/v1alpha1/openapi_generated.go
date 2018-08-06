@@ -308,12 +308,32 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							},
 						},
 					},
+					"withItems": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WithItems expands a task into multiple parallel tasks from the items in the list",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"),
+									},
+								},
+							},
+						},
+					},
+					"withParam": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "template"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item"},
 	}
 }
 
@@ -1765,7 +1785,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 					},
 					"withParam": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WithParam expands a step into from the value in the parameter",
+							Description: "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

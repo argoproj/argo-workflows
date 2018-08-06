@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/argoproj/argo/errors"
@@ -82,9 +81,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			childNode := woc.getNodeByName(childNodeName)
 			prefix := fmt.Sprintf("steps.%s", step.Name)
 			if childNode == nil {
-				// This happens when there was `withItem/withParam` expansion. We add the aggregate
-				// outputs to the scope as a JSON list
-				woc.processAggregateNodeOutputs(&stepsCtx, prefix, childNodeName)
+				// This happens when there was `withItem/withParam` expansion.
+				// We add the aggregate outputs of our children to the scope as a JSON list
+				var childNodes []wfv1.NodeStatus
+				for _, node := range woc.wf.Status.Nodes {
+					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") {
+						childNodes = append(childNodes, node)
+					}
+				}
+				woc.processAggregateNodeOutputs(stepsCtx.scope, prefix, childNodes)
 			} else {
 				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
 			}
@@ -333,42 +338,10 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 	}
 
 	for i, item := range items {
-		replaceMap := make(map[string]string)
-		var newStepName string
-		switch val := item.Value.(type) {
-		case string, int32, int64, float32, float64, bool:
-			replaceMap["item"] = fmt.Sprintf("%v", val)
-			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, val)
-		case map[string]interface{}:
-			// Handle the case when withItems is a list of maps.
-			// vals holds stringified versions of the map items which are incorporated as part of the step name.
-			// For example if the item is: {"name": "jesse","group":"developer"}
-			// the vals would be: ["name:jesse", "group:developer"]
-			// This would eventually be part of the step name (group:developer,name:jesse)
-			vals := make([]string, 0)
-			for itemKey, itemValIf := range val {
-				switch itemVal := itemValIf.(type) {
-				case string, int32, int64, float32, float64, bool:
-					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
-				default:
-					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", i, itemKey, itemVal)
-				}
-			}
-			// sort the values so that the name is deterministic
-			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, strings.Join(vals, ","))
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
-		}
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+		var newStep wfv1.WorkflowStep
+		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
 		if err != nil {
 			return nil, err
-		}
-		var newStep wfv1.WorkflowStep
-		err = json.Unmarshal([]byte(newStepStr), &newStep)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
 		}
 		newStep.Name = newStepName
 		expandedStep = append(expandedStep, newStep)

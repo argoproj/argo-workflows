@@ -154,6 +154,13 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.WithItems != nil {
+		in, out := &in.WithItems, &out.WithItems
+		*out = make([]Item, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 

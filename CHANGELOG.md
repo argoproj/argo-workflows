@@ -3,10 +3,12 @@
 ## 2.2.0 (TBD)
 
 ### Changelog since v2.1
++ Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
 + Add ability to aggregate and reference output parameters expanded by loops (issue #861)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
-+ Support submission of workflows as json, and from stdin (issue #926)
++ Support submission of workflows from json files (issue #926)
++ Support submission of workflows from stdin (issue #926)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
 * Update argo-cluster-role to work with OpenShift
