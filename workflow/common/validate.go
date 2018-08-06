@@ -322,7 +322,8 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
-			err := addItemsToScope(&step, scope)
+			prefix := fmt.Sprintf("steps.%s", step.Name)
+			err := addItemsToScope(prefix, step.WithItems, step.WithParam, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -348,19 +349,20 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			}
 		}
 		for _, step := range stepGroup {
-			ctx.addOutputsToScope(step.Template, fmt.Sprintf("steps.%s", step.Name), scope)
+			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
+			ctx.addOutputsToScope(step.Template, fmt.Sprintf("steps.%s", step.Name), scope, aggregate)
 		}
 	}
 	return nil
 }
 
-func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) error {
-	if len(step.WithItems) > 0 && step.WithParam != "" {
+func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, scope map[string]interface{}) error {
+	if len(withItems) > 0 && withParam != "" {
 		return fmt.Errorf("only one of withItems or withParam can be specified")
 	}
-	if len(step.WithItems) > 0 {
-		for i := range step.WithItems {
-			switch val := step.WithItems[i].Value.(type) {
+	if len(withItems) > 0 {
+		for i := range withItems {
+			switch val := withItems[i].Value.(type) {
 			case string, int32, int64, float32, float64, bool:
 				scope["item"] = true
 			case map[string]interface{}:
@@ -371,17 +373,16 @@ func addItemsToScope(step *wfv1.WorkflowStep, scope map[string]interface{}) erro
 				return fmt.Errorf("unsupported withItems type: %v", val)
 			}
 		}
-	} else if step.WithParam != "" {
+	} else if withParam != "" {
 		scope["item"] = true
 		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
 	}
-	scope[fmt.Sprintf("steps.%s.outputs.parameters", step.Name)] = true
 	return nil
 }
 
-func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string, scope map[string]interface{}) {
+func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string, scope map[string]interface{}, aggregate bool) {
 	tmpl := ctx.wf.GetTemplate(templateName)
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
@@ -402,6 +403,9 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
 			scope[fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)] = true
 		}
+	}
+	if aggregate {
+		scope[fmt.Sprintf("%s.outputs.parameters", prefix)] = true
 	}
 }
 
@@ -591,8 +595,9 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 	}
 
 	for _, task := range tmpl.DAG.Tasks {
-		// add all tasks outputs to scope so that DAGs can have outputs
-		ctx.addOutputsToScope(task.Template, fmt.Sprintf("tasks.%s", task.Name), scope)
+		// add all tasks outputs to scope so that a nested DAGs can have outputs
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		ctx.addOutputsToScope(task.Template, prefix, scope, false)
 
 		taskBytes, err := json.Marshal(task)
 		if err != nil {
@@ -604,7 +609,14 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		}
 		ancestry := GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
 		for _, ancestor := range ancestry {
-			ctx.addOutputsToScope(nameToTask[ancestor].Template, fmt.Sprintf("tasks.%s", ancestor), taskScope)
+			ancestorTask := nameToTask[ancestor]
+			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
+			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
+			ctx.addOutputsToScope(ancestorTask.Template, ancestorPrefix, taskScope, aggregate)
+		}
+		err = addItemsToScope(prefix, task.WithItems, task.WithParam, taskScope)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
 		err = resolveAllVariables(taskScope, string(taskBytes))
 		if err != nil {

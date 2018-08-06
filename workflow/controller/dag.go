@@ -138,6 +138,9 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		tmpl:         tmpl,
 		wf:           woc.wf,
 	}
+
+	// Identify our target tasks. If user did not specify any, then we choose all tasks which have
+	// no dependants.
 	var targetTasks []string
 	if tmpl.DAG.Target == "" {
 		targetTasks = findLeafTaskNames(tmpl.DAG.Tasks)
@@ -148,13 +151,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl.Name, boundaryID, wfv1.NodeRunning)
 	}
-	if len(node.Children) == 0 {
-		rootTasks := findRootTaskNames(dagCtx, targetTasks)
-		woc.log.Infof("Root tasks of %s identified as %s", nodeName, rootTasks)
-		for _, rootTaskName := range rootTasks {
-			woc.addChildNode(node.Name, dagCtx.taskNodeName(rootTaskName))
-		}
-	}
 	// kick off execution of each target task asynchronously
 	for _, taskNames := range targetTasks {
 		woc.executeDAGTask(dagCtx, taskNames)
@@ -163,7 +159,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
-		return node
+		return woc.getNodeByName(nodeName)
 	case wfv1.NodeError, wfv1.NodeFailed:
 		return woc.markNodePhase(nodeName, dagPhase)
 	}
@@ -211,32 +207,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 }
 
-// findRootTaskNames finds the names of all tasks which have no dependencies.
-// Once identified, these root tasks are marked as children to the encompassing node.
-func findRootTaskNames(dagCtx *dagContext, targetTasks []string) []string {
-	rootTaskNames := make([]string, 0)
-	visited := make(map[string]bool)
-	var findRootHelper func(s string)
-	findRootHelper = func(taskName string) {
-		if _, ok := visited[taskName]; ok {
-			return
-		}
-		visited[taskName] = true
-		task := dagCtx.getTask(taskName)
-		if len(task.Dependencies) == 0 {
-			rootTaskNames = append(rootTaskNames, taskName)
-			return
-		}
-		for _, depName := range task.Dependencies {
-			findRootHelper(depName)
-		}
-	}
-	for _, targetTaskName := range targetTasks {
-		findRootHelper(targetTaskName)
-	}
-	return rootTaskNames
-}
-
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
 func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if _, ok := dagCtx.visited[taskName]; ok {
@@ -279,30 +249,77 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		return
 	}
 
-	// All our dependencies completed. Now add the child relationship from our dependency's
-	// outbound nodes to this node.
-	node = dagCtx.getTaskNode(taskName)
-	if node == nil {
-		woc.log.Infof("All of node %s dependencies %s completed", nodeName, task.Dependencies)
-		// Add all outbound nodes of our dependencies as parents to this node
-		for _, depName := range task.Dependencies {
-			depNode := dagCtx.getTaskNode(depName)
-			outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-			woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
-			for _, outNodeID := range outboundNodeIDs {
-				woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, nodeName)
+	// All our dependencies were satisfied and successful. It's our turn to run
+
+	// connectDependencies is a helper to connect our dependencies to current task as children
+	connectDependencies := func(taskNodeName string) {
+		if len(task.Dependencies) == 0 {
+			// if we had no dependencies, then we are a root task, and we should connect the
+			// boundary node as our parent
+			woc.addChildNode(dagCtx.boundaryName, taskNodeName)
+		} else {
+			// Otherwise, add all outbound nodes of our dependencies as parents to this node
+			for _, depName := range task.Dependencies {
+				depNode := dagCtx.getTaskNode(depName)
+				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
+				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
+				for _, outNodeID := range outboundNodeIDs {
+					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, taskNodeName)
+				}
 			}
 		}
 	}
 
-	// All our dependencies were satisfied and successful. It's our turn to run
-	// Substitute params/artifacts from our dependencies and execute the template
+	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		connectDependencies(nodeName)
 		return
 	}
-	_, _ = woc.executeTemplate(newTask.Template, newTask.Arguments, nodeName, dagCtx.boundaryID)
+
+	// Next, expand the DAG's withItems/withParams (if any). If there was none, then expandedTasks
+	// will be a single element list of the same task
+	expandedTasks, err := woc.expandTask(*newTask)
+	if err != nil {
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		connectDependencies(nodeName)
+		return
+	}
+
+	for _, t := range expandedTasks {
+		// Add the child relationship from our dependency's outbound nodes to this node.
+		node = dagCtx.getTaskNode(t.Name)
+		taskNodeName := dagCtx.taskNodeName(t.Name)
+		if node == nil {
+			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, task.Dependencies)
+			connectDependencies(taskNodeName)
+		}
+		// Finally execute the template
+		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID)
+	}
+
+	// If we expanded the task, we still need to create the task entry for the non-expanded node,
+	// since dependant tasks will look to it, to decide when when to execute. For example, if we had
+	// task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
+	// need to create a node for A, after the withItems have completed.
+	if len(expandedTasks) > 1 {
+		nodeStatus := wfv1.NodeSucceeded
+		for _, t := range expandedTasks {
+			// Add the child relationship from our dependency's outbound nodes to this node.
+			node := dagCtx.getTaskNode(t.Name)
+			if node == nil || !node.Completed() {
+				return
+			}
+			if !node.Successful() {
+				nodeStatus = node.Phase
+			}
+		}
+		woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task.Template, dagCtx.boundaryID, nodeStatus, "")
+		for _, t := range expandedTasks {
+			woc.addChildNode(dagCtx.taskNodeName(t.Name), nodeName)
+		}
+	}
 }
 
 // resolveDependencyReferences replaces any references to outputs of task dependencies, or artifacts in the inputs
@@ -317,7 +334,17 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ancestor)
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
-		woc.processNodeOutputs(&scope, prefix, ancestorNode)
+		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
+			var ancestorNodes []wfv1.NodeStatus
+			for _, node := range woc.wf.Status.Nodes {
+				if node.BoundaryID == dagCtx.boundaryID && strings.HasPrefix(node.Name, ancestorNode.Name+"(") {
+					ancestorNodes = append(ancestorNodes, node)
+				}
+			}
+			woc.processAggregateNodeOutputs(&scope, prefix, ancestorNodes)
+		} else {
+			woc.processNodeOutputs(&scope, prefix, ancestorNode)
+		}
 	}
 
 	// Perform replacement
@@ -370,4 +397,36 @@ func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 		}
 	}
 	return leafTaskNames
+}
+
+// expandTask expands a single DAG task containing withItems or withParams into multiple parallel tasks
+func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
+	taskBytes, err := json.Marshal(task)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	var items []wfv1.Item
+	if len(task.WithItems) > 0 {
+		items = task.WithItems
+	} else if task.WithParam != "" {
+		err = json.Unmarshal([]byte(task.WithParam), &items)
+		if err != nil {
+			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(task.WithParam))
+		}
+	} else {
+		return []wfv1.DAGTask{task}, nil
+	}
+
+	fstTmpl := fasttemplate.New(string(taskBytes), "{{", "}}")
+	expandedTasks := make([]wfv1.DAGTask, 0)
+	for i, item := range items {
+		var newTask wfv1.DAGTask
+		newTaskName, err := processItem(fstTmpl, task.Name, i, item, &newTask)
+		if err != nil {
+			return nil, err
+		}
+		newTask.Name = newTaskName
+		expandedTasks = append(expandedTasks, newTask)
+	}
+	return expandedTasks, nil
 }

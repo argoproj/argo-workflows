@@ -17,6 +17,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1101,7 +1102,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
+	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeTaskGroup:
 		return []string{node.ID}
 	case wfv1.NodeTypeRetry:
 		numChildren := len(node.Children)
@@ -1222,21 +1223,13 @@ func (n loopNodes) Swap(i, j int) {
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(stepsCtx *stepsContext, prefix, childNodePrefix string) {
-	paramList := make([]map[string]string, 0)
-	var childNodes []wfv1.NodeStatus
-	for _, node := range woc.wf.Status.Nodes {
-		if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodePrefix) {
-			childNodes = append(childNodes, node)
-		}
-	}
+func (woc *wfOperationCtx) processAggregateNodeOutputs(scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) {
 	if len(childNodes) == 0 {
 		return
 	}
-
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
-
+	paramList := make([]map[string]string, 0)
 	for _, node := range childNodes {
 		if node.Outputs == nil || len(node.Outputs.Parameters) == 0 {
 			continue
@@ -1249,7 +1242,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(stepsCtx *stepsContext, p
 	}
 	outputsJSON, _ := json.Marshal(paramList)
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
-	stepsCtx.scope.addParamToScope(key, string(outputsJSON))
+	scope.addParamToScope(key, string(outputsJSON))
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
@@ -1384,9 +1377,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	if !ok {
 		panic(fmt.Sprintf("parent node %s not initialized", parent))
 	}
-	if node.Children == nil {
-		node.Children = make([]string, 0)
-	}
 	for _, nodeID := range node.Children {
 		if childID == nodeID {
 			// already exists
@@ -1418,4 +1408,44 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+}
+
+func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
+	replaceMap := make(map[string]string)
+	var newName string
+	switch val := item.Value.(type) {
+	case string, int32, int64, float32, float64, bool:
+		replaceMap["item"] = fmt.Sprintf("%v", val)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
+	case map[string]interface{}:
+		// Handle the case when withItems is a list of maps.
+		// vals holds stringified versions of the map items which are incorporated as part of the step name.
+		// For example if the item is: {"name": "jesse","group":"developer"}
+		// the vals would be: ["name:jesse", "group:developer"]
+		// This would eventually be part of the step name (group:developer,name:jesse)
+		vals := make([]string, 0)
+		for itemKey, itemValIf := range val {
+			switch itemVal := itemValIf.(type) {
+			case string, int32, int64, float32, float64, bool:
+				replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
+			default:
+				return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", index, itemKey, itemVal)
+			}
+		}
+		// sort the values so that the name is deterministic
+		sort.Strings(vals)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
+	default:
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", index, val)
+	}
+	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal([]byte(newStepStr), &obj)
+	if err != nil {
+		return "", errors.InternalWrapError(err)
+	}
+	return newName, nil
 }
