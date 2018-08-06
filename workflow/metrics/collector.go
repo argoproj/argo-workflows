@@ -73,7 +73,10 @@ func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registr
 	workflowLister := workflowLister(func() (workflows []wfv1.Workflow, err error) {
 		for _, m := range informer.GetStore().List() {
 			var wf wfv1.Workflow
-			runtime.DefaultUnstructuredConverter.FromUnstructured(m.(*unstructured.Unstructured).Object, &wf)
+			err := runtime.DefaultUnstructuredConverter.FromUnstructured(m.(*unstructured.Unstructured).Object, &wf)
+			if err != nil {
+				return nil, err
+			}
 			workflows = append(workflows, wf)
 		}
 		return workflows, nil
@@ -86,8 +89,8 @@ func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registr
 // NewTelemetryRegistry creates a new prometheus registry that collects telemetry
 func NewTelemetryRegistry() *prometheus.Registry {
 	registry := prometheus.NewRegistry()
-	registry.Register(prometheus.NewProcessCollector(os.Getpid(), ""))
-	registry.Register(prometheus.NewGoCollector())
+	registry.MustRegister(prometheus.NewProcessCollector(os.Getpid(), ""))
+	registry.MustRegister(prometheus.NewGoCollector())
 	return registry
 }
 
