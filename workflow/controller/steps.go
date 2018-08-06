@@ -54,11 +54,17 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			// the current step group node.
 			prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
 			prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
-			for _, childID := range prevStepGroupNode.Children {
-				outboundNodeIDs := woc.getOutboundNodes(childID)
-				woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
-				for _, outNodeID := range outboundNodeIDs {
-					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
+			if len(prevStepGroupNode.Children) == 0 {
+				// corner case which connects an empty StepGroup (e.g. due to empty withParams) to
+				// the previous StepGroup node
+				woc.addChildNode(prevStepGroupName, sgNodeName)
+			} else {
+				for _, childID := range prevStepGroupNode.Children {
+					outboundNodeIDs := woc.getOutboundNodes(childID)
+					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+					for _, outNodeID := range outboundNodeIDs {
+						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
+					}
 				}
 			}
 		}
@@ -89,7 +95,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 						childNodes = append(childNodes, node)
 					}
 				}
-				woc.processAggregateNodeOutputs(stepsCtx.scope, prefix, childNodes)
+				woc.processAggregateNodeOutputs(step.Template, stepsCtx.scope, prefix, childNodes)
 			} else {
 				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
 			}
@@ -344,6 +350,7 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 			return nil, err
 		}
 		newStep.Name = newStepName
+		newStep.Template = step.Template
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil

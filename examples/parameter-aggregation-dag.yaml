@@ -1,3 +1,4 @@
+# Example workflow to demonstrate parameter aggregation in a DAG.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -8,6 +9,8 @@ spec:
   - name: parameter-aggregation
     dag:
       tasks:
+      # First loop through a list of numbers and determine if the number is odd or even. This is
+      # captured in output parameter 'evenness'. (e.g. {"num": "4", "evenness": "even"})
       - name: odd-or-even
         template: odd-or-even
         arguments:
@@ -15,15 +18,26 @@ spec:
           - name: num
             value: "{{item}}"
         withItems: [1, 2, 3, 4]
-      - name: pick-evens
-        template: pick-evens
+      # Next, for each even number, divide it by two (using a script template).
+      # Skip odd numbers using a `when` clause.
+      - name: divide-by-2
         dependencies: [odd-or-even]
+        template: divide-by-2
         arguments:
           parameters:
           - name: num
             value: "{{item.num}}"
         withParam: "{{tasks.odd-or-even.outputs.parameters}}"
-        #when: "{{item.evenness}} == even"
+        when: "{{item.evenness}} == even"
+      # Finally, print all numbers processed in the previous step
+      - name: print
+        dependencies: [divide-by-2]
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{tasks.divide-by-2.outputs.result}}"
 
   # odd-or-even accepts a number and returns whether or not that number is odd or even
   - name: odd-or-even
@@ -50,12 +64,24 @@ spec:
         valueFrom:
           path: /tmp/even
 
-  - name: pick-evens
+  # divide-by-2 divides a number in half
+  - name: divide-by-2
     inputs:
       parameters:
       - name: num
-    container:
+    script:
       image: alpine:latest
-      command: [sh, -xc]
-      args: 
-      - echo {{inputs.parameters.num}}
+      command: [sh, -x]
+      source: |
+        #!/bin/sh
+        echo $(({{inputs.parameters.num}}/2))
+
+  # whalesay prints a number using whalesay
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

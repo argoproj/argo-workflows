@@ -158,6 +158,10 @@
           "description": "Name of template to execute",
           "type": "string"
         },
+        "when": {
+          "description": "When is an expression in which the task should conditionally execute",
+          "type": "string"
+        },
         "withItems": {
           "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
           "type": "array",
