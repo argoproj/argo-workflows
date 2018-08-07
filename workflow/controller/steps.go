@@ -3,9 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
+	"github.com/Knetic/govaluate"
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -226,28 +226,40 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
-var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
-
 // shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
 func shouldExecute(when string) (bool, error) {
 	if when == "" {
 		return true, nil
 	}
-	parts := whenExpression.FindStringSubmatch(when)
-	if len(parts) == 0 {
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression: %s", when)
+	expression, err := govaluate.NewEvaluableExpression(when)
+	if err != nil {
+		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
-	var1 := strings.TrimSpace(parts[1])
-	operator := parts[2]
-	var2 := strings.TrimSpace(parts[3])
-	switch operator {
-	case "==":
-		return var1 == var2, nil
-	case "!=":
-		return var1 != var2, nil
-	default:
-		return false, errors.Errorf(errors.CodeBadRequest, "Unknown operator: %s", operator)
+	// The following loop converts govaluate variables (which we don't use), into strings. This
+	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
+	tokens := expression.Tokens()
+	for i, tok := range tokens {
+		switch tok.Kind {
+		case govaluate.VARIABLE:
+			tok.Kind = govaluate.STRING
+		default:
+			continue
+		}
+		tokens[i] = tok
 	}
+	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", err)
+	}
+	boolRes, ok := result.(bool)
+	if !ok {
+		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+	}
+	return boolRes, nil
 }
 
 // resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
