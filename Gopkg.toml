@@ -58,3 +58,7 @@ required = [
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
   version = "4.5.0"
+
+[[constraint]]
+  name = "github.com/Knetic/govaluate"
+  revision = "9aa49832a739dcd78a5542ff189fb82c3e423116"
