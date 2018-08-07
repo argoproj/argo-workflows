@@ -81,12 +81,16 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		return errors.InternalWrapError(err)
 	}
 	if inputArtifact.Git.Revision != "" {
+		hash, err := repo.ResolveRevision(plumbing.Revision(inputArtifact.Git.Revision))
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
 		w, err := repo.Worktree()
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		err = w.Checkout(&git.CheckoutOptions{
-			Hash: plumbing.NewHash(inputArtifact.Git.Revision),
+			Hash: *hash,
 		})
 		if err != nil {
 			return errors.InternalWrapError(err)
