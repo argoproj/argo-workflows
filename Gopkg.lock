@@ -10,6 +10,13 @@
   version = "v0.25.0"
 
 [[projects]]
+  digest = "1:b9660f5e3522b899d32b1f9bb98056203d6f76f673e1843eaa00869330103ba5"
+  name = "github.com/Knetic/govaluate"
+  packages = ["."]
+  pruneopts = ""
+  revision = "9aa49832a739dcd78a5542ff189fb82c3e423116"
+
+[[projects]]
   digest = "1:8e47871087b94913898333f37af26732faaab30cdb41571136cf7aec9921dae7"
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
@@ -1067,6 +1074,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Knetic/govaluate",
     "github.com/argoproj/argo-cd/errors",
     "github.com/argoproj/argo-cd/util/diff",
     "github.com/argoproj/argo-cd/util/kube",

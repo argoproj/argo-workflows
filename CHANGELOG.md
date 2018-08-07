@@ -5,6 +5,7 @@
 ### Changelog since v2.1
 + Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
 + Add ability to aggregate and reference output parameters expanded by loops (issue #861)
++ Support for sophisticated expressions in `when` conditionals (issue #860)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support submission of workflows from json files (issue #926)
