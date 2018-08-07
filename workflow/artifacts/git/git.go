@@ -87,7 +87,7 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		parsedHash = *hash
 		if err != nil {
 			// Try to parse hash since go-git doesn't support short hand https://github.com/src-d/go-git/issues/599
-			// This can be remove when git-rev parse is implemented in go-git
+			// This can be removed when git-rev parse is implemented in go-git
 			fullRevision, err := exec.Command("sh", "-c", fmt.Sprintf("cd %s && git rev-parse %s", path, inputArtifact.Git.Revision)).Output()
 			parsedHash = plumbing.NewHash(string(fullRevision))
 			if err != nil {
