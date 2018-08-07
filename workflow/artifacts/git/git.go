@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"regexp"
 
 	"github.com/argoproj/argo/errors"
@@ -81,12 +82,24 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		return errors.InternalWrapError(err)
 	}
 	if inputArtifact.Git.Revision != "" {
+		var parsedHash plumbing.Hash
+		hash, err := repo.ResolveRevision(plumbing.Revision(inputArtifact.Git.Revision))
+		parsedHash = *hash
+		if err != nil {
+			// Try to parse hash since go-git doesn't support short hand https://github.com/src-d/go-git/issues/599
+			// This can be removed when git-rev parse is implemented in go-git
+			fullRevision, err := exec.Command("sh", "-c", fmt.Sprintf("cd %s && git rev-parse %s", path, inputArtifact.Git.Revision)).Output()
+			parsedHash = plumbing.NewHash(string(fullRevision))
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+		}
 		w, err := repo.Worktree()
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		err = w.Checkout(&git.CheckoutOptions{
-			Hash: plumbing.NewHash(inputArtifact.Git.Revision),
+			Hash: parsedHash,
 		})
 		if err != nil {
 			return errors.InternalWrapError(err)
