@@ -17,12 +17,10 @@ type PrometheusConfig struct {
 
 // Server starts a metrics server
 func Server(config PrometheusConfig, registry *prometheus.Registry) {
-	if config.Enabled {
-		mux := http.NewServeMux()
-		mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-		log.Infof("Starting prometheus metrics server at 0.0.0.0%s%s", config.Port, config.Path)
-		if err := http.ListenAndServe(config.Port, mux); err != nil {
-			panic(err)
-		}
+	mux := http.NewServeMux()
+	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	log.Infof("Starting prometheus metrics server at 0.0.0.0%s%s", config.Port, config.Path)
+	if err := http.ListenAndServe(config.Port, mux); err != nil {
+		panic(err)
 	}
 }

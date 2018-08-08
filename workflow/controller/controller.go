@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/informers/internalinterfaces"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -80,15 +81,15 @@ type WorkflowControllerConfig struct {
 
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 
-	ResyncPeriod int `json:"resyncPeriod,omitempty"`
-
 	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
 
 	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
 }
 
 const (
-	podResyncPeriod = 30 * time.Minute
+	workflowResyncPeriod        = 20 * time.Minute
+	workflowMetricsResyncPeriod = 1 * time.Minute
+	podResyncPeriod             = 30 * time.Minute
 )
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
@@ -127,14 +128,22 @@ func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Int
 	return &wfc
 }
 
-func (wfc *WorkflowController) metricsServer() {
-	registry := metrics.NewWorkflowRegistry(wfc.wfInformer)
-	metrics.Server(wfc.Config.MetricsConfig, registry)
+// MetricsServer starts a prometheus metrics server if enabled in the configmap
+func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
+	if wfc.Config.MetricsConfig.Enabled {
+		informer := wfc.newWorkflowInformer(workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
+		go informer.Run(ctx.Done())
+		registry := metrics.NewWorkflowRegistry(informer)
+		metrics.Server(wfc.Config.MetricsConfig, registry)
+	}
 }
 
-func (wfc *WorkflowController) telemetryServer() {
-	registry := metrics.NewTelemetryRegistry()
-	metrics.Server(wfc.Config.TelemetryConfig, registry)
+// TelemetryServer starts a prometheus telemetry server if enabled in the configmap
+func (wfc *WorkflowController) TelemetryServer() {
+	if wfc.Config.TelemetryConfig.Enabled {
+		registry := metrics.NewTelemetryRegistry()
+		metrics.Server(wfc.Config.TelemetryConfig, registry)
+	}
 }
 
 // Run starts an Workflow resource controller
@@ -150,11 +159,9 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.wfInformer = wfc.newWorkflowInformer()
+	wfc.wfInformer = wfc.newWorkflowInformer(workflowResyncPeriod, wfc.tweakWorkflowlist)
+	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
-
-	go wait.Until(wfc.metricsServer, time.Second, ctx.Done())
-	go wait.Until(wfc.telemetryServer, time.Second, ctx.Done())
 
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
@@ -333,10 +340,6 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.ConfigMap)
 	}
 	wfc.Config = config
-	if wfc.Config.ResyncPeriod == 0 {
-		wfc.Config.ResyncPeriod = 20
-	}
-	log.Printf("Workflow resync period is set to %d minutes", wfc.Config.ResyncPeriod)
 	return nil
 }
 
@@ -358,15 +361,21 @@ func (wfc *WorkflowController) instanceIDRequirement() labels.Requirement {
 func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
 
-	labelSelector := labels.NewSelector().
-		Add(wfc.instanceIDRequirement())
-	if !wfc.Config.MetricsConfig.Enabled {
-		incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
-		if err != nil {
-			panic(err)
-		}
-		labelSelector.Add(*incompleteReq)
+	// completed notin (true)
+	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	if err != nil {
+		panic(err)
 	}
+	labelSelector := labels.NewSelector().
+		Add(*incompleteReq).
+		Add(wfc.instanceIDRequirement())
+	options.LabelSelector = labelSelector.String()
+}
+
+func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOptions) {
+	options.FieldSelector = fields.Everything().String()
+
+	labelSelector := labels.NewSelector().Add(wfc.instanceIDRequirement())
 	options.LabelSelector = labelSelector.String()
 }
 
@@ -375,7 +384,7 @@ func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
-func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
+func (wfc *WorkflowController) newWorkflowInformer(resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	dynClientPool := dynamic.NewDynamicClientPool(wfc.restConfig)
 	dclient, err := dynClientPool.ClientForGroupVersionKind(wfv1.SchemaGroupVersionKind)
 	if err != nil {
@@ -393,11 +402,15 @@ func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
 		resource,
 		dclient,
 		wfc.Config.Namespace,
-		time.Duration(wfc.Config.ResyncPeriod)*time.Minute,
+		resyncPeriod,
 		cache.Indexers{},
-		wfc.tweakWorkflowlist,
+		tweakListOptions,
 	)
-	informer.AddEventHandler(
+	return informer
+}
+
+func (wfc *WorkflowController) addWorkflowInformerHandler() {
+	wfc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -421,7 +434,6 @@ func (wfc *WorkflowController) newWorkflowInformer() cache.SharedIndexInformer {
 			},
 		},
 	)
-	return informer
 }
 
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {

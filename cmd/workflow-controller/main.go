@@ -70,6 +70,8 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			go wfController.Run(ctx, 8, 8)
+			go wfController.MetricsServer(ctx)
+			go wfController.TelemetryServer()
 
 			// Wait forever
 			select {}
