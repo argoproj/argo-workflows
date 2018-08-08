@@ -39,7 +39,9 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 			_ = os.Remove(tmpfile.Name())
 		}()
 		re := regexp.MustCompile("@(.*):")
-		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)[1]
+		incomingHost := re.FindStringSubmatch(inputArtifact.Git.Repo)[1]
+		repoHost := fmt.Sprintf("%s github.com gitlab.com bitbucket.org", incomingHost)
+
 		err = os.Setenv("SSH_KNOWN_HOSTS", tmpfile.Name())
 		if err != nil {
 			return errors.InternalWrapError(err)
