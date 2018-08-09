@@ -346,6 +346,8 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 		tmpl:  dagCtx.tmpl,
 		scope: make(map[string]interface{}),
 	}
+	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, &scope)
+
 	ancestors := common.GetTaskAncestry(task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.getTaskNode(ancestor)

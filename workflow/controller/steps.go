@@ -38,6 +38,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			scope: make(map[string]interface{}),
 		},
 	}
+	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
+
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)

@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"runtime/debug"
 	"sort"
@@ -10,11 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/common"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -22,6 +18,12 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -62,12 +64,6 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime time.Duration = 10 * time.Second
-
-// wfScope contains the current scope of variables available when iterating steps in a workflow
-type wfScope struct {
-	tmpl  *wfv1.Template
-	scope map[string]interface{}
-}
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
@@ -386,14 +382,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
-				if node.Outputs != nil {
-					for _, param := range node.Outputs.Parameters {
-						woc.addParamToGlobalScope(param)
-					}
-					for _, art := range node.Outputs.Artifacts {
-						woc.addArtifactToGlobalScope(art)
-					}
-				}
+				woc.addOutputsToScope("workflow", node.Outputs, nil)
 				woc.updated = true
 			}
 			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
@@ -1173,27 +1162,37 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
-func (woc *wfOperationCtx) processNodeOutputs(wfs *wfScope, prefix string, node *wfv1.NodeStatus) {
+func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
-		wfs.addParamToScope(key, node.PodIP)
+		scope.addParamToScope(key, node.PodIP)
 	}
-	if node.Outputs == nil {
+	woc.addOutputsToScope(prefix, node.Outputs, scope)
+}
+
+func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Outputs, scope *wfScope) {
+	if outputs == nil {
 		return
 	}
-	if node.Outputs.Result != nil {
+	if prefix != "workflow" && outputs.Result != nil {
 		key := fmt.Sprintf("%s.outputs.result", prefix)
-		wfs.addParamToScope(key, *node.Outputs.Result)
+		if scope != nil {
+			scope.addParamToScope(key, *outputs.Result)
+		}
 	}
-	for _, outParam := range node.Outputs.Parameters {
-		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, outParam.Name)
-		wfs.addParamToScope(key, *outParam.Value)
-		woc.addParamToGlobalScope(outParam)
+	for _, param := range outputs.Parameters {
+		key := fmt.Sprintf("%s.outputs.parameters.%s", prefix, param.Name)
+		if scope != nil {
+			scope.addParamToScope(key, *param.Value)
+		}
+		woc.addParamToGlobalScope(param)
 	}
-	for _, outArt := range node.Outputs.Artifacts {
-		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, outArt.Name)
-		wfs.addArtifactToScope(key, outArt)
-		woc.addArtifactToGlobalScope(outArt)
+	for _, art := range outputs.Artifacts {
+		key := fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)
+		if scope != nil {
+			scope.addArtifactToScope(key, art)
+		}
+		woc.addArtifactToGlobalScope(art)
 	}
 }
 
@@ -1274,16 +1273,20 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 	} else {
 		woc.wf.Status.Outputs = &wfv1.Outputs{}
 	}
-	woc.updated = true
 	paramName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 	woc.globalParams[paramName] = *param.Value
 	if index == -1 {
 		woc.log.Infof("setting %s: '%s'", paramName, *param.Value)
 		gParam := wfv1.Parameter{Name: param.GlobalName, Value: param.Value}
 		woc.wf.Status.Outputs.Parameters = append(woc.wf.Status.Outputs.Parameters, gParam)
+		woc.updated = true
 	} else {
-		woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, *woc.wf.Status.Outputs.Parameters[index].Value, *param.Value)
-		woc.wf.Status.Outputs.Parameters[index].Value = param.Value
+		prevVal := *woc.wf.Status.Outputs.Parameters[index].Value
+		if prevVal != *param.Value {
+			woc.log.Infof("overwriting %s: '%s' -> '%s'", paramName, *woc.wf.Status.Outputs.Parameters[index].Value, *param.Value)
+			woc.wf.Status.Outputs.Parameters[index].Value = param.Value
+			woc.updated = true
+		}
 	}
 }
 
@@ -1293,17 +1296,19 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	if art.GlobalName == "" {
 		return
 	}
-	woc.updated = true
 	globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
 	if woc.wf.Status.Outputs != nil {
 		for i, gArt := range woc.wf.Status.Outputs.Artifacts {
 			if gArt.Name == art.GlobalName {
-				// global output already exists. overwrite the value
+				// global output already exists. overwrite the value if different
 				art.Name = art.GlobalName
 				art.GlobalName = ""
 				art.Path = ""
-				woc.wf.Status.Outputs.Artifacts[i] = art
-				woc.log.Infof("overwriting %s: %s", globalArtName, art)
+				if !reflect.DeepEqual(woc.wf.Status.Outputs.Artifacts[i], art) {
+					woc.wf.Status.Outputs.Artifacts[i] = art
+					woc.log.Infof("overwriting %s: %v", globalArtName, art)
+					woc.updated = true
+				}
 				return
 			}
 		}
@@ -1316,69 +1321,7 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	art.Path = ""
 	woc.log.Infof("setting %s: %s", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
-}
-
-// replaceMap returns a replacement map of strings intended to be used simple string substitution
-func (wfs *wfScope) replaceMap() map[string]string {
-	replaceMap := make(map[string]string)
-	for key, val := range wfs.scope {
-		valStr, ok := val.(string)
-		if ok {
-			replaceMap[key] = valStr
-		}
-	}
-	return replaceMap
-}
-
-func (wfs *wfScope) addParamToScope(key, val string) {
-	wfs.scope[key] = val
-}
-
-func (wfs *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
-	wfs.scope[key] = artifact
-}
-
-func (wfs *wfScope) resolveVar(v string) (interface{}, error) {
-	v = strings.TrimPrefix(v, "{{")
-	v = strings.TrimSuffix(v, "}}")
-	if strings.HasPrefix(v, "steps.") || strings.HasPrefix(v, "tasks.") {
-		val, ok := wfs.scope[v]
-		if !ok {
-			return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve: {{%s}}", v)
-		}
-		return val, nil
-	}
-	parts := strings.Split(v, ".")
-	// HACK (assuming it is an input artifact)
-	art := wfs.tmpl.Inputs.GetArtifactByName(parts[2])
-	if art != nil {
-		return *art, nil
-	}
-	return nil, errors.Errorf(errors.CodeBadRequest, "Unable to resolve input artifact: {{%s}}", v)
-}
-
-func (wfs *wfScope) resolveParameter(v string) (string, error) {
-	val, err := wfs.resolveVar(v)
-	if err != nil {
-		return "", err
-	}
-	valStr, ok := val.(string)
-	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not a string", v)
-	}
-	return valStr, nil
-}
-
-func (wfs *wfScope) resolveArtifact(v string) (*wfv1.Artifact, error) {
-	val, err := wfs.resolveVar(v)
-	if err != nil {
-		return nil, err
-	}
-	valArt, ok := val.(wfv1.Artifact)
-	if !ok {
-		return nil, errors.Errorf(errors.CodeBadRequest, "Variable {{%s}} is not an artifact", v)
-	}
-	return &valArt, nil
+	woc.updated = true
 }
 
 // addChildNode adds a nodeID as a child to a parent

@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: global-outputs-
+  generateName: global-outputs-dag-
 spec:
   entrypoint: generate-globals
   onExit: consume-globals
 
   templates:
   - name: generate-globals
-    steps:
-    - - name: generate
+    dag:
+      tasks:
+      - name: generate
         template: global-output
-    - - name: consume-globals
+      - name: consume-globals
+        dependencies: [generate]
         template: consume-globals
 
   # Template which produces a global parameter and artifact
@@ -39,8 +41,9 @@ spec:
   # In this example, the consume-globals template is invoked after the generate-globals step, as
   # well as in the onExit handler. and can reference the globals, my-global-param and my-global-art.
   - name: consume-globals
-    steps:
-    - - name: consume-global-param
+    dag:
+      tasks:
+      - name: consume-global-param
         template: consume-global-param
       - name: consume-global-art
         template: consume-global-art
