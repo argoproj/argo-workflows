@@ -51,5 +51,5 @@ Currently **officially** using Argo:
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
 * Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLTA5MTFjNjI0Nzg3NzNiMDZiNmRiODM4Y2M1NWQxOGYzMzZkNTc1YWVkYTZkNzdlNmYyZjMxNWI3NjY2MDc1MzI)
-* Argo website: https://argoproj.github.io/argo-site
+* Argo website: https://argoproj.github.io/
 * Argo forum:   https://groups.google.com/forum/#!forum/argoproj
