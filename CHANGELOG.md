@@ -8,6 +8,7 @@
 + Support for sophisticated expressions in `when` conditionals (issue #860)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
++ Support referencing of global workflow artifacts (issue #900)
 + Support submission of workflows from json files (issue #926)
 + Support submission of workflows from stdin (issue #926)
 * Update golang compiler to v1.10.3
