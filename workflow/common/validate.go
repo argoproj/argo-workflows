@@ -401,7 +401,9 @@ func (ctx *wfValidationCtx) addOutputsToScope(templateName string, prefix string
 	for _, art := range tmpl.Outputs.Artifacts {
 		scope[fmt.Sprintf("%s.outputs.artifacts.%s", prefix, art.Name)] = true
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
-			scope[fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)] = true
+			globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
+			scope[globalArtName] = true
+			ctx.globalParams[globalArtName] = placeholderValue
 		}
 	}
 	if aggregate {
