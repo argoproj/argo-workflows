@@ -2,14 +2,10 @@ package git
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"os/exec"
-	"regexp"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
@@ -31,28 +27,12 @@ type GitArtifactDriver struct {
 // leaking such as in the repo_dir/.git/config or logging an insecure url.
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if g.SSHPrivateKey != "" {
-		tmpfile, err := ioutil.TempFile("", "ssh-know-hosts")
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		defer func() {
-			_ = os.Remove(tmpfile.Name())
-		}()
-		re := regexp.MustCompile("@(.*):")
-		repoHost := re.FindStringSubmatch(inputArtifact.Git.Repo)[1]
-		err = os.Setenv("SSH_KNOWN_HOSTS", tmpfile.Name())
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		err = common.RunCommand("sh", "-c", fmt.Sprintf("ssh-keyscan %s > %s", repoHost, tmpfile.Name()))
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
+		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
 		return gitClone(path, inputArtifact, auth)
 
