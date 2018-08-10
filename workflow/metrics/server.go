@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,12 +16,18 @@ type PrometheusConfig struct {
 	Port    string `json:"port,omitempty"`
 }
 
-// Server starts a metrics server
-func Server(config PrometheusConfig, registry *prometheus.Registry) {
+// RunServer starts a metrics server
+func RunServer(ctx context.Context, config PrometheusConfig, registry *prometheus.Registry) {
 	mux := http.NewServeMux()
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	srv := &http.Server{Addr: config.Port, Handler: mux}
+
+	defer srv.Close()
+
 	log.Infof("Starting prometheus metrics server at 0.0.0.0%s%s", config.Port, config.Path)
-	if err := http.ListenAndServe(config.Port, mux); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
+
+	<-ctx.Done()
 }

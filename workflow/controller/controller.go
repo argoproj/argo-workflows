@@ -134,15 +134,15 @@ func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 		informer := wfc.newWorkflowInformer(workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
 		registry := metrics.NewWorkflowRegistry(informer)
-		metrics.Server(wfc.Config.MetricsConfig, registry)
+		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
 	}
 }
 
 // TelemetryServer starts a prometheus telemetry server if enabled in the configmap
-func (wfc *WorkflowController) TelemetryServer() {
+func (wfc *WorkflowController) TelemetryServer(ctx context.Context) {
 	if wfc.Config.TelemetryConfig.Enabled {
 		registry := metrics.NewTelemetryRegistry()
-		metrics.Server(wfc.Config.TelemetryConfig, registry)
+		metrics.RunServer(ctx, wfc.Config.TelemetryConfig, registry)
 	}
 }
 

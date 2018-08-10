@@ -71,7 +71,7 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 			go wfController.Run(ctx, 8, 8)
 			go wfController.MetricsServer(ctx)
-			go wfController.TelemetryServer()
+			go wfController.TelemetryServer(ctx)
 
 			// Wait forever
 			select {}
