@@ -1230,7 +1230,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scop
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
 	paramList := make([]map[string]string, 0)
-	resultsList := make([]string, 0)
+	resultsList := make([]wfv1.Item, 0)
 	for _, node := range childNodes {
 		if node.Outputs == nil {
 			continue
@@ -1243,7 +1243,14 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scop
 			paramList = append(paramList, param)
 		}
 		if node.Outputs.Result != nil {
-			resultsList = append(resultsList, *node.Outputs.Result)
+			// Support the case where item may be a map
+			var itemMap map[string]interface{}
+			err := json.Unmarshal([]byte(*node.Outputs.Result), &itemMap)
+			if err == nil {
+				resultsList = append(resultsList, wfv1.Item{Value: itemMap})
+			} else {
+				resultsList = append(resultsList, wfv1.Item{Value: *node.Outputs.Result})
+			}
 		}
 	}
 	tmplType := woc.wf.GetTemplate(templateName).GetType()
