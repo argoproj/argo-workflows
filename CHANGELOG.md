@@ -2,6 +2,34 @@
 
 ## 2.2.0 (TBD)
 
+### Notes about upgrading from v2.1
+
+* The `argo install` and `argo uninstall` commands have been removed from the CLI. Instead, plain
+kubernetes manifests are provided to be installed using `kubectl apply`, or downstreamed into other
+tools (e.g. helm chart, ksonnet prototype, kustomize, etc...).
+* In 2.1, argo would install into the kube-system namespace by default. The new install instructions
+have been updated to install into a different namespace, `argo`. In order to move to the recommended
+installation location, you should delete the v2.1 resources from kube-system before applying the
+new manifests to the `argo` namespace.
+
+    The following commands migrates the workflow-controller-configmap from the `kube-system` to the
+`argo` namespace, and deletes all argo resources from the `kube-system` namespace. Note that this
+will delete the argo-ui service, resulting in the LoadBalancer being deleted (if created).
+
+    ```
+    kubectl get cm workflow-controller-configmap -o yaml -n kube-system --export | kubectl apply -n argo -f -
+    kubectl delete -n kube-system cm workflow-controller-configmap
+    kubectl delete -n kube-system deploy workflow-controller argo-ui
+    kubectl delete -n kube-system sa argo argo-ui
+    kubectl delete -n kube-system svc argo-ui
+    ```
+
+* In 2.1, the argoexec sidecar image was configured in the workflow-controller-configmap. This is
+now configured using a new `--executor-image` flag in the `workflow-controller` deployment. This is
+the preferred way to configure the executor image, since upgrades can now be performed without
+changing the workflow-controller configmap. The executorImage setting in the config is deprecated
+and may be removed/ignored in a future release.
+
 ### Changelog since v2.1
 + Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
 + Add ability to aggregate and reference output parameters expanded by loops (issue #861)
@@ -11,6 +39,8 @@
 + Support referencing of global workflow artifacts (issue #900)
 + Support submission of workflows from json files (issue #926)
 + Support submission of workflows from stdin (issue #926)
++ Prometheus metrics and telemetry (issue #896) (@bbc88ks)
+* Remove installer/uninstaller (issue #928)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
 * Update argo-cluster-role to work with OpenShift

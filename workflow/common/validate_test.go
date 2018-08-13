@@ -1043,7 +1043,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(test.GetWorkflow("functional/global-outputs-variable.yaml"))
+	err := ValidateWorkflow(test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"))
 	assert.Nil(t, err)
 }
 

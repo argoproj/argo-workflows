@@ -792,7 +792,7 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 }
 
 func TestParamSubstitutionWithArtifact(t *testing.T) {
-	wf := test.GetWorkflow("functional/param-sub-with-artifacts.yaml")
+	wf := test.LoadE2EWorkflow("functional/param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
 	woc.operate()
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -804,7 +804,7 @@ func TestParamSubstitutionWithArtifact(t *testing.T) {
 }
 
 func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
-	wf := test.GetWorkflow("functional/global-param-sub-with-artifacts.yaml")
+	wf := test.LoadE2EWorkflow("functional/global-param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
 	woc.operate()
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})

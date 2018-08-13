@@ -2,4 +2,3 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo-ui
-  namespace: kube-system
