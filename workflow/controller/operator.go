@@ -11,19 +11,18 @@ import (
 	"strings"
 	"time"
 
-	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/retry"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/argoproj/argo/workflow/common"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -501,8 +500,24 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var message string
 	updated := false
 	f := false
+
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
+		//In some case, ImagePullBackOff will hang forever.
+		//Mark it as Failed, user can retry quickly
+		foundImageErrFlag := false
+		for _, tmpContainerStatus := range pod.Status.ContainerStatuses {
+			tmpWaiting := tmpContainerStatus.State.Waiting
+			if tmpWaiting != nil && tmpWaiting.Reason == ImagePullBackOff {
+				newPhase = wfv1.NodeFailed
+				message = tmpWaiting.Message
+				newDaemonStatus = &f
+				foundImageErrFlag = true
+			}
+		}
+		if foundImageErrFlag {
+			break
+		}
 		return nil
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
