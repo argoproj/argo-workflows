@@ -62,3 +62,7 @@ required = [
 [[constraint]]
   name = "github.com/Knetic/govaluate"
   revision = "9aa49832a739dcd78a5542ff189fb82c3e423116"
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "0.8.0"
