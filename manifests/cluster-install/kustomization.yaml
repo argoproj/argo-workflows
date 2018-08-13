@@ -1,0 +1,22 @@
+namespace: argo
+
+resources:
+- ../base/01_workflow-crd.yaml
+- ../base/02a_workflow-controller-sa.yaml
+- ../base/02b_workflow-controller-cluster-role.yaml
+- ../base/02c_workflow-controller-cluster-rolebinding.yaml
+- ../base/02d_workflow-controller-configmap.yaml
+- ../base/02e_workflow-controller-deployment.yaml
+- ../base/03a_argo-ui-sa.yaml
+- ../base/03b_argo-ui-cluster-role.yaml
+- ../base/03c_argo-ui-cluster-rolebinding.yaml
+- ../base/03d_argo-ui-deployment.yaml
+- ../base/03e_argo-ui-service.yaml
+
+imageTags:
+- name: argoproj/workflow-controller
+  newTag: v2.1.1
+- name: argoproj/argoexec
+  newTag: v2.1.1
+- name: argoproj/argo-ui
+  newTag: v2.1.1

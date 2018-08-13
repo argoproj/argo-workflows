@@ -3,18 +3,9 @@ package controller
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	unstructutil "github.com/argoproj/argo/util/unstructured"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -32,16 +23,28 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+
+	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	unstructutil "github.com/argoproj/argo/util/unstructured"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/metrics"
 )
 
 // WorkflowController is the controller for workflow resources
 type WorkflowController struct {
-	// ConfigMap is the name of the config map in which to derive configuration of the controller from
-	ConfigMap string
-	// namespace for config map
-	ConfigMapNS string
+	// namespace of the workflow controller
+	namespace string
+	// configMap is the name of the config map in which to derive configuration of the controller from
+	configMap string
 	// Config is the workflow controller's configuration
 	Config WorkflowControllerConfig
+
+	// cliExecutorImage is the executor image as specified from the command line
+	cliExecutorImage string
 
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
@@ -115,15 +118,24 @@ type ArtifactoryArtifactRepository struct {
 }
 
 // NewWorkflowController instantiates a new WorkflowController
-func NewWorkflowController(restConfig *rest.Config, kubeclientset kubernetes.Interface, wfclientset wfclientset.Interface, configMap string) *WorkflowController {
+func NewWorkflowController(
+	restConfig *rest.Config,
+	kubeclientset kubernetes.Interface,
+	wfclientset wfclientset.Interface,
+	namespace,
+	executorImage,
+	configMap string,
+) *WorkflowController {
 	wfc := WorkflowController{
-		restConfig:    restConfig,
-		kubeclientset: kubeclientset,
-		wfclientset:   wfclientset,
-		ConfigMap:     configMap,
-		wfQueue:       workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:      workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		completedPods: make(chan string, 512),
+		restConfig:       restConfig,
+		kubeclientset:    kubeclientset,
+		wfclientset:      wfclientset,
+		configMap:        configMap,
+		namespace:        namespace,
+		cliExecutorImage: executorImage,
+		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		completedPods:    make(chan string, 512),
 	}
 	return &wfc
 }
@@ -312,35 +324,39 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 
 // ResyncConfig reloads the controller config from the configmap
 func (wfc *WorkflowController) ResyncConfig() error {
-	namespace, _ := os.LookupEnv(common.EnvVarNamespace)
-	if namespace == "" {
-		namespace = common.DefaultControllerNamespace
-	}
-	cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(namespace)
-	cm, err := cmClient.Get(wfc.ConfigMap, metav1.GetOptions{})
+	cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(wfc.namespace)
+	cm, err := cmClient.Get(wfc.configMap, metav1.GetOptions{})
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	wfc.ConfigMapNS = cm.Namespace
 	return wfc.updateConfig(cm)
 }
 
 func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have key '%s'", wfc.ConfigMap, common.WorkflowControllerConfigMapKey)
+		log.Warnf("ConfigMap '%s' does not have key '%s'", wfc.configMap, common.WorkflowControllerConfigMapKey)
+		return nil
 	}
 	var config WorkflowControllerConfig
 	err := yaml.Unmarshal([]byte(configStr), &config)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	log.Printf("workflow controller configuration from %s:\n%s", wfc.ConfigMap, configStr)
-	if config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.ConfigMap)
+	log.Printf("workflow controller configuration from %s:\n%s", wfc.configMap, configStr)
+	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
+		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
 	}
 	wfc.Config = config
 	return nil
+}
+
+// executorImage returns the image to use for the workflow executor
+func (wfc *WorkflowController) executorImage() string {
+	if wfc.cliExecutorImage != "" {
+		return wfc.cliExecutorImage
+	}
+	return wfc.Config.ExecutorImage
 }
 
 // instanceIDRequirement returns the label requirement to filter against a controller instance (or not)
@@ -453,6 +469,11 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
+				oldCM := old.(*apiv1.ConfigMap)
+				newCM := new.(*apiv1.ConfigMap)
+				if oldCM.ResourceVersion == newCM.ResourceVersion {
+					return
+				}
 				if newCm, ok := new.(*apiv1.ConfigMap); ok {
 					log.Infof("Detected ConfigMap update. Updating the controller config.")
 					err := wfc.updateConfig(newCm)
@@ -470,14 +491,13 @@ func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (ca
 func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "configmaps"
-	name := wfc.ConfigMap
-	namespace := wfc.ConfigMapNS
+	name := wfc.configMap
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.FieldSelector = fieldSelector.String()
 		req := c.Get().
-			Namespace(namespace).
+			Namespace(wfc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
 		return req.Do().Get()
@@ -486,7 +506,7 @@ func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
 		options.Watch = true
 		options.FieldSelector = fieldSelector.String()
 		req := c.Get().
-			Namespace(namespace).
+			Namespace(wfc.namespace).
 			Resource(resource).
 			VersionedParams(&options, metav1.ParameterCodec)
 		return req.Watch()

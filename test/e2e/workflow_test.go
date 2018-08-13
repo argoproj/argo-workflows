@@ -24,9 +24,6 @@ func (suite *WorkflowSuite) SetupSuite() {
 		return
 	}
 	suite.testNamespace = createNamespaceForTest()
-	if !checkIfInstalled(suite.testNamespace) {
-		installArgoInNamespace(suite.testNamespace)
-	}
 }
 
 func (suite *WorkflowSuite) TearDownSuite() {

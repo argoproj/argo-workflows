@@ -83,9 +83,7 @@ var (
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
 	execEnvVars = []apiv1.EnvVar{
-		envFromField(common.EnvVarPodIP, "status.podIP"),
 		envFromField(common.EnvVarPodName, "metadata.name"),
-		envFromField(common.EnvVarNamespace, "metadata.namespace"),
 	}
 )
 
@@ -262,7 +260,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:  name,
-		Image: woc.controller.Config.ExecutorImage,
+		Image: woc.controller.executorImage(),
 		Env:   execEnvVars,
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
