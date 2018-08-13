@@ -22,7 +22,11 @@ func RunServer(ctx context.Context, config PrometheusConfig, registry *prometheu
 	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	srv := &http.Server{Addr: config.Port, Handler: mux}
 
-	defer srv.Close()
+	defer func() {
+		if cerr := srv.Close(); cerr != nil {
+			log.Fatalf("Encountered an '%s' error when tried to close the metrics server running on '%s'", cerr, config.Port)
+		}
+	}()
 
 	log.Infof("Starting prometheus metrics server at 0.0.0.0%s%s", config.Port, config.Path)
 	if err := srv.ListenAndServe(); err != nil {
