@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +23,6 @@ func (suite *WaitSuite) SetupSuite() {
 		suite.T().Skip("Skipping test. Kubeconfig not provided")
 	}
 	suite.testNamespace = createNamespaceForTest()
-	if !checkIfInstalled(suite.testNamespace) {
-		installArgoInNamespace(suite.testNamespace)
-		// Wait a little for the installation to complete.
-		time.Sleep(10 * time.Second)
-	}
 }
 
 func (suite *WaitSuite) TearDownSuite() {

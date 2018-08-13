@@ -345,13 +345,11 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		// Getting Kubernetes namespace from the environment variables
-		namespace := os.Getenv(common.EnvVarNamespace)
-		username, err := we.getSecrets(namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		username, err := we.getSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		password, err := we.getSecrets(namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		password, err := we.getSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}

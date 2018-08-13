@@ -3,16 +3,10 @@ required = [
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/informer-gen",
   "k8s.io/code-generator/cmd/lister-gen",
-  # required by packr build (which we don't import as a package)
-  "golang.org/x/sync/errgroup",
 ]
 
 [[constraint]]
   name = "k8s.io/api"
-  branch = "release-1.10"
-
-[[constraint]]
-  name = "k8s.io/apiextensions-apiserver"
   branch = "release-1.10"
 
 [[constraint]]

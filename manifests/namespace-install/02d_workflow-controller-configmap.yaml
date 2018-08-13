@@ -2,8 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
-  namespace: kube-system
 data:
   config: |
     artifactRepository: {}
-    executorImage: argoproj/argoexec:latest
+    namespace: argo

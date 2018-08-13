@@ -26,7 +26,6 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
-	command.AddCommand(NewInstallCommand())
 	command.AddCommand(NewLintCommand())
 	command.AddCommand(NewListCommand())
 	command.AddCommand(NewLogsCommand())
@@ -35,7 +34,6 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewRetryCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewUninstallCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 

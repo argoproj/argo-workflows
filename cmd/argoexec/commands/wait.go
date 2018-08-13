@@ -18,7 +18,7 @@ var waitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := waitContainer()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%+v", err)
 		}
 	},
 }

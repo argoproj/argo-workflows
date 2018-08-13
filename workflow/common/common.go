@@ -9,8 +9,6 @@ import (
 const (
 	// DefaultControllerDeploymentName is the default deployment name of the workflow controller
 	DefaultControllerDeploymentName = "workflow-controller"
-	// DefaultControllerNamespace is the default namespace where the workflow controller is installed
-	DefaultControllerNamespace = "kube-system"
 
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
@@ -81,12 +79,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarPodIP contains the IP of the pod (currently unused)
-	EnvVarPodIP = "ARGO_POD_IP"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarNamespace contains the namespace of the pod (currently unused)
-	EnvVarNamespace = "ARGO_NAMESPACE"
 
 	// These are global variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

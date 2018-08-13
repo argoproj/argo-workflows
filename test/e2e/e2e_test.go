@@ -3,13 +3,12 @@ package e2e
 import (
 	"flag"
 
-	"github.com/argoproj/argo/install"
-	"github.com/argoproj/argo/workflow/common"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -36,17 +35,6 @@ func getKubernetesClient() (*rest.Config, *kubernetes.Clientset) {
 	return config, clientSet
 }
 
-func newInstallArgs(namespace string) install.InstallOptions {
-	return install.InstallOptions{
-		Namespace:       namespace,
-		ConfigMap:       common.DefaultConfigMapName(common.DefaultControllerDeploymentName),
-		ControllerImage: "argoproj/workflow-controller:latest",
-		UIImage:         "argoproj/argoui:latest",
-		ExecutorImage:   "argoproj/argoexec:latest",
-		ServiceAccount:  "",
-	}
-}
-
 func createNamespaceForTest() string {
 	_, clientset := getKubernetesClient()
 	ns := &v1.Namespace{
@@ -58,7 +46,6 @@ func createNamespaceForTest() string {
 	if err != nil {
 		panic(err)
 	}
-
 	return cns.Name
 }
 
@@ -66,14 +53,4 @@ func deleteTestNamespace(namespace string) error {
 	_, clientset := getKubernetesClient()
 	deleteOptions := metav1.DeleteOptions{}
 	return clientset.CoreV1().Namespaces().Delete(namespace, &deleteOptions)
-}
-
-func installArgoInNamespace(namespace string) {
-	args := newInstallArgs(namespace)
-	config, _ := getKubernetesClient()
-	installer, err := install.NewInstaller(config, args)
-	if err != nil {
-		panic(err)
-	}
-	installer.Install()
 }
