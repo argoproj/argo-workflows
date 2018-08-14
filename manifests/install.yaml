@@ -194,9 +194,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - jessesuen/argoexec:latest
+        - argoproj/argoexec:v2.1.1
         command:
         - workflow-controller
-        image: jessesuen/workflow-controller:latest
+        image: argoproj/workflow-controller:v2.1.1
         name: workflow-controller
       serviceAccountName: argo
