@@ -15,31 +15,31 @@ var (
 	descWorkflowDefaultLabels = []string{"namespace", "name"}
 
 	descWorkflowInfo = prometheus.NewDesc(
-		"kube_wf_info",
+		"argo_workflow_info",
 		"Information about workflow.",
 		append(descWorkflowDefaultLabels, "entrypoint", "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
-		"kube_wf_start_time",
+		"argo_workflow_start_time",
 		"Start time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowFinishedAt = prometheus.NewDesc(
-		"kube_wf_completion_time",
+		"argo_workflow_completion_time",
 		"Completion time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowCreated = prometheus.NewDesc(
-		"kube_wf_created",
+		"argo_workflow_created_time",
 		"Creation time in unix timestamp for a workflow.",
 		descWorkflowDefaultLabels,
 		nil,
 	)
 	descWorkflowStatusPhase = prometheus.NewDesc(
-		"kube_wf_status_phase",
+		"argo_workflow_status_phase",
 		"The workflow current phase.",
 		append(descWorkflowDefaultLabels, "phase"),
 		nil,
