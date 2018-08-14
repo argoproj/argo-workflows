@@ -32,6 +32,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodePending   NodePhase = "Pending"
 )
 
 // NodeType is the type of a node

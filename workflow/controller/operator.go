@@ -503,22 +503,14 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		//In some case, ImagePullBackOff will hang forever.
-		//Mark it as Failed, user can retry quickly
-		foundImageErrFlag := false
-		for _, tmpContainerStatus := range pod.Status.ContainerStatuses {
-			tmpWaiting := tmpContainerStatus.State.Waiting
-			if tmpWaiting != nil && tmpWaiting.Reason == ImagePullBackOff {
-				newPhase = wfv1.NodeFailed
-				message = tmpWaiting.Message
-				newDaemonStatus = &f
-				foundImageErrFlag = true
+		newPhase = wfv1.NodePending
+		newDaemonStatus = &f
+		for _, ctrStatus := range pod.Status.ContainerStatuses {
+			if ctrStatus.State.Waiting != nil {
+				message = fmt.Sprintf("%s reason %s", ctrStatus.State.Waiting.Message, ctrStatus.State.Waiting.Reason)
+				break
 			}
 		}
-		if foundImageErrFlag {
-			break
-		}
-		return nil
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
@@ -591,6 +583,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	if message != "" && node.Message != message {
 		log.Infof("Updating node %s message: %s", node, message)
 		node.Message = message
+		updated = true
 	}
 	if node.Phase != newPhase {
 		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
