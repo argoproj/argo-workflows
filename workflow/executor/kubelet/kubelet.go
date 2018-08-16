@@ -71,7 +71,7 @@ func (k *KubeletExecutor) GetOutput(containerID string) (string, error) {
 
 // Wait for the container to complete
 func (k *KubeletExecutor) Wait(containerID string) error {
-	return k.cli.WaitForTermination(containerID, time.Hour*24)
+	return k.cli.WaitForTermination(containerID, 0)
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
