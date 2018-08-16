@@ -8,6 +8,31 @@ Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a resul
 
 Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
 
+## Table of Content
+
+- [Argo CLI](#argo-cli)
+- [Hello World!](#hello-world)
+- [Parameters](#parameters)
+- [Steps](#steps)
+- [DAG](#dag)
+- [Artifacts](#artifacts)
+- [The Structure of Workflow Specs](#the-structure-of-workflow-specs)
+- [Secrets](#secrets)
+- [Scripts & Results](#scripts--results)
+- [Output Parameters](#output-parameters)
+- [Loops](#loops)
+- [Conditionals](#conditionals)
+- [Recursion](#recursion)
+- [Exit handlers](#exit-handlers)
+- [Timeouts](#timeouts)
+- [Volumes](#volumes)
+- [Daemon Containers](#daemon-containers)
+- [Sidecars](#sidecars)
+- [Hardwired Artifacts](#hardwired-artifacts)
+- [Kubernetes Resources](#kubernetes-resources)
+- [Docker-in-Docker (aka. DinD) Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
+- [Continuous integration example](#continuous-integration-example)
+
 ## Argo CLI
 
 In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo CLI commands.
