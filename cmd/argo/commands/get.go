@@ -4,17 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strings"
 	"text/tabwriter"
-	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	humanize "github.com/dustin/go-humanize"
+	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const onExitSuffix = "onExit"
@@ -76,21 +75,15 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
-	fmt.Printf(fmtStr, "Created:", humanizeTimestamp(wf.ObjectMeta.CreationTimestamp.Unix()))
+	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
 	if !wf.Status.StartedAt.IsZero() {
-		fmt.Printf(fmtStr, "Started:", humanizeTimestamp(wf.Status.StartedAt.Unix()))
+		fmt.Printf(fmtStr, "Started:", humanize.Timestamp(wf.Status.StartedAt.Time))
 	}
 	if !wf.Status.FinishedAt.IsZero() {
-		fmt.Printf(fmtStr, "Finished:", humanizeTimestamp(wf.Status.FinishedAt.Unix()))
+		fmt.Printf(fmtStr, "Finished:", humanize.Timestamp(wf.Status.FinishedAt.Time))
 	}
 	if !wf.Status.StartedAt.IsZero() {
-		var duration time.Duration
-		if !wf.Status.FinishedAt.IsZero() {
-			duration = time.Second * time.Duration(wf.Status.FinishedAt.Unix()-wf.Status.StartedAt.Unix())
-		} else {
-			duration = time.Second * time.Duration(time.Now().UTC().Unix()-wf.Status.StartedAt.Unix())
-		}
-		fmt.Printf(fmtStr, "Duration:", humanizeDuration(duration))
+		fmt.Printf(fmtStr, "Duration:", humanize.RelativeDuration(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time))
 	}
 
 	if len(wf.Spec.Arguments.Parameters) > 0 {
@@ -410,10 +403,9 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 
 // Main method to print information of node in get
 func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string, outFmt string) {
-
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
 	var args []interface{}
-	duration := humanizeDurationShort(node.StartedAt, node.FinishedAt)
+	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
 		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
 	} else {
@@ -473,39 +465,4 @@ func getArtifactsString(node wfv1.NodeStatus) string {
 		artNames = append(artNames, art.Name)
 	}
 	return strings.Join(artNames, ",")
-}
-
-func humanizeTimestamp(epoch int64) string {
-	ts := time.Unix(epoch, 0)
-	return fmt.Sprintf("%s (%s)", ts.Format("Mon Jan 02 15:04:05 -0700"), humanize.Time(ts))
-}
-
-func humanizeDurationShort(start, finish metav1.Time) string {
-	if finish.IsZero() {
-		finish = metav1.Time{Time: time.Now().UTC()}
-	}
-	return humanize.CustomRelTime(start.Time, finish.Time, "", "", timeMagnitudes)
-}
-
-// humanizeDuration humanizes time.Duration output to a meaningful value,
-func humanizeDuration(duration time.Duration) string {
-	if duration.Seconds() < 60.0 {
-		return fmt.Sprintf("%d seconds", int64(duration.Seconds()))
-	}
-	if duration.Minutes() < 60.0 {
-		remainingSeconds := math.Mod(duration.Seconds(), 60)
-		return fmt.Sprintf("%d minutes %d seconds", int64(duration.Minutes()), int64(remainingSeconds))
-	}
-	if duration.Hours() < 24.0 {
-		remainingMinutes := math.Mod(duration.Minutes(), 60)
-		remainingSeconds := math.Mod(duration.Seconds(), 60)
-		return fmt.Sprintf("%d hours %d minutes %d seconds",
-			int64(duration.Hours()), int64(remainingMinutes), int64(remainingSeconds))
-	}
-	remainingHours := math.Mod(duration.Hours(), 24)
-	remainingMinutes := math.Mod(duration.Minutes(), 60)
-	remainingSeconds := math.Mod(duration.Seconds(), 60)
-	return fmt.Sprintf("%d days %d hours %d minutes %d seconds",
-		int64(duration.Hours()/24), int64(remainingHours),
-		int64(remainingMinutes), int64(remainingSeconds))
 }
