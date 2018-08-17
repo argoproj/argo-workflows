@@ -40,6 +40,7 @@ Currently **officially** using Argo:
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
+1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 
 ## Community Blogs and Presentations
