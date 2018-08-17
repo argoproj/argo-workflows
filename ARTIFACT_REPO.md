@@ -115,11 +115,11 @@ data:
         bucket: my-bucket
 	keyPrefix: prefix/in/bucket	#optional
         endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
-        insecure: true                  #only needed for minio
-        accessKeySecret:                #not needed for S3 if your instance can already access the bucket
+        insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
+        accessKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
           key: accesskey
-        secretKeySecret:                #not needed for S3 if your instance can already access the bucket
+        secretKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
           key: secretkey
 ```
