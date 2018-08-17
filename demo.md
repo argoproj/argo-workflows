@@ -89,7 +89,8 @@ Edit the workflow-controller config map to reference the service name (argo-arti
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.1.1
+data:
+  config: |
     artifactRepository:
       s3:
         bucket: my-bucket
