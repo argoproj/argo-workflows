@@ -108,17 +108,18 @@ Example:
 ```
 $ kubectl edit configmap workflow-controller-configmap -n kube-system
 ...
-    executorImage: argoproj/argoexec:v2.1.1
+data:
+  config: |
     artifactRepository:
       s3:
         bucket: my-bucket
 	keyPrefix: prefix/in/bucket	#optional
-        endpoint: my-minio-endpoint.default:9000
-        insecure: true
-        accessKeySecret:
+        endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
+        insecure: true                  #only needed for minio
+        accessKeySecret:                #not needed for S3 if your instance can already access the bucket
           name: my-minio-cred
           key: accesskey
-        secretKeySecret:
+        secretKeySecret:                #not needed for S3 if your instance can already access the bucket
           name: my-minio-cred
           key: secretkey
 ```
