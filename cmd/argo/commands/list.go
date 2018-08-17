@@ -9,8 +9,8 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
-	humanize "github.com/dustin/go-humanize"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,18 +102,6 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-var timeMagnitudes = []humanize.RelTimeMagnitude{
-	{D: time.Second, Format: "0s", DivBy: time.Second},
-	{D: 2 * time.Second, Format: "1s %s", DivBy: 1},
-	{D: time.Minute, Format: "%ds %s", DivBy: time.Second},
-	{D: 2 * time.Minute, Format: "1m %s", DivBy: 1},
-	{D: time.Hour, Format: "%dm %s", DivBy: time.Minute},
-	{D: 2 * time.Hour, Format: "1h %s", DivBy: 1},
-	{D: humanize.Day, Format: "%dh %s", DivBy: time.Hour},
-	{D: 2 * humanize.Day, Format: "1d %s", DivBy: 1},
-	{D: humanize.Week, Format: "%dd %s", DivBy: humanize.Day},
-}
-
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
@@ -125,9 +113,8 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
-		cTime := time.Unix(wf.ObjectMeta.CreationTimestamp.Unix(), 0)
-		ageStr := humanize.CustomRelTime(cTime, time.Now(), "", "", timeMagnitudes)
-		durationStr := humanizeDurationShort(wf.Status.StartedAt, wf.Status.FinishedAt)
+		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
+		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
