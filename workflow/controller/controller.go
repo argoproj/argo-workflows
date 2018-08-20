@@ -265,6 +265,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+
 	woc := newWorkflowOperationCtx(&wf, wfc)
 	woc.operate()
 	// TODO: operate should return error if it was unable to operate properly
@@ -315,6 +316,7 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 		log.Warnf("watch returned pod unrelated to any workflow: %s", pod.ObjectMeta.Name)
 		return true
 	}
+
 	// TODO: currently we reawaken the workflow on *any* pod updates.
 	// But this could be be much improved to become smarter by only
 	// requeue the workflow when there are changes that we care about.
@@ -518,7 +520,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
-	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
+	// fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -526,7 +528,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 		Add(wfc.instanceIDRequirement())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.FieldSelector = fieldSelector.String()
+		//options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
@@ -536,7 +538,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
-		options.FieldSelector = fieldSelector.String()
+		//options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
