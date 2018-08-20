@@ -1,9 +1,11 @@
 package s3
 
 import (
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
+	log "github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -33,7 +35,24 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 	if err != nil {
 		return err
 	}
-	return s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+	if origErr == nil {
+		return nil
+	}
+	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+		return origErr
+	}
+	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		log.Warn("Failed to test if %s is a directory: %v", err)
+		return origErr
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return origErr
+	}
+	return s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
 }
 
 // Save saves an artifact to S3 compliant storage
