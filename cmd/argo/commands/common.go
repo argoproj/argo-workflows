@@ -122,7 +122,7 @@ func ansiFormat(s string, codes ...int) string {
 var yamlSeparator = regexp.MustCompile("\\n---")
 
 // splitYAMLFile is a helper to split a body into multiple workflow objects
-func splitYAMLFile(body []byte) ([]wfv1.Workflow, error) {
+func splitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 	manifestsStrings := yamlSeparator.Split(string(body), -1)
 	manifests := make([]wfv1.Workflow, 0)
 	for _, manifestStr := range manifestsStrings {
@@ -130,7 +130,11 @@ func splitYAMLFile(body []byte) ([]wfv1.Workflow, error) {
 			continue
 		}
 		var wf wfv1.Workflow
-		err := yaml.Unmarshal([]byte(manifestStr), &wf)
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields)
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
 		if wf.Kind != "" && wf.Kind != workflow.Kind {
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about validating Workflow manifests.

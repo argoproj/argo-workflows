@@ -23,6 +23,7 @@ type submitFlags struct {
 	parameters     []string // --parameter
 	output         string   // --output
 	wait           bool     // --wait
+	strict         bool     // --strict
 	serviceAccount string   // --serviceaccount
 }
 
@@ -47,6 +48,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&submitArgs.strict, "strict", false, "perform strict workflow validation")
 	command.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	return command
@@ -61,7 +63,7 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		workflows = unmarshalWorkflows(body)
+		workflows = unmarshalWorkflows(body, submitArgs.strict)
 	} else {
 		for _, filePath := range filePaths {
 			var body []byte
@@ -82,7 +84,7 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 					log.Fatal(err)
 				}
 			}
-			wfs := unmarshalWorkflows(body)
+			wfs := unmarshalWorkflows(body, submitArgs.strict)
 			workflows = append(workflows, wfs...)
 		}
 	}
@@ -102,13 +104,13 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
-func unmarshalWorkflows(wfBytes []byte) []wfv1.Workflow {
+func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
 	err := json.Unmarshal(wfBytes, &wf)
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := splitYAMLFile(wfBytes)
+	yamlWfs, err := splitYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}

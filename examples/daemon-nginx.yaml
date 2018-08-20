@@ -21,7 +21,6 @@ spec:
     daemon: true
     container:
       image: nginx:1.13
-      restartPolicy: Always
       readinessProbe:
         httpGet:
           path: /

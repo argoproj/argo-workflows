@@ -14,6 +14,9 @@ import (
 )
 
 func NewLintCommand() *cobra.Command {
+	var (
+		strict bool
+	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a directory or specific workflow YAML files",
@@ -30,7 +33,7 @@ func NewLintCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				fmt.Printf("Verifying all yaml files in directory: %s\n", args[0])
-				err = lintYAMLDir(args[0])
+				err = lintYAMLDir(args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -41,7 +44,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = lintYAMLFile(yamlFile)
+					err = lintYAMLFile(yamlFile, strict)
 					if err != nil {
 						break
 					}
@@ -53,10 +56,11 @@ func NewLintCommand() *cobra.Command {
 			fmt.Printf("YAML validated\n")
 		},
 	}
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validatation")
 	return command
 }
 
-func lintYAMLDir(dirPath string) error {
+func lintYAMLDir(dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -65,18 +69,18 @@ func lintYAMLDir(dirPath string) error {
 		if fileExt != ".yaml" && fileExt != ".yml" {
 			return nil
 		}
-		return lintYAMLFile(path)
+		return lintYAMLFile(path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // lintYAMLFile lints multiple workflow manifest in a single yaml file. Ignores non-workflow manifests
-func lintYAMLFile(filePath string) error {
+func lintYAMLFile(filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
 	}
-	workflows, err := splitYAMLFile(body)
+	workflows, err := splitYAMLFile(body, strict)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
