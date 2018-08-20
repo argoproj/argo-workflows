@@ -61,6 +61,15 @@ data:
           name: my-s3-credentials
           key: secretKey
 
+    # Specifies the container runtime interface to use, default is docker
+    containerRuntimeExecutor: docker
+
+    # kubelet port when using kubelet executor, default to 10250
+    kubeletPort: 10250
+
+    # disable the TLS verification of the kubelet executor, default to false
+    kubeletInsecure: false
+
     # executorResources specifies the resource requirements that will be used for the executor
     # sidecar/init container. This is useful in clusters which require resources to be specified as
     # part of admission control.

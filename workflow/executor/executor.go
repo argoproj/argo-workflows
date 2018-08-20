@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"syscall"
@@ -28,6 +29,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
+	argofile "github.com/argoproj/pkg/file"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -199,60 +201,122 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		log.Infof("Saving artifact: %s", art.Name)
-		// Determine the file path of where to find the artifact
-		if art.Path == "" {
-			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
-		}
-
-		fileName := fmt.Sprintf("%s.tgz", art.Name)
-		if !art.HasLocation() {
-			// If user did not explicitly set an artifact destination location in the template,
-			// use the default archive location (appended with the filename).
-			if we.Template.ArchiveLocation == nil {
-				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
-			}
-			if we.Template.ArchiveLocation.S3 != nil {
-				shallowCopy := *we.Template.ArchiveLocation.S3
-				art.S3 = &shallowCopy
-				art.S3.Key = path.Join(art.S3.Key, fileName)
-			} else if we.Template.ArchiveLocation.Artifactory != nil {
-				shallowCopy := *we.Template.ArchiveLocation.Artifactory
-				art.Artifactory = &shallowCopy
-				artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-				if urlParseErr != nil {
-					return urlParseErr
-				}
-				artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-				art.Artifactory.URL = artifactoryURL.String()
-			} else {
-				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-			}
-		}
-
-		tempArtPath := path.Join(tempOutArtDir, fileName)
-		err = we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, tempArtPath)
+		err := we.saveArtifact(tempOutArtDir, mainCtrID, &art)
 		if err != nil {
 			return err
-		}
-		artDriver, err := we.InitDriver(art)
-		if err != nil {
-			return err
-		}
-		err = artDriver.Save(tempArtPath, &art)
-		if err != nil {
-			return err
-		}
-		// remove is best effort (the container will go away anyways).
-		// we just want reduce peak space usage
-		err = os.Remove(tempArtPath)
-		if err != nil {
-			log.Warn("Failed to remove %s", tempArtPath)
 		}
 		we.Template.Outputs.Artifacts[i] = art
-		log.Infof("Successfully saved file: %s", tempArtPath)
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string, art *wfv1.Artifact) error {
+	log.Infof("Saving artifact: %s", art.Name)
+	// Determine the file path of where to find the artifact
+	if art.Path == "" {
+		return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
+	}
+
+	// fileName is incorporated into the final path when uploading it to the artifact repo
+	fileName := fmt.Sprintf("%s.tgz", art.Name)
+	// localArtPath is the final staging location of the file (or directory) which we will pass
+	// to the SaveArtifacts call
+	localArtPath := path.Join(tempOutArtDir, fileName)
+	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+	if err != nil {
+		return err
+	}
+	fileName, localArtPath, err = stageArchiveFile(fileName, localArtPath, art)
+	if err != nil {
+		return err
+	}
+
+	if !art.HasLocation() {
+		// If user did not explicitly set an artifact destination location in the template,
+		// use the default archive location (appended with the filename).
+		if we.Template.ArchiveLocation == nil {
+			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
+		}
+		if we.Template.ArchiveLocation.S3 != nil {
+			shallowCopy := *we.Template.ArchiveLocation.S3
+			art.S3 = &shallowCopy
+			art.S3.Key = path.Join(art.S3.Key, fileName)
+		} else if we.Template.ArchiveLocation.Artifactory != nil {
+			shallowCopy := *we.Template.ArchiveLocation.Artifactory
+			art.Artifactory = &shallowCopy
+			artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
+			if urlParseErr != nil {
+				return urlParseErr
+			}
+			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+			art.Artifactory.URL = artifactoryURL.String()
+		} else {
+			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+		}
+	}
+
+	artDriver, err := we.InitDriver(*art)
+	if err != nil {
+		return err
+	}
+	err = artDriver.Save(localArtPath, art)
+	if err != nil {
+		return err
+	}
+	// remove is best effort (the container will go away anyways).
+	// we just want reduce peak space usage
+	err = os.Remove(localArtPath)
+	if err != nil {
+		log.Warnf("Failed to remove %s: %v", localArtPath, err)
+	}
+	log.Infof("Successfully saved file: %s", localArtPath)
+	return nil
+}
+
+func stageArchiveFile(fileName, localArtPath string, art *wfv1.Artifact) (string, string, error) {
+	strategy := art.Archive
+	if strategy == nil {
+		// If no strategy is specified, default to the tar strategy
+		strategy = &wfv1.ArchiveStrategy{
+			Tar: &wfv1.TarStrategy{},
+		}
+	}
+	tempOutArtDir := filepath.Dir(localArtPath)
+	if strategy.None != nil {
+		log.Info("Disabling archive before upload")
+		unarchivedArtPath := path.Join(tempOutArtDir, art.Name)
+		err := untar(localArtPath, unarchivedArtPath)
+		if err != nil {
+			return "", "", err
+		}
+		// Delete the tarball
+		err = os.Remove(localArtPath)
+		if err != nil {
+			return "", "", errors.InternalWrapError(err)
+		}
+		isDir, err := argofile.IsDirectory(unarchivedArtPath)
+		if err != nil {
+			return "", "", errors.InternalWrapError(err)
+		}
+		fileName = filepath.Base(art.Path)
+		if isDir {
+			localArtPath = unarchivedArtPath
+		} else {
+			// If we are uploading a single file, we need to preserve original filename so that
+			// 1. minio client can infer its mime-type, based on file extension
+			// 2. the original filename is incorporated into the final path
+			localArtPath = path.Join(tempOutArtDir, fileName)
+			err = os.Rename(unarchivedArtPath, localArtPath)
+			if err != nil {
+				return "", "", errors.InternalWrapError(err)
+			}
+		}
+	} else if strategy.Tar != nil {
+		// NOTE we already tar gzip the file in the executor. So this is a noop. In the future, if
+		// we were to support other compression formats (e.g. bzip2) or options, the logic would go
+		// here, and compression would be moved out of the executors.
+	}
+	return fileName, localArtPath, nil
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value
