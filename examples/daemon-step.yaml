@@ -47,7 +47,6 @@ spec:
     daemon: true
     container:
       image: influxdb:1.2
-      restartPolicy: Always
       readinessProbe:
         httpGet:
           path: /ping
