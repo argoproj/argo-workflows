@@ -13,6 +13,7 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy":     schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments":           schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact":            schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation":    schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
@@ -25,6 +26,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":              schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":            schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":        schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":             schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":           schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":         schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
@@ -35,12 +37,37 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":      schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar":             schema_pkg_apis_workflow_v1alpha1_Sidecar(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":     schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy":         schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template":            schema_pkg_apis_workflow_v1alpha1_Template(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":           schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":            schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":        schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":        schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep":        schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ArchiveStrategy describes how to archive files/directory when saving artifacts",
+				Properties: map[string]spec.Schema{
+					"tar": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy"),
+						},
+					},
+					"none": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy"},
 	}
 }
 
@@ -155,12 +182,18 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"archive": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Archive controls how the artifact will be saved to the artifact repository.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -532,6 +565,18 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 						},
 					},
 				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
+				Properties:  map[string]spec.Schema{},
 			},
 		},
 		Dependencies: []string{},
@@ -1303,6 +1348,18 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
+				Properties:  map[string]spec.Schema{},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "TarStrategy will tar and gzip the file or directory when saving",
 				Properties:  map[string]spec.Schema{},
 			},
 		},

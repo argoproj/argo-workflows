@@ -36,6 +36,7 @@ and may be removed/ignored in a future release.
 + Support for sophisticated expressions in `when` conditionals (issue #860)
 + Introduce Pending node state to highlight failures when starting workflow pods (issue #525)
 + Support additional container runtimes through kubelet executor (issue #902) (@JulienBalestra)
++ Introduce archive strategies with ability to disable tar.gz archiving (resolves #784)
 + Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
 + Introduce `argo watch` command to watch live workflows from terminal (issue #969)
 + Github login using go-git, with support for ssh keys (@andreimc)
