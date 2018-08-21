@@ -21,8 +21,7 @@ spec:
           - name: cmd
             value: "{{item}}"
         withItems:
-        - make controller-image
-        - make executor-image
+        - make controller-image executor-image
         - make cli-linux
         - make cli-darwin
       - name: test
@@ -32,9 +31,7 @@ spec:
           - name: cmd
             value: "{{item}}"
         withItems:
-        - dep ensure && make lint
-        - dep ensure && make test
-        - dep ensure && make verify-codegen
+        - dep ensure && make lint test verify-codegen
 
   - name: ci-builder
     inputs:
