@@ -33,18 +33,11 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  digest = "1:b6b8cfb7d169d6ce827f955034d251b907d3a56f453f35c4e9c7dd5778fdecd5"
-  name = "github.com/argoproj/argo-cd"
-  packages = ["errors"]
-  pruneopts = ""
-  revision = "da7be2e3cae13320e9714beba644aec24dc7c0fa"
-  version = "v0.7.1"
-
-[[projects]]
   branch = "master"
   digest = "1:562a4b54b9929800c0a49a87b66c5565aaec84883d7752b2dd489fd01346e9af"
   name = "github.com/argoproj/pkg"
   packages = [
+    "errors",
     "file",
     "humanize",
     "json",
@@ -1007,7 +1000,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Knetic/govaluate",
-    "github.com/argoproj/argo-cd/errors",
+    "github.com/argoproj/pkg/errors",
     "github.com/argoproj/pkg/file",
     "github.com/argoproj/pkg/humanize",
     "github.com/argoproj/pkg/json",
@@ -1038,7 +1031,6 @@
     "gopkg.in/src-d/go-git.v4/plumbing/transport/http",
     "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh",
     "k8s.io/api/core/v1",
-    "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",

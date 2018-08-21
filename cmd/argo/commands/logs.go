@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"fmt"
 	"hash/fnv"
 	"math"
 	"os"
@@ -10,17 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo-cd/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfinformers "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"fmt"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
