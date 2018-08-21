@@ -42,18 +42,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:149226e3fa0be4e1adf0ef1f8257122cab13fab8a2fb59da9288c86877e68e4d"
+  digest = "1:562a4b54b9929800c0a49a87b66c5565aaec84883d7752b2dd489fd01346e9af"
   name = "github.com/argoproj/pkg"
   packages = [
     "file",
     "humanize",
+    "json",
     "kube/cli",
     "s3",
     "stats",
     "time",
   ]
   pruneopts = ""
-  revision = "c6c1332e245bc2a31e227c620d1b24d4ab49baf3"
+  revision = "4478f28a0aca948d9fc2d1d13e59db670ce973d6"
 
 [[projects]]
   branch = "master"
@@ -1009,6 +1010,7 @@
     "github.com/argoproj/argo-cd/errors",
     "github.com/argoproj/pkg/file",
     "github.com/argoproj/pkg/humanize",
+    "github.com/argoproj/pkg/json",
     "github.com/argoproj/pkg/kube/cli",
     "github.com/argoproj/pkg/s3",
     "github.com/argoproj/pkg/stats",
