@@ -47,7 +47,7 @@ spec:
           repo: "{{workflow.parameters.repo}}"
           revision: "{{workflow.parameters.revision}}"
     container:
-      image: argoproj/argo-ci-builder:1.0
+      image: argoproj/argo-ci-builder:latest
       command: [sh, -c]
       args: ["{{inputs.parameters.cmd}}"]
       workingDir: /go/src/github.com/argoproj/argo
@@ -63,7 +63,7 @@ spec:
           repo: "{{workflow.parameters.repo}}"
           revision: "{{workflow.parameters.revision}}"
     container:
-      image: argoproj/argo-ci-builder:1.0
+      image: argoproj/argo-ci-builder:latest
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
       workingDir: /go/src/github.com/argoproj/argo
