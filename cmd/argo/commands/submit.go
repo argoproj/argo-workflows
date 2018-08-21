@@ -2,17 +2,19 @@ package commands
 
 import (
 	"bufio"
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/argoproj/pkg/json"
+	"github.com/spf13/cobra"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/spf13/cobra"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 type submitFlags struct {
@@ -48,7 +50,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
-	command.Flags().BoolVar(&submitArgs.strict, "strict", false, "perform strict workflow validation")
+	command.Flags().BoolVar(&submitArgs.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	return command
@@ -106,11 +108,15 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
-	err := json.Unmarshal(wfBytes, &wf)
+	var jsonOpts []json.JSONOpt
+	if strict {
+		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
+	}
+	err := json.Unmarshal(wfBytes, &wf, jsonOpts...)
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := splitYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
@@ -164,7 +170,7 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 	if submitArgs.name != "" {
 		wf.ObjectMeta.Name = submitArgs.name
 	}
-	err := common.ValidateWorkflow(wf)
+	err := validate.ValidateWorkflow(wf)
 	if err != nil {
 		return "", err
 	}
