@@ -601,7 +601,7 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		var wf wfv1.Workflow
 		var opts []yaml.JSONOpt
 		if strict {
-			opts = append(opts, yaml.DisallowUnknownFields)
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
 		if wf.Kind != "" && wf.Kind != workflow.Kind {
