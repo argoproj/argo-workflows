@@ -48,7 +48,7 @@ const (
 
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
-		//Pending:   ansiFormat("◷", FgDefault),
+		wfv1.NodePending:   ansiFormat("◷", FgYellow),
 		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
 		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
 		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
