@@ -453,13 +453,16 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 	var activePods int64
 	// if we care about parallelism, count the active pods at the template level
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase != wfv1.NodeRunning {
+		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
 		if boundaryID != "" && node.BoundaryID != boundaryID {
 			continue
 		}
-		activePods++
+		switch node.Phase {
+		case wfv1.NodePending, wfv1.NodeRunning:
+			activePods++
+		}
 	}
 	return activePods
 }
@@ -504,7 +507,18 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	f := false
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		return nil
+		newPhase = wfv1.NodePending
+		newDaemonStatus = &f
+		for _, ctrStatus := range pod.Status.ContainerStatuses {
+			if ctrStatus.State.Waiting != nil {
+				if ctrStatus.State.Waiting.Message != "" {
+					message = fmt.Sprintf("%s: %s", ctrStatus.State.Waiting.Reason, ctrStatus.State.Waiting.Message)
+				} else {
+					message = ctrStatus.State.Waiting.Reason
+				}
+				break
+			}
+		}
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
@@ -512,6 +526,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		newPhase, message = inferFailedReason(pod)
 		newDaemonStatus = &f
 	case apiv1.PodRunning:
+		newPhase = wfv1.NodeRunning
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
 			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
@@ -523,21 +538,19 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
 			return nil
 		}
-		if tmpl.Daemon == nil || !*tmpl.Daemon {
-			// incidental state change of a running pod. No need to inspect further
-			return nil
-		}
-		// pod is running and template is marked daemon. check if everything is ready
-		for _, ctrStatus := range pod.Status.ContainerStatuses {
-			if !ctrStatus.Ready {
-				return nil
+		if tmpl.Daemon != nil && *tmpl.Daemon {
+			// pod is running and template is marked daemon. check if everything is ready
+			for _, ctrStatus := range pod.Status.ContainerStatuses {
+				if !ctrStatus.Ready {
+					return nil
+				}
 			}
+			// proceed to mark node status as succeeded (and daemoned)
+			newPhase = wfv1.NodeSucceeded
+			t := true
+			newDaemonStatus = &t
+			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		// proceed to mark node status as succeeded (and daemoned)
-		newPhase = wfv1.NodeSucceeded
-		t := true
-		newDaemonStatus = &t
-		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -574,15 +587,21 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			node.Outputs = &outputs
 		}
 	}
-	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node, message)
-		node.Message = message
-	}
 	if node.Phase != newPhase {
 		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
+		// if we are transitioning from Pending to a different state, clear out pending message
+		if node.Phase == wfv1.NodePending {
+			node.Message = ""
+		}
 		updated = true
 		node.Phase = newPhase
 	}
+	if message != "" && node.Message != message {
+		log.Infof("Updating node %s message: %s", node, message)
+		updated = true
+		node.Message = message
+	}
+
 	if node.Completed() && node.FinishedAt.IsZero() {
 		updated = true
 		if !node.IsDaemoned() {
@@ -1086,7 +1105,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1158,7 +1177,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -1371,7 +1390,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {

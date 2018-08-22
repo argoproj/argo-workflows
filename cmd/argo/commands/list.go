@@ -109,7 +109,7 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	}
 	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION")
 	if listArgs.output == "wide" {
-		fmt.Fprint(w, "\tR/C\tPARAMETERS")
+		fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
@@ -120,8 +120,8 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr)
 		if listArgs.output == "wide" {
-			running, completed := countCompletedRunning(&wf)
-			fmt.Fprintf(w, "\t%d/%d", running, completed)
+			pending, running, completed := countPendingRunningCompleted(&wf)
+			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
 			fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
 		}
 		fmt.Fprintf(w, "\n")
@@ -129,22 +129,24 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	_ = w.Flush()
 }
 
-func countCompletedRunning(wf *wfv1.Workflow) (int, int) {
-	completed := 0
+func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
+	pending := 0
 	running := 0
+	completed := 0
 	for _, node := range wf.Status.Nodes {
-		if len(node.Children) > 0 {
-			// not a pod
-			// TODO: this will change after DAG implementation
+		tmpl := wf.GetTemplate(node.TemplateName)
+		if tmpl == nil || !tmpl.IsPodType() {
 			continue
 		}
 		if node.Completed() {
 			completed++
-		} else {
+		} else if node.Phase == wfv1.NodeRunning {
 			running++
+		} else {
+			pending++
 		}
 	}
-	return running, completed
+	return pending, running, completed
 }
 
 // parameterString returns a human readable display string of the parameters, truncating if necessary
@@ -200,9 +202,9 @@ func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 			return "Running (Suspended)"
 		}
 		return wf.Status.Phase
-	case "":
+	case "", wfv1.NodePending:
 		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return "Pending"
+			return wfv1.NodePending
 		}
 		return "Unknown"
 	default:

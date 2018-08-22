@@ -67,7 +67,7 @@ script:
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
 	node := newWoc().executeScript(tmpl.Name, tmpl, "")
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, node.Phase, wfv1.NodePending)
 }
 
 // TestServiceAccount verifies the ability to carry forward the service account name
