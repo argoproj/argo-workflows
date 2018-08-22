@@ -132,7 +132,7 @@ Run:
 ```
 $ kubectl proxy
 ```
-Then visit: http://127.0.0.1:8001/api/v1/proxy/namespaces/kube-system/services/argo-ui/
+Then visit: http://127.0.0.1:8001/api/v1/namespaces/kube-system/services/argo-ui/proxy/
 
 NOTE: artifact download and webconsole is not supported using this method
 
