@@ -518,7 +518,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
-	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -526,7 +525,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 		Add(wfc.instanceIDRequirement())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
@@ -536,7 +534,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
-		options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).

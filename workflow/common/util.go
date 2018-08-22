@@ -521,7 +521,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 				node.Message = fmt.Sprintf("original pod: %s", originalID)
 			}
 			newWF.Status.Nodes[node.ID] = node
-		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning:
+		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning, wfv1.NodePending:
 			// do not add this status to the node. pretend as if this node never existed.
 			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
 			// mismanages state (e.g. panic when operating on a workflow)
@@ -568,9 +568,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 		case wfv1.NodeError, wfv1.NodeFailed:
 			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
 		default:
+			// Do not allow retry of workflows with pods in Running/Pending phase
 			return nil, errors.InternalErrorf("Workflow cannot be retried with nodes in %s phase", node, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {

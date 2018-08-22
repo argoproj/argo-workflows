@@ -27,6 +27,7 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
+	NodePending   NodePhase = "Pending"
 	NodeRunning   NodePhase = "Running"
 	NodeSucceeded NodePhase = "Succeeded"
 	NodeSkipped   NodePhase = "Skipped"
