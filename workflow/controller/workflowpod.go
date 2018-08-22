@@ -251,51 +251,57 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
-	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
-		return execEnvVars
-	}
-	return append(execEnvVars,
-		apiv1.EnvVar{
-			Name:  common.EnvVarContainerRuntimeExecutor,
-			Value: woc.controller.Config.ContainerRuntimeExecutor,
-		},
-		apiv1.EnvVar{
-			Name: common.EnvVarDownwardAPINodeIP,
-			ValueFrom: &apiv1.EnvVarSource{
-				FieldRef: &apiv1.ObjectFieldSelector{
-					FieldPath: "status.hostIP",
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorKubelet:
+		return append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.Config.ContainerRuntimeExecutor,
+			},
+			apiv1.EnvVar{
+				Name: common.EnvVarDownwardAPINodeIP,
+				ValueFrom: &apiv1.EnvVarSource{
+					FieldRef: &apiv1.ObjectFieldSelector{
+						FieldPath: "status.hostIP",
+					},
 				},
 			},
-		},
-		apiv1.EnvVar{
-			Name:  common.EnvVarKubeletPort,
-			Value: strconv.Itoa(woc.controller.Config.KubeletPort),
-		},
-		apiv1.EnvVar{
-			Name:  common.EnvVarKubeletInsecure,
-			Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
-		},
-	)
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletPort,
+				Value: strconv.Itoa(woc.controller.Config.KubeletPort),
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletInsecure,
+				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
+			},
+		)
+	default:
+		return execEnvVars
+	}
 }
 
 func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
 	volumeMounts := []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorKubelet:
+		return volumeMounts
+	default:
 		return append(volumeMounts, volumeMountDockerLib, volumeMountDockerSock)
 	}
-	return volumeMounts
 }
 
 func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
-	if woc.controller.Config.ContainerRuntimeExecutor == common.ContainerRuntimeExecutorDocker {
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorKubelet:
+		return volumes
+	default:
 		return append(volumes, volumeDockerLib, volumeDockerSock)
 	}
-	return volumes
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
