@@ -4,5 +4,4 @@ metadata:
   name: workflow-controller-configmap
 data:
   config: |
-    artifactRepository: {}
     namespace: argo

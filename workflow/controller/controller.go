@@ -106,7 +106,12 @@ type ArtifactRepository struct {
 type S3ArtifactRepository struct {
 	wfv1.S3Bucket `json:",inline"`
 
+	// KeyPattern is defines the pattern of how to store keys. Can reference workflow variables
+	// If omitted, uses the default as defined in ArchiveDefaultS3KeyPattern
+	KeyPattern string `json:"keyPattern,omitempty"`
+
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
+	// DEPRECATED. Use KeyPattern instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
