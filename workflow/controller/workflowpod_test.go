@@ -161,3 +161,34 @@ func TestMetadata(t *testing.T) {
 		assert.Equal(t, pod.ObjectMeta.Labels[k], v)
 	}
 }
+
+// TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
+func TestWorkflowControllerArchiveConfig(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyPattern: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.NoError(t, err)
+}
+
+// TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
+// unresolvable variables
+func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyPattern: "{{workflow.unresolvable}}",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Error(t, err)
+}

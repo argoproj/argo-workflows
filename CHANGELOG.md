@@ -34,6 +34,8 @@ and may be removed/ignored in a future release.
 + Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
 + Add ability to aggregate and reference output parameters expanded by loops (issue #861)
 + Support for sophisticated expressions in `when` conditionals (issue #860)
++ Introduce Pending node state to highlight failures when starting workflow pods (issue #525)
++ Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support referencing of global workflow artifacts (issue #900)

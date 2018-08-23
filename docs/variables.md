@@ -2,39 +2,57 @@
 
 The following variables are made available to reference various metadata of a workflow:
 
-## Templates:
-* `inputs.artifacts.XXX`
-* `inputs.parameters.XXX`
+## All Templates:
+| Variable | Description|
+|----------|------------|
+| `inputs.parameters.<NAME>`| Input parameter to a template |
+| `inputs.artifacts.<NAME>` | Input artifact to a template |
 
 ## Steps Templates:
-* `steps.XXX.ip`
-* `steps.XXX.outputs.result`
-* `steps.XXX.outputs.parameters.YYY`
-* `steps.XXX.outputs.artifacts.YYY`
+| Variable | Description|
+|----------|------------|
+| `steps.<STEPNAME>.ip` | IP address of a previous daemon container step |
+| `steps.<STEPNAME>.outputs.result` | Output result of a previous script step |
+| `steps.<STEPNAME>.outputs.parameters.<NAME>` | Output parameter of a previous step |
+| `steps.<STEPNAME>.outputs.artifacts.<NAME>` | Output artifact of a previous step |
 
 ## DAG Templates:
-* `tasks.XXX.ip`
-* `tasks.XXX.outputs.result`
-* `tasks.XXX.outputs.parameters.YYY`
-* `tasks.XXX.outputs.artifacts.YYY`
+| Variable | Description|
+|----------|------------|
+| `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
+| `tasks.<TASKNAME>.outputs.result` | Output result of a previous script task |
+| `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of a previous task |
+| `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of a previous task |
 
-## Container/Script/Resource Templates:
-* `pod.name`
+## Container/Script Templates:
+| Variable | Description|
+|----------|------------|
+| `pod.name` | Pod name of the container/script |
 
-## Loops
-* `item`
-* `item.XXX`
+## Loops (withItems / withParam)
+| Variable | Description|
+|----------|------------|
+| `item` | Value of the item in a list |
+| `item.<FIELDNAME>` | Field value of the item in a list of maps |
 
 ## Global:
-* `workflow.name`
-* `workflow.namespace`
-* `workflow.uid`
-* `workflow.parameters.XXX`
-* `workflow.outputs.parameters.XXX`
+| Variable | Description|
+|----------|------------|
+| `workflow.name` | Workflow name |
+| `workflow.namespace` | Workflow namespace |
+| `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
+| `workflow.parameters.<NAME>` | Input parameter to the workflow |
+| `workflow.outputs.parameters.<NAME>` | Input artifact to the workflow |
 
 ## Exit Handler:
-* `workflow.status`
+| Variable | Description|
+|----------|------------|
+| `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
 
 ## Coming in v2.2:
-* `workflow.artifacts.XXX`
-* `workflow.outputs.artifacts.XXX`
+| Variable | Description|
+|----------|------------|
+| `workflow.artifacts.<NAME>` | Input artifact to the workflow |
+| `workflow.outputs.artifacts.<NAME>` | Output artifact to the workflow |
+| `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
+| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |

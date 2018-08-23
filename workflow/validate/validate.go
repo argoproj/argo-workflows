@@ -107,8 +107,8 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams["pod.name"] = placeholderValue
-		scope["pod.name"] = placeholderValue
+		localParams[common.LocalVarPodName] = placeholderValue
+		scope[common.LocalVarPodName] = placeholderValue
 	}
 	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
@@ -213,6 +213,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
+			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
 				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -706,9 +707,11 @@ func isParameter(p string) bool {
 	return paramRegex.MatchString(p)
 }
 
-const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
-const workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
-const workflowFieldMaxLength int = 128
+const (
+	workflowFieldNameFmt    string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
+	workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
+	workflowFieldMaxLength  int    = 128
+)
 
 var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
 

@@ -115,11 +115,6 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 	return stdOut.String(), stdErr.String(), nil
 }
 
-// DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
-func DefaultConfigMapName(controllerName string) string {
-	return fmt.Sprintf("%s-configmap", controllerName)
-}
-
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It substitutes:
 // * parameters in the template from the arguments
