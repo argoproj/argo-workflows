@@ -12,7 +12,7 @@ data:
     # in order to support multiple controllers in a single cluster, and ultimately allows the
     # controller itself to be bundled as part of a higher level application. If omitted, the
     # controller watches workflows and pods that *are not* labeled with an instance id.
-	  instanceID: my-ci-controller
+    instanceID: my-ci-controller
 
     # similar to instanceID, the namespace field limits the controller's watch/queries to a specific
     # namespace, allowing the controller to run with namespace scope (role), instead of cluster
@@ -35,12 +35,13 @@ data:
         endpoint: s3.amazonaws.com
         bucket: my-bucket
         region: us-west-2
-        # keyPattern is a format pattern in which the controller will store artifacts in a bucket.
-        # It can reference workflow metadata variables such as workflow.name, pod.namem as well as
-        # workflow.creationTimestamp.<STRFTIMECHAR> so that workflow artifacts can be organized by
-        # date. If omitted, will use `{{workflow.name}}/{{pod.name}}`, which can have collisions.
-        # The following example will organize workflow artifacts under a "my-artifacts" sub dir,
-        # then sub folders for year, month, date and finally workflow name/pod.
+        # keyPattern is a format pattern to define how artifacts will be organized in a bucket.
+        # It can reference workflow metadata variables such as workflow.namespace, workflow.name, 
+        # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
+        # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
+        # which has potential for have collisions.
+        # The following example pattern organizes workflow artifacts under a "my-artifacts" sub dir,
+        # then sub dirs for year, month, date and finally workflow name and pod.
         # e.g.: my-artifacts/2018/08/23/my-workflow-abc123/my-workflow-abc123-1234567890
         keyPattern: "my-artifacts\
           /{{workflow.creationTimestamp.Y}}\
