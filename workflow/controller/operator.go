@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -206,6 +207,11 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
+	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.String()
+	for char := range strftime.FormatChars {
+		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
+		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
+	}
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
@@ -858,7 +864,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	// Perform parameter substitution of the template
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams["pod.name"] = woc.wf.NodeID(nodeName)
+		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
 	if err != nil {
