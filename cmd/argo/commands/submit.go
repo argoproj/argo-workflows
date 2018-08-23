@@ -15,6 +15,7 @@ import (
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/validate"
+	"github.com/ghodss/yaml"
 )
 
 type submitFlags struct {
@@ -178,25 +179,24 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 					log.Fatal(err)
 				}
 			}
-			for i, line := range strings.Split(string(body), "\n") {
-				// Ignore comments
-				fileParam := strings.TrimSpace(strings.Split(line, "#")[0])
-				if fileParam != "" {
-					parts := strings.SplitN(fileParam, "=", 2)
-					if len(parts) == 1 {
-						log.Fatalf("%s:%d > Expected parameter of the form: NAME=VALUE. Received: %s", submitArgs.parameterFile, i+1, fileParam)
-					}
-					param := wfv1.Parameter{
-						Name:  parts[0],
-						Value: &parts[1],
-					}
-					if _, ok := passedParams[param.Name]; ok {
-						// this parameter was overridden via command line
-						continue
-					}
-					newParams = append(newParams, param)
-					passedParams[param.Name] = true
+
+			yamlParams := map[string]string{}
+			err = yaml.Unmarshal(body, &yamlParams)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for k, v := range yamlParams {
+				param := wfv1.Parameter{
+					Name:  k,
+					Value: &v,
 				}
+				if _, ok := passedParams[param.Name]; ok {
+					// this parameter was overridden via command line
+					continue
+				}
+				newParams = append(newParams, param)
+				passedParams[param.Name] = true
 			}
 		}
 
