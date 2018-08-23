@@ -1,10 +1,4 @@
 # This example demonstrates how to use a resource template to wait on another workflow.
-#
-# NOTE: The ability to create custom resources (e.g. workflows) is not included in the built-in
-# admin role. For this example to work, it will require more privileges than normal.
-# For testing purposes, you can escalate the default service account in the default namespace to
-# cluster-admin using the command:
-# kubectl create rolebinding default-admin --clusterrole=cluster-admin --serviceaccount=default:default
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

@@ -132,9 +132,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				volumeDockerSock,
 			},
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			// TODO: consider allowing service account and image pull secrets to reference global vars
-			ServiceAccountName: woc.wf.Spec.ServiceAccountName,
-			ImagePullSecrets:   woc.wf.Spec.ImagePullSecrets,
+			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {

@@ -125,7 +125,6 @@ subjects:
 apiVersion: v1
 data:
   config: |
-    artifactRepository: {}
     namespace: argo
 kind: ConfigMap
 metadata:
@@ -168,7 +167,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.1.1
+        image: argoproj/argoui:latest
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -190,9 +189,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.1.1
+        - argoproj/argoexec:latest
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.1.1
+        image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
