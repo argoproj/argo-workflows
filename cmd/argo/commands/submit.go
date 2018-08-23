@@ -187,9 +187,10 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 			}
 
 			for k, v := range yamlParams {
+				value := v
 				param := wfv1.Parameter{
 					Name:  k,
-					Value: &v,
+					Value: &value,
 				}
 				if _, ok := passedParams[param.Name]; ok {
 					// this parameter was overridden via command line
