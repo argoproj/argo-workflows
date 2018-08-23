@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -180,14 +181,14 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 				}
 			}
 
-			yamlParams := map[string]string{}
+			yamlParams := map[string]interface{}{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			for k, v := range yamlParams {
-				value := v
+				value := fmt.Sprintf("%v", v)
 				param := wfv1.Parameter{
 					Name:  k,
 					Value: &value,
