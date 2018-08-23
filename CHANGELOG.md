@@ -43,6 +43,7 @@ and may be removed/ignored in a future release.
 + Support submission of workflows from stdin (issue #926)
 + Prometheus metrics and telemetry (issue #896) (@bbc88ks)
 + Detect and fail upon unknown fields during argo submit & lint (issue #892)
++ Allow scaling of workflow and pod workers via controller CLI flags (issue #962)
 * Remove installer/uninstaller (issue #928)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
