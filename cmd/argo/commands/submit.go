@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/validate"
+	"github.com/ghodss/yaml"
 )
 
 type submitFlags struct {
@@ -23,6 +25,7 @@ type submitFlags struct {
 	instanceID     string   // --instanceid
 	entrypoint     string   // --entrypoint
 	parameters     []string // --parameter
+	parameterFile  string   // --parameter-file
 	output         string   // --output
 	wait           bool     // --wait
 	strict         bool     // --strict
@@ -48,6 +51,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitArgs.generateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVarP(&submitArgs.parameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&submitArgs.strict, "strict", true, "perform strict workflow validation")
@@ -140,7 +144,7 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 		labels[common.LabelKeyControllerInstanceID] = submitArgs.instanceID
 		wf.SetLabels(labels)
 	}
-	if len(submitArgs.parameters) > 0 {
+	if len(submitArgs.parameters) > 0 || submitArgs.parameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
 		for _, paramStr := range submitArgs.parameters {
@@ -155,6 +159,49 @@ func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) 
 			newParams = append(newParams, param)
 			passedParams[param.Name] = true
 		}
+
+		// Add parameters from a parameter-file, if one was provided
+		if submitArgs.parameterFile != "" {
+			var body []byte
+			var err error
+			if cmdutil.IsURL(submitArgs.parameterFile) {
+				response, err := http.Get(submitArgs.parameterFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				body, err = ioutil.ReadAll(response.Body)
+				_ = response.Body.Close()
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				body, err = ioutil.ReadFile(submitArgs.parameterFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			yamlParams := map[string]interface{}{}
+			err = yaml.Unmarshal(body, &yamlParams)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for k, v := range yamlParams {
+				value := fmt.Sprintf("%v", v)
+				param := wfv1.Parameter{
+					Name:  k,
+					Value: &value,
+				}
+				if _, ok := passedParams[param.Name]; ok {
+					// this parameter was overridden via command line
+					continue
+				}
+				newParams = append(newParams, param)
+				passedParams[param.Name] = true
+			}
+		}
+
 		for _, param := range wf.Spec.Arguments.Parameters {
 			if _, ok := passedParams[param.Name]; ok {
 				// this parameter was overridden via command line
