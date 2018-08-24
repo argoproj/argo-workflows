@@ -34,7 +34,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0dee03e2c730d2ec98eb3084c3d0b18fd6383c2842f3958c0ae110994d3af977"
+  digest = "1:063217f911758dc9695e50149f07f482d954f7e7c7560fa1f25c033d486aca9e"
   name = "github.com/argoproj/pkg"
   packages = [
     "errors",
@@ -42,12 +42,14 @@
     "humanize",
     "json",
     "kube/cli",
+    "kube/errors",
     "s3",
     "stats",
+    "strftime",
     "time",
   ]
   pruneopts = ""
-  revision = "44a8795ad3201a6f6ab7ef59fe719c85178b9521"
+  revision = "709fb020c52b294e15fb70817bc1725802fe836c"
 
 [[projects]]
   branch = "master"
@@ -1005,8 +1007,10 @@
     "github.com/argoproj/pkg/humanize",
     "github.com/argoproj/pkg/json",
     "github.com/argoproj/pkg/kube/cli",
+    "github.com/argoproj/pkg/kube/errors",
     "github.com/argoproj/pkg/s3",
     "github.com/argoproj/pkg/stats",
+    "github.com/argoproj/pkg/strftime",
     "github.com/argoproj/pkg/time",
     "github.com/evanphx/json-patch",
     "github.com/fsnotify/fsnotify",
