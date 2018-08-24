@@ -35,6 +35,11 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try to save outputs
 	}
+	err = wfExecutor.SaveLogs()
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
+	}
 	err = wfExecutor.SaveArtifacts()
 	if err != nil {
 		wfExecutor.AddError(err)

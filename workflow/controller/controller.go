@@ -106,8 +106,11 @@ const (
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts
 type ArtifactRepository struct {
+	// ArchiveLogs enables log archiving
+	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
+	// S3 stores artifact in a S3-compliant object store
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
-	// Future artifact repository support here
+	// Artifactory stores artifacts to JFrog Artifactory
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 }
 

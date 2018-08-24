@@ -539,7 +539,9 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		// User explicitly set the location. nothing to do.
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{}
+	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
+		ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+	}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)

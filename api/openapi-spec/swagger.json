@@ -46,6 +46,10 @@
           "description": "Archive controls how the artifact will be saved to the artifact repository.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchiveStrategy"
         },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -92,6 +96,10 @@
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "properties": {
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
