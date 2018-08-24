@@ -69,12 +69,17 @@ func (k *KubeletExecutor) GetOutput(containerID string) (string, error) {
 	return k.cli.GetContainerLogs(containerID)
 }
 
+// Logs copies logs to a given path
+func (k *KubeletExecutor) Logs(containerID, path string) error {
+	return k.cli.SaveLogsToFile(containerID, path)
+}
+
 // Wait for the container to complete
 func (k *KubeletExecutor) Wait(containerID string) error {
 	return k.cli.WaitForTermination(containerID, 0)
 }
 
-// killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
+// Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(containerIDs []string) error {
 	for _, containerID := range containerIDs {
 		log.Infof("SIGTERM containerID %q ...", containerID, syscall.SIGTERM.String())

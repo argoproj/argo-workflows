@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -64,6 +65,22 @@ func (d *DockerExecutor) GetOutput(containerID string) (string, error) {
 // Wait for the container to complete
 func (d *DockerExecutor) Wait(containerID string) error {
 	return common.RunCommand("docker", "wait", containerID)
+}
+
+// Logs captures the logs of a container to a file
+func (d *DockerExecutor) Logs(containerID string, path string) error {
+	cmd := exec.Command("docker", "logs", containerID)
+	outfile, err := os.Create(path)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	defer outfile.Close()
+	cmd.Stdout = outfile
+	err = cmd.Start()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return cmd.Wait()
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period

@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -87,6 +88,15 @@ func newKubeletClient() (*kubeletClient, error) {
 	}, nil
 }
 
+func checkHTTPErr(resp *http.Response) error {
+	if resp.StatusCode != http.StatusOK {
+		b, _ := ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		return errors.InternalWrapError(fmt.Errorf("unexpected non 200 status code: %d, body: %s", resp.StatusCode, string(b)))
+	}
+	return nil
+}
+
 func (k *kubeletClient) getPodList() (*v1.PodList, error) {
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/pods", k.kubeletEndpoint))
 	if err != nil {
@@ -100,9 +110,9 @@ func (k *kubeletClient) getPodList() (*v1.PodList, error) {
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	if resp.StatusCode != http.StatusOK {
-		_ = resp.Body.Close()
-		return nil, errors.InternalWrapError(fmt.Errorf("unexpected non 200 status code: %d", resp.StatusCode))
+	err = checkHTTPErr(resp)
+	if err != nil {
+		return nil, err
 	}
 	podListDecoder := json.NewDecoder(resp.Body)
 	podList := &v1.PodList{}
@@ -114,10 +124,10 @@ func (k *kubeletClient) getPodList() (*v1.PodList, error) {
 	return podList, resp.Body.Close()
 }
 
-func (k *kubeletClient) getLogs(namespace, podName, containerName string) (string, error) {
+func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) (*http.Response, error) {
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/containerLogs/%s/%s/%s", k.kubeletEndpoint, namespace, podName, containerName))
 	if err != nil {
-		return "", errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	resp, err := k.httpClient.Do(&http.Request{
 		Method: http.MethodGet,
@@ -125,16 +135,45 @@ func (k *kubeletClient) getLogs(namespace, podName, containerName string) (strin
 		URL:    u,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.InternalWrapError(fmt.Errorf("unexpected non 200 status code: %d", resp.StatusCode))
+	err = checkHTTPErr(resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (k *kubeletClient) getLogs(namespace, podName, containerName string) (string, error) {
+	resp, err := k.doRequestLogs(namespace, podName, containerName)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
+	if err != nil {
+		return "", err
 	}
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.InternalWrapError(err)
 	}
 	return string(b), resp.Body.Close()
+}
+
+func (k *kubeletClient) saveLogsToFile(namespace, podName, containerName, path string) error {
+	resp, err := k.doRequestLogs(namespace, podName, containerName)
+	if resp != nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
+	if err != nil {
+		return err
+	}
+	outFile, err := os.Create(path)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	defer outFile.Close()
+	_, err = io.Copy(outFile, resp.Body)
+	return err
 }
 
 func getContainerID(container *v1.ContainerStatus) string {
@@ -175,6 +214,22 @@ func (k *kubeletClient) GetContainerLogs(containerID string) (string, error) {
 		}
 	}
 	return "", errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+}
+
+func (k *kubeletClient) SaveLogsToFile(containerID, path string) error {
+	podList, err := k.getPodList()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	for _, pod := range podList.Items {
+		for _, container := range pod.Status.ContainerStatuses {
+			if getContainerID(&container) != containerID {
+				continue
+			}
+			return k.saveLogsToFile(pod.Namespace, pod.Name, container.Name, path)
+		}
+	}
+	return errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
 }
 
 func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {

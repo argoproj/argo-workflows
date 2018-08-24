@@ -36,10 +36,11 @@ and may be removed/ignored in a future release.
 + Support for sophisticated expressions in `when` conditionals (issue #860)
 + Introduce Pending node state to highlight failures when starting workflow pods (issue #525)
 + Support additional container runtimes through kubelet executor (issue #902) (@JulienBalestra)
-+ Introduce archive strategies with ability to disable tar.gz archiving (resolves #784)
++ Introduce archive strategies with ability to disable tar.gz archiving (issue #784)
 + Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
 + Introduce `argo watch` command to watch live workflows from terminal (issue #969)
-+ Github login using go-git, with support for ssh keys (@andreimc)
++ Add ability to archive container logs to the artifact repository (issue #454)
++ Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support referencing of global workflow artifacts (issue #900)
 + Support submission of workflows from json files (issue #926)
