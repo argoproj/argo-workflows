@@ -270,8 +270,17 @@ func (k *kubeletClient) TerminatePodWithContainerID(containerID string, sig sysc
 	return errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
 }
 
+// CreateArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
+func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
+}
+
 // GetFileContents exec in the given containerID and cat the given sourcePath.
 func (k *kubeletClient) GetFileContents(containerID, sourcePath string) (*bytes.Buffer, error) {
+	return k.getCommandOutput(containerID, fmt.Sprintf("command=cat&command=%s&output=1", sourcePath))
+}
+
+func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Buffer, error) {
 	podList, err := k.getPodList()
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -285,7 +294,7 @@ func (k *kubeletClient) GetFileContents(containerID, sourcePath string) (*bytes.
 				err = fmt.Errorf("container %s is terminated: %v", container.ContainerID, container.State.Terminated.String())
 				return nil, err
 			}
-			u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=cat&command=%s&output=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sourcePath))
+			u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?%s", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, command))
 			if err != nil {
 				return nil, err
 			}

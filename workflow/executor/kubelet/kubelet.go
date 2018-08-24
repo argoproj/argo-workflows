@@ -39,7 +39,7 @@ func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string)
 
 func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	b, err := k.cli.GetFileContents(containerID, sourcePath)
+	b, err := k.cli.CreateArchive(containerID, sourcePath)
 	if err != nil {
 		return err
 	}
