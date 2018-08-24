@@ -44,6 +44,7 @@ and may be removed/ignored in a future release.
 + Prometheus metrics and telemetry (issue #896) (@bbc88ks)
 + Detect and fail upon unknown fields during argo submit & lint (issue #892)
 + Allow scaling of workflow and pod workers via controller CLI flags (issue #962)
++ Allow supplying of parameters from a file during `argo submit` (issue #796) (@vosmith)
 * Remove installer/uninstaller (issue #928)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
@@ -53,6 +54,7 @@ and may be removed/ignored in a future release.
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
 - Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI
 - Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
+- Error workflows which hit k8s/etcd 1M resource size limit (issue #913)
 
 ## 2.1.1 (2018-05-29)
 

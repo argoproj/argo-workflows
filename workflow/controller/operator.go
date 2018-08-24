@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -243,6 +244,10 @@ func (woc *wfOperationCtx) persistUpdates() {
 	_, err := wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v", err)
+		if argokubeerr.IsRequestEntityTooLargeErr(err) {
+			woc.persistWorkflowSizeLimitErr(wfClient, err)
+			return
+		}
 		if !apierr.IsConflict(err) {
 			return
 		}
@@ -267,6 +272,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Failing to do so means we can have inconsistent state.
 	for podName := range woc.completedPods {
 		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+	}
+}
+
+// persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
+// See https://github.com/argoproj/argo/issues/913
+func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
+	woc.wf = woc.orig.DeepCopy()
+	woc.markWorkflowError(err, true)
+	_, err = wfClient.Update(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Error updating workflow: %v", err)
 	}
 }
 
