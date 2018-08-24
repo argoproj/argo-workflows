@@ -72,6 +72,9 @@ type ContainerRuntimeExecutor interface {
 	// Wait for the container to complete
 	Wait(containerID string) error
 
+	// Copy logs to a given path
+	Logs(containerID string, path string) error
+
 	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(containerIDs []string) error
 }
@@ -348,6 +351,57 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		}
 		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Successfully saved output parameter: %s", param.Name)
+	}
+	return nil
+}
+
+// SaveLogs saves logs
+func (we *WorkflowExecutor) SaveLogs() error {
+	if we.Template.ArchiveLocation == nil || we.Template.ArchiveLocation.ArchiveLogs == nil || !*we.Template.ArchiveLocation.ArchiveLogs {
+		return nil
+	}
+	log.Infof("Saving logs")
+	mainCtrID, err := we.GetMainContainerID()
+	if err != nil {
+		return err
+	}
+	tempLogsDir := "/argo/outputs/logs"
+	err = os.MkdirAll(tempLogsDir, os.ModePerm)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	fileName := "main.log"
+	mainLog := path.Join(tempLogsDir, fileName)
+	err = we.RuntimeExecutor.Logs(mainCtrID, mainLog)
+	if err != nil {
+		return err
+	}
+	art := wfv1.Artifact{
+		ArtifactLocation: *we.Template.ArchiveLocation,
+	}
+	if we.Template.ArchiveLocation.S3 != nil {
+		shallowCopy := *we.Template.ArchiveLocation.S3
+		art.S3 = &shallowCopy
+		art.S3.Key = path.Join(art.S3.Key, fileName)
+	} else if we.Template.ArchiveLocation.Artifactory != nil {
+		shallowCopy := *we.Template.ArchiveLocation.Artifactory
+		art.Artifactory = &shallowCopy
+		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
+		if urlParseErr != nil {
+			return urlParseErr
+		}
+		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+		art.Artifactory.URL = artifactoryURL.String()
+	} else {
+		return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+	}
+	artDriver, err := we.InitDriver(art)
+	if err != nil {
+		return err
+	}
+	err = artDriver.Save(mainLog, &art)
+	if err != nil {
+		return err
 	}
 	return nil
 }

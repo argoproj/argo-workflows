@@ -289,6 +289,9 @@ type NoneStrategy struct{}
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
+	// ArchiveLogs indicates if the container logs should be archived
+	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
+
 	// S3 contains S3 artifact location details
 	S3 *S3Artifact `json:"s3,omitempty"`
 

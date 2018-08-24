@@ -145,6 +145,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"archiveLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveLogs indicates if the container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",
@@ -203,6 +210,13 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 			SchemaProps: spec.SchemaProps{
 				Description: "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
 				Properties: map[string]spec.Schema{
+					"archiveLogs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArchiveLogs indicates if the container logs should be archived",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"s3": {
 						SchemaProps: spec.SchemaProps{
 							Description: "S3 contains S3 artifact location details",

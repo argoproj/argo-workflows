@@ -78,6 +78,20 @@ func (_m *ContainerRuntimeExecutor) Kill(containerIDs []string) error {
 	return r0
 }
 
+// Logs provides a mock function with given fields: containerID, path
+func (_m *ContainerRuntimeExecutor) Logs(containerID string, path string) error {
+	ret := _m.Called(containerID, path)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(containerID, path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Wait provides a mock function with given fields: containerID
 func (_m *ContainerRuntimeExecutor) Wait(containerID string) error {
 	ret := _m.Called(containerID)
