@@ -12,10 +12,15 @@ import (
 )
 
 // killGracePeriod is the time in seconds after sending SIGTERM before
-// forcefully killing the sidcar with SIGKILL (value matches k8s)
+// forcefully killing the sidecar with SIGKILL (value matches k8s)
 const killGracePeriod = 30
 
 type DockerExecutor struct{}
+
+func NewDockerExecutor() (*DockerExecutor, error) {
+	log.Infof("Creating a docker executor")
+	return &DockerExecutor{}, nil
+}
 
 func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
 	// Uses docker cp command to return contents of the file
