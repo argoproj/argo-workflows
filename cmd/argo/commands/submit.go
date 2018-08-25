@@ -28,6 +28,7 @@ type submitFlags struct {
 	parameterFile  string   // --parameter-file
 	output         string   // --output
 	wait           bool     // --wait
+	watch          bool     // --watch
 	strict         bool     // --strict
 	serviceAccount string   // --serviceaccount
 }
@@ -54,6 +55,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVarP(&submitArgs.parameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&submitArgs.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&submitArgs.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
@@ -95,6 +97,15 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 		}
 	}
 
+	if submitArgs.watch {
+		if len(workflows) > 1 {
+			log.Fatalf("Cannot watch more than one workflow")
+		}
+		if submitArgs.wait {
+			log.Fatalf("--wait cannot be combined with --watch")
+		}
+	}
+
 	var workflowNames []string
 	for _, wf := range workflows {
 		wfName, err := submitWorkflow(&wf, submitArgs)
@@ -104,8 +115,9 @@ func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
 		workflowNames = append(workflowNames, wfName)
 	}
 	if submitArgs.wait {
-		wsp := NewWorkflowStatusPoller(wfClient, false, submitArgs.output == "json")
-		wsp.WaitWorkflows(workflowNames)
+		WaitWorkflows(workflowNames, false, submitArgs.output == "json")
+	} else if submitArgs.watch {
+		watchWorkflow(workflowNames[0])
 	}
 }
 

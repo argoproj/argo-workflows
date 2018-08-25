@@ -40,6 +40,7 @@ func NewResubmitCommand() *cobra.Command {
 	}
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&submitArgs.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&memoized, "memoized", false, "re-use successful steps & outputs from the previous run (experimental)")
 	return command
 }

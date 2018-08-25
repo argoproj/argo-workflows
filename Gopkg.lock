@@ -239,14 +239,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:139bdc2c89779b8ff8b1150be28f889b0ed964e6da96f32cbc9035bd4642881c"
-  name = "github.com/hashicorp/go-version"
-  packages = ["."]
-  pruneopts = ""
-  revision = "270f2f71b1ee587f3b609f00f422b76a6b28f348"
-
-[[projects]]
-  branch = "master"
   digest = "1:9c776d7d9c54b7ed89f119e449983c3f24c0023e75001d6092442412ebca6b94"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -287,14 +279,6 @@
   packages = ["io"]
   pruneopts = ""
   revision = "d14ea06fba99483203c19d92cfcd13ebe73135f4"
-
-[[projects]]
-  branch = "master"
-  digest = "1:ef0f9731bc6c3c59396adc50f36da36ca98c704812c449794f9326f7bc64b5f1"
-  name = "github.com/jpillora/backoff"
-  packages = ["."]
-  pruneopts = ""
-  revision = "8eab2debe79d12b7bd3d10653910df25fa9552ba"
 
 [[projects]]
   digest = "1:b79fc583e4dc7055ed86742e22164ac41bf8c0940722dbcb600f1a3ace1a8cb5"
@@ -1026,8 +1010,6 @@
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
     "github.com/gorilla/websocket",
-    "github.com/hashicorp/go-version",
-    "github.com/jpillora/backoff",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",

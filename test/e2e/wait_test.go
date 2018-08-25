@@ -66,8 +66,7 @@ spec:
 	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil)
 
 	wfClient := commands.InitWorkflowClient()
-	wsp := commands.NewWorkflowStatusPoller(wfClient, false, false)
-	wsp.WaitWorkflows([]string{workflowName})
+	commands.WaitWorkflows([]string{workflowName}, false, false)
 
 	wf, err := wfClient.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
