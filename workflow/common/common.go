@@ -82,6 +82,21 @@ const (
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
 
+	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
+	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
+	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
+	EnvVarDownwardAPINodeIP = "ARGO_KUBELET_HOST"
+	// EnvVarKubeletPort is used to configure the kubelet api port
+	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
+	// EnvVarKubeletInsecure is used to disable the TLS verification
+	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
+
+	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
+	ContainerRuntimeExecutorDocker = "docker"
+
+	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
+	ContainerRuntimeExecutorKubelet = "kubelet"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field

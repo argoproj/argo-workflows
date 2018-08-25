@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
 	"github.com/argoproj/argo/workflow/executor/docker"
+	"github.com/argoproj/argo/workflow/executor/kubelet"
 )
 
 const (
@@ -73,11 +74,26 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, &docker.DockerExecutor{})
+
+	var cre executor.ContainerRuntimeExecutor
+	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
+	case common.ContainerRuntimeExecutorKubelet:
+		cre, err = kubelet.NewKubeletExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		cre, err = docker.NewDockerExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre)
 	err = wfExecutor.LoadTemplate()
 	if err != nil {
 		panic(err.Error())
 	}
+
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
 	vers := argo.GetVersion()
 	log.Infof("Executor (version: %s, build_date: %s) initialized with template:\n%s", vers, vers.BuildDate, string(yamlBytes))
