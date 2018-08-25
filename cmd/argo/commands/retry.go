@@ -33,12 +33,14 @@ func NewRetryCommand() *cobra.Command {
 			}
 			printWorkflow(wf, submitArgs.output)
 			if submitArgs.wait {
-				wsp := NewWorkflowStatusPoller(wfClient, false, submitArgs.output == "json")
-				wsp.WaitWorkflows([]string{wf.ObjectMeta.Name})
+				WaitWorkflows([]string{wf.ObjectMeta.Name}, false, submitArgs.output == "json")
+			} else if submitArgs.watch {
+				watchWorkflow(wf.ObjectMeta.Name)
 			}
 		},
 	}
 	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&submitArgs.watch, "watch", false, "watch the workflow until it completes")
 	return command
 }
