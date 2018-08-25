@@ -18,7 +18,6 @@ import (
 
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/controller"
 )
 
@@ -30,11 +29,13 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig  clientcmd.ClientConfig
-		configMap     string // --configmap
-		executorImage string // --executor-image
-		logLevel      string // --loglevel
-		glogLevel     int    // --gloglevel
+		clientConfig    clientcmd.ClientConfig
+		configMap       string // --configmap
+		executorImage   string // --executor-image
+		logLevel        string // --loglevel
+		glogLevel       int    // --gloglevel
+		workflowWorkers int    // --workflow-workers
+		podWorkers      int    // --pod-workers
 	)
 
 	var command = cobra.Command{
@@ -75,7 +76,7 @@ func NewRootCommand() *cobra.Command {
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			go wfController.Run(ctx, 8, 8)
+			go wfController.Run(ctx, workflowWorkers, podWorkers)
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)
 
@@ -87,10 +88,12 @@ func NewRootCommand() *cobra.Command {
 
 	clientConfig = cli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
-	command.Flags().StringVar(&configMap, "configmap", common.DefaultConfigMapName(common.DefaultControllerDeploymentName), "Name of K8s configmap to retrieve workflow controller configuration")
+	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
+	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
+	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
 	return &command
 }
 

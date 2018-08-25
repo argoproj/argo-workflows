@@ -17,13 +17,13 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/retry"
+	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -113,11 +113,6 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 		return "", "", errors.InternalWrapError(err)
 	}
 	return stdOut.String(), stdErr.String(), nil
-}
-
-// DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
-func DefaultConfigMapName(controllerName string) string {
-	return fmt.Sprintf("%s-configmap", controllerName)
 }
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
@@ -299,25 +294,6 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
-}
-
-const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
-const workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
-const workflowFieldMaxLength int = 128
-
-var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
-
-// IsValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
-func IsValidWorkflowFieldName(name string) []string {
-	var errs []string
-	if len(name) > workflowFieldMaxLength {
-		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
-	}
-	if !workflowFieldNameRegexp.MatchString(name) {
-		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
-		errs = append(errs, msg)
-	}
-	return errs
 }
 
 // IsPodTemplate returns whether the template corresponds to a pod
@@ -540,7 +516,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 				node.Message = fmt.Sprintf("original pod: %s", originalID)
 			}
 			newWF.Status.Nodes[node.ID] = node
-		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning:
+		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning, wfv1.NodePending:
 			// do not add this status to the node. pretend as if this node never existed.
 			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
 			// mismanages state (e.g. panic when operating on a workflow)
@@ -587,9 +563,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 		case wfv1.NodeError, wfv1.NodeFailed:
 			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
 		default:
+			// Do not allow retry of workflows with pods in Running/Pending phase
 			return nil, errors.InternalErrorf("Workflow cannot be retried with nodes in %s phase", node, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
@@ -605,4 +580,33 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 		log.Fatal(err)
 	}
 	return newWF, nil
+}
+
+var yamlSeparator = regexp.MustCompile("\\n---")
+
+// SplitYAMLFile is a helper to split a body into multiple workflow objects
+func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.Workflow, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var wf wfv1.Workflow
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
+		if wf.Kind != "" && wf.Kind != workflow.Kind {
+			// If we get here, it was a k8s manifest which was not of type 'Workflow'
+			// We ignore these since we only care about Workflow manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, wf)
+	}
+	return manifests, nil
 }

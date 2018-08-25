@@ -115,7 +115,12 @@ type ArtifactRepository struct {
 type S3ArtifactRepository struct {
 	wfv1.S3Bucket `json:",inline"`
 
+	// KeyPattern is defines the pattern of how to store keys. Can reference workflow variables
+	// If omitted, uses the default as defined in ArchiveDefaultS3KeyPattern
+	KeyPattern string `json:"keyPattern,omitempty"`
+
 	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
+	// DEPRECATED. Use KeyPattern instead
 	KeyPrefix string `json:"keyPrefix,omitempty"`
 }
 
@@ -173,6 +178,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	defer wfc.podQueue.ShutDown()
 
 	log.Infof("Workflow Controller (version: %s) starting", argo.GetVersion())
+	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
 	log.Info("Watch Workflow controller config map updates")
 	_, err := wfc.watchControllerConfigMap(ctx)
 	if err != nil {
@@ -527,7 +533,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
 	namespace := wfc.Config.Namespace
-	fieldSelector := fields.ParseSelectorOrDie("status.phase!=Pending")
 	// completed=false
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
@@ -535,7 +540,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 		Add(wfc.instanceIDRequirement())
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).
@@ -545,7 +549,6 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	}
 	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		options.Watch = true
-		options.FieldSelector = fieldSelector.String()
 		options.LabelSelector = labelSelector.String()
 		req := c.Get().
 			Namespace(namespace).

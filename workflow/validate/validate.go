@@ -1,4 +1,4 @@
-package common
+package validate
 
 import (
 	"encoding/json"
@@ -10,7 +10,9 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/valyala/fasttemplate"
+	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
 // wfValidationCtx is the context for validating a workflow spec
@@ -57,9 +59,9 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	if err != nil {
 		return err
 	}
-	ctx.globalParams[GlobalVarWorkflowName] = placeholderValue
-	ctx.globalParams[GlobalVarWorkflowNamespace] = placeholderValue
-	ctx.globalParams[GlobalVarWorkflowUID] = placeholderValue
+	ctx.globalParams[common.GlobalVarWorkflowName] = placeholderValue
+	ctx.globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
+	ctx.globalParams[common.GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
@@ -80,7 +82,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 			return errors.Errorf(errors.CodeBadRequest, "spec.onExit template '%s' undefined", ctx.wf.Spec.OnExit)
 		}
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams[GlobalVarWorkflowStatus] = placeholderValue
+		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
 		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments)
 		if err != nil {
 			return err
@@ -105,10 +107,10 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams["pod.name"] = placeholderValue
-		scope["pod.name"] = placeholderValue
+		localParams[common.LocalVarPodName] = placeholderValue
+		scope[common.LocalVarPodName] = placeholderValue
 	}
-	_, err = ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
+	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
@@ -211,6 +213,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
 				// we are *probably* referencing a undetermined item using withParam
 				// NOTE: this is far from foolproof.
+			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
 				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
@@ -318,7 +321,7 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			if ok {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is not unique", tmpl.Name, i, step.Name)
 			}
-			if errs := IsValidWorkflowFieldName(step.Name); len(errs) != 0 {
+			if errs := isValidWorkflowFieldName(step.Name); len(errs) != 0 {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name '%s' is invalid: %s", tmpl.Name, i, step.Name, strings.Join(errs, ";"))
 			}
 			stepNames[step.Name] = true
@@ -446,7 +449,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 			}
 		}
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
-			errs := IsValidWorkflowFieldName(art.GlobalName)
+			errs := isValidWorkflowFieldName(art.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.globalName: %s", tmpl.Name, artRef, errs[0])
 			}
@@ -474,7 +477,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 			}
 		}
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
-			errs := IsValidWorkflowFieldName(param.GlobalName)
+			errs := isValidWorkflowFieldName(param.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
 			}
@@ -538,7 +541,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 		if name == "" {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name is required", i)
 		}
-		if errs := IsValidWorkflowFieldName(name); len(errs) != 0 {
+		if errs := isValidWorkflowFieldName(name); len(errs) != 0 {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
 		}
 		_, ok := names[name]
@@ -614,7 +617,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
 		for _, ancestor := range ancestry {
 			ancestorTask := nameToTask[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
@@ -702,4 +705,25 @@ var (
 
 func isParameter(p string) bool {
 	return paramRegex.MatchString(p)
+}
+
+const (
+	workflowFieldNameFmt    string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
+	workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
+	workflowFieldMaxLength  int    = 128
+)
+
+var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
+
+// isValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
+func isValidWorkflowFieldName(name string) []string {
+	var errs []string
+	if len(name) > workflowFieldMaxLength {
+		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
+	}
+	if !workflowFieldNameRegexp.MatchString(name) {
+		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
+		errs = append(errs, msg)
+	}
+	return errs
 }

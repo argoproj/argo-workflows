@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	// DefaultControllerDeploymentName is the default deployment name of the workflow controller
-	DefaultControllerDeploymentName = "workflow-controller"
-
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"
+
+	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
+	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 
 	// Container names used in the workflow pod
 	MainContainerName = "main"
@@ -97,7 +97,7 @@ const (
 	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
 	ContainerRuntimeExecutorKubelet = "kubelet"
 
-	// These are global variables that are added to the scope during template execution and can be referenced using {{}} syntax
+	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
@@ -107,6 +107,10 @@ const (
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
+	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflows metadata.creationTimestamp field
+	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
+	// LocalVarPodName is a step level variable that references the name of the pod
+	LocalVarPodName = "pod.name"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

@@ -4,16 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -52,7 +48,7 @@ const (
 
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
-		//Pending:   ansiFormat("◷", FgDefault),
+		wfv1.NodePending:   ansiFormat("◷", FgYellow),
 		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
 		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
 		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
@@ -117,29 +113,4 @@ func ansiFormat(s string, codes ...int) string {
 	}
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
-}
-
-var yamlSeparator = regexp.MustCompile("\\n---")
-
-// splitYAMLFile is a helper to split a body into multiple workflow objects
-func splitYAMLFile(body []byte) ([]wfv1.Workflow, error) {
-	manifestsStrings := yamlSeparator.Split(string(body), -1)
-	manifests := make([]wfv1.Workflow, 0)
-	for _, manifestStr := range manifestsStrings {
-		if strings.TrimSpace(manifestStr) == "" {
-			continue
-		}
-		var wf wfv1.Workflow
-		err := yaml.Unmarshal([]byte(manifestStr), &wf)
-		if wf.Kind != "" && wf.Kind != workflow.Kind {
-			// If we get here, it was a k8s manifest which was not of type 'Workflow'
-			// We ignore these since we only care about validating Workflow manifests.
-			continue
-		}
-		if err != nil {
-			return nil, errors.New(errors.CodeBadRequest, err.Error())
-		}
-		manifests = append(manifests, wf)
-	}
-	return manifests, nil
 }

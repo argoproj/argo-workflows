@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
+	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -24,6 +26,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -111,7 +114,7 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
-		err := common.ValidateWorkflow(woc.wf)
+		err := validate.ValidateWorkflow(woc.wf)
 		if err != nil {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
@@ -205,6 +208,11 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	woc.globalParams[common.GlobalVarWorkflowName] = woc.wf.ObjectMeta.Name
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
+	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.String()
+	for char := range strftime.FormatChars {
+		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
+		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
+	}
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
@@ -236,6 +244,10 @@ func (woc *wfOperationCtx) persistUpdates() {
 	_, err := wfClient.Update(woc.wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v", err)
+		if argokubeerr.IsRequestEntityTooLargeErr(err) {
+			woc.persistWorkflowSizeLimitErr(wfClient, err)
+			return
+		}
 		if !apierr.IsConflict(err) {
 			return
 		}
@@ -260,6 +272,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Failing to do so means we can have inconsistent state.
 	for podName := range woc.completedPods {
 		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+	}
+}
+
+// persistWorkflowSizeLimitErr will fail a the workflow with an error when we hit the resource size limit
+// See https://github.com/argoproj/argo/issues/913
+func (woc *wfOperationCtx) persistWorkflowSizeLimitErr(wfClient v1alpha1.WorkflowInterface, err error) {
+	woc.wf = woc.orig.DeepCopy()
+	woc.markWorkflowError(err, true)
+	_, err = wfClient.Update(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Error updating workflow: %v", err)
 	}
 }
 
@@ -452,13 +475,16 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 	var activePods int64
 	// if we care about parallelism, count the active pods at the template level
 	for _, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Phase != wfv1.NodeRunning {
+		if node.Type != wfv1.NodeTypePod {
 			continue
 		}
 		if boundaryID != "" && node.BoundaryID != boundaryID {
 			continue
 		}
-		activePods++
+		switch node.Phase {
+		case wfv1.NodePending, wfv1.NodeRunning:
+			activePods++
+		}
 	}
 	return activePods
 }
@@ -503,7 +529,18 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	f := false
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
-		return nil
+		newPhase = wfv1.NodePending
+		newDaemonStatus = &f
+		for _, ctrStatus := range pod.Status.ContainerStatuses {
+			if ctrStatus.State.Waiting != nil {
+				if ctrStatus.State.Waiting.Message != "" {
+					message = fmt.Sprintf("%s: %s", ctrStatus.State.Waiting.Reason, ctrStatus.State.Waiting.Message)
+				} else {
+					message = ctrStatus.State.Waiting.Reason
+				}
+				break
+			}
+		}
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
@@ -511,6 +548,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		newPhase, message = inferFailedReason(pod)
 		newDaemonStatus = &f
 	case apiv1.PodRunning:
+		newPhase = wfv1.NodeRunning
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
 		if !ok {
 			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
@@ -522,21 +560,19 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
 			return nil
 		}
-		if tmpl.Daemon == nil || !*tmpl.Daemon {
-			// incidental state change of a running pod. No need to inspect further
-			return nil
-		}
-		// pod is running and template is marked daemon. check if everything is ready
-		for _, ctrStatus := range pod.Status.ContainerStatuses {
-			if !ctrStatus.Ready {
-				return nil
+		if tmpl.Daemon != nil && *tmpl.Daemon {
+			// pod is running and template is marked daemon. check if everything is ready
+			for _, ctrStatus := range pod.Status.ContainerStatuses {
+				if !ctrStatus.Ready {
+					return nil
+				}
 			}
+			// proceed to mark node status as succeeded (and daemoned)
+			newPhase = wfv1.NodeSucceeded
+			t := true
+			newDaemonStatus = &t
+			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
-		// proceed to mark node status as succeeded (and daemoned)
-		newPhase = wfv1.NodeSucceeded
-		t := true
-		newDaemonStatus = &t
-		log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 	default:
 		newPhase = wfv1.NodeError
 		message = fmt.Sprintf("Unexpected pod phase for %s: %s", pod.ObjectMeta.Name, pod.Status.Phase)
@@ -573,15 +609,21 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			node.Outputs = &outputs
 		}
 	}
-	if message != "" && node.Message != message {
-		log.Infof("Updating node %s message: %s", node, message)
-		node.Message = message
-	}
 	if node.Phase != newPhase {
 		log.Infof("Updating node %s status %s -> %s", node, node.Phase, newPhase)
+		// if we are transitioning from Pending to a different state, clear out pending message
+		if node.Phase == wfv1.NodePending {
+			node.Message = ""
+		}
 		updated = true
 		node.Phase = newPhase
 	}
+	if message != "" && node.Message != message {
+		log.Infof("Updating node %s message: %s", node, message)
+		updated = true
+		node.Message = message
+	}
+
 	if node.Completed() && node.FinishedAt.IsZero() {
 		updated = true
 		if !node.IsDaemoned() {
@@ -838,7 +880,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	// Perform parameter substitution of the template
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams["pod.name"] = woc.wf.NodeID(nodeName)
+		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
 	if err != nil {
@@ -1085,7 +1127,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1157,7 +1199,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -1370,7 +1412,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeRunning)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {

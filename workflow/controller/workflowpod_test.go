@@ -67,7 +67,7 @@ script:
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
 	node := newWoc().executeScript(tmpl.Name, tmpl, "")
-	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+	assert.Equal(t, node.Phase, wfv1.NodePending)
 }
 
 // TestServiceAccount verifies the ability to carry forward the service account name
@@ -160,4 +160,35 @@ func TestMetadata(t *testing.T) {
 	for k, v := range woc.wf.Spec.Templates[0].Metadata.Labels {
 		assert.Equal(t, pod.ObjectMeta.Labels[k], v)
 	}
+}
+
+// TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
+func TestWorkflowControllerArchiveConfig(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyPattern: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.NoError(t, err)
+}
+
+// TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
+// unresolvable variables
+func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyPattern: "{{workflow.unresolvable}}",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Error(t, err)
 }

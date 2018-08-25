@@ -2,18 +2,19 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
-	"github.com/argoproj/argo/errors"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/workflow/validate"
 )
 
 func NewLintCommand() *cobra.Command {
+	var (
+		strict bool
+	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
 		Short: "validate a directory or specific workflow YAML files",
@@ -29,8 +30,8 @@ func NewLintCommand() *cobra.Command {
 					fmt.Printf("Validation of a single directory supported")
 					os.Exit(1)
 				}
-				fmt.Printf("Verifying all yaml files in directory: %s\n", args[0])
-				err = lintYAMLDir(args[0])
+				fmt.Printf("Verifying all workflow manifests in directory: %s\n", args[0])
+				err = validate.LintWorkflowDir(args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -41,7 +42,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = lintYAMLFile(yamlFile)
+					err = validate.LintWorkflowFile(yamlFile, strict)
 					if err != nil {
 						break
 					}
@@ -50,41 +51,9 @@ func NewLintCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("YAML validated\n")
+			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validatation")
 	return command
-}
-
-func lintYAMLDir(dirPath string) error {
-	walkFunc := func(path string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-		fileExt := filepath.Ext(info.Name())
-		if fileExt != ".yaml" && fileExt != ".yml" {
-			return nil
-		}
-		return lintYAMLFile(path)
-	}
-	return filepath.Walk(dirPath, walkFunc)
-}
-
-// lintYAMLFile lints multiple workflow manifest in a single yaml file. Ignores non-workflow manifests
-func lintYAMLFile(filePath string) error {
-	body, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
-	}
-	workflows, err := splitYAMLFile(body)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
-	}
-	for _, wf := range workflows {
-		err = common.ValidateWorkflow(&wf, true)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
-		}
-	}
-	return nil
 }

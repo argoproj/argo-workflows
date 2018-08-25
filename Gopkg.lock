@@ -33,24 +33,23 @@
   revision = "de5bf2ad457846296e2031421a34e2568e304e35"
 
 [[projects]]
-  digest = "1:b6b8cfb7d169d6ce827f955034d251b907d3a56f453f35c4e9c7dd5778fdecd5"
-  name = "github.com/argoproj/argo-cd"
-  packages = ["errors"]
-  pruneopts = ""
-  revision = "da7be2e3cae13320e9714beba644aec24dc7c0fa"
-  version = "v0.7.1"
-
-[[projects]]
   branch = "master"
-  digest = "1:0667628f85b38f0422880ad3a503b1cf139bca5a817d29cd4e7ffccd5914869c"
+  digest = "1:063217f911758dc9695e50149f07f482d954f7e7c7560fa1f25c033d486aca9e"
   name = "github.com/argoproj/pkg"
   packages = [
+    "errors",
+    "file",
+    "humanize",
+    "json",
     "kube/cli",
+    "kube/errors",
+    "s3",
     "stats",
+    "strftime",
     "time",
   ]
   pruneopts = ""
-  revision = "881057947d921c5d62af84ad15cd3c6fb36d6077"
+  revision = "709fb020c52b294e15fb70817bc1725802fe836c"
 
 [[projects]]
   branch = "master"
@@ -130,12 +129,12 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:b13707423743d41665fd23f0c36b2f37bb49c30e94adb813319c44188a51ba22"
+  branch = "master"
+  digest = "1:ac2bf6881c6a96d07773dee3b9b2b369bc209c988505bd6cb283a8d549cb8699"
   name = "github.com/ghodss/yaml"
   packages = ["."]
   pruneopts = ""
-  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
-  version = "v1.0.0"
+  revision = "c7ce16629ff4cd059ed96ed06419dd3856fd3577"
 
 [[projects]]
   digest = "1:858b7fe7b0f4bc7ef9953926828f2816ea52d01a88d72d1c45bc8c108f23c356"
@@ -334,28 +333,19 @@
   version = "v1.0.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:527b28f86ce5357b59a4ca75df399eb29944c39a264afca90205e7da7994c9ea"
-  name = "github.com/minio/go-homedir"
-  packages = ["."]
-  pruneopts = ""
-  revision = "4d76aabb80b22bad8695d3904e943f1fb5e6199f"
-
-[[projects]]
-  digest = "1:cf491c824487a8550ca6a9869799df388e2d11901dcd9f125eae6653c9e98a12"
+  digest = "1:619ff8becfc8080f2cc4532ea21437e804038e0431c88e171c381fde96eb06ae"
   name = "github.com/minio/minio-go"
   packages = [
     ".",
     "pkg/credentials",
     "pkg/encrypt",
-    "pkg/policy",
     "pkg/s3signer",
     "pkg/s3utils",
     "pkg/set",
   ]
   pruneopts = ""
-  revision = "4e0f567303d4cc90ceb055a451959fb9fc391fb9"
-  version = "3.0.3"
+  revision = "70799fe8dae6ecfb6c7d7e9e048fce27f23a1992"
+  version = "v6.0.5"
 
 [[projects]]
   branch = "master"
@@ -560,6 +550,8 @@
   digest = "1:53c4b75f22ea7757dea07eae380ea42de547ae6865a5e3b41866754a8a8219c9"
   name = "golang.org/x/crypto"
   packages = [
+    "argon2",
+    "blake2b",
     "cast5",
     "curve25519",
     "ed25519",
@@ -615,6 +607,7 @@
   digest = "1:6d9c86494d97c7fc8bbab029c17fc0ce9dc517aaae92a25d790d01b0e8732832"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
     "windows",
   ]
@@ -1017,11 +1010,16 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Knetic/govaluate",
-    "github.com/argoproj/argo-cd/errors",
+    "github.com/argoproj/pkg/errors",
+    "github.com/argoproj/pkg/file",
+    "github.com/argoproj/pkg/humanize",
+    "github.com/argoproj/pkg/json",
     "github.com/argoproj/pkg/kube/cli",
+    "github.com/argoproj/pkg/kube/errors",
+    "github.com/argoproj/pkg/s3",
     "github.com/argoproj/pkg/stats",
+    "github.com/argoproj/pkg/strftime",
     "github.com/argoproj/pkg/time",
-    "github.com/dustin/go-humanize",
     "github.com/evanphx/json-patch",
     "github.com/fsnotify/fsnotify",
     "github.com/ghodss/yaml",
@@ -1030,8 +1028,6 @@
     "github.com/gorilla/websocket",
     "github.com/hashicorp/go-version",
     "github.com/jpillora/backoff",
-    "github.com/minio/minio-go",
-    "github.com/minio/minio-go/pkg/credentials",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
@@ -1048,7 +1044,6 @@
     "gopkg.in/src-d/go-git.v4/plumbing/transport/http",
     "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh",
     "k8s.io/api/core/v1",
-    "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",

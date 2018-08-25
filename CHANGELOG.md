@@ -34,12 +34,17 @@ and may be removed/ignored in a future release.
 + Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
 + Add ability to aggregate and reference output parameters expanded by loops (issue #861)
 + Support for sophisticated expressions in `when` conditionals (issue #860)
++ Introduce Pending node state to highlight failures when starting workflow pods (issue #525)
++ Introduce `keyPattern` workflow config to enable flexibility in archive location path (issue #953)
 + Github login using go-git, with support for ssh keys (@andreimc)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support referencing of global workflow artifacts (issue #900)
 + Support submission of workflows from json files (issue #926)
 + Support submission of workflows from stdin (issue #926)
 + Prometheus metrics and telemetry (issue #896) (@bbc88ks)
++ Detect and fail upon unknown fields during argo submit & lint (issue #892)
++ Allow scaling of workflow and pod workers via controller CLI flags (issue #962)
++ Allow supplying of parameters from a file during `argo submit` (issue #796) (@vosmith)
 * Remove installer/uninstaller (issue #928)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
@@ -49,6 +54,7 @@ and may be removed/ignored in a future release.
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
 - Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI
 - Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
+- Error workflows which hit k8s/etcd 1M resource size limit (issue #913)
 
 ## 2.1.1 (2018-05-29)
 
