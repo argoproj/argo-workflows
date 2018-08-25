@@ -230,6 +230,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:64d212c703a2b94054be0ce470303286b177ad260b2f89a307e3d1bb6c073ef6"
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ea4d1f681babbce9545c9c5f3d5194a789c89f5b"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:139bdc2c89779b8ff8b1150be28f889b0ed964e6da96f32cbc9035bd4642881c"
   name = "github.com/hashicorp/go-version"
@@ -1017,6 +1025,7 @@
     "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/golang/glog",
+    "github.com/gorilla/websocket",
     "github.com/hashicorp/go-version",
     "github.com/jpillora/backoff",
     "github.com/pkg/errors",

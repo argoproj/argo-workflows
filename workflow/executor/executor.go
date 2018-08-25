@@ -544,9 +544,13 @@ func untar(tarPath string, destPath string) error {
 	return nil
 }
 
-// containerID is a convenience function to strip the 'docker://' from k8s ContainerID string
+// containerID is a convenience function to strip the 'docker://', 'containerd://' from k8s ContainerID string
 func containerID(ctrID string) string {
-	return strings.Replace(ctrID, "docker://", "", 1)
+	schemeIndex := strings.Index(ctrID, "://")
+	if schemeIndex == -1 {
+		return ctrID
+	}
+	return ctrID[schemeIndex+3:]
 }
 
 // Wait is the sidecar container logic which waits for the main container to complete.

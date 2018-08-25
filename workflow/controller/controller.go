@@ -67,6 +67,15 @@ type WorkflowControllerConfig struct {
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
+	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
+	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
+
+	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
+	KubeletPort int `json:"kubeletPort,omitempty"`
+
+	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
+	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
+
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
