@@ -34,14 +34,6 @@ required = [
   version = "1.1.4"
 
 [[constraint]]
-  name = "github.com/hashicorp/go-version"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/jpillora/backoff"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/spf13/cobra"
   branch = "master"
 
