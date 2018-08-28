@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
@@ -17,21 +17,18 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/informers/internalinterfaces"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/ttlcontroller"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -59,80 +56,11 @@ type WorkflowController struct {
 	completedPods chan string
 }
 
-// WorkflowControllerConfig contain the configuration settings for the workflow controller
-type WorkflowControllerConfig struct {
-	// ExecutorImage is the image name of the executor to use when running pods
-	ExecutorImage string `json:"executorImage,omitempty"`
-
-	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
-	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
-
-	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
-	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
-
-	// KubeletPort is needed when using the kubelet containerRuntimeExecutor, default to 10250
-	KubeletPort int `json:"kubeletPort,omitempty"`
-
-	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
-	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
-
-	// ArtifactRepository contains the default location of an artifact repository for container artifacts
-	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
-
-	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
-	Namespace string `json:"namespace,omitempty"`
-
-	// InstanceID is a label selector to limit the controller's watch to a specific instance. It
-	// contains an arbitrary value that is carried forward into its pod labels, under the key
-	// workflows.argoproj.io/controller-instanceid, for the purposes of workflow segregation. This
-	// enables a controller to only receive workflow and pod events that it is interested about,
-	// in order to support multiple controllers in a single cluster, and ultimately allows the
-	// controller itself to be bundled as part of a higher level application. If omitted, the
-	// controller watches workflows and pods that *are not* labeled with an instance id.
-	InstanceID string `json:"instanceID,omitempty"`
-
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-
-	MetricsConfig metrics.PrometheusConfig `json:"metricsConfig,omitempty"`
-
-	TelemetryConfig metrics.PrometheusConfig `json:"telemetryConfig,omitempty"`
-}
-
 const (
 	workflowResyncPeriod        = 20 * time.Minute
 	workflowMetricsResyncPeriod = 1 * time.Minute
 	podResyncPeriod             = 30 * time.Minute
 )
-
-// ArtifactRepository represents a artifact repository in which a controller will store its artifacts
-type ArtifactRepository struct {
-	// ArchiveLogs enables log archiving
-	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
-	// S3 stores artifact in a S3-compliant object store
-	S3 *S3ArtifactRepository `json:"s3,omitempty"`
-	// Artifactory stores artifacts to JFrog Artifactory
-	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
-}
-
-// S3ArtifactRepository defines the controller configuration for an S3 artifact repository
-type S3ArtifactRepository struct {
-	wfv1.S3Bucket `json:",inline"`
-
-	// KeyPattern is defines the pattern of how to store keys. Can reference workflow variables
-	// If omitted, uses the default as defined in ArchiveDefaultS3KeyPattern
-	KeyPattern string `json:"keyPattern,omitempty"`
-
-	// KeyPrefix is prefix used as part of the bucket key in which the controller will store artifacts.
-	// DEPRECATED. Use KeyPattern instead
-	KeyPrefix string `json:"keyPrefix,omitempty"`
-}
-
-// ArtifactoryArtifactRepository defines the controller configuration for an artifactory artifact repository
-type ArtifactoryArtifactRepository struct {
-	wfv1.ArtifactoryAuth `json:",inline"`
-	// RepoURL is the url for artifactory repo.
-	RepoURL string `json:"repoURL,omitempty"`
-}
 
 // NewWorkflowController instantiates a new WorkflowController
 func NewWorkflowController(
@@ -160,7 +88,7 @@ func NewWorkflowController(
 // MetricsServer starts a prometheus metrics server if enabled in the configmap
 func (wfc *WorkflowController) MetricsServer(ctx context.Context) {
 	if wfc.Config.MetricsConfig.Enabled {
-		informer := wfc.newWorkflowInformer(workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
+		informer := util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowMetricsResyncPeriod, wfc.tweakWorkflowMetricslist)
 		go informer.Run(ctx.Done())
 		registry := metrics.NewWorkflowRegistry(informer)
 		metrics.RunServer(ctx, wfc.Config.MetricsConfig, registry)
@@ -172,6 +100,20 @@ func (wfc *WorkflowController) TelemetryServer(ctx context.Context) {
 	if wfc.Config.TelemetryConfig.Enabled {
 		registry := metrics.NewTelemetryRegistry()
 		metrics.RunServer(ctx, wfc.Config.TelemetryConfig, registry)
+	}
+}
+
+// RunTTLController runs the workflow TTL controller
+func (wfc *WorkflowController) RunTTLController(ctx context.Context) {
+	ttlCtrl := ttlcontroller.NewController(
+		wfc.restConfig,
+		wfc.wfclientset,
+		wfc.Config.Namespace,
+		wfc.Config.InstanceID,
+	)
+	err := ttlCtrl.Run(ctx.Done())
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -189,7 +131,8 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 		return
 	}
 
-	wfc.wfInformer = wfc.newWorkflowInformer(workflowResyncPeriod, wfc.tweakWorkflowlist)
+	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
+
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
@@ -230,7 +173,9 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 			podName := parts[1]
 			err := common.AddPodLabel(wfc.kubeclientset, podName, namespace, common.LabelKeyCompleted, "true")
 			if err != nil {
-				log.Errorf("Failed to label pod %s/%s completed: %+v", namespace, podName, err)
+				if !apierr.IsNotFound(err) {
+					log.Errorf("Failed to label pod %s/%s completed: %+v", namespace, podName, err)
+				}
 			} else {
 				log.Infof("Labeled pod %s/%s completed", namespace, podName)
 			}
@@ -268,11 +213,10 @@ func (wfc *WorkflowController) processNextItem() bool {
 		log.Warnf("Key '%s' in index is not an unstructured", key)
 		return true
 	}
-	var wf wfv1.Workflow
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
+	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
-		woc := newWorkflowOperationCtx(&wf, wfc)
+		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
 		return true
@@ -283,7 +227,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
-	woc := newWorkflowOperationCtx(&wf, wfc)
+	woc := newWorkflowOperationCtx(wf, wfc)
 	woc.operate()
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
@@ -340,61 +284,8 @@ func (wfc *WorkflowController) processNextPodItem() bool {
 	return true
 }
 
-// ResyncConfig reloads the controller config from the configmap
-func (wfc *WorkflowController) ResyncConfig() error {
-	cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(wfc.namespace)
-	cm, err := cmClient.Get(wfc.configMap, metav1.GetOptions{})
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return wfc.updateConfig(cm)
-}
-
-func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
-	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
-	if !ok {
-		log.Warnf("ConfigMap '%s' does not have key '%s'", wfc.configMap, common.WorkflowControllerConfigMapKey)
-		return nil
-	}
-	var config WorkflowControllerConfig
-	err := yaml.Unmarshal([]byte(configStr), &config)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	log.Printf("workflow controller configuration from %s:\n%s", wfc.configMap, configStr)
-	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
-	}
-	wfc.Config = config
-	return nil
-}
-
-// executorImage returns the image to use for the workflow executor
-func (wfc *WorkflowController) executorImage() string {
-	if wfc.cliExecutorImage != "" {
-		return wfc.cliExecutorImage
-	}
-	return wfc.Config.ExecutorImage
-}
-
-// instanceIDRequirement returns the label requirement to filter against a controller instance (or not)
-func (wfc *WorkflowController) instanceIDRequirement() labels.Requirement {
-	var instanceIDReq *labels.Requirement
-	var err error
-	if wfc.Config.InstanceID != "" {
-		instanceIDReq, err = labels.NewRequirement(common.LabelKeyControllerInstanceID, selection.Equals, []string{wfc.Config.InstanceID})
-	} else {
-		instanceIDReq, err = labels.NewRequirement(common.LabelKeyControllerInstanceID, selection.DoesNotExist, nil)
-	}
-	if err != nil {
-		panic(err)
-	}
-	return *instanceIDReq
-}
-
 func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-
 	// completed notin (true)
 	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
 	if err != nil {
@@ -402,45 +293,14 @@ func (wfc *WorkflowController) tweakWorkflowlist(options *metav1.ListOptions) {
 	}
 	labelSelector := labels.NewSelector().
 		Add(*incompleteReq).
-		Add(wfc.instanceIDRequirement())
+		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
 }
 
 func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-
-	labelSelector := labels.NewSelector().Add(wfc.instanceIDRequirement())
+	labelSelector := labels.NewSelector().Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 	options.LabelSelector = labelSelector.String()
-}
-
-// newWorkflowInformer returns the workflow informer used by the controller. This is actually
-// a custom built UnstructuredInformer which is in actuality returning unstructured.Unstructured
-// objects. We no longer return WorkflowInformer due to:
-// https://github.com/kubernetes/kubernetes/issues/57705
-// https://github.com/argoproj/argo/issues/632
-func (wfc *WorkflowController) newWorkflowInformer(resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	dynClientPool := dynamic.NewDynamicClientPool(wfc.restConfig)
-	dclient, err := dynClientPool.ClientForGroupVersionKind(wfv1.SchemaGroupVersionKind)
-	if err != nil {
-		panic(err)
-	}
-	resource := &metav1.APIResource{
-		Name:         workflow.Plural,
-		SingularName: workflow.Singular,
-		Namespaced:   true,
-		Group:        workflow.Group,
-		Version:      "v1alpha1",
-		ShortNames:   []string{"wf"},
-	}
-	informer := unstructutil.NewFilteredUnstructuredInformer(
-		resource,
-		dclient,
-		wfc.Config.Namespace,
-		resyncPeriod,
-		cache.Indexers{},
-		tweakListOptions,
-	)
-	return informer
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
@@ -470,68 +330,6 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 	)
 }
 
-func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
-	source := wfc.newControllerConfigMapWatch()
-	_, controller := cache.NewInformer(
-		source,
-		&apiv1.ConfigMap{},
-		0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				if cm, ok := obj.(*apiv1.ConfigMap); ok {
-					log.Infof("Detected ConfigMap update. Updating the controller config.")
-					err := wfc.updateConfig(cm)
-					if err != nil {
-						log.Errorf("Update of config failed due to: %v", err)
-					}
-				}
-			},
-			UpdateFunc: func(old, new interface{}) {
-				oldCM := old.(*apiv1.ConfigMap)
-				newCM := new.(*apiv1.ConfigMap)
-				if oldCM.ResourceVersion == newCM.ResourceVersion {
-					return
-				}
-				if newCm, ok := new.(*apiv1.ConfigMap); ok {
-					log.Infof("Detected ConfigMap update. Updating the controller config.")
-					err := wfc.updateConfig(newCm)
-					if err != nil {
-						log.Errorf("Update of config failed due to: %v", err)
-					}
-				}
-			},
-		})
-
-	go controller.Run(ctx.Done())
-	return controller, nil
-}
-
-func (wfc *WorkflowController) newControllerConfigMapWatch() *cache.ListWatch {
-	c := wfc.kubeclientset.CoreV1().RESTClient()
-	resource := "configmaps"
-	name := wfc.configMap
-	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", name))
-
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
-		options.FieldSelector = fieldSelector.String()
-		req := c.Get().
-			Namespace(wfc.namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Do().Get()
-	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		options.Watch = true
-		options.FieldSelector = fieldSelector.String()
-		req := c.Get().
-			Namespace(wfc.namespace).
-			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec)
-		return req.Watch()
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
-}
-
 func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	c := wfc.kubeclientset.CoreV1().RESTClient()
 	resource := "pods"
@@ -540,7 +338,7 @@ func (wfc *WorkflowController) newWorkflowPodWatch() *cache.ListWatch {
 	incompleteReq, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"false"})
 	labelSelector := labels.NewSelector().
 		Add(*incompleteReq).
-		Add(wfc.instanceIDRequirement())
+		Add(util.InstanceIDRequirement(wfc.Config.InstanceID))
 
 	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		options.LabelSelector = labelSelector.String()
