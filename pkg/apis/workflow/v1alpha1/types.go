@@ -121,6 +121,13 @@ type WorkflowSpec struct {
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty"`
+
+	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
+	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
+	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
+	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
+	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow

@@ -41,6 +41,7 @@ and may be removed/ignored in a future release.
 + Introduce `argo watch` command to watch live workflows from terminal (issue #969)
 + Add ability to archive container logs to the artifact repository (issue #454)
 + Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
++ Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (issue #911)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
 + Support referencing of global workflow artifacts (issue #900)
 + Support submission of workflows from json files (issue #926)
@@ -49,6 +50,7 @@ and may be removed/ignored in a future release.
 + Detect and fail upon unknown fields during argo submit & lint (issue #892)
 + Allow scaling of workflow and pod workers via controller CLI flags (issue #962)
 + Allow supplying of parameters from a file during `argo submit` (issue #796) (@vosmith)
++ [UI] UI support/spinning clock for pending pods (@EdanSneh)
 * Remove installer/uninstaller (issue #928)
 * Update golang compiler to v1.10.3
 * Update k8s dependencies to v1.10 and client-go to v7.0
@@ -59,6 +61,8 @@ and may be removed/ignored in a future release.
 - Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI
 - Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
 - Error workflows which hit k8s/etcd 1M resource size limit (issue #913)
+- [UI] Fixed 'X' hiding under page (@EdanSneh)
+- [UI] Beautified resource template. Yaml will now indent 2 spaces instead of one space
 
 ## 2.1.1 (2018-05-29)
 

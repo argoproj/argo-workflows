@@ -4,11 +4,11 @@ import (
 	"os"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 var (
@@ -53,34 +53,14 @@ func boolFloat64(b bool) float64 {
 	return 0
 }
 
-type workflowLister func() ([]wfv1.Workflow, error)
-
-func (l workflowLister) List() ([]wfv1.Workflow, error) {
-	return l()
-}
-
-type wfStore interface {
-	List() (workflows []wfv1.Workflow, err error)
-}
-
 // workflowCollector collects metrics about all workflows in the cluster
 type workflowCollector struct {
-	store wfStore
+	store util.WorkflowLister
 }
 
 // NewWorkflowRegistry creates a new prometheus registry that collects workflows
 func NewWorkflowRegistry(informer cache.SharedIndexInformer) *prometheus.Registry {
-	workflowLister := workflowLister(func() (workflows []wfv1.Workflow, err error) {
-		for _, m := range informer.GetStore().List() {
-			var wf wfv1.Workflow
-			err := runtime.DefaultUnstructuredConverter.FromUnstructured(m.(*unstructured.Unstructured).Object, &wf)
-			if err != nil {
-				return nil, err
-			}
-			workflows = append(workflows, wf)
-		}
-		return workflows, nil
-	})
+	workflowLister := util.NewWorkflowLister(informer)
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(&workflowCollector{store: workflowLister})
 	return registry
@@ -110,7 +90,7 @@ func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 	for _, wf := range workflows {
-		wc.collectWorkflow(ch, wf)
+		wc.collectWorkflow(ch, *wf)
 	}
 }
 
