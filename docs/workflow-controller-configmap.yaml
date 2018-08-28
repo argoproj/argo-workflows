@@ -35,7 +35,7 @@ data:
         endpoint: s3.amazonaws.com
         bucket: my-bucket
         region: us-west-2
-        # keyPattern is a format pattern to define how artifacts will be organized in a bucket.
+        # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
         # It can reference workflow metadata variables such as workflow.namespace, workflow.name, 
         # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
         # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
@@ -43,7 +43,7 @@ data:
         # The following example pattern organizes workflow artifacts under a "my-artifacts" sub dir,
         # then sub dirs for year, month, date and finally workflow name and pod.
         # e.g.: my-artifacts/2018/08/23/my-workflow-abc123/my-workflow-abc123-1234567890
-        keyPattern: "my-artifacts\
+        keyFormat: "my-artifacts\
           /{{workflow.creationTimestamp.Y}}\
           /{{workflow.creationTimestamp.m}}\
           /{{workflow.creationTimestamp.d}}\
