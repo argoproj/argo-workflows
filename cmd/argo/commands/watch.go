@@ -39,24 +39,26 @@ func watchWorkflow(name string) {
 
 	watchIf, err := wfClient.Watch(opts)
 	errors.CheckError(err)
-	defer watchIf.Stop()
 	ticker := time.NewTicker(time.Second)
 
-	var ok bool
 	for {
 		select {
 		case next := <-watchIf.ResultChan():
-			wf, ok = next.Object.(*wfv1.Workflow)
-			if !ok {
-				continue
-			}
+			wf, _ = next.Object.(*wfv1.Workflow)
 		case <-ticker.C:
+		}
+		if wf == nil {
+			watchIf.Stop()
+			watchIf, err = wfClient.Watch(opts)
+			errors.CheckError(err)
+			continue
 		}
 		print("\033[H\033[2J")
 		print("\033[0;0H")
 		printWorkflowHelper(wf, "")
 		if !wf.Status.FinishedAt.IsZero() {
-			return
+			break
 		}
 	}
+	watchIf.Stop()
 }
