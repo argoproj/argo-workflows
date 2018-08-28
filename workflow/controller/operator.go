@@ -903,7 +903,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 			return node, err
 		}
 		node = woc.getNodeByName(retryNodeName)
-		woc.log.Infof("Node %s: Status: %s", retryNodeName, node.Phase)
+		//woc.log.Infof("Node %s: Status: %s", retryNodeName, node.Phase)
 		// The retry node might have completed by now.
 		if node.Completed() {
 			return node, nil
