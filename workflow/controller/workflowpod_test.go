@@ -169,7 +169,7 @@ func TestWorkflowControllerArchiveConfig(t *testing.T) {
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
-		KeyPattern: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
+		KeyFormat: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
 	}
 	woc.operate()
 	podName := getPodName(woc.wf)
@@ -185,7 +185,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
-		KeyPattern: "{{workflow.unresolvable}}",
+		KeyFormat: "{{workflow.unresolvable}}",
 	}
 	woc.operate()
 	podName := getPodName(woc.wf)

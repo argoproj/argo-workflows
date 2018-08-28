@@ -547,7 +547,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
 	if s3Location := woc.controller.Config.ArtifactRepository.S3; s3Location != nil {
 		log.Debugf("Setting s3 artifact repository information")
-		artLocationKey := s3Location.KeyPattern
+		artLocationKey := s3Location.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
 		if artLocationKey == "" {
 			artLocationKey = path.Join(s3Location.KeyPrefix, common.DefaultArchivePattern)

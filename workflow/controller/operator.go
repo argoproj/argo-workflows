@@ -392,7 +392,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 // Records all pods which were observed completed, which will be labeled completed=true
 // after successful persist of the workflow.
 func (woc *wfOperationCtx) podReconciliation() error {
-	podList, err := woc.getRunningWorkflowPods()
+	podList, err := woc.getAllWorkflowPods()
 	if err != nil {
 		return err
 	}
@@ -418,37 +418,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		performAssessment(&pod)
 	}
 
-	if len(podList.Items) > 0 {
-		// if we saw related pods, no need to check for deleted pods yet.
-		// we will get to them eventually.
-		return nil
-	}
-	// If we get here, our initial query for pods related to this workflow returned nothing.
-	// Note that our initial query excludes Pending/completed=true pods for performance reasons
-	// since there's generally no action needed to be taken on pending pods or ones we have
-	// already processed (completed=true).
-	// There are a few scenarios where the pod list would have been empty:
-	//  1. workflow's pods are still pending (best case scenario)
-	//  2. workflow's pods were deleted unbeknownst to the controller
-	//  3. workflow's pods were marked completed=true, but we are operating on a stale workflow object
-	//  4. combination of any the above scenarios
-	// In order to detect deleted pods, we repeat the pod reconciliation process, this time
-	// including ALL workflow pods in the query. If any one of our nodes does not show up in this
-	// returned list, it implies that the pod was deleted without the controller seeing the event.
-	woc.log.Info("Checking for deleted pods")
-	podList, err = woc.getAllWorkflowPods()
-	if err != nil {
-		return err
-	}
-	// Repeat the node assessment
-	for _, pod := range podList.Items {
-		performAssessment(&pod)
-	}
-
-	// Now iterate the workflow pod nodes which we still believe to be incomplete.
-	// If the pod was not seen in the pod list, it means the pod was deleted and it
-	// is now impossible to infer status. The only thing we can do at this point is
-	// to mark the node with Error.
+	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
+	// the seen list it implies that the pod was deleted without the controller seeing the event.
+	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
+	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
 		if node.Type != wfv1.NodeTypePod || node.Completed() {
 			// node is not a pod, or it is already complete
@@ -487,22 +460,6 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 		}
 	}
 	return activePods
-}
-
-// getRunningWorkflowPods returns running pods of the current workflow.
-func (woc *wfOperationCtx) getRunningWorkflowPods() (*apiv1.PodList, error) {
-	options := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s,%s=false",
-			common.LabelKeyWorkflow,
-			woc.wf.ObjectMeta.Name,
-			common.LabelKeyCompleted),
-		FieldSelector: "status.phase!=Pending",
-	}
-	podList, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.Namespace).List(options)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return podList, nil
 }
 
 // getAllWorkflowPods returns all pods related to the current workflow
