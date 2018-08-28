@@ -79,6 +79,7 @@ func NewRootCommand() *cobra.Command {
 			go wfController.Run(ctx, workflowWorkers, podWorkers)
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)
+			go wfController.RunTTLController(ctx)
 
 			// Wait forever
 			select {}
