@@ -20,6 +20,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 type listFlags struct {
@@ -198,7 +199,7 @@ func (f ByFinishedAt) Less(i, j int) bool {
 func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	switch wf.Status.Phase {
 	case wfv1.NodeRunning:
-		if common.IsWorkflowSuspended(wf) {
+		if util.IsWorkflowSuspended(wf) {
 			return "Running (Suspended)"
 		}
 		return wf.Status.Phase
