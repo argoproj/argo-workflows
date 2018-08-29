@@ -7,27 +7,10 @@ RUN apt-get update && \
     chmod +x ./kubectl && \
     mv ./kubectl /bin/
 
-ENV DOCKER_CHANNEL edge
-ENV DOCKER_VERSION 17.10.0-ce
-# TODO ENV DOCKER_SHA256
-# https://github.com/docker/docker-ce/blob/5b073ee2cf564edee5adca05eee574142f7627bb/components/packaging/static/hash_files !!
-# (no SHA file artifacts on download.docker.com yet as of 2017-06-07 though)
-
-RUN set -ex; \
-    dockerArch='x86_64'; \
-	if ! curl -fL -o docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${dockerArch}/docker-${DOCKER_VERSION}.tgz"; then \
-		echo >&2 "error: failed to download 'docker-${DOCKER_VERSION}' from '${DOCKER_CHANNEL}' for '${dockerArch}'"; \
-		exit 1; \
-	fi; \
-	\
-	tar --extract \
-		--file docker.tgz \
-		--strip-components 1 \
-		--directory /usr/local/bin/ \
-	; \
-	rm docker.tgz; \
-	\
-	dockerd -v; \
-	docker -v
+ENV DOCKER_VERSION=18.06.0
+RUN curl -O https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}-ce.tgz && \
+  tar -xzf docker-${DOCKER_VERSION}-ce.tgz && \
+  mv docker/docker /usr/local/bin/docker && \
+  rm -rf ./docker
 
 COPY dist/argoexec /bin/
