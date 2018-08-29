@@ -57,6 +57,7 @@ and may be removed/ignored in a future release.
 * Update k8s dependencies to v1.10 and client-go to v7.0
 * Update argo-cluster-role to work with OpenShift
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
+- Fix issue where sidecars and daemons were not reliably killed (issue #879)
 - Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
 - Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
 - Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI

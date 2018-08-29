@@ -71,7 +71,7 @@ func NewController(config *rest.Config, wfClientset wfclientset.Interface, names
 func (c *Controller) Run(stopCh <-chan struct{}) error {
 	defer runtimeutil.HandleCrash()
 	defer c.workqueue.ShutDown()
-	log.Info("Starting workflow TTL controller (resync %v)", c.resyncPeriod)
+	log.Infof("Starting workflow TTL controller (resync %v)", c.resyncPeriod)
 	go c.wfInformer.Run(stopCh)
 	if ok := cache.WaitForCacheSync(stopCh, c.wfInformer.HasSynced); !ok {
 		return fmt.Errorf("failed to wait for caches to sync")
