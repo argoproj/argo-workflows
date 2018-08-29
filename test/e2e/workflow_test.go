@@ -62,7 +62,7 @@ spec:
 		log.Fatal(err)
 	}
 
-	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil)
+	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil, nil)
 
 	wfClient := commands.InitWorkflowClient()
 

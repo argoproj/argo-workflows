@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func NewSuspendCommand() *cobra.Command {
 			}
 			InitWorkflowClient()
 			for _, wfName := range args {
-				err := common.SuspendWorkflow(wfClient, wfName)
+				err := util.SuspendWorkflow(wfClient, wfName)
 				if err != nil {
 					log.Fatalf("Failed to suspend %s: %v", wfName, err)
 				}
