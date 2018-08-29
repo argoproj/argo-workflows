@@ -128,6 +128,10 @@ type WorkflowSpec struct {
 	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
 	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
+
+	// Optional duration in seconds relative to the workflow start time which the workflow is
+	// allowed to run before the controller terminates the workflow.
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
