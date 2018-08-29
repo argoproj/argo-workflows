@@ -1,18 +1,18 @@
 package commands
 
 import (
-	"log"
 	"os"
 
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func NewResubmitCommand() *cobra.Command {
 	var (
-		memoized   bool
-		submitArgs submitFlags
+		memoized      bool
+		cliSubmitOpts cliSubmitOpts
 	)
 	var command = &cobra.Command{
 		Use:   "resubmit WORKFLOW",
@@ -25,22 +25,19 @@ func NewResubmitCommand() *cobra.Command {
 
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-			if err != nil {
-				log.Fatal(err)
-			}
-			newWF, err := common.FormulateResubmitWorkflow(wf, memoized)
-			if err != nil {
-				log.Fatal(err)
-			}
-			_, err = submitWorkflow(newWF, &submitArgs)
-			if err != nil {
-				log.Fatal(err)
-			}
+			errors.CheckError(err)
+			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
+			errors.CheckError(err)
+			created, err := util.SubmitWorkflow(wfClient, newWF, nil)
+			errors.CheckError(err)
+			printWorkflow(created, cliSubmitOpts.output)
+			waitOrWatch([]string{created.Name}, cliSubmitOpts)
 		},
 	}
-	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
-	command.Flags().BoolVar(&submitArgs.watch, "watch", false, "watch the workflow until it completes")
+
+	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&memoized, "memoized", false, "re-use successful steps & outputs from the previous run (experimental)")
 	return command
 }

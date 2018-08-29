@@ -3,15 +3,16 @@ package commands
 import (
 	"os"
 
-	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/workflow/util"
 )
 
 func NewRetryCommand() *cobra.Command {
 	var (
-		submitArgs submitFlags
+		cliSubmitOpts cliSubmitOpts
 	)
 	var command = &cobra.Command{
 		Use:   "retry WORKFLOW",
@@ -27,20 +28,16 @@ func NewRetryCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			wf, err = common.RetryWorkflow(kubeClient, wfClient, wf)
+			wf, err = util.RetryWorkflow(kubeClient, wfClient, wf)
 			if err != nil {
 				log.Fatal(err)
 			}
-			printWorkflow(wf, submitArgs.output)
-			if submitArgs.wait {
-				WaitWorkflows([]string{wf.ObjectMeta.Name}, false, submitArgs.output == "json")
-			} else if submitArgs.watch {
-				watchWorkflow(wf.ObjectMeta.Name)
-			}
+			printWorkflow(wf, cliSubmitOpts.output)
+			waitOrWatch([]string{wf.Name}, cliSubmitOpts)
 		},
 	}
-	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
-	command.Flags().BoolVar(&submitArgs.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	return command
 }

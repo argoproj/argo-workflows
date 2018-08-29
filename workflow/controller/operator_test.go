@@ -6,7 +6,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -473,7 +473,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Nil(t, err)
 
 	// suspend the workflow
-	err = common.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -487,7 +487,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = common.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -631,7 +631,7 @@ func TestSuspendTemplate(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.True(t, common.IsWorkflowSuspended(wf))
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
@@ -641,10 +641,10 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	common.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.False(t, common.IsWorkflowSuspended(wf))
+	assert.False(t, util.IsWorkflowSuspended(wf))
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
