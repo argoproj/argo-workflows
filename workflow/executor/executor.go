@@ -749,6 +749,8 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGUSR2)
 
+	we.setExecutionControl()
+
 	// Create a channel which will notify a listener on new updates to the annotations
 	annotationUpdateCh := make(chan struct{})
 
@@ -765,24 +767,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 			case <-sigs:
 				log.Infof("Received update signal. Reloading annotations from API")
 				annotationUpdateCh <- struct{}{}
-				pod, err := we.getPod()
-				if err != nil {
-					log.Warnf("Failed to reload execution control from API server: %v", err)
-					continue
-				}
-				execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
-				if !ok {
-					we.ExecutionControl = nil
-				} else {
-					var execCtl common.ExecutionControl
-					err = json.Unmarshal([]byte(execCtlString), &execCtl)
-					if err != nil {
-						log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
-						continue
-					}
-					we.ExecutionControl = &execCtl
-					log.Infof("Execution control reloaded from API: %v", *we.ExecutionControl)
-				}
+				we.setExecutionControl()
 			case <-watcher.Events:
 				log.Infof("%s updated", we.PodAnnotationsPath)
 				err := we.LoadExecutionControl()
@@ -798,6 +783,28 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 		}
 	}()
 	return annotationUpdateCh
+}
+
+// setExecutionControl sets the execution control information from the pod annotation
+func (we *WorkflowExecutor) setExecutionControl() {
+	pod, err := we.getPod()
+	if err != nil {
+		log.Warnf("Failed to set execution control from API server: %v", err)
+		return
+	}
+	execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
+	if !ok {
+		we.ExecutionControl = nil
+	} else {
+		var execCtl common.ExecutionControl
+		err = json.Unmarshal([]byte(execCtlString), &execCtl)
+		if err != nil {
+			log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
+			return
+		}
+		we.ExecutionControl = &execCtl
+		log.Infof("Execution control set from API: %v", *we.ExecutionControl)
+	}
 }
 
 // monitorDeadline checks to see if we exceeded the deadline for the step and
@@ -821,8 +828,7 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 						// timeouts as a failure and the pod should be annotated with that error
 						errMsg := fmt.Sprintf("step exceeded deadline %s", *we.ExecutionControl.Deadline)
 						log.Warnf(errMsg)
-						// TODO(jessesuen): we do not have workflow or step level timeouts (yet) so do not annotate yet
-						//_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, errMsg)
+						_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, errMsg)
 					} else {
 						log.Info("step has been cancelled")
 					}

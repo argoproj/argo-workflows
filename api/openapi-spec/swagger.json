@@ -913,6 +913,11 @@
         "entrypoint"
       ],
       "properties": {
+        "activeDeadlineSeconds": {
+          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow.",
+          "type": "integer",
+          "format": "int64"
+        },
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"

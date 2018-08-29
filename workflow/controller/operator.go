@@ -55,6 +55,9 @@ type wfOperationCtx struct {
 	// activePods tracks the number of active (Running/Pending) pods for controlling
 	// parallelism
 	activePods int64
+	// workflowDeadline is the deadline which the workflow is expected to complete before we
+	// terminate the workflow.
+	workflowDeadline *time.Time
 }
 
 var (
@@ -119,7 +122,9 @@ func (woc *wfOperationCtx) operate() {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
 		}
+		woc.workflowDeadline = woc.getWorkflowDeadline()
 	} else {
+		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
@@ -127,6 +132,7 @@ func (woc *wfOperationCtx) operate() {
 			return
 		}
 	}
+
 	if woc.wf.Spec.Suspend != nil && *woc.wf.Spec.Suspend {
 		woc.log.Infof("workflow suspended")
 		return
@@ -201,6 +207,18 @@ func (woc *wfOperationCtx) operate() {
 		err = errors.InternalErrorf("Unexpected node phase %s: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
 	}
+}
+
+func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
+	if woc.wf.Spec.ActiveDeadlineSeconds == nil {
+		return nil
+	}
+	if woc.wf.Status.StartedAt.IsZero() {
+		return nil
+	}
+	startedAt := woc.wf.Status.StartedAt.Truncate(time.Second)
+	deadline := startedAt.Add(time.Duration(*woc.wf.Spec.ActiveDeadlineSeconds) * time.Second).UTC()
+	return &deadline
 }
 
 // setGlobalParameters sets the globalParam map with global parameters
@@ -416,6 +434,10 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 	for _, pod := range podList.Items {
 		performAssessment(&pod)
+		err = woc.applyExecutionControl(&pod)
+		if err != nil {
+			woc.log.Warn("Failed to apply execution control to pod %s", pod.Name)
+		}
 	}
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
