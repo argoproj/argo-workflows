@@ -156,7 +156,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	addMetadata(pod, tmpl)
+	woc.addMetadata(pod, tmpl)
 
 	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -343,13 +343,22 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 }
 
 // addMetadata applies metadata specified in the template
-func addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
-
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
+	}
+	if woc.workflowDeadline != nil {
+		execCtl := common.ExecutionControl{
+			Deadline: woc.workflowDeadline,
+		}
+		execCtlBytes, err := json.Marshal(execCtl)
+		if err != nil {
+			panic(err)
+		}
+		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 	}
 }
 

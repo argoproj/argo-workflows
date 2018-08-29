@@ -40,6 +40,7 @@ and may be removed/ignored in a future release.
 + Introduce `keyFormat` workflow config to enable flexibility in archive location path (issue #953)
 + Introduce `argo watch` command to watch live workflows from terminal (issue #969)
 + Add ability to archive container logs to the artifact repository (issue #454)
++ Support for workflow level timeouts (issue #848)
 + Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
 + Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (issue #911)
 + Add `argo delete --older` flag to delete completed workflows older than a duration

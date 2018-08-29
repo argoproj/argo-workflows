@@ -14,7 +14,7 @@ import (
 
 // killGracePeriod is the time in seconds after sending SIGTERM before
 // forcefully killing the sidecar with SIGKILL (value matches k8s)
-const killGracePeriod = 30
+const killGracePeriod = 10
 
 type DockerExecutor struct{}
 
