@@ -510,16 +510,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
 		newDaemonStatus = &f
-		for _, ctrStatus := range pod.Status.ContainerStatuses {
-			if ctrStatus.State.Waiting != nil {
-				if ctrStatus.State.Waiting.Message != "" {
-					message = fmt.Sprintf("%s: %s", ctrStatus.State.Waiting.Reason, ctrStatus.State.Waiting.Message)
-				} else {
-					message = ctrStatus.State.Waiting.Reason
-				}
-				break
-			}
-		}
+		message = getPendingReason(pod)
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
@@ -635,6 +626,33 @@ func getLatestFinishedAt(pod *apiv1.Pod) metav1.Time {
 		}
 	}
 	return latest
+}
+
+func getPendingReason(pod *apiv1.Pod) string {
+	for _, ctrStatus := range pod.Status.ContainerStatuses {
+		if ctrStatus.State.Waiting != nil {
+			if ctrStatus.State.Waiting.Message != "" {
+				return fmt.Sprintf("%s: %s", ctrStatus.State.Waiting.Reason, ctrStatus.State.Waiting.Message)
+			}
+			return ctrStatus.State.Waiting.Reason
+		}
+	}
+	// Example:
+	// - lastProbeTime: null
+	//   lastTransitionTime: 2018-08-29T06:38:36Z
+	//   message: '0/3 nodes are available: 2 Insufficient cpu, 3 MatchNodeSelector.'
+	//   reason: Unschedulable
+	//   status: "False"
+	//   type: PodScheduled
+	for _, cond := range pod.Status.Conditions {
+		if cond.Reason == apiv1.PodReasonUnschedulable {
+			if cond.Message != "" {
+				return fmt.Sprintf("%s: %s", cond.Reason, cond.Message)
+			}
+			return cond.Reason
+		}
+	}
+	return ""
 }
 
 // inferFailedReason returns metadata about a Failed pod to be used in its NodeStatus
