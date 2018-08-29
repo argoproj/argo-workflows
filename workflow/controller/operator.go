@@ -711,17 +711,24 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			}
 			errMsg := fmt.Sprintf("failed to save outputs: %s", errDetails)
 			failMessages[ctr.Name] = errMsg
-		} else {
-			if ctr.State.Terminated.Message != "" {
-				failMessages[ctr.Name] = ctr.State.Terminated.Message
-			} else {
-				errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
-				if ctr.Name != common.MainContainerName {
-					errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
-				}
-				failMessages[ctr.Name] = errMsg
-			}
+			continue
 		}
+		if ctr.State.Terminated.Message != "" {
+			failMessages[ctr.Name] = ctr.State.Terminated.Message
+			continue
+		}
+		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
+		if ctr.Name != common.MainContainerName {
+			if ctr.State.Terminated.ExitCode == 137 {
+				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
+				// forcibly killed the container, which we ignore the error for.
+				// TODO: we might be missing the case where sidecar is OOM killed
+				log.Infof("Ignoring %d exit code of sidecar '%s'", ctr.State.Terminated.ExitCode, ctr.Name)
+				continue
+			}
+			errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
+		}
+		failMessages[ctr.Name] = errMsg
 	}
 	if failMsg, ok := failMessages[common.MainContainerName]; ok {
 		_, ok = failMessages[common.WaitContainerName]
@@ -737,20 +744,16 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		return wfv1.NodeError, failMsg
 	}
 
-	// If we get here, both the main and wait container succeeded.
-	// Identify the sidecar which failed and give proper message
-	// NOTE: we may need to distinguish between the main container
-	// succeeding and ignoring the sidecar statuses. This is because
-	// executor may have had to forcefully terminate a sidecar
-	// (kill -9), resulting in an non-zero exit code of a sidecar,
-	// and overall pod status as failed. Or the sidecar is actually
-	// *expected* to fail non-zero and should be ignored. Users may
-	// want the option to consider a step failed only if the main
-	// container failed. For now return the first failure.
+	// If we get here, both the main and wait container succeeded. Iterate the fail messages to
+	// identify the sidecar which failed and return the message.
 	for _, failMsg := range failMessages {
 		return wfv1.NodeFailed, failMsg
 	}
-	return wfv1.NodeFailed, fmt.Sprintf("pod failed for unknown reason")
+	// If we get here, we have detected that the main/wait containers succeed but the sidecar(s)
+	// were  SIGKILL'd. The executor may have had to forcefully terminate the sidecar (kill -9),
+	// resulting in a 137 exit code (which we had ignored earlier). If failMessages is empty, it
+	// indicates that this is the case and we return Success instead of Failure.
+	return wfv1.NodeSucceeded, ""
 }
 
 func (woc *wfOperationCtx) createPVCs() error {
