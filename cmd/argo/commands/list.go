@@ -203,6 +203,11 @@ func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 			return "Running (Suspended)"
 		}
 		return wf.Status.Phase
+	case wfv1.NodeFailed:
+		if util.IsWorkflowTerminated(wf) {
+			return "Failed (Terminated)"
+		}
+		return wf.Status.Phase
 	case "", wfv1.NodePending:
 		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
 			return wfv1.NodePending

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -9,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -20,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
@@ -27,9 +26,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/validate"
@@ -171,7 +173,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
 			if len(parts) == 1 {
-				log.Fatalf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
 			param := wfv1.Parameter{
 				Name:  parts[0],
@@ -188,24 +190,24 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 			if cmdutil.IsURL(opts.ParameterFile) {
 				response, err := http.Get(opts.ParameterFile)
 				if err != nil {
-					log.Fatal(err)
+					return nil, errors.InternalWrapError(err)
 				}
 				body, err = ioutil.ReadAll(response.Body)
 				_ = response.Body.Close()
 				if err != nil {
-					log.Fatal(err)
+					return nil, errors.InternalWrapError(err)
 				}
 			} else {
 				body, err = ioutil.ReadFile(opts.ParameterFile)
 				if err != nil {
-					log.Fatal(err)
+					return nil, errors.InternalWrapError(err)
 				}
 			}
 
 			yamlParams := map[string]interface{}{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
-				log.Fatal(err)
+				return nil, errors.InternalWrapError(err)
 			}
 
 			for k, v := range yamlParams {
@@ -466,11 +468,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 		}
 	}
-	newWF, err := wfClient.Update(newWF)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return newWF, nil
+	return wfClient.Update(newWF)
 }
 
 var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
@@ -488,7 +486,35 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
-func KillWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
+func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
+	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
+		return true
+	}
+	return false
+}
 
-	return nil
+// TerminateWorkflow terminates a workflow by setting its activeDeadlineSeconds to 0
+func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
+	patchObj := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"activeDeadlineSeconds": 0,
+		},
+	}
+	var err error
+	patch, err := json.Marshal(patchObj)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	for attempt := 0; attempt < 10; attempt++ {
+		_, err = wfClient.Patch(name, types.MergePatchType, patch)
+		if err != nil {
+			if !apierr.IsConflict(err) {
+				return err
+			}
+		} else {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return err
 }

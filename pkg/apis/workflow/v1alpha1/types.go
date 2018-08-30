@@ -130,7 +130,8 @@ type WorkflowSpec struct {
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
-	// allowed to run before the controller terminates the workflow.
+	// allowed to run before the controller terminates the workflow. A value of zero is used to
+	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 }
 

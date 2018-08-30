@@ -28,7 +28,13 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 			err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 			if err == nil {
 				node := woc.wf.Status.Nodes[pod.Name]
-				woc.markNodePhase(node.Name, wfv1.NodeFailed, fmt.Sprintf("step exceeded deadline %s", *woc.workflowDeadline))
+				var message string
+				if woc.workflowDeadline.IsZero() {
+					message = "terminated"
+				} else {
+					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
 				return nil
 			}
 			// If we fail to delete the pod, fall back to setting the annotation

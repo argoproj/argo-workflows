@@ -36,6 +36,7 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewSuspendCommand())
 	command.AddCommand(NewWaitCommand())
 	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 
 	addKubectlFlagsToCmd(command)
