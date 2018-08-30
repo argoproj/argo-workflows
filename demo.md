@@ -31,14 +31,17 @@ NOTE: On GKE, you may need to grant your account the ability to create new clust
 kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=cluster-admin --user=YOUREMAIL@gmail.com
 ```
 
-## 3. Configure the service account to run workflows (required for RBAC clusters)
+## 3. Configure the service account to run workflows
 For clusters with RBAC enabled, the 'default' service account is too limited to support features
 like artifacts, outputs, access to secrets, etc... Run the following command to grant admin
 privileges to the 'default' service account in the namespace 'default':
 ```
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
-NOTE: You can also submit workflows using a different service account using the `argo submit --serviceaccount <name>` flag.
+NOTE: You can also submit workflows which run with a different service account using:
+```
+argo submit --serviceaccount <name>
+```
 
 ## 4. Run Simple Example Workflows
 ```
@@ -51,7 +54,8 @@ argo logs xxx-pod-name-xxx #from get command above
 ```
 
 You can also create workflows directly with kubectl. However, the Argo CLI offers extra features
-that kubectl does not, such as YAML validation, workflow visualization, and overall less typing.
+that kubectl does not, such as YAML validation, workflow visualization, parameter passing, retries
+and resubmits, suspend and resume, and more.
 ```
 kubectl create -f https://raw.githubusercontent.com/argoproj/argo/master/examples/hello-world.yaml
 kubectl get wf
@@ -131,14 +135,12 @@ By default, the Argo UI service is not exposed with an external IP. To access th
 following methods:
 
 #### Method 1: kubectl port-forward
-Run:
 ```
 kubectl -n argo port-forward deployment/argo-ui 8001:8001
 ```
 Then visit: http://127.0.0.1:8001
 
 #### Method 2: kubectl proxy
-Run:
 ```
 kubectl proxy
 ```
@@ -147,7 +149,6 @@ Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-ui/proxy/
 NOTE: artifact download and webconsole is not supported using this method
 
 #### Method 3: Expose a LoadBalancer
-
 Update the argo-ui service to be of type `LoadBalancer`.
 ```
 kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'

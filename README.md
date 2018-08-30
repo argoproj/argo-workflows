@@ -26,6 +26,28 @@ Argo is an open source container-native workflow engine for getting work done on
 * [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
 
+## Features
+* DAG or Steps based declaration of workflows
+* Artifact support (S3, Artifactory, HTTP, Git, raw)
+* Step level input & outputs (artifacts/parameters)
+* Loops
+* Parameterization
+* Conditionals
+* Timeouts (step & workflow level)
+* Retry (step & workflow level)
+* Resubmit (memoized)
+* Suspend & Resume
+* Cancellation
+* K8s resource orchestration
+* Exit Hooks (notifications, cleanup)
+* Garbage collection of completed workflow
+* Scheduling (affinity/tolerations/node selectors)
+* Volumes (ephemeral/existing)
+* Parallelism limits
+* Daemoned steps
+* DinD (docker-in-docker)
+* Script steps
+
 ## Who uses Argo?
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
