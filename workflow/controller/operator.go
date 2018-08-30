@@ -26,6 +26,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
@@ -156,8 +157,13 @@ func (woc *wfOperationCtx) operate() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
 	}
+
 	workflowStatus = node.Phase
-	workflowMessage = node.Message
+	if !node.Successful() && util.IsWorkflowTerminated(woc.wf) {
+		workflowMessage = "terminated"
+	} else {
+		workflowMessage = node.Message
+	}
 
 	var onExitNode *wfv1.NodeStatus
 	if woc.wf.Spec.OnExit != "" {
@@ -215,6 +221,11 @@ func (woc *wfOperationCtx) getWorkflowDeadline() *time.Time {
 	}
 	if woc.wf.Status.StartedAt.IsZero() {
 		return nil
+	}
+	if *woc.wf.Spec.ActiveDeadlineSeconds == 0 {
+		// A zero value for ActiveDeadlineSeconds has special meaning (killed).
+		// Return a zero value time object
+		return &time.Time{}
 	}
 	startedAt := woc.wf.Status.StartedAt.Truncate(time.Second)
 	deadline := startedAt.Add(time.Duration(*woc.wf.Spec.ActiveDeadlineSeconds) * time.Second).UTC()
