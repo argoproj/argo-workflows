@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.2.0 (TBD)
+## 2.2.0 (2018-08-30)
 
 ### Notes about upgrading from v2.1
 
@@ -42,7 +42,7 @@ and may be removed/ignored in a future release.
 + Add ability to archive container logs to the artifact repository (issue #454)
 + Support for workflow level timeouts (issue #848)
 + Introduce `argo terminate` to terminate a workflow without deleting it (issue #527)
-+ Introduce `withSequence` to iterate a range of numbers in a loop (issue #527)
++ Introduce `withSequence` to iterate a range of numbers in a loop (issue #945)
 + Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
 + Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (issue #911)
 + Add `argo delete --older` flag to delete completed workflows older than a duration
