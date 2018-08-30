@@ -14,7 +14,7 @@ spec:
       serviceAccountName: argo-ui
       containers:
       - name: argo-ui
-        image: argoproj/argoui:latest
+        image: argoproj/argoui:v2.2.0
         env:
         - name: ARGO_NAMESPACE
           valueFrom:
