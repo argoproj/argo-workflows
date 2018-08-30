@@ -321,7 +321,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" {
+		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -351,6 +351,11 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		err = json.Unmarshal([]byte(step.WithParam), &items)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
+		}
+	} else if step.WithSequence != nil {
+		items, err = expandSequence(step.WithSequence)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		// this should have been prevented in expandStepGroup()

@@ -326,7 +326,7 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			}
 			stepNames[step.Name] = true
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			err := addItemsToScope(prefix, step.WithItems, step.WithParam, scope)
+			err := addItemsToScope(prefix, step.WithItems, step.WithParam, step.WithSequence, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
@@ -359,14 +359,24 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 	return nil
 }
 
-func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, scope map[string]interface{}) error {
-	if len(withItems) > 0 && withParam != "" {
-		return fmt.Errorf("only one of withItems or withParam can be specified")
+func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, withSequence *wfv1.Sequence, scope map[string]interface{}) error {
+	defined := 0
+	if len(withItems) > 0 {
+		defined++
+	}
+	if withParam != "" {
+		defined++
+	}
+	if withSequence != nil {
+		defined++
+	}
+	if defined > 1 {
+		return fmt.Errorf("only one of withItems, withParam, withSequence can be specified")
 	}
 	if len(withItems) > 0 {
 		for i := range withItems {
 			switch val := withItems[i].Value.(type) {
-			case string, int32, int64, float32, float64, bool:
+			case string, int, int32, int64, float32, float64, bool:
 				scope["item"] = true
 			case map[string]interface{}:
 				for itemKey := range val {
@@ -381,6 +391,11 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, sco
 		// 'item.*' is magic placeholder value which resolveAllVariables() will look for
 		// when considering if all variables are resolveable.
 		scope[anyItemMagicValue] = true
+	} else if withSequence != nil {
+		if withSequence.Count != "" && withSequence.End != "" {
+			return errors.New(errors.CodeBadRequest, "only one of count or end can be defined in withSequence")
+		}
+		scope["item"] = true
 	}
 	return nil
 }
@@ -624,7 +639,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 			aggregate := len(ancestorTask.WithItems) > 0 || ancestorTask.WithParam != ""
 			ctx.addOutputsToScope(ancestorTask.Template, ancestorPrefix, taskScope, aggregate)
 		}
-		err = addItemsToScope(prefix, task.WithItems, task.WithParam, taskScope)
+		err = addItemsToScope(prefix, task.WithItems, task.WithParam, task.WithSequence, taskScope)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
