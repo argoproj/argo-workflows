@@ -1430,7 +1430,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	replaceMap := make(map[string]string)
 	var newName string
 	switch val := item.Value.(type) {
-	case string, int32, int64, float32, float64, bool:
+	case string, int, int32, int64, float32, float64, bool:
 		replaceMap["item"] = fmt.Sprintf("%v", val)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
 	case map[string]interface{}:
@@ -1442,11 +1442,11 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		vals := make([]string, 0)
 		for itemKey, itemValIf := range val {
 			switch itemVal := itemValIf.(type) {
-			case string, int32, int64, float32, float64, bool:
+			case string, int, int32, int64, float32, float64, bool:
 				replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
 				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 			default:
-				return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", index, itemKey, itemVal)
+				return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %v", index, itemKey, itemVal)
 			}
 		}
 		// sort the values so that the name is deterministic
@@ -1464,4 +1464,47 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		return "", errors.InternalWrapError(err)
 	}
 	return newName, nil
+}
+
+func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
+	var start, end int
+	var err error
+	if seq.Start != "" {
+		start, err = strconv.Atoi(seq.Start)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if seq.End != "" {
+		end, err = strconv.Atoi(seq.End)
+		if err != nil {
+			return nil, err
+		}
+	} else if seq.Count != "" {
+		count, err := strconv.Atoi(seq.Count)
+		if err != nil {
+			return nil, err
+		}
+		if count == 0 {
+			return []wfv1.Item{}, nil
+		}
+		end = start + count - 1
+	} else {
+		return nil, errors.InternalError("neither end nor count was specified in withSequence")
+	}
+	items := make([]wfv1.Item, 0)
+	format := "%d"
+	if seq.Format != "" {
+		format = seq.Format
+	}
+	if start <= end {
+		for i := start; i <= end; i++ {
+			items = append(items, wfv1.Item{Value: fmt.Sprintf(format, i)})
+		}
+	} else {
+		for i := start; i >= end; i-- {
+			items = append(items, wfv1.Item{Value: fmt.Sprintf(format, i)})
+		}
+	}
+	return items, nil
 }

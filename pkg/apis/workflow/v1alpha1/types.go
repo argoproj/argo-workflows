@@ -350,6 +350,9 @@ type WorkflowStep struct {
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty"`
 
+	// WithSequence expands a step into a numeric sequence
+	WithSequence *Sequence `json:"withSequence,omitempty"`
+
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty"`
 }
@@ -358,6 +361,21 @@ type WorkflowStep struct {
 // The value of Item can be a map, string, bool, or number
 type Item struct {
 	Value interface{} `json:"value,omitempty"`
+}
+
+// Sequence expands a workflow step into numeric range
+type Sequence struct {
+	// Count is number of elements in the sequence (default: 0). Not to be used with end
+	Count string `json:"count,omitempty"`
+
+	// Number at which to start the sequence (default: 0)
+	Start string `json:"start,omitempty"`
+
+	// Number at which to end the sequence (default: 0). Not to be used with Count
+	End string `json:"end,omitempty"`
+
+	// Format is a printf format string to format the value in the sequence
+	Format string `json:"format,omitempty"`
 }
 
 // DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
@@ -721,6 +739,9 @@ type DAGTask struct {
 	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
 	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty"`
+
+	// WithSequence expands a task into a numeric sequence
+	WithSequence *Sequence `json:"withSequence,omitempty"`
 
 	// When is an expression in which the task should conditionally execute
 	When string `json:"when,omitempty"`

@@ -195,6 +195,10 @@
         "withParam": {
           "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
+        },
+        "withSequence": {
+          "description": "WithSequence expands a task into a numeric sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sequence"
         }
       }
     },
@@ -596,6 +600,27 @@
         },
         "workingDir": {
           "description": "Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Sequence": {
+      "description": "Sequence expands a workflow step into numeric range",
+      "properties": {
+        "count": {
+          "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
+          "type": "string"
+        },
+        "end": {
+          "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
+          "type": "string"
+        },
+        "format": {
+          "description": "Format is a printf format string to format the value in the sequence",
+          "type": "string"
+        },
+        "start": {
+          "description": "Number at which to start the sequence (default: 0)",
           "type": "string"
         }
       }
@@ -1025,6 +1050,10 @@
         "withParam": {
           "description": "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
+        },
+        "withSequence": {
+          "description": "WithSequence expands a step into a numeric sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sequence"
         }
       }
     }

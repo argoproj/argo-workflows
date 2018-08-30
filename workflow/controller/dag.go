@@ -278,8 +278,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		return
 	}
 
-	// Next, expand the DAG's withItems/withParams (if any). If there was none, then expandedTasks
-	// will be a single element list of the same task
+	// Next, expand the DAG's withItems/withParams/withSequence (if any). If there was none, then
+	// expandedTasks will be a single element list of the same task
 	expandedTasks, err := woc.expandTask(*newTask)
 	if err != nil {
 		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
@@ -315,7 +315,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// since dependant tasks will look to it, when deciding when to execute. For example, if we had
 	// task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
 	// need to create a node for A, after the withItems have completed.
-	if len(task.WithItems) > 0 || task.WithParam != "" {
+	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
 		nodeStatus := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
@@ -417,7 +417,7 @@ func findLeafTaskNames(tasks []wfv1.DAGTask) []string {
 	return leafTaskNames
 }
 
-// expandTask expands a single DAG task containing withItems or withParams into multiple parallel tasks
+// expandTask expands a single DAG task containing withItems, withParams, withSequence into multiple parallel tasks
 func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error) {
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
@@ -430,6 +430,11 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 		err = json.Unmarshal([]byte(task.WithParam), &items)
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(task.WithParam))
+		}
+	} else if task.WithSequence != nil {
+		items, err = expandSequence(task.WithSequence)
+		if err != nil {
+			return nil, err
 		}
 	} else {
 		return []wfv1.DAGTask{task}, nil
