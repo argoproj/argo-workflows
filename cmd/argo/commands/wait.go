@@ -19,7 +19,7 @@ func NewWaitCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "wait WORKFLOW1 WORKFLOW2..,",
-		Short: "waits for all workflows specified on command line to complete",
+		Short: "waits for a workflow to complete",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

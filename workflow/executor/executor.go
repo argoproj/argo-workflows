@@ -823,15 +823,16 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 			// value instead of polling.
 			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
 				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
-					if !we.ExecutionControl.Deadline.IsZero() {
-						// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
-						// timeouts as a failure and the pod should be annotated with that error
-						errMsg := fmt.Sprintf("step exceeded deadline %s", *we.ExecutionControl.Deadline)
-						log.Warnf(errMsg)
-						_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, errMsg)
+					var message string
+					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
+					// timeouts as a failure and the pod should be annotated with that error
+					if we.ExecutionControl.Deadline.IsZero() {
+						message = "terminated"
 					} else {
-						log.Info("step has been cancelled")
+						message = fmt.Sprintf("step exceeded workflow deadline %s", *we.ExecutionControl.Deadline)
 					}
+					log.Info(message)
+					_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
 					mainContainerID, _ := we.GetMainContainerID()
 					err := we.RuntimeExecutor.Kill([]string{mainContainerID})

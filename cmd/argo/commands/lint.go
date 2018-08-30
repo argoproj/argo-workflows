@@ -17,7 +17,7 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short: "validate a directory or specific workflow YAML files",
+		Short: "validate a file or directory of workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

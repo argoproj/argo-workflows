@@ -40,7 +40,7 @@ func NewLogsCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "logs POD/WORKFLOW",
-		Short: "print the logs for a container in a workflow",
+		Short: "view logs of a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)

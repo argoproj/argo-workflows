@@ -914,7 +914,7 @@
       ],
       "properties": {
         "activeDeadlineSeconds": {
-          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow.",
+          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A value of zero is used to terminate a Running workflow",
           "type": "integer",
           "format": "int64"
         },
