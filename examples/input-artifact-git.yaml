@@ -17,7 +17,10 @@ spec:
           revision: "v2.1.1"
           # For private repositories, create a k8s secret containing the git credentials and
           # reference the secret keys in the secret selectors: usernameSecret, passwordSecret,
-          # or sshPrivateKeySecret:
+          # or sshPrivateKeySecret.
+          # NOTE: when authenticating via sshPrivateKeySecret, the repo URL should supplied in its
+          # SSH format (e.g. git@github.com:argoproj/argo.git). Similarly, when authenticating via
+          # basic auth, the URL should be in its HTTP form (e.g. https://github.com/argoproj/argo.git)
           # usernameSecret:
           #   name: github-creds
           #   key: username
@@ -28,7 +31,7 @@ spec:
           #   name: github-creds
           #   key: ssh-private-key
     container:
-      image: golang:1.8
+      image: golang:1.10
       command: [sh, -c]
       args: ["git status && ls && cat VERSION"]
       workingDir: /src
