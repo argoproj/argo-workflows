@@ -1073,3 +1073,39 @@ func TestSpecArgumentNoValue(t *testing.T) {
 	err = ValidateWorkflow(wf)
 	assert.NotNil(t, err)
 }
+
+var specBadSequenceCountAndEnd = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-sequence-
+spec:
+  entrypoint: loops-sequence
+  templates:
+  - name: loops-sequence
+    steps:
+    - - name: print-num
+        template: echo
+        arguments:
+          parameters:
+          - name: num
+            value: "{{item}}"
+        withSequence:
+          count: "10"
+          end: "10"
+  - name: echo
+    inputs:
+      parameters:
+      - name: num
+    container:
+      image: alpine:latest
+      command: [echo, "{{inputs.parameters.num}}"]
+
+`
+
+// TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
+func TestSpecBadSequenceCountAndEnd(t *testing.T) {
+	wf := unmarshalWf(specBadSequenceCountAndEnd)
+	err := ValidateWorkflow(wf, true)
+	assert.Error(t, err)
+}

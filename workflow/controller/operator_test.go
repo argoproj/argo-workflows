@@ -814,3 +814,75 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(pods.Items), 1)
 }
+
+func TestExpandWithSequence(t *testing.T) {
+	var seq wfv1.Sequence
+	var items []wfv1.Item
+	var err error
+
+	seq = wfv1.Sequence{
+		Count: "10",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "0", items[0].Value.(string))
+	assert.Equal(t, "9", items[9].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "101",
+		Count: "10",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "101", items[0].Value.(string))
+	assert.Equal(t, "110", items[9].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "50",
+		End:   "60",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 11, len(items))
+	assert.Equal(t, "50", items[0].Value.(string))
+	assert.Equal(t, "60", items[10].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "60",
+		End:   "50",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 11, len(items))
+	assert.Equal(t, "60", items[0].Value.(string))
+	assert.Equal(t, "50", items[10].Value.(string))
+
+	seq = wfv1.Sequence{
+		Count: "0",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(items))
+
+	seq = wfv1.Sequence{
+		Start: "8",
+		End:   "8",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(items))
+	assert.Equal(t, "8", items[0].Value.(string))
+
+	seq = wfv1.Sequence{
+		Format: "testuser%02X",
+		Count:  "10",
+		Start:  "1",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "testuser01", items[0].Value.(string))
+	assert.Equal(t, "testuser0A", items[9].Value.(string))
+}
