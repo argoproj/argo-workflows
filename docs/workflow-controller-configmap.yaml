@@ -14,19 +14,16 @@ data:
     # controller watches workflows and pods that *are not* labeled with an instance id.
     instanceID: my-ci-controller
 
-    # similar to instanceID, the namespace field limits the controller's watch/queries to a specific
-    # namespace, allowing the controller to run with namespace scope (role), instead of cluster
-    # scope (clusterrole).
+    # namespace limits the controller's watch/queries to a specific namespace. This allows the
+    # controller to run with namespace scope (role), instead of cluster scope (clusterrole).
     namespace: argo
-
-    # matchLabels limits a controller's watch to specific set of label selectors
-    matchLabels:
-      my-label: foo
-      my-other-label: bar
 
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:
+      # archiveLogs will archive the main container logs as an artifact
+      archiveLogs: true
+
       s3:
         # Use the corresponding endpoint depending on your S3 provider:
         #   AWS: s3.amazonaws.com
@@ -61,13 +58,13 @@ data:
           name: my-s3-credentials
           key: secretKey
 
-    # Specifies the container runtime interface to use, default is docker
+    # Specifies the container runtime interface to use (default: docker)
     containerRuntimeExecutor: docker
 
-    # kubelet port when using kubelet executor, default to 10250
+    # kubelet port when using kubelet executor (default: 10250)
     kubeletPort: 10250
 
-    # disable the TLS verification of the kubelet executor, default to false
+    # disable the TLS verification of the kubelet executo (default: false)
     kubeletInsecure: false
 
     # executorResources specifies the resource requirements that will be used for the executor
