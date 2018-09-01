@@ -728,12 +728,15 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			failMessages[ctr.Name] = ctr.State.Terminated.Message
 			continue
 		}
+		if ctr.State.Terminated.Reason == "OOMKilled" {
+			failMessages[ctr.Name] = ctr.State.Terminated.Reason
+			continue
+		}
 		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
 		if ctr.Name != common.MainContainerName {
 			if ctr.State.Terminated.ExitCode == 137 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
-				// TODO: we might be missing the case where sidecar is OOM killed
 				log.Infof("Ignoring %d exit code of sidecar '%s'", ctr.State.Terminated.ExitCode, ctr.Name)
 				continue
 			}
