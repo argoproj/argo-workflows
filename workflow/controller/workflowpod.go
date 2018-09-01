@@ -544,13 +544,22 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 // configured in the controller. This is skipped for templates which have explicitly set an archive
 // location in the template.
 func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.ArchiveLocation != nil {
-		// User explicitly set the location. nothing to do.
+	if tmpl.ArchiveLocation == nil {
+		tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
+			ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+		}
+	}
+	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil {
+		// User explicitly set the location. nothing else to do.
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-		ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+	// needLocation keeps track if the workflow needs to have an archive location set.
+	// If so, and one was not supplied (or defaulted), we will return error
+	var needLocation bool
+	if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
+		needLocation = true
 	}
+
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
@@ -579,9 +588,12 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if !art.HasLocation() {
-				log.Errorf("artifact has no location details:%#v", art)
-				return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+				needLocation = true
+				break
 			}
+		}
+		if needLocation {
+			return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
 		}
 	}
 	return nil
