@@ -34,7 +34,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:063217f911758dc9695e50149f07f482d954f7e7c7560fa1f25c033d486aca9e"
+  digest = "1:0e8f4b1639b80be02aed21595cef2164bab203e660db4485c142e7cebf4f5e95"
   name = "github.com/argoproj/pkg"
   packages = [
     "errors",
@@ -49,7 +49,7 @@
     "time",
   ]
   pruneopts = ""
-  revision = "709fb020c52b294e15fb70817bc1725802fe836c"
+  revision = "1aa3e0c55668da17703adba5c534fff6930db589"
 
 [[projects]]
   branch = "master"
