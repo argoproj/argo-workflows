@@ -42,6 +42,9 @@ type WorkflowController struct {
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
 
+	// cliExecutorImagePullPolicy is the executor imagePullPolicy as specified from the command line
+	cliExecutorImagePullPolicy string
+
 	// restConfig is used by controller to send a SIGUSR1 to the wait sidecar using remotecommand.NewSPDYExecutor().
 	restConfig    *rest.Config
 	kubeclientset kubernetes.Interface
@@ -68,18 +71,20 @@ func NewWorkflowController(
 	wfclientset wfclientset.Interface,
 	namespace,
 	executorImage,
+	executorImagePullPolicy,
 	configMap string,
 ) *WorkflowController {
 	wfc := WorkflowController{
-		restConfig:       restConfig,
-		kubeclientset:    kubeclientset,
-		wfclientset:      wfclientset,
-		configMap:        configMap,
-		namespace:        namespace,
-		cliExecutorImage: executorImage,
-		wfQueue:          workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		podQueue:         workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		completedPods:    make(chan string, 512),
+		restConfig:                 restConfig,
+		kubeclientset:              kubeclientset,
+		wfclientset:                wfclientset,
+		configMap:                  configMap,
+		namespace:                  namespace,
+		cliExecutorImage:           executorImage,
+		cliExecutorImagePullPolicy: executorImagePullPolicy,
+		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		completedPods:              make(chan string, 512),
 	}
 	return &wfc
 }
