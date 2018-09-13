@@ -74,7 +74,7 @@ are [here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 ```
 brew install kubernetes-helm # mac
 helm init
-helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer
+helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer --set persistence.enabled=false
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
