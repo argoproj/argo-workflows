@@ -6,12 +6,12 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
+	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,12 +20,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-const (
-	readWSResponseTimeout = time.Minute * 1
-	containerShimPrefix   = "://"
-)
-
 type k8sAPIClient struct {
+	execcommon.KubernetesClientInterface
+
 	clientset *kubernetes.Clientset
 	config    *restclient.Config
 	podName   string
@@ -62,7 +59,7 @@ func newK8sAPIClient() (*k8sAPIClient, error) {
 }
 
 func (c *k8sAPIClient) getFileContents(containerID, sourcePath string) (string, error) {
-	containerStatus, err := c.getContainerStatus(containerID)
+	_, containerStatus, err := c.getContainerStatus(containerID)
 	if err != nil {
 		return "", err
 	}
@@ -79,7 +76,7 @@ func (c *k8sAPIClient) getFileContents(containerID, sourcePath string) (string, 
 }
 
 func (c *k8sAPIClient) createArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
-	containerStatus, err := c.getContainerStatus(containerID)
+	_, containerStatus, err := c.getContainerStatus(containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +93,7 @@ func (c *k8sAPIClient) createArchive(containerID, sourcePath string) (*bytes.Buf
 }
 
 func (c *k8sAPIClient) getLogsAsStream(containerID string) (io.ReadCloser, error) {
-	containerStatus, err := c.getContainerStatus(containerID)
+	_, containerStatus, err := c.getContainerStatus(containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -133,27 +130,31 @@ func (c *k8sAPIClient) saveLogs(containerID, path string) error {
 	return nil
 }
 
-func (c *k8sAPIClient) terminatePodWithContainerID(containerID string, sig syscall.Signal) error {
-	containerStatus, err := c.getContainerStatus(containerID)
-	if err != nil {
-		return err
-	}
-	if containerStatus.State.Terminated != nil {
-		log.Infof("Container %s is already terminated: %v", containerID, containerStatus.State.Terminated.String())
-		return nil
-	}
+func (c *k8sAPIClient) getPod() (*v1.Pod, error) {
+	return c.clientset.CoreV1().Pods(c.namespace).Get(c.podName, metav1.GetOptions{})
+}
+
+func (c *k8sAPIClient) getContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
 	pod, err := c.getPod()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-	if pod.Spec.HostPID {
-		return fmt.Errorf("cannot terminate a hostPID Pod %s", pod.Name)
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if execcommon.GetContainerID(&containerStatus) != containerID {
+			continue
+		}
+		return pod, &containerStatus, nil
 	}
-	if pod.Spec.RestartPolicy != v1.RestartPolicyNever {
-		return fmt.Errorf("cannot terminate pod with a %q restart policy", pod.Spec.RestartPolicy)
-	}
+	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, c.podName))
+}
+
+func (c *k8sAPIClient) waitForTermination(containerID string, timeout time.Duration) error {
+	return execcommon.WaitForTermination(c, containerID, timeout)
+}
+
+func (c *k8sAPIClient) killContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
-	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, containerStatus.Name, false, false, command...)
+	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, false, command...)
 	if err != nil {
 		return err
 	}
@@ -161,57 +162,10 @@ func (c *k8sAPIClient) terminatePodWithContainerID(containerID string, sig sysca
 	return err
 }
 
-func getContainerID(container *v1.ContainerStatus) string {
-	i := strings.Index(container.ContainerID, containerShimPrefix)
-	if i == -1 {
-		return ""
-	}
-	return container.ContainerID[i+len(containerShimPrefix):]
+func (c *k8sAPIClient) killGracefully(containerID string) error {
+	return execcommon.KillGracefully(c, containerID)
 }
 
-func (c *k8sAPIClient) getPod() (*v1.Pod, error) {
-	return c.clientset.CoreV1().Pods(c.namespace).Get(c.podName, metav1.GetOptions{})
-}
-
-func (c *k8sAPIClient) getContainerStatus(containerID string) (*v1.ContainerStatus, error) {
-	pod, err := c.getPod()
-	if err != nil {
-		return nil, err
-	}
-	for _, containerStatus := range pod.Status.ContainerStatuses {
-		if getContainerID(&containerStatus) != containerID {
-			continue
-		}
-		return &containerStatus, nil
-	}
-	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod %s", containerID, c.podName))
-}
-
-func (c *k8sAPIClient) waitForTermination(containerID string, timeout time.Duration) error {
-	ticker := time.NewTicker(time.Second * 1)
-	defer ticker.Stop()
-	timer := time.NewTimer(timeout)
-	if timeout == 0 {
-		timer.Stop()
-	} else {
-		defer timer.Stop()
-	}
-
-	log.Infof("Starting to wait completion of containerID %s ...", containerID)
-	for {
-		select {
-		case <-ticker.C:
-			containerStatus, err := c.getContainerStatus(containerID)
-			if err != nil {
-				return err
-			}
-			if containerStatus.State.Terminated == nil {
-				continue
-			}
-			log.Infof("ContainerID %q is terminated: %v", containerID, containerStatus.String())
-			return nil
-		case <-timer.C:
-			return errors.New(errors.CodeTimeout, fmt.Sprintf("timeout after %s", timeout.String()))
-		}
-	}
+func (c *k8sAPIClient) copyArchive(containerID, sourcePath, destPath string) error {
+	return execcommon.CopyArchive(c, containerID, sourcePath, destPath)
 }

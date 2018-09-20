@@ -12,12 +12,12 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
+	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
@@ -25,10 +25,11 @@ import (
 
 const (
 	readWSResponseTimeout = time.Minute * 1
-	containerShimPrefix   = "://"
 )
 
 type kubeletClient struct {
+	execcommon.KubernetesClientInterface
+
 	httpClient      *http.Client
 	httpHeader      http.Header
 	websocketDialer *websocket.Dialer
@@ -176,28 +177,20 @@ func (k *kubeletClient) saveLogsToFile(namespace, podName, containerName, path s
 	return err
 }
 
-func getContainerID(container *v1.ContainerStatus) string {
-	i := strings.Index(container.ContainerID, containerShimPrefix)
-	if i == -1 {
-		return ""
-	}
-	return container.ContainerID[i+len(containerShimPrefix):]
-}
-
-func (k *kubeletClient) getContainerStatus(containerID string) (*v1.ContainerStatus, error) {
+func (k *kubeletClient) getContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
 	podList, err := k.getPodList()
 	if err != nil {
-		return nil, errors.InternalWrapError(err)
+		return nil, nil, errors.InternalWrapError(err)
 	}
 	for _, pod := range podList.Items {
 		for _, container := range pod.Status.ContainerStatuses {
-			if getContainerID(&container) != containerID {
+			if execcommon.GetContainerID(&container) != containerID {
 				continue
 			}
-			return &container, nil
+			return &pod, &container, nil
 		}
 	}
-	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
 }
 
 func (k *kubeletClient) GetContainerLogs(containerID string) (string, error) {
@@ -207,7 +200,7 @@ func (k *kubeletClient) GetContainerLogs(containerID string) (string, error) {
 	}
 	for _, pod := range podList.Items {
 		for _, container := range pod.Status.ContainerStatuses {
-			if getContainerID(&container) != containerID {
+			if execcommon.GetContainerID(&container) != containerID {
 				continue
 			}
 			return k.getLogs(pod.Namespace, pod.Name, container.Name)
@@ -223,7 +216,7 @@ func (k *kubeletClient) SaveLogsToFile(containerID, path string) error {
 	}
 	for _, pod := range podList.Items {
 		for _, container := range pod.Status.ContainerStatuses {
-			if getContainerID(&container) != containerID {
+			if execcommon.GetContainerID(&container) != containerID {
 				continue
 			}
 			return k.saveLogsToFile(pod.Namespace, pod.Name, container.Name, path)
@@ -292,39 +285,6 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 	}
 }
 
-// TerminatePodWithContainerID invoke the given SIG against the PID1 of the container.
-// No-op if the container is on the hostPID
-func (k *kubeletClient) TerminatePodWithContainerID(containerID string, sig syscall.Signal) error {
-	podList, err := k.getPodList()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if getContainerID(&container) != containerID {
-				continue
-			}
-			if container.State.Terminated != nil {
-				log.Infof("Container %s is already terminated: %v", container.ContainerID, container.State.Terminated.String())
-				return nil
-			}
-			if pod.Spec.HostPID {
-				return fmt.Errorf("cannot terminate a hostPID Pod %s", pod.Name)
-			}
-			if pod.Spec.RestartPolicy != "Never" {
-				return fmt.Errorf("cannot terminate pod with a %q restart policy", pod.Spec.RestartPolicy)
-			}
-			u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-			_, err = k.exec(u)
-			return err
-		}
-	}
-	return errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
-}
-
 // CreateArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
 func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
 	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
@@ -342,7 +302,7 @@ func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Bu
 	}
 	for _, pod := range podList.Items {
 		for _, container := range pod.Status.ContainerStatuses {
-			if getContainerID(&container) != containerID {
+			if execcommon.GetContainerID(&container) != containerID {
 				continue
 			}
 			if container.State.Terminated != nil {
@@ -365,30 +325,22 @@ func (k *kubeletClient) getCommandOutput(containerID, command string) (*bytes.Bu
 
 // WaitForTermination of the given containerID, set the timeout to 0 to discard it
 func (k *kubeletClient) WaitForTermination(containerID string, timeout time.Duration) error {
-	ticker := time.NewTicker(time.Second * 1)
-	defer ticker.Stop()
-	timer := time.NewTimer(timeout)
-	if timeout == 0 {
-		timer.Stop()
-	} else {
-		defer timer.Stop()
-	}
+	return execcommon.WaitForTermination(k, containerID, timeout)
+}
 
-	log.Infof("Starting to wait completion of containerID %s ...", containerID)
-	for {
-		select {
-		case <-ticker.C:
-			containerStatus, err := k.getContainerStatus(containerID)
-			if err != nil {
-				return err
-			}
-			if containerStatus.State.Terminated == nil {
-				continue
-			}
-			log.Infof("ContainerID %q is terminated: %v", containerID, containerStatus.String())
-			return nil
-		case <-timer.C:
-			return fmt.Errorf("timeout after %s", timeout.String())
-		}
+func (k *kubeletClient) killContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
+	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
+	if err != nil {
+		return errors.InternalWrapError(err)
 	}
+	_, err = k.exec(u)
+	return err
+}
+
+func (k *kubeletClient) KillGracefully(containerID string) error {
+	return execcommon.KillGracefully(k, containerID)
+}
+
+func (k *kubeletClient) CopyArchive(containerID, sourcePath, destPath string) error {
+	return execcommon.CopyArchive(k, containerID, sourcePath, destPath)
 }
