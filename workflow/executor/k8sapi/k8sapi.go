@@ -3,15 +3,17 @@ package k8sapi
 import (
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 )
 
 type K8sAPIExecutor struct {
 	client *k8sAPIClient
 }
 
-func NewK8sAPIExecutor() (*K8sAPIExecutor, error) {
+func NewK8sAPIExecutor(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) (*K8sAPIExecutor, error) {
 	log.Infof("Creating a K8sAPI executor")
-	client, err := newK8sAPIClient()
+	client, err := newK8sAPIClient(clientset, config, podName, namespace)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}

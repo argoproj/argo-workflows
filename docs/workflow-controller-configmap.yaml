@@ -33,7 +33,7 @@ data:
         bucket: my-bucket
         region: us-west-2
         # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
-        # It can reference workflow metadata variables such as workflow.namespace, workflow.name, 
+        # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
         # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
         # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
         # which has potential for have collisions.
@@ -66,10 +66,6 @@ data:
 
     # disable the TLS verification of the kubelet executo (default: false)
     kubeletInsecure: false
-
-    # Config file path when using k8sapi executor.
-    # Empty string indicates in-cluster service account. (default: "")
-    k8sAPIConfigPath: ""
 
     # executorResources specifies the resource requirements that will be used for the executor
     # sidecar/init container. This is useful in clusters which require resources to be specified as

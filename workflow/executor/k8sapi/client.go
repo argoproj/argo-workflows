@@ -12,12 +12,10 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type k8sAPIClient struct {
@@ -29,30 +27,10 @@ type k8sAPIClient struct {
 	namespace string
 }
 
-func newK8sAPIClient() (*k8sAPIClient, error) {
-	kubeconfigPath := os.Getenv(common.EnvVarK8sAPIConfigPath)
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	clientset, err := kubernetes.NewForConfig(kubeConfig)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-
-	namespace := os.Getenv(common.EnvVarK8sAPITargetNamespace)
-	if namespace == "" {
-		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("namespace must be specified"))
-	}
-
-	podName := os.Getenv(common.EnvVarK8sAPITargetPodName)
-	if podName == "" {
-		return nil, errors.New(errors.CodeBadRequest, fmt.Sprintf("pod name must be specified"))
-	}
-
+func newK8sAPIClient(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) (*k8sAPIClient, error) {
 	return &k8sAPIClient{
 		clientset: clientset,
-		config:    kubeConfig,
+		config:    config,
 		podName:   podName,
 		namespace: namespace,
 	}, nil

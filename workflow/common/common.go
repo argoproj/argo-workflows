@@ -91,13 +91,6 @@ const (
 	// EnvVarKubeletInsecure is used to disable the TLS verification
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 
-	// EnvVarK8sAPIConfigPath is used to specify Kubernetes API config path
-	EnvVarK8sAPIConfigPath = "ARGO_K8SAPI_CONFIG_PATH"
-	// EnvVarK8sAPITargetNamespace is used to specify target namespace
-	EnvVarK8sAPITargetNamespace = "ARGO_K8SAPI_TARGET_NAMESPACE"
-	// EnvVarK8sAPITargetPodName is used to specify target pod name
-	EnvVarK8sAPITargetPodName = "ARGO_K8SAPI_TARGET_POD_NAME"
-
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
 

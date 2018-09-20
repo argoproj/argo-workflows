@@ -39,9 +39,6 @@ type WorkflowControllerConfig struct {
 	// KubeletInsecure disable the TLS verification of the kubelet containerRuntimeExecutor, default to false
 	KubeletInsecure bool `json:"kubeletInsecure,omitempty"`
 
-	// K8sAPIConfigPath is needed when using the k8sapi containerRuntimeExecutor, default to use in cluster config
-	K8sAPIConfigPath string `json:"k8sAPIConfigPath,omitempty"`
-
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 

@@ -79,7 +79,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	var cre executor.ContainerRuntimeExecutor
 	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
 	case common.ContainerRuntimeExecutorK8sAPI:
-		cre, err = k8sapi.NewK8sAPIExecutor()
+		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
 		if err != nil {
 			panic(err.Error())
 		}
