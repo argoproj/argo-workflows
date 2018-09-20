@@ -329,9 +329,10 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 
 func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
 	exec := apiv1.Container{
-		Name:  name,
-		Image: woc.controller.executorImage(),
-		Env:   woc.createEnvVars(),
+		Name:            name,
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Env:             woc.createEnvVars(),
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
 		},
