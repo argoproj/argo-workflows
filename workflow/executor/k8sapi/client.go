@@ -98,7 +98,7 @@ func (c *k8sAPIClient) getLogsAsStream(containerID string) (io.ReadCloser, error
 		return nil, err
 	}
 	return c.clientset.CoreV1().Pods(c.namespace).
-		GetLogs(c.podName, &v1.PodLogOptions{Container: containerStatus.Name, SinceTime: nil}).Stream()
+		GetLogs(c.podName, &v1.PodLogOptions{Container: containerStatus.Name, SinceTime: &metav1.Time{}}).Stream()
 }
 
 func (c *k8sAPIClient) getLogs(containerID string) (string, error) {
