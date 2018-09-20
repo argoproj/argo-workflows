@@ -275,6 +275,19 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		return append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.Config.ContainerRuntimeExecutor,
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarK8sAPIConfigPath,
+				Value: woc.controller.Config.K8sAPIConfigPath,
+			},
+			envFromField(common.EnvVarK8sAPITargetNamespace, "metadata.namespace"),
+			envFromField(common.EnvVarK8sAPITargetPodName, "metadata.name"),
+		)
 	case common.ContainerRuntimeExecutorKubelet:
 		return append(execEnvVars,
 			apiv1.EnvVar{

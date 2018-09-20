@@ -91,11 +91,21 @@ const (
 	// EnvVarKubeletInsecure is used to disable the TLS verification
 	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
 
+	// EnvVarK8sAPIConfigPath is used to specify Kubernetes API config path
+	EnvVarK8sAPIConfigPath = "ARGO_K8SAPI_CONFIG_PATH"
+	// EnvVarK8sAPITargetNamespace is used to specify target namespace
+	EnvVarK8sAPITargetNamespace = "ARGO_K8SAPI_TARGET_NAMESPACE"
+	// EnvVarK8sAPITargetPodName is used to specify target pod name
+	EnvVarK8sAPITargetPodName = "ARGO_K8SAPI_TARGET_POD_NAME"
+
 	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
 	ContainerRuntimeExecutorDocker = "docker"
 
 	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
 	ContainerRuntimeExecutorKubelet = "kubelet"
+
+	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
+	ContainerRuntimeExecutorK8sAPI = "k8sapi"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
