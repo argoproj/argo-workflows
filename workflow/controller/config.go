@@ -24,6 +24,9 @@ type WorkflowControllerConfig struct {
 	// ExecutorImage is the image name of the executor to use when running pods
 	ExecutorImage string `json:"executorImage,omitempty"`
 
+	// ExecutorImagePullPolicy is the imagePullPolicy of the executor to use when running pods
+	ExecutorImagePullPolicy string `json:"executorImagePullPolicy,omitempty"`
+
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
@@ -120,6 +123,17 @@ func (wfc *WorkflowController) executorImage() string {
 		return wfc.cliExecutorImage
 	}
 	return wfc.Config.ExecutorImage
+}
+
+// executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
+func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
+	var policy string
+	if wfc.cliExecutorImagePullPolicy != "" {
+		policy = wfc.cliExecutorImagePullPolicy
+	} else {
+		policy = wfc.Config.ExecutorImagePullPolicy
+	}
+	return apiv1.PullPolicy(policy)
 }
 
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
