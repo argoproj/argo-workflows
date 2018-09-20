@@ -614,7 +614,7 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 
 // isTarball returns whether or not the file is a tarball
 func isTarball(filePath string) bool {
-	cmd := exec.Command("tar", "-tzf", filePath)
+	cmd := exec.Command("tar", "-tf", filePath)
 	log.Info(cmd.Args)
 	err := cmd.Run()
 	return err == nil
