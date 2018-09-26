@@ -173,15 +173,15 @@ spec:
     container:
       image: containerA
       env:
-        - name: LOG_LEVEL
-        - value: "{{workflow.parameters.log_level}}"
+      - name: LOG_LEVEL
+        value: "{{workflow.parameters.log_level}}"
       command: [runA]
   - - name: B
       container:
         image: containerB
         env:
-          - name: LOG_LEVEL
-          - value: "{{workflow.parameters.log_level}}"
+        - name: LOG_LEVEL
+          value: "{{workflow.parameters.log_level}}"
         command: [runB]
 ```
 
