@@ -35,7 +35,7 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try to save outputs
 	}
-	err = wfExecutor.SaveLogs()
+	logArt, err := wfExecutor.SaveLogs()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
@@ -57,7 +57,7 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	err = wfExecutor.AnnotateOutputs()
+	err = wfExecutor.AnnotateOutputs(logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
