@@ -248,7 +248,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceName string) error {
 		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.AnnotateOutputs()
+	err := we.AnnotateOutputs(nil)
 	if err != nil {
 		return err
 	}
