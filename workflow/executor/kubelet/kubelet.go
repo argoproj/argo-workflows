@@ -82,7 +82,7 @@ func (k *KubeletExecutor) Wait(containerID string) error {
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(containerIDs []string) error {
 	for _, containerID := range containerIDs {
-		log.Infof("SIGTERM containerID %q ...", containerID, syscall.SIGTERM.String())
+		log.Infof("SIGTERM containerID %q: %s", containerID, syscall.SIGTERM.String())
 		err := k.cli.TerminatePodWithContainerID(containerID, syscall.SIGTERM)
 		if err != nil {
 			return err
@@ -92,7 +92,7 @@ func (k *KubeletExecutor) Kill(containerIDs []string) error {
 			log.Infof("ContainerID %q successfully killed", containerID)
 			continue
 		}
-		log.Infof("SIGKILL containerID %q ...", containerID, syscall.SIGKILL.String())
+		log.Infof("SIGKILL containerID %q: %s", containerID, syscall.SIGKILL.String())
 		err = k.cli.TerminatePodWithContainerID(containerID, syscall.SIGKILL)
 		if err != nil {
 			return err
