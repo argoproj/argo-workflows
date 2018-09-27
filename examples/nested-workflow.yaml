@@ -40,6 +40,9 @@ spec:
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt
       "]
     outputs:
+      exports:
+      - name: tmp
+        path: /tmp
       parameters:
       - name: out-parameter
         valueFrom:
@@ -69,6 +72,9 @@ spec:
       - name: generate
         template: generate
     outputs:
+      exports:
+      - name: tmp
+        path: /tmp
       parameters:
       - name: nested-out-parameter
         valueFrom:

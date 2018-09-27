@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/argoproj/argo/errors"
@@ -175,6 +176,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
 		addExecutorStagingVolume(pod)
+	}
+
+	if tmpl.GetType() != wfv1.TemplateTypeResource {
+		addExecutorExportVolume(pod, tmpl)
 	}
 
 	// addSidecars should be called after all volumes have been manipulated
@@ -642,6 +647,66 @@ func addExecutorStagingVolume(pod *apiv1.Pod) {
 	}
 	if !found {
 		panic("Unable to locate main container")
+	}
+}
+
+// addExecutorExportVolume sets up a shared export volume between the main container
+// and wait container for the purpose of sharing output files without copying them.
+func addExecutorExportVolume(pod *apiv1.Pod, tmpl *wfv1.Template) {
+	volBaseName := "argo-export"
+	for _, export := range tmpl.Outputs.Exports {
+		volName := fmt.Sprintf("%s-%s", volBaseName, export.Name)
+		exportVol := apiv1.Volume{
+			Name: volName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, exportVol)
+	}
+
+	foundMain := false
+	foundWait := false
+	for i, ctr := range pod.Spec.Containers {
+		if ctr.Name == common.MainContainerName {
+			for _, export := range tmpl.Outputs.Exports {
+				volMount := apiv1.VolumeMount{
+					Name:      fmt.Sprintf("%s-%s", volBaseName, export.Name),
+					MountPath: export.Path,
+				}
+				if ctr.VolumeMounts == nil {
+					ctr.VolumeMounts = []apiv1.VolumeMount{volMount}
+				} else {
+					ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
+				}
+			}
+			pod.Spec.Containers[i] = ctr
+			foundMain = true
+		}
+		if ctr.Name == common.WaitContainerName {
+			for _, export := range tmpl.Outputs.Exports {
+				volMount := apiv1.VolumeMount{
+					Name:      fmt.Sprintf("%s-%s", volBaseName, export.Name),
+					MountPath: filepath.Join(common.ExecutorExportBaseDir, export.Name),
+				}
+				if ctr.VolumeMounts == nil {
+					ctr.VolumeMounts = []apiv1.VolumeMount{volMount}
+				} else {
+					ctr.VolumeMounts = append(ctr.VolumeMounts, volMount)
+				}
+			}
+			pod.Spec.Containers[i] = ctr
+			foundWait = true
+		}
+		if foundMain && foundWait {
+			break
+		}
+	}
+	if !foundMain {
+		panic("Unable to locate main container")
+	}
+	if !foundWait {
+		panic("Unable to locate wait container")
 	}
 }
 

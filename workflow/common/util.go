@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -353,4 +354,17 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		manifests = append(manifests, wf)
 	}
 	return manifests, nil
+}
+
+// ReplaceDirPath is a hlper to replace directory in path
+func ReplaceDirPath(path, fromDirPath string, toDirPath string) (string, error) {
+	relPath, err := filepath.Rel(fromDirPath, path)
+	if err != nil {
+		return "", errors.InternalWrapError(err)
+	}
+	if !strings.HasPrefix(relPath, "/") && !strings.HasPrefix(relPath, "..") {
+		newPath := filepath.Join(toDirPath, relPath)
+		return newPath, nil
+	}
+	return path, nil
 }

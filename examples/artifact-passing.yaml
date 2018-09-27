@@ -24,6 +24,9 @@ spec:
       command: [sh, -c]
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
+      exports:
+      - name: tmp
+        path: /tmp
       artifacts:
       - name: hello-art
         path: /tmp/hello_world.txt

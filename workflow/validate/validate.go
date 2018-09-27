@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -452,6 +453,16 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs %s", tmpl.Name, err.Error())
 	}
 
+	for _, export := range tmpl.Outputs.Exports {
+		exportRef := fmt.Sprintf("outputs.exports.%s", export.Name)
+		errs := isValidWorkflowFieldName(export.Name)
+		if len(errs) > 0 {
+			return errors.Errorf(errors.CodeBadRequest, "%s.name is invalid: %s", exportRef, errs[0])
+		}
+		if !filepath.IsAbs(export.Path) {
+			return errors.Errorf(errors.CodeBadRequest, "%s.path must be an absolute path", exportRef)
+		}
+	}
 	for _, art := range tmpl.Outputs.Artifacts {
 		artRef := fmt.Sprintf("outputs.artifacts.%s", art.Name)
 		if tmpl.IsLeaf() {

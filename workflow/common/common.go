@@ -77,6 +77,9 @@ const (
 	// ExecutorResourceManifestPath is the path which init will write the a manifest file to for resource templates
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
+	// ExecutorExportBaseDir is the path of the emptydir which is used as an export area to share files between main/wait container for outputs.
+	ExecutorExportBaseDir = "/argo/outputs/exports"
+
 	// Various environment variables containing pod information exposed to the executor container(s)
 
 	// EnvVarPodName contains the name of the pod (currently unused)

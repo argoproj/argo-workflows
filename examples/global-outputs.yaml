@@ -21,6 +21,9 @@ spec:
       command: [sh, -c]
       args: ["echo -n hello world > /tmp/hello_world.txt"]
     outputs:
+      exports:
+      - name: tmp
+        path: /tmp
       parameters:
       # export a global parameter. The parameter will be programatically available in the completed
       # workflow object under: workflow.status.outputs.parameters

@@ -56,6 +56,9 @@ spec:
           echo "odd" > /tmp/even;
         fi
     outputs:
+      exports:
+      - name: tmp
+        path: /tmp
       parameters:
       - name: num
         valueFrom:

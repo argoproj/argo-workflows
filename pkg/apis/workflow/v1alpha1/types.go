@@ -282,6 +282,12 @@ type Artifact struct {
 	Archive *ArchiveStrategy `json:"archive,omitempty"`
 }
 
+// Export is used to share output artifacts between main/wait container.
+type Export struct {
+	Name string `json:"name,omitempty"`
+	Path string `json:"path,omitempty"`
+}
+
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
 type ArchiveStrategy struct {
 	Tar  *TarStrategy  `json:"tar,omitempty"`
@@ -320,7 +326,7 @@ type ArtifactLocation struct {
 	Raw *RawArtifact `json:"raw,omitempty"`
 }
 
-// Outputs hold parameters, artifacts, and results from a step
+// Outputs hold parameters, artifacts, results and exports from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
 	Parameters []Parameter `json:"parameters,omitempty"`
@@ -330,6 +336,9 @@ type Outputs struct {
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty"`
+
+	// Exports holds the export directory for outputs
+	Exports []Export `json:"exports,omitempty"`
 }
 
 // WorkflowStep is a reference to a template to execute in a series of step

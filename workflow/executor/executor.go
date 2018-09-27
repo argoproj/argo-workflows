@@ -213,6 +213,20 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 	return nil
 }
 
+func (we *WorkflowExecutor) replaceExportPath(path string) (string, error) {
+	for _, export := range we.Template.Outputs.Exports {
+		newPath, err := common.ReplaceDirPath(path, export.Path, filepath.Join(common.ExecutorExportBaseDir, export.Name))
+		if err != nil {
+			return "", err
+		}
+		if path != newPath {
+			log.Infof("replaced export path: %q -> %q", path, newPath)
+			return newPath, nil
+		}
+	}
+	return path, nil
+}
+
 func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string, art *wfv1.Artifact) error {
 	log.Infof("Saving artifact: %s", art.Name)
 	// Determine the file path of where to find the artifact
@@ -225,9 +239,20 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 	// localArtPath is the final staging location of the file (or directory) which we will pass
 	// to the SaveArtifacts call
 	localArtPath := path.Join(tempOutArtDir, fileName)
-	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+	exportedArtPath, err := we.replaceExportPath(art.Path)
 	if err != nil {
 		return err
+	}
+	if exportedArtPath != art.Path {
+		err = os.Symlink(exportedArtPath, localArtPath)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	} else {
+		err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+		if err != nil {
+			return err
+		}
 	}
 	fileName, localArtPath, err = stageArchiveFile(fileName, localArtPath, art)
 	if err != nil {
@@ -340,9 +365,28 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		if param.ValueFrom == nil || param.ValueFrom.Path == "" {
 			continue
 		}
-		output, err := we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
+		// TODO: Read file contents from mounted directories
+
+		var output string
+		exportedArtPath, err := we.replaceExportPath(param.ValueFrom.Path)
 		if err != nil {
 			return err
+		}
+		if exportedArtPath != param.ValueFrom.Path {
+			fp, err := os.Open(exportedArtPath)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+			bytes, err := ioutil.ReadAll(fp)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+			output = string(bytes)
+		} else {
+			output, err = we.RuntimeExecutor.GetFileContents(mainCtrID, param.ValueFrom.Path)
+			if err != nil {
+				return err
+			}
 		}
 		outputLen := len(output)
 		// Trims off a single newline for user convenience

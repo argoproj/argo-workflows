@@ -221,6 +221,17 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.Export": {
+      "description": "Export is used to share output artifacts between main/wait container.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "required": [
@@ -306,13 +317,20 @@
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately."
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
-      "description": "Outputs hold parameters, artifacts, and results from a step",
+      "description": "Outputs hold parameters, artifacts, results and exports from a step",
       "properties": {
         "artifacts": {
           "description": "Artifacts holds the list of output artifacts produced by a step",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
+          }
+        },
+        "exports": {
+          "description": "Exports holds the export directory for outputs",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Export"
           }
         },
         "parameters": {
