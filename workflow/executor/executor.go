@@ -24,6 +24,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
+	"github.com/argoproj/argo/workflow/artifacts/gcs"
 	"github.com/argoproj/argo/workflow/artifacts/git"
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/raw"
@@ -253,6 +254,10 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 			}
 			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 			art.Artifactory.URL = artifactoryURL.String()
+		} else if we.Template.ArchiveLocation.GCS != nil {
+			shallowCopy := *we.Template.ArchiveLocation.GCS
+			art.GCS = &shallowCopy
+			art.GCS.Key = path.Join(art.GCS.Key, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 		}
@@ -433,6 +438,10 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			Secure:    art.S3.Insecure == nil || *art.S3.Insecure == false,
 			Region:    art.S3.Region,
 		}
+		return &driver, nil
+	}
+	if art.GCS != nil {
+		driver := gcs.GCSArtifactDriver{}
 		return &driver, nil
 	}
 	if art.HTTP != nil {

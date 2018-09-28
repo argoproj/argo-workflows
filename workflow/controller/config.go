@@ -67,6 +67,7 @@ type ArtifactRepository struct {
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Artifactory stores artifacts to JFrog Artifactory
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
+	GCS         *GCSArtifactRepository         `json:"gcs,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
@@ -86,6 +87,11 @@ type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
 	// RepoURL is the url for artifactory repo.
 	RepoURL string `json:"repoURL,omitempty"`
+}
+
+// GCSArtifactRepository defines the controller configuration for a GCS artifact repository
+type GCSArtifactRepository struct {
+	wfv1.GCSBucket `json:",inline"`
 }
 
 // ResyncConfig reloads the controller config from the configmap

@@ -87,6 +87,25 @@ var (
 	execEnvVars = []apiv1.EnvVar{
 		envFromField(common.EnvVarPodName, "metadata.name"),
 	}
+
+	volumeMountGoogleSecret = apiv1.VolumeMount{
+		Name:      common.GoogleSecretVolumeName,
+		MountPath: "/var/secrets/google",
+	}
+
+	googleCredentialSecretEnvVar = apiv1.EnvVar{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: "/var/secrets/google/key.json",
+	}
+
+	volumeGoogleSecret = apiv1.Volume{
+		Name: common.GoogleSecretVolumeName,
+		VolumeSource: apiv1.VolumeSource{
+			Secret: &apiv1.SecretVolumeSource{
+				SecretName: common.GoogleSecretName,
+			},
+		},
+	}
 )
 
 // envFromField is a helper to return a EnvVar with the name and field
@@ -136,6 +155,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
+	}
+
+	if common.GoogleSecretName != "" {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeGoogleSecret)
 	}
 
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
@@ -260,9 +283,8 @@ func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container
 	ctr := woc.newExecContainer(common.InitContainerName, false)
 	ctr.Command = []string{"argoexec"}
 	ctr.Args = []string{"init"}
-	ctr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-	}
+	ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountPodMetadata)
+
 	return *ctr
 }
 
@@ -270,7 +292,8 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"argoexec"}
 	ctr.Args = []string{"wait"}
-	ctr.VolumeMounts = woc.createVolumeMounts()
+	ctr.VolumeMounts = append(ctr.VolumeMounts, woc.createVolumeMounts()...)
+
 	return ctr, nil
 }
 
@@ -340,6 +363,7 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 		Name:            name,
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		VolumeMounts:    []apiv1.VolumeMount{},
 		Env:             woc.createEnvVars(),
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
@@ -347,6 +371,11 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 	}
 	if woc.controller.Config.ExecutorResources != nil {
 		exec.Resources = *woc.controller.Config.ExecutorResources
+	}
+
+	if common.GoogleSecretName != "" {
+		exec.VolumeMounts = append(exec.VolumeMounts, volumeMountGoogleSecret)
+		exec.Env = append(exec.Env, googleCredentialSecretEnvVar)
 	}
 	return &exec
 }
@@ -593,6 +622,13 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
+		}
+	} else if woc.controller.Config.ArtifactRepository.GCS != nil {
+		log.Debugf("Setting GCS artifact repository information")
+		artLocationKey := fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
+		tmpl.ArchiveLocation.GCS = &wfv1.GCSArtifact{
+			GCSBucket: woc.controller.Config.ArtifactRepository.GCS.GCSBucket,
+			Key:       artLocationKey,
 		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {

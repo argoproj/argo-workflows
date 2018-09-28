@@ -58,6 +58,10 @@
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
         },
+        "gcs": {
+          "description": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
+        },
         "git": {
           "description": "Git contains git artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GitArtifact"
@@ -103,6 +107,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "gcs": {
+          "description": "GCS contains GCS artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.GCSArtifact"
         },
         "git": {
           "description": "Git contains git artifact location details",
@@ -218,6 +226,32 @@
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSArtifact": {
+      "description": "GCSArtifact is the location of a GCS artifact",
+      "required": [
+        "bucket",
+        "key"
+      ],
+      "properties": {
+        "bucket": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.GCSBucket": {
+      "description": "GCSBucket contains the access information required for acting with a GCS bucket",
+      "required": [
+        "bucket"
+      ],
+      "properties": {
+        "bucket": {
+          "type": "string"
         }
       }
     },

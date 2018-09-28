@@ -318,6 +318,9 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
+
+	// GCS contains GCS artifact location details
+	GCS *GCSArtifact `json:"gcs,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -594,6 +597,21 @@ func (s *S3Artifact) String() string {
 	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
 }
 
+// GCSBucket contains the access information required for acting with a GCS bucket
+type GCSBucket struct {
+	Bucket string `json:"bucket"`
+}
+
+// GCSArtifact is the location of a GCS artifact
+type GCSArtifact struct {
+	GCSBucket `json:",inline"`
+	Key       string `json:"key"`
+}
+
+func (s *GCSArtifact) String() string {
+	return fmt.Sprintf("gs://%s/%s", s.Bucket, s.Key)
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -818,7 +836,7 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.GCS != nil
 }
 
 // GetTemplate retrieves a defined template by its name
