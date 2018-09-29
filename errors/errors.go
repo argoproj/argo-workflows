@@ -61,7 +61,7 @@ func InternalError(message string) error {
 
 // InternalErrorf is a convenience function to format an Internal error
 func InternalErrorf(format string, args ...interface{}) error {
-	return Errorf(CodeInternal, format, args)
+	return Errorf(CodeInternal, format, args...)
 }
 
 // InternalWrapError annotates the error with the ERR_INTERNAL code and a stack trace, optional message

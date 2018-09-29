@@ -255,7 +255,7 @@ func shouldExecute(when string) (bool, error) {
 	}
 	result, err := expression.Evaluate(nil)
 	if err != nil {
-		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", err)
+		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
 	}
 	boolRes, ok := result.(bool)
 	if !ok {
