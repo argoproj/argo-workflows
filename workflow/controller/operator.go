@@ -447,7 +447,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		performAssessment(&pod)
 		err = woc.applyExecutionControl(&pod)
 		if err != nil {
-			woc.log.Warn("Failed to apply execution control to pod %s", pod.Name)
+			woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 		}
 	}
 
@@ -1382,7 +1382,7 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	art.Name = art.GlobalName
 	art.GlobalName = ""
 	art.Path = ""
-	woc.log.Infof("setting %s: %s", globalArtName, art)
+	woc.log.Infof("setting %s: %v", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
 	woc.updated = true
 }
