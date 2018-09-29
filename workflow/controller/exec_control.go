@@ -50,7 +50,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 	if execCtlStr, ok := pod.Annotations[common.AnnotationKeyExecutionControl]; ok && execCtlStr != "" {
 		err := json.Unmarshal([]byte(execCtlStr), &podExecCtl)
 		if err != nil {
-			woc.log.Warn("Failed to unmarshal execution control from pod %s", pod.Name)
+			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
 		}
 	}
 	if podExecCtl.Deadline == nil && desiredExecCtl.Deadline == nil {
@@ -60,7 +60,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 			return nil
 		}
 	}
-	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Namespace, pod.Name, desiredExecCtl.Deadline, podExecCtl.Deadline)
+	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, desiredExecCtl.Deadline, podExecCtl.Deadline)
 	return woc.updateExecutionControl(pod.Name, desiredExecCtl)
 }
 

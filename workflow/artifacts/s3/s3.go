@@ -45,7 +45,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
 	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 	if err != nil {
-		log.Warn("Failed to test if %s is a directory: %v", err)
+		log.Warnf("Failed to test if %s is a directory: %v", inputArtifact.S3.Bucket, err)
 		return origErr
 	}
 	if !isDir {
