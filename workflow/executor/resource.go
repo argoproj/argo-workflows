@@ -107,7 +107,7 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 		if err == wait.ErrWaitTimeout {
 			log.Warnf("Waiting for resource %s resulted in timeout due to repeated errors", resourceName)
 		} else {
-			log.Warnf("Waiting for resource %s resulted in error %v", err)
+			log.Warnf("Waiting for resource %s resulted in error %v", resourceName, err)
 		}
 	}
 
@@ -248,7 +248,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceName string) error {
 		we.Template.Outputs.Parameters[i].Value = &output
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
-	err := we.AnnotateOutputs()
+	err := we.AnnotateOutputs(nil)
 	if err != nil {
 		return err
 	}

@@ -65,6 +65,7 @@ Currently **officially** using Argo:
 1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [KintoHub](https://www.kintohub.com/)
+1. [Styra](https://www.styra.com/)
 
 ## Community Blogs and Presentations
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)

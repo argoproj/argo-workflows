@@ -356,27 +356,28 @@ func (we *WorkflowExecutor) SaveParameters() error {
 }
 
 // SaveLogs saves logs
-func (we *WorkflowExecutor) SaveLogs() error {
+func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if we.Template.ArchiveLocation == nil || we.Template.ArchiveLocation.ArchiveLogs == nil || !*we.Template.ArchiveLocation.ArchiveLogs {
-		return nil
+		return nil, nil
 	}
 	log.Infof("Saving logs")
 	mainCtrID, err := we.GetMainContainerID()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tempLogsDir := "/argo/outputs/logs"
 	err = os.MkdirAll(tempLogsDir, os.ModePerm)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 	fileName := "main.log"
 	mainLog := path.Join(tempLogsDir, fileName)
 	err = we.RuntimeExecutor.Logs(mainCtrID, mainLog)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	art := wfv1.Artifact{
+		Name:             "main-logs",
 		ArtifactLocation: *we.Template.ArchiveLocation,
 	}
 	if we.Template.ArchiveLocation.S3 != nil {
@@ -388,22 +389,23 @@ func (we *WorkflowExecutor) SaveLogs() error {
 		art.Artifactory = &shallowCopy
 		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
 		if urlParseErr != nil {
-			return urlParseErr
+			return nil, urlParseErr
 		}
 		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 		art.Artifactory.URL = artifactoryURL.String()
 	} else {
-		return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
 	artDriver, err := we.InitDriver(art)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = artDriver.Save(mainLog, &art)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	return &art, nil
 }
 
 // InitDriver initializes an instance of an artifact driver
@@ -590,12 +592,17 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 }
 
 // AnnotateOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) AnnotateOutputs() error {
-	if !we.Template.Outputs.HasOutputs() {
+func (we *WorkflowExecutor) AnnotateOutputs(logArt *wfv1.Artifact) error {
+	outputs := we.Template.Outputs.DeepCopy()
+	if logArt != nil {
+		outputs.Artifacts = append(outputs.Artifacts, *logArt)
+	}
+
+	if !outputs.HasOutputs() {
 		return nil
 	}
 	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(we.Template.Outputs)
+	outputBytes, err := json.Marshal(outputs)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}

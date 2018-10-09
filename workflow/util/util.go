@@ -355,6 +355,11 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// carry over the unmodified spec
 	newWF.Spec = wf.Spec
 
+	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
+		// if it was terminated, unset the deadline
+		newWF.Spec.ActiveDeadlineSeconds = nil
+	}
+
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
 	for key, val := range wf.ObjectMeta.Labels {
@@ -439,10 +444,14 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	// Delete/reset fields which indicate workflow completed
 	delete(newWF.Labels, common.LabelKeyCompleted)
-	delete(newWF.Labels, common.LabelKeyPhase)
+	newWF.ObjectMeta.Labels[common.LabelKeyPhase] = string(wfv1.NodeRunning)
 	newWF.Status.Phase = wfv1.NodeRunning
 	newWF.Status.Message = ""
 	newWF.Status.FinishedAt = metav1.Time{}
+	if newWF.Spec.ActiveDeadlineSeconds != nil && *newWF.Spec.ActiveDeadlineSeconds == 0 {
+		// if it was terminated, unset the deadline
+		newWF.Spec.ActiveDeadlineSeconds = nil
+	}
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)

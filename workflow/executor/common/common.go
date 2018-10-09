@@ -89,7 +89,7 @@ func TerminatePodWithContainerID(c KubernetesClientInterface, containerID string
 
 // KillGracefully kills a container gracefully.
 func KillGracefully(c KubernetesClientInterface, containerID string) error {
-	log.Infof("SIGTERM containerID %q ...", containerID, syscall.SIGTERM.String())
+	log.Infof("SIGTERM containerID %q: %s", containerID, syscall.SIGTERM.String())
 	err := TerminatePodWithContainerID(c, containerID, syscall.SIGTERM)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func KillGracefully(c KubernetesClientInterface, containerID string) error {
 		log.Infof("ContainerID %q successfully killed", containerID)
 		return nil
 	}
-	log.Infof("SIGKILL containerID %q ...", containerID, syscall.SIGKILL.String())
+	log.Infof("SIGKILL containerID %q: %s", containerID, syscall.SIGKILL.String())
 	err = TerminatePodWithContainerID(c, containerID, syscall.SIGKILL)
 	if err != nil {
 		return err
