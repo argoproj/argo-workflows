@@ -113,7 +113,7 @@ data:
     artifactRepository:
       s3:
         bucket: my-bucket
-	keyPrefix: prefix/in/bucket	#optional
+        keyPrefix: prefix/in/bucket     #optional
         endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
         insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
         accessKeySecret:                #omit if accessing via AWS IAM
