@@ -80,7 +80,7 @@ func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
 		}
 		err := woc.updateExecutionControl(childNode.ID, execCtl)
 		if err != nil {
-			woc.log.Errorf("Failed to update execution control of %s: %+v", childNode, err)
+			woc.log.Errorf("Failed to update execution control of node %s: %+v", childNode.ID, err)
 			if firstErr == nil {
 				firstErr = err
 			}

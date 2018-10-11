@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo/util"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/gorilla/websocket"
@@ -171,7 +173,7 @@ func (k *kubeletClient) saveLogsToFile(namespace, podName, containerName, path s
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	defer outFile.Close()
+	defer util.Close(outFile)
 	_, err = io.Copy(outFile, resp.Body)
 	return err
 }
