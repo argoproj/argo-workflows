@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.1 (2018-10-18)
+
+### Changelog since v2.2.0
++ UI retrieve logs from artifacts location if logs archiving is enabled (issue #1018)
++ Add imagePullPolicy config for executors (@dtaniwaki)
++ Detect and indicate when container was OOMKilled
++ support force namespace isolation in UI
+- Workflow executor panic: workflows.argoproj.io/template not found (issue #1033)
+- gc-ttl dose not work (issue #1004)
+- Resubmission of a terminated workflow creates a new workflow that is already terminated (issue #1011)
+- ZIP containing single file cannot be used as an artifact due to errors in init container (issue #984) (@mthx)
+- Regression when S3 secret has trailing newline (issue #981)
+* Documentation fixes (@gsf, @davidB, @dtaniwaki)
+
 ## 2.2.0 (2018-08-30)
 
 ### Notes about upgrading from v2.1
