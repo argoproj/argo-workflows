@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo/util"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
@@ -74,7 +76,7 @@ func (d *DockerExecutor) Logs(containerID string, path string) error {
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
-	defer outfile.Close()
+	defer util.Close(outfile)
 	cmd.Stdout = outfile
 	err = cmd.Start()
 	if err != nil {
