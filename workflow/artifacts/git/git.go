@@ -45,6 +45,40 @@ func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
 }
 
+func gitCheckout(path string, inputArtifact *wfv1.Artifact) error {
+    // We still rely on forking git for checkout, since go-git does not have a reliable
+    // way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
+    log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
+    cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
+    cmd.Dir = path
+    output, err := cmd.Output()
+    if err != nil {
+        if exErr, ok := err.(*exec.ExitError); ok {
+            log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+            return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
+        }
+        return errors.InternalWrapError(err)
+    }
+    log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
+    return nil
+}
+
+func gitSubmoduleUpdate(path string, inputArtifact *wfv1.Artifact) error {
+    log.Infof("updating submodule for revision %s", inputArtifact.Git.Revision)
+    cmd := exec.Command("git", "submodule", "update")
+    cmd.Dir = path
+    output, err := cmd.Output()
+    if err != nil {
+        if exErr, ok := err.(*exec.ExitError); ok {
+            log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
+            return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
+        }
+        return errors.InternalWrapError(err)
+    }
+    log.Infof("`%s` stdout:\n%s", cmd.Args, string(output))
+    return nil
+}
+
 func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod) error {
 	cloneOptions := git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
@@ -56,20 +90,15 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		return errors.InternalWrapError(err)
 	}
 	if inputArtifact.Git.Revision != "" {
-		// We still rely on forking git for checkout, since go-git does not have a reliable
-		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
-		log.Infof("Checking out revision %s", inputArtifact.Git.Revision)
-		cmd := exec.Command("git", "checkout", inputArtifact.Git.Revision)
-		cmd.Dir = path
-		output, err := cmd.Output()
-		if err != nil {
-			if exErr, ok := err.(*exec.ExitError); ok {
-				log.Errorf("`%s` stderr:\n%s", cmd.Args, string(exErr.Stderr))
-				return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
-			}
-			return errors.InternalWrapError(err)
-		}
-		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
+        checkoutErr := gitCheckout(path, inputArtifact)
+        if checkoutErr != nil {
+            return checkoutErr
+        }
+
+        updateErr := gitSubmoduleUpdate(path, inputArtifact)
+        if updateErr != nil {
+            return updateErr
+        }
 	}
 	return nil
 }
