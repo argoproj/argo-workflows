@@ -939,10 +939,7 @@ func unmarshalAnnotationField(filePath string, key string, into interface{}) err
 				break
 			}
 		}
-		// The end of the annotation file
-		if err == io.EOF {
-			break
-		}
+
 		line := buffer.String()
 
 		// Read property
@@ -970,6 +967,11 @@ func unmarshalAnnotationField(filePath string, key string, into interface{}) err
 				return errors.InternalWrapError(err)
 			}
 			return nil
+		}
+
+		// The end of the annotation file
+		if err == io.EOF {
+			break
 		}
 	}
 
