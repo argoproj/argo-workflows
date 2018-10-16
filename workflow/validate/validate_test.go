@@ -322,9 +322,7 @@ spec:
 
 func TestInvalidArgParamName(t *testing.T) {
 	err := validate(invalidArgParamNames)
-	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), invalidErr)
-	}
+	assert.NotNil(t, err)
 }
 
 var invalidArgArtNames = `
@@ -336,7 +334,7 @@ spec:
   entrypoint: kubectl-input-artifact
   arguments:
     artifacts:
-    - name: -kubectl
+    - name: "&-kubectl"
       http:
         url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
 
@@ -344,7 +342,7 @@ spec:
   - name: kubectl-input-artifact
     inputs:
       artifacts:
-      - name: -kubectl
+      - name: "&-kubectl"
         path: /usr/local/bin/kubectl
         mode: 0755
     container:
@@ -423,7 +421,7 @@ spec:
     container:
       image: docker/whalesay
       command: [cowsay]
-      args: ["{{inputs.parameters.message}}"]
+      args: ["{{inputs.parameters.message+123}}"]
 `
 
 func TestInvalidInputParamName(t *testing.T) {
@@ -500,7 +498,7 @@ spec:
       args: ["cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
-      - name: __1
+      - name: "!1"
         path: /tmp/hello_world.txt
 `
 
@@ -1072,6 +1070,41 @@ func TestSpecArgumentNoValue(t *testing.T) {
 	assert.Nil(t, err)
 	err = ValidateWorkflow(wf)
 	assert.NotNil(t, err)
+}
+
+var specArgumentSnakeCase = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: spec-arg-snake-case-
+spec:
+  entrypoint: whalesay
+  arguments:
+    artifacts:
+    - name: __kubectl
+      http:
+        url: https://storage.googleapis.com/kubernetes-release/release/v1.8.0/bin/linux/amd64/kubectl
+    parameters:
+    - name: my_snake_case_param
+      value: "hello world"
+  templates:
+  - name: whalesay
+    inputs:
+      artifacts:
+      - name: __kubectl
+        path: /usr/local/bin/kubectl
+        mode: 0755
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{workflow.parameters.my_snake_case_param}} | tee /tmp/hello_world.txt && ls  /usr/local/bin/kubectl"]
+`
+
+// TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
+func TestSpecArgumentSnakeCase(t *testing.T) {
+	wf := unmarshalWf(specArgumentSnakeCase)
+	err := ValidateWorkflow(wf, true)
+	assert.Nil(t, err)
 }
 
 var specBadSequenceCountAndEnd = `
