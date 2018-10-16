@@ -308,7 +308,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			}
 		}
 		// Finally execute the template
-		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID, dagCtx.boundaryName)
 	}
 
 	// If we expanded the task, we still need to create the task entry for the non-expanded node,
