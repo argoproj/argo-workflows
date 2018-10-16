@@ -167,12 +167,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return woc.markNodeError(sgNodeName, err)
 	}
 
-	woc.log.Infof("Length of stepGroup: %d", len(stepGroup))
-
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
-		woc.log.Infof("yoyo childNodeName: %s", childNodeName)
 
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
@@ -196,7 +193,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			case ErrDeadlineExceeded:
 				return node
 			case ErrParallelismReached:
-				woc.log.Infof("executeStepGroup ErrParallelismReached")
 			default:
 				errMsg := fmt.Sprintf("child '%s' errored", childNode.ID)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
