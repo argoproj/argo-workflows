@@ -70,6 +70,16 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 			return errors.InternalWrapError(err)
 		}
 		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
+		submodulesCmd := exec.Command("git", "submodules", "update", "--init", "--recursive", "--force")
+		submodulesCmd.Dir = path
+		output, err = submodulesCmd.Output()
+		if err != nil {
+			if exErr, ok := err.(*exec.ExitError); ok {
+				log.Errorf("`%s` stderr:\n%s", submodulesCmd.Args, string(exErr.Stderr))
+				return errors.InternalError(strings.Split(string(exErr.Stderr), "\n")[0])
+			}
+			return errors.InternalWrapError(err)
+		}
 	}
 	return nil
 }
