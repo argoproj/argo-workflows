@@ -2,7 +2,10 @@ package git
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"os/user"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -27,6 +30,10 @@ type GitArtifactDriver struct {
 // leaking such as in the repo_dir/.git/config or logging an insecure url.
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if g.SSHPrivateKey != "" {
+		err := writePrivateKey(g.SSHPrivateKey)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
 			return errors.InternalWrapError(err)
@@ -45,6 +52,32 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 // Save is unsupported for git output artifacts
 func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
+}
+
+func writePrivateKey(key string) error {
+	usr, err := user.Current()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	sshDir := fmt.Sprintf("%s/.ssh", usr.HomeDir)
+	err = os.Mkdir(sshDir, 0700)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+
+	sshConfig := `Host *
+	StrictHostKeyChecking no
+	UserKnownHostsFile /dev/null`
+	err = ioutil.WriteFile(fmt.Sprintf("%s/config", sshDir), []byte(sshConfig), 0644)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	err = ioutil.WriteFile(fmt.Sprintf("%s/id_rsa", sshDir), []byte(key), 0600)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+
+	return nil
 }
 
 func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod) error {
