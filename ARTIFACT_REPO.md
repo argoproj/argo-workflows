@@ -106,7 +106,7 @@ For Minio, the `accessKeySecret` and `secretKeySecret` naturally correspond the 
 
 Example:
 ```
-$ kubectl edit configmap workflow-controller-configmap -n kube-system
+$ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo was installed in the argo namespace
 ...
 data:
   config: |
