@@ -29,23 +29,19 @@ type GitArtifactDriver struct {
 // Load download artifacts from an git URL
 func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
 	if g.SSHPrivateKey != "" {
-		err := writePrivateKey(g.SSHPrivateKey)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
 		signer, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
 		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-		return gitClone(path, inputArtifact, auth)
+		return gitClone(path, inputArtifact, auth, g.SSHPrivateKey)
 	}
 	if g.Username != "" || g.Password != "" {
 		auth := &http.BasicAuth{Username: g.Username, Password: g.Password}
-		return gitClone(path, inputArtifact, auth)
+		return gitClone(path, inputArtifact, auth, "")
 	}
-	return gitClone(path, inputArtifact, nil)
+	return gitClone(path, inputArtifact, nil, "")
 }
 
 // Save is unsupported for git output artifacts
@@ -79,7 +75,7 @@ func writePrivateKey(key string) error {
 	return nil
 }
 
-func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod) error {
+func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMethod, privateKey string) error {
 	cloneOptions := git.CloneOptions{
 		URL:               inputArtifact.Git.Repo,
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
@@ -105,6 +101,12 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		}
 		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
 		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
+		if privateKey != "" {
+			err := writePrivateKey(privateKey)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+		}
 		submodulesCmd.Dir = path
 		submoduleOutput, err := submodulesCmd.Output()
 		if err != nil {
