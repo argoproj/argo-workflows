@@ -100,13 +100,13 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 			return errors.InternalWrapError(err)
 		}
 		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
-		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 		if privateKey != "" {
 			err := writePrivateKey(privateKey)
 			if err != nil {
 				return errors.InternalWrapError(err)
 			}
 		}
+		submodulesCmd := exec.Command("git", "submodule", "update", "--init", "--recursive", "--force")
 		submodulesCmd.Dir = path
 		submoduleOutput, err := submodulesCmd.Output()
 		if err != nil {
