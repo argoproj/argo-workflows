@@ -8,6 +8,8 @@ Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a resul
 
 Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
 
+For a complete description of the Argo workflow spec, please refer to https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/types.go
+
 ## Table of Content
 
 - [Argo CLI](#argo-cli)
