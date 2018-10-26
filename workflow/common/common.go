@@ -97,6 +97,9 @@ const (
 	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
 	ContainerRuntimeExecutorKubelet = "kubelet"
 
+	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
+	ContainerRuntimeExecutorK8sAPI = "k8sapi"
+
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field

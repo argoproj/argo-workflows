@@ -33,7 +33,7 @@ data:
         bucket: my-bucket
         region: us-west-2
         # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
-        # It can reference workflow metadata variables such as workflow.namespace, workflow.name, 
+        # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
         # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
         # artifacts can be organized by date. If omitted, will use `{{workflow.name}}/{{pod.name}}`,
         # which has potential for have collisions.

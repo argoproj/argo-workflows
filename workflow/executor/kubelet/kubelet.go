@@ -1,18 +1,9 @@
 package kubelet
 
 import (
-	"compress/gzip"
-	"os"
-	"syscall"
-	"time"
-
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 )
-
-// killGracePeriod is the time in seconds after sending SIGTERM before
-// forcefully killing the sidecar with SIGKILL (value matches k8s)
-const killGracePeriod = 10
 
 type KubeletExecutor struct {
 	cli *kubeletClient
@@ -38,29 +29,7 @@ func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string)
 }
 
 func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
-	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	b, err := k.cli.CreateArchive(containerID, sourcePath)
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(destPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
-	if err != nil {
-		return err
-	}
-	w := gzip.NewWriter(f)
-	_, err = w.Write(b.Bytes())
-	if err != nil {
-		return err
-	}
-	err = w.Flush()
-	if err != nil {
-		return err
-	}
-	err = w.Close()
-	if err != nil {
-		return err
-	}
-	return f.Close()
+	return k.cli.CopyArchive(containerID, sourcePath, destPath)
 }
 
 // GetOutput returns the entirety of the container output as a string
@@ -82,26 +51,10 @@ func (k *KubeletExecutor) Wait(containerID string) error {
 // Kill kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 func (k *KubeletExecutor) Kill(containerIDs []string) error {
 	for _, containerID := range containerIDs {
-		log.Infof("SIGTERM containerID %q: %s", containerID, syscall.SIGTERM.String())
-		err := k.cli.TerminatePodWithContainerID(containerID, syscall.SIGTERM)
+		err := k.cli.KillGracefully(containerID)
 		if err != nil {
 			return err
 		}
-		err = k.cli.WaitForTermination(containerID, time.Second*killGracePeriod)
-		if err == nil {
-			log.Infof("ContainerID %q successfully killed", containerID)
-			continue
-		}
-		log.Infof("SIGKILL containerID %q: %s", containerID, syscall.SIGKILL.String())
-		err = k.cli.TerminatePodWithContainerID(containerID, syscall.SIGKILL)
-		if err != nil {
-			return err
-		}
-		err = k.cli.WaitForTermination(containerID, time.Second*killGracePeriod)
-		if err != nil {
-			return err
-		}
-		log.Infof("ContainerID %q successfully killed", containerID)
 	}
 	return nil
 }

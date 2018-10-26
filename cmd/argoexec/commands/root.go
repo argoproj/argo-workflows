@@ -15,6 +15,7 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
 	"github.com/argoproj/argo/workflow/executor/docker"
+	"github.com/argoproj/argo/workflow/executor/k8sapi"
 	"github.com/argoproj/argo/workflow/executor/kubelet"
 )
 
@@ -77,6 +78,11 @@ func initExecutor() *executor.WorkflowExecutor {
 
 	var cre executor.ContainerRuntimeExecutor
 	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
+		if err != nil {
+			panic(err.Error())
+		}
 	case common.ContainerRuntimeExecutorKubelet:
 		cre, err = kubelet.NewKubeletExecutor()
 		if err != nil {
