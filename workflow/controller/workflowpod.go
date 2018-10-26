@@ -275,6 +275,13 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		return append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.Config.ContainerRuntimeExecutor,
+			},
+		)
 	case common.ContainerRuntimeExecutorKubelet:
 		return append(execEnvVars,
 			apiv1.EnvVar{
