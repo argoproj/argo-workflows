@@ -734,9 +734,10 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 		}
 		errMsg := fmt.Sprintf("failed with exit code %d", ctr.State.Terminated.ExitCode)
 		if ctr.Name != common.MainContainerName {
-			if ctr.State.Terminated.ExitCode == 137 {
+			if ctr.State.Terminated.ExitCode == 137 || ctr.State.Terminated.ExitCode == 143 {
 				// if the sidecar was SIGKILL'd (exit code 137) assume it was because argoexec
 				// forcibly killed the container, which we ignore the error for.
+				// Java code 143 is a normal exit 128 + 15 https://github.com/elastic/elasticsearch/issues/31847
 				log.Infof("Ignoring %d exit code of sidecar '%s'", ctr.State.Terminated.ExitCode, ctr.Name)
 				continue
 			}
