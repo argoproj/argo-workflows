@@ -96,7 +96,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 }
 
 // GetExecutorOutput returns the output of an remotecommand.Executor
-func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
+func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
 	err := exec.Stream(remotecommand.StreamOptions{
@@ -105,9 +105,9 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 		Tty:    false,
 	})
 	if err != nil {
-		return "", "", errors.InternalWrapError(err)
+		return nil, nil, errors.InternalWrapError(err)
 	}
-	return stdOut.String(), stdErr.String(), nil
+	return &stdOut, &stdErr, nil
 }
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
