@@ -1123,12 +1123,10 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
 func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
-	woc.log.Infof("tmpl type: %v, parallelism:%v, node:%v", tmpl.GetType(), tmpl.Parallelism, node)
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
 		return ErrParallelismReached
 	}
-
 	// TODO: repeated calls to countActivePods is not optimal
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
@@ -1140,7 +1138,6 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 				return ErrParallelismReached
 			}
 		}
-
 		fallthrough
 	default:
 		// if we are about to execute a pod, make our parent hasn't reached it's limit
