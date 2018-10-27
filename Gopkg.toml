@@ -7,15 +7,15 @@ required = [
 
 [[constraint]]
   name = "k8s.io/api"
-  branch = "release-1.10"
+  branch = "release-1.12"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  branch = "release-1.10"
+  branch = "release-1.12"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  branch = "release-1.10"
+  branch = "release-1.12"
 
 [[constraint]]
   name = "k8s.io/kube-openapi"
@@ -23,11 +23,7 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  branch = "release-7.0"
-
-[[override]]
-  name = "k8s.io/kubernetes"
-  version = "~1.10.0"
+  branch = "release-9.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"

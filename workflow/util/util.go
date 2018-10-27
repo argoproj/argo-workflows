@@ -17,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -37,28 +38,20 @@ import (
 	"github.com/argoproj/argo/workflow/validate"
 )
 
-func NewDynamicWorkflowClient(config *rest.Config) (dynamic.Interface, error) {
-	dynClientPool := dynamic.NewDynamicClientPool(config)
-	return dynClientPool.ClientForGroupVersionKind(wfv1.SchemaGroupVersionKind)
-}
-
 // NewWorkflowInformer returns the workflow informer used by the controller. This is actually
 // a custom built UnstructuredInformer which is in actuality returning unstructured.Unstructured
 // objects. We no longer return WorkflowInformer due to:
 // https://github.com/kubernetes/kubernetes/issues/57705
 // https://github.com/argoproj/argo/issues/632
 func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	dclient, err := NewDynamicWorkflowClient(cfg)
+	dclient, err := dynamic.NewForConfig(cfg)
 	if err != nil {
 		panic(err)
 	}
-	resource := &metav1.APIResource{
-		Name:         workflow.Plural,
-		SingularName: workflow.Singular,
-		Namespaced:   true,
-		Group:        workflow.Group,
-		Version:      "v1alpha1",
-		ShortNames:   []string{"wf"},
+	resource := schema.GroupVersionResource{
+		Group:    workflow.Group,
+		Version:  "v1alpha1",
+		Resource: "workflows",
 	}
 	informer := unstructutil.NewFilteredUnstructuredInformer(
 		resource,
