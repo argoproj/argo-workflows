@@ -152,7 +152,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, _ := woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "", "")
+	node, _ := woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	if node == nil || !node.Completed() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
@@ -175,7 +175,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, _ = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "", "")
+		onExitNode, _ = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
 		if onExitNode == nil || !onExitNode.Completed() {
 			return
 		}
@@ -496,16 +496,20 @@ func (woc *wfOperationCtx) countActivePods(boundaryIDs ...string) int64 {
 }
 
 // countActiveChildren counts the number of active (Pending/Running) children nodes of parent parentName
-func (woc *wfOperationCtx) countActiveChildren(parentName string) int64 {
-	parent := woc.getNodeByName(parentName)
-	if parent == nil {
-		return 0
+func (woc *wfOperationCtx) countActiveChildren(boundaryIDs ...string) int64 {
+	var boundaryID = ""
+	if len(boundaryIDs) > 0 {
+		boundaryID = boundaryIDs[0]
 	}
 	var activeChildren int64
-	// if we care about parallelism, count the active children nodes at the template level
-	for _, c := range parent.Children {
-		node, ok := woc.wf.Status.Nodes[c]
-		if !ok {
+	// if we care about parallelism, count the active pods at the template level
+	for _, node := range woc.wf.Status.Nodes {
+		if boundaryID != "" && node.BoundaryID != boundaryID {
+			continue
+		}
+		switch node.Type {
+		case wfv1.NodeTypePod, wfv1.NodeTypeSteps, wfv1.NodeTypeDAG:
+		default:
 			continue
 		}
 		switch node.Phase {
@@ -887,8 +891,8 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string, boundaryID string, parentName string) (*wfv1.NodeStatus, error) {
-	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s, parentName: %s", nodeName, templateName, boundaryID, parentName)
+func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
+	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, templateName, boundaryID)
 
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
@@ -909,7 +913,7 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		err := errors.Errorf(errors.CodeBadRequest, "Node %v error: template '%s' undefined", node, templateName)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, "", boundaryID, wfv1.NodeError, err.Error()), err
 	}
-	if err := woc.checkParallelism(tmpl, node, boundaryID, parentName); err != nil {
+	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
 		return node, err
 	}
 
@@ -1118,7 +1122,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
-func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string, parentName string) error {
+func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	woc.log.Infof("tmpl type: %v, parallelism:%v, node:%v", tmpl.GetType(), tmpl.Parallelism, node)
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
@@ -1137,33 +1141,17 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			}
 		}
 
-		// if we are about to start executing a StepGroup, make our parent hasn't reached it's limit
-		// only when it is not started yet, i.e. let it keep running if it has started
+		fallthrough
+	default:
+		// if we are about to execute a pod, make our parent hasn't reached it's limit
 		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 			boundaryNode := woc.wf.Status.Nodes[boundaryID]
 			boundaryTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
 			if boundaryTemplate.Parallelism != nil {
-				// for stepgroups, parent is different from boundary
-				activeSiblings := woc.countActiveChildren(parentName)
-
-				woc.log.Debugf("counted %d/%d active children in boundary %s of parent %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID, parentName)
+				activeSiblings := woc.countActiveChildren(boundaryID)
+				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
 				if activeSiblings >= *boundaryTemplate.Parallelism {
-					woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
-					return ErrParallelismReached
-				}
-			}
-		}
-
-	default:
-		// if we are about to execute a pod, make our parent hasn't reached it's limit
-		if boundaryID != "" {
-			boundaryNode := woc.wf.Status.Nodes[boundaryID]
-			boundaryTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
-			if boundaryTemplate.Parallelism != nil {
-				templateActivePods := woc.countActivePods(boundaryID)
-				woc.log.Debugf("counted %d/%d active pods in boundary %s", templateActivePods, *boundaryTemplate.Parallelism, boundaryID)
-				if templateActivePods >= *boundaryTemplate.Parallelism {
-					woc.log.Infof("template (node %s) active pod parallelism reached %d/%d", boundaryID, templateActivePods, *boundaryTemplate.Parallelism)
+					woc.log.Infof("template (node %s) active children parallelism reached %d/%d", boundaryID, activeSiblings, *boundaryTemplate.Parallelism)
 					return ErrParallelismReached
 				}
 			}

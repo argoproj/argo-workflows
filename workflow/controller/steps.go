@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
-		childNode, err := woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID, sgNodeName)
+		childNode, err := woc.executeTemplate(step.Template, step.Arguments, childNodeName, stepsCtx.boundaryID)
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:
