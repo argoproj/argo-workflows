@@ -46,7 +46,7 @@ func (c *FakeWorkflows) List(opts v1.ListOptions) (result *v1alpha1.WorkflowList
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.WorkflowList{}
+	list := &v1alpha1.WorkflowList{ListMeta: obj.(*v1alpha1.WorkflowList).ListMeta}
 	for _, item := range obj.(*v1alpha1.WorkflowList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
