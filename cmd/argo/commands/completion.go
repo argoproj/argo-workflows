@@ -9,6 +9,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	bashCompletionFunc = `
+__argo_get_workflow() {
+	local argo_out
+	if argo_out=$(argo list --output name 2>/dev/null); then
+		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
+	fi
+}
+
+__argo_custom_func() {
+	case ${last_command} in
+		argo_delete | argo_get | argo_logs |\
+		argo_resubmit | argo_resume | argo_retry | argo_suspend |\
+		argo_terminate | argo_wait | argo_watch)
+			__argo_get_workflow
+			return
+			;;
+		*)
+			;;
+	esac
+}
+	`
+)
+
 func NewCompletionCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "completion SHELL",
@@ -30,6 +54,7 @@ variable.
 			}
 			shell := args[0]
 			rootCommand := NewCommand()
+			rootCommand.BashCompletionFunction = bashCompletionFunc
 			availableCompletions := map[string]func(io.Writer) error{
 				"bash": rootCommand.GenBashCompletion,
 				"zsh":  rootCommand.GenZshCompletion,
