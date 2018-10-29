@@ -23,12 +23,11 @@ func NewK8sAPIExecutor(clientset *kubernetes.Clientset, config *restclient.Confi
 }
 
 func (k *K8sAPIExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
-	log.Infof("Getting file contents of %s:%s", containerID, sourcePath)
-	return k.client.getFileContents(containerID, sourcePath)
+	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the k8sapi executor.")
 }
 
 func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
-	return k.client.copyArchive(containerID, sourcePath, destPath)
+	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the k8sapi executor.")
 }
 
 // GetOutput returns the entirety of the container output as a string
