@@ -66,6 +66,7 @@ Currently **officially** using Argo:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Styra](https://www.styra.com/)
+1. [Cratejoy](https://www.cratejoy.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 
 ## Community Blogs and Presentations
