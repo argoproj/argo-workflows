@@ -21,15 +21,11 @@ func NewKubeletExecutor() (*KubeletExecutor, error) {
 }
 
 func (k *KubeletExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
-	b, err := k.cli.GetFileContents(containerID, sourcePath)
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
+	return "", errors.Errorf(errors.CodeNotImplemented, "GetFileContents() is not implemented in the kubelet executor.")
 }
 
 func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
-	return k.cli.CopyArchive(containerID, sourcePath, destPath)
+	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
 // GetOutput returns the entirety of the container output as a string

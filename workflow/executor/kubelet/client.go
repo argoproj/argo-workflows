@@ -287,8 +287,8 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 	}
 }
 
-// CreateArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
-func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+// createArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
+func (k *kubeletClient) createArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
 	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
 }
 
