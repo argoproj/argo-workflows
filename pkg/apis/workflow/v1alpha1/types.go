@@ -133,6 +133,8 @@ type WorkflowSpec struct {
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
 	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
+	Priority int `json:"priority,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -530,12 +532,21 @@ func (n NodeStatus) String() string {
 	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
 }
 
-// Completed returns whether or not the node has completed execution
+func isCompletedPhase(phase NodePhase) bool {
+	return phase == NodeSucceeded ||
+		phase == NodeFailed ||
+		phase == NodeError ||
+		phase == NodeSkipped
+}
+
+// Remove returns whether or not the workflow has completed execution
+func (ws *WorkflowStatus) Completed() bool {
+	return isCompletedPhase(ws.Phase)
+}
+
+// Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return n.Phase == NodeSucceeded ||
-		n.Phase == NodeFailed ||
-		n.Phase == NodeError ||
-		n.Phase == NodeSkipped
+	return isCompletedPhase(n.Phase)
 }
 
 // IsDaemoned returns whether or not the node is deamoned

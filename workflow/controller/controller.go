@@ -56,6 +56,7 @@ type WorkflowController struct {
 	wfQueue       workqueue.RateLimitingInterface
 	podQueue      workqueue.RateLimitingInterface
 	completedPods chan string
+	throttler     Throttler
 }
 
 const (
@@ -86,6 +87,7 @@ func NewWorkflowController(
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
 	}
+	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
 }
 
@@ -217,22 +219,35 @@ func (wfc *WorkflowController) processNextItem() bool {
 		log.Warnf("Key '%s' in index is not an unstructured", key)
 		return true
 	}
+
+	if key, ok = wfc.throttler.Next(key); !ok {
+		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
+		return true
+	}
+
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 		woc.persistUpdates()
+		wfc.throttler.Remove(key)
 		return true
 	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
+		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
 		return true
 	}
+
 	woc := newWorkflowOperationCtx(wf, wfc)
 	woc.operate()
+	if woc.wf.Status.Completed() {
+		wfc.throttler.Remove(key)
+	}
+
 	// TODO: operate should return error if it was unable to operate properly
 	// so we can requeue the work for a later time
 	// See: https://github.com/kubernetes/client-go/blob/master/examples/workqueue/main.go
@@ -307,6 +322,22 @@ func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOpti
 	options.LabelSelector = labelSelector.String()
 }
 
+func getWfPriority(obj interface{}) (int, time.Time) {
+	un, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		return 0, time.Now()
+	}
+	priority, hasPriority, err := unstructured.NestedInt64(un.Object, "spec", "priority")
+	if err != nil {
+		return 0, un.GetCreationTimestamp().Time
+	}
+	if !hasPriority {
+		priority = 0
+	}
+
+	return int(priority), un.GetCreationTimestamp().Time
+}
+
 func (wfc *WorkflowController) addWorkflowInformerHandler() {
 	wfc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
@@ -314,12 +345,16 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
 					wfc.wfQueue.Add(key)
+					priority, creation := getWfPriority(obj)
+					wfc.throttler.Add(key, priority, creation)
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.wfQueue.Add(key)
+					priority, creation := getWfPriority(new)
+					wfc.throttler.Add(key, priority, creation)
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
@@ -328,6 +363,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
 					wfc.wfQueue.Add(key)
+					wfc.throttler.Remove(key)
 				}
 			},
 		},

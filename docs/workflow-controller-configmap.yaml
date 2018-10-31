@@ -18,6 +18,11 @@ data:
     # controller to run with namespace scope (role), instead of cluster scope (clusterrole).
     namespace: argo
 
+    # Parallelism limits the max total parallel workflows that can execute at the same time
+
+    parallelism: 10
+
+
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:
