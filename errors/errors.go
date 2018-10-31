@@ -10,12 +10,13 @@ import (
 
 // Externally visible error codes
 const (
-	CodeUnauthorized = "ERR_UNAUTHORIZED"
-	CodeBadRequest   = "ERR_BAD_REQUEST"
-	CodeForbidden    = "ERR_FORBIDDEN"
-	CodeNotFound     = "ERR_NOT_FOUND"
-	CodeTimeout      = "ERR_TIMEOUT"
-	CodeInternal     = "ERR_INTERNAL"
+	CodeUnauthorized   = "ERR_UNAUTHORIZED"
+	CodeBadRequest     = "ERR_BAD_REQUEST"
+	CodeForbidden      = "ERR_FORBIDDEN"
+	CodeNotFound       = "ERR_NOT_FOUND"
+	CodeNotImplemented = "ERR_NOT_INPLEMENTED"
+	CodeTimeout        = "ERR_TIMEOUT"
+	CodeInternal       = "ERR_INTERNAL"
 )
 
 // ArgoError is an error interface that additionally adds support for
