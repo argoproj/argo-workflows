@@ -31,7 +31,7 @@ required = [
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  branch = "master"
+  revision = "fe5e611709b0c57fa4a89136deaa8e1d4004d053"
 
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
