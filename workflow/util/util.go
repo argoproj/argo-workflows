@@ -412,7 +412,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
 			// mismanages state (e.g. panic when operating on a workflow)
 		default:
-			return nil, errors.InternalErrorf("Workflow cannot be resubmitted with nodes in %s phase", node, node.Phase)
+			return nil, errors.InternalErrorf("Workflow cannot be resubmitted with node %s in %s phase", node, node.Phase)
 		}
 	}
 	return &newWF, nil
@@ -460,7 +460,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, errors.InternalErrorf("Workflow cannot be retried with nodes in %s phase", node, node.Phase)
+			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
