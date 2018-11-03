@@ -466,12 +466,11 @@
   version = "v1.0.6"
 
 [[projects]]
-  branch = "master"
-  digest = "1:c8f6919ab9f140506fd4ad3f4a9c9c2af9ee7921e190af0c67b2fca2f903083c"
+  digest = "1:9ba49264cef4386aded205f9cb5b1f2d30f983d7dc37a21c780d9db3edfac9a7"
   name = "github.com/spf13/cobra"
   packages = ["."]
   pruneopts = ""
-  revision = "7c4570c3ebeb8129a1f7456d0908a8b676b6f9f1"
+  revision = "fe5e611709b0c57fa4a89136deaa8e1d4004d053"
 
 [[projects]]
   digest = "1:8e243c568f36b09031ec18dff5f7d2769dcf5ca4d624ea511c8e3197dc3d352d"
@@ -1052,7 +1051,6 @@
     "github.com/fsnotify/fsnotify",
     "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
-    "github.com/golang/glog",
     "github.com/gorilla/websocket",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
