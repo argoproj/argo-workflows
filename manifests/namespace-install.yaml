@@ -27,6 +27,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-role
+  namespace: argo
 rules:
 - apiGroups:
   - ""
@@ -41,14 +42,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - watch
-  - list
 - apiGroups:
   - ""
   resources:
@@ -73,6 +66,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-ui-role
+  namespace: argo
 rules:
 - apiGroups:
   - ""
@@ -100,9 +94,24 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-cm-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
+  namespace: argo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -110,11 +119,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
+  namespace: default
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-ui-binding
+  namespace: argo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -122,6 +133,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-ui
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-cm-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-cm-role
+subjects:
+- kind: ServiceAccount
+  name: argo
 ---
 apiVersion: v1
 data:
@@ -158,14 +182,13 @@ spec:
       containers:
       - env:
         - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
+          value: argo
         - name: IN_CLUSTER
           value: "true"
         - name: ENABLE_WEB_CONSOLE
           value: "false"
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         - name: BASE_HREF
           value: /
         image: argoproj/argoui:v2.2.1
