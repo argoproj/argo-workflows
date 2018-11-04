@@ -8,5 +8,5 @@ resources:
 - ../base/03a_argo-ui-sa.yaml
 - ./03b_argo-ui-role.yaml
 - ./03c_argo-ui-rolebinding.yaml
-- ../base/03d_argo-ui-deployment.yaml
+- ./03d_argo-ui-deployment.yaml
 - ../base/03e_argo-ui-service.yaml
