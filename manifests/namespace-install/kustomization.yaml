@@ -1,4 +1,5 @@
 resources:
+- ../base/00a_argo-namespace.yaml
 - ../base/01a_workflow-crd.yaml
 - ../base/02a_workflow-controller-sa.yaml
 - ./02b_workflow-controller-role.yaml
