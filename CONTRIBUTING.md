@@ -49,5 +49,6 @@ $ ./dist/argo version
 
 ### Deploying controller with alternative controller/executor images
 ```
-$ argo install --controller-image jessesuen/workflow-controller:latest --executor-image jessesuen/argoexec:latest
+$ helm install argo/argo --set images.namespace=jessesuen --set
+images.controller workflow-controller:latest
 ```
