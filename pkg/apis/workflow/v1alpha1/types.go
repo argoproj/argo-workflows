@@ -134,7 +134,7 @@ type WorkflowSpec struct {
 	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
-	Priority int `json:"priority,omitempty"`
+	Priority *int32 `json:"priority,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow

@@ -322,7 +322,7 @@ func (wfc *WorkflowController) tweakWorkflowMetricslist(options *metav1.ListOpti
 	options.LabelSelector = labelSelector.String()
 }
 
-func getWfPriority(obj interface{}) (int, time.Time) {
+func getWfPriority(obj interface{}) (int32, time.Time) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return 0, time.Now()
@@ -335,7 +335,7 @@ func getWfPriority(obj interface{}) (int, time.Time) {
 		priority = 0
 	}
 
-	return int(priority), un.GetCreationTimestamp().Time
+	return int32(priority), un.GetCreationTimestamp().Time
 }
 
 func (wfc *WorkflowController) addWorkflowInformerHandler() {

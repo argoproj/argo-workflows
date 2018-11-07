@@ -22,14 +22,14 @@ type cliSubmitOpts struct {
 	wait     bool   // --wait
 	watch    bool   // --watch
 	strict   bool   // --strict
-	priority *int   // --priority
+	priority *int32 // --priority
 }
 
 func NewSubmitCommand() *cobra.Command {
 	var (
 		submitOpts    util.SubmitOpts
 		cliSubmitOpts cliSubmitOpts
-		priority      int
+		priority      int32
 	)
 	var command = &cobra.Command{
 		Use:   "submit FILE1 FILE2...",
@@ -57,7 +57,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
-	command.Flags().IntVar(&priority, "priority", 0, "workflow priority")
+	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	return command
 }
 
@@ -113,9 +113,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 
 	var workflowNames []string
 	for _, wf := range workflows {
-		if cliOpts.priority != nil {
-			wf.Spec.Priority = *cliOpts.priority
-		}
+		wf.Spec.Priority = cliOpts.priority
 		created, err := util.SubmitWorkflow(wfClient, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)

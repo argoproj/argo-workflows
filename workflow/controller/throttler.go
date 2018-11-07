@@ -10,7 +10,7 @@ import (
 
 // Throttler allows CRD controller to limit number of items it is processing in parallel.
 type Throttler interface {
-	Add(key interface{}, priority int, creationTime time.Time)
+	Add(key interface{}, priority int32, creationTime time.Time)
 	// Next returns true if item should be processed by controller now or return false.
 	Next(key interface{}) (interface{}, bool)
 	// Remove notifies throttler that item processing is done. In responses the throttler triggers processing of previously throttled items.
@@ -46,7 +46,7 @@ func (t *throttler) SetParallelism(parallelism int) {
 	}
 }
 
-func (t *throttler) Add(key interface{}, priority int, creationTime time.Time) {
+func (t *throttler) Add(key interface{}, priority int32, creationTime time.Time) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.pending.add(key, priority, creationTime)
@@ -88,7 +88,7 @@ func (t *throttler) queueThrottled() {
 type item struct {
 	key          interface{}
 	creationTime time.Time
-	priority     int
+	priority     int32
 	index        int
 }
 
@@ -101,7 +101,7 @@ func (pq *priorityQueue) pop() *item {
 	return heap.Pop(pq).(*item)
 }
 
-func (pq *priorityQueue) add(key interface{}, priority int, creationTime time.Time) {
+func (pq *priorityQueue) add(key interface{}, priority int32, creationTime time.Time) {
 	if res, ok := pq.itemByKey[key]; ok {
 		if res.priority != priority {
 			res.priority = priority
