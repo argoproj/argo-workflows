@@ -1875,6 +1875,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "int64",
 						},
 					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 				Required: []string{"templates", "entrypoint"},
 			},
