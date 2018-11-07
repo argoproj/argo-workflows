@@ -108,7 +108,7 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")
 	}
-	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION")
+	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
 	if listArgs.output == "wide" {
 		fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
 	}
@@ -119,7 +119,7 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr, wf.Spec.Priority)
 		if listArgs.output == "wide" {
 			pending, running, completed := countPendingRunningCompleted(&wf)
 			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
