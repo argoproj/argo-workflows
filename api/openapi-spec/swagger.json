@@ -978,6 +978,11 @@
           "type": "integer",
           "format": "int64"
         },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
+          "type": "integer",
+          "format": "int32"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
