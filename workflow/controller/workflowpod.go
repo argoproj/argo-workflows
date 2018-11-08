@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -84,9 +85,7 @@ var (
 
 	// execEnvVars exposes various pod information as environment variables to the exec container
 	execEnvVars = []apiv1.EnvVar{
-		envFromField(common.EnvVarPodIP, "status.podIP"),
 		envFromField(common.EnvVarPodName, "metadata.name"),
-		envFromField(common.EnvVarNamespace, "metadata.namespace"),
 	}
 )
 
@@ -107,14 +106,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
-	wfSpec, err := substituteGlobals(&woc.wf.Spec, woc.globalParams)
-	if err != nil {
-		return nil, err
-	}
+	wfSpec := woc.wf.Spec.DeepCopy()
 	mainCtr.Name = common.MainContainerName
-	pod := apiv1.Pod{
+	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: nodeID,
+			Name:      nodeID,
+			Namespace: woc.wf.ObjectMeta.Namespace,
 			Labels: map[string]string{
 				common.LabelKeyWorkflow:  woc.wf.ObjectMeta.Name, // Allows filtering by pods related to specific workflow
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
@@ -131,15 +128,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			Containers: []apiv1.Container{
 				mainCtr,
 			},
-			Volumes: []apiv1.Volume{
-				volumePodMetadata,
-				volumeDockerLib,
-				volumeDockerSock,
-			},
+			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			// TODO: consider allowing service account and image pull secrets to reference global vars
-			ServiceAccountName: woc.wf.Spec.ServiceAccountName,
-			ImagePullSecrets:   woc.wf.Spec.ImagePullSecrets,
+			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
 	if woc.controller.Config.InstanceID != "" {
@@ -164,50 +156,66 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
-	addSchedulingConstraints(&pod, wfSpec, tmpl)
-	addMetadata(&pod, tmpl)
+	addSchedulingConstraints(pod, wfSpec, tmpl)
+	woc.addMetadata(pod, tmpl)
 
-	err = addVolumeReferences(&pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
 
-	err = woc.addInputArtifactsVolumes(&pod, tmpl)
+	err = woc.addInputArtifactsVolumes(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
-	err = woc.addArchiveLocation(&pod, tmpl)
+	err = woc.addArchiveLocation(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
-		addExecutorStagingVolume(&pod)
+		addExecutorStagingVolume(pod)
 	}
 
 	// addSidecars should be called after all volumes have been manipulated
 	// in the main container (in case sidecar requires volume mount mirroring)
-	err = addSidecars(&pod, tmpl)
+	err = addSidecars(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set the container template JSON in pod annotations, which executor
-	// will examine for things like artifact location/path. Also ensures
-	// that all variables have been resolved. Do this last, after all
-	// template manipulations have been performed.
+	// Set the container template JSON in pod annotations, which executor examines for things like
+	// artifact location/path.
 	tmplBytes, err := json.Marshal(tmpl)
-	if err != nil {
-		return nil, err
-	}
-	err = verifyResolvedVariables(string(tmplBytes))
 	if err != nil {
 		return nil, err
 	}
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(&pod)
+	// Perform one last variable substitution here. Some variables come from the from workflow
+	// configmap (e.g. archive location), and were not substituted in executeTemplate.
+	pod, err = substituteGlobals(pod, woc.globalParams)
+	if err != nil {
+		return nil, err
+	}
+
+	// One final check to verify all variables are resolvable for select fields. We are choosing
+	// only to check ArchiveLocation for now, since everything else should have been substituted
+	// earlier (i.e. in executeTemplate). But archive location is unique in that the variables
+	// are formulated from the configmap. We can expand this to other fields as necessary.
+	err = json.Unmarshal([]byte(pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	if err != nil {
+		return nil, err
+	}
+	for _, obj := range []interface{}{tmpl.ArchiveLocation} {
+		err = verifyResolvedVariables(obj)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
 			// workflow pod names are deterministic. We can get here if the
@@ -223,9 +231,15 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	return created, nil
 }
 
-// substituteGlobals returns a workflow spec with global parameter references substituted
-func substituteGlobals(wfSpec *wfv1.WorkflowSpec, globalParams map[string]string) (*wfv1.WorkflowSpec, error) {
-	specBytes, err := json.Marshal(wfSpec)
+// substituteGlobals returns a pod spec with global parameter references substituted as well as pod.name
+func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.Pod, error) {
+	newGlobalParams := make(map[string]string)
+	for k, v := range globalParams {
+		newGlobalParams[k] = v
+	}
+	newGlobalParams[common.LocalVarPodName] = pod.Name
+	globalParams = newGlobalParams
+	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err
 	}
@@ -234,12 +248,12 @@ func substituteGlobals(wfSpec *wfv1.WorkflowSpec, globalParams map[string]string
 	if err != nil {
 		return nil, err
 	}
-	var newWfSpec wfv1.WorkflowSpec
-	err = json.Unmarshal([]byte(newSpecBytes), &newWfSpec)
+	var newSpec apiv1.Pod
+	err = json.Unmarshal([]byte(newSpecBytes), &newSpec)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return &newWfSpec, nil
+	return &newSpec, nil
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
@@ -256,19 +270,77 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"argoexec"}
 	ctr.Args = []string{"wait"}
-	ctr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-		volumeMountDockerLib,
-		volumeMountDockerSock,
-	}
+	ctr.VolumeMounts = woc.createVolumeMounts()
 	return ctr, nil
+}
+
+func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		return append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.Config.ContainerRuntimeExecutor,
+			},
+		)
+	case common.ContainerRuntimeExecutorKubelet:
+		return append(execEnvVars,
+			apiv1.EnvVar{
+				Name:  common.EnvVarContainerRuntimeExecutor,
+				Value: woc.controller.Config.ContainerRuntimeExecutor,
+			},
+			apiv1.EnvVar{
+				Name: common.EnvVarDownwardAPINodeIP,
+				ValueFrom: &apiv1.EnvVarSource{
+					FieldRef: &apiv1.ObjectFieldSelector{
+						FieldPath: "status.hostIP",
+					},
+				},
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletPort,
+				Value: strconv.Itoa(woc.controller.Config.KubeletPort),
+			},
+			apiv1.EnvVar{
+				Name:  common.EnvVarKubeletInsecure,
+				Value: strconv.FormatBool(woc.controller.Config.KubeletInsecure),
+			},
+		)
+	default:
+		return execEnvVars
+	}
+}
+
+func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
+	volumeMounts := []apiv1.VolumeMount{
+		volumeMountPodMetadata,
+	}
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorKubelet:
+		return volumeMounts
+	default:
+		return append(volumeMounts, volumeMountDockerLib, volumeMountDockerSock)
+	}
+}
+
+func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
+	volumes := []apiv1.Volume{
+		volumePodMetadata,
+	}
+	switch woc.controller.Config.ContainerRuntimeExecutor {
+	case common.ContainerRuntimeExecutorKubelet:
+		return volumes
+	default:
+		return append(volumes, volumeDockerLib, volumeDockerSock)
+	}
 }
 
 func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
 	exec := apiv1.Container{
-		Name:  name,
-		Image: woc.controller.Config.ExecutorImage,
-		Env:   execEnvVars,
+		Name:            name,
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Env:             woc.createEnvVars(),
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
 		},
@@ -280,13 +352,22 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 }
 
 // addMetadata applies metadata specified in the template
-func addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
-
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
+	}
+	if woc.workflowDeadline != nil {
+		execCtl := common.ExecutionControl{
+			Deadline: woc.workflowDeadline,
+		}
+		execCtlBytes, err := json.Marshal(execCtl)
+		if err != nil {
+			panic(err)
+		}
+		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 	}
 }
 
@@ -468,27 +549,38 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 	return nil
 }
 
-// addArchiveLocation updates the template with artifact repository information configured in the controller.
-// This is skipped for templates which have explicitly set an archive location in the template
+// addArchiveLocation updates the template with the default artifact repository information
+// configured in the controller. This is skipped for templates which have explicitly set an archive
+// location in the template.
 func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.ArchiveLocation != nil {
+	if tmpl.ArchiveLocation == nil {
+		tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
+			ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+		}
+	}
+	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil {
+		// User explicitly set the location. nothing else to do.
 		return nil
 	}
-	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{}
-	// artifacts are stored in using the following formula:
-	// <repo_key_prefix>/<worflow_name>/<node_id>/<artifact_name>.tgz
+	// needLocation keeps track if the workflow needs to have an archive location set.
+	// If so, and one was not supplied (or defaulted), we will return error
+	var needLocation bool
+	if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
+		needLocation = true
+	}
+
+	// artifact location is defaulted using the following formula:
+	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	// TODO: will need to support more advanced organization of artifacts such as dated
-	// (e.g. myworkflowartifacts/2017/10/31/... )
-	if woc.controller.Config.ArtifactRepository.S3 != nil {
+	if s3Location := woc.controller.Config.ArtifactRepository.S3; s3Location != nil {
 		log.Debugf("Setting s3 artifact repository information")
-		keyPrefix := ""
-		if woc.controller.Config.ArtifactRepository.S3.KeyPrefix != "" {
-			keyPrefix = woc.controller.Config.ArtifactRepository.S3.KeyPrefix + "/"
+		artLocationKey := s3Location.KeyFormat
+		// NOTE: we use unresolved variables, will get substituted later
+		if artLocationKey == "" {
+			artLocationKey = path.Join(s3Location.KeyPrefix, common.DefaultArchivePattern)
 		}
-		artLocationKey := fmt.Sprintf("%s%s/%s", keyPrefix, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
 		tmpl.ArchiveLocation.S3 = &wfv1.S3Artifact{
-			S3Bucket: woc.controller.Config.ArtifactRepository.S3.S3Bucket,
+			S3Bucket: s3Location.S3Bucket,
 			Key:      artLocationKey,
 		}
 	} else if woc.controller.Config.ArtifactRepository.Artifactory != nil {
@@ -497,7 +589,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		if woc.controller.Config.ArtifactRepository.Artifactory.RepoURL != "" {
 			repoURL = woc.controller.Config.ArtifactRepository.Artifactory.RepoURL + "/"
 		}
-		artURL := fmt.Sprintf("%s%s/%s", repoURL, woc.wf.ObjectMeta.Name, pod.ObjectMeta.Name)
+		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
@@ -505,9 +597,12 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
 			if !art.HasLocation() {
-				log.Errorf("artifact has no location details:%#v", art)
-				return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+				needLocation = true
+				break
 			}
+		}
+		if needLocation {
+			return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
 		}
 	}
 	return nil
@@ -589,10 +684,14 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	return nil
 }
 
-// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved
-func verifyResolvedVariables(tmplStr string) error {
+// verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
+func verifyResolvedVariables(obj interface{}) error {
+	str, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
 	var unresolvedErr error
-	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
+	fstTmpl := fasttemplate.New(string(str), "{{", "}}")
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		unresolvedErr = errors.Errorf(errors.CodeBadRequest, "failed to resolve {{%s}}", tag)
 		return 0, nil

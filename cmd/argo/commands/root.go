@@ -13,7 +13,7 @@ const (
 	CLIName = "argo"
 )
 
-// NewCommand returns a new instance of an argocd command
+// NewCommand returns a new instance of an argo command
 func NewCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   CLIName,
@@ -26,7 +26,6 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewCompletionCommand())
 	command.AddCommand(NewDeleteCommand())
 	command.AddCommand(NewGetCommand())
-	command.AddCommand(NewInstallCommand())
 	command.AddCommand(NewLintCommand())
 	command.AddCommand(NewListCommand())
 	command.AddCommand(NewLogsCommand())
@@ -35,8 +34,9 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewRetryCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewUninstallCommand())
 	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 
 	addKubectlFlagsToCmd(command)

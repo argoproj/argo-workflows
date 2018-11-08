@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 	"syscall"
@@ -28,6 +29,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
+	argofile "github.com/argoproj/pkg/file"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -69,6 +71,9 @@ type ContainerRuntimeExecutor interface {
 
 	// Wait for the container to complete
 	Wait(containerID string) error
+
+	// Copy logs to a given path
+	Logs(containerID string, path string) error
 
 	// Kill a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 	Kill(containerIDs []string) error
@@ -199,60 +204,122 @@ func (we *WorkflowExecutor) SaveArtifacts() error {
 	}
 
 	for i, art := range we.Template.Outputs.Artifacts {
-		log.Infof("Saving artifact: %s", art.Name)
-		// Determine the file path of where to find the artifact
-		if art.Path == "" {
-			return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
-		}
-
-		fileName := fmt.Sprintf("%s.tgz", art.Name)
-		if !art.HasLocation() {
-			// If user did not explicitly set an artifact destination location in the template,
-			// use the default archive location (appended with the filename).
-			if we.Template.ArchiveLocation == nil {
-				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
-			}
-			if we.Template.ArchiveLocation.S3 != nil {
-				shallowCopy := *we.Template.ArchiveLocation.S3
-				art.S3 = &shallowCopy
-				art.S3.Key = path.Join(art.S3.Key, fileName)
-			} else if we.Template.ArchiveLocation.Artifactory != nil {
-				shallowCopy := *we.Template.ArchiveLocation.Artifactory
-				art.Artifactory = &shallowCopy
-				artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
-				if urlParseErr != nil {
-					return urlParseErr
-				}
-				artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
-				art.Artifactory.URL = artifactoryURL.String()
-			} else {
-				return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
-			}
-		}
-
-		tempArtPath := path.Join(tempOutArtDir, fileName)
-		err = we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, tempArtPath)
+		err := we.saveArtifact(tempOutArtDir, mainCtrID, &art)
 		if err != nil {
 			return err
-		}
-		artDriver, err := we.InitDriver(art)
-		if err != nil {
-			return err
-		}
-		err = artDriver.Save(tempArtPath, &art)
-		if err != nil {
-			return err
-		}
-		// remove is best effort (the container will go away anyways).
-		// we just want reduce peak space usage
-		err = os.Remove(tempArtPath)
-		if err != nil {
-			log.Warn("Failed to remove %s", tempArtPath)
 		}
 		we.Template.Outputs.Artifacts[i] = art
-		log.Infof("Successfully saved file: %s", tempArtPath)
 	}
 	return nil
+}
+
+func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string, art *wfv1.Artifact) error {
+	log.Infof("Saving artifact: %s", art.Name)
+	// Determine the file path of where to find the artifact
+	if art.Path == "" {
+		return errors.InternalErrorf("Artifact %s did not specify a path", art.Name)
+	}
+
+	// fileName is incorporated into the final path when uploading it to the artifact repo
+	fileName := fmt.Sprintf("%s.tgz", art.Name)
+	// localArtPath is the final staging location of the file (or directory) which we will pass
+	// to the SaveArtifacts call
+	localArtPath := path.Join(tempOutArtDir, fileName)
+	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
+	if err != nil {
+		return err
+	}
+	fileName, localArtPath, err = stageArchiveFile(fileName, localArtPath, art)
+	if err != nil {
+		return err
+	}
+
+	if !art.HasLocation() {
+		// If user did not explicitly set an artifact destination location in the template,
+		// use the default archive location (appended with the filename).
+		if we.Template.ArchiveLocation == nil {
+			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. No archive location", art.Name)
+		}
+		if we.Template.ArchiveLocation.S3 != nil {
+			shallowCopy := *we.Template.ArchiveLocation.S3
+			art.S3 = &shallowCopy
+			art.S3.Key = path.Join(art.S3.Key, fileName)
+		} else if we.Template.ArchiveLocation.Artifactory != nil {
+			shallowCopy := *we.Template.ArchiveLocation.Artifactory
+			art.Artifactory = &shallowCopy
+			artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
+			if urlParseErr != nil {
+				return urlParseErr
+			}
+			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+			art.Artifactory.URL = artifactoryURL.String()
+		} else {
+			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+		}
+	}
+
+	artDriver, err := we.InitDriver(*art)
+	if err != nil {
+		return err
+	}
+	err = artDriver.Save(localArtPath, art)
+	if err != nil {
+		return err
+	}
+	// remove is best effort (the container will go away anyways).
+	// we just want reduce peak space usage
+	err = os.Remove(localArtPath)
+	if err != nil {
+		log.Warnf("Failed to remove %s: %v", localArtPath, err)
+	}
+	log.Infof("Successfully saved file: %s", localArtPath)
+	return nil
+}
+
+func stageArchiveFile(fileName, localArtPath string, art *wfv1.Artifact) (string, string, error) {
+	strategy := art.Archive
+	if strategy == nil {
+		// If no strategy is specified, default to the tar strategy
+		strategy = &wfv1.ArchiveStrategy{
+			Tar: &wfv1.TarStrategy{},
+		}
+	}
+	tempOutArtDir := filepath.Dir(localArtPath)
+	if strategy.None != nil {
+		log.Info("Disabling archive before upload")
+		unarchivedArtPath := path.Join(tempOutArtDir, art.Name)
+		err := untar(localArtPath, unarchivedArtPath)
+		if err != nil {
+			return "", "", err
+		}
+		// Delete the tarball
+		err = os.Remove(localArtPath)
+		if err != nil {
+			return "", "", errors.InternalWrapError(err)
+		}
+		isDir, err := argofile.IsDirectory(unarchivedArtPath)
+		if err != nil {
+			return "", "", errors.InternalWrapError(err)
+		}
+		fileName = filepath.Base(art.Path)
+		if isDir {
+			localArtPath = unarchivedArtPath
+		} else {
+			// If we are uploading a single file, we need to preserve original filename so that
+			// 1. minio client can infer its mime-type, based on file extension
+			// 2. the original filename is incorporated into the final path
+			localArtPath = path.Join(tempOutArtDir, fileName)
+			err = os.Rename(unarchivedArtPath, localArtPath)
+			if err != nil {
+				return "", "", errors.InternalWrapError(err)
+			}
+		}
+	} else if strategy.Tar != nil {
+		// NOTE we already tar gzip the file in the executor. So this is a noop. In the future, if
+		// we were to support other compression formats (e.g. bzip2) or options, the logic would go
+		// here, and compression would be moved out of the executors.
+	}
+	return fileName, localArtPath, nil
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value
@@ -286,6 +353,59 @@ func (we *WorkflowExecutor) SaveParameters() error {
 		log.Infof("Successfully saved output parameter: %s", param.Name)
 	}
 	return nil
+}
+
+// SaveLogs saves logs
+func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
+	if we.Template.ArchiveLocation == nil || we.Template.ArchiveLocation.ArchiveLogs == nil || !*we.Template.ArchiveLocation.ArchiveLogs {
+		return nil, nil
+	}
+	log.Infof("Saving logs")
+	mainCtrID, err := we.GetMainContainerID()
+	if err != nil {
+		return nil, err
+	}
+	tempLogsDir := "/argo/outputs/logs"
+	err = os.MkdirAll(tempLogsDir, os.ModePerm)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	fileName := "main.log"
+	mainLog := path.Join(tempLogsDir, fileName)
+	err = we.RuntimeExecutor.Logs(mainCtrID, mainLog)
+	if err != nil {
+		return nil, err
+	}
+	art := wfv1.Artifact{
+		Name:             "main-logs",
+		ArtifactLocation: *we.Template.ArchiveLocation,
+	}
+	if we.Template.ArchiveLocation.S3 != nil {
+		shallowCopy := *we.Template.ArchiveLocation.S3
+		art.S3 = &shallowCopy
+		art.S3.Key = path.Join(art.S3.Key, fileName)
+	} else if we.Template.ArchiveLocation.Artifactory != nil {
+		shallowCopy := *we.Template.ArchiveLocation.Artifactory
+		art.Artifactory = &shallowCopy
+		artifactoryURL, urlParseErr := url.Parse(art.Artifactory.URL)
+		if urlParseErr != nil {
+			return nil, urlParseErr
+		}
+		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
+		art.Artifactory.URL = artifactoryURL.String()
+	} else {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
+	}
+	artDriver, err := we.InitDriver(art)
+	if err != nil {
+		return nil, err
+	}
+	err = artDriver.Save(mainLog, &art)
+	if err != nil {
+		return nil, err
+	}
+
+	return &art, nil
 }
 
 // InitDriver initializes an instance of an artifact driver
@@ -334,17 +454,22 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			}
 			gitDriver.Password = password
 		}
+		if art.Git.SSHPrivateKeySecret != nil {
+			sshPrivateKey, err := we.getSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			gitDriver.SSHPrivateKey = sshPrivateKey
+		}
 
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		// Getting Kubernetes namespace from the environment variables
-		namespace := os.Getenv(common.EnvVarNamespace)
-		username, err := we.getSecrets(namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		username, err := we.getSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		password, err := we.getSecrets(namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		password, err := we.getSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -467,12 +592,17 @@ func (we *WorkflowExecutor) CaptureScriptResult() error {
 }
 
 // AnnotateOutputs annotation to the pod indicating all the outputs.
-func (we *WorkflowExecutor) AnnotateOutputs() error {
-	if !we.Template.Outputs.HasOutputs() {
+func (we *WorkflowExecutor) AnnotateOutputs(logArt *wfv1.Artifact) error {
+	outputs := we.Template.Outputs.DeepCopy()
+	if logArt != nil {
+		outputs.Artifacts = append(outputs.Artifacts, *logArt)
+	}
+
+	if !outputs.HasOutputs() {
 		return nil
 	}
 	log.Infof("Annotating pod with output")
-	outputBytes, err := json.Marshal(we.Template.Outputs)
+	outputBytes, err := json.Marshal(outputs)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
@@ -491,7 +621,7 @@ func (we *WorkflowExecutor) AddAnnotation(key, value string) error {
 
 // isTarball returns whether or not the file is a tarball
 func isTarball(filePath string) bool {
-	cmd := exec.Command("tar", "-tzf", filePath)
+	cmd := exec.Command("tar", "-tf", filePath)
 	log.Info(cmd.Args)
 	err := cmd.Run()
 	return err == nil
@@ -539,9 +669,13 @@ func untar(tarPath string, destPath string) error {
 	return nil
 }
 
-// containerID is a convenience function to strip the 'docker://' from k8s ContainerID string
+// containerID is a convenience function to strip the 'docker://', 'containerd://' from k8s ContainerID string
 func containerID(ctrID string) string {
-	return strings.Replace(ctrID, "docker://", "", 1)
+	schemeIndex := strings.Index(ctrID, "://")
+	if schemeIndex == -1 {
+		return ctrID
+	}
+	return ctrID[schemeIndex+3:]
 }
 
 // Wait is the sidecar container logic which waits for the main container to complete.
@@ -622,6 +756,8 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGUSR2)
 
+	we.setExecutionControl()
+
 	// Create a channel which will notify a listener on new updates to the annotations
 	annotationUpdateCh := make(chan struct{})
 
@@ -638,24 +774,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 			case <-sigs:
 				log.Infof("Received update signal. Reloading annotations from API")
 				annotationUpdateCh <- struct{}{}
-				pod, err := we.getPod()
-				if err != nil {
-					log.Warnf("Failed to reload execution control from API server: %v", err)
-					continue
-				}
-				execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
-				if !ok {
-					we.ExecutionControl = nil
-				} else {
-					var execCtl common.ExecutionControl
-					err = json.Unmarshal([]byte(execCtlString), &execCtl)
-					if err != nil {
-						log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
-						continue
-					}
-					we.ExecutionControl = &execCtl
-					log.Infof("Execution control reloaded from API: %v", *we.ExecutionControl)
-				}
+				we.setExecutionControl()
 			case <-watcher.Events:
 				log.Infof("%s updated", we.PodAnnotationsPath)
 				err := we.LoadExecutionControl()
@@ -671,6 +790,28 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 		}
 	}()
 	return annotationUpdateCh
+}
+
+// setExecutionControl sets the execution control information from the pod annotation
+func (we *WorkflowExecutor) setExecutionControl() {
+	pod, err := we.getPod()
+	if err != nil {
+		log.Warnf("Failed to set execution control from API server: %v", err)
+		return
+	}
+	execCtlString, ok := pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl]
+	if !ok {
+		we.ExecutionControl = nil
+	} else {
+		var execCtl common.ExecutionControl
+		err = json.Unmarshal([]byte(execCtlString), &execCtl)
+		if err != nil {
+			log.Errorf("Error unmarshalling '%s': %v", execCtlString, err)
+			return
+		}
+		we.ExecutionControl = &execCtl
+		log.Infof("Execution control set from API: %v", *we.ExecutionControl)
+	}
 }
 
 // monitorDeadline checks to see if we exceeded the deadline for the step and
@@ -689,16 +830,16 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 			// value instead of polling.
 			if we.ExecutionControl != nil && we.ExecutionControl.Deadline != nil {
 				if time.Now().UTC().After(*we.ExecutionControl.Deadline) {
-					if !we.ExecutionControl.Deadline.IsZero() {
-						// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
-						// timeouts as a failure and the pod should be annotated with that error
-						errMsg := fmt.Sprintf("step exceeded deadline %s", *we.ExecutionControl.Deadline)
-						log.Warnf(errMsg)
-						// TODO(jessesuen): we do not have workflow or step level timeouts (yet) so do not annotate yet
-						//_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, errMsg)
+					var message string
+					// Zero value of the deadline indicates an intentional cancel vs. a timeout. We treat
+					// timeouts as a failure and the pod should be annotated with that error
+					if we.ExecutionControl.Deadline.IsZero() {
+						message = "terminated"
 					} else {
-						log.Info("step has been cancelled")
+						message = fmt.Sprintf("step exceeded workflow deadline %s", *we.ExecutionControl.Deadline)
 					}
+					log.Info(message)
+					_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, message)
 					log.Infof("Killing main container")
 					mainContainerID, _ := we.GetMainContainerID()
 					err := we.RuntimeExecutor.Kill([]string{mainContainerID})
@@ -798,10 +939,7 @@ func unmarshalAnnotationField(filePath string, key string, into interface{}) err
 				break
 			}
 		}
-		// The end of the annotation file
-		if err == io.EOF {
-			break
-		}
+
 		line := buffer.String()
 
 		// Read property
@@ -829,6 +967,11 @@ func unmarshalAnnotationField(filePath string, key string, into interface{}) err
 				return errors.InternalWrapError(err)
 			}
 			return nil
+		}
+
+		// The end of the annotation file
+		if err == io.EOF {
+			break
 		}
 	}
 

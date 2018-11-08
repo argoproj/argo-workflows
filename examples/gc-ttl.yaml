@@ -1,0 +1,16 @@
+# This example shows the ability to automatically delete workflows after a specified time period
+# after the workflow completes. The ttlSecondsAfterFinished indicates the duration in seconds, after
+# a workflow finishes, in which the workflow (and its pods) will be deleted.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: gc-ttl-
+spec:
+  ttlSecondsAfterFinished: 10
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]

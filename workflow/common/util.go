@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -15,16 +14,12 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/util/retry"
+	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	apivalidation "k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -101,7 +96,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 }
 
 // GetExecutorOutput returns the output of an remotecommand.Executor
-func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
+func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
 	err := exec.Stream(remotecommand.StreamOptions{
@@ -110,14 +105,9 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 		Tty:    false,
 	})
 	if err != nil {
-		return "", "", errors.InternalWrapError(err)
+		return nil, nil, errors.InternalWrapError(err)
 	}
-	return stdOut.String(), stdErr.String(), nil
-}
-
-// DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
-func DefaultConfigMapName(controllerName string) string {
-	return fmt.Sprintf("%s-configmap", controllerName)
+	return &stdOut, &stdErr, nil
 }
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
@@ -301,25 +291,6 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 	return err
 }
 
-const workflowFieldNameFmt string = "[a-zA-Z0-9][-a-zA-Z0-9]*"
-const workflowFieldNameErrMsg string = "name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character"
-const workflowFieldMaxLength int = 128
-
-var workflowFieldNameRegexp = regexp.MustCompile("^" + workflowFieldNameFmt + "$")
-
-// IsValidWorkflowFieldName : workflow field name must consist of alpha-numeric characters or '-', and must start with an alpha-numeric character
-func IsValidWorkflowFieldName(name string) []string {
-	var errs []string
-	if len(name) > workflowFieldMaxLength {
-		errs = append(errs, apivalidation.MaxLenError(workflowFieldMaxLength))
-	}
-	if !workflowFieldNameRegexp.MatchString(name) {
-		msg := workflowFieldNameErrMsg + " (e.g. My-name1-2, 123-NAME)"
-		errs = append(errs, msg)
-	}
-	return errs
-}
-
 // IsPodTemplate returns whether the template corresponds to a pod
 func IsPodTemplate(tmpl *wfv1.Template) bool {
 	if tmpl.Container != nil || tmpl.Script != nil || tmpl.Resource != nil {
@@ -355,254 +326,31 @@ func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
 	return ancestry
 }
 
-var errSuspendedCompletedWorkflow = errors.Errorf(errors.CodeBadRequest, "cannot suspend completed workflows")
+var yamlSeparator = regexp.MustCompile("\\n---")
 
-// IsWorkflowSuspended returns whether or not a workflow is considered suspended
-func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
-	if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-		return true
-	}
-	for _, node := range wf.Status.Nodes {
-		if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
-			return true
-		}
-	}
-	return false
-}
-
-// IsWorkflowCompleted returns whether or not a workflow is considered completed
-func IsWorkflowCompleted(wf *wfv1.Workflow) bool {
-	if wf.ObjectMeta.Labels != nil {
-		return wf.ObjectMeta.Labels[LabelKeyCompleted] == "true"
-	}
-	return false
-}
-
-// SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
-func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		if IsWorkflowCompleted(wf) {
-			return false, errSuspendedCompletedWorkflow
-		}
-		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
-			t := true
-			wf.Spec.Suspend = &t
-			wf, err = wfIf.Update(wf)
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
-				}
-				return false, err
-			}
-		}
-		return true, nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
-// Retries conflict errors
-func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error {
-	err := wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
-		wf, err := wfIf.Get(workflowName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		updated := false
-		if wf.Spec.Suspend != nil && *wf.Spec.Suspend {
-			wf.Spec.Suspend = nil
-			updated = true
-		}
-		// To resume a workflow with a suspended node we simply mark the node as Successful
-		for nodeID, node := range wf.Status.Nodes {
-			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
-				node.Phase = wfv1.NodeSucceeded
-				node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-				wf.Status.Nodes[nodeID] = node
-				updated = true
-			}
-		}
-		if updated {
-			wf, err = wfIf.Update(wf)
-			if err != nil {
-				if apierr.IsConflict(err) {
-					return false, nil
-				}
-				return false, err
-			}
-		}
-		return true, nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
-func randString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
-// FormulateResubmitWorkflow formulate a new workflow from a previous workflow, optionally re-using successful nodes
-func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow, error) {
-	newWF := wfv1.Workflow{}
-	newWF.TypeMeta = wf.TypeMeta
-
-	// Resubmitted workflow will use generated names
-	if wf.ObjectMeta.GenerateName != "" {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.GenerateName
-	} else {
-		newWF.ObjectMeta.GenerateName = wf.ObjectMeta.Name + "-"
-	}
-	// When resubmitting workflow with memoized nodes, we need to use a predetermined workflow name
-	// in order to formulate the node statuses. Which means we cannot reuse metadata.generateName
-	// The following simulates the behavior of generateName
-	if memoized {
-		switch wf.Status.Phase {
-		case wfv1.NodeFailed, wfv1.NodeError:
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to resubmit in memoized mode")
-		}
-		newWF.ObjectMeta.Name = newWF.ObjectMeta.GenerateName + randString(5)
-	}
-
-	// carry over the unmodified spec
-	newWF.Spec = wf.Spec
-
-	// carry over user labels and annotations from previous workflow.
-	// skip any argoproj.io labels except for the controller instanceID label.
-	for key, val := range wf.ObjectMeta.Labels {
-		if strings.HasPrefix(key, workflow.FullName+"/") && key != LabelKeyControllerInstanceID {
+// SplitYAMLFile is a helper to split a body into multiple workflow objects
+func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.Workflow, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
 			continue
 		}
-		if newWF.ObjectMeta.Labels == nil {
-			newWF.ObjectMeta.Labels = make(map[string]string)
+		var wf wfv1.Workflow
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
 		}
-		newWF.ObjectMeta.Labels[key] = val
-	}
-	for key, val := range wf.ObjectMeta.Annotations {
-		if newWF.ObjectMeta.Annotations == nil {
-			newWF.ObjectMeta.Annotations = make(map[string]string)
+		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
+		if wf.Kind != "" && wf.Kind != workflow.Kind {
+			// If we get here, it was a k8s manifest which was not of type 'Workflow'
+			// We ignore these since we only care about Workflow manifests.
+			continue
 		}
-		newWF.ObjectMeta.Annotations[key] = val
-	}
-
-	if !memoized {
-		return &newWF, nil
-	}
-
-	// Iterate the previous nodes. If it was successful Pod carry it forward
-	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
-	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
-	for _, node := range wf.Status.Nodes {
-		switch node.Phase {
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasPrefix(node.Name, onExitNodeName) {
-				continue
-			}
-			originalID := node.ID
-			node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
-			node.ID = newWF.NodeID(node.Name)
-			node.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
-			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.FinishedAt = node.StartedAt
-			newChildren := make([]string, len(node.Children))
-			for i, childID := range node.Children {
-				newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
-			}
-			node.Children = newChildren
-			newOutboundNodes := make([]string, len(node.OutboundNodes))
-			for i, outboundID := range node.OutboundNodes {
-				newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
-			}
-			node.OutboundNodes = newOutboundNodes
-			if node.Type == wfv1.NodeTypePod {
-				node.Phase = wfv1.NodeSkipped
-				node.Type = wfv1.NodeTypeSkipped
-				node.Message = fmt.Sprintf("original pod: %s", originalID)
-			}
-			newWF.Status.Nodes[node.ID] = node
-		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning:
-			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
-		default:
-			return nil, errors.InternalErrorf("Workflow cannot be resubmitted with nodes in %s phase", node, node.Phase)
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
 		}
+		manifests = append(manifests, wf)
 	}
-	return &newWF, nil
-}
-
-// convertNodeID converts an old nodeID to a new nodeID
-func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
-	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
-	return newWf.NodeID(newNodeName)
-}
-
-// RetryWorkflow updates a workflow, deleting all failed steps as well as the onExit node (and children)
-func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowInterface, wf *wfv1.Workflow) (*wfv1.Workflow, error) {
-	switch wf.Status.Phase {
-	case wfv1.NodeFailed, wfv1.NodeError:
-	default:
-		return nil, errors.Errorf(errors.CodeBadRequest, "workflow must be Failed/Error to retry")
-	}
-	newWF := wf.DeepCopy()
-	podIf := kubeClient.CoreV1().Pods(wf.ObjectMeta.Namespace)
-
-	// Delete/reset fields which indicate workflow completed
-	delete(newWF.Labels, LabelKeyCompleted)
-	delete(newWF.Labels, LabelKeyPhase)
-	newWF.Status.Phase = wfv1.NodeRunning
-	newWF.Status.Message = ""
-	newWF.Status.FinishedAt = metav1.Time{}
-
-	// Iterate the previous nodes. If it was successful Pod carry it forward
-	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
-	for _, node := range wf.Status.Nodes {
-		switch node.Phase {
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if !strings.HasPrefix(node.Name, onExitNodeName) {
-				newWF.Status.Nodes[node.ID] = node
-				continue
-			}
-		case wfv1.NodeError, wfv1.NodeFailed:
-			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
-		default:
-			return nil, errors.InternalErrorf("Workflow cannot be retried with nodes in %s phase", node, node.Phase)
-		}
-		if node.Type == wfv1.NodeTypePod {
-			log.Infof("Deleting pod: %s", node.ID)
-			err := podIf.Delete(node.ID, &metav1.DeleteOptions{})
-			if err != nil && !apierr.IsNotFound(err) {
-				return nil, errors.InternalWrapError(err)
-			}
-		}
-	}
-	newWF, err := wfClient.Update(newWF)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return newWF, nil
+	return manifests, nil
 }

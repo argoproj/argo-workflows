@@ -3,17 +3,20 @@ package commands
 import (
 	"os"
 
+	"github.com/argoproj/pkg/kube/cli"
+	"github.com/ghodss/yaml"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/executor"
 	"github.com/argoproj/argo/workflow/executor/docker"
-	"github.com/ghodss/yaml"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	"github.com/argoproj/argo/workflow/executor/k8sapi"
+	"github.com/argoproj/argo/workflow/executor/kubelet"
 )
 
 const (
@@ -24,15 +27,16 @@ const (
 var (
 	// GlobalArgs hold global CLI flags
 	GlobalArgs globalFlags
+
+	clientConfig clientcmd.ClientConfig
 )
 
 type globalFlags struct {
 	podAnnotationsPath string // --pod-annotations
-	kubeConfig         string // --kubeconfig
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&GlobalArgs.kubeConfig, "kubeconfig", "", "Kubernetes config (used when running outside of cluster)")
+	clientConfig = cli.AddKubectlFlagsToCmd(RootCmd)
 	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, "Pod annotations file from k8s downward API")
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
 }
@@ -46,14 +50,6 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-// getClientConfig return rest config, if path not specified, assume in cluster config
-func getClientConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-	return rest.InClusterConfig()
-}
-
 func initExecutor() *executor.WorkflowExecutor {
 	podAnnotationsPath := common.PodMetadataAnnotationsPath
 
@@ -62,7 +58,11 @@ func initExecutor() *executor.WorkflowExecutor {
 		podAnnotationsPath = GlobalArgs.podAnnotationsPath
 	}
 
-	config, err := getClientConfig(GlobalArgs.kubeConfig)
+	config, err := clientConfig.ClientConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	namespace, _, err := clientConfig.Namespace()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -75,17 +75,33 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-	namespace, ok := os.LookupEnv(common.EnvVarNamespace)
-	if !ok {
-		log.Fatalf("Unable to determine pod namespace from environment variable %s", common.EnvVarNamespace)
-	}
 
-	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, &docker.DockerExecutor{})
+	var cre executor.ContainerRuntimeExecutor
+	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
+		if err != nil {
+			panic(err.Error())
+		}
+	case common.ContainerRuntimeExecutorKubelet:
+		cre, err = kubelet.NewKubeletExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		cre, err = docker.NewDockerExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre)
 	err = wfExecutor.LoadTemplate()
 	if err != nil {
 		panic(err.Error())
 	}
+
 	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.GetVersion(), string(yamlBytes))
+	vers := argo.GetVersion()
+	log.Infof("Executor (version: %s, build_date: %s) initialized with template:\n%s", vers, vers.BuildDate, string(yamlBytes))
 	return &wfExecutor
 }

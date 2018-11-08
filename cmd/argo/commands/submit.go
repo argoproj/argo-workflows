@@ -1,32 +1,35 @@
 package commands
 
 import (
+	"bufio"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
+
+	"github.com/argoproj/pkg/json"
+	"github.com/spf13/cobra"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/spf13/cobra"
+	"github.com/argoproj/argo/workflow/util"
 )
 
-type submitFlags struct {
-	name           string   // --name
-	generateName   string   // --generate-name
-	instanceID     string   // --instanceid
-	entrypoint     string   // --entrypoint
-	parameters     []string // --parameter
-	output         string   // --output
-	wait           bool     // --wait
-	serviceAccount string   // --serviceaccount
+// cliSubmitOpts holds submition options specific to CLI submission (e.g. controlling output)
+type cliSubmitOpts struct {
+	output   string // --output
+	wait     bool   // --wait
+	watch    bool   // --watch
+	strict   bool   // --strict
+	priority *int32 // --priority
 }
 
 func NewSubmitCommand() *cobra.Command {
 	var (
-		submitArgs submitFlags
+		submitOpts    util.SubmitOpts
+		cliSubmitOpts cliSubmitOpts
+		priority      int32
 	)
 	var command = &cobra.Command{
 		Use:   "submit FILE1 FILE2...",
@@ -36,116 +39,114 @@ func NewSubmitCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			SubmitWorkflows(args, &submitArgs)
+			if cmd.Flag("priority").Changed {
+				cliSubmitOpts.priority = &priority
+			}
+
+			SubmitWorkflows(args, &submitOpts, &cliSubmitOpts)
 		},
 	}
-	command.Flags().StringVar(&submitArgs.name, "name", "", "override metadata.name")
-	command.Flags().StringVar(&submitArgs.generateName, "generate-name", "", "override metadata.generateName")
-	command.Flags().StringVar(&submitArgs.entrypoint, "entrypoint", "", "override entrypoint")
-	command.Flags().StringArrayVarP(&submitArgs.parameters, "parameter", "p", []string{}, "pass an input parameter")
-	command.Flags().StringVarP(&submitArgs.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVarP(&submitArgs.wait, "wait", "w", false, "wait for the workflow to complete")
-	command.Flags().StringVar(&submitArgs.serviceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
-	command.Flags().StringVar(&submitArgs.instanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	command.Flags().StringVar(&submitOpts.Name, "name", "", "override metadata.name")
+	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
+	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
+	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
+	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
+	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
+	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	return command
 }
 
-func SubmitWorkflows(filePaths []string, submitArgs *submitFlags) {
+func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+	if submitOpts == nil {
+		submitOpts = &util.SubmitOpts{}
+	}
+	if cliOpts == nil {
+		cliOpts = &cliSubmitOpts{}
+	}
 	InitWorkflowClient()
-	var workflowNames []string
-	for _, filePath := range filePaths {
-		var body []byte
-		var err error
-		if cmdutil.IsURL(filePath) {
-			response, err := http.Get(filePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-			body, err = ioutil.ReadAll(response.Body)
-			_ = response.Body.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			body, err = ioutil.ReadFile(filePath)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-		workflows, err := splitYAMLFile(body)
+	var workflows []wfv1.Workflow
+	if len(filePaths) == 1 && filePaths[0] == "-" {
+		reader := bufio.NewReader(os.Stdin)
+		body, err := ioutil.ReadAll(reader)
 		if err != nil {
-			log.Fatalf("%s failed to parse: %v", filePath, err)
+			log.Fatal(err)
 		}
-		for _, wf := range workflows {
-			wfName, err := submitWorkflow(&wf, submitArgs)
-			if err != nil {
-				log.Fatalf("Workflow manifest %s failed submission: %v", filePath, err)
+		workflows = unmarshalWorkflows(body, cliOpts.strict)
+	} else {
+		for _, filePath := range filePaths {
+			var body []byte
+			var err error
+			if cmdutil.IsURL(filePath) {
+				response, err := http.Get(filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
+				body, err = ioutil.ReadAll(response.Body)
+				_ = response.Body.Close()
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				body, err = ioutil.ReadFile(filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
-
-			workflowNames = append(workflowNames, wfName)
+			wfs := unmarshalWorkflows(body, cliOpts.strict)
+			workflows = append(workflows, wfs...)
 		}
 	}
 
-	if submitArgs.wait {
-		wsp := NewWorkflowStatusPoller(wfClient, false, submitArgs.output == "json")
-		wsp.WaitWorkflows(workflowNames)
+	if cliOpts.watch {
+		if len(workflows) > 1 {
+			log.Fatalf("Cannot watch more than one workflow")
+		}
+		if cliOpts.wait {
+			log.Fatalf("--wait cannot be combined with --watch")
+		}
 	}
+
+	var workflowNames []string
+	for _, wf := range workflows {
+		wf.Spec.Priority = cliOpts.priority
+		created, err := util.SubmitWorkflow(wfClient, &wf, submitOpts)
+		if err != nil {
+			log.Fatalf("Failed to submit workflow: %v", err)
+		}
+		printWorkflow(created, cliOpts.output)
+		workflowNames = append(workflowNames, created.Name)
+	}
+	waitOrWatch(workflowNames, *cliOpts)
 }
 
-// submitWorkflow is a helper to validate and submit a single workflow and override the entrypoint/params supplied from command line
-func submitWorkflow(wf *wfv1.Workflow, submitArgs *submitFlags) (string, error) {
-	if submitArgs.entrypoint != "" {
-		wf.Spec.Entrypoint = submitArgs.entrypoint
+// unmarshalWorkflows unmarshals the input bytes as either json or yaml
+func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
+	var wf wfv1.Workflow
+	var jsonOpts []json.JSONOpt
+	if strict {
+		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
 	}
-	if submitArgs.serviceAccount != "" {
-		wf.Spec.ServiceAccountName = submitArgs.serviceAccount
+	err := json.Unmarshal(wfBytes, &wf, jsonOpts...)
+	if err == nil {
+		return []wfv1.Workflow{wf}
 	}
-	if submitArgs.instanceID != "" {
-		labels := wf.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = submitArgs.instanceID
-		wf.SetLabels(labels)
+	yamlWfs, err := common.SplitYAMLFile(wfBytes, strict)
+	if err == nil {
+		return yamlWfs
 	}
-	if len(submitArgs.parameters) > 0 {
-		newParams := make([]wfv1.Parameter, 0)
-		passedParams := make(map[string]bool)
-		for _, paramStr := range submitArgs.parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				log.Fatalf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := wfv1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
-		}
-		for _, param := range wf.Spec.Arguments.Parameters {
-			if _, ok := passedParams[param.Name]; ok {
-				// this parameter was overridden via command line
-				continue
-			}
-			newParams = append(newParams, param)
-		}
-		wf.Spec.Arguments.Parameters = newParams
+	log.Fatalf("Failed to parse workflow: %v", err)
+	return nil
+}
+
+func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
+	if cliSubmitOpts.wait {
+		WaitWorkflows(workflowNames, false, cliSubmitOpts.output == "json")
+	} else if cliSubmitOpts.watch {
+		watchWorkflow(workflowNames[0])
 	}
-	if submitArgs.generateName != "" {
-		wf.ObjectMeta.GenerateName = submitArgs.generateName
-	}
-	if submitArgs.name != "" {
-		wf.ObjectMeta.Name = submitArgs.name
-	}
-	err := common.ValidateWorkflow(wf)
-	if err != nil {
-		return "", err
-	}
-	created, err := wfClient.Create(wf)
-	if err != nil {
-		return "", err
-	}
-	printWorkflow(created, submitArgs.output)
-	return created.Name, nil
 }

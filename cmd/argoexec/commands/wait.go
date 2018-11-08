@@ -3,7 +3,7 @@ package commands
 import (
 	"time"
 
-	"github.com/argoproj/argo/util/stats"
+	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,7 @@ var waitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := waitContainer()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%+v", err)
 		}
 	},
 }
@@ -34,6 +34,11 @@ func waitContainer() error {
 	if err != nil {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try to save outputs
+	}
+	logArt, err := wfExecutor.SaveLogs()
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
 	}
 	err = wfExecutor.SaveArtifacts()
 	if err != nil {
@@ -52,7 +57,7 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	err = wfExecutor.AnnotateOutputs()
+	err = wfExecutor.AnnotateOutputs(logArt)
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err

@@ -2,9 +2,12 @@ package docker
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/argoproj/argo/util"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
@@ -12,10 +15,15 @@ import (
 )
 
 // killGracePeriod is the time in seconds after sending SIGTERM before
-// forcefully killing the sidcar with SIGKILL (value matches k8s)
-const killGracePeriod = 30
+// forcefully killing the sidecar with SIGKILL (value matches k8s)
+const killGracePeriod = 10
 
 type DockerExecutor struct{}
+
+func NewDockerExecutor() (*DockerExecutor, error) {
+	log.Infof("Creating a docker executor")
+	return &DockerExecutor{}, nil
+}
 
 func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) (string, error) {
 	// Uses docker cp command to return contents of the file
@@ -61,6 +69,22 @@ func (d *DockerExecutor) Wait(containerID string) error {
 	return common.RunCommand("docker", "wait", containerID)
 }
 
+// Logs captures the logs of a container to a file
+func (d *DockerExecutor) Logs(containerID string, path string) error {
+	cmd := exec.Command("docker", "logs", containerID)
+	outfile, err := os.Create(path)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	defer util.Close(outfile)
+	cmd.Stdout = outfile
+	err = cmd.Start()
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	return cmd.Wait()
+}
+
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
 func (d *DockerExecutor) Kill(containerIDs []string) error {
 	killArgs := append([]string{"kill", "--signal", "TERM"}, containerIDs...)
@@ -74,13 +98,17 @@ func (d *DockerExecutor) Kill(containerIDs []string) error {
 	if err := waitCmd.Start(); err != nil {
 		return errors.InternalWrapError(err)
 	}
+	// waitCmd.Wait() might return error "signal: killed" when we SIGKILL the process
+	// We ignore errors in this case
+	//ignoreWaitError := false
 	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
 		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", killGracePeriod)
-		_ = waitCmd.Process.Kill()
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)
 		_ = forceKillCmd.Run()
+		//ignoreWaitError = true
+		//_ = waitCmd.Process.Kill()
 	})
 	err = waitCmd.Wait()
 	_ = timer.Stop()

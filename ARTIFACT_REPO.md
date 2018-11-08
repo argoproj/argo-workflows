@@ -106,19 +106,20 @@ For Minio, the `accessKeySecret` and `secretKeySecret` naturally correspond the 
 
 Example:
 ```
-$ kubectl edit configmap workflow-controller-configmap -n kube-system
+$ kubectl edit configmap workflow-controller-configmap -n argo		# assumes argo was installed in the argo namespace
 ...
-    executorImage: argoproj/argoexec:v2.1.1
+data:
+  config: |
     artifactRepository:
       s3:
         bucket: my-bucket
-	keyPrefix: prefix/in/bucket	#optional
-        endpoint: my-minio-endpoint.default:9000
-        insecure: true
-        accessKeySecret:
+        keyPrefix: prefix/in/bucket     #optional
+        endpoint: my-minio-endpoint.default:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
+        insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
+        accessKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
           key: accesskey
-        secretKeySecret:
+        secretKeySecret:                #omit if accessing via AWS IAM
           name: my-minio-cred
           key: secretkey
 ```

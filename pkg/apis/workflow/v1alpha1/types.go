@@ -27,6 +27,7 @@ type NodePhase string
 
 // Workflow and node statuses
 const (
+	NodePending   NodePhase = "Pending"
 	NodeRunning   NodePhase = "Running"
 	NodeSucceeded NodePhase = "Succeeded"
 	NodeSkipped   NodePhase = "Skipped"
@@ -43,6 +44,7 @@ const (
 	NodeTypeSteps     NodeType = "Steps"
 	NodeTypeStepGroup NodeType = "StepGroup"
 	NodeTypeDAG       NodeType = "DAG"
+	NodeTypeTaskGroup NodeType = "TaskGroup"
 	NodeTypeRetry     NodeType = "Retry"
 	NodeTypeSkipped   NodeType = "Skipped"
 	NodeTypeSuspend   NodeType = "Suspend"
@@ -119,6 +121,20 @@ type WorkflowSpec struct {
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
 	OnExit string `json:"onExit,omitempty"`
+
+	// TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution
+	// (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be
+	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
+	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
+	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
+
+	// Optional duration in seconds relative to the workflow start time which the workflow is
+	// allowed to run before the controller terminates the workflow. A value of zero is used to
+	// terminate a Running workflow
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
+	Priority *int32 `json:"priority,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -263,13 +279,33 @@ type Artifact struct {
 	// GlobalName exports an output artifact to the global scope, making it available as
 	// '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts
 	GlobalName string `json:"globalName,omitempty"`
+
+	// Archive controls how the artifact will be saved to the artifact repository.
+	Archive *ArchiveStrategy `json:"archive,omitempty"`
 }
+
+// ArchiveStrategy describes how to archive files/directory when saving artifacts
+type ArchiveStrategy struct {
+	Tar  *TarStrategy  `json:"tar,omitempty"`
+	None *NoneStrategy `json:"none,omitempty"`
+}
+
+// TarStrategy will tar and gzip the file or directory when saving
+type TarStrategy struct{}
+
+// NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
+// files. Note that if the artifact is a directory, the artifact driver must support the ability to
+// save/load the directory appropriately.
+type NoneStrategy struct{}
 
 // ArtifactLocation describes a location for a single or multiple artifacts.
 // It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).
 // It is also used to describe the location of multiple artifacts such as the archive location
 // of a single workflow step, which the executor will use as a default location to store its files.
 type ArtifactLocation struct {
+	// ArchiveLogs indicates if the container logs should be archived
+	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
+
 	// S3 contains S3 artifact location details
 	S3 *S3Artifact `json:"s3,omitempty"`
 
@@ -312,8 +348,12 @@ type WorkflowStep struct {
 	// WithItems expands a step into multiple parallel steps from the items in the list
 	WithItems []Item `json:"withItems,omitempty"`
 
-	// WithParam expands a step into from the value in the parameter
+	// WithParam expands a step into multiple parallel steps from the value in the parameter,
+	// which is expected to be a JSON list.
 	WithParam string `json:"withParam,omitempty"`
+
+	// WithSequence expands a step into a numeric sequence
+	WithSequence *Sequence `json:"withSequence,omitempty"`
 
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty"`
@@ -322,7 +362,22 @@ type WorkflowStep struct {
 // Item expands a single workflow step into multiple parallel steps
 // The value of Item can be a map, string, bool, or number
 type Item struct {
-	Value interface{}
+	Value interface{} `json:"value,omitempty"`
+}
+
+// Sequence expands a workflow step into numeric range
+type Sequence struct {
+	// Count is number of elements in the sequence (default: 0). Not to be used with end
+	Count string `json:"count,omitempty"`
+
+	// Number at which to start the sequence (default: 0)
+	Start string `json:"start,omitempty"`
+
+	// Number at which to end the sequence (default: 0). Not to be used with Count
+	End string `json:"end,omitempty"`
+
+	// Format is a printf format string to format the value in the sequence
+	Format string `json:"format,omitempty"`
 }
 
 // DeepCopyInto is an custom deepcopy function to deal with our use of the interface{} type
@@ -477,12 +532,21 @@ func (n NodeStatus) String() string {
 	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
 }
 
-// Completed returns whether or not the node has completed execution
+func isCompletedPhase(phase NodePhase) bool {
+	return phase == NodeSucceeded ||
+		phase == NodeFailed ||
+		phase == NodeError ||
+		phase == NodeSkipped
+}
+
+// Remove returns whether or not the workflow has completed execution
+func (ws *WorkflowStatus) Completed() bool {
+	return isCompletedPhase(ws.Phase)
+}
+
+// Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return n.Phase == NodeSucceeded ||
-		n.Phase == NodeFailed ||
-		n.Phase == NodeError ||
-		n.Phase == NodeSkipped
+	return isCompletedPhase(n.Phase)
 }
 
 // IsDaemoned returns whether or not the node is deamoned
@@ -554,6 +618,8 @@ type GitArtifact struct {
 
 	// PasswordSecret is the secret selector to the repository password
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+	// SSHPrivateKeySecret is the secret selector to the repository ssh private key
+	SSHPrivateKeySecret *apiv1.SecretKeySelector `json:"sshPrivateKeySecret,omitempty"`
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -658,7 +724,7 @@ func (tmpl *Template) IsLeaf() bool {
 // DAGTemplate is a template subtype for directed acyclic graph templates
 type DAGTemplate struct {
 	// Target are one or more names of targets to execute in a DAG
-	Targets string `json:"target,omitempty"`
+	Target string `json:"target,omitempty"`
 
 	// Tasks are a list of DAG tasks
 	Tasks []DAGTask `json:"tasks"`
@@ -677,6 +743,19 @@ type DAGTask struct {
 
 	// Dependencies are name of other targets which this depends on
 	Dependencies []string `json:"dependencies,omitempty"`
+
+	// WithItems expands a task into multiple parallel tasks from the items in the list
+	WithItems []Item `json:"withItems,omitempty"`
+
+	// WithParam expands a task into multiple parallel tasks from the value in the parameter,
+	// which is expected to be a JSON list.
+	WithParam string `json:"withParam,omitempty"`
+
+	// WithSequence expands a task into a numeric sequence
+	WithSequence *Sequence `json:"withSequence,omitempty"`
+
+	// When is an expression in which the task should conditionally execute
+	When string `json:"when,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

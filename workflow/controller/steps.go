@@ -3,10 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"sort"
 	"strings"
 
+	"github.com/Knetic/govaluate"
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -39,6 +38,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			scope: make(map[string]interface{}),
 		},
 	}
+	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
+
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
@@ -55,11 +56,17 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 			// the current step group node.
 			prevStepGroupName := fmt.Sprintf("%s[%d]", nodeName, i-1)
 			prevStepGroupNode := woc.getNodeByName(prevStepGroupName)
-			for _, childID := range prevStepGroupNode.Children {
-				outboundNodeIDs := woc.getOutboundNodes(childID)
-				woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
-				for _, outNodeID := range outboundNodeIDs {
-					woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
+			if len(prevStepGroupNode.Children) == 0 {
+				// corner case which connects an empty StepGroup (e.g. due to empty withParams) to
+				// the previous StepGroup node
+				woc.addChildNode(prevStepGroupName, sgNodeName)
+			} else {
+				for _, childID := range prevStepGroupNode.Children {
+					outboundNodeIDs := woc.getOutboundNodes(childID)
+					woc.log.Infof("SG Outbound nodes of %s are %s", childID, outboundNodeIDs)
+					for _, outNodeID := range outboundNodeIDs {
+						woc.addChildNode(woc.wf.Status.Nodes[outNodeID].Name, sgNodeName)
+					}
 				}
 			}
 		}
@@ -70,7 +77,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		}
 
 		if !sgNode.Successful() {
-			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode, sgNode.Message)
+			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 			return woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
@@ -78,15 +85,22 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 
 		// Add all outputs of each step in the group to the scope
 		for _, step := range stepGroup {
-			childNode := woc.getNodeByName(fmt.Sprintf("%s.%s", sgNodeName, step.Name))
-			if childNode == nil {
-				// This can happen if there was `withItem` expansion
-				// it is okay to ignore this because these expanded steps
-				// are not easily referenceable by user.
-				continue
-			}
+			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
+			childNode := woc.getNodeByName(childNodeName)
 			prefix := fmt.Sprintf("steps.%s", step.Name)
-			woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
+			if childNode == nil {
+				// This happens when there was `withItem/withParam` expansion.
+				// We add the aggregate outputs of our children to the scope as a JSON list
+				var childNodes []wfv1.NodeStatus
+				for _, node := range woc.wf.Status.Nodes {
+					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") {
+						childNodes = append(childNodes, node)
+					}
+				}
+				woc.processAggregateNodeOutputs(step.Template, stepsCtx.scope, prefix, childNodes)
+			} else {
+				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
+			}
 		}
 	}
 	woc.updateOutboundNodes(nodeName, tmpl)
@@ -113,6 +127,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 		sgNode := woc.getNodeByName(fmt.Sprintf("%s[%d]", nodeName, i))
 		if sgNode != nil {
 			lastSGNode = sgNode
+			break
 		}
 	}
 	if lastSGNode == nil {
@@ -179,7 +194,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				return node
 			case ErrParallelismReached:
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNode)
+				errMsg := fmt.Sprintf("child '%s' errored", childNode.ID)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
@@ -213,28 +228,40 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
-var whenExpression = regexp.MustCompile("^(.*)(==|!=)(.*)$")
-
 // shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
 func shouldExecute(when string) (bool, error) {
 	if when == "" {
 		return true, nil
 	}
-	parts := whenExpression.FindStringSubmatch(when)
-	if len(parts) == 0 {
-		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression: %s", when)
+	expression, err := govaluate.NewEvaluableExpression(when)
+	if err != nil {
+		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
-	var1 := strings.TrimSpace(parts[1])
-	operator := parts[2]
-	var2 := strings.TrimSpace(parts[3])
-	switch operator {
-	case "==":
-		return var1 == var2, nil
-	case "!=":
-		return var1 != var2, nil
-	default:
-		return false, errors.Errorf(errors.CodeBadRequest, "Unknown operator: %s", operator)
+	// The following loop converts govaluate variables (which we don't use), into strings. This
+	// allows us to have expressions like: "foo != bar" without requiring foo and bar to be quoted.
+	tokens := expression.Tokens()
+	for i, tok := range tokens {
+		switch tok.Kind {
+		case govaluate.VARIABLE:
+			tok.Kind = govaluate.STRING
+		default:
+			continue
+		}
+		tokens[i] = tok
 	}
+	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
+	}
+	boolRes, ok := result.(bool)
+	if !ok {
+		return false, errors.Errorf(errors.CodeBadRequest, "Expected boolean evaluation for '%s'. Got %v", when, result)
+	}
+	return boolRes, nil
 }
 
 // resolveReferences replaces any references to outputs of previous steps, or artifacts in the inputs
@@ -294,7 +321,7 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, 0)
 	for _, step := range stepGroup {
-		if len(step.WithItems) == 0 && step.WithParam == "" {
+		if len(step.WithItems) == 0 && step.WithParam == "" && step.WithSequence == nil {
 			newStepGroup = append(newStepGroup, step)
 			continue
 		}
@@ -325,50 +352,24 @@ func (woc *wfOperationCtx) expandStep(step wfv1.WorkflowStep) ([]wfv1.WorkflowSt
 		if err != nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "withParam value could not be parsed as a JSON list: %s", strings.TrimSpace(step.WithParam))
 		}
+	} else if step.WithSequence != nil {
+		items, err = expandSequence(step.WithSequence)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		// this should have been prevented in expandStepGroup()
 		return nil, errors.InternalError("expandStep() was called with withItems and withParam empty")
 	}
 
 	for i, item := range items {
-		replaceMap := make(map[string]string)
-		var newStepName string
-		switch val := item.Value.(type) {
-		case string, int32, int64, float32, float64, bool:
-			replaceMap["item"] = fmt.Sprintf("%v", val)
-			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, val)
-		case map[string]interface{}:
-			// Handle the case when withItems is a list of maps.
-			// vals holds stringified versions of the map items which are incorporated as part of the step name.
-			// For example if the item is: {"name": "jesse","group":"developer"}
-			// the vals would be: ["name:jesse", "group:developer"]
-			// This would eventually be part of the step name (group:developer,name:jesse)
-			vals := make([]string, 0)
-			for itemKey, itemValIf := range val {
-				switch itemVal := itemValIf.(type) {
-				case string, int32, int64, float32, float64, bool:
-					replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-					vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
-				default:
-					return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %s", i, itemKey, itemVal)
-				}
-			}
-			// sort the values so that the name is deterministic
-			sort.Strings(vals)
-			newStepName = fmt.Sprintf("%s(%d:%v)", step.Name, i, strings.Join(vals, ","))
-		default:
-			return nil, errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", i, val)
-		}
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
+		var newStep wfv1.WorkflowStep
+		newStepName, err := processItem(fstTmpl, step.Name, i, item, &newStep)
 		if err != nil {
 			return nil, err
 		}
-		var newStep wfv1.WorkflowStep
-		err = json.Unmarshal([]byte(newStepStr), &newStep)
-		if err != nil {
-			return nil, errors.InternalWrapError(err)
-		}
 		newStep.Name = newStepName
+		newStep.Template = step.Template
 		expandedStep = append(expandedStep, newStep)
 	}
 	return expandedStep, nil

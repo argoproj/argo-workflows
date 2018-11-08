@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	humanize "github.com/dustin/go-humanize"
+	"github.com/argoproj/pkg/humanize"
+	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 type listFlags struct {
@@ -69,9 +70,12 @@ func NewListCommand() *cobra.Command {
 				workflows = wfList.Items
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
-				minTime := parseSince(listArgs.since)
+				minTime, err := argotime.ParseSince(listArgs.since)
+				if err != nil {
+					log.Fatal(err)
+				}
 				for _, wf := range wfList.Items {
-					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(minTime) {
+					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
 				}
@@ -99,41 +103,26 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-var sinceRegex = regexp.MustCompile("^(\\d+)([smhd])$")
-
-var timeMagnitudes = []humanize.RelTimeMagnitude{
-	{D: time.Second, Format: "0s", DivBy: time.Second},
-	{D: 2 * time.Second, Format: "1s %s", DivBy: 1},
-	{D: time.Minute, Format: "%ds %s", DivBy: time.Second},
-	{D: 2 * time.Minute, Format: "1m %s", DivBy: 1},
-	{D: time.Hour, Format: "%dm %s", DivBy: time.Minute},
-	{D: 2 * time.Hour, Format: "1h %s", DivBy: 1},
-	{D: humanize.Day, Format: "%dh %s", DivBy: time.Hour},
-	{D: 2 * humanize.Day, Format: "1d %s", DivBy: 1},
-	{D: humanize.Week, Format: "%dd %s", DivBy: humanize.Day},
-}
-
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")
 	}
-	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION")
+	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
 	if listArgs.output == "wide" {
-		fmt.Fprint(w, "\tR/C\tPARAMETERS")
+		fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
-		cTime := time.Unix(wf.ObjectMeta.CreationTimestamp.Unix(), 0)
-		ageStr := humanize.CustomRelTime(cTime, time.Now(), "", "", timeMagnitudes)
-		durationStr := humanizeDurationShort(wf.Status.StartedAt, wf.Status.FinishedAt)
+		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
+		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr, wf.Spec.Priority)
 		if listArgs.output == "wide" {
-			running, completed := countCompletedRunning(&wf)
-			fmt.Fprintf(w, "\t%d/%d", running, completed)
+			pending, running, completed := countPendingRunningCompleted(&wf)
+			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
 			fmt.Fprintf(w, "\t%s", parameterString(wf.Spec.Arguments.Parameters))
 		}
 		fmt.Fprintf(w, "\n")
@@ -141,22 +130,24 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	_ = w.Flush()
 }
 
-func countCompletedRunning(wf *wfv1.Workflow) (int, int) {
-	completed := 0
+func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
+	pending := 0
 	running := 0
+	completed := 0
 	for _, node := range wf.Status.Nodes {
-		if len(node.Children) > 0 {
-			// not a pod
-			// TODO: this will change after DAG implementation
+		tmpl := wf.GetTemplate(node.TemplateName)
+		if tmpl == nil || !tmpl.IsPodType() {
 			continue
 		}
 		if node.Completed() {
 			completed++
-		} else {
+		} else if node.Phase == wfv1.NodeRunning {
 			running++
+		} else {
+			pending++
 		}
 	}
-	return running, completed
+	return pending, running, completed
 }
 
 // parameterString returns a human readable display string of the parameters, truncating if necessary
@@ -208,41 +199,21 @@ func (f ByFinishedAt) Less(i, j int) bool {
 func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	switch wf.Status.Phase {
 	case wfv1.NodeRunning:
-		if common.IsWorkflowSuspended(wf) {
+		if util.IsWorkflowSuspended(wf) {
 			return "Running (Suspended)"
 		}
 		return wf.Status.Phase
-	case "":
+	case wfv1.NodeFailed:
+		if util.IsWorkflowTerminated(wf) {
+			return "Failed (Terminated)"
+		}
+		return wf.Status.Phase
+	case "", wfv1.NodePending:
 		if !wf.ObjectMeta.CreationTimestamp.IsZero() {
-			return "Pending"
+			return wfv1.NodePending
 		}
 		return "Unknown"
 	default:
 		return wf.Status.Phase
 	}
-}
-
-// parseSince parses a since string and returns the time.Time in UTC
-func parseSince(since string) time.Time {
-	matches := sinceRegex.FindStringSubmatch(since)
-	if len(matches) != 3 {
-		log.Fatalf("Invalid since format '%s'. Expected format <duration><unit> (e.g. 3h)\n", since)
-	}
-	amount, err := strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var unit time.Duration
-	switch matches[2] {
-	case "s":
-		unit = time.Second
-	case "m":
-		unit = time.Minute
-	case "h":
-		unit = time.Hour
-	case "d":
-		unit = time.Hour * 24
-	}
-	ago := unit * time.Duration(amount)
-	return time.Now().UTC().Add(-ago)
 }

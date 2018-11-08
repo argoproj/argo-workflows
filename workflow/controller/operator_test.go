@@ -6,7 +6,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -473,7 +473,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Nil(t, err)
 
 	// suspend the workflow
-	err = common.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.SuspendWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -487,7 +487,7 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow and operate again. two pods should be able to be scheduled
-	err = common.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	err = util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
 	assert.Nil(t, err)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
@@ -631,7 +631,7 @@ func TestSuspendTemplate(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.True(t, common.IsWorkflowSuspended(wf))
+	assert.True(t, util.IsWorkflowSuspended(wf))
 
 	// operate again and verify no pods were scheduled
 	woc = newWorkflowOperationCtx(wf, controller)
@@ -641,10 +641,10 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 0, len(pods.Items))
 
 	// resume the workflow. verify resume workflow edits nodestatus correctly
-	common.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
+	util.ResumeWorkflow(wfcset, wf.ObjectMeta.Name)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.False(t, common.IsWorkflowSuspended(wf))
+	assert.False(t, util.IsWorkflowSuspended(wf))
 
 	// operate the workflow. it should reach the second step
 	woc = newWorkflowOperationCtx(wf, controller)
@@ -792,7 +792,7 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 }
 
 func TestParamSubstitutionWithArtifact(t *testing.T) {
-	wf := test.GetWorkflow("functional/param-sub-with-artifacts.yaml")
+	wf := test.LoadE2EWorkflow("functional/param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
 	woc.operate()
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -804,7 +804,7 @@ func TestParamSubstitutionWithArtifact(t *testing.T) {
 }
 
 func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
-	wf := test.GetWorkflow("functional/global-param-sub-with-artifacts.yaml")
+	wf := test.LoadE2EWorkflow("functional/global-param-sub-with-artifacts.yaml")
 	woc := newWoc(*wf)
 	woc.operate()
 	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
@@ -813,4 +813,76 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, len(pods.Items), 1)
+}
+
+func TestExpandWithSequence(t *testing.T) {
+	var seq wfv1.Sequence
+	var items []wfv1.Item
+	var err error
+
+	seq = wfv1.Sequence{
+		Count: "10",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "0", items[0].Value.(string))
+	assert.Equal(t, "9", items[9].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "101",
+		Count: "10",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "101", items[0].Value.(string))
+	assert.Equal(t, "110", items[9].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "50",
+		End:   "60",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 11, len(items))
+	assert.Equal(t, "50", items[0].Value.(string))
+	assert.Equal(t, "60", items[10].Value.(string))
+
+	seq = wfv1.Sequence{
+		Start: "60",
+		End:   "50",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 11, len(items))
+	assert.Equal(t, "60", items[0].Value.(string))
+	assert.Equal(t, "50", items[10].Value.(string))
+
+	seq = wfv1.Sequence{
+		Count: "0",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(items))
+
+	seq = wfv1.Sequence{
+		Start: "8",
+		End:   "8",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(items))
+	assert.Equal(t, "8", items[0].Value.(string))
+
+	seq = wfv1.Sequence{
+		Format: "testuser%02X",
+		Count:  "10",
+		Start:  "1",
+	}
+	items, err = expandSequence(&seq)
+	assert.NoError(t, err)
+	assert.Equal(t, 10, len(items))
+	assert.Equal(t, "testuser01", items[0].Value.(string))
+	assert.Equal(t, "testuser0A", items[9].Value.(string))
 }

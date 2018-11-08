@@ -1,13 +1,11 @@
 package s3
 
 import (
-	"strings"
-
-	"github.com/argoproj/argo/errors"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/credentials"
+	"github.com/argoproj/pkg/file"
+	argos3 "github.com/argoproj/pkg/s3"
 	log "github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -19,65 +17,56 @@ type S3ArtifactDriver struct {
 	SecretKey string
 }
 
-const nullIAMEndpoint = ""
-
 // newMinioClient instantiates a new minio client object.
-func (s3Driver *S3ArtifactDriver) newMinioClient() (*minio.Client, error) {
-	var minioClient *minio.Client
-	var err error
-
-	s3Driver.AccessKey = strings.TrimSpace(s3Driver.AccessKey)
-	s3Driver.SecretKey = strings.TrimSpace(s3Driver.SecretKey)
-
-	log.Infof("creating minio client %s\n", s3Driver.Endpoint)
-
-	if s3Driver.AccessKey != "" {
-		log.Debugf("using static credentials")
-		if s3Driver.Region != "" {
-			minioClient, err = minio.NewWithRegion(
-				s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure, s3Driver.Region)
-		} else {
-			minioClient, err = minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
-		}
-	} else {
-		log.Debugf("using credentials for IAM role")
-		credentials := credentials.NewIAM(nullIAMEndpoint)
-		minioClient, err = minio.NewWithCredentials(s3Driver.Endpoint, credentials, s3Driver.Secure, s3Driver.Region)
+func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
+	opts := argos3.S3ClientOpts{
+		Endpoint:  s3Driver.Endpoint,
+		Region:    s3Driver.Region,
+		Secure:    s3Driver.Secure,
+		AccessKey: s3Driver.AccessKey,
+		SecretKey: s3Driver.SecretKey,
 	}
-
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return minioClient, nil
+	return argos3.NewS3Client(opts)
 }
 
-// Load downloads artifacts from S3 compliant storage using Minio Go SDK
+// Load downloads artifacts from S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	minioClient, err := s3Driver.newMinioClient()
+	s3cli, err := s3Driver.newS3Client()
 	if err != nil {
 		return err
 	}
-	// Download the file to a local file path
-	log.Infof("Loading from s3 (endpoint: %s, bucket: %s, key: %s) to %s",
-		inputArtifact.S3.Endpoint, inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
-	err = minioClient.FGetObject(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
-	if err != nil {
-		return errors.InternalWrapError(err)
+	origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+	if origErr == nil {
+		return nil
 	}
-	return nil
+	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+		return origErr
+	}
+	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		log.Warnf("Failed to test if %s is a directory: %v", inputArtifact.S3.Bucket, err)
+		return origErr
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return origErr
+	}
+	return s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
 }
 
+// Save saves an artifact to S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	minioClient, err := s3Driver.newMinioClient()
+	s3cli, err := s3Driver.newS3Client()
 	if err != nil {
 		return err
 	}
-	log.Infof("Saving from %s to s3 (endpoint: %s, bucket: %s, key: %s)",
-		path, outputArtifact.S3.Endpoint, outputArtifact.S3.Bucket, outputArtifact.S3.Key)
-
-	_, err = minioClient.FPutObject(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, "application/gzip")
+	isDir, err := file.IsDirectory(path)
 	if err != nil {
-		return errors.InternalWrapError(err)
+		return err
 	}
-	return nil
+	if isDir {
+		return s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path)
+	}
+	return s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path)
 }

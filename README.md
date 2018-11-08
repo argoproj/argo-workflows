@@ -26,6 +26,28 @@ Argo is an open source container-native workflow engine for getting work done on
 * [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
 * [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
 
+## Features
+* DAG or Steps based declaration of workflows
+* Artifact support (S3, Artifactory, HTTP, Git, raw)
+* Step level input & outputs (artifacts/parameters)
+* Loops
+* Parameterization
+* Conditionals
+* Timeouts (step & workflow level)
+* Retry (step & workflow level)
+* Resubmit (memoized)
+* Suspend & Resume
+* Cancellation
+* K8s resource orchestration
+* Exit Hooks (notifications, cleanup)
+* Garbage collection of completed workflow
+* Scheduling (affinity/tolerations/node selectors)
+* Volumes (ephemeral/existing)
+* Parallelism limits
+* Daemoned steps
+* DinD (docker-in-docker)
+* Script steps
+
 ## Who uses Argo?
 As the Argo Community grows, we'd like to keep track of our users. Please send a PR with your organization name.
 
@@ -40,15 +62,21 @@ Currently **officially** using Argo:
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
+1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
+1. [KintoHub](https://www.kintohub.com/)
+1. [Styra](https://www.styra.com/)
+1. [Cratejoy](https://www.cratejoy.com/)
+1. [SAP Hybris](https://cx.sap.com/)
 
 ## Community Blogs and Presentations
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
+* [Community meeting minutes and recordings](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE)
 
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
 * Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLTA5MTFjNjI0Nzg3NzNiMDZiNmRiODM4Y2M1NWQxOGYzMzZkNTc1YWVkYTZkNzdlNmYyZjMxNWI3NjY2MDc1MzI)
-* Argo website: https://argoproj.github.io/argo-site
+* Argo website: https://argoproj.github.io/
 * Argo forum:   https://groups.google.com/forum/#!forum/argoproj

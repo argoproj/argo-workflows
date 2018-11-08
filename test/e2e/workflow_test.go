@@ -24,9 +24,6 @@ func (suite *WorkflowSuite) SetupSuite() {
 		return
 	}
 	suite.testNamespace = createNamespaceForTest()
-	if !checkIfInstalled(suite.testNamespace) {
-		installArgoInNamespace(suite.testNamespace)
-	}
 }
 
 func (suite *WorkflowSuite) TearDownSuite() {
@@ -65,7 +62,7 @@ spec:
 		log.Fatal(err)
 	}
 
-	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil)
+	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil, nil)
 
 	wfClient := commands.InitWorkflowClient()
 

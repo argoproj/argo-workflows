@@ -7,14 +7,12 @@ import (
 )
 
 const (
-	// DefaultControllerDeploymentName is the default deployment name of the workflow controller
-	DefaultControllerDeploymentName = "workflow-controller"
-	// DefaultControllerNamespace is the default namespace where the workflow controller is installed
-	DefaultControllerNamespace = "kube-system"
-
 	// WorkflowControllerConfigMapKey is the key in the configmap to retrieve workflow configuration from.
 	// Content encoding is expected to be YAML.
 	WorkflowControllerConfigMapKey = "config"
+
+	// DefaultArchivePattern is the default pattern when storing artifacts in an archive repository
+	DefaultArchivePattern = "{{workflow.name}}/{{pod.name}}"
 
 	// Container names used in the workflow pod
 	MainContainerName = "main"
@@ -81,14 +79,28 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
-	// EnvVarPodIP contains the IP of the pod (currently unused)
-	EnvVarPodIP = "ARGO_POD_IP"
 	// EnvVarPodName contains the name of the pod (currently unused)
 	EnvVarPodName = "ARGO_POD_NAME"
-	// EnvVarNamespace contains the namespace of the pod (currently unused)
-	EnvVarNamespace = "ARGO_NAMESPACE"
 
-	// These are global variables that are added to the scope during template execution and can be referenced using {{}} syntax
+	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
+	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
+	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`
+	EnvVarDownwardAPINodeIP = "ARGO_KUBELET_HOST"
+	// EnvVarKubeletPort is used to configure the kubelet api port
+	EnvVarKubeletPort = "ARGO_KUBELET_PORT"
+	// EnvVarKubeletInsecure is used to disable the TLS verification
+	EnvVarKubeletInsecure = "ARGO_KUBELET_INSECURE"
+
+	// ContainerRuntimeExecutorDocker to use docker as container runtime executor
+	ContainerRuntimeExecutorDocker = "docker"
+
+	// ContainerRuntimeExecutorKubelet to use the kubelet as container runtime executor
+	ContainerRuntimeExecutorKubelet = "kubelet"
+
+	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
+	ContainerRuntimeExecutorK8sAPI = "k8sapi"
+
+	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 
 	// GlobalVarWorkflowName is a global workflow variable referencing the workflow's metadata.name field
 	GlobalVarWorkflowName = "workflow.name"
@@ -98,6 +110,10 @@ const (
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
+	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflows metadata.creationTimestamp field
+	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
+	// LocalVarPodName is a step level variable that references the name of the pod
+	LocalVarPodName = "pod.name"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

@@ -1,5 +1,87 @@
 # Changelog
 
+## 2.2.1 (2018-10-18)
+
+### Changelog since v2.2.0
++ UI retrieve logs from artifacts location if logs archiving is enabled (issue #1018)
++ Add imagePullPolicy config for executors (@dtaniwaki)
++ Detect and indicate when container was OOMKilled
++ support force namespace isolation in UI
+- Workflow executor panic: workflows.argoproj.io/template not found (issue #1033)
+- gc-ttl dose not work (issue #1004)
+- Resubmission of a terminated workflow creates a new workflow that is already terminated (issue #1011)
+- ZIP containing single file cannot be used as an artifact due to errors in init container (issue #984) (@mthx)
+- Regression when S3 secret has trailing newline (issue #981)
+* Documentation fixes (@gsf, @davidB, @dtaniwaki)
+
+## 2.2.0 (2018-08-30)
+
+### Notes about upgrading from v2.1
+
+* The `argo install` and `argo uninstall` commands have been removed from the CLI. Instead, plain
+kubernetes manifests are provided to be installed using `kubectl apply`, or downstreamed into other
+tools (e.g. helm chart, ksonnet prototype, kustomize, etc...).
+* In 2.1, argo would install into the kube-system namespace by default. The new install instructions
+have been updated to install into a different namespace, `argo`. In order to move to the recommended
+installation location, you should delete the v2.1 resources from kube-system before applying the
+new manifests to the `argo` namespace.
+
+    The following commands migrates the workflow-controller-configmap from the `kube-system` to the
+`argo` namespace, and deletes all argo resources from the `kube-system` namespace. Note that this
+will delete the argo-ui service, resulting in the LoadBalancer being deleted (if created).
+
+    ```
+    kubectl get cm workflow-controller-configmap -o yaml -n kube-system --export | kubectl apply -n argo -f -
+    kubectl delete -n kube-system cm workflow-controller-configmap
+    kubectl delete -n kube-system deploy workflow-controller argo-ui
+    kubectl delete -n kube-system sa argo argo-ui
+    kubectl delete -n kube-system svc argo-ui
+    ```
+
+* In 2.1, the argoexec sidecar image was configured in the workflow-controller-configmap. This is
+now configured using a new `--executor-image` flag in the `workflow-controller` deployment. This is
+the preferred way to configure the executor image, since upgrades can now be performed without
+changing the workflow-controller configmap. The executorImage setting in the config is deprecated
+and may be removed/ignored in a future release.
+
+### Changelog since v2.1
++ Support withItems/withParam and parameter aggregation with DAG templates (issue #801)
++ Add ability to aggregate and reference output parameters expanded by loops (issue #861)
++ Support for sophisticated expressions in `when` conditionals (issue #860)
++ Introduce Pending node state to highlight failures when starting workflow pods (issue #525)
++ Support additional container runtimes through kubelet executor (issue #902) (@JulienBalestra)
++ Introduce archive strategies with ability to disable tar.gz archiving (issue #784)
++ Introduce `keyFormat` workflow config to enable flexibility in archive location path (issue #953)
++ Introduce `argo watch` command to watch live workflows from terminal (issue #969)
++ Add ability to archive container logs to the artifact repository (issue #454)
++ Support for workflow level timeouts (issue #848)
++ Introduce `argo terminate` to terminate a workflow without deleting it (issue #527)
++ Introduce `withSequence` to iterate a range of numbers in a loop (issue #945)
++ Github login using go-git, with support for ssh keys (issue #793) (@andreimc)
++ Add TTLSecondsAfterFinished field and controller to garbage collect completed workflows (issue #911)
++ Add `argo delete --older` flag to delete completed workflows older than a duration
++ Support referencing of global workflow artifacts (issue #900)
++ Support submission of workflows from json files (issue #926)
++ Support submission of workflows from stdin (issue #926)
++ Prometheus metrics and telemetry (issue #896) (@bbc88ks)
++ Detect and fail upon unknown fields during argo submit & lint (issue #892)
++ Allow scaling of workflow and pod workers via controller CLI flags (issue #962)
++ Allow supplying of parameters from a file during `argo submit` (issue #796) (@vosmith)
++ [UI] UI support/spinning clock for pending pods (@EdanSneh)
+* Remove installer/uninstaller (issue #928)
+* Update golang compiler to v1.10.3
+* Update k8s dependencies to v1.10 and client-go to v7.0
+* Update argo-cluster-role to work with OpenShift
+- Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
+- Fix issue where sidecars and daemons were not reliably killed (issue #879)
+- Redundant verifyResolvedVariables check in controller precluded the ability to use {{ }} in other circumstances
+- Fix issue where retryStrategy with DAGs fails, even if the step passes after retries (issue #885)
+- Fix outbound node metadata with steps templates causing incorrect edges to be rendered in UI
+- Fix outbound node metadata with retry nodes causing disconnected nodes to be rendered in UI (issue #880)
+- Error workflows which hit k8s/etcd 1M resource size limit (issue #913)
+- [UI] Fixed 'X' hiding under page (@EdanSneh)
+- [UI] Beautified resource template. Yaml will now indent 2 spaces instead of one space
+
 ## 2.1.1 (2018-05-29)
 
 ### Changelog since v2.1.0

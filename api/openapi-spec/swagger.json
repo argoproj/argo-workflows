@@ -2,10 +2,21 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.1.1"
+    "version": "v2.2.1"
   },
   "paths": {},
   "definitions": {
+    "io.argoproj.workflow.v1alpha1.ArchiveStrategy": {
+      "description": "ArchiveStrategy describes how to archive files/directory when saving artifacts",
+      "properties": {
+        "none": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NoneStrategy"
+        },
+        "tar": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TarStrategy"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Arguments": {
       "description": "Arguments to a template",
       "properties": {
@@ -31,6 +42,14 @@
         "name"
       ],
       "properties": {
+        "archive": {
+          "description": "Archive controls how the artifact will be saved to the artifact repository.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArchiveStrategy"
+        },
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -77,6 +96,10 @@
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
       "properties": {
+        "archiveLogs": {
+          "description": "ArchiveLogs indicates if the container logs should be archived",
+          "type": "boolean"
+        },
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
@@ -157,6 +180,25 @@
         "template": {
           "description": "Name of template to execute",
           "type": "string"
+        },
+        "when": {
+          "description": "When is an expression in which the task should conditionally execute",
+          "type": "string"
+        },
+        "withItems": {
+          "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Item"
+          }
+        },
+        "withParam": {
+          "description": "WithParam expands a task into multiple parallel tasks from the value in the parameter, which is expected to be a JSON list.",
+          "type": "string"
+        },
+        "withSequence": {
+          "description": "WithSequence expands a task into a numeric sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sequence"
         }
       }
     },
@@ -197,6 +239,10 @@
           "description": "Revision is the git commit, tag, branch to checkout",
           "type": "string"
         },
+        "sshPrivateKeySecret": {
+          "description": "SSHPrivateKeySecret is the secret selector to the repository ssh private key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -235,6 +281,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.Item": {
+      "description": "Item expands a single workflow step into multiple parallel steps The value of Item can be a map, string, bool, or number",
       "type": "string",
       "format": "item"
     },
@@ -254,6 +301,9 @@
           }
         }
       }
+    },
+    "io.argoproj.workflow.v1alpha1.NoneStrategy": {
+      "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately."
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
@@ -499,7 +549,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -550,6 +600,27 @@
         },
         "workingDir": {
           "description": "Container's working directory. If not specified, the container runtime's default will be used, which might be configured in the container image. Cannot be updated.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Sequence": {
+      "description": "Sequence expands a workflow step into numeric range",
+      "properties": {
+        "count": {
+          "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
+          "type": "string"
+        },
+        "end": {
+          "description": "Number at which to end the sequence (default: 0). Not to be used with Count",
+          "type": "string"
+        },
+        "format": {
+          "description": "Format is a printf format string to format the value in the sequence",
+          "type": "string"
+        },
+        "start": {
+          "description": "Number at which to start the sequence (default: 0)",
           "type": "string"
         }
       }
@@ -628,7 +699,7 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
         },
         "resources": {
-          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources",
+          "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/",
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
         },
         "securityContext": {
@@ -681,6 +752,9 @@
     },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
+    },
+    "io.argoproj.workflow.v1alpha1.TarStrategy": {
+      "description": "TarStrategy will tar and gzip the file or directory when saving"
     },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
@@ -864,6 +938,11 @@
         "entrypoint"
       ],
       "properties": {
+        "activeDeadlineSeconds": {
+          "description": "Optional duration in seconds relative to the workflow start time which the workflow is allowed to run before the controller terminates the workflow. A value of zero is used to terminate a Running workflow",
+          "type": "integer",
+          "format": "int64"
+        },
         "affinity": {
           "description": "Affinity sets the scheduling constraints for all pods in the workflow. Can be overridden by an affinity specified in the template",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
@@ -899,6 +978,11 @@
           "type": "integer",
           "format": "int64"
         },
+        "priority": {
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
+          "type": "integer",
+          "format": "int32"
+        },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
@@ -920,6 +1004,11 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           }
+        },
+        "ttlSecondsAfterFinished": {
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.",
+          "type": "integer",
+          "format": "int32"
         },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
@@ -964,8 +1053,12 @@
           }
         },
         "withParam": {
-          "description": "WithParam expands a step into from the value in the parameter",
+          "description": "WithParam expands a step into multiple parallel steps from the value in the parameter, which is expected to be a JSON list.",
           "type": "string"
+        },
+        "withSequence": {
+          "description": "WithSequence expands a step into a numeric sequence",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sequence"
         }
       }
     }
