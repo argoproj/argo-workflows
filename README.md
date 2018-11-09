@@ -4,7 +4,7 @@
 
 ## News
 
-We are excited to welcome [Adobe](https://www.adobe.com/) and [BlackRock](https://www.blackrock.com/) as the latest corporate members of the Argo Community! We are also thrilled that BlackRock has developed an eventing framework for Argo and has decided to contribute it to the Argo Community. Please check out the new repo and try [Argo Events](https://github.com/argoproj/argo-events)!
+We are thrilled that BlackRock has developed an eventing framework for Argo and has decided to contribute it to the Argo Community. Please check out the new project and try [Argo Events](https://github.com/argoproj/argo-events)!
 
 If you actively use Argo in your organization and believe that your organization may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
 
@@ -56,20 +56,21 @@ Currently **officially** using Argo:
 1. [Adobe](https://www.adobe.com/) 
 1. [BlackRock](https://www.blackrock.com/)
 1. [CoreFiling](https://www.corefiling.com/)
+1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
 1. [Gladly](https://gladly.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
+1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
-1. [KintoHub](https://www.kintohub.com/)
-1. [Styra](https://www.styra.com/)
-1. [Cratejoy](https://www.cratejoy.com/)
 1. [SAP Hybris](https://cx.sap.com/)
+1. [Styra](https://www.styra.com/)
 
 ## Community Blogs and Presentations
+* [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
 * TGI Kubernetes with Joe Beda: [Argo workflow system](https://www.youtube.com/watch?v=M_rxPPLG8pU&start=859)
