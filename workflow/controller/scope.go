@@ -5,6 +5,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	log "github.com/sirupsen/logrus"
 )
 
 // wfScope contains the current scope of variables available when executing a template
@@ -30,11 +31,14 @@ func (s *wfScope) addParamToScope(key, val string) {
 }
 
 func (s *wfScope) addArtifactToScope(key string, artifact wfv1.Artifact) {
+	log.Infof(" [ tang ] addArtifactToScope(%s, %+v) of %p, %+v", key, artifact, s, s)
 	s.scope[key] = artifact
+	log.Infof(" [ tang ] after addArtifactToScope %+v", s.scope)
 }
 
 // resolveVar resolves a parameter or artifact
 func (s *wfScope) resolveVar(v string) (interface{}, error) {
+	log.Infof(" [tang] resolveVar(%s) of %p %+v", v, s, s)
 	v = strings.TrimPrefix(v, "{{")
 	v = strings.TrimSuffix(v, "}}")
 	parts := strings.Split(v, ".")
