@@ -1276,7 +1276,7 @@ func (woc *wfOperationCtx) addOutputsToScope(prefix string, outputs *wfv1.Output
 		if scope != nil {
 			scope.addArtifactToScope(key, art)
 		}
-		woc.addArtifactToGlobalScope(art)
+		woc.addArtifactToGlobalScope(art, scope)
 	}
 }
 
@@ -1383,7 +1383,7 @@ func (woc *wfOperationCtx) addParamToGlobalScope(param wfv1.Parameter) {
 
 // addArtifactToGlobalScope exports any desired node outputs to the global scope
 // Optionally adds to a local scope if supplied
-func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
+func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact, scope *wfScope) {
 	if art.GlobalName == "" {
 		return
 	}
@@ -1397,6 +1397,9 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 				art.Path = ""
 				if !reflect.DeepEqual(woc.wf.Status.Outputs.Artifacts[i], art) {
 					woc.wf.Status.Outputs.Artifacts[i] = art
+					if scope != nil {
+						scope.addArtifactToScope(globalArtName, art)
+					}
 					woc.log.Infof("overwriting %s: %v", globalArtName, art)
 					woc.updated = true
 				}
@@ -1412,6 +1415,9 @@ func (woc *wfOperationCtx) addArtifactToGlobalScope(art wfv1.Artifact) {
 	art.Path = ""
 	woc.log.Infof("setting %s: %v", globalArtName, art)
 	woc.wf.Status.Outputs.Artifacts = append(woc.wf.Status.Outputs.Artifacts, art)
+	if scope != nil {
+		scope.addArtifactToScope(globalArtName, art)
+	}
 	woc.updated = true
 }
 
