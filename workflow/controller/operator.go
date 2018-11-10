@@ -433,7 +433,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		seenPods[nodeID] = true
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := assessNodeStatus(pod, &node); newState != nil {
-				woc.log.Infof("^ ^ assessNodeStatus(%s, %s) %v, will do addOutputs", pod.Name, node.Name, newState)
 				woc.wf.Status.Nodes[nodeID] = *newState
 				woc.addOutputsToScope("workflow", node.Outputs, nil)
 				woc.updated = true
@@ -911,7 +910,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	tmpl := woc.wf.GetTemplate(templateName)
-	woc.log.Infof("[ tang ] GetTemplate(%s): %+v", templateName, tmpl)
 	if tmpl == nil {
 		err := errors.Errorf(errors.CodeBadRequest, "Node %v error: template '%s' undefined", node, templateName)
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, "", boundaryID, wfv1.NodeError, err.Error()), err
@@ -1249,7 +1247,6 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
 // as the global scope, if specified with a globalName
 func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, node *wfv1.NodeStatus) {
-	woc.log.Infof(" v + v processNodeOutputs(%s, %s) will do addOutputs", prefix, node.Name)
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)

@@ -140,8 +140,6 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 
 	// Performs substitutions of input artifacts
 	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-	log.Infof("[ tang ] args: %+v", args)
-	log.Infof("[ tang ] tmpl.Inputs.Artifacts: %+v", tmpl.Inputs.Artifacts)
 	for i, inArt := range tmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
 		if inArt.HasLocation() {
@@ -160,7 +158,6 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		argArt.Mode = inArt.Mode
 		newInputArtifacts[i] = *argArt
 	}
-	log.Infof("[ tang ] newInputArtifacts: %v, tmpl: %v", newInputArtifacts, tmpl)
 	tmpl.Inputs.Artifacts = newInputArtifacts
 
 	return substituteParams(tmpl, globalParams, localParams)

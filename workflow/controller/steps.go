@@ -22,7 +22,6 @@ type stepsContext struct {
 }
 
 func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
-	woc.log.Infof("[ tang ] executeSteps %s", nodeName)
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmpl.Name, boundaryID, wfv1.NodeRunning)
@@ -43,7 +42,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
-		woc.log.Infof("[ tang ] stepGroup %d %s", i, sgNodeName)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
 			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
@@ -152,7 +150,6 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 // executeStepGroup examines a list of parallel steps and executes them in parallel.
 // Handles referencing of variables in scope, expands `withItem` clauses, and evaluates `when` expressions
 func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNodeName string, stepsCtx *stepsContext) *wfv1.NodeStatus {
-	woc.log.Infof("[ tang ] executeStepGroup 1 stepGroup: %+v", stepGroup)
 	node := woc.getNodeByName(sgNodeName)
 	if node.Completed() {
 		woc.log.Debugf("Step group node %v already marked completed", node)
@@ -169,8 +166,6 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	if err != nil {
 		return woc.markNodeError(sgNodeName, err)
 	}
-
-	woc.log.Infof("[ tang ] executeStepGroup after expand stepGroup: %+v", stepGroup)
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
@@ -306,12 +301,10 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 
 		// Step 2: replace all artifact references
 		for j, art := range newStep.Arguments.Artifacts {
-			woc.log.Infof(" [ tang ] resolveReference, %d, %+v", j, art)
 			if art.From == "" {
 				continue
 			}
 			resolvedArt, err := scope.resolveArtifact(art.From)
-			woc.log.Infof(" [ tang ] resolveReference resolvedArt %+v", resolvedArt)
 			if err != nil {
 				return nil, err
 			}
