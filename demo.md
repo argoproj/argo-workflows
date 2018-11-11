@@ -32,13 +32,16 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 ```
 
 ## 3. Configure the service account to run workflows
-For clusters with RBAC enabled, the 'default' service account is too limited to support features
-like artifacts, outputs, access to secrets, etc... Run the following command to grant admin
-privileges to the 'default' service account in the namespace 'default':
+
+To run all of the examples in this guide, the 'default' service account is too limited to support
+features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
+command to grant admin privileges to the 'default' service account in the namespace 'default':
 ```
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
-NOTE: You can also submit workflows which run with a different service account using:
+For the bare minimum set of privileges which a workflow needs to function, see
+[Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
+service account using:
 ```
 argo submit --serviceaccount <name>
 ```
