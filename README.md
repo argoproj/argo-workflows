@@ -22,9 +22,9 @@ Argo is an open source container-native workflow engine for getting work done on
 * Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
 
 ## Documentation
-* [Get started here](https://github.com/argoproj/argo/blob/master/demo.md)
-* [How to write Argo workflow specs](https://github.com/argoproj/argo/blob/master/examples/README.md)
-* [How to configure your artifact repository](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md)
+* [Get started here](demo.md)
+* [How to write Argo workflow specs](examples/README.md)
+* [How to configure your artifact repository](ARTIFACT_REPO.md)
 
 ## Features
 * DAG or Steps based declaration of workflows
