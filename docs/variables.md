@@ -43,16 +43,11 @@ The following variables are made available to reference various metadata of a wo
 | `workflow.uid` | Workflow UID. Useful for setting ownership reference to a resource, or a unique artifact location |
 | `workflow.parameters.<NAME>` | Input parameter to the workflow |
 | `workflow.outputs.parameters.<NAME>` | Input artifact to the workflow |
+| `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
+| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |
+
 
 ## Exit Handler:
 | Variable | Description|
 |----------|------------|
 | `workflow.status` | Workflow status. One of: `Succeeded`, `Failed`, `Error` |
-
-## Coming in v2.2:
-| Variable | Description|
-|----------|------------|
-| `workflow.artifacts.<NAME>` | Input artifact to the workflow |
-| `workflow.outputs.artifacts.<NAME>` | Output artifact to the workflow |
-| `workflow.creationTimestamp` | Workflow creation timestamp formatted in RFC 3339  (e.g. `2018-08-23T05:42:49Z`) |
-| `workflow.creationTimestamp.<STRFTIMECHAR>` | Creation timestamp formatted with a [strftime](http://strftime.org) format character |
