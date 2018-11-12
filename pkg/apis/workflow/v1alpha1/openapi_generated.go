@@ -404,6 +404,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
+					"ignoreError": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IgnoreError makes argo to proceed with the following tasks even if this task fails.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "template"},
 			},

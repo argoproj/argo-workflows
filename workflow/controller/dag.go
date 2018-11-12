@@ -233,7 +233,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.getTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
-				if !depNode.Successful() {
+				if !depNode.Successful() && !dagCtx.getTask(depName).IgnoresError() {
 					dependenciesSuccessful = false
 				}
 				continue

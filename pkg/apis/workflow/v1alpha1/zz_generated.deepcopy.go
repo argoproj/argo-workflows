@@ -207,6 +207,11 @@ func (in *DAGTask) DeepCopyInto(out *DAGTask) {
 		*out = new(Sequence)
 		**out = **in
 	}
+	if in.IgnoreError != nil {
+		in, out := &in.IgnoreError, &out.IgnoreError
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

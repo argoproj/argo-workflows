@@ -845,6 +845,9 @@ type DAGTask struct {
 
 	// When is an expression in which the task should conditionally execute
 	When string `json:"when,omitempty"`
+
+	// IgnoreError makes argo to proceed with the following tasks even if this task fails.
+	IgnoreError *bool `json:"ignoreError,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -939,4 +942,12 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// IgnoresError returns whether the DAG should be proceeded if the task fails.
+func (t *DAGTask) IgnoresError() bool {
+	if t.IgnoreError != nil && *t.IgnoreError == true {
+		return true
+	}
+	return false
 }

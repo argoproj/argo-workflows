@@ -181,6 +181,10 @@
             "type": "string"
           }
         },
+        "ignoreError": {
+          "description": "IgnoreError makes argo to proceed with the following tasks even if this task fails.",
+          "type": "boolean"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
