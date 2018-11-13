@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -100,6 +102,24 @@ func envFromField(envVarName, fieldPath string) apiv1.EnvVar {
 			},
 		},
 	}
+}
+
+// IsResourceQuotaError overrides the apimachinery/pkg/api/errors function that checks for this error type.
+func IsResourceQuotaError(err error) bool {
+	err = errors.Cause(err)
+	switch t := err.(type) {
+	case apierr.APIStatus:
+		if t.Status().Code == http.StatusForbidden {
+			return true
+		}
+		// Hack string check for those _other_ times...
+		if strings.Contains(t.Status().Message, "failed quota") {
+			return true
+		}
+	}
+	// This used to be the only line in this function...
+	//return ReasonForError(err) == metav1.StatusReasonForbidden
+	return false
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
@@ -222,10 +242,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
-		} else if apierr.IsForbidden(err) {
+		}
+		if IsResourceQuotaError(err) {
 			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
-			// Creating a pod when the resource quota has been readh may result in this error.
-			woc.log.Infof("RESOURCE QUOTA ?: 403 FORBIDDEN: %v", err)
+			// Creating a pod when the resource quota has been reached may result in this error.
+			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
