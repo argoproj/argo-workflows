@@ -72,6 +72,9 @@ var (
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime time.Duration = 10 * time.Second
 
+// failedQuota is a string used to check for errors during pod creation that are the result of a resource quota.
+const failedQuota string = "failed quota"
+
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
 	// NEVER modify objects from the store. It's a read-only, local cache.
@@ -1162,19 +1165,19 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == "failed quota" {
+		if node.Message == failedQuota {
 			//retyPodCreation
 		} else {
 			return node
 		}
 	}
 
-	failedQuota := false
+	resourceQuotaReached := false
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
-		if strings.Contains(err.Error(), "failed quota") {
-			failedQuota = true
+		if strings.Contains(err.Error(), failedQuota) {
+			resourceQuotaReached = true
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
@@ -1182,8 +1185,8 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	}
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
-	if failedQuota {
-		node.Message = "failed quota"
+	if resourceQuotaReached {
+		node.Message = failedQuota
 		woc.updated = true
 	}
 	return node
@@ -1250,20 +1253,20 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == "failed quota" {
+		if node.Message == failedQuota {
 			//retyPodCreation
 		} else {
 			return node
 		}
 	}
 
-	failedQuota := false
+	resourceQuotaReached := false
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		if strings.Contains(err.Error(), "failed quota") {
-			failedQuota = true
+		if strings.Contains(err.Error(), failedQuota) {
+			resourceQuotaReached = true
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
@@ -1271,8 +1274,8 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	}
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
-	if failedQuota {
-		node.Message = "failed quota"
+	if resourceQuotaReached {
+		node.Message = failedQuota
 		woc.updated = true
 	}
 	return node
@@ -1473,7 +1476,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == "failed quota" {
+		if node.Message == failedQuota {
 			//retyPodCreation
 		} else {
 			return node
@@ -1489,11 +1492,11 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		Env: execEnvVars,
 	}
 
-	failedQuota := false
+	resourceQuotaReached := false
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		if strings.Contains(err.Error(), "failed quota") {
-			failedQuota = true
+		if strings.Contains(err.Error(), failedQuota) {
+			resourceQuotaReached = true
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
@@ -1501,8 +1504,8 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	}
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
-	if failedQuota {
-		node.Message = "failed quota"
+	if resourceQuotaReached {
+		node.Message = failedQuota
 		woc.updated = true
 	}
 	return node
