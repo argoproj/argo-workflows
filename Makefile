@@ -25,7 +25,7 @@ override LDFLAGS += \
 
 # docker image publishing options
 DOCKER_PUSH=false
-IMAGE_TAG=latest
+IMAGE_TAG=handle-resource-quota-on-pod-create
 
 ifneq (${GIT_TAG},)
 IMAGE_TAG=${GIT_TAG}

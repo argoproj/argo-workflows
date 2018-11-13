@@ -223,9 +223,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		} else if apierr.IsForbidden(err) {
-			// This is a hack to "pass" when the resource quota has been reached.
-			woc.log.Infof("Got 403 FORBIDDEN %s: %v\n", nodeName, err)
-			return nil, nil
+			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
+			// Creating a pod when the resource quota has been readh may result in this error.
+			woc.log.Infof("RESOURCE QUOTA ?: 403 FORBIDDEN: %v", err)
 		}
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
