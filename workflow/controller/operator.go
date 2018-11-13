@@ -1164,19 +1164,25 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	if node != nil {
 		return node
 	}
+
+	failedQuota := false
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), "failed quota") {
-			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
-			// Creating a pod when the resource quota has been reached may result in this error.
-			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
-			woc.log.Infof("Marking pod as pending!")
+			failedQuota = true
+			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+
+	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	if failedQuota {
+		node.Message = "failed quota"
+		woc.updated = true
+	}
+	return node
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1247,7 +1253,6 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), "failed quota") {
-			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
 			// Creating a pod when the resource quota has been reached may result in this error.
 			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
 			woc.log.Infof("Marking pod as pending!")
@@ -1467,7 +1472,6 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), "failed quota") {
-			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
 			// Creating a pod when the resource quota has been reached may result in this error.
 			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
 			woc.log.Infof("Marking pod as pending!")
