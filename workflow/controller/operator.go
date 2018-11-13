@@ -66,6 +66,12 @@ var (
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
+	// FailedQuotaRetries tracks how many times pod creation has been attempted for a node that failed due to a resource quota.
+	// A node's ID is used as the key.
+	// https://argoproj.slack.com/archives/C8J6SGN12/p1542151484324500?thread_ts=1542146208.319900&cid=C8J6SGN12
+	// Let failures of this kind retry forever and just let the user know.
+	// Should be propogated up by the fact that the Node is Pending.
+	//FailedQuotaRetries map[string]uint
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -1165,9 +1171,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == failedQuota {
-			//retyPodCreation
-		} else {
+		if !(node.Message == failedQuota) {
 			return node
 		}
 	}
@@ -1253,9 +1257,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == failedQuota {
-			//retyPodCreation
-		} else {
+		if !(node.Message == failedQuota) {
 			return node
 		}
 	}
@@ -1476,12 +1478,11 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		if node.Message == failedQuota {
-			//retyPodCreation
-		} else {
+		if !(node.Message == failedQuota) {
 			return node
 		}
 	}
+
 	mainCtr := apiv1.Container{
 		Image:   woc.controller.executorImage(),
 		Command: []string{"argoexec"},
