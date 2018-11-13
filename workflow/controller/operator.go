@@ -1086,7 +1086,13 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.log.Infof("%s node %s initialized %s%s", node.Type, node, node.Phase, message)
-	woc.updated = true
+
+	// if the error is from a resource quota could it simply be said that woc.update = false?
+	if strings.Contains(message, "failed quota") {
+		woc.updated = false
+	} else {
+		woc.updated = true
+	}
 	return &node
 }
 
@@ -1167,7 +1173,14 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if strings.Contains(err.Error(), "failed quota") {
+			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
+			// Creating a pod when the resource quota has been reached may result in this error.
+			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
+			woc.log.Infof("Marking pod as pending!")
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
@@ -1239,7 +1252,14 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if strings.Contains(err.Error(), "failed quota") {
+			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
+			// Creating a pod when the resource quota has been reached may result in this error.
+			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
+			woc.log.Infof("Marking pod as pending!")
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
@@ -1452,7 +1472,14 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	}
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if strings.Contains(err.Error(), "failed quota") {
+			// Creating a pod without a resource spec in a namespace with a resroucequota may result in this error.
+			// Creating a pod when the resource quota has been reached may result in this error.
+			woc.log.Infof("Failed to create pod due to a lack of resources: %v", err)
+			woc.log.Infof("Marking pod as pending!")
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 }
