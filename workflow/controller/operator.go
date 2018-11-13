@@ -1086,13 +1086,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 	}
 	woc.wf.Status.Nodes[nodeID] = node
 	woc.log.Infof("%s node %s initialized %s%s", node.Type, node, node.Phase, message)
-
-	// if the error is from a resource quota could it simply be said that woc.update = false?
-	if strings.Contains(message, "failed quota") {
-		woc.updated = false
-	} else {
-		woc.updated = true
-	}
+	woc.updated = true
 	return &node
 }
 
