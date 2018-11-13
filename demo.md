@@ -67,7 +67,7 @@ kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-
 kubectl logs hello-world-yyy -c main
 ```
 
-Additional examples are availabe [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
+Additional examples are available [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
 
 ## 5. Install an Artifact Repository
 
