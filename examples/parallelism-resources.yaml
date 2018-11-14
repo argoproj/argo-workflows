@@ -13,14 +13,7 @@ spec:
         withItems:
         - this
         - workflow
-        - should
-        - take
-        - at
-        - least
-        - 60
-        - seconds
-        - to
-        - complete
+        - sucks
 
   - name: sleep
     container:
