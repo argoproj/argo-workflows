@@ -66,12 +66,6 @@ var (
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
-	// FailedQuotaRetries tracks how many times pod creation has been attempted for a node that failed due to a resource quota.
-	// A node's ID is used as the key.
-	// https://argoproj.slack.com/archives/C8J6SGN12/p1542151484324500?thread_ts=1542146208.319900&cid=C8J6SGN12
-	// Let failures of this kind retry forever and just let the user know.
-	// Should be propogated up by the fact that the Node is Pending.
-	//FailedQuotaRetries map[string]uint
 )
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
@@ -1003,8 +997,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
-
-	log.Infof("NODE from ExecuteTemplate: %v", node.Message)
 
 	return node, nil
 }
