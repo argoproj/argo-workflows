@@ -465,6 +465,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
+		woc.log.Infof("RECONCILE NODE: %v", node.Message)
 		if node.Type != wfv1.NodeTypePod || node.Completed() {
 			// node is not a pod, or it is already complete
 			continue
@@ -1002,6 +1003,9 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 		woc.wf.Status.Nodes[node.ID] = *node
 		woc.updated = true
 	}
+
+	log.Infof("NODE from ExecuteTemplate: %v", node.Message)
+
 	return node, nil
 }
 
@@ -1190,6 +1194,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
+		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
 	}
@@ -1277,6 +1282,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
+		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
 	}
@@ -1506,6 +1512,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
+		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
 	}
