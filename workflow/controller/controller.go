@@ -407,14 +407,12 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(obj)
-				log.Info("POD INFORMER ADD: %v -- %v", obj, err)
 				if err == nil {
 					wfc.podQueue.Add(key)
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
-				log.Info("POD INFORMER UPDATE: %v -> %v -- %v", old, new, err)
 				if err == nil {
 					wfc.podQueue.Add(key)
 				}
@@ -423,7 +421,6 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-				log.Info("POD INFORMER DELETE: %v -- %v", obj, err)
 				if err == nil {
 					wfc.podQueue.Add(key)
 				}
