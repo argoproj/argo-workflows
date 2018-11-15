@@ -1164,22 +1164,25 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && node.Message != failedQuota {
-		return node
+	if node != nil {
+		if strings.Contains(node.Message, failedQuota) {
+			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), failedQuota) {
-			node.Phase = wfv1.NodePending
-			node.Message = failedQuota
-			woc.updated = true
+			messages = append(messages, failedQuota)
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1242,23 +1245,26 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && node.Message != failedQuota {
-		return node
+	if node != nil {
+		if strings.Contains(node.Message, failedQuota) {
+			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), failedQuota) {
-			node.Phase = wfv1.NodePending
-			node.Message = failedQuota
-			woc.updated = true
+			messages = append(messages, failedQuota)
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -1455,8 +1461,12 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil && node.Message != failedQuota {
-		return node
+	if node != nil {
+		if strings.Contains(node.Message, failedQuota) {
+			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	mainCtr := apiv1.Container{
 		Image:   woc.controller.executorImage(),
@@ -1467,18 +1477,17 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		},
 		Env: execEnvVars,
 	}
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		if strings.Contains(err.Error(), failedQuota) {
-			node.Phase = wfv1.NodePending
-			node.Message = failedQuota
-			woc.updated = true
+			messages = append(messages, failedQuota)
 			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
