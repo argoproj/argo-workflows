@@ -464,7 +464,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			// node is not a pod, or it is already complete
 			continue
 		}
-		if node.PodScheduled {
+		if !node.PodScheduled {
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
@@ -1189,7 +1189,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
-		node.PodScheduled = true
+		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
@@ -1278,7 +1278,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
-		node.PodScheduled = true
+		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
@@ -1509,7 +1509,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 
 	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
 	if resourceQuotaReached {
-		node.PodScheduled = true
+		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
 		woc.updated = true
