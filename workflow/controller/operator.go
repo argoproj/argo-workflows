@@ -459,8 +459,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() {
-			// node is not a pod, or it is already complete
+		if node.Type != wfv1.NodeTypePod || node.Completed() || strings.Contains(node.Message, failedQuota) {
+			// node is not a pod, or it is already complete, or it failed to create because of a quota
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
@@ -1163,9 +1163,11 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		if strings.Contains(node.Message, failedQuota) {
+			skipNodeInitialization = true
 			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
 		} else {
 			return node
@@ -1181,6 +1183,10 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
+	}
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
@@ -1244,9 +1250,11 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		if strings.Contains(node.Message, failedQuota) {
+			skipNodeInitialization = true
 			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
 		} else {
 			return node
@@ -1263,6 +1271,10 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
+	}
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
@@ -1460,10 +1472,12 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		if strings.Contains(node.Message, failedQuota) {
-			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+			skipNodeInitialization = true
+			woc.log.Infof("Node %s exists but a pod does not: '%s'", nodeName, node.Message)
 		} else {
 			return node
 		}
@@ -1486,6 +1500,10 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		} else {
 			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 		}
+	}
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
 	}
 	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
