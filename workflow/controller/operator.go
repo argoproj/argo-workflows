@@ -1168,10 +1168,8 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
-		if !(node.Message == failedQuota) {
-			return node
-		}
+	if node != nil && node.PodScheduled {
+		return node
 	}
 
 	resourceQuotaReached := false
@@ -1258,10 +1256,8 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
-		if !(node.Message == failedQuota) {
-			return node
-		}
+	if node != nil && node.PodScheduled {
+		return node
 	}
 
 	resourceQuotaReached := false
@@ -1483,10 +1479,8 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
-		if !(node.Message == failedQuota) {
-			return node
-		}
+	if node != nil && node.PodScheduled {
+		return node
 	}
 
 	mainCtr := apiv1.Container{
