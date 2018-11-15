@@ -6,8 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"time"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"time"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
@@ -33,7 +33,7 @@ func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 
 // Load downloads artifacts from S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1,},
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 
 			s3cli, err := s3Driver.newS3Client()
@@ -63,14 +63,14 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 				return false, nil
 			}
 			return true, nil
-	})
+		})
 
 	return err
 }
 
 // Save saves an artifact to S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1,},
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			s3cli, err := s3Driver.newS3Client()
 			if err != nil {
@@ -83,7 +83,7 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				return false, nil
 			}
 			if isDir {
-				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil{
+				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
 					return false, nil
 				}
 			}
@@ -91,6 +91,6 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				return false, nil
 			}
 			return true, nil
-	})
+		})
 	return err
 }
