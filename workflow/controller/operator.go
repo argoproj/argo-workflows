@@ -1192,8 +1192,10 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
-		woc.updated = true
+	} else {
+		node.PodScheduled = true
 	}
+	woc.updated = true
 	return node
 }
 
@@ -1281,8 +1283,10 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
-		woc.updated = true
+	} else {
+		node.PodScheduled = true
 	}
+	woc.updated = true
 	return node
 }
 
@@ -1512,8 +1516,10 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		node.PodScheduled = false
 		node.Phase = wfv1.NodePending
 		node.Message = failedQuota
-		woc.updated = true
+	} else {
+		node.PodScheduled = true
 	}
+	woc.updated = true
 	return node
 }
 

@@ -470,6 +470,9 @@ type NodeStatus struct {
 	// It is implemented as a hash of the node name, which makes the ID deterministic
 	ID string `json:"id"`
 
+	// PodScheduled ...
+	PodScheduled bool `json:"podScheduled"`
+
 	// Name is unique name in the node tree used to generate the node ID
 	Name string `json:"name"`
 
