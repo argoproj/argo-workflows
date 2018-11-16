@@ -1,0 +1,29 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: argo-ui
+spec:
+  selector:
+    matchLabels:
+      app: argo-ui
+  template:
+    metadata:
+      labels:
+        app: argo-ui
+    spec:
+      serviceAccountName: argo-ui
+      containers:
+      - name: argo-ui
+        image: argoproj/argoui:v2.2.1
+        env:
+        - name: ARGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: IN_CLUSTER
+          value: "true"
+        - name: ENABLE_WEB_CONSOLE
+          value: "false"
+        - name: BASE_HREF
+          value: /

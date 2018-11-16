@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-raw-
+spec:
+  entrypoint: raw-contents
+  templates:
+  - name: raw-contents
+    inputs:
+      artifacts:
+      - name: myfile
+        path: /tmp/file
+        raw:
+          data: |
+            this is
+            the raw file
+            contents
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/file"]

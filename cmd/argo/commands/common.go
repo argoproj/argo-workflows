@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-	wfclient "github.com/argoproj/argo/workflow/client"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -20,8 +21,9 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
-	wfClient         *wfclient.WorkflowClient
+	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
+	noColor          bool
 )
 
 func init() {
@@ -46,7 +48,7 @@ const (
 
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
-		//Pending:   ansiFormat("◷", FgDefault),
+		wfv1.NodePending:   ansiFormat("◷", FgYellow),
 		wfv1.NodeRunning:   ansiFormat("●", FgCyan),
 		wfv1.NodeSucceeded: ansiFormat("✔", FgGreen),
 		wfv1.NodeSkipped:   ansiFormat("○", FgDefault),
@@ -61,6 +63,9 @@ func initKubeClient() *kubernetes.Clientset {
 	}
 	var err error
 	restConfig, err = clientConfig.ClientConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// create the clientset
 	clientset, err = kubernetes.NewForConfig(restConfig)
@@ -70,7 +75,8 @@ func initKubeClient() *kubernetes.Clientset {
 	return clientset
 }
 
-func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
+// InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
+func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if wfClient != nil {
 		return wfClient
 	}
@@ -85,11 +91,8 @@ func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 			log.Fatal(err)
 		}
 	}
-	restClient, scheme, err := wfclient.NewRESTClient(restConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	wfClient = wfclient.NewWorkflowClient(restClient, scheme, namespace)
+	wfcs := wfclientset.NewForConfigOrDie(restConfig)
+	wfClient = wfcs.ArgoprojV1alpha1().Workflows(namespace)
 	return wfClient
 }
 
@@ -101,7 +104,7 @@ func initWorkflowClient(ns ...string) *wfclient.WorkflowClient {
 // color, it provides more consistent string lengths so that tabwriter can calculate
 // widths correctly.
 func ansiFormat(s string, codes ...int) string {
-	if globalArgs.noColor || os.Getenv("TERM") == "dumb" || len(codes) == 0 {
+	if noColor || os.Getenv("TERM") == "dumb" || len(codes) == 0 {
 		return s
 	}
 	codeStrs := make([]string, len(codes))

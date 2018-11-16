@@ -13,14 +13,34 @@ const (
 	CLIName = "argo"
 )
 
-var (
-	// Global CLI flags
-	globalArgs globalFlags
-)
+// NewCommand returns a new instance of an argo command
+func NewCommand() *cobra.Command {
+	var command = &cobra.Command{
+		Use:   CLIName,
+		Short: "argo is the command line interface to Argo",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.HelpFunc()(cmd, args)
+		},
+	}
 
-func init() {
-	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
-	addKubectlFlagsToCmd(RootCmd)
+	command.AddCommand(NewCompletionCommand())
+	command.AddCommand(NewDeleteCommand())
+	command.AddCommand(NewGetCommand())
+	command.AddCommand(NewLintCommand())
+	command.AddCommand(NewListCommand())
+	command.AddCommand(NewLogsCommand())
+	command.AddCommand(NewResubmitCommand())
+	command.AddCommand(NewResumeCommand())
+	command.AddCommand(NewRetryCommand())
+	command.AddCommand(NewSubmitCommand())
+	command.AddCommand(NewSuspendCommand())
+	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewWatchCommand())
+	command.AddCommand(NewTerminateCommand())
+	command.AddCommand(cmd.NewVersionCmd(CLIName))
+
+	addKubectlFlagsToCmd(command)
+	return command
 }
 
 func addKubectlFlagsToCmd(cmd *cobra.Command) {
@@ -32,17 +52,4 @@ func addKubectlFlagsToCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
 	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
-}
-
-type globalFlags struct {
-	noColor bool // --no-color
-}
-
-// RootCmd is the argo root level command
-var RootCmd = &cobra.Command{
-	Use:   CLIName,
-	Short: "argo is the command line interface to Argo",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.HelpFunc()(cmd, args)
-	},
 }

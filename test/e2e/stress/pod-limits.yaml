@@ -12,31 +12,11 @@ spec:
 
   templates:
   - name: pod-limits
-    inputs:
-      parameters:
-      - name: limit
     steps:
-    - - name: gen-number-list
-        template: gen-number-list
-        arguments:
-          parameters:
-          - name: count
-            value: "{{inputs.parameters.limit}}"
     - - name: run-pod
         template: run-pod
-        withParam: "{{steps.gen-number-list.outputs.result}}"
-
-  - name: gen-number-list
-    inputs:
-      parameters:
-      - name: count
-    script:
-      image: python:3.6
-      command: [python]
-      source: |
-        import json
-        import sys
-        json.dump([i for i in range(1, {{inputs.parameters.count}}+1)], sys.stdout)
+        withSequence:
+          count: "{{workflow.parameters.limit}}"
 
   - name: run-pod
     container:

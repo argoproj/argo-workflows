@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ui-dag-with-params-
+spec:
+  entrypoint: diamond
+  templates:
+  - name: diamond
+    dag:
+      tasks:
+      - name: A
+        template: nested-diamond
+        arguments:
+          parameters: [{name: message, value: A}]
+  - name: nested-diamond
+    inputs:
+      parameters:
+      - name: message
+    dag:
+      tasks:
+      - name: A
+        template: echo
+  - name: echo
+    container:
+      image: alpine:3.7
+      command: [echo, "hello"]

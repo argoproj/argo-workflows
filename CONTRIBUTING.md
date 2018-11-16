@@ -21,11 +21,11 @@ Go to https://groups.google.com/forum/#!forum/argoproj
 ## How to setup your dev environment
 
 ### Requirements
-* Golang 1.9
+* Golang 1.10
 * Docker
-* dep
+* dep v0.5
    * Mac Install: `brew install dep`
-   * Mac/Linux Install: `go get -u github.com/golang/dep/cmd/dep`
+* gometalinter v2.0.5
 
 ### Quickstart
 ```
@@ -49,9 +49,6 @@ $ ./dist/argo version
 
 ### Deploying controller with alternative controller/executor images
 ```
-$ argo install --controller-image jessesuen/workflow-controller:latest --executor-image jessesuen/argoexec:latest
+$ helm install argo/argo --set images.namespace=jessesuen --set
+images.controller workflow-controller:latest
 ```
-
-## Most needed contributions
-
-* TBD

@@ -1,39 +1,42 @@
-GOARCH=amd64
-GOPATH=$(shell go env GOPATH)
-
 PACKAGE=github.com/argoproj/argo
-BUILD_DIR=${GOPATH}/src/${PACKAGE}
-DIST_DIR=${GOPATH}/src/${PACKAGE}/dist
 CURRENT_DIR=$(shell pwd)
+DIST_DIR=${CURRENT_DIR}/dist
+ARGO_CLI_NAME=argo
 
-VERSION=$(shell cat ${BUILD_DIR}/VERSION)
-REVISION=$(shell git rev-parse HEAD)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
-TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
-TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
+BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT=$(shell git rev-parse HEAD)
+GIT_TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 BUILDER_IMAGE=argo-builder
+# NOTE: the volume mount of ${DIST_DIR}/pkg below is optional and serves only
+# to speed up subsequent builds by caching ${GOPATH}/pkg between builds.
 BUILDER_CMD=docker run --rm \
-  -v ${BUILD_DIR}:/root/go/src/${PACKAGE} \
-  -v ${GOPATH}/pkg:/root/go/pkg \
+  -v ${CURRENT_DIR}:/root/go/src/${PACKAGE} \
+  -v ${DIST_DIR}/pkg:/root/go/pkg \
   -w /root/go/src/${PACKAGE} ${BUILDER_IMAGE}
+
+override LDFLAGS += \
+  -X ${PACKAGE}.version=${VERSION} \
+  -X ${PACKAGE}.buildDate=${BUILD_DATE} \
+  -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
+  -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
 
 # docker image publishing options
 DOCKER_PUSH=false
-ifeq (${IMAGE_TAG},)
-ifneq (${TAG},)
-IMAGE_TAG=${TAG}
-else
-IMAGE_TAG=${VERSION}
-endif
-endif
+IMAGE_TAG=latest
 
-LDFLAGS = -ldflags "-X ${PACKAGE}.Version=${VERSION} \
-  -X ${PACKAGE}.Revision=${REVISION} \
-  -X ${PACKAGE}.Branch=${BRANCH} \
-  -X ${PACKAGE}.Tag=${TAG} \
-  -X ${PACKAGE}.ImageNamespace=${IMAGE_NAMESPACE} \
-  -X ${PACKAGE}.ImageTag=${IMAGE_TAG}"
+ifneq (${GIT_TAG},)
+IMAGE_TAG=${GIT_TAG}
+override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
+endif
+ifneq (${IMAGE_NAMESPACE},)
+override LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageNamespace=${IMAGE_NAMESPACE}
+endif
+ifneq (${IMAGE_TAG},)
+override LDFLAGS += -X ${PACKAGE}/cmd/argo/commands.imageTag=${IMAGE_TAG}
+endif
 
 ifeq (${DOCKER_PUSH},true)
 ifndef IMAGE_NAMESPACE
@@ -46,69 +49,113 @@ IMAGE_PREFIX=${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
-all: cli controller-image executor-image ui-image
+.PHONY: all
+all: cli cli-image controller-image executor-image
 
+.PHONY: builder
 builder:
 	docker build -t ${BUILDER_IMAGE} -f Dockerfile-builder .
 
+.PHONY: cli
 cli:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/argo ./cmd/argo
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
 
+.PHONY: cli-linux
 cli-linux: builder
-	${BUILDER_CMD} make cli IMAGE_TAG=$(IMAGE_TAG)
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-linux-amd64
+	${BUILDER_CMD} make cli \
+		CGO_ENABLED=0 \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-linux-amd64
 
+.PHONY: cli-darwin
 cli-darwin: builder
-	${BUILDER_CMD} make cli GOOS=darwin IMAGE_TAG=$(IMAGE_TAG)
-	mv ${DIST_DIR}/argo ${DIST_DIR}/argo-darwin-amd64
+	${BUILDER_CMD} make cli \
+		GOOS=darwin \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		ARGO_CLI_NAME=argo-darwin-amd64
 
+.PHONY: cli-windows
+cli-windows: builder
+	${BUILDER_CMD} make cli \
+		GOARCH=amd64 \
+		GOOS=windows \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-windows-amd64
+
+.PHONY: controller
 controller:
-	go build -v -i ${LDFLAGS} -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
+.PHONY: cli-image
+cli-image: cli-linux
+	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) -f Dockerfile-cli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) ; fi
+
+.PHONY: controller-linux
 controller-linux: builder
 	${BUILDER_CMD} make controller
 
+.PHONY: controller-image
 controller-image: controller-linux
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile-workflow-controller .
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
+.PHONY: executor
 executor:
-	go build -i ${LDFLAGS} -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
+.PHONY: executor-linux
 executor-linux: builder
 	${BUILDER_CMD} make executor
 
+.PHONY: executor-image
 executor-image: executor-linux
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile-argoexec .
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
+.PHONY: lint
 lint:
-	gometalinter --config gometalinter.json --vendor ./...
+	gometalinter --config gometalinter.json ./...
 
-fmt:
-	cd ${BUILD_DIR}; \
-	go fmt $$(go list ./... | grep -v /vendor/) ; \
-	cd - >/dev/null
+.PHONY: test
+test:
+	go test ./...
 
+.PHONY: update-codegen
+update-codegen:
+	./hack/update-codegen.sh
+	./hack/update-openapigen.sh
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/api/openapi-spec/swagger.json
+
+.PHONY: verify-codegen
+verify-codegen:
+	./hack/verify-codegen.sh
+	./hack/update-openapigen.sh --verify-only
+	mkdir -p ${CURRENT_DIR}/dist
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/dist/swagger.json
+	diff ${CURRENT_DIR}/dist/swagger.json ${CURRENT_DIR}/api/openapi-spec/swagger.json
+
+.PHONY: update-manifests
+update-manifests:
+	./hack/update-manifests.sh
+
+.PHONY: clean
 clean:
-	-rm -rf ${BUILD_DIR}/dist
+	-rm -rf ${CURRENT_DIR}/dist
 
-ui-image:
-	docker run --rm -v `pwd`/ui:/src -w /src -it node:6.9.5 bash -c "npm install -g yarn && rm -rf node_modules && yarn install && yarn run build" && \
-	docker build -t $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) -f ui/Dockerfile ui
-	if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoui:$(IMAGE_TAG) ; fi
+.PHONY: precheckin
+precheckin: test lint verify-codegen
 
-release-precheck:
-	@if [ "$(TREE_STATE)" != "clean" ]; then echo 'git tree state is $(TREE_STATE)' ; exit 1; fi
-	@if [ -z "$(TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+.PHONY: release-precheck
+release-precheck: precheckin
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 
-release: release-precheck controller-image cli-darwin cli-linux executor-image ui-image
-
-.PHONY: builder \
-	cli cli-linux cli-darwin \
-	controller controller-linux controller-image \
-	executor executor-linux executor-image \
-	ui-image \
-	release-precheck release \
-	lint
-	# test fmt clean
+.PHONY: release
+release: release-precheck controller-image cli-darwin cli-linux cli-windows executor-image cli-image

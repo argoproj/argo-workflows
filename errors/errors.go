@@ -10,11 +10,13 @@ import (
 
 // Externally visible error codes
 const (
-	CodeUnauthorized = "ERR_UNAUTHORIZED"
-	CodeBadRequest   = "ERR_BAD_REQUEST"
-	CodeForbidden    = "ERR_FORBIDDEN"
-	CodeNotFound     = "ERR_NOT_FOUND"
-	CodeInternal     = "ERR_INTERNAL"
+	CodeUnauthorized   = "ERR_UNAUTHORIZED"
+	CodeBadRequest     = "ERR_BAD_REQUEST"
+	CodeForbidden      = "ERR_FORBIDDEN"
+	CodeNotFound       = "ERR_NOT_FOUND"
+	CodeNotImplemented = "ERR_NOT_INPLEMENTED"
+	CodeTimeout        = "ERR_TIMEOUT"
+	CodeInternal       = "ERR_INTERNAL"
 )
 
 // ArgoError is an error interface that additionally adds support for
@@ -60,7 +62,7 @@ func InternalError(message string) error {
 
 // InternalErrorf is a convenience function to format an Internal error
 func InternalErrorf(format string, args ...interface{}) error {
-	return Errorf(CodeInternal, format, args)
+	return Errorf(CodeInternal, format, args...)
 }
 
 // InternalWrapError annotates the error with the ERR_INTERNAL code and a stack trace, optional message
@@ -135,17 +137,25 @@ func (e argoerr) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			io.WriteString(s, e.Error())
+			_, _ = io.WriteString(s, e.Error())
 			for _, pc := range e.StackTrace() {
-				f := errors.Frame(pc)
-				fmt.Fprintf(s, "\n%+v", f)
+				fmt.Fprintf(s, "\n%+v", pc)
 			}
 			return
 		}
 		fallthrough
 	case 's':
-		io.WriteString(s, e.Error())
+		_, _ = io.WriteString(s, e.Error())
 	case 'q':
 		fmt.Fprintf(s, "%q", e.Error())
 	}
+}
+
+// IsCode is a helper to determine if the error is of a specific code
+func IsCode(code string, err error) bool {
+	if argoErr, ok := err.(argoerr); ok {
+		return argoErr.code == code
+	}
+	return false
+
 }

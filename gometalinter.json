@@ -1,13 +1,24 @@
 {
     "Vendor": true,
     "DisableAll": true,
+    "Deadline": "3m",
     "Enable": [
         "vet",
+        "gofmt",
         "deadcode",
         "errcheck",
         "varcheck",
         "structcheck",
         "ineffassign",
-        "unconvert"
+        "unconvert",
+        "misspell"
+    ],
+    "Skip": [
+        "pkg/client",
+        "vendor/"
+    ],
+    "Exclude": [
+        "pkg/client",
+        "vendor/"
     ]
 }

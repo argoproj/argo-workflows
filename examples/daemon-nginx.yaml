@@ -21,15 +21,12 @@ spec:
     daemon: true
     container:
       image: nginx:1.13
-      restartPolicy: Always
       readinessProbe:
         httpGet:
           path: /
           port: 80
         initialDelaySeconds: 2
         timeoutSeconds: 1
-      command: ["/bin/sh", "-c"]
-      args: ["nginx"]
 
   - name: nginx-client
     inputs:
@@ -38,5 +35,5 @@ spec:
     container:
       image: appropriate/curl:latest
       command: ["/bin/sh", "-c"]
-      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && sleep 3600"]
+      args: ["echo curl --silent -G http://{{inputs.parameters.server-ip}}:80/ && curl --silent -G http://{{inputs.parameters.server-ip}}:80/"]
 

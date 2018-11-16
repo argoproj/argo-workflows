@@ -5,6 +5,12 @@ metadata:
 
 spec:
   entrypoint: influxdb-ci
+  arguments:
+    parameters:
+    - name: repo
+      value: https://github.com/influxdata/influxdb.git
+    - name: revision
+      value: 1.6
 
   templates:
   - name: influxdb-ci
@@ -42,14 +48,14 @@ spec:
       - name: source
         path: /src
         git:
-          repo: https://github.com/argoproj/influxdb.git
-          revision: "master"
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
     outputs:
       artifacts:
       - name: source
         path: /src
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["cd /src && git status && ls -l"]
 
@@ -63,17 +69,18 @@ spec:
       - name: influxd
         path: /go/bin
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
         go install -v ./...
       "]
       resources:
-        mem_mib: 1024
-        cpu_cores: 0.2
+        requests:
+          memory: 1024Mi
+          cpu: 200m
 
   - name: test-unit
     inputs:
@@ -81,17 +88,14 @@ spec:
       - name: source
         path: /go/src/github.com/influxdata/influxdb
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
-        go test -v ./...
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
+        go test -parallel=1 ./...
       "]
-      resources:
-        mem_mib: 5120
-        cpu_cores: 0.2
 
   - name: test-cov
     inputs:
@@ -116,16 +120,6 @@ spec:
           artifacts:
           - name: source
             from: "{{inputs.artifacts.source}}"
-      - name: test-cov-influxql
-        template: test-cov-base
-        arguments:
-          parameters:
-          - name: package
-            value: "influxql"
-          artifacts:
-          - name: source
-            from: "{{inputs.artifacts.source}}"
-
   - name: test-cov-base
     inputs:
       parameters:
@@ -138,18 +132,19 @@ spec:
       - name: covreport
         path: /tmp/index.html
     container:
-      image: golang:1.8.3
+      image: golang:1.9.2
       command: ["/bin/sh", "-c"]
       args: ["
-        go get github.com/sparrc/gdm &&
         cd /go/src/github.com/influxdata/influxdb &&
-        gdm restore &&
+        go get github.com/golang/dep/cmd/dep &&
+        dep ensure -vendor-only &&
         go test -v -coverprofile /tmp/cov.out ./{{inputs.parameters.package}} &&
         go tool cover -html=/tmp/cov.out -o /tmp/index.html
       "]
       resources:
-        mem_mib: 4096
-        cpu_cores: 0.2
+        requests:
+          memory: 4096Mi
+          cpu: 200m
 
   - name: test-e2e
     inputs:
@@ -168,7 +163,7 @@ spec:
           parameters:
           - name: cmd
             value: curl -XPOST 'http://{{steps.influxdb-server.ip}}:8086/query' --data-urlencode "q=CREATE DATABASE mydb"
-      - name: producer1
+    - - name: producer1
         template: influxdb-client
         arguments:
           parameters:
@@ -200,8 +195,7 @@ spec:
         path: /app
     daemon: true
     container:
-      image: debian:9.1
-      restartPolicy: Always
+      image: debian:9.4
       readinessProbe:
         httpGet:
           path: /ping
@@ -211,8 +205,9 @@ spec:
       command: ["/bin/sh", "-c"]
       args: ["chmod +x /app/influxd && /app/influxd"]
       resources:
-        mem_mib: 512
-        cpu_cores: 0.25
+        requests:
+          memory: 512Mi
+          cpu: 250m
 
   - name: influxdb-client
     inputs:
@@ -223,6 +218,7 @@ spec:
       command: ["/bin/sh", "-c"]
       args: ["{{inputs.parameters.cmd}}"]
       resources:
-        mem_mib: 32
-        cpu_cores: 0.05
+        requests:
+          memory: 32Mi
+          cpu: 100m
 

@@ -1,25 +1,22 @@
 package commands
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
 	"os"
-	"strings"
 
-	"github.com/argoproj/argo"
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/executor"
+	"github.com/argoproj/pkg/kube/cli"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/executor"
+	"github.com/argoproj/argo/workflow/executor/docker"
+	"github.com/argoproj/argo/workflow/executor/k8sapi"
+	"github.com/argoproj/argo/workflow/executor/kubelet"
 )
 
 const (
@@ -28,11 +25,19 @@ const (
 )
 
 var (
-	// Global CLI flags
+	// GlobalArgs hold global CLI flags
 	GlobalArgs globalFlags
+
+	clientConfig clientcmd.ClientConfig
 )
 
+type globalFlags struct {
+	podAnnotationsPath string // --pod-annotations
+}
+
 func init() {
+	clientConfig = cli.AddKubectlFlagsToCmd(RootCmd)
+	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, "Pod annotations file from k8s downward API")
 	RootCmd.AddCommand(cmd.NewVersionCmd(CLIName))
 }
 
@@ -45,16 +50,6 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-type globalFlags struct {
-	hostIP             string // --host-ip
-	podAnnotationsPath string // --pod-annotations
-}
-
-func init() {
-	RootCmd.PersistentFlags().StringVar(&GlobalArgs.hostIP, "host-ip", common.EnvVarHostIP, fmt.Sprintf("IP of host. (Default: %s)", common.EnvVarHostIP))
-	RootCmd.PersistentFlags().StringVar(&GlobalArgs.podAnnotationsPath, "pod-annotations", common.PodMetadataAnnotationsPath, fmt.Sprintf("Pod annotations fiel from k8s downward API. (Default: %s)", common.PodMetadataAnnotationsPath))
-}
-
 func initExecutor() *executor.WorkflowExecutor {
 	podAnnotationsPath := common.PodMetadataAnnotationsPath
 
@@ -63,16 +58,11 @@ func initExecutor() *executor.WorkflowExecutor {
 		podAnnotationsPath = GlobalArgs.podAnnotationsPath
 	}
 
-	var wfTemplate wfv1.Template
-
-	// Read template
-	err := getTemplateFromPodAnnotations(podAnnotationsPath, &wfTemplate)
+	config, err := clientConfig.ClientConfig()
 	if err != nil {
-		log.Fatalf("Error getting template %v", err)
+		panic(err.Error())
 	}
-
-	// Initialize in-cluster Kubernetes client
-	config, err := rest.InClusterConfig()
+	namespace, _, err := clientConfig.Namespace()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -85,100 +75,33 @@ func initExecutor() *executor.WorkflowExecutor {
 	if !ok {
 		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
 	}
-	namespace, ok := os.LookupEnv(common.EnvVarNamespace)
-	if !ok {
-		log.Fatalf("Unable to determine pod namespace from environment variable %s", common.EnvVarNamespace)
-	}
 
-	// Initialize workflow executor
-	wfExecutor := executor.WorkflowExecutor{
-		PodName:   podName,
-		Template:  wfTemplate,
-		ClientSet: clientset,
-		Namespace: namespace,
+	var cre executor.ContainerRuntimeExecutor
+	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
+	case common.ContainerRuntimeExecutorK8sAPI:
+		cre, err = k8sapi.NewK8sAPIExecutor(clientset, config, podName, namespace)
+		if err != nil {
+			panic(err.Error())
+		}
+	case common.ContainerRuntimeExecutorKubelet:
+		cre, err = kubelet.NewKubeletExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
+	default:
+		cre, err = docker.NewDockerExecutor()
+		if err != nil {
+			panic(err.Error())
+		}
 	}
-	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
-	log.Infof("Executor (version: %s) initialized with template:\n%s", argo.FullVersion, string(yamlBytes))
-	return &wfExecutor
-}
-
-// Open the Kubernetes downward api file and
-// read the pod annotation file that contains template and then
-// unmarshal the template
-func getTemplateFromPodAnnotations(annotationsPath string, template *wfv1.Template) error {
-	// Read the annotation file
-	file, err := os.Open(annotationsPath)
+	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre)
+	err = wfExecutor.LoadTemplate()
 	if err != nil {
-		fmt.Printf("ERROR opening annotation file from %s\n", annotationsPath)
-		return errors.InternalWrapError(err)
+		panic(err.Error())
 	}
 
-	defer file.Close()
-	reader := bufio.NewReader(file)
-
-	// Prefix of template property in the annotation file
-	prefix := fmt.Sprintf("%s=", common.AnnotationKeyTemplate)
-
-	for {
-		// Read line-by-line
-		var buffer bytes.Buffer
-
-		var l []byte
-		var isPrefix bool
-		for {
-			l, isPrefix, err = reader.ReadLine()
-			buffer.Write(l)
-
-			// If we've reached the end of the line, stop reading.
-			if !isPrefix {
-				break
-			}
-
-			// If we're just at the EOF, break
-			if err != nil {
-				break
-			}
-		}
-
-		// The end of the annotation file
-		if err == io.EOF {
-			break
-		}
-
-		line := buffer.String()
-
-		// Read template property
-		if strings.HasPrefix(line, prefix) {
-			// Trim the prefix
-			templateContent := strings.TrimPrefix(line, prefix)
-
-			// This part is a bit tricky in terms of unmarshalling
-			// The content in the file will be something like,
-			// `"{\"type\":\"container\",\"inputs\":{},\"outputs\":{}}"`
-			// which is required to unmarshal twice
-
-			// First unmarshal to a string without escaping characters
-			var templateString string
-			err = json.Unmarshal([]byte(templateContent), &templateString)
-			if err != nil {
-				fmt.Printf("Error unmarshalling annotation into template string, %s, %v\n", templateContent, err)
-				return errors.InternalWrapError(err)
-			}
-
-			// Second unmarshal to a template
-			err = json.Unmarshal([]byte(templateString), template)
-			if err != nil {
-				fmt.Printf("Error unmarshalling annotation into template, %s, %v\n", templateString, err)
-				return errors.InternalWrapError(err)
-			}
-			return nil
-		}
-	}
-
-	if err != io.EOF {
-		return errors.InternalWrapError(err)
-	}
-
-	// If reaching here, then no template prefix in the file
-	return errors.InternalErrorf("No template property found from annotation file: %s", annotationsPath)
+	yamlBytes, _ := yaml.Marshal(&wfExecutor.Template)
+	vers := argo.GetVersion()
+	log.Infof("Executor (version: %s, build_date: %s) initialized with template:\n%s", vers, vers.BuildDate, string(yamlBytes))
+	return &wfExecutor
 }

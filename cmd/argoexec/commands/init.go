@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -13,20 +13,29 @@ func init() {
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Load artifacts",
-	Run:   loadArtifacts,
+	Run: func(cmd *cobra.Command, args []string) {
+		err := loadArtifacts()
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+	},
 }
 
-func loadArtifacts(cmd *cobra.Command, args []string) {
+func loadArtifacts() error {
 	wfExecutor := initExecutor()
+	defer wfExecutor.HandleError()
+	defer stats.LogStats()
+
 	// Download input artifacts
-	err := wfExecutor.LoadScriptSource()
+	err := wfExecutor.StageFiles()
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
-		log.Fatalf("Error loading script: %+v", err)
+		wfExecutor.AddError(err)
+		return err
 	}
 	err = wfExecutor.LoadArtifacts()
 	if err != nil {
-		_ = wfExecutor.AddAnnotation(common.AnnotationKeyNodeMessage, err.Error())
-		log.Fatalf("Error downloading input artifacts: %+v", err)
+		wfExecutor.AddError(err)
+		return err
 	}
+	return nil
 }

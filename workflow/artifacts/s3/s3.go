@@ -1,56 +1,96 @@
 package s3
 
 import (
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
-	"github.com/argoproj/argo/errors"
-	minio "github.com/minio/minio-go"
+	"github.com/argoproj/pkg/file"
+	argos3 "github.com/argoproj/pkg/s3"
 	log "github.com/sirupsen/logrus"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"time"
 )
 
 // S3ArtifactDriver is a driver for AWS S3
 type S3ArtifactDriver struct {
 	Endpoint  string
+	Region    string
 	Secure    bool
 	AccessKey string
 	SecretKey string
 }
 
 // newMinioClient instantiates a new minio client object.
-func (s3Driver *S3ArtifactDriver) newMinioClient() (*minio.Client, error) {
-	minioClient, err := minio.New(s3Driver.Endpoint, s3Driver.AccessKey, s3Driver.SecretKey, s3Driver.Secure)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
+func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
+	opts := argos3.S3ClientOpts{
+		Endpoint:  s3Driver.Endpoint,
+		Region:    s3Driver.Region,
+		Secure:    s3Driver.Secure,
+		AccessKey: s3Driver.AccessKey,
+		SecretKey: s3Driver.SecretKey,
 	}
-	return minioClient, nil
+	return argos3.NewS3Client(opts)
 }
 
-// Load downloads artifacts from S3 compliant storage using Minio Go SDK
+// Load downloads artifacts from S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) error {
-	minioClient, err := s3Driver.newMinioClient()
-	if err != nil {
-		return err
-	}
-	// Download the file to a local file path
-	log.Infof("Loading from s3 (endpoint: %s, bucket: %s, key: %s) to %s",
-		inputArtifact.S3.Endpoint, inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
-	err = minioClient.FGetObject(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return nil
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1},
+		func() (bool, error) {
+
+			s3cli, err := s3Driver.newS3Client()
+			if err != nil {
+				log.Warnf("Failed to create new S3 client: %v", err)
+				return false, nil
+			}
+			origErr := s3cli.GetFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path)
+			if origErr == nil {
+				return true, nil
+			}
+			if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+				return false, origErr
+			}
+			// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+			isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+			if err != nil {
+				log.Warnf("Failed to test if %s is a directory: %v", inputArtifact.S3.Bucket, err)
+				return false, nil
+			}
+			if !isDir {
+				// It's neither a file, nor a directory. Return the original NoSuchKey error
+				return false, origErr
+			}
+
+			if err = s3cli.GetDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key, path); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+
+	return err
 }
 
+// Save saves an artifact to S3 compliant storage
 func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
-	minioClient, err := s3Driver.newMinioClient()
-	if err != nil {
-		return err
-	}
-	log.Infof("Saving from %s to s3 (endpoint: %s, bucket: %s, key: %s)",
-		path, outputArtifact.S3.Endpoint, outputArtifact.S3.Bucket, outputArtifact.S3.Key)
-
-	_, err = minioClient.FPutObject(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path, "application/gzip")
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return nil
+	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Millisecond * 10, Factor: 2.0, Steps: 5, Jitter: 0.1},
+		func() (bool, error) {
+			s3cli, err := s3Driver.newS3Client()
+			if err != nil {
+				log.Warnf("Failed to create new S3 client: %v", err)
+				return false, nil
+			}
+			isDir, err := file.IsDirectory(path)
+			if err != nil {
+				log.Warnf("Failed to test if %s is a directory: %v", path, err)
+				return false, nil
+			}
+			if isDir {
+				if err = s3cli.PutDirectory(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+					return false, nil
+				}
+			}
+			if err = s3cli.PutFile(outputArtifact.S3.Bucket, outputArtifact.S3.Key, path); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+	return err
 }

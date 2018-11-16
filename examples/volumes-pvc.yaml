@@ -1,7 +1,7 @@
 # This example demonstrates the ability for a workflow to create a 
 # temporary, ephemeral volume used by the workflow, and delete it
 # when the workflow completes. It uses the same volumeClaimTemplates
-# syntax with statefulsets.
+# syntax as statefulsets.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

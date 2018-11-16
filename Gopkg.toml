@@ -1,31 +1,57 @@
+required = [
+  "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+  "k8s.io/code-generator/cmd/informer-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+]
+
 [[constraint]]
-  branch = "release-1.8"
   name = "k8s.io/api"
+  branch = "release-1.12"
 
 [[constraint]]
-  branch = "release-1.8"
-  name = "k8s.io/apiextensions-apiserver"
-
-[[constraint]]
-  branch = "release-1.8"
   name = "k8s.io/apimachinery"
+  branch = "release-1.12"
+
+[[constraint]]
+  name = "k8s.io/code-generator"
+  branch = "release-1.12"
+
+[[constraint]]
+  name = "k8s.io/kube-openapi"
+  branch = "master"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  branch = "release-5.0"
+  branch = "release-9.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.1.4"
 
 [[constraint]]
-  name = "github.com/aws/aws-sdk-go"
-  version = "1.12.19"
+  name = "github.com/spf13/cobra"
+  revision = "fe5e611709b0c57fa4a89136deaa8e1d4004d053"
 
 [[constraint]]
-  name = "github.com/minio/minio-go"
-  version = "3.0.2"
+  name = "gopkg.in/src-d/go-git.v4"
+  version = "4.5.0"
 
 [[constraint]]
+  name = "github.com/Knetic/govaluate"
+  revision = "9aa49832a739dcd78a5542ff189fb82c3e423116"
+
+[[constraint]]
+  name = "github.com/prometheus/client_golang"
+  version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
   branch = "master"
-  name = "github.com/hashicorp/go-version"
+
+# vendor/k8s.io/client-go/plugin/pkg/client/auth/azure/azure.go:300:25:
+# cannot call non-function spt.Token (type adal.Token)
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
+

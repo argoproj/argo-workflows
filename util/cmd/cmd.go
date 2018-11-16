@@ -4,24 +4,41 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/user"
+	"strings"
 
 	"github.com/argoproj/argo"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root
 func NewVersionCmd(cliName string) *cobra.Command {
-	return &cobra.Command{
+	var short bool
+	versionCmd := cobra.Command{
 		Use:   "version",
 		Short: fmt.Sprintf("Print version information"),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s version %s\n", cliName, argo.FullVersion)
+			version := argo.GetVersion()
+			fmt.Printf("%s: %s\n", cliName, version)
+			if short {
+				return
+			}
+			fmt.Printf("  BuildDate: %s\n", version.BuildDate)
+			fmt.Printf("  GitCommit: %s\n", version.GitCommit)
+			fmt.Printf("  GitTreeState: %s\n", version.GitTreeState)
+			if version.GitTag != "" {
+				fmt.Printf("  GitTag: %s\n", version.GitTag)
+			}
+			fmt.Printf("  GoVersion: %s\n", version.GoVersion)
+			fmt.Printf("  Compiler: %s\n", version.Compiler)
+			fmt.Printf("  Platform: %s\n", version.Platform)
 		},
 	}
+	versionCmd.Flags().BoolVar(&short, "short", false, "print just the version number")
+	return &versionCmd
 }
 
 // MustIsDir returns whether or not the given filePath is a directory. Exits if path does not exist
@@ -54,4 +71,20 @@ func IsURL(u string) bool {
 		}
 	}
 	return false
+}
+
+// SetLogLevel sets the logrus logging level
+func SetLogLevel(level string) {
+	switch strings.ToLower(level) {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	default:
+		log.Fatalf("Unknown level: %s", level)
+	}
 }

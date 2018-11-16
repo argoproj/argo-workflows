@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"os/signal"
-	"runtime"
+	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/api/workflow/v1alpha1"
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -30,6 +29,9 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any).
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
+	if tmpl.Container == nil {
+		return nil
+	}
 	var volMnt *apiv1.VolumeMount
 	deepestLen := 0
 	for _, mnt := range tmpl.Container.VolumeMounts {
@@ -44,7 +46,7 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 	return volMnt
 }
 
-// KillPodContainer is a convenience funtion to issue a kill signal to a container in a pod
+// KillPodContainer is a convenience function to issue a kill signal to a container in a pod
 // It gives a 15 second grace period before issuing SIGKILL
 // NOTE: this only works with containers that have sh
 func KillPodContainer(restConfig *rest.Config, namespace string, pod string, container string) error {
@@ -68,7 +70,7 @@ func KillPodContainer(restConfig *rest.Config, namespace string, pod string, con
 func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, container string, stdout bool, stderr bool, command ...string) (remotecommand.Executor, error) {
 	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		errors.InternalWrapError(err)
+		return nil, errors.InternalWrapError(err)
 	}
 
 	execRequest := clientset.CoreV1().RESTClient().Post().
@@ -94,7 +96,7 @@ func ExecPodContainer(restConfig *rest.Config, namespace string, pod string, con
 }
 
 // GetExecutorOutput returns the output of an remotecommand.Executor
-func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
+func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
 	err := exec.Stream(remotecommand.StreamOptions{
@@ -103,19 +105,17 @@ func GetExecutorOutput(exec remotecommand.Executor) (string, string, error) {
 		Tty:    false,
 	})
 	if err != nil {
-		return "", "", errors.InternalWrapError(err)
+		return nil, nil, errors.InternalWrapError(err)
 	}
-	return stdOut.String(), stdErr.String(), nil
-}
-
-// DefaultConfigMapName returns a formulated name for a configmap name based on the workflow-controller deployment name
-func DefaultConfigMapName(controllerName string) string {
-	return fmt.Sprintf("%s-configmap", controllerName)
+	return &stdOut, &stdErr, nil
 }
 
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
-// It also substitutes parameters in the template from the arguments
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*wfv1.Template, error) {
+// It substitutes:
+// * parameters in the template from the arguments
+// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+// * local parameters (e.g. {{pod.name}})
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -137,11 +137,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*
 		}
 		tmpl.Inputs.Parameters[i] = inParam
 	}
-	tmpl, err := substituteParams(tmpl)
-	if err != nil {
-		return nil, err
-	}
 
+	// Performs substitutions of input artifacts
 	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
 	for i, inArt := range tmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
@@ -162,23 +159,43 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
-	return tmpl, nil
+
+	return substituteParams(tmpl, globalParams, localParams)
 }
 
-// substituteParams returns a new copy of the template with all input parameters substituted
-func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
+// substituteParams returns a new copy of the template with global, pod, and input parameters substituted
+func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
+	// First replace globals & locals, then replace inputs because globals could be referenced in the inputs
 	replaceMap := make(map[string]string)
-	for _, inParam := range tmpl.Inputs.Parameters {
+	for k, v := range globalParams {
+		replaceMap[k] = v
+	}
+	for k, v := range localParams {
+		replaceMap[k] = v
+	}
+	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	globalReplacedTmplStr, err := Replace(fstTmpl, replaceMap, true)
+	if err != nil {
+		return nil, err
+	}
+	var globalReplacedTmpl wfv1.Template
+	err = json.Unmarshal([]byte(globalReplacedTmplStr), &globalReplacedTmpl)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	// Now replace the rest of substitutions (the ones that can be made) in the template
+	replaceMap = make(map[string]string)
+	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
 		if inParam.Value == nil {
 			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
-	fstTmpl := fasttemplate.New(string(tmplBytes), "{{", "}}")
+	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
 		return nil, err
@@ -193,7 +210,8 @@ func substituteParams(tmpl *wfv1.Template) (*wfv1.Template, error) {
 
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template.
+// remaining in the substituted template. prefixFilter will apply the replacements only
+// to variables with the specified prefix
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -218,30 +236,35 @@ func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allow
 	return replacedTmpl, nil
 }
 
+// RunCommand is a convenience function to run/log a command and log the stderr upon failure
 func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
-	log.Info(cmd.Args)
+	cmdStr := strings.Join(cmd.Args, " ")
+	log.Info(cmdStr)
 	_, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
-		log.Errorf("`%s` failed: %s", strings.Join(cmd.Args, " "), string(exErr.Stderr))
-		return errors.InternalError(string(exErr.Stderr))
+		errOutput := string(exErr.Stderr)
+		log.Errorf("`%s` failed: %s", cmdStr, errOutput)
+		return errors.InternalError(strings.TrimSpace(errOutput))
 	}
 	return nil
 }
 
 const patchRetries = 5
 
-func AddPodAnnotation(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+// AddPodAnnotation adds an annotation to pod
+func AddPodAnnotation(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "annotations", podName, namespace, key, value)
 }
 
-func AddPodLabel(c *kubernetes.Clientset, podName, namespace, key, value string) error {
+// AddPodLabel adds an label to pod
+func AddPodLabel(c kubernetes.Interface, podName, namespace, key, value string) error {
 	return addPodMetadata(c, "labels", podName, namespace, key, value)
 }
 
 // addPodMetadata is helper to either add a pod label or annotation to the pod
-func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, value string) error {
+func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, value string) error {
 	metadata := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			field: map[string]string{
@@ -255,7 +278,7 @@ func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, val
 		return errors.InternalWrapError(err)
 	}
 	for attempt := 0; attempt < patchRetries; attempt++ {
-		_, err = c.Core().Pods(namespace).Patch(podName, types.MergePatchType, patch)
+		_, err = c.CoreV1().Pods(namespace).Patch(podName, types.MergePatchType, patch)
 		if err != nil {
 			if !apierr.IsConflict(err) {
 				return err
@@ -268,21 +291,66 @@ func addPodMetadata(c *kubernetes.Clientset, field, podName, namespace, key, val
 	return err
 }
 
-// RegisterStackDumper spawns a goroutine which dumps stack trace upon a SIGUSR1
-func RegisterStackDumper() {
-	go func() {
-		sigs := make(chan os.Signal, 1)
-		signal.Notify(sigs, syscall.SIGUSR1)
-		for {
-			<-sigs
-			LogStack()
-		}
-	}()
+// IsPodTemplate returns whether the template corresponds to a pod
+func IsPodTemplate(tmpl *wfv1.Template) bool {
+	if tmpl.Container != nil || tmpl.Script != nil || tmpl.Resource != nil {
+		return true
+	}
+	return false
 }
 
-// LogStack will log the current stack
-func LogStack() {
-	buf := make([]byte, 1<<20)
-	stacklen := runtime.Stack(buf, true)
-	log.Printf("*** goroutine dump...\n%s\n*** end\n", buf[:stacklen])
+// GetTaskAncestry returns a list of taskNames which are ancestors of this task
+func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
+	taskByName := make(map[string]wfv1.DAGTask)
+	for _, task := range tasks {
+		taskByName[task.Name] = task
+	}
+
+	visited := make(map[string]bool)
+	var getAncestry func(s string)
+	getAncestry = func(currTask string) {
+		task := taskByName[currTask]
+		for _, depTask := range task.Dependencies {
+			getAncestry(depTask)
+		}
+		if currTask != taskName {
+			visited[currTask] = true
+		}
+	}
+
+	getAncestry(taskName)
+	ancestry := make([]string, 0)
+	for ancestor := range visited {
+		ancestry = append(ancestry, ancestor)
+	}
+	return ancestry
+}
+
+var yamlSeparator = regexp.MustCompile("\\n---")
+
+// SplitYAMLFile is a helper to split a body into multiple workflow objects
+func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.Workflow, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var wf wfv1.Workflow
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
+		if wf.Kind != "" && wf.Kind != workflow.Kind {
+			// If we get here, it was a k8s manifest which was not of type 'Workflow'
+			// We ignore these since we only care about Workflow manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, wf)
+	}
+	return manifests, nil
 }
