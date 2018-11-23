@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -90,12 +92,24 @@ type ArtifactoryArtifactRepository struct {
 
 // ResyncConfig reloads the controller config from the configmap
 func (wfc *WorkflowController) ResyncConfig() error {
-	cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(wfc.namespace)
-	cm, err := cmClient.Get(wfc.configMap, metav1.GetOptions{})
-	if err != nil {
-		return errors.InternalWrapError(err)
+	if wfc.configPath != "" {
+		if e := wfc.loadConfigFile(wfc.configPath); e != nil {
+			return errors.InternalWrapError(e)
+		}
+	} else if wfc.configMap != "" {
+		cmClient := wfc.kubeclientset.CoreV1().ConfigMaps(wfc.namespace)
+		cm, err := cmClient.Get(wfc.configMap, metav1.GetOptions{})
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		if err := wfc.updateConfig(cm); err != nil {
+			return errors.InternalWrapError(err)
+		}
 	}
-	return wfc.updateConfig(cm)
+	if wfc.cliExecutorImage == "" && wfc.Config.ExecutorImage == "" {
+		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
+	}
+	return nil
 }
 
 func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
@@ -110,9 +124,24 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		return errors.InternalWrapError(err)
 	}
 	log.Printf("workflow controller configuration from %s:\n%s", wfc.configMap, configStr)
-	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
+	wfc.Config = config
+	return nil
+}
+
+func (wfc *WorkflowController) loadConfigFile(path string) error {
+	f, e := os.Open(path)
+	if e != nil {
+		return errors.InternalWrapError(e, "open config file failed")
 	}
+	buf, e := ioutil.ReadAll(f)
+	if e != nil {
+		return errors.InternalWrapError(e, "read config file failed")
+	}
+	var config WorkflowControllerConfig
+	if e := yaml.Unmarshal(buf, &config); e != nil {
+		return errors.InternalWrapError(e, "parse config file failed")
+	}
+	log.Printf("workflow controller configuration from %s:\n%s", path, string(buf))
 	wfc.Config = config
 	return nil
 }

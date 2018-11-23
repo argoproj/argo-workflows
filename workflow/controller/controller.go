@@ -36,6 +36,8 @@ type WorkflowController struct {
 	namespace string
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
+	// configPath is the path to the configuration file of the controller
+	configPath string
 	// Config is the workflow controller's configuration
 	Config WorkflowControllerConfig
 
@@ -72,13 +74,15 @@ func NewWorkflowController(
 	namespace,
 	executorImage,
 	executorImagePullPolicy,
-	configMap string,
+	configMap,
+	configPath string,
 ) *WorkflowController {
 	wfc := WorkflowController{
 		restConfig:                 restConfig,
 		kubeclientset:              kubeclientset,
 		wfclientset:                wfclientset,
 		configMap:                  configMap,
+		configPath:                 configPath,
 		namespace:                  namespace,
 		cliExecutorImage:           executorImage,
 		cliExecutorImagePullPolicy: executorImagePullPolicy,
