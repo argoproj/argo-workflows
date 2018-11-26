@@ -476,7 +476,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || exceededQuota(node) || failedQuota(node) {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || exceededQuota(&node) || failedQuota(&node) {
 			// node is not a pod, or it is already complete, or it failed to create because of a quota
 			continue
 		}
