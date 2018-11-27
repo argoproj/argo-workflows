@@ -60,14 +60,41 @@ builder:
 cli:
 	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
 
-.PHONY: cli-linux
-cli-linux: builder
+.PHONY: cli-linux-amd64
+cli-linux-amd64: builder
 	${BUILDER_CMD} make cli \
 		CGO_ENABLED=0 \
+		GOOS=linux \
+		GOARCH=amd64 \
 		IMAGE_TAG=$(IMAGE_TAG) \
 		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
 		LDFLAGS='-extldflags "-static"' \
 		ARGO_CLI_NAME=argo-linux-amd64
+
+.PHONY: cli-linux-ppc64le
+cli-linux-ppc64le: builder
+	${BUILDER_CMD} make cli \
+		CGO_ENABLED=0 \
+		GOOS=linux \
+		GOARCH=ppc64le \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-linux-ppc64le
+
+.PHONY: cli-linux-s390x
+cli-linux-s390x: builder
+	${BUILDER_CMD} make cli \
+		CGO_ENABLED=0 \
+		GOOS=linux \
+		GOARCH=s390x \
+		IMAGE_TAG=$(IMAGE_TAG) \
+		IMAGE_NAMESPACE=$(IMAGE_NAMESPACE) \
+		LDFLAGS='-extldflags "-static"' \
+		ARGO_CLI_NAME=argo-linux-s390x
+
+.PHONY: cli-linux
+cli-linux: cli-linux-amd64 cli-linux-ppc64le cli-linux-s390x
 
 .PHONY: cli-darwin
 cli-darwin: builder
