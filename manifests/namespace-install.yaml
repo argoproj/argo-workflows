@@ -187,12 +187,19 @@ spec:
     spec:
       containers:
       - args:
-        - --configmap
-        - workflow-controller-configmap
+        - --config-path
+        - /controller-config/config
         - --executor-image
         - argoproj/argoexec:v2.2.1
         command:
         - workflow-controller
         image: argoproj/workflow-controller:v2.2.1
         name: workflow-controller
+        volumeMounts:
+        - name: config
+          path: /controller-config
       serviceAccountName: argo
+      volumes:
+      - name: config
+        configMap:
+          name: workflow-controller-configmap

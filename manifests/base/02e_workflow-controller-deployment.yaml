@@ -18,7 +18,14 @@ spec:
         command:
         - workflow-controller
         args:
-        - --configmap
-        - workflow-controller-configmap
+        - --config-path
+        - /controller-config/config
         - --executor-image
         - argoproj/argoexec:v2.2.1
+        volumeMounts:
+        - name: config
+          path: /controller-config
+      volumes:
+      - name: config
+        configMap:
+          name: workflow-controller-configmap
