@@ -72,15 +72,11 @@ var (
 	ErrQuotaExceeded = errors.New(errors.CodeUnauthorized, "Exceeded quota")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-const maxOperationTime time.Duration = 10 * time.Second
-
-// exceededQuota is a string used to check for an error in the return string from k8s api.
-const exceededQuotaString string = "exceeded quota"
-
-// failedQuota is a string used to check for an error in the return string from k8s api.
-const failedQuotaString string = "failed quota"
+const (
+	// maxOperationTime is the maximum time a workflow operation is allowed to run
+	// for before requeuing the workflow onto the workqueue.
+	maxOperationTime time.Duration = 10 * time.Second
+)
 
 // exceededQuota ...
 func exceededQuota(n *wfv1.NodeStatus) bool {
