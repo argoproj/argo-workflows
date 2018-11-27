@@ -66,16 +66,16 @@ var (
 	ErrDeadlineExceeded = errors.New(errors.CodeTimeout, "Deadline exceeded")
 	// ErrParallelismReached indicates this workflow reached its parallelism limit
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
-	// ErrQuotaFailed indicates the pod creation failed because a resource quota was not provided AND there is no limit range in the namespace.
-	ErrQuotaFailed = errors.New(errors.CodeUnauthorized, "Failed quota")
-	// ErrQuotaExceeded indicates the pod creation failed because a resource quota is preventing creation.
-	ErrQuotaExceeded = errors.New(errors.CodeUnauthorized, "Exceeded quota")
 )
 
 const (
 	// maxOperationTime is the maximum time a workflow operation is allowed to run
 	// for before requeuing the workflow onto the workqueue.
 	maxOperationTime time.Duration = 10 * time.Second
+	// exceededQuota is a string used to check for an error in the return string from k8s api.
+	exceededQuotaString string = "exceeded quota"
+	// failedQuota is a string used to check for an error in the return string from k8s api.
+	failedQuotaString string = "failed quota"
 )
 
 // exceededQuota ...
