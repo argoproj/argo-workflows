@@ -68,9 +68,35 @@ var (
 	ErrParallelismReached = errors.New(errors.CodeForbidden, "Max parallelism reached")
 )
 
-// maxOperationTime is the maximum time a workflow operation is allowed to run
-// for before requeuing the workflow onto the workqueue.
-const maxOperationTime time.Duration = 10 * time.Second
+const (
+	// maxOperationTime is the maximum time a workflow operation is allowed to run
+	// for before requeuing the workflow onto the workqueue.
+	maxOperationTime time.Duration = 10 * time.Second
+	// exceededQuota is a string used to check for an error in the return string from k8s api.
+	exceededQuotaString string = "exceeded quota"
+	// failedQuota is a string used to check for an error in the return string from k8s api.
+	failedQuotaString string = "failed quota"
+)
+
+// exceededQuota ...
+func exceededQuota(n *wfv1.NodeStatus) bool {
+	return strings.Contains(n.Message, exceededQuotaString)
+}
+
+// failedQuota ...
+func failedQuota(n *wfv1.NodeStatus) bool {
+	return strings.Contains(n.Message, failedQuotaString)
+}
+
+// IsExceededQuotaErr determines if the error (403) was due to a quota in the namespae being exceeded.
+func IsExceededQuotaErr(e error) bool {
+	return strings.Contains(e.Error(), exceededQuotaString)
+}
+
+// IsFailedQuotaErr  determines if the error (403) was due to a resources not being spec'ed OR a limit range not extisting.
+func IsFailedQuotaErr(e error) bool {
+	return strings.Contains(e.Error(), failedQuotaString)
+}
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
@@ -456,8 +482,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() {
-			// node is not a pod, or it is already complete
+		if node.Type != wfv1.NodeTypePod || node.Completed() || exceededQuota(&node) || failedQuota(&node) {
+			// node is not a pod, or it is already complete, or it failed to create because of a quota
 			continue
 		}
 		if _, ok := seenPods[nodeID]; !ok {
@@ -1160,16 +1186,35 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		return node
+		if exceededQuota(node) || failedQuota(node) {
+			skipNodeInitialization = true
+			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if IsExceededQuotaErr(err) {
+			messages = append(messages, exceededQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
+		} else if IsFailedQuotaErr(err) {
+			messages = append(messages, failedQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources on all containers in pod spec or a limit range is missing. It will be marked pending: %v", err)
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
+	}
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1231,17 +1276,36 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		return node
+		if exceededQuota(node) || failedQuota(node) {
+			skipNodeInitialization = true
+			woc.log.Infof("Node %s exists but a pod does not: %s", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if IsExceededQuotaErr(err) {
+			messages = append(messages, exceededQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
+		} else if IsFailedQuotaErr(err) {
+			messages = append(messages, failedQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources on all containers in pod spec or a limit range is missing. It will be marked pending: %v", err)
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
+	}
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -1437,9 +1501,15 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	var skipNodeInitialization bool
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
-		return node
+		if exceededQuota(node) || failedQuota(node) {
+			skipNodeInitialization = true
+			woc.log.Infof("Node %s exists but a pod does not: '%s'", nodeName, node.Message)
+		} else {
+			return node
+		}
 	}
 	mainCtr := apiv1.Container{
 		Image:   woc.controller.executorImage(),
@@ -1450,11 +1520,24 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		},
 		Env: execEnvVars,
 	}
+	var messages []string
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		if IsExceededQuotaErr(err) {
+			messages = append(messages, exceededQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources. It will be marked pending: %v", err)
+		} else if IsFailedQuotaErr(err) {
+			messages = append(messages, failedQuotaString)
+			woc.log.Infof("Failed to create pod due to a lack of resources on all containers in pod spec or a limit range is missing. It will be marked pending: %v", err)
+		} else {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	if skipNodeInitialization {
+		woc.updated = true
+		return node
+	}
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending, messages...)
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
