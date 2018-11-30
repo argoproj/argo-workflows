@@ -147,6 +147,18 @@ type WorkflowSpec struct {
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
 	Priority *int32 `json:"priority,omitempty"`
+
+	// Restart policy for all containers within all the pods.
+	// One of Always, OnFailure, Never.
+	// Default to Always.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy
+	// +optional
+	RestartPolicy apiv1.RestartPolicy `json:"restartPolicy,omitempty"`
+
+	// If specified, all the pods will be dispatched by specified scheduler.
+	// If not specified, all the pods will be dispatched by default scheduler.
+	// +optional
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
