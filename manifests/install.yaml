@@ -16,13 +16,13 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo
+  name: argo-ui
   namespace: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo
   namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
