@@ -43,7 +43,6 @@ var (
 		MountPath: common.PodMetadataMountPath,
 	}
 
-	hostPathDir    = apiv1.HostPathDirectory
 	hostPathSocket = apiv1.HostPathSocket
 
 	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
