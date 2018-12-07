@@ -43,26 +43,7 @@ var (
 		MountPath: common.PodMetadataMountPath,
 	}
 
-	hostPathDir    = apiv1.HostPathDirectory
 	hostPathSocket = apiv1.HostPathSocket
-
-	// volumeDockerLib provides the wait container access to the minion's host docker containers
-	// runtime files (e.g. /var/lib/docker/container). This is used by the executor to access
-	// the main container's logs (and potentially storage to upload output artifacts)
-	volumeDockerLib = apiv1.Volume{
-		Name: common.DockerLibVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			HostPath: &apiv1.HostPathVolumeSource{
-				Path: common.DockerLibHostPath,
-				Type: &hostPathDir,
-			},
-		},
-	}
-	volumeMountDockerLib = apiv1.VolumeMount{
-		Name:      volumeDockerLib.Name,
-		MountPath: volumeDockerLib.VolumeSource.HostPath.Path,
-		ReadOnly:  true,
-	}
 
 	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
 	// The primary purpose of this is to make available `docker cp` to collect an output artifact
@@ -319,7 +300,7 @@ func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
 	case common.ContainerRuntimeExecutorKubelet:
 		return volumeMounts
 	default:
-		return append(volumeMounts, volumeMountDockerLib, volumeMountDockerSock)
+		return append(volumeMounts, volumeMountDockerSock)
 	}
 }
 
@@ -331,7 +312,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	case common.ContainerRuntimeExecutorKubelet:
 		return volumes
 	default:
-		return append(volumes, volumeDockerLib, volumeDockerSock)
+		return append(volumes, volumeDockerSock)
 	}
 }
 

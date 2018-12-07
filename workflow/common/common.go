@@ -29,10 +29,6 @@ const (
 	// PodMetadataAnnotationsPath is the file path containing pod metadata annotations. Examined by executor
 	PodMetadataAnnotationsPath = PodMetadataMountPath + "/" + PodMetadataAnnotationsVolumePath
 
-	// DockerLibVolumeName is the volume name for the /var/lib/docker host path volume
-	DockerLibVolumeName = "docker-lib"
-	// DockerLibHostPath is the host directory path containing docker runtime state
-	DockerLibHostPath = "/var/lib/docker"
 	// DockerSockVolumeName is the volume name for the /var/run/docker.sock host path volume
 	DockerSockVolumeName = "docker-sock"
 
