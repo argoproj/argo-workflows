@@ -167,7 +167,7 @@ spec:
   entrypoint: A
   arguments:
     parameters:
-    - name: log_level
+    - name: log-level
       value: INFO
 
   templates:
@@ -176,15 +176,15 @@ spec:
       image: containerA
       env:
       - name: LOG_LEVEL
-        value: "{{workflow.parameters.log_level}}"
+        value: "{{workflow.parameters.log-level}}"
       command: [runA]
-  - - name: B
-      container:
-        image: containerB
-        env:
-        - name: LOG_LEVEL
-          value: "{{workflow.parameters.log_level}}"
-        command: [runB]
+  - name: B
+    container:
+      image: containerB
+      env:
+      - name: LOG_LEVEL
+        value: "{{workflow.parameters.log-level}}"
+      command: [runB]
 ```
 
 In this workflow, both steps `A` and `B` would have the same log level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
