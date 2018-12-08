@@ -119,7 +119,7 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, worklowStatus(&wf), ageStr, durationStr, wf.Spec.Priority)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, workflowStatus(&wf), ageStr, durationStr, wf.Spec.Priority)
 		if listArgs.output == "wide" {
 			pending, running, completed := countPendingRunningCompleted(&wf)
 			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
@@ -196,7 +196,7 @@ func (f ByFinishedAt) Less(i, j int) bool {
 }
 
 // workflowStatus returns a human readable inferred workflow status based on workflow phase and conditions
-func worklowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
+func workflowStatus(wf *wfv1.Workflow) wfv1.NodePhase {
 	switch wf.Status.Phase {
 	case wfv1.NodeRunning:
 		if util.IsWorkflowSuspended(wf) {

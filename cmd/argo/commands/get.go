@@ -71,7 +71,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 		serviceAccount = "default"
 	}
 	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
-	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
+	fmt.Printf(fmtStr, "Status:", workflowStatus(wf))
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}
