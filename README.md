@@ -68,6 +68,7 @@ Currently **officially** using Argo:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
+1. [Quantibio](http://quantibio.com/us/en/)
 
 ## Community Blogs and Presentations
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
