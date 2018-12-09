@@ -29,6 +29,7 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewLintCommand())
 	command.AddCommand(NewListCommand())
 	command.AddCommand(NewLogsCommand())
+	command.AddCommand(NewDescribeCommand())
 	command.AddCommand(NewResubmitCommand())
 	command.AddCommand(NewResumeCommand())
 	command.AddCommand(NewRetryCommand())
