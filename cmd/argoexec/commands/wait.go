@@ -40,13 +40,14 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	err = wfExecutor.SaveArtifacts()
+	// Saving output parameters
+	err = wfExecutor.SaveParameters()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
 	}
-	// Saving output parameters
-	err = wfExecutor.SaveParameters()
+	// Saving output artifacts
+	err = wfExecutor.SaveArtifacts()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
