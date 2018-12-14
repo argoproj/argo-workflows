@@ -7,6 +7,7 @@ spec:
     spec:
       containers:
         - name: argo-ui
+          image: argoproj/argoui:v2.2.1-37808b1
           env:
           - name: FORCE_NAMESPACE_ISOLATION
             value: "true"

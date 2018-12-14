@@ -1,0 +1,11 @@
+namespace: argo
+bases:
+- ../../base
+resources:
+- ./03b_argo-ui-role.yaml
+- ./03c_argo-ui-rolebinding.yaml
+- ./02b_workflow-controller-role.yaml
+- ./02c_workflow-controller-rolebinding.yaml
+- ./02d_workflow-controller-configmap.yaml
+patches:
+- ./03d_argo-ui-deployment.yaml

@@ -17,16 +17,19 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo-ui
+  namespace: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo
+  namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-role
+  namespace: argo
 rules:
 - apiGroups:
   - ""
@@ -73,6 +76,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-ui-role
+  namespace: argo
 rules:
 - apiGroups:
   - ""
@@ -103,6 +107,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
+  namespace: argo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -110,11 +115,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
+  namespace: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-ui-binding
+  namespace: argo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -122,6 +129,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo-ui
+  namespace: argo
 ---
 apiVersion: v1
 data:
@@ -130,11 +138,13 @@ data:
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
+  namespace: argo
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: argo-ui
+  namespace: argo
 spec:
   ports:
   - port: 80
@@ -146,6 +156,7 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: argo-ui
+  namespace: argo
 spec:
   selector:
     matchLabels:
@@ -157,6 +168,8 @@ spec:
     spec:
       containers:
       - env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         - name: ARGO_NAMESPACE
           valueFrom:
             fieldRef:
@@ -168,7 +181,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.2.1
+        image: argoproj/argoui:v2.2.1-37808b1
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -176,6 +189,7 @@ apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
   name: workflow-controller
+  namespace: argo
 spec:
   selector:
     matchLabels:

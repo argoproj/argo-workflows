@@ -1,0 +1,9 @@
+namespace: argo
+
+resources:
+- 01a_workflow-crd.yaml
+- 02a_workflow-controller-sa.yaml
+- 02e_workflow-controller-deployment.yaml
+- 03a_argo-ui-sa.yaml
+- 03d_argo-ui-deployment.yaml
+- 03e_argo-ui-service.yaml
