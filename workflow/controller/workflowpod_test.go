@@ -265,4 +265,20 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, 1, len(pod.Spec.Containers[0].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 	}
+func TestOutOfCluster(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ExecutorOutOfCluster = true
+	woc.controller.Config.KubeConfigSecretName = "foo"
+	woc.controller.Config.KubeConfigSecretKey = "bar"
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+	assert.Nil(t, err)
+	assert.Equal(t, "kube-config", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "kube-config", pod.Spec.Containers[1].VolumeMounts[1].Name)
+	assert.Equal(t, "/root/.kube", pod.Spec.Containers[1].VolumeMounts[1].MountPath)
+	assert.Equal(t, "--kubeconfig=/root/.kube/bar", pod.Spec.Containers[1].Args[1])
 }
