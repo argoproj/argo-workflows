@@ -27,9 +27,11 @@ func NewDescribeCommand() *cobra.Command {
 			errors.CheckError(err)
 			printer.kubeClient = kubernetes.NewForConfigOrDie(conf)
 			namespace, _, err := clientConfig.Namespace()
+			errors.CheckError(err)
 			buf, err := printer.DescribePod(args[0], namespace)
 			errors.CheckError(err)
-			os.Stdout.Write(buf[:])
+			_, err := os.Stdout.Write(buf[:])
+			errors.CheckError(err)
 
 		}, // --- end of func ---
 	}
