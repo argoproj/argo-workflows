@@ -30,13 +30,10 @@ type WorkflowControllerConfig struct {
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
-	// ExecutorOutOfCluster uses a out of cluster config to access the kubernetes apiserver
-	ExecutorOutOfCluster bool `json:"executorOutOfCluster,omitempty"`
-
-	// KubeConfigSecretName should be set when access the apiserver use out of cluster config
+	// KubeConfigSecretName should be set when the executor access the apiserver use out of cluster config
 	KubeConfigSecretName string `json:"kubeConfigSecretName,omitempty"`
 
-	// KubeConfigSecretKey should be set when access the apiserver use out of cluster config
+	// KubeConfigSecretKey should be set when the executor access the apiserver use out of cluster config
 	KubeConfigSecretKey string `json:"kubeConfigSecretKey, omitempty"`
 
 	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker

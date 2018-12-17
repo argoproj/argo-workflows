@@ -265,9 +265,10 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, 1, len(pod.Spec.Containers[0].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 	}
+}
+
 func TestOutOfCluster(t *testing.T) {
 	woc := newWoc()
-	woc.controller.Config.ExecutorOutOfCluster = true
 	woc.controller.Config.KubeConfigSecretName = "foo"
 	woc.controller.Config.KubeConfigSecretKey = "bar"
 

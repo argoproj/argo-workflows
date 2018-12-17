@@ -260,7 +260,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 	ctr := woc.newExecContainer(common.WaitContainerName, false)
 	ctr.Command = []string{"argoexec"}
 	ctr.Args = []string{"wait"}
-	if woc.controller.Config.ExecutorOutOfCluster {
+	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
 		ctr.Args = append(ctr.Args, "--kubeconfig="+common.KubeConfigMountPath+"/"+woc.controller.Config.KubeConfigSecretKey)
 	}
 	ctr.VolumeMounts = woc.createVolumeMounts()
@@ -308,7 +308,7 @@ func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
 	volumeMounts := []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	if woc.controller.Config.ExecutorOutOfCluster {
+	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
 		volumeMounts = append(volumeMounts, apiv1.VolumeMount{
 			Name:      common.KubeConfigVolumeName,
 			MountPath: common.KubeConfigMountPath,
@@ -326,7 +326,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
-	if woc.controller.Config.ExecutorOutOfCluster {
+	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
 		volumes = append(volumes, apiv1.Volume{
 			Name: common.KubeConfigVolumeName,
 			VolumeSource: apiv1.VolumeSource{
