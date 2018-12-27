@@ -51,7 +51,7 @@ type WorkflowExecutor struct {
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
 	// memoized secrets
-	memoizedSecrets map[string]string
+	memoizedSecrets map[string][]byte
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
 	errors []error
@@ -87,7 +87,7 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
-		memoizedSecrets:    map[string]string{},
+		memoizedSecrets:    map[string][]byte{},
 		errors:             []error{},
 	}
 }
@@ -415,15 +415,16 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		var secretKey string
 
 		if art.S3.AccessKeySecret.Name != "" {
-			var err error
-			accessKey, err = we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+			accessKeyBytes, err := we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			secretKey, err = we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+			accessKey = string(accessKeyBytes)
+			secretKeyBytes, err := we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
+			secretKey = string(secretKeyBytes)
 		}
 
 		driver := s3.S3ArtifactDriver{
@@ -441,41 +442,41 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	if art.Git != nil {
 		gitDriver := git.GitArtifactDriver{}
 		if art.Git.UsernameSecret != nil {
-			username, err := we.getSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
+			usernameBytes, err := we.getSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			gitDriver.Username = username
+			gitDriver.Username = string(usernameBytes)
 		}
 		if art.Git.PasswordSecret != nil {
-			password, err := we.getSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
+			passwordBytes, err := we.getSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			gitDriver.Password = password
+			gitDriver.Password = string(passwordBytes)
 		}
 		if art.Git.SSHPrivateKeySecret != nil {
-			sshPrivateKey, err := we.getSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			sshPrivateKeyBytes, err := we.getSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
-			gitDriver.SSHPrivateKey = sshPrivateKey
+			gitDriver.SSHPrivateKey = string(sshPrivateKeyBytes)
 		}
 
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		username, err := we.getSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		usernameBytes, err := we.getSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		password, err := we.getSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		passwordBytes, err := we.getSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}
 		driver := artifactory.ArtifactoryArtifactDriver{
-			Username: username,
-			Password: password,
+			Username: string(usernameBytes),
+			Password: string(passwordBytes),
 		}
 		return &driver, nil
 
@@ -509,7 +510,7 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 }
 
 // getSecrets retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) getSecrets(namespace, name, key string) (string, error) {
+func (we *WorkflowExecutor) getSecrets(namespace, name, key string) ([]byte, error) {
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedSecrets[cachedKey]; ok {
 		return val, nil
@@ -529,16 +530,16 @@ func (we *WorkflowExecutor) getSecrets(namespace, name, key string) (string, err
 		return true, nil
 	})
 	if err != nil {
-		return "", errors.InternalWrapError(err)
+		return []byte{}, errors.InternalWrapError(err)
 	}
 	// memoize all keys in the secret since it's highly likely we will need to get a
 	// subsequent key in the secret (e.g. username + password) and we can save an API call
 	for k, v := range secret.Data {
-		we.memoizedSecrets[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = string(v)
+		we.memoizedSecrets[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
 	}
 	val, ok := we.memoizedSecrets[cachedKey]
 	if !ok {
-		return "", errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
+		return []byte{}, errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
 }
