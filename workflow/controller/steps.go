@@ -203,7 +203,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		}
 		if childNode != nil {
 			woc.addChildNode(sgNodeName, childNodeName)
-			if childNode.Completed() && !childNode.Successful() {
+			if childNode.Completed() && !childNode.Successful() && len(step.WithItems) == 0 {
 				break
 			}
 		}
