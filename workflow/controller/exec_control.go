@@ -64,9 +64,9 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 	return woc.updateExecutionControl(pod.Name, desiredExecCtl)
 }
 
-// killDeamonedChildren kill any daemoned pods of a steps or DAG template node.
-func (woc *wfOperationCtx) killDeamonedChildren(nodeID string) error {
-	woc.log.Infof("Checking deamoned children of %s", nodeID)
+// killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
+func (woc *wfOperationCtx) killDaemonedChildren(nodeID string) error {
+	woc.log.Infof("Checking daemoned children of %s", nodeID)
 	var firstErr error
 	execCtl := common.ExecutionControl{
 		Deadline: &time.Time{},

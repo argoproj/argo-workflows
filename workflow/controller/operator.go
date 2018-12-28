@@ -103,7 +103,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
 func (woc *wfOperationCtx) operate() {
-	defer woc.persistUpdates()
+	defer func() {
+		if woc.wf.Status.Completed() {
+			_ = woc.killDaemonedChildren("")
+		}
+		woc.persistUpdates()
+	}()
 	defer func() {
 		if r := recover(); r != nil {
 			if rerr, ok := r.(error); ok {

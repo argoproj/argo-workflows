@@ -28,7 +28,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 	}
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
-			_ = woc.killDeamonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
 	stepsCtx := stepsContext{
