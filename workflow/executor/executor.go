@@ -50,6 +50,8 @@ type WorkflowExecutor struct {
 
 	// memoized container ID to prevent multiple lookups
 	mainContainerID string
+	// memoized configmaps
+	memoizedConfigMaps map[string]string
 	// memoized secrets
 	memoizedSecrets map[string][]byte
 	// list of errors that occurred during execution.
@@ -87,6 +89,7 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 		Namespace:          namespace,
 		PodAnnotationsPath: podAnnotationsPath,
 		RuntimeExecutor:    cre,
+		memoizedConfigMaps: map[string]string{},
 		memoizedSecrets:    map[string][]byte{},
 		errors:             []error{},
 	}
@@ -507,6 +510,41 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 		return nil, errors.InternalWrapError(err)
 	}
 	return pod, nil
+}
+
+// getConfigMaps retrieves a secret value and memoizes the result
+func (we *WorkflowExecutor) getConfigMaps(namespace, name, key string) (string, error) {
+	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
+	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
+		return val, nil
+	}
+	configmapsIf := we.ClientSet.CoreV1().ConfigMaps(namespace)
+	var configmap *apiv1.ConfigMap
+	var err error
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		configmap, err = configmapsIf.Get(name, metav1.GetOptions{})
+		if err != nil {
+			log.Warnf("Failed to get configmap '%s': %v", name, err)
+			if !retry.IsRetryableKubeAPIError(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return "", errors.InternalWrapError(err)
+	}
+	// memoize all keys in the configmap since it's highly likely we will need to get a
+	// subsequent key in the configmap (e.g. username + password) and we can save an API call
+	for k, v := range configmap.Data {
+		we.memoizedConfigMaps[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
+	}
+	val, ok := we.memoizedConfigMaps[cachedKey]
+	if !ok {
+		return "", errors.Errorf(errors.CodeBadRequest, "configmap '%s' does not have the key '%s'", name, key)
+	}
+	return val, nil
 }
 
 // getSecrets retrieves a secret value and memoizes the result
