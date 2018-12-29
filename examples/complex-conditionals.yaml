@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: conditional-
+spec:
+  entrypoint: conditional-example
+  arguments:
+    parameters:
+    - name: should-print
+      value: '{"success": true}'
+
+  templates:
+  - name: conditional-example
+    inputs:
+      parameters:
+      - name: should-print
+    steps:
+    - - name: print-hello
+        template: whalesay
+        when: "JSONPath(shouldPrint, '.success') == true"
+        whenBindings:
+        - name: shouldPrint
+          value: '{{inputs.parameters.should-print}}'
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello"]

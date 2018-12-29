@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/client-go/util/jsonpath"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -44,6 +46,45 @@ func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount 
 		}
 	}
 	return volMnt
+}
+
+// JSONPath executes JSONPath expression agains specified JSON string
+func JSONPath(jsonInput string, expression string) ([][]interface{}, error) {
+	var input interface{}
+	jsonInput = strings.TrimSpace(jsonInput)
+	if strings.HasPrefix(jsonInput, "[") {
+		input = make([]map[string]interface{}, 0)
+		err := json.Unmarshal([]byte(jsonInput), &input)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		input = make(map[string]interface{})
+		err := json.Unmarshal([]byte(jsonInput), &input)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	parser := jsonpath.New("")
+	err := parser.Parse(fmt.Sprintf("{%s}", expression))
+	if err != nil {
+		return nil, err
+	}
+	res, err := parser.FindResults(input)
+	if err != nil {
+		return nil, err
+	}
+	values := make([][]interface{}, len(res))
+	for i := range res {
+		row := make([]interface{}, len(res[i]))
+		for j := range res[i] {
+			val := res[i][j].Interface()
+			row[j] = val
+		}
+		values[i] = row
+	}
+	return values, nil
 }
 
 // KillPodContainer is a convenience function to issue a kill signal to a container in a pod

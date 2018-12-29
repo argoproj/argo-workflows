@@ -185,6 +185,12 @@
           "description": "When is an expression in which the task should conditionally execute",
           "type": "string"
         },
+        "whenBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WhenBinding"
+          }
+        },
         "withItems": {
           "description": "WithItems expands a task into multiple parallel tasks from the items in the list",
           "type": "array",
@@ -878,6 +884,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.WhenBinding": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Workflow": {
       "description": "Workflow is the definition of a workflow resource",
       "required": [
@@ -1044,6 +1060,12 @@
         "when": {
           "description": "When is an expression in which the step should conditionally execute",
           "type": "string"
+        },
+        "whenBindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WhenBinding"
+          }
         },
         "withItems": {
           "description": "WithItems expands a step into multiple parallel steps from the items in the list",

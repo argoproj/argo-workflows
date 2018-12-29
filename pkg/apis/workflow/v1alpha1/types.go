@@ -357,6 +357,8 @@ type WorkflowStep struct {
 
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty"`
+
+	WhenBindings []WhenBinding `json:"whenBindings,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -756,6 +758,13 @@ type DAGTask struct {
 
 	// When is an expression in which the task should conditionally execute
 	When string `json:"when,omitempty"`
+
+	WhenBindings []WhenBinding `json:"whenBindings,omitempty"`
+}
+
+type WhenBinding struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

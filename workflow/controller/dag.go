@@ -296,7 +296,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			connectDependencies(taskNodeName)
 
 			// Check the task's when clause to decide if it should execute
-			proceed, err := shouldExecute(t.When)
+			proceed, err := shouldExecute(t.When, t.WhenBindings...)
 			if err != nil {
 				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task.Template, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 				continue

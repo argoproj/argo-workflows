@@ -172,7 +172,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 
 		// Check the step's when clause to decide if it should execute
-		proceed, err := shouldExecute(step.When)
+		proceed, err := shouldExecute(step.When, step.WhenBindings...)
 		if err != nil {
 			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, "", stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
@@ -229,12 +229,47 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	return woc.markNodePhase(node.Name, wfv1.NodeSucceeded)
 }
 
+var govaluateFunctions = map[string]govaluate.ExpressionFunction{
+	"JSONPath": func(args ...interface{}) (interface{}, error) {
+		invalidArgErr := fmt.Errorf("JSONPath function error; expected two string arguments but got '%v'", args)
+		if len(args) != 2 {
+			return nil, invalidArgErr
+		}
+		jsonArg, ok := args[0].(string)
+		if !ok {
+			return nil, invalidArgErr
+		}
+		expressionArg, ok := args[1].(string)
+		if !ok {
+			return nil, invalidArgErr
+		}
+
+		values, err := common.JSONPath(jsonArg, expressionArg)
+		if err != nil {
+			return nil, fmt.Errorf("JSONPath function error; failed to execute JSONPath expression: %v", err)
+		}
+
+		if len(values) == 0 {
+			return nil, nil
+		} else if len(values) == 1 && len(values[0]) == 1 {
+			return values[0][0], nil
+		} else if len(values) == 1 {
+			return values[0], nil
+		}
+		return values, nil
+	},
+}
+
 // shouldExecute evaluates a already substituted when expression to decide whether or not a step should execute
-func shouldExecute(when string) (bool, error) {
+func shouldExecute(when string, bindings ...wfv1.WhenBinding) (bool, error) {
 	if when == "" {
 		return true, nil
 	}
-	expression, err := govaluate.NewEvaluableExpression(when)
+	params := make(map[string]interface{})
+	for i := range bindings {
+		params[bindings[i].Name] = bindings[i].Value
+	}
+	expression, err := govaluate.NewEvaluableExpressionWithFunctions(when, govaluateFunctions)
 	if err != nil {
 		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
@@ -244,17 +279,20 @@ func shouldExecute(when string) (bool, error) {
 	for i, tok := range tokens {
 		switch tok.Kind {
 		case govaluate.VARIABLE:
-			tok.Kind = govaluate.STRING
+			if _, ok := params[fmt.Sprintf("%s", tok.Value)]; !ok {
+				tok.Kind = govaluate.STRING
+			}
 		default:
 			continue
 		}
 		tokens[i] = tok
 	}
+
 	expression, err = govaluate.NewEvaluableExpressionFromTokens(tokens)
 	if err != nil {
 		return false, errors.InternalWrapErrorf(err, "Failed to parse 'when' expression '%s': %v", when, err)
 	}
-	result, err := expression.Evaluate(nil)
+	result, err := expression.Evaluate(params)
 	if err != nil {
 		return false, errors.InternalWrapErrorf(err, "Failed to evaluate 'when' expresion '%s': %v", when, err)
 	}

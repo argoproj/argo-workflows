@@ -1120,6 +1120,7 @@
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/remotecommand",
     "k8s.io/client-go/util/flowcontrol",
+    "k8s.io/client-go/util/jsonpath",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
