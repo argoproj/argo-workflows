@@ -14,12 +14,12 @@ $ helm install stable/minio --name argo-artifacts --set service.type=LoadBalance
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the external IP using `kubectl`.
 ```
-$ kubectl get service argo-artifacts-minio
+$ kubectl get service argo-artifacts
 ```
 
 On Minikube:
 ```
-$ minikube service --url argo-artifacts-minio
+$ minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
