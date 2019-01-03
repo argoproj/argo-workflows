@@ -1180,8 +1180,17 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 	node := woc.wf.Status.Nodes[nodeID]
 	switch node.Type {
-	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend, wfv1.NodeTypeTaskGroup:
+	case wfv1.NodeTypePod, wfv1.NodeTypeSkipped, wfv1.NodeTypeSuspend:
 		return []string{node.ID}
+	case wfv1.NodeTypeTaskGroup:
+		if len(node.Children) == 0 {
+			return []string{node.ID}
+		}
+		outboundNodes := make([]string, 0)
+		for _, child := range node.Children {
+			outboundNodes = append(outboundNodes, woc.getOutboundNodes(child)...)
+		}
+		return outboundNodes
 	case wfv1.NodeTypeRetry:
 		numChildren := len(node.Children)
 		if numChildren > 0 {
