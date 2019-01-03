@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: test-
+  generateName: ui-dag-with-params-
 spec:
   entrypoint: pipeline
 
