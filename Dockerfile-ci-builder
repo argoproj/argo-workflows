@@ -2,11 +2,11 @@ FROM golang:1.10.3
 
 WORKDIR /tmp
 
-RUN curl -O https://download.docker.com/linux/static/stable/x86_64/docker-18.06.0-ce.tgz && \
+RUN curl -O https://download.docker.com/linux/static/stable/$(uname -m)/docker-18.06.0-ce.tgz && \
   tar -xzf docker-18.06.0-ce.tgz && \
   mv docker/docker /usr/local/bin/docker && \
   rm -rf ./docker && \
-  wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 -O /usr/local/bin/dep && \
+  wget https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-$(uname -m|sed 's/x86_64/amd64/g') -O /usr/local/bin/dep && \
   chmod +x /usr/local/bin/dep && \
-  curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v2.0.5/gometalinter-2.0.5-linux-amd64.tar.gz | \
+  curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v2.0.5/gometalinter-2.0.5-linux-$(uname -m|sed 's/x86_64/amd64/g').tar.gz | \
     tar -xzC "$GOPATH/bin" --exclude COPYING --exclude README.md --strip-components 1 -f-
