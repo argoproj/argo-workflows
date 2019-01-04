@@ -40,6 +40,8 @@ import (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
+	common.ResourceInterface
+
 	PodName            string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
@@ -418,12 +420,12 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		var secretKey string
 
 		if art.S3.AccessKeySecret.Name != "" {
-			accessKeyBytes, err := we.getSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+			accessKeyBytes, err := we.GetSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			accessKey = string(accessKeyBytes)
-			secretKeyBytes, err := we.getSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+			secretKeyBytes, err := we.GetSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -445,21 +447,21 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	if art.Git != nil {
 		gitDriver := git.GitArtifactDriver{}
 		if art.Git.UsernameSecret != nil {
-			usernameBytes, err := we.getSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
+			usernameBytes, err := we.GetSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Username = string(usernameBytes)
 		}
 		if art.Git.PasswordSecret != nil {
-			passwordBytes, err := we.getSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
+			passwordBytes, err := we.GetSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Password = string(passwordBytes)
 		}
 		if art.Git.SSHPrivateKeySecret != nil {
-			sshPrivateKeyBytes, err := we.getSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			sshPrivateKeyBytes, err := we.GetSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -469,11 +471,11 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		usernameBytes, err := we.getSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		usernameBytes, err := we.GetSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		passwordBytes, err := we.getSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		passwordBytes, err := we.GetSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -512,8 +514,13 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 	return pod, nil
 }
 
-// getConfigMaps retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) getConfigMaps(namespace, name, key string) (string, error) {
+// GetNamespace returns the namespace
+func (we *WorkflowExecutor) GetNamespace() string {
+	return we.Namespace
+}
+
+// GetConfigMaps retrieves a secret value and memoizes the result
+func (we *WorkflowExecutor) GetConfigMaps(namespace, name, key string) (string, error) {
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
 		return val, nil
@@ -547,8 +554,8 @@ func (we *WorkflowExecutor) getConfigMaps(namespace, name, key string) (string, 
 	return val, nil
 }
 
-// getSecrets retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) getSecrets(namespace, name, key string) ([]byte, error) {
+// GetSecrets retrieves a secret value and memoizes the result
+func (we *WorkflowExecutor) GetSecrets(namespace, name, key string) ([]byte, error) {
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedSecrets[cachedKey]; ok {
 		return val, nil
