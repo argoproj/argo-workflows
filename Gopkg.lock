@@ -72,6 +72,18 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:5cf8a8393124ac3d5632a8c51d08d8ff2aa29b6b328306cb8b7560a7e83cf760"
+  name = "github.com/colinmarc/hdfs"
+  packages = [
+    ".",
+    "protocol/hadoop_common",
+    "protocol/hadoop_hdfs",
+    "rpc",
+  ]
+  pruneopts = ""
+  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+
+[[projects]]
   digest = "1:56c130d885a4aacae1dd9c7b71cfe39912c7ebc1ff7d2b46083c8812996dc43b"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
@@ -277,6 +289,14 @@
   revision = "9cad4c3443a7200dd6400aef47183728de563a38"
 
 [[projects]]
+  digest = "1:d35e07e002ccc51cb01fa77e932ea62206c4d3b2fb0fa1f1b052885942108a96"
+  name = "github.com/hashicorp/go-uuid"
+  packages = ["."]
+  pruneopts = ""
+  revision = "de160f5c59f693fed329e73e291bb751fe4ea4dc"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:9c776d7d9c54b7ed89f119e449983c3f24c0023e75001d6092442412ebca6b94"
   name = "github.com/hashicorp/golang-lru"
@@ -310,6 +330,17 @@
   packages = ["io"]
   pruneopts = ""
   revision = "d14ea06fba99483203c19d92cfcd13ebe73135f4"
+
+[[projects]]
+  branch = "master"
+  digest = "1:1c030807110db46f33e7abd02c08dd98dc2c1c6620eea6941185025f16ad8bbb"
+  name = "github.com/jcmturner/gofork"
+  packages = [
+    "encoding/asn1",
+    "x/crypto/pbkdf2",
+  ]
+  pruneopts = ""
+  revision = "2aebee971930cd0dd525873330952ab7df5ac95c"
 
 [[projects]]
   digest = "1:31c6f3c4f1e15fcc24fcfc9f5f24603ff3963c56d6fa162116493b4025fb6acc"
@@ -587,12 +618,14 @@
     "ed25519/internal/edwards25519",
     "internal/chacha20",
     "internal/subtle",
+    "md4",
     "openpgp",
     "openpgp/armor",
     "openpgp/elgamal",
     "openpgp/errors",
     "openpgp/packet",
     "openpgp/s2k",
+    "pbkdf2",
     "poly1305",
     "ssh",
     "ssh/agent",
@@ -713,6 +746,70 @@
   pruneopts = ""
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+
+[[projects]]
+  digest = "1:4777ba481cc12866b89aafb0a67529e7ac48b9aea06a25f3737b2cf5a3ffda12"
+  name = "gopkg.in/jcmturner/aescts.v1"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f6abebb3171c4c1b1fea279cb7c7325020a26290"
+  version = "v1.0.1"
+
+[[projects]]
+  digest = "1:84c5b1392ef65ad1bb64da4b4d0beb2f204eefc769d6d96082347bb7057cb7b1"
+  name = "gopkg.in/jcmturner/dnsutils.v1"
+  packages = ["."]
+  pruneopts = ""
+  revision = "13eeb8d49ffb74d7a75784c35e4d900607a3943c"
+  version = "v1.0.1"
+
+[[projects]]
+  digest = "1:f727cb776135c090d4043eca9cd921b9967f75704a97309172fde92591b3c828"
+  name = "gopkg.in/jcmturner/gokrb5.v5"
+  packages = [
+    "asn1tools",
+    "client",
+    "config",
+    "credentials",
+    "crypto",
+    "crypto/common",
+    "crypto/etype",
+    "crypto/rfc3961",
+    "crypto/rfc3962",
+    "crypto/rfc4757",
+    "crypto/rfc8009",
+    "gssapi",
+    "iana",
+    "iana/addrtype",
+    "iana/adtype",
+    "iana/asnAppTag",
+    "iana/chksumtype",
+    "iana/errorcode",
+    "iana/etypeID",
+    "iana/flags",
+    "iana/keyusage",
+    "iana/msgtype",
+    "iana/nametype",
+    "iana/patype",
+    "kadmin",
+    "keytab",
+    "krberror",
+    "messages",
+    "mstypes",
+    "pac",
+    "types",
+  ]
+  pruneopts = ""
+  revision = "32ba44ca5b42f17a4a9f33ff4305e70665a1bc0f"
+  version = "v5.3.0"
+
+[[projects]]
+  digest = "1:269a70a6997455a9130b3005af6d2983323e4b8c712f3288a0df0e6013c18ee1"
+  name = "gopkg.in/jcmturner/rpc.v0"
+  packages = ["ndr"]
+  pruneopts = ""
+  revision = "4480c480c9cd343b54b0acb5b62261cbd33d7adf"
+  version = "v0.0.2"
 
 [[projects]]
   digest = "1:6715e0bec216255ab784fe04aa4d5a0a626ae07a3a209080182e469bc142761a"
@@ -1068,6 +1165,7 @@
     "github.com/argoproj/pkg/stats",
     "github.com/argoproj/pkg/strftime",
     "github.com/argoproj/pkg/time",
+    "github.com/colinmarc/hdfs",
     "github.com/evanphx/json-patch",
     "github.com/fsnotify/fsnotify",
     "github.com/ghodss/yaml",
@@ -1084,6 +1182,10 @@
     "github.com/tidwall/gjson",
     "github.com/valyala/fasttemplate",
     "golang.org/x/crypto/ssh",
+    "gopkg.in/jcmturner/gokrb5.v5/client",
+    "gopkg.in/jcmturner/gokrb5.v5/config",
+    "gopkg.in/jcmturner/gokrb5.v5/credentials",
+    "gopkg.in/jcmturner/gokrb5.v5/keytab",
     "gopkg.in/src-d/go-git.v4",
     "gopkg.in/src-d/go-git.v4/plumbing/transport",
     "gopkg.in/src-d/go-git.v4/plumbing/transport/http",

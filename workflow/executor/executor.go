@@ -25,6 +25,7 @@ import (
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/artifacts/artifactory"
 	"github.com/argoproj/argo/workflow/artifacts/git"
+	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
@@ -258,6 +259,10 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 			}
 			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 			art.Artifactory.URL = artifactoryURL.String()
+		} else if we.Template.ArchiveLocation.HDFS != nil {
+			shallowCopy := *we.Template.ArchiveLocation.HDFS
+			art.HDFS = &shallowCopy
+			art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 		}
@@ -398,6 +403,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		}
 		artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 		art.Artifactory.URL = artifactoryURL.String()
+	} else if we.Template.ArchiveLocation.HDFS != nil {
+		shallowCopy := *we.Template.ArchiveLocation.HDFS
+		art.HDFS = &shallowCopy
+		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
@@ -485,6 +494,9 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		}
 		return &driver, nil
 
+	}
+	if art.HDFS != nil {
+		return hdfs.CreateDriver(we, art.HDFS)
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
