@@ -566,9 +566,9 @@ func schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref common.ReferenceCallback
 							Ref:         ref("k8s.io/api/core/v1.ConfigMapKeySelector"),
 						},
 					},
-					"krbServicePrincipleName": {
+					"krbServicePrincipalName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KrbServicePrincipleName is the principle name of Kerberos service It must be set if either ccache or keytab is used.",
+							Description: "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

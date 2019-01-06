@@ -28,7 +28,7 @@ type KrbOptions struct {
 	CCacheOptions        *CCacheOptions
 	KeytabOptions        *KeytabOptions
 	Config               string
-	ServicePrincipleName string
+	ServicePrincipalName string
 }
 
 // CCacheOptions is options for ccache
@@ -61,11 +61,11 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 	if art.HDFSUser == "" && !hasKrbCCache && !hasKrbKeytab {
 		return errors.Errorf(errors.CodeBadRequest, "either %s.hdfsUser, %s.krbCCacheSecret or %s.krbKeytabSecret is required", errPrefix, errPrefix, errPrefix)
 	}
-	if hasKrbKeytab && (art.KrbServicePrincipleName == "" || art.KrbConfigConfigMap == nil || art.KrbUsername == "" || art.KrbRealm == "") {
-		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipleName, %s.krbConfigConfigMap, %s.krbUsername and %s.krbRealm are required with %s.krbKeytabSecret", errPrefix, errPrefix, errPrefix, errPrefix, errPrefix)
+	if hasKrbKeytab && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil || art.KrbUsername == "" || art.KrbRealm == "") {
+		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName, %s.krbConfigConfigMap, %s.krbUsername and %s.krbRealm are required with %s.krbKeytabSecret", errPrefix, errPrefix, errPrefix, errPrefix, errPrefix)
 	}
-	if hasKrbCCache && (art.KrbServicePrincipleName == "" || art.KrbConfigConfigMap == nil) {
-		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipleName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
+	if hasKrbCCache && (art.KrbServicePrincipalName == "" || art.KrbConfigConfigMap == nil) {
+		return errors.Errorf(errors.CodeBadRequest, "%s.krbServicePrincipalName and %s.krbConfigConfigMap are required with %s.krbCCacheSecret", errPrefix, errPrefix, errPrefix)
 	}
 	return nil
 }
@@ -99,7 +99,7 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 				CCache: ccache,
 			},
 			Config:               krbConfig,
-			ServicePrincipleName: art.KrbServicePrincipleName,
+			ServicePrincipalName: art.KrbServicePrincipalName,
 		}
 	}
 	if art.KrbKeytabSecret != nil && art.KrbKeytabSecret.Name != "" {
@@ -118,7 +118,7 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 				Realm:    art.KrbRealm,
 			},
 			Config:               krbConfig,
-			ServicePrincipleName: art.KrbServicePrincipleName,
+			ServicePrincipalName: art.KrbServicePrincipalName,
 		}
 	}
 

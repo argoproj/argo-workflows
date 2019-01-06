@@ -49,7 +49,7 @@ spec:
           # krbConfigConfigMap:
           #   name: my-hdfs-krb5-config
           #   key: krb5.conf
-          # krbServicePrincipleName: hdfs/_HOST
+          # krbServicePrincipalName: hdfs/_HOST
 
   - name: print-message
     inputs:
@@ -74,7 +74,7 @@ spec:
           # krbConfigConfigMap:
           #   name: my-hdfs-krb5-config
           #   key: krb5.conf
-          # krbServicePrincipleName: hdfs/_HOST
+          # krbServicePrincipalName: hdfs/_HOST
     container:
       image: alpine:latest
       command: [sh, -c]

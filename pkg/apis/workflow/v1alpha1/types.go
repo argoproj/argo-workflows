@@ -681,9 +681,9 @@ type HDFSArtifact struct {
 	// It must be set if either ccache or keytab is used.
 	KrbConfigConfigMap *apiv1.ConfigMapKeySelector `json:"krbConfigConfigMap,omitempty"`
 
-	// KrbServicePrincipleName is the principle name of Kerberos service
+	// KrbServicePrincipalName is the principal name of Kerberos service
 	// It must be set if either ccache or keytab is used.
-	KrbServicePrincipleName string `json:"krbServicePrincipleName,omitempty"`
+	KrbServicePrincipalName string `json:"krbServicePrincipalName,omitempty"`
 }
 
 func (a *HDFSArtifact) String() string {

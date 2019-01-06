@@ -19,7 +19,7 @@ func createHDFSClient(addresses []string, user string, krbOptions *KrbOptions) (
 			return nil, err
 		}
 		options.KerberosClient = krbClient
-		options.KerberosServicePrincipleName = krbOptions.ServicePrincipleName
+		options.KerberosServicePrincipleName = krbOptions.ServicePrincipalName
 	} else {
 		options.User = user
 	}

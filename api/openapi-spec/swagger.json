@@ -295,8 +295,8 @@
           "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
           "type": "string"
         },
-        "krbServicePrincipleName": {
-          "description": "KrbServicePrincipleName is the principle name of Kerberos service It must be set if either ccache or keytab is used.",
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
           "type": "string"
         },
         "krbUsername": {
