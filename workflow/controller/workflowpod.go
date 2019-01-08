@@ -115,6 +115,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
+
+	if woc.wf.Spec.HostNetwork != nil {
+                pod.Spec.HostNetwork = *woc.wf.Spec.HostNetwork
+        }
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
