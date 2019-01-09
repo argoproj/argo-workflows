@@ -117,6 +117,17 @@ type WorkflowSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
 	ImagePullSecrets []apiv1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
+	// Host networking requested for this workflow pod. Default to false.
+	HostNetwork *bool `json:"hostNetwork,omitempty"`
+
+	// Set DNS policy for the pod.
+	// Defaults to "ClusterFirst".
+	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
+	// DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
+	// To have DNS options set along with hostNetwork, you have to specify DNS policy
+	// explicitly to 'ClusterFirstWithHostNet'.
+	DNSPolicy *apiv1.DNSPolicy `json:"dnsPolicy,omitempty"`
+
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
