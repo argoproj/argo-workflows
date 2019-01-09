@@ -1,3 +1,5 @@
+[![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
+
 # Argo - The Workflow Engine for Kubernetes
 
 ![Argo Image](argo.png)
