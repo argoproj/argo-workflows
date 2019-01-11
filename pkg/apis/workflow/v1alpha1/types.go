@@ -648,19 +648,29 @@ func (a *ArtifactoryArtifact) String() string {
 
 // HDFSArtifact is the location of an HDFS artifact
 type HDFSArtifact struct {
-	// Addresses is accessible addresses of HDFS name nodes
-	Addresses []string `json:"addresses"`
+	HDFSConfig `json:",inline"`
 
 	// Path is a file path in HDFS
 	Path string `json:"path"`
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
+}
+
+// HDFSConfig is configurations for HDFS
+type HDFSConfig struct {
+	HDFSKrbConfig `json:",inline"`
+
+	// Addresses is accessible addresses of HDFS name nodes
+	Addresses []string `json:"addresses"`
 
 	// HDFSUser is the user to access HDFS file system.
 	// It is ignored if either ccache or keytab is used.
 	HDFSUser string `json:"hdfsUser,omitempty"`
+}
 
+// HDFSKrbConfig is auth configurations for Kerberos
+type HDFSKrbConfig struct {
 	// KrbCCacheSecret is the secret selector for Kerberos ccache
 	// Either ccache or keytab can be set to use Kerberos.
 	KrbCCacheSecret *apiv1.SecretKeySelector `json:"krbCCacheSecret,omitempty"`

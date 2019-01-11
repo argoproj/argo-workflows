@@ -309,6 +309,78 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.HDFSConfig": {
+      "description": "HDFSConfig is configurations for HDFS",
+      "required": [
+        "addresses"
+      ],
+      "properties": {
+        "addresses": {
+          "description": "Addresses is accessible addresses of HDFS name nodes",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hdfsUser": {
+          "description": "HDFSUser is the user to access HDFS file system. It is ignored if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbCCacheSecret": {
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbConfigConfigMap": {
+          "description": "KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "krbKeytabSecret": {
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.HDFSKrbConfig": {
+      "description": "HDFSKrbConfig is auth configurations for Kerberos",
+      "properties": {
+        "krbCCacheSecret": {
+          "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbConfigConfigMap": {
+          "description": "KrbConfig is the configmap selector for Kerberos config as string It must be set if either ccache or keytab is used.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.ConfigMapKeySelector"
+        },
+        "krbKeytabSecret": {
+          "description": "KrbKeytabSecret is the secret selector for Kerberos keytab Either ccache or keytab can be set to use Kerberos.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "krbRealm": {
+          "description": "KrbRealm is the Kerberos realm used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        },
+        "krbServicePrincipalName": {
+          "description": "KrbServicePrincipalName is the principal name of Kerberos service It must be set if either ccache or keytab is used.",
+          "type": "string"
+        },
+        "krbUsername": {
+          "description": "KrbUsername is the Kerberos username used with Kerberos keytab It must be set if keytab is used.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
       "required": [
