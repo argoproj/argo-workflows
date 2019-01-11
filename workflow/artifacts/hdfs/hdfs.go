@@ -94,7 +94,6 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("ccache: %v", ccache)
 		krbOptions = &KrbOptions{
 			CCacheOptions: &CCacheOptions{
 				CCache: ccache,
