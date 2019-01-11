@@ -11,6 +11,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -138,7 +139,7 @@ func (driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) er
 	if err != nil {
 		return err
 	}
-	defer hdfscli.Close()
+	defer util.Close(hdfscli)
 
 	srcStat, err := hdfscli.Stat(driver.Path)
 	if err != nil {
@@ -180,7 +181,7 @@ func (driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) e
 	if err != nil {
 		return err
 	}
-	defer hdfscli.Close()
+	defer util.Close(hdfscli)
 
 	isDir, err := file.IsDirectory(path)
 	if err != nil {
