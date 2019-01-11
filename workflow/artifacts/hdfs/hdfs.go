@@ -79,7 +79,7 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 	namespace := ci.GetNamespace()
 
 	if art.KrbConfigConfigMap != nil && art.KrbConfigConfigMap.Name != "" {
-		krbConfig, err = ci.GetConfigMaps(namespace, art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
+		krbConfig, err = ci.GetConfigMapKey(namespace, art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
 		if err != nil {
 			return nil, err
 		}

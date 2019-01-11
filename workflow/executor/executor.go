@@ -531,8 +531,8 @@ func (we *WorkflowExecutor) GetNamespace() string {
 	return we.Namespace
 }
 
-// GetConfigMaps retrieves a secret value and memoizes the result
-func (we *WorkflowExecutor) GetConfigMaps(namespace, name, key string) (string, error) {
+// GetConfigMapKey retrieves a configmap value and memoizes the result
+func (we *WorkflowExecutor) GetConfigMapKey(namespace, name, key string) (string, error) {
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
 		return val, nil

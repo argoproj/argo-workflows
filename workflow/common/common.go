@@ -123,5 +123,5 @@ type ExecutionControl struct {
 type ResourceInterface interface {
 	GetNamespace() string
 	GetSecrets(namespace, name, key string) ([]byte, error)
-	GetConfigMaps(namespace, name, key string) (string, error)
+	GetConfigMapKey(namespace, name, key string) (string, error)
 }
