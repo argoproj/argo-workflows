@@ -55,3 +55,10 @@ required = [
   name = "github.com/Azure/go-autorest"
   revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
 
+[[constraint]]
+  name = "github.com/colinmarc/hdfs"
+  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+
+[[constraint]]
+  name = "gopkg.in/jcmturner/gokrb5.v5"
+  version = "5.3.0"
