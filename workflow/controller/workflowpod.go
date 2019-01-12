@@ -548,7 +548,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
 		}
 	}
-	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil {
+	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
 		// User explicitly set the location. nothing else to do.
 		return nil
 	}
@@ -583,6 +583,13 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
 			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
+		}
+	} else if hdfsLocation := woc.controller.Config.ArtifactRepository.HDFS; hdfsLocation != nil {
+		log.Debugf("Setting HDFS artifact repository information")
+		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
+			HDFSConfig: hdfsLocation.HDFSConfig,
+			Path:       hdfsLocation.PathFormat,
+			Force:      hdfsLocation.Force,
 		}
 	} else {
 		for _, art := range tmpl.Outputs.Artifacts {
