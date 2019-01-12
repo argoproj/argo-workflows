@@ -217,6 +217,18 @@ type Template struct {
 
 	// Tolerations to apply to workflow pods.
 	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
+
+	// Restart policy for all containers within all the pods.
+	// One of OnFailure or Never.
+	// Default to Never.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy
+	// +optional
+	RestartPolicy *apiv1.RestartPolicy `json:"restartPolicy,omitempty"`
+
+	// If specified, all the pods will be dispatched by specified scheduler.
+	// If not specified, all the pods will be dispatched by default scheduler.
+	// +optional
+	SchedulerName *string `json:"schedulerName,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

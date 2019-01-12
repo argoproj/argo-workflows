@@ -13,6 +13,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/valyala/fasttemplate"
+	apiv1 "k8s.io/api/core/v1"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -237,6 +238,12 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	if tmpl.RetryStrategy != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.retryStrategy is only valid for container templates", tmpl.Name)
 	}
+	if tmpl.RestartPolicy != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.restartPolicy is only valid for leaf templates", tmpl.Name)
+	}
+	if tmpl.SchedulerName != nil {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.schedulerName is only valid for leaf templates", tmpl.Name)
+	}
 	return nil
 }
 
@@ -263,6 +270,12 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
+		}
+		if tmpl.RestartPolicy != nil {
+			if *tmpl.RestartPolicy != apiv1.RestartPolicyNever &&
+				*tmpl.RestartPolicy != apiv1.RestartPolicyOnFailure {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.restartPolicy should be one of Never or OnFailure", tmpl.Name)
+			}
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {

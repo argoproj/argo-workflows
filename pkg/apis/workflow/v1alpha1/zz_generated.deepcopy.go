@@ -830,6 +830,16 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.RestartPolicy != nil {
+		in, out := &in.RestartPolicy, &out.RestartPolicy
+		*out = new(v1.RestartPolicy)
+		**out = **in
+	}
+	if in.SchedulerName != nil {
+		in, out := &in.SchedulerName, &out.SchedulerName
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

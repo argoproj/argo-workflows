@@ -105,7 +105,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy: apiv1.RestartPolicyNever,
 			Containers: []apiv1.Container{
 				mainCtr,
 			},
@@ -148,6 +147,16 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
+
+	if tmpl.RestartPolicy != nil {
+		pod.Spec.RestartPolicy = *tmpl.RestartPolicy
+	} else {
+		pod.Spec.RestartPolicy = apiv1.RestartPolicyNever
+	}
+
+	if tmpl.SchedulerName != nil {
+		pod.Spec.SchedulerName = *tmpl.SchedulerName
+	}
 
 	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
