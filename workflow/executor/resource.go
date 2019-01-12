@@ -3,10 +3,13 @@ package executor
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
@@ -16,28 +19,38 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (string, error) {
+func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isDelete bool) (string, string, error) {
 	args := []string{
 		action,
 	}
-	if action == "delete" {
+	output := "json"
+	if isDelete {
 		args = append(args, "--ignore-not-found")
+		output = "name"
 	}
 	args = append(args, "-f")
 	args = append(args, manifestPath)
 	args = append(args, "-o")
-	args = append(args, "name")
+	args = append(args, output)
 	cmd := exec.Command("kubectl", args...)
 	log.Info(strings.Join(cmd.Args, " "))
 	out, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
 		errMsg := strings.TrimSpace(string(exErr.Stderr))
-		return "", errors.New(errors.CodeBadRequest, errMsg)
+		return "", "", errors.New(errors.CodeBadRequest, errMsg)
 	}
-	resourceName := strings.TrimSpace(string(out))
-	log.Infof(resourceName)
-	return resourceName, nil
+	if action == "delete" {
+		return "", "", nil
+	}
+	obj := unstructured.Unstructured{}
+	err = json.Unmarshal(out, &obj)
+	if err != nil {
+		return "", "", err
+	}
+	resourceName := fmt.Sprintf("%s.%s/%s", obj.GroupVersionKind().Kind, obj.GroupVersionKind().Group, obj.GetName())
+	log.Infof("%s/%s", obj.GetNamespace(), resourceName)
+	return obj.GetNamespace(), resourceName, nil
 }
 
 // gjsonLabels is an implementation of labels.Labels interface
@@ -58,7 +71,7 @@ func (g gjsonLabels) Get(label string) string {
 }
 
 // WaitResource waits for a specific resource to satisfy either the success or failure condition
-func (we *WorkflowExecutor) WaitResource(resourceName string) error {
+func (we *WorkflowExecutor) WaitResource(resourceNamespace string, resourceName string) error {
 	if we.Template.Resource.SuccessCondition == "" && we.Template.Resource.FailureCondition == "" {
 		return nil
 	}
@@ -86,7 +99,7 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 	// Poll intervall of 5 seconds serves as a backoff intervall in case of immediate result reader failure
 	err := wait.PollImmediateInfinite(time.Duration(time.Second*5),
 		func() (bool, error) {
-			isErrRetry, err := checkResourceState(resourceName, successReqs, failReqs)
+			isErrRetry, err := checkResourceState(resourceNamespace, resourceName, successReqs, failReqs)
 
 			if err == nil {
 				log.Infof("Returning from successful wait for resource %s", resourceName)
@@ -114,9 +127,9 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 }
 
 // Function to do the kubectl get -w command and then waiting on json reading.
-func checkResourceState(resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
+func checkResourceState(resourceNamespace string, resourceName string, successReqs labels.Requirements, failReqs labels.Requirements) (bool, error) {
 
-	cmd, reader, err := startKubectlWaitCmd(resourceName)
+	cmd, reader, err := startKubectlWaitCmd(resourceNamespace, resourceName)
 	if err != nil {
 		return false, err
 	}
@@ -179,8 +192,12 @@ func checkResourceState(resourceName string, successReqs labels.Requirements, fa
 }
 
 // Start Kubectl command Get with -w return error if unable to start command
-func startKubectlWaitCmd(resourceName string) (*exec.Cmd, *bufio.Reader, error) {
-	cmd := exec.Command("kubectl", "get", resourceName, "-w", "-o", "json")
+func startKubectlWaitCmd(resourceNamespace string, resourceName string) (*exec.Cmd, *bufio.Reader, error) {
+	args := []string{"get", resourceName, "-w", "-o", "json"}
+	if resourceNamespace != "" {
+		args = append(args, "-n", resourceNamespace)
+	}
+	cmd := exec.Command("kubectl", args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
@@ -216,7 +233,7 @@ func readJSON(reader *bufio.Reader) ([]byte, error) {
 }
 
 // SaveResourceParameters will save any resource output parameters
-func (we *WorkflowExecutor) SaveResourceParameters(resourceName string) error {
+func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, resourceName string) error {
 	if len(we.Template.Outputs.Parameters) == 0 {
 		log.Infof("No output parameters")
 		return nil
@@ -228,9 +245,17 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceName string) error {
 		}
 		var cmd *exec.Cmd
 		if param.ValueFrom.JSONPath != "" {
-			cmd = exec.Command("kubectl", "get", resourceName, "-o", fmt.Sprintf("jsonpath='%s'", param.ValueFrom.JSONPath))
+			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath='%s'", param.ValueFrom.JSONPath)}
+			if resourceNamespace != "" {
+				args = append(args, "-n", resourceNamespace)
+			}
+			cmd = exec.Command("kubectl", args...)
 		} else if param.ValueFrom.JQFilter != "" {
-			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -c '%s'", resourceName, param.ValueFrom.JQFilter)
+			resArgs := []string{resourceName}
+			if resourceNamespace != "" {
+				resArgs = append(resArgs, "-n", resourceNamespace)
+			}
+			cmdStr := fmt.Sprintf("kubectl get %s -o json | jq -c '%s'", strings.Join(resArgs, " "), param.ValueFrom.JQFilter)
 			cmd = exec.Command("sh", "-c", cmdStr)
 		} else {
 			continue
