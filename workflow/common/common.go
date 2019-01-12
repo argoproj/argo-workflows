@@ -119,3 +119,9 @@ type ExecutionControl struct {
 	// used to support workflow or steps/dag level timeouts.
 	Deadline *time.Time `json:"deadline,omitempty"`
 }
+
+type ResourceInterface interface {
+	GetNamespace() string
+	GetSecrets(namespace, name, key string) ([]byte, error)
+	GetConfigMapKey(namespace, name, key string) (string, error)
+}

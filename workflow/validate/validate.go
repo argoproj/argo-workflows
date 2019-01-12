@@ -10,6 +10,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/valyala/fasttemplate"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -195,6 +196,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.Artifact) error {
 	if art.Git != nil {
 		if art.Git.Repo == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s.git.repo is required", errPrefix)
+		}
+	}
+	if art.HDFS != nil {
+		err := hdfs.ValidateArtifact(fmt.Sprintf("%s.hdfs", errPrefix), art.HDFS)
+		if err != nil {
+			return err
 		}
 	}
 	// TODO: validate other artifact locations
