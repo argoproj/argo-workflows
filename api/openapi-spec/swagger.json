@@ -1123,14 +1123,6 @@
           "type": "integer",
           "format": "int32"
         },
-        "restartPolicy": {
-          "description": "Restart policy for all containers within all the pods. One of Always, OnFailure, Never. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy",
-          "type": "string"
-        },
-        "schedulerName": {
-          "description": "If specified, all the pods will be dispatched by specified scheduler. If not specified, all the pods will be dispatched by default scheduler.",
-          "type": "string"
-        },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",
           "type": "string"
