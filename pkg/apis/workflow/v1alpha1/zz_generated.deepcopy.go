@@ -979,6 +979,16 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = make([]v1.LocalObjectReference, len(*in))
 		copy(*out, *in)
 	}
+	if in.HostNetwork != nil {
+		in, out := &in.HostNetwork, &out.HostNetwork
+		*out = new(bool)
+		**out = **in
+	}
+	if in.DNSPolicy != nil {
+		in, out := &in.DNSPolicy, &out.DNSPolicy
+		*out = new(v1.DNSPolicy)
+		**out = **in
+	}
 	if in.TTLSecondsAfterFinished != nil {
 		in, out := &in.TTLSecondsAfterFinished, &out.TTLSecondsAfterFinished
 		*out = new(int32)
