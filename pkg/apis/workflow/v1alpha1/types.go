@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -329,6 +330,9 @@ type ArtifactLocation struct {
 	// Artifactory contains artifactory artifact location details
 	Artifactory *ArtifactoryArtifact `json:"artifactory,omitempty"`
 
+	// HDFS contains HDFS artifact location details
+	HDFS *HDFSArtifact `json:"hdfs,omitempty"`
+
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
 }
@@ -653,6 +657,68 @@ func (a *ArtifactoryArtifact) String() string {
 	return a.URL
 }
 
+// HDFSArtifact is the location of an HDFS artifact
+type HDFSArtifact struct {
+	HDFSConfig `json:",inline"`
+
+	// Path is a file path in HDFS
+	Path string `json:"path"`
+
+	// Force copies a file forcibly even if it exists (default: false)
+	Force bool `json:"force,omitempty"`
+}
+
+// HDFSConfig is configurations for HDFS
+type HDFSConfig struct {
+	HDFSKrbConfig `json:",inline"`
+
+	// Addresses is accessible addresses of HDFS name nodes
+	Addresses []string `json:"addresses"`
+
+	// HDFSUser is the user to access HDFS file system.
+	// It is ignored if either ccache or keytab is used.
+	HDFSUser string `json:"hdfsUser,omitempty"`
+}
+
+// HDFSKrbConfig is auth configurations for Kerberos
+type HDFSKrbConfig struct {
+	// KrbCCacheSecret is the secret selector for Kerberos ccache
+	// Either ccache or keytab can be set to use Kerberos.
+	KrbCCacheSecret *apiv1.SecretKeySelector `json:"krbCCacheSecret,omitempty"`
+
+	// KrbKeytabSecret is the secret selector for Kerberos keytab
+	// Either ccache or keytab can be set to use Kerberos.
+	KrbKeytabSecret *apiv1.SecretKeySelector `json:"krbKeytabSecret,omitempty"`
+
+	// KrbUsername is the Kerberos username used with Kerberos keytab
+	// It must be set if keytab is used.
+	KrbUsername string `json:"krbUsername,omitempty"`
+
+	// KrbRealm is the Kerberos realm used with Kerberos keytab
+	// It must be set if keytab is used.
+	KrbRealm string `json:"krbRealm,omitempty"`
+
+	// KrbConfig is the configmap selector for Kerberos config as string
+	// It must be set if either ccache or keytab is used.
+	KrbConfigConfigMap *apiv1.ConfigMapKeySelector `json:"krbConfigConfigMap,omitempty"`
+
+	// KrbServicePrincipalName is the principal name of Kerberos service
+	// It must be set if either ccache or keytab is used.
+	KrbServicePrincipalName string `json:"krbServicePrincipalName,omitempty"`
+}
+
+func (a *HDFSArtifact) String() string {
+	var cred string
+	if a.HDFSUser != "" {
+		cred = fmt.Sprintf("HDFS user %s", a.HDFSUser)
+	} else if a.KrbCCacheSecret != nil {
+		cred = fmt.Sprintf("ccache %v", a.KrbCCacheSecret.Name)
+	} else if a.KrbKeytabSecret != nil {
+		cred = fmt.Sprintf("keytab %v (%s/%s)", a.KrbKeytabSecret.Name, a.KrbUsername, a.KrbRealm)
+	}
+	return fmt.Sprintf("hdfs://%s/%s with %s", strings.Join(a.Addresses, ", "), a.Path, cred)
+}
+
 // RawArtifact allows raw string content to be placed as an artifact in a container
 type RawArtifact struct {
 	// Data is the string contents of the artifact
@@ -840,7 +906,7 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.HDFS != nil
 }
 
 // GetTemplate retrieves a defined template by its name
