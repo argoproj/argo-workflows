@@ -1,6 +1,6 @@
 [![slack](https://img.shields.io/badge/slack-argoproj-brightgreen.svg?logo=slack)](https://argoproj.github.io/community/join-slack)
 
-# Argo - The Workflow Engine for Kubernetes
+# ArgoProj - Get stuff done with Kubernetes
 
 ![Argo Image](argo.png)
 
@@ -10,22 +10,32 @@ We are thrilled that BlackRock has developed an eventing framework for Argo and 
 
 If you actively use Argo in your organization and believe that your organization may be interested in actively participating in the Argo Community, please ask a representative to contact saradhi_sreegiriraju@intuit.com for additional information.
 
-## What is Argo?
-Argo is an open source container-native workflow engine for getting work done on Kubernetes. Argo is implemented as a Kubernetes CRD (Custom Resource Definition).
+## What is ArgoProj?
+
+ArgoProj is a collection of tools for getting work done with Kubernetes.
+* [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
+* [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
+* [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
+* [Argo CI](https://github.com/argoproj/argo-ci) - Simple CI based on GitHUb and Argo Workflows
+
+
+## What is Argo Workflows?
+Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
 
 * Define workflows where each step in the workflow is a container.
 * Model multi-step workflows as a sequence of tasks or capture the dependencies between tasks using a graph (DAG).
-* Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo workflows on Kubernetes.
+* Easily run compute intensive jobs for machine learning or data processing in a fraction of the time using Argo Workflows on Kubernetes.
 * Run CI/CD pipelines natively on Kubernetes without configuring complex software development products.
 
-## Why Argo?
-* Argo is designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
-* Argo is cloud agnostic and can run on any kubernetes cluster.
-* Argo with Kubernetes puts a cloud-scale supercomputer at your fingertips.
+## Why Argo Workflows?
+* Designed from the ground up for containers without the overhead and limitations of legacy VM and server-based environments.
+* Cloud agnostic and can run on any kubernetes cluster.
+* Easily ochestrate highly parallel jobs on Kubernets.
+* Argo Workflows puts a cloud-scale supercomputer at your fingertips!
 
 ## Documentation
 * [Get started here](demo.md)
-* [How to write Argo workflow specs](examples/README.md)
+* [How to write Argo Workflow specs](examples/README.md)
 * [How to configure your artifact repository](ARTIFACT_REPO.md)
 
 ## Features
@@ -85,4 +95,3 @@ Currently **officially** using Argo:
 * Argo GitHub:  https://github.com/argoproj
 * Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLTA5MTFjNjI0Nzg3NzNiMDZiNmRiODM4Y2M1NWQxOGYzMzZkNTc1YWVkYTZkNzdlNmYyZjMxNWI3NjY2MDc1MzI)
 * Argo website: https://argoproj.github.io/
-* Argo forum:   https://groups.google.com/forum/#!forum/argoproj
