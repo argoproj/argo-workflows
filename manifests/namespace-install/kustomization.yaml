@@ -10,3 +10,6 @@ resources:
 - ./03c_argo-ui-rolebinding.yaml
 - ../base/03d_argo-ui-deployment.yaml
 - ../base/03e_argo-ui-service.yaml
+
+patches:
+- ./overlays/03d_argo-ui-deployment.yaml
