@@ -62,6 +62,7 @@ Currently **officially** using Argo:
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
 1. [Gladly](https://gladly.com/)
+1. [GitHub](https://github.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
