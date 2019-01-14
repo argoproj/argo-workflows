@@ -69,6 +69,7 @@ Currently **officially** using Argo:
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
+1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Quantibio](http://quantibio.com/us/en/)
