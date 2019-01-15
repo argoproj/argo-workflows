@@ -19,6 +19,7 @@ import (
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -287,6 +288,22 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 			break
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+	return err
+}
+
+const deleteRetries = 3
+
+// deletePod return error to indicate delete pod successfully or not.
+func DeletePod(c kubernetes.Interface, podName, namespace string) error {
+	var err error
+	for attempt := 0; attempt < deleteRetries; attempt++ {
+		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
+		if err != nil {
+			time.Sleep(100 * time.Millisecond)
+		} else {
+			break
+		}
 	}
 	return err
 }

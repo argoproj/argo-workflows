@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -56,6 +57,7 @@ type WorkflowController struct {
 	wfQueue       workqueue.RateLimitingInterface
 	podQueue      workqueue.RateLimitingInterface
 	completedPods chan string
+	gcPods        chan string // pods to be deleted depend on GC strategy
 	throttler     Throttler
 }
 
@@ -86,6 +88,7 @@ func NewWorkflowController(
 		wfQueue:                    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		podQueue:                   workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		completedPods:              make(chan string, 512),
+		gcPods:                     make(chan string, 512),
 	}
 	wfc.throttler = NewThrottler(0, wfc.wfQueue)
 	return &wfc
@@ -145,6 +148,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	go wfc.wfInformer.Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
+	go wfc.podGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
@@ -184,6 +188,33 @@ func (wfc *WorkflowController) podLabeler(stopCh <-chan struct{}) {
 				}
 			} else {
 				log.Infof("Labeled pod %s/%s completed", namespace, podName)
+			}
+		}
+	}
+}
+
+// podGarbageCollector will delete all pods on the controllers gcPods channel as completed
+func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
+	for {
+		select {
+		case <-stopCh:
+			return
+		case pod := <-wfc.gcPods:
+			parts := strings.Split(pod, "/")
+			if len(parts) != 2 {
+				log.Warnf("Unexpected item on gcPods channel: %s", pod)
+				continue
+			}
+			namespace := parts[0]
+			podName := parts[1]
+			err := common.DeletePod(wfc.kubeclientset, podName, namespace)
+			if err != nil {
+				// because of multiple delete situation, we can ignore NotFound error safely
+				if !apierr.IsNotFound(err) {
+					log.Errorf("Failed to delete pod %s/%s for gc: %+v", namespace, podName, err)
+				}
+			} else {
+				log.Infof("Delete pod %s/%s for gc successfully", namespace, podName)
 			}
 		}
 	}
@@ -246,6 +277,19 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
+		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
+		var doPodGC bool
+		if woc.wf.Spec.PodGCStrategy == wfv1.PodGCUponWorkflowCompleted {
+			doPodGC = true
+		} else if woc.wf.Spec.PodGCStrategy == wfv1.PodGCUponWorkflowSucceeded && woc.wf.Status.Successful() {
+			doPodGC = true
+		}
+		if doPodGC {
+			for podName := range woc.completedPods {
+				pod := fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- pod
+			}
+		}
 	}
 
 	// TODO: operate should return error if it was unable to operate properly

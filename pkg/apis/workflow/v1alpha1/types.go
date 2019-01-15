@@ -51,6 +51,17 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+// PodGCStrategy is the strategy when to delete completed pods for GC.
+type PodGCStrategy string
+
+// PodGCStrategy
+const (
+	PodGCUponPodCompleted      PodGCStrategy = "upon-pod-completed"
+	PodGCUponPodSucceeded      PodGCStrategy = "upon-pod-succeeded"
+	PodGCUponWorkflowCompleted PodGCStrategy = "upon-workflow-completed"
+	PodGCUponWorkflowSucceeded PodGCStrategy = "upon-workflow-succeeded"
+)
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -153,6 +164,12 @@ type WorkflowSpec struct {
 	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PodReclaimation is the strategy when to delete the completed pods
+	// 1. Retain: always retain completed pods
+	// 2. Delete：delete pod immediately when it is completed
+	// 3. DeleteLater：delete completed pod when its workflow is completed
+	PodGCStrategy PodGCStrategy `json:"podgcstrategy,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -569,6 +586,11 @@ func isCompletedPhase(phase NodePhase) bool {
 // Remove returns whether or not the workflow has completed execution
 func (ws *WorkflowStatus) Completed() bool {
 	return isCompletedPhase(ws.Phase)
+}
+
+// Successful return whether or not the workflow has succeeded
+func (ws *WorkflowStatus) Successful() bool {
+	return ws.Phase == NodeSucceeded
 }
 
 // Remove returns whether or not the node has completed execution
