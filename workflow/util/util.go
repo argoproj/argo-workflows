@@ -137,6 +137,7 @@ type SubmitOpts struct {
 	InstanceID     string                 // --instanceid
 	Entrypoint     string                 // --entrypoint
 	Parameters     []string               // --parameter
+	NodeSelector   []string               // --node-selector
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
@@ -228,6 +229,19 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		}
 		wf.Spec.Arguments.Parameters = newParams
 	}
+
+	if len(opts.NodeSelector) > 0 {
+		nodeSelectorItems := make(map[string]string)
+		for _, itemStr := range opts.NodeSelector {
+			parts := strings.SplitN(itemStr, "=", 2)
+			if len(parts) == 1 {
+				return nil, fmt.Errorf("Expected item of the form: NAME=VALUE. Received: %s", itemStr)
+			}
+			nodeSelectorItems[parts[0]] = parts[1]
+		}
+		wf.Spec.NodeSelector = nodeSelectorItems
+	}
+
 	if opts.GenerateName != "" {
 		wf.ObjectMeta.GenerateName = opts.GenerateName
 	}

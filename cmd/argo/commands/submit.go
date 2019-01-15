@@ -50,6 +50,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
+	command.Flags().StringArrayVarP(&submitOpts.NodeSelector, "node-selector", "s", []string{}, "override nodeSelector")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
