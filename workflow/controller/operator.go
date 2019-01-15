@@ -1462,9 +1462,10 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		return node
 	}
 	mainCtr := apiv1.Container{
-		Image:   woc.controller.executorImage(),
-		Command: []string{"argoexec"},
-		Args:    []string{"resource", tmpl.Resource.Action},
+		Image:           woc.controller.executorImage(),
+		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
+		Command:         []string{"argoexec"},
+		Args:            []string{"resource", tmpl.Resource.Action},
 		VolumeMounts: []apiv1.VolumeMount{
 			volumeMountPodMetadata,
 		},
