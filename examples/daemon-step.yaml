@@ -53,6 +53,10 @@ spec:
           port: 8086
         initialDelaySeconds: 5
         timeoutSeconds: 1
+    outputs:
+      artifacts:
+        - name: data
+          path: /var/lib/influxdb/data
 
   - name: influxdb-client
     inputs:
