@@ -1,0 +1,32 @@
+# podgcstrategy is the strategy to control when to delete pods for GC.
+# after the pods deleted, you will never see it by `kubectl get pods` or 
+# `argo logs <pod-name>`.
+# it include four strategy
+#    - "upon-pod-completed": delete pods immediately when pod is completed, the completedPhase including phase succeeded, failed, error and skipped.
+#    - "upon-pod-succeeded": delete pods immediately when pod is Succeeded.
+#    - "upon-workflow-completed": delete pods when workflow is completed.
+#    - "upon-workflow-succeeded": delete pods when workflow is succeeded.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: parallelism-limit-
+spec:
+  entrypoint: parallelism-limit
+  podgcstrategy: upon-pod-succeeded
+  parallelism: 2
+  templates:
+  - name: parallelism-limit
+    steps:
+    - - name: sleep
+        template: sleep
+        withItems:
+        - arg1
+        - arg2
+        - arg3
+        - arg4
+  - name: sleep
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo lk; sleep 0.5; exit 0"]
