@@ -306,10 +306,10 @@ func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
 		volumeMountPodMetadata,
 	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorKubelet:
-		return volumeMounts
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		return append(volumeMounts, volumeMountDockerSock)
+	default:
+		return volumeMounts
 	}
 }
 
@@ -318,10 +318,10 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 		volumePodMetadata,
 	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
-	case common.ContainerRuntimeExecutorKubelet:
-		return volumes
-	default:
+	case common.ContainerRuntimeExecutorDocker:
 		return append(volumes, volumeDockerSock)
+	default:
+		return volumes
 	}
 }
 
