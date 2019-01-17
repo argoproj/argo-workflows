@@ -1828,6 +1828,20 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"priorityClassName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PriorityClassName to apply to workflow pods.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority to apply to workflow pods.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -2140,6 +2154,20 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Description: "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"podPriorityClassName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PriorityClassName to apply to workflow pods.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"podPriority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority to apply to workflow pods.",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},

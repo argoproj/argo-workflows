@@ -947,6 +947,15 @@
           "type": "integer",
           "format": "int64"
         },
+        "priority": {
+          "description": "Priority to apply to workflow pods.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "priorityClassName": {
+          "description": "PriorityClassName to apply to workflow pods.",
+          "type": "string"
+        },
         "resource": {
           "description": "Resource template subtype which can run k8s resources",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ResourceTemplate"
@@ -1121,6 +1130,15 @@
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
           "type": "integer",
           "format": "int64"
+        },
+        "podPriority": {
+          "description": "Priority to apply to workflow pods.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "podPriorityClassName": {
+          "description": "PriorityClassName to apply to workflow pods.",
+          "type": "string"
         },
         "priority": {
           "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.",
