@@ -557,7 +557,12 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
-		newPhase, message = inferFailedReason(pod)
+		// ignore pod failure for daemoned steps
+		if node.IsDaemoned() {
+			newPhase = wfv1.NodeSucceeded
+		} else {
+			newPhase, message = inferFailedReason(pod)
+		}
 		newDaemonStatus = &f
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
