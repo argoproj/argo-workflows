@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -191,4 +192,77 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 	podName := getPodName(woc.wf)
 	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Error(t, err)
+}
+
+// TestVolumeAndVolumeMounts verifies the ability to carry forward volumes and volumeMounts from workflow.spec
+func TestVolumeAndVolumeMounts(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+
+	// For Docker executor
+	{
+		woc := newWoc()
+		woc.wf.Spec.Volumes = volumes
+		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, 3, len(pod.Spec.Volumes))
+		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "docker-sock", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+		assert.Equal(t, 1, len(pod.Spec.Containers[0].VolumeMounts))
+		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
+	}
+
+	// For Kubelet executor
+	{
+		woc := newWoc()
+		woc.wf.Spec.Volumes = volumes
+		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 1, len(pod.Spec.Containers[0].VolumeMounts))
+		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
+	}
+
+	// For K8sAPI executor
+	{
+		woc := newWoc()
+		woc.wf.Spec.Volumes = volumes
+		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorK8sAPI
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(pod.Spec.Volumes))
+		assert.Equal(t, "podmetadata", pod.Spec.Volumes[0].Name)
+		assert.Equal(t, "volume-name", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, 1, len(pod.Spec.Containers[0].VolumeMounts))
+		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
+	}
 }
