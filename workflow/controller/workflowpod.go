@@ -168,6 +168,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		addExecutorStagingVolume(pod)
 	}
 
+	err = addInitContainers(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
 	// addSidecars should be called after all volumes have been manipulated
 	// in the main container (in case sidecar requires volume mount mirroring)
 	err = addSidecars(pod, tmpl)
@@ -683,31 +688,39 @@ func addExecutorStagingVolume(pod *apiv1.Pod) {
 	}
 }
 
+// addInitContainers adds all init containers to the pod spec of the step
+func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if len(tmpl.InitContainers) == 0 {
+		return nil
+	}
+	mainCtr := findMainContainer(pod)
+	if mainCtr == nil {
+		panic("Unable to locate main container")
+	}
+	for _, ctr := range tmpl.InitContainers {
+		log.Debugf("Adding init container %s", ctr.Name)
+		if ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
+			mirrorVolumeMounts(mainCtr, &ctr.Container)
+		}
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
+	}
+	return nil
+}
+
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
 func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.Sidecars) == 0 {
 		return nil
 	}
-	var mainCtr *apiv1.Container
-	for _, ctr := range pod.Spec.Containers {
-		if ctr.Name != common.MainContainerName {
-			continue
-		}
-		mainCtr = &ctr
-		break
-	}
+	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
 		panic("Unable to locate main container")
 	}
 	for _, sidecar := range tmpl.Sidecars {
+		log.Debugf("Adding sidecar container %s", sidecar.Name)
 		if sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
-			for _, volMnt := range mainCtr.VolumeMounts {
-				if sidecar.VolumeMounts == nil {
-					sidecar.VolumeMounts = make([]apiv1.VolumeMount, 0)
-				}
-				sidecar.VolumeMounts = append(sidecar.VolumeMounts, volMnt)
-			}
+			mirrorVolumeMounts(mainCtr, &sidecar.Container)
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
@@ -727,4 +740,28 @@ func verifyResolvedVariables(obj interface{}) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// findMainContainer finds main container
+func findMainContainer(pod *apiv1.Pod) *apiv1.Container {
+	var mainCtr *apiv1.Container
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name != common.MainContainerName {
+			continue
+		}
+		mainCtr = &ctr
+		break
+	}
+	return mainCtr
+}
+
+// mirrorVolumeMounts mirrors volumeMounts of source container to target container
+func mirrorVolumeMounts(sourceContainer, targetContainer *apiv1.Container) {
+	for _, volMnt := range sourceContainer.VolumeMounts {
+		if targetContainer.VolumeMounts == nil {
+			targetContainer.VolumeMounts = make([]apiv1.VolumeMount, 0)
+		}
+		log.Debugf("Adding volume mount %v to container %v", volMnt.Name, targetContainer.Name)
+		targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, volMnt)
+	}
 }
