@@ -194,6 +194,10 @@ spec:
       - name: influxd
         path: /app
     daemon: true
+    outputs:
+      artifacts:
+        - name: data
+          path: /var/lib/influxdb/data
     container:
       image: debian:9.4
       readinessProbe:

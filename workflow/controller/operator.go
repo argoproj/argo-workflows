@@ -442,7 +442,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.addOutputsToScope("workflow", node.Outputs, nil)
 				woc.updated = true
 			}
-			if woc.wf.Status.Nodes[pod.ObjectMeta.Name].Completed() {
+			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
+			if node.Completed() && !node.IsDaemoned() {
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
@@ -556,7 +557,12 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		newPhase = wfv1.NodeSucceeded
 		newDaemonStatus = &f
 	case apiv1.PodFailed:
-		newPhase, message = inferFailedReason(pod)
+		// ignore pod failure for daemoned steps
+		if node.IsDaemoned() {
+			newPhase = wfv1.NodeSucceeded
+		} else {
+			newPhase, message = inferFailedReason(pod)
+		}
 		newDaemonStatus = &f
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
@@ -578,8 +584,8 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 					return nil
 				}
 			}
-			// proceed to mark node status as succeeded (and daemoned)
-			newPhase = wfv1.NodeSucceeded
+			// proceed to mark node status as running (and daemoned)
+			newPhase = wfv1.NodeRunning
 			t := true
 			newDaemonStatus = &t
 			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
@@ -1025,7 +1031,8 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 
 	switch phase {
 	case wfv1.NodeSucceeded, wfv1.NodeFailed, wfv1.NodeError:
-		if markCompleted {
+		// wait for all daemon nodes to get terminated before marking workflow completed
+		if markCompleted && !woc.hasDaemonNodes() {
 			woc.log.Infof("Marking workflow completed")
 			woc.wf.Status.FinishedAt = metav1.Time{Time: time.Now().UTC()}
 			if woc.wf.ObjectMeta.Labels == nil {
@@ -1035,6 +1042,15 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 			woc.updated = true
 		}
 	}
+}
+
+func (woc *wfOperationCtx) hasDaemonNodes() bool {
+	for _, node := range woc.wf.Status.Nodes {
+		if node.IsDaemoned() {
+			return true
+		}
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) markWorkflowRunning() {
