@@ -561,7 +561,7 @@ func (ws *WorkflowStatus) Completed() bool {
 
 // Remove returns whether or not the node has completed execution
 func (n NodeStatus) Completed() bool {
-	return isCompletedPhase(n.Phase)
+	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned
@@ -574,7 +574,7 @@ func (n NodeStatus) IsDaemoned() bool {
 
 // Successful returns whether or not this node completed successfully
 func (n NodeStatus) Successful() bool {
-	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped
+	return n.Phase == NodeSucceeded || n.Phase == NodeSkipped || n.IsDaemoned() && n.Phase != NodePending
 }
 
 // CanRetry returns whether the node should be retried or not.
