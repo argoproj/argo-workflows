@@ -139,6 +139,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
+	if tmpl.SchedulerName != nil &&
+		(tmpl.GetType() == wfv1.TemplateTypeContainer || tmpl.GetType() == wfv1.TemplateTypeScript) {
+		pod.Spec.SchedulerName = *tmpl.SchedulerName
+	}
+
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {

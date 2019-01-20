@@ -830,6 +830,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.SchedulerName != nil {
+		in, out := &in.SchedulerName, &out.SchedulerName
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

@@ -955,6 +955,10 @@
           "description": "RetryStrategy describes how to retry a template when it fails",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryStrategy"
         },
+        "schedulerName": {
+          "description": "If specified, the pod will be dispatched by specified scheduler. If not specified, the pod will be dispatched by default scheduler.",
+          "type": "string"
+        },
         "script": {
           "description": "Script runs a portion of code against an interpreter",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
