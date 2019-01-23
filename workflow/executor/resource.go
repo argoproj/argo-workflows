@@ -84,7 +84,7 @@ func (we *WorkflowExecutor) WaitResource(resourceName string) error {
 
 	// Start the condition result reader using PollImmediateInfinite
 	// Poll intervall of 5 seconds serves as a backoff intervall in case of immediate result reader failure
-	err := wait.PollImmediateInfinite(time.Duration(time.Second*5),
+	err := wait.PollImmediateInfinite(time.Second*5,
 		func() (bool, error) {
 			isErrRetry, err := checkResourceState(resourceName, successReqs, failReqs)
 

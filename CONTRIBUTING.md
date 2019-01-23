@@ -15,17 +15,17 @@ Go to https://github.com/argoproj/
 
 ## How to suggest a new feature
 
-Go to https://groups.google.com/forum/#!forum/argoproj
-* Create a new topic to discuss your feature.
+Go to https://github.com/argoproj/
+* Open an issue and discuss it.
 
 ## How to setup your dev environment
 
 ### Requirements
-* Golang 1.10
+* Golang 1.11
 * Docker
 * dep v0.5
    * Mac Install: `brew install dep`
-* gometalinter v2.0.5
+* gometalinter v2.0.12
 
 ### Quickstart
 ```
@@ -36,9 +36,16 @@ $ make
 ```
 
 ### Build workflow-controller and executor images
-The following will build the workflow-controller and executor images tagged with the `latest` tag, then push to a personal dockerhub repository:
+The following will build the release versions of workflow-controller and executor images tagged
+with the `latest` tag, then push to a personal dockerhub repository, `mydockerrepo`:
 ```
-$ make controller-image executor-image IMAGE_TAG=latest IMAGE_NAMESPACE=jessesuen DOCKER_PUSH=true
+$ make controller-image executor-image IMAGE_TAG=latest IMAGE_NAMESPACE=mydockerrepo DOCKER_PUSH=true
+```
+Building release versions of the images will be slow during development, since the build happens
+inside a docker build context, which cannot re-use the golang build cache between builds. To build
+images quicker (for development purposes), images can be built by adding DEV_IMAGE=true.
+```
+$ make controller-image executor-image IMAGE_TAG=latest IMAGE_NAMESPACE=mydockerrepo DOCKER_PUSH=true DEV_IMAGE=true
 ```
 
 ### Build argo cli
@@ -49,6 +56,6 @@ $ ./dist/argo version
 
 ### Deploying controller with alternative controller/executor images
 ```
-$ helm install argo/argo --set images.namespace=jessesuen --set
+$ helm install argo/argo --set images.namespace=mydockerrepo --set
 images.controller workflow-controller:latest
 ```
