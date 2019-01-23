@@ -221,7 +221,7 @@ type Template struct {
 	// If specified, the pod will be dispatched by specified scheduler.
 	// If not specified, the pod will be dispatched by default scheduler.
 	// +optional
-	SchedulerName *string `json:"schedulerName,omitempty"`
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
