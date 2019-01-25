@@ -90,7 +90,7 @@ controller:
 controller-image:
 ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o workflow-controller ./cmd/workflow-controller
-	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev --target workflow-controller-dev .
+	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
 	rm -f workflow-controller
 else
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) --target workflow-controller .
@@ -101,6 +101,10 @@ endif
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
+.PHONY: executor-base-image
+executor-base-image:
+	docker build -t argoexec-base --target argoexec-base .
+
 # The DEV_IMAGE versions of controller-image and executor-image are speed optimized development
 # builds of workflow-controller and argoexec images respectively. It allows for faster image builds
 # by re-using the golang build cache of the desktop environment. Ideally, we would not need extra
@@ -110,12 +114,13 @@ executor:
 # TODO: move these targets to the main Dockerfile once DOCKER_BUILDKIT=1 is more pervasive.
 # NOTE: have to output ouside of dist directory since dist is under .dockerignore
 .PHONY: executor-image
-executor-image:
 ifeq ($(DEV_IMAGE), true)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argo
-	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev --target argoexec-dev .
+executor-image: executor-base-image
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
+	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
+executor-image:
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
