@@ -148,6 +148,16 @@ The argo CLI provides a convenient way to override parameters used to invoke the
 ```sh
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
+In case of multiple parameters that can be overriten argo CLI provides also command to load whole parameters files in yaml or json format. That files can look like that:
+
+```yaml
+message: goodbye world
+```
+
+To run use following command:
+```sh
+argo submit arguments-parameters.yaml --parameter-file params.yaml
+```
 
 Command line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows.
 ```sh
