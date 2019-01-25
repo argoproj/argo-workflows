@@ -1,0 +1,6 @@
+####################################################################################################
+# workflow-controller-dev
+####################################################################################################
+FROM scratch as workflow-controller-dev
+COPY workflow-controller /bin/
+ENTRYPOINT [ "workflow-controller" ]

@@ -1,4 +1,0 @@
-FROM alpine:3.7
-
-COPY dist/argo-linux-amd64 /bin/argo
-ENTRYPOINT [ "/bin/argo" ]
