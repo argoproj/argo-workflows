@@ -36,6 +36,21 @@ RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${G
 
 
 ####################################################################################################
+# argoexec-base
+# Used as the base for both the release and development version of argoexec
+####################################################################################################
+FROM debian:9.6-slim as argoexec-base
+# NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
+ENV KUBECTL_VERSION=1.13.1
+RUN apt-get update && \
+    apt-get install -y curl jq procps git tar mime-support && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
+    chmod +x /usr/local/bin/kubectl
+COPY --from=builder /usr/local/bin/docker /usr/local/bin/
+
+
+####################################################################################################
 # Argo Build stage which performs the actual build of Argo binaries
 ####################################################################################################
 FROM builder as argo-build
@@ -61,13 +76,6 @@ RUN make $MAKE_TARGET
 # argoexec
 ####################################################################################################
 FROM debian:9.6-slim as argoexec
-# NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.13.1
-RUN apt-get update && \
-    apt-get install -y curl jq procps git tar mime-support && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
-    chmod +x /usr/local/bin/kubectl
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec /usr/local/bin/
 
 
