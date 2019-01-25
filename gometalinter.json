@@ -19,6 +19,7 @@
     ],
     "Exclude": [
         "pkg/client",
-        "vendor/"
+        "vendor/",
+        ".*warning.*fmt.Fprint"
     ]
 }
