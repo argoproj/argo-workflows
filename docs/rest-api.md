@@ -32,6 +32,7 @@ https://github.com/kubernetes-client/java/blob/master/kubernetes/docs/CustomObje
 ### Ruby
 The Ruby kubernetes client has libraries for interacting with custom objects. See:
 https://github.com/kubernetes-client/ruby/tree/master/kubernetes
+See this [external Ruby example](https://github.com/fischerjulian/argo_workflows_ruby_example) on how to make use of this client.
 
 ## OpenAPI
 
