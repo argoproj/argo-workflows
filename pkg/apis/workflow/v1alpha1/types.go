@@ -147,6 +147,12 @@ type WorkflowSpec struct {
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
 	Priority *int32 `json:"priority,omitempty"`
+
+	// Set scheduler name for all pods.
+	// Will be overridden if container/script template's scheduler name is set.
+	// Default scheduler will be used if both unspecified.
+	// +optional
+	SchedulerName string `json:"schedulerName,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -219,7 +225,8 @@ type Template struct {
 	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
 
 	// If specified, the pod will be dispatched by specified scheduler.
-	// If not specified, the pod will be dispatched by default scheduler.
+	// Or it will be dispatched by workflow scope scheduler if specified.
+	// If both not specified, the pod will be dispatched by default scheduler.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
 }
