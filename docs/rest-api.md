@@ -29,6 +29,11 @@ The python kubernetes client has libraries for interacting with custom objects. 
 The Java kubernetes client has libraries for interacting with custom objects. See:
 https://github.com/kubernetes-client/java/blob/master/kubernetes/docs/CustomObjectsApi.md
 
+### Ruby
+The Ruby kubernetes client has libraries for interacting with custom objects. See:
+https://github.com/kubernetes-client/ruby/tree/master/kubernetes
+See this [external Ruby example](https://github.com/fischerjulian/argo_workflows_ruby_example) on how to make use of this client.
+
 ## OpenAPI
 
 An OpenAPI Spec is generated under [argoproj/argo/api/openapi-spec](https://github.com/argoproj/argo/blob/master/api/openapi-spec/swagger.json). This spec may be
