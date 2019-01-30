@@ -31,7 +31,6 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
 	argofile "github.com/argoproj/pkg/file"
-	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -794,19 +793,38 @@ func (we *WorkflowExecutor) waitMainContainerStart() (string, error) {
 	}
 }
 
+func watchFileChanges(ctx context.Context, pollInterval time.Duration, filePath string) <-chan struct{} {
+	res := make(chan struct{})
+	go func() {
+		defer close(res)
+
+		var modTime *time.Time
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			file, err := os.Stat(filePath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			newModTime := file.ModTime()
+			if modTime != nil && !modTime.Equal(file.ModTime()) {
+				res <- struct{}{}
+			}
+			modTime = &newModTime
+			time.Sleep(pollInterval)
+		}
+	}()
+	return res
+}
+
 // monitorAnnotations starts a goroutine which monitors for any changes to the pod annotations.
 // Emits an event on the returned channel upon any updates
 func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struct{} {
 	log.Infof("Starting annotations monitor")
-	// Create a fsnotify watcher on the local annotations file to listen for updates from the Downward API
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = watcher.Add(we.PodAnnotationsPath)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// Create a channel to listen for a SIGUSR2. Upon receiving of the signal, we force reload our annotations
 	// directly from kubernetes API. The controller uses this to fast-track notification of annotations
@@ -819,12 +837,12 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 	// Create a channel which will notify a listener on new updates to the annotations
 	annotationUpdateCh := make(chan struct{})
 
+	annotationChanges := watchFileChanges(ctx, 10*time.Second, we.PodAnnotationsPath)
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				log.Infof("Annotations monitor stopped")
-				_ = watcher.Close()
 				signal.Stop(sigs)
 				close(sigs)
 				close(annotationUpdateCh)
@@ -833,7 +851,7 @@ func (we *WorkflowExecutor) monitorAnnotations(ctx context.Context) <-chan struc
 				log.Infof("Received update signal. Reloading annotations from API")
 				annotationUpdateCh <- struct{}{}
 				we.setExecutionControl()
-			case <-watcher.Events:
+			case <-annotationChanges:
 				log.Infof("%s updated", we.PodAnnotationsPath)
 				err := we.LoadExecutionControl()
 				if err != nil {
