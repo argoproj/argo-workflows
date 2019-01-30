@@ -4,15 +4,6 @@ Welcome to the Argo community!
 
 Argo is an open, community driven project to make it easy to use Kubernetes for getting useful work done.  This document describes the organizational structure of the Argo Community including the roles, responsibilities and processes that govern Argo projects and community.
 
-
-We will have our **first community meeting on May 9th 10 am PST**.
-
-Map that to your local time with this [timezone table](https://www.google.com/search?q=1800+in+utc)
-
-See it on the web as [Google Calendar](https://calendar.google.com/calendar/embed?src=argoproj%40gmail.com&ctz=America%2FLos_Angeles) , or paste this [iCal url](https://calendar.google.com/calendar/ical/argoproj%40gmail.com/private-52229421c00ee71c176517df5bf1941e/basic.ics) into any iCal client. 
-
-Meeting notes is available [here](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE/edit?usp=sharing).
-
 ## Projects
 
 Argo is organized into a set of projects. Each project has at least one owner. The owner is responsible for publishing a roadmap and organizing community meetings for soliciting feedback, publishing meeting notes, and reporting on the current status of the project.
@@ -20,9 +11,9 @@ Argo is organized into a set of projects. Each project has at least one owner. T
 The projects are:
 
 * Argo Workflows
-* Argo CI
 * Argo CD
 * Argo Events
+* Argo CI
 
 ## Community Roles and Responsibilities
 
