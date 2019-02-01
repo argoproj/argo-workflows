@@ -4,13 +4,13 @@
 
 Argo is an open source project that provides container-native workflows for Kubernetes. Each step in an Argo workflow is defined as a container.
 
-Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using kubectl and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is lightweight and installs in under a minute but provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
+Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using `kubectl` and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is light-weight and installs in under a minute, and provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
-Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples.  If you like this project, please give us a star!
+Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples. If you like this project, please give us a star!
 
 For a complete description of the Argo workflow spec, please refer to https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/types.go
 
-## Table of Content
+## Table of Contents
 
 - [Argo CLI](#argo-cli)
 - [Hello World!](#hello-world)
@@ -32,12 +32,12 @@ For a complete description of the Argo workflow spec, please refer to https://gi
 - [Sidecars](#sidecars)
 - [Hardwired Artifacts](#hardwired-artifacts)
 - [Kubernetes Resources](#kubernetes-resources)
-- [Docker-in-Docker (aka. DinD) Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
-- [Continuous integration example](#continuous-integration-example)
+- [Docker-in-Docker Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
+- [Continuous Integration Example](#continuous-integration-example)
 
 ## Argo CLI
 
-In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo CLI commands.
+In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo command line interface (CLI) commands.
 
 [Install Argo here](https://github.com/argoproj/argo/blob/master/demo.md)
 
@@ -50,23 +50,24 @@ argo logs hello-world-xxx-yyy   # get logs from a specific step in a workflow
 argo delete hello-world-xxx     # delete workflow
 ```
 
-You can also run workflow specs directly using kubectl but the argo CLI provides syntax checking, nicer output, and requires less typing.
+You can also run workflow specs directly using `kubectl` but the Argo CLI provides syntax checking, nicer output, and requires less typing.
+
 ```sh
 kubectl create -f hello-world.yaml
 kubectl get wf
 kubectl get wf hello-world-xxx
-kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all  #similar to argo
+kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-all  # similar to argo
 kubectl logs hello-world-xxx-yyy -c main
 kubectl delete wf hello-world-xxx
 ```
 
 ## Hello World!
 
-Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
+Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
 
 <img src="whalesay.png" width="600">
 
-You can run this directly from your shell with a simple docker command.
+You can run this directly from your shell with a simple docker command:
 ```
 bash% docker run docker/whalesay cowsay "hello world"
  _____________
@@ -90,32 +91,33 @@ This message shows that your installation appears to be working correctly.
 ```
 
 Below, we run the same container on a Kubernetes cluster using an Argo workflow template.
-Be sure to read the comments. They provide useful explanations.
+Be sure to read the comments as they provide useful explanations.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
-kind: Workflow                  #new type of k8s spec
+kind: Workflow                  # new type of k8s spec
 metadata:
-  generateName: hello-world-    #name of workflow spec
+  generateName: hello-world-    # name of the workflow spec
 spec:
-  entrypoint: whalesay          #invoke the whalesay template
+  entrypoint: whalesay          # invoke the whalesay template
   templates:
-  - name: whalesay              #name of template
+  - name: whalesay              # name of the template
     container:
       image: docker/whalesay
       command: [cowsay]
       args: ["hello world"]
-      resources:                #don't use too much resources
+      resources:                # limit the resources
         limits:
           memory: 32Mi
           cpu: 100m
 ```
-Argo adds a new `kind` of Kubernetes spec called a `Workflow`.
-The above spec contains a single `template` called `whalesay` which runs the `docker/whalesay` container and invokes `cowsay "hello world"`.
-The `whalesay` template is denoted as the `entrypoint` for the spec. The entrypoint specifies the initial template that should be invoked  when the workflow spec is executed by Kubernetes. Being able to specify the entrypoint is more useful when there are more than one template defined in the Kubernetes workflow spec :-)
+
+Argo adds a new `kind` of Kubernetes spec called a `Workflow`. The above spec contains a single `template` called `whalesay` which runs the `docker/whalesay` container and invokes `cowsay "hello world"`. The `whalesay` template is the `entrypoint` for the spec. The entrypoint specifies the initial template that should be invoked when the workflow spec is executed by Kubernetes. Being able to specify the entrypoint is more useful when there is more than one template defined in the Kubernetes workflow spec. :-)
 
 ## Parameters
 
 Let's look at a slightly more complex workflow spec with parameters.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -135,20 +137,22 @@ spec:
   - name: whalesay
     inputs:
       parameters:
-      - name: message       #parameter declaration
+      - name: message       # parameter declaration
     container:
       # run cowsay with that message input parameter as args
       image: docker/whalesay
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
 ```
-This time, the `whalesay` template takes an input parameter named `message` which is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g. "{{inputs.parameters.message}}"), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
+
+This time, the `whalesay` template takes an input parameter named `message` that is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g., ``"{{inputs.parameters.message}}"``), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
 
 The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the `message` parameter to "goodbye world" instead of the default "hello world".
 ```sh
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
-In case of multiple parameters that can be overriten argo CLI provides also command to load whole parameters files in yaml or json format. That files can look like that:
+
+In case of multiple parameters that can be overriten, the argo CLI provides a command to load parameters files in YAML or JSON format. Here is an example of that kind of parameter file:
 
 ```yaml
 message: goodbye world
@@ -159,14 +163,15 @@ To run use following command:
 argo submit arguments-parameters.yaml --parameter-file params.yaml
 ```
 
-Command line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows.
+Command-line parameters can also be used to override the default entrypoint and invoke any template in the workflow spec. For example, if you add a new version of the `whalesay` template called `whalesay-caps` but you don't want to change the default entrypoint, you can invoke this from the command line as follows:
+
 ```sh
 argo submit arguments-parameters.yaml --entrypoint whalesay-caps
 ```
 
-By using a combination of the `--entrypoint` and `-p` parameters, you can invoke any template in the workflow spec with any parameter that you like.
+By using a combination of the `--entrypoint` and `-p` parameters, you can call any template in the workflow spec with any parameter that you like.
 
-The values set in the `spec.arguments.parameters` are globally scoped and can be accessed via `{{workflow.parameters.parameter_name}}`.  This can be useful to pass information to multiple steps in a workflow.  For example, if you wanted to run your workflows with different logging levels, set in environment of each container, you could have a set up similar to this:
+The values set in the `spec.arguments.parameters` are globally scoped and can be accessed via `{{workflow.parameters.parameter_name}}`. This can be useful to pass information to multiple steps in a workflow. For example, if you wanted to run your workflows with different logging levels that are set in the environment of each container, you could have a YAML file similar to this one:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -197,11 +202,12 @@ spec:
       command: [runB]
 ```
 
-In this workflow, both steps `A` and `B` would have the same log level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
+In this workflow, both steps `A` and `B` would have the same log-level set to `INFO` and can easily be changed between workflow submissions using the `-p` flag.
 
 ## Steps
 
-In this example, we'll see how to create multi-step workflows as well as how to define more than one template in a workflow spec and how to create nested workflows.  Be sure to read the comments. They provide useful explanations.
+In this example, we'll see how to create multi-step workflows, how to define more than one template in a workflow spec, and how to create nested workflows. Be sure to read the comments as they provide useful explanations.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -216,19 +222,19 @@ spec:
     # Instead of just running a container
     # This template has a sequence of steps
     steps:
-    - - name: hello1            #hello1 is run before the following steps
+    - - name: hello1            # hello1 is run before the following steps
         template: whalesay
         arguments:
           parameters:
           - name: message
             value: "hello1"
-    - - name: hello2a           #double dash => run after previous step
+    - - name: hello2a           # double dash => run after previous step
         template: whalesay
         arguments:
           parameters:
           - name: message
             value: "hello2a"
-      - name: hello2b           #single dash => run in parallel with previous step
+      - name: hello2b           # single dash => run in parallel with previous step
         template: whalesay
         arguments:
           parameters:
@@ -245,10 +251,9 @@ spec:
       command: [cowsay]
       args: ["{{inputs.parameters.message}}"]
 ```
-The above workflow spec prints three different flavors of "hello".
-The `hello-hello-hello` template consists of three `steps`.
-The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other.
-Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
+
+The above workflow spec prints three different flavors of "hello". The `hello-hello-hello` template consists of three `steps`. The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
+
 ```
 STEP                                     PODNAME
  ✔ arguments-parameters-rbm92
@@ -259,12 +264,9 @@ STEP                                     PODNAME
 
 ## DAG
 
-As an alternative to specifying sequences of steps, you can define the workflow as a graph by specifying the dependencies of each task.
-This can be simpler to maintain for complex workflows and allows for maximum parallelism when running tasks.
+As an alternative to specifying sequences of steps, you can define the workflow as a directed-acyclic graph (DAG) by specifying the dependencies of each task. This can be simpler to maintain for complex workflows and allows for maximum parallelism when running tasks.
 
-In the following workflow, step `A` runs first, as it has no dependencies.
-Once `A` has finished, steps `B` and `C` run in parallel.
-Finally, once `B` and `C` have completed, step `D` can run.
+In the following workflow, step `A` runs first, as it has no dependencies. Once `A` has finished, steps `B` and `C` run in parallel. Finally, once `B` and `C` have completed, step `D` can run.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -305,18 +307,18 @@ spec:
           parameters: [{name: message, value: D}]
 ```
 
-The dependency graph may have [multiple roots](./dag-multiroot.yaml).
-The templates called from a dag or steps template can themselves be dag or steps templates. This can allow for complex workflows to be split into manageable pieces.
+The dependency graph may have [multiple roots](./dag-multiroot.yaml). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
 ## Artifacts
 
 **Note:**
-You will need to have configured an artifact repository to run this example.
+You will need to configure an artifact repository to run this example.
 [Configuring an artifact repository here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
-The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template which will be consumed by the second step named `print-message` that consumes the generated artifact.
+The below workflow spec consists of two steps that run in sequence. The first step named `generate-artifact` will generate an artifact using the `whalesay` template that will be consumed by the second step named `print-message` that then consumes the generated artifact.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -362,14 +364,13 @@ spec:
       command: [sh, -c]
       args: ["cat /tmp/message"]
 ```
-The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file.
-The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
-The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step.
-DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
+
+The `whalesay` template uses the `cowsay` command to generate a file named `/tmp/hello-world.txt`. It then `outputs` this file as an artifact named `hello-art`. In general, the artifact's `path` may be a directory rather than just a file. The `print-message` template takes an input artifact named `message`, unpacks it at the `path` named `/tmp/message` and then prints the contents of `/tmp/message` using the `cat` command.
+The `artifact-example` template passes the `hello-art` artifact generated as an output of the `generate-artifact` step as the `message` input artifact to the `print-message` step. DAG templates use the tasks prefix to refer to another task, for example `{{tasks.generate-artifact.outputs.artifacts.hello-art}}`.
 
 ## The Structure of Workflow Specs
 
-We now know enough about the basic components of a workflow spec to review its basic structure.
+We now know enough about the basic components of a workflow spec to review its basic structure:
 - Kubernetes header including metadata
 - Spec body
   - Entrypoint invocation with optionally arguments
@@ -384,11 +385,11 @@ We now know enough about the basic components of a workflow spec to review its b
 
 To summarize, workflow specs are composed of a set of Argo templates where each template consists of an optional input section, an optional output section and either a container invocation or a list of steps where each step invokes another template.
 
-Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to env vars, secrets, and volume mounts. Similarly, for volume claims and volumes.
+Note that the controller section of the workflow spec will accept the same options as the controller section of a pod spec, including but not limited to environment variables, secrets, and volume mounts. Similarly, for volume claims and volumes.
 
 ## Secrets
-Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts.
-- https://kubernetes.io/docs/concepts/configuration/secret/
+
+Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the (Kubernetes documentation)[https://kubernetes.io/docs/concepts/configuration/secret/] for more information.
 
 ```yaml
 # To run this example, first create the secret by running:
@@ -428,7 +429,8 @@ spec:
 ```
 
 ## Scripts & Results
-Often times, we just want a template that executes a script specified as a here-script (aka. here document) in the workflow spec.
+Often, we just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -481,13 +483,15 @@ spec:
       command: [sh, -c]
       args: ["echo result was: {{inputs.parameters.message}}"]
 ```
-The `script` keyword allows the specification of the script body using the `source` tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body..
+
+The `script` keyword allows the specification of the script body using the `source` tag. This creates a temporary file containing the script body and then passes the name of the temporary file as the final parameter to `command`, which should be an interpreter that executes the script body.
 
 The use of the `script` feature also assigns the standard output of running the script to a special output parameter named `result`. This allows you to use the result of running the script itself in the rest of the workflow spec. In this example, the result is simply echoed by the print-message template.
 
 ## Output Parameters
 
 Output parameters provide a general mechanism to use the result of a step as a parameter rather than as an artifact. This allows you to use the result from any type of step, not just a `script`, for conditional tests, loops, and arguments. Output parameters work similarly to `script result` except that the value of the output parameter is set to the contents of a generated file rather than the contents of `stdout`.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -512,12 +516,12 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["echo -n hello world > /tmp/hello_world.txt"]  #generate the content of hello_world.txt
+      args: ["echo -n hello world > /tmp/hello_world.txt"]  # generate the content of hello_world.txt
     outputs:
       parameters:
-      - name: hello-param		#name of output parameter
+      - name: hello-param		# name of output parameter
         valueFrom:
-          path: /tmp/hello_world.txt	#set the value of hello-param to the contents of this hello-world.txt
+          path: /tmp/hello_world.txt	# set the value of hello-param to the contents of this hello-world.txt
 
   - name: print-message
     inputs:
@@ -533,7 +537,8 @@ DAG templates use the tasks prefix to refer to another task, for example `{{task
 
 ## Loops
 
-When writing workflows, it is often very useful to be able to iterate over a set of inputs.
+When writing workflows, it is often very useful to be able to iterate over a set of inputs as shown in this example:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -550,9 +555,9 @@ spec:
           parameters:
           - name: message
             value: "{{item}}"
-        withItems:              #invoke whalesay once for each item in parallel
-        - hello world           #item 1
-        - goodbye world         #item 2
+        withItems:              # invoke whalesay once for each item in parallel
+        - hello world           # item 1
+        - goodbye world         # item 2
 
   - name: whalesay
     inputs:
@@ -564,7 +569,8 @@ spec:
       args: ["{{inputs.parameters.message}}"]
 ```
 
-We can also iterate over a sets of items.
+We can also iterate over sets of items:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -600,7 +606,8 @@ spec:
       args: [/etc/os-release]
 ```
 
-We can pass lists of items as parameters.
+We can pass lists of items as parameters:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -610,7 +617,7 @@ spec:
   entrypoint: loop-param-arg-example
   arguments:
     parameters:
-    - name: os-list                                     #a list of items
+    - name: os-list                                     # a list of items
       value: |
         [
           { "image": "debian", "tag": "9.1" },
@@ -633,7 +640,7 @@ spec:
             value: "{{item.image}}"
           - name: tag
             value: "{{item.tag}}"
-        withParam: "{{inputs.parameters.os-list}}"      #parameter specifies the list to iterate over
+        withParam: "{{inputs.parameters.os-list}}"      # parameter specifies the list to iterate over
 
   # This template is the same as in the previous example
   - name: cat-os-release
@@ -690,7 +697,9 @@ spec:
 ```
 
 ## Conditionals
-We also support conditional execution.
+
+We also support conditional execution as shown in this example:
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -706,10 +715,10 @@ spec:
         template: flip-coin
     # evaluate the result in parallel
     - - name: heads
-        template: heads                 #invoke heads template if "heads"
+        template: heads                 # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
       - name: tails
-        template: tails                 #invoke tails template if "tails"
+        template: tails                 # call tails template if "tails"
         when: "{{steps.flip-coin.outputs.result}} == tails"
 
   # Return heads or tails based on a random number
@@ -736,7 +745,9 @@ spec:
 ```
 
 ## Recursion
+
 Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -752,9 +763,9 @@ spec:
         template: flip-coin
     # evaluate the result in parallel
     - - name: heads
-        template: heads                 #invoke heads template if "heads"
+        template: heads                 # call heads template if "heads"
         when: "{{steps.flip-coin.outputs.result}} == heads"
-      - name: tails                     #keep flipping coins if "tails"
+      - name: tails                     # keep flipping coins if "tails"
         template: coinflip
         when: "{{steps.flip-coin.outputs.result}} == tails"
 
@@ -775,6 +786,7 @@ spec:
 ```
 
 Here's the result of a couple of runs of coinflip for comparison.
+
 ```
 argo get coinflip-recursive-tzcb5
 
@@ -799,17 +811,16 @@ STEP                          PODNAME                              MESSAGE
              └-·-✔ heads      coinflip-recursive-tzcb5-4080323273
                └-○ tails
 ```
-In the first run, the coin immediately comes up heads and we stop.
-In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
+In the first run, the coin immediately comes up heads and we stop. In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
 
 ## Exit handlers
 
-An exit handler is a template that always executes, irrespective of success or failure, at the end of the workflow.
+An exit handler is a template that *always* executes, irrespective of success or failure, at the end of the workflow.
 
 Some common use cases of exit handlers are:
 - cleaning up after a workflow runs
-- sending notifications of workflow status (e.g. e-mail/slack)
-- posting the pass/fail status to a webhook result (e.g. github build result)
+- sending notifications of workflow status (e.g., e-mail/Slack)
+- posting the pass/fail status to a webhook result (e.g. GitHub build result)
 - resubmitting or submitting another workflow
 
 ```yaml
@@ -819,7 +830,7 @@ metadata:
   generateName: exit-handlers-
 spec:
   entrypoint: intentional-fail
-  onExit: exit-handler                  #invoke exit-hander template at end of the workflow
+  onExit: exit-handler                  # invoke exit-hander template at end of the workflow
   templates:
   # primary workflow template
   - name: intentional-fail
@@ -860,7 +871,8 @@ spec:
 ```
 
 ## Timeouts
-To limit the elapsed time for a workflow, you can set `activeDeadlineSeconds`.
+To limit the elapsed time for a workflow, you can set the variable `activeDeadlineSeconds`.
+
 ```yaml
 # To enforce a timeout for a container template, specify a value for activeDeadlineSeconds.
 apiVersion: argoproj.io/v1alpha1
@@ -875,10 +887,11 @@ spec:
       image: alpine:latest
       command: [sh, -c]
       args: ["echo sleeping for 1m; sleep 60; echo done"]
-    activeDeadlineSeconds: 10           #terminate container template after 10 seconds
+    activeDeadlineSeconds: 10           # terminate container template after 10 seconds
 ```
 
 ## Volumes
+
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -887,14 +900,14 @@ metadata:
   generateName: volumes-pvc-
 spec:
   entrypoint: volumes-pvc-example
-  volumeClaimTemplates:                 #define volume, same syntax as k8s Pod spec
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
   - metadata:
-      name: workdir                     #name of volume claim
+      name: workdir                     # name of volume claim
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 1Gi                  #Gi => 1024 * 1024 * 1024
+          storage: 1Gi                  # Gi => 1024 * 1024 * 1024
 
   templates:
   - name: volumes-pvc-example
@@ -910,7 +923,7 @@ spec:
       command: [sh, -c]
       args: ["echo generating message in volume; cowsay hello world | tee /mnt/vol/hello_world.txt"]
       # Mount workdir volume at /mnt/vol before invoking docker/whalesay
-      volumeMounts:                     #same syntax as k8s Pod spec
+      volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /mnt/vol
 
@@ -920,15 +933,16 @@ spec:
       command: [sh, -c]
       args: ["echo getting message from volume; find /mnt/vol; cat /mnt/vol/hello_world.txt"]
       # Mount workdir volume at /mnt/vol before invoking docker/whalesay
-      volumeMounts:                     #same syntax as k8s Pod spec
+      volumeMounts:                     # same syntax as k8s Pod spec
       - name: workdir
         mountPath: /mnt/vol
 
 ```
-Volumes are a very useful way to move large amounts of data from one step in a workflow to another.
-Depending on the system, some volumes may be accessible concurrently from multiple steps.
+
+Volumes are a very useful way to move large amounts of data from one step in a workflow to another. Depending on the system, some volumes may be accessible concurrently from multiple steps.
 
 In some cases, you want to access an already existing volume rather than creating/destroying one dynamically.
+
 ```yaml
 # Define Kubernetes PVC
 kind: PersistentVolumeClaim
@@ -983,7 +997,9 @@ spec:
 ```
 
 ## Daemon Containers
-Argo workflows can start containers that run in the background (aka. daemon containers) while the workflow itself continues execution. The daemons will be automatically destroyed when the workflow exits the template scope in which the daemon was invoked. Deamons containers are useful for starting up services to be tested or to be used in testing (aka. fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
+
+Argo workflows can start containers that run in the background (also known as `daemon containers`) while the workflow itself continues execution. Note that the daemons will be *automatically destroyed* when the workflow exits the template scope in which the daemon was invoked. Deamon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -995,35 +1011,35 @@ spec:
   - name: daemon-example
     steps:
     - - name: influx
-        template: influxdb              #start an influxdb as a daemon (see the influxdb template spec below)
+        template: influxdb              # start an influxdb as a daemon (see the influxdb template spec below)
 
-    - - name: init-database             #initialize influxdb
+    - - name: init-database             # initialize influxdb
         template: influxdb-client
         arguments:
           parameters:
           - name: cmd
             value: curl -XPOST 'http://{{steps.influx.ip}}:8086/query' --data-urlencode "q=CREATE DATABASE mydb"
 
-    - - name: producer-1                #add entries to influxdb
+    - - name: producer-1                # add entries to influxdb
         template: influxdb-client
         arguments:
           parameters:
           - name: cmd
             value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d "cpu,host=server01,region=uswest load=$i" ; sleep .5 ; done
-      - name: producer-2                #add entries to influxdb
+      - name: producer-2                # add entries to influxdb
         template: influxdb-client
         arguments:
           parameters:
           - name: cmd
             value: for i in $(seq 1 20); do curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d "cpu,host=server02,region=uswest load=$((RANDOM % 100))" ; sleep .5 ; done
-      - name: producer-3                #add entries to influxdb
+      - name: producer-3                # add entries to influxdb
         template: influxdb-client
         arguments:
           parameters:
           - name: cmd
             value: curl -XPOST 'http://{{steps.influx.ip}}:8086/write?db=mydb' -d 'cpu,host=server03,region=useast load=15.4'
 
-    - - name: consumer                  #consume intries from influxdb
+    - - name: consumer                  # consume intries from influxdb
         template: influxdb-client
         arguments:
           parameters:
@@ -1031,11 +1047,11 @@ spec:
             value: curl --silent -G http://{{steps.influx.ip}}:8086/query?pretty=true --data-urlencode "db=mydb" --data-urlencode "q=SELECT * FROM cpu"
 
   - name: influxdb
-    daemon: true                        #start influxdb as a daemon
+    daemon: true                        # start influxdb as a daemon
     container:
       image: influxdb:1.2
-      restartPolicy: Always             #restart container if it fails
-      readinessProbe:                   #wait for readinessProbe to succeed
+      restartPolicy: Always             # restart container if it fails
+      readinessProbe:                   # wait for readinessProbe to succeed
         httpGet:
           path: /ping
           port: 8086
@@ -1057,8 +1073,9 @@ spec:
 DAG templates use the tasks prefix to refer to another task, for example `{{tasks.influx.ip}}`.
 
 ## Sidecars
-A sidecar is another container that executes concurrently in the same pod as the "main" container and is useful
-in creating multi-container pods.
+
+A sidecar is another container that executes concurrently in the same pod as the main container and is useful in creating multi-container pods.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1078,10 +1095,13 @@ spec:
     - name: nginx
       image: nginx:1.13
 ```
-In the above example, we create a sidecar container that runs nginx as a simple web server. The order in which containers may come up is random. This is why the 'main' container polls the nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems. Always wait for any services you need to come up before running your main code.
+
+In the above example, we create a sidecar container that runs nginx as a simple web server. The order in which containers come up is random, so in this example the main container polls the nginx container until it is ready to service requests. This is a good design pattern when designing multi-container systems: always wait for any services you need to come up before running your main code.
 
 ## Hardwired Artifacts
-With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common and provide a more convenient way to generate and use these artifacts. In particular, we have "hardwired" support for git, http and s3 artifacts.
+
+With Argo, you can use any container image that you like to generate any kind of artifact. In practice, however, we find certain types of artifacts are very common, so there is built-in support for git, http, and s3 artifacts.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1129,6 +1149,7 @@ spec:
 ## Kubernetes Resources
 
 In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.
+
 ```yaml
 # in a workflow. The resource template type accepts any k8s manifest
 # (including CRDs) and can perform any kubectl action against it (e.g. create,
@@ -1141,8 +1162,8 @@ spec:
   entrypoint: pi-tmpl
   templates:
   - name: pi-tmpl
-    resource:                   #indicates that this is a resource template
-      action: create            #can be any kubectl action (e.g. create, delete, apply, patch)
+    resource:                   # indicates that this is a resource template
+      action: create            # can be any kubectl action (e.g. create, delete, apply, patch)
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
@@ -1172,9 +1193,10 @@ spec:
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
 
-## Docker-in-Docker (aka. DinD) Using Sidecars
-An application of sidecars is to implement DinD (Docker-in-Docker).
-DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
+## Docker-in-Docker Using Sidecars
+
+An application of sidecars is to implement Docker-in-Docker (DinD). DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1189,13 +1211,13 @@ spec:
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done; docker run --rm debian:latest cat /etc/os-release"]
       env:
-      - name: DOCKER_HOST               #the docker daemon can be access on the standard port on localhost
+      - name: DOCKER_HOST               # the docker daemon can be access on the standard port on localhost
         value: 127.0.0.1
     sidecars:
     - name: dind
-      image: docker:17.10-dind          #Docker already provides an image for running a Docker daemon
+      image: docker:17.10-dind          # Docker already provides an image for running a Docker daemon
       securityContext:
-        privileged: true                #the Docker daemon can only run in a privileged container
+        privileged: true                # the Docker daemon can only run in a privileged container
       # mirrorVolumeMounts will mount the same volumes specified in the main container
       # to the sidecar (including artifacts), at the same mountPaths. This enables
       # dind daemon to (partially) see the same filesystem as the main container in
@@ -1203,7 +1225,8 @@ spec:
       mirrorVolumeMounts: true
 ```
 
-## Continuous integration example
+## Continuous Integration Example
+
 Continuous integration is a popular application for workflows. Currently, Argo does not provide event triggers for automatically kicking off your CI jobs, but we plan to do so in the near future. Until then, you can easily write a cron job that checks for new commits and kicks off the needed workflow, or use your existing Jenkins server to kick off the workflow.
 
 A good example of a CI workflow spec is provided at https://github.com/argoproj/argo/tree/master/examples/influxdb-ci.yaml. Because it just uses the concepts that we've already covered and is somewhat long, we don't go into details here.
