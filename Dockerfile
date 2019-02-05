@@ -75,7 +75,7 @@ RUN make $MAKE_TARGET
 ####################################################################################################
 # argoexec
 ####################################################################################################
-FROM debian:9.6-slim as argoexec
+FROM argoexec-base as argoexec
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec /usr/local/bin/
 
 
