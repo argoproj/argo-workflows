@@ -31,7 +31,8 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 	// as a tar archive to STDOUT if using - as DEST_PATH. Thus, we need to extract the
 	// content from the tar archive and output into stdout. In this way, we do not need to
 	// create and copy the content into a file from the wait container.
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | tar -ax -O", containerID, sourcePath)
+        // NOTE: -L option adds the capability to get file contents from mounted secrets
+	dockerCpCmd := fmt.Sprintf("docker cp -a -L %s:%s - | tar -ax -O", containerID, sourcePath)
 	cmd := exec.Command("sh", "-c", dockerCpCmd)
 	log.Info(cmd.Args)
 	out, err := cmd.Output()
@@ -46,7 +47,7 @@ func (d *DockerExecutor) GetFileContents(containerID string, sourcePath string) 
 
 func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPath string) error {
 	log.Infof("Archiving %s:%s to %s", containerID, sourcePath, destPath)
-	dockerCpCmd := fmt.Sprintf("docker cp -a %s:%s - | gzip > %s", containerID, sourcePath, destPath)
+	dockerCpCmd := fmt.Sprintf("docker cp -a -L %s:%s - | gzip > %s", containerID, sourcePath, destPath)
 	err := common.RunCommand("sh", "-c", dockerCpCmd)
 	if err != nil {
 		return err
