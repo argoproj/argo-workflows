@@ -150,7 +150,7 @@ type WorkflowSpec struct {
 
 	// Set scheduler name for all pods.
 	// Will be overridden if container/script template's scheduler name is set.
-	// Default scheduler will be used if neither unspecified.
+	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
 }
@@ -226,7 +226,7 @@ type Template struct {
 
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
-	// If neither unspecified, the pod will be dispatched by default scheduler.
+	// If neither specified, the pod will be dispatched by default scheduler.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
 }

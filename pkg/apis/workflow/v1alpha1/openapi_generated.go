@@ -1823,7 +1823,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"schedulerName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither unspecified, the pod will be dispatched by default scheduler.",
+							Description: "If specified, the pod will be dispatched by specified scheduler. Or it will be dispatched by workflow scope scheduler if specified. If neither specified, the pod will be dispatched by default scheduler.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2137,7 +2137,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"schedulerName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither unspecified.",
+							Description: "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
