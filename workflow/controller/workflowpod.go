@@ -139,14 +139,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
-	if tmpl.GetType() == wfv1.TemplateTypeContainer || tmpl.GetType() == wfv1.TemplateTypeScript {
-		if tmpl.SchedulerName != "" {
-			pod.Spec.SchedulerName = tmpl.SchedulerName
-		} else if woc.wf.Spec.SchedulerName != "" {
-			pod.Spec.SchedulerName = woc.wf.Spc.SchedulerName
-		}
-	}
-
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
@@ -388,6 +380,12 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 		pod.Spec.Tolerations = tmpl.Tolerations
 	} else if len(wfSpec.Tolerations) > 0 {
 		pod.Spec.Tolerations = wfSpec.Tolerations
+	}
+	// Set scheduler name (if specified)
+	if tmpl.SchedulerName != "" {
+		pod.Spec.SchedulerName = tmpl.SchedulerName
+	} else if wfSpec.SchedulerName != "" {
+		pod.Spec.SchedulerName = wfSpec.SchedulerName
 	}
 }
 
