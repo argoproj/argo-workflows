@@ -19,6 +19,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation":    schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact": schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":     schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":          schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":             schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":         schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact":         schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
@@ -331,6 +332,31 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref common.ReferenceCallb
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.",
+				Properties: map[string]spec.Schema{
+					"error": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"failed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -404,11 +430,10 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
-					"ignoreError": {
+					"continueOn": {
 						SchemaProps: spec.SchemaProps{
-							Description: "IgnoreError makes argo to proceed with the following tasks even if this task fails.",
-							Type:        []string{"boolean"},
-							Format:      "",
+							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
 						},
 					},
 				},
@@ -416,7 +441,7 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence"},
 	}
 }
 
@@ -2217,10 +2242,16 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"continueOn": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence"},
 	}
 }

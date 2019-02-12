@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-ignore-error-
+  generateName: dag-contiueOn-fail-
 spec:
-  entrypoint: diamond
+  entrypoint: workflow
   templates:
-  - name: diamond
+  - name: workflow
     dag:
       tasks:
       - name: A
@@ -13,7 +13,8 @@ spec:
       - name: B
         dependencies: [A]
         template: intentional-fail
-        ignoreError: true
+        continueOn:
+            failed: true
       - name: C
         dependencies: [A]
         template: whalesay
