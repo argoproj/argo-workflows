@@ -106,6 +106,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 }
 
 func hasMoreRetries(node *wfv1.NodeStatus, wf *wfv1.Workflow) bool {
+	if node.Phase == wfv1.NodeSucceeded {
+		return false
+	}
+
 	if len(node.Children) == 0 {
 		return true
 	}
