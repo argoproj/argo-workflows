@@ -111,9 +111,8 @@ const (
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
-	EnvVarKubeConfig     = "KUBECONFIG"
-	KubeConfigVolumeName = "kube-config"
-	KubeConfigMountPath  = "/root/.kube"
+	KubeConfigDefaultMountPath  = "/kube/.config"
+	KubeConfigDefaultVolumeName = "kubeconfig"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

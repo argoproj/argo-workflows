@@ -247,23 +247,14 @@ func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.P
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName, false)
-	ctr.Command = []string{"argoexec"}
-	ctr.Args = []string{"init"}
-	ctr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-	}
+	ctr := woc.newExecContainer(common.InitContainerName, false, "init")
+	ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountPodMetadata)
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
-	ctr := woc.newExecContainer(common.WaitContainerName, false)
-	ctr.Command = []string{"argoexec"}
-	ctr.Args = []string{"wait"}
-	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
-		ctr.Args = append(ctr.Args, "--kubeconfig="+common.KubeConfigMountPath+"/"+woc.controller.Config.KubeConfigSecretKey)
-	}
-	ctr.VolumeMounts = woc.createVolumeMounts()
+	ctr := woc.newExecContainer(common.WaitContainerName, false, "wait")
+	ctr.VolumeMounts = append(ctr.VolumeMounts, woc.createVolumeMounts()...)
 	return ctr, nil
 }
 
@@ -308,12 +299,6 @@ func (woc *wfOperationCtx) createVolumeMounts() []apiv1.VolumeMount {
 	volumeMounts := []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
-		volumeMounts = append(volumeMounts, apiv1.VolumeMount{
-			Name:      common.KubeConfigVolumeName,
-			MountPath: common.KubeConfigMountPath,
-		})
-	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
 		return volumeMounts
@@ -326,16 +311,16 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
-	if woc.controller.Config.KubeConfigSecretName != "" && woc.controller.Config.KubeConfigSecretKey != "" {
+	if woc.controller.Config.KubeConfig != nil {
+		name := woc.controller.Config.KubeConfig.VolumeName
+		if name == "" {
+			name = common.KubeConfigDefaultVolumeName
+		}
 		volumes = append(volumes, apiv1.Volume{
-			Name: common.KubeConfigVolumeName,
+			Name: name,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
-					SecretName: woc.controller.Config.KubeConfigSecretName,
-					DefaultMode: func() *int32 {
-						mode := int32(0622)
-						return &mode
-					}(),
+					SecretName: woc.controller.Config.KubeConfig.SecretName,
 				},
 			},
 		})
@@ -348,7 +333,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, privileged bool, subCommand string) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
@@ -357,9 +342,28 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 		SecurityContext: &apiv1.SecurityContext{
 			Privileged: &privileged,
 		},
+		Command: []string{"argoexec"},
+		Args:    []string{subCommand},
 	}
 	if woc.controller.Config.ExecutorResources != nil {
 		exec.Resources = *woc.controller.Config.ExecutorResources
+	}
+	if woc.controller.Config.KubeConfig != nil {
+		path := woc.controller.Config.KubeConfig.MountPath
+		if path == "" {
+			path = common.KubeConfigDefaultMountPath
+		}
+		name := woc.controller.Config.KubeConfig.VolumeName
+		if name == "" {
+			name = common.KubeConfigDefaultVolumeName
+		}
+		exec.VolumeMounts = []apiv1.VolumeMount{{
+			Name:      name,
+			MountPath: path,
+			ReadOnly:  true,
+			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
+		}}
+		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
 	return &exec
 }

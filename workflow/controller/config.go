@@ -30,11 +30,8 @@ type WorkflowControllerConfig struct {
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
-	// KubeConfigSecretName should be set when the executor access the apiserver use out of cluster config
-	KubeConfigSecretName string `json:"kubeConfigSecretName,omitempty"`
-
-	// KubeConfigSecretKey should be set when the executor access the apiserver use out of cluster config
-	KubeConfigSecretKey string `json:"kubeConfigSecretKey, omitempty"`
+	// KubeConfig specifies a kube config file for the wait & init containers
+	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
 	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
@@ -66,6 +63,21 @@ type WorkflowControllerConfig struct {
 
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
+}
+
+// KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
+// it is used when the workflow controller is in a different cluster with the workflow workloads
+type KubeConfig struct {
+	// SecretName of the kubeconfig secret
+	// may not be empty if kuebConfig specified
+	SecretName string `json:"secretName"`
+	// SecretKey of the kubeconfig in the secret
+	// may not be empty if kubeConfig specified
+	SecretKey string `json:"secretKey"`
+	// VolumeName of kubeconfig, default to 'kubeconfig'
+	VolumeName string `json:"volumeName,omitempty"`
+	// MountPath of the kubeconfig secret, default to '/kube/.config'
+	MountPath string `json:"mountPath,omitempty"`
 }
 
 // ArtifactRepository represents a artifact repository in which a controller will store its artifacts

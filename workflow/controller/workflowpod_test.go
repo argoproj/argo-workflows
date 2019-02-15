@@ -268,18 +268,44 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 }
 
 func TestOutOfCluster(t *testing.T) {
-	woc := newWoc()
-	woc.controller.Config.KubeConfigSecretName = "foo"
-	woc.controller.Config.KubeConfigSecretKey = "bar"
+	// default mount path & volume name
+	{
+		woc := newWoc()
+		woc.controller.Config.KubeConfig = &KubeConfig{
+			SecretName: "foo",
+			SecretKey:  "bar",
+		}
 
-	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	podName := getPodName(woc.wf)
-	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 
-	assert.Nil(t, err)
-	assert.Equal(t, "kube-config", pod.Spec.Volumes[1].Name)
-	assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
-	assert.Equal(t, "kube-config", pod.Spec.Containers[1].VolumeMounts[1].Name)
-	assert.Equal(t, "/root/.kube", pod.Spec.Containers[1].VolumeMounts[1].MountPath)
-	assert.Equal(t, "--kubeconfig=/root/.kube/bar", pod.Spec.Containers[1].Args[1])
+		assert.Nil(t, err)
+		assert.Equal(t, "kubeconfig", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+		assert.Equal(t, "kubeconfig", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "/kube/.config", pod.Spec.Containers[1].VolumeMounts[0].MountPath)
+		assert.Equal(t, "--kubeconfig=/kube/.config", pod.Spec.Containers[1].Args[1])
+	}
+	// custom mount path & volume name, in case name collision
+	{
+		woc := newWoc()
+		woc.controller.Config.KubeConfig = &KubeConfig{
+			SecretName: "foo",
+			SecretKey:  "bar",
+			MountPath:  "/some/path/config",
+			VolumeName: "kube-config-secret",
+		}
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+		assert.Nil(t, err)
+		assert.Equal(t, "kube-config-secret", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+		assert.Equal(t, "kube-config-secret", pod.Spec.Containers[1].VolumeMounts[0].Name)
+		assert.Equal(t, "/some/path/config", pod.Spec.Containers[1].VolumeMounts[0].MountPath)
+		assert.Equal(t, "--kubeconfig=/some/path/config", pod.Spec.Containers[1].Args[1])
+	}
 }
