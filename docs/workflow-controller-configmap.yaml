@@ -22,6 +22,19 @@ data:
     # (available since Argo v2.3)
     parallelism: 10
 
+    # uncomment flowing lines if workflow controller runs in a different k8s cluster with the 
+    # workflow workloads, or needs to communicate with the k8s apiserver using an out-of-cluster
+    # kubeconfig secret
+    # kubeConfig:
+    #   # name of the kubeconfig secret, may not be empty when kubeConfig specified
+    #   secretName: kubeconfig-secret
+    #   # key of the kubeconfig secret, may not be empty when kubeConfig specified
+    #   secretKey: kubeconfig
+    #   # mounting path of the kubeconfig secret, default to /kube/config
+    #   mountPath: /kubeconfig/mount/path
+    #   # volume name when mounting the secret, default to kubeconfig
+    #   volumeName: kube-config-volume
+
     # artifactRepository defines the default location to be used as the artifact repository for
     # container artifacts.
     artifactRepository:

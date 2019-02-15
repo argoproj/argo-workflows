@@ -76,7 +76,7 @@ type KubeConfig struct {
 	SecretKey string `json:"secretKey"`
 	// VolumeName of kubeconfig, default to 'kubeconfig'
 	VolumeName string `json:"volumeName,omitempty"`
-	// MountPath of the kubeconfig secret, default to '/kube/.config'
+	// MountPath of the kubeconfig secret, default to '/kube/config'
 	MountPath string `json:"mountPath,omitempty"`
 }
 

@@ -111,7 +111,7 @@ const (
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
-	KubeConfigDefaultMountPath  = "/kube/.config"
+	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
 )
 

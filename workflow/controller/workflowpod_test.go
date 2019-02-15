@@ -284,8 +284,8 @@ func TestOutOfCluster(t *testing.T) {
 		assert.Equal(t, "kubeconfig", pod.Spec.Volumes[1].Name)
 		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
 		assert.Equal(t, "kubeconfig", pod.Spec.Containers[1].VolumeMounts[0].Name)
-		assert.Equal(t, "/kube/.config", pod.Spec.Containers[1].VolumeMounts[0].MountPath)
-		assert.Equal(t, "--kubeconfig=/kube/.config", pod.Spec.Containers[1].Args[1])
+		assert.Equal(t, "/kube/config", pod.Spec.Containers[1].VolumeMounts[0].MountPath)
+		assert.Equal(t, "--kubeconfig=/kube/config", pod.Spec.Containers[1].Args[1])
 	}
 	// custom mount path & volume name, in case name collision
 	{
