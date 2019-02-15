@@ -290,6 +290,7 @@ func TestOutOfCluster(t *testing.T) {
 		assert.Equal(t, "/kube/config", pod.Spec.Containers[1].VolumeMounts[idx].MountPath)
 		assert.Equal(t, "--kubeconfig=/kube/config", pod.Spec.Containers[1].Args[1])
 	}
+
 	// custom mount path & volume name, in case name collision
 	{
 		woc := newWoc()
