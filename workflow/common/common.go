@@ -110,6 +110,9 @@ const (
 	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
+
+	KubeConfigDefaultMountPath  = "/kube/config"
+	KubeConfigDefaultVolumeName = "kubeconfig"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

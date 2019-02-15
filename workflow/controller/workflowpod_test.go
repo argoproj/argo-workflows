@@ -266,3 +266,53 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, "volume-name", pod.Spec.Containers[0].VolumeMounts[0].Name)
 	}
 }
+
+func TestOutOfCluster(t *testing.T) {
+	// default mount path & volume name
+	{
+		woc := newWoc()
+		woc.controller.Config.KubeConfig = &KubeConfig{
+			SecretName: "foo",
+			SecretKey:  "bar",
+		}
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+		assert.Nil(t, err)
+		assert.Equal(t, "kubeconfig", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+
+		// kubeconfig volume is the last one
+		idx := len(pod.Spec.Containers[1].VolumeMounts) - 1
+		assert.Equal(t, "kubeconfig", pod.Spec.Containers[1].VolumeMounts[idx].Name)
+		assert.Equal(t, "/kube/config", pod.Spec.Containers[1].VolumeMounts[idx].MountPath)
+		assert.Equal(t, "--kubeconfig=/kube/config", pod.Spec.Containers[1].Args[1])
+	}
+
+	// custom mount path & volume name, in case name collision
+	{
+		woc := newWoc()
+		woc.controller.Config.KubeConfig = &KubeConfig{
+			SecretName: "foo",
+			SecretKey:  "bar",
+			MountPath:  "/some/path/config",
+			VolumeName: "kube-config-secret",
+		}
+
+		woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+		podName := getPodName(woc.wf)
+		pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+		assert.Nil(t, err)
+		assert.Equal(t, "kube-config-secret", pod.Spec.Volumes[1].Name)
+		assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+
+		// kubeconfig volume is the last one
+		idx := len(pod.Spec.Containers[1].VolumeMounts) - 1
+		assert.Equal(t, "kube-config-secret", pod.Spec.Containers[1].VolumeMounts[idx].Name)
+		assert.Equal(t, "/some/path/config", pod.Spec.Containers[1].VolumeMounts[idx].MountPath)
+		assert.Equal(t, "--kubeconfig=/some/path/config", pod.Spec.Containers[1].Args[1])
+	}
+}
