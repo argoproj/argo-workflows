@@ -80,8 +80,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		}
 		if node.Type == wfv1.NodeTypeRetry {
 			if node.Successful() {
-				retriesExhausted = false
-			} else if hasMoreRetries(&node, d.wf) {
+				unsuccessfulPhase = ""
+				break
+			}
+			if hasMoreRetries(&node, d.wf) {
 				retriesExhausted = false
 			}
 		}
