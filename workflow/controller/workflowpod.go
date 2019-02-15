@@ -248,13 +248,13 @@ func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.P
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
 	ctr := woc.newExecContainer(common.InitContainerName, false, "init")
-	ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountPodMetadata)
+	ctr.VolumeMounts = append([]apiv1.VolumeMount{volumeMountPodMetadata}, ctr.VolumeMounts...)
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
 	ctr := woc.newExecContainer(common.WaitContainerName, false, "wait")
-	ctr.VolumeMounts = append(ctr.VolumeMounts, woc.createVolumeMounts()...)
+	ctr.VolumeMounts = append(woc.createVolumeMounts(), ctr.VolumeMounts...)
 	return ctr, nil
 }
 
