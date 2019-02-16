@@ -93,7 +93,7 @@ func NewRootCommand() *cobra.Command {
 	clientConfig = cli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
-	command.Flags().StringVar(&configPath, "config-path", "workflow-controller config file path", "path to workflow controller configuration file (overrides value in configmap)")
+	command.Flags().StringVar(&configPath, "config-path", "", "path to workflow controller configuration file (overrides configmap)")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")

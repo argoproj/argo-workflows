@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -141,7 +140,7 @@ func (wfc *WorkflowController) ResyncConfig() error {
 		}
 	}
 	if wfc.cliExecutorImage == "" && wfc.Config.ExecutorImage == "" {
-		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
+		return errors.Errorf(errors.CodeBadRequest, "executorImage unspecified")
 	}
 	return nil
 }
@@ -163,11 +162,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 }
 
 func (wfc *WorkflowController) loadConfigFile(path string) error {
-	f, e := os.Open(path)
-	if e != nil {
-		return errors.InternalWrapError(e, "open config file failed")
-	}
-	buf, e := ioutil.ReadAll(f)
+	buf, e := ioutil.ReadFile(path)
 	if e != nil {
 		return errors.InternalWrapError(e, "read config file failed")
 	}

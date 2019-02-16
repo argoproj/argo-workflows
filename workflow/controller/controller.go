@@ -134,11 +134,15 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	log.Infof("Workflow Controller (version: %s) starting", argo.GetVersion())
 	log.Infof("Workers: workflow: %d, pod: %d", wfWorkers, podWorkers)
-	log.Info("Watch Workflow controller config map updates")
-	_, err := wfc.watchControllerConfigMap(ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for controller config map: %v", err)
-		return
+
+	// if config path is specified, do not watch configmap
+	if wfc.configPath == "" {
+		log.Info("Watch Workflow controller config map updates")
+		_, err := wfc.watchControllerConfigMap(ctx)
+		if err != nil {
+			log.Errorf("Failed to register watch for controller config map: %v", err)
+			return
+		}
 	}
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
