@@ -245,7 +245,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		}
 		var cmd *exec.Cmd
 		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath='%s'", param.ValueFrom.JSONPath)}
+			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
 			if resourceNamespace != "" {
 				args = append(args, "-n", resourceNamespace)
 			}
