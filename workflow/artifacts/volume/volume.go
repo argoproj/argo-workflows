@@ -19,8 +19,14 @@ type ArtifactDriver struct {
 
 // ValidateArtifact validates volume artifact
 func ValidateArtifact(errPrefix string, art *wfv1.VolumeArtifact) error {
+	if art.Name == "" {
+		return errors.Errorf(errors.CodeBadRequest, "%s.name is required", errPrefix)
+	}
 	if strings.Contains(art.SubPath, "..") {
 		return errors.Errorf(errors.CodeBadRequest, "%s.subPath is invalid", errPrefix)
+	}
+	if art.Path == "" {
+		return errors.Errorf(errors.CodeBadRequest, "%s.path is required", errPrefix)
 	}
 	if strings.Contains(art.Path, "..") {
 		return errors.Errorf(errors.CodeBadRequest, "%s.path is invalid", errPrefix)
