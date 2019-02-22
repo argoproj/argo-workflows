@@ -11,8 +11,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var availableCompressions = []string{"tar.gz"}
-
 // ArtifactDriver is a driver for volume
 type ArtifactDriver struct {
 	MountPath string

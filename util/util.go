@@ -23,19 +23,19 @@ func CopyFile(dst, src string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer Close(in)
 	tmp, err := ioutil.TempFile(filepath.Dir(dst), "")
 	if err != nil {
 		return err
 	}
 	_, err = io.Copy(tmp, in)
 	if err != nil {
-		tmp.Close()
-		os.Remove(tmp.Name())
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
 		return err
 	}
 	if err = tmp.Close(); err != nil {
-		os.Remove(tmp.Name())
+		_ = os.Remove(tmp.Name())
 		return err
 	}
 	return os.Rename(tmp.Name(), dst)

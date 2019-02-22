@@ -22,5 +22,6 @@ func TestCopyFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	actual, err := ioutil.ReadFile(dstf.Name())
+	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
