@@ -14,12 +14,13 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	tmpdir := os.TempDir()
+	tmpdir, err := ioutil.TempDir("", "argo-volume-artifact-")
+	assert.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tmpdir)
 	}()
 
-	err := os.Mkdir(filepath.Join(tmpdir, "foo"), 0777)
+	err = os.Mkdir(filepath.Join(tmpdir, "foo"), 0777)
 	assert.NoError(t, err)
 	srcf, err := os.Create(filepath.Join(tmpdir, "foo", "bar"))
 	assert.NoError(t, err)
@@ -47,12 +48,13 @@ func TestLoad(t *testing.T) {
 	assert.Equal(t, content, dat)
 }
 func TestSave(t *testing.T) {
-	tmpdir := os.TempDir()
+	tmpdir, err := ioutil.TempDir("", "argo-volume-artifact-")
+	assert.NoError(t, err)
 	defer func() {
 		_ = os.RemoveAll(tmpdir)
 	}()
 
-	err := os.Mkdir(filepath.Join(tmpdir, "foo"), 0777)
+	err = os.Mkdir(filepath.Join(tmpdir, "foo"), 0777)
 	assert.NoError(t, err)
 	dstf, err := os.Create(filepath.Join(tmpdir, "foo", "bar"))
 	assert.NoError(t, err)
