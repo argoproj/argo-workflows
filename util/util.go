@@ -1,5 +1,12 @@
 package util
 
+import (
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+)
+
 type Closer interface {
 	Close() error
 }
@@ -8,4 +15,28 @@ type Closer interface {
 // Used to satisfy errcheck lint
 func Close(c Closer) {
 	_ = c.Close()
+}
+
+// CopyFile copies the contents from src to dst.
+func CopyFile(dst, src string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	tmp, err := ioutil.TempFile(filepath.Dir(dst), "")
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(tmp, in)
+	if err != nil {
+		tmp.Close()
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	return os.Rename(tmp.Name(), dst)
 }

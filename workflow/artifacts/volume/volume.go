@@ -1,8 +1,6 @@
 package volume
 
 import (
-	"io"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -41,44 +39,15 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.VolumeArtifact) (*Artif
 // Load copies a file from a volume
 func (driver *ArtifactDriver) Load(artifact *wfv1.Artifact, path string) error {
 	srcpath := filepath.Join(driver.MountPath, artifact.Volume.Name, artifact.Volume.SubPath, artifact.Volume.Path)
-
-	srcf, err := os.Open(srcpath)
-	if err != nil {
-		return err
-	}
-	defer util.Close(srcf)
-
-	dstf, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer util.Close(dstf)
-
-	_, err = io.Copy(dstf, srcf)
+	err := util.CopyFile(path, srcpath)
 
 	return err
 }
 
 // Save copies a file to a volume
 func (driver *ArtifactDriver) Save(path string, artifact *wfv1.Artifact) error {
-	srcf, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = srcf.Close()
-	}()
-
 	dstpath := filepath.Join(driver.MountPath, artifact.Volume.Name, artifact.Volume.SubPath, artifact.Volume.Path)
-	dstf, err := os.Create(dstpath)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = dstf.Close()
-	}()
-
-	_, err = io.Copy(dstf, srcf)
+	err := util.CopyFile(dstpath, path)
 
 	return err
 }
