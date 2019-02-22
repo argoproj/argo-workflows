@@ -30,6 +30,9 @@ type WorkflowControllerConfig struct {
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
+	// ExecutorLogLevel is the log level of executor
+	ExecutorLogLevel string `json:"executorLogLevel,omitempty"`
+
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 

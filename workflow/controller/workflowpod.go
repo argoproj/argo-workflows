@@ -259,16 +259,23 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
+	envVars := execEnvVars
+	if woc.controller.Config.ExecutorLogLevel != "" {
+		envVars = append(envVars, apiv1.EnvVar{
+			Name:  common.EnvVarLogLevel,
+			Value: woc.controller.Config.ExecutorLogLevel,
+		})
+	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorK8sAPI:
-		return append(execEnvVars,
+		return append(envVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
 				Value: woc.controller.Config.ContainerRuntimeExecutor,
 			},
 		)
 	case common.ContainerRuntimeExecutorKubelet:
-		return append(execEnvVars,
+		return append(envVars,
 			apiv1.EnvVar{
 				Name:  common.EnvVarContainerRuntimeExecutor,
 				Value: woc.controller.Config.ContainerRuntimeExecutor,
@@ -291,7 +298,7 @@ func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 			},
 		)
 	default:
-		return execEnvVars
+		return envVars
 	}
 }
 

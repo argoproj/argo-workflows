@@ -58,6 +58,10 @@ func initExecutor() *executor.WorkflowExecutor {
 		podAnnotationsPath = GlobalArgs.podAnnotationsPath
 	}
 
+	if logLevel := os.Getenv(common.EnvVarLogLevel); logLevel != "" {
+		cmd.SetLogLevel(logLevel)
+	}
+
 	config, err := clientConfig.ClientConfig()
 	if err != nil {
 		panic(err.Error())
