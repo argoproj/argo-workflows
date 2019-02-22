@@ -94,6 +94,10 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "volume": {
+          "description": "Volume contains volume artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeArtifact"
         }
       }
     },
@@ -127,6 +131,10 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "volume": {
+          "description": "Volume contains volume artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.VolumeArtifact"
         }
       }
     },
@@ -1010,6 +1018,28 @@
         },
         "path": {
           "description": "Path in the container to retrieve an output parameter value from in container templates",
+          "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.VolumeArtifact": {
+      "description": "VolumeArtifact is the location of an HDFS artifact",
+      "required": [
+        "name",
+        "subPath",
+        "path"
+      ],
+      "properties": {
+        "name": {
+          "description": "Name is the name of volume",
+          "type": "string"
+        },
+        "path": {
+          "description": "Path is the path to save or load a file",
+          "type": "string"
+        },
+        "subPath": {
+          "description": "SubPath is the sub path to mount the volume",
           "type": "string"
         }
       }

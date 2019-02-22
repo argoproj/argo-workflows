@@ -113,6 +113,8 @@ const (
 
 	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
+
+	VolumeArtifactMountPath = "/mnt/volume-artifact"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

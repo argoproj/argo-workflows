@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: input-artifact-volume-
+spec:
+  entrypoint: volume-contents
+  templates:
+  - name: volume-contents
+    inputs:
+      artifacts:
+      - name: myfile
+        path: /tmp/file
+        volume:
+          name: vol01
+          path: /tmp/infile
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/file"]
+  volumes:
+  - name: vol01
+    hostPath:
+      path: /data/argo
+      type: Directory

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: output-artifact-volume-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: myfile
+        path: /tmp/hello_world.txt
+        volume:
+          name: vol01
+          path: /tmp/outfile
+  volumes:
+  - name: vol01
+    hostPath:
+      path: /data/argo
+      type: Directory
+

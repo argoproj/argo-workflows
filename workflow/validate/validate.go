@@ -11,6 +11,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
+	"github.com/argoproj/argo/workflow/artifacts/volume"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/valyala/fasttemplate"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
@@ -206,6 +207,12 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 	}
 	if art.HDFS != nil {
 		err := hdfs.ValidateArtifact(fmt.Sprintf("%s.hdfs", errPrefix), art.HDFS)
+		if err != nil {
+			return err
+		}
+	}
+	if art.Volume != nil {
+		err := volume.ValidateArtifact(fmt.Sprintf("%s.volume", errPrefix), art.Volume)
 		if err != nil {
 			return err
 		}

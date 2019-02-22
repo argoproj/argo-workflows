@@ -345,6 +345,9 @@ type ArtifactLocation struct {
 	// HDFS contains HDFS artifact location details
 	HDFS *HDFSArtifact `json:"hdfs,omitempty"`
 
+	// Volume contains volume artifact location details
+	Volume *VolumeArtifact `json:"volume,omitempty"`
+
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
 }
@@ -731,6 +734,16 @@ func (a *HDFSArtifact) String() string {
 	return fmt.Sprintf("hdfs://%s/%s with %s", strings.Join(a.Addresses, ", "), a.Path, cred)
 }
 
+// VolumeArtifact is the location of an HDFS artifact
+type VolumeArtifact struct {
+	// Name is the name of volume
+	Name string `json:"name"`
+	// SubPath is the sub path to mount the volume
+	SubPath string `json:"subPath"`
+	// Path is the path to save or load a file
+	Path string `json:"path"`
+}
+
 // RawArtifact allows raw string content to be placed as an artifact in a container
 type RawArtifact struct {
 	// Data is the string contents of the artifact
@@ -918,7 +931,7 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.HDFS != nil
+	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.HDFS != nil || a.Volume != nil
 }
 
 // GetTemplate retrieves a defined template by its name

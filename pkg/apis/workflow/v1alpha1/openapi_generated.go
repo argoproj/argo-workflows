@@ -44,6 +44,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy":         schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template":            schema_pkg_apis_workflow_v1alpha1_Template(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":           schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeArtifact":      schema_pkg_apis_workflow_v1alpha1_VolumeArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":            schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":        schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":        schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
@@ -186,6 +187,12 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
 						},
 					},
+					"volume": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Volume contains volume artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeArtifact"),
+						},
+					},
 					"raw": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Raw contains raw artifact location details",
@@ -210,7 +217,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeArtifact"},
 	}
 }
 
@@ -257,6 +264,12 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact"),
 						},
 					},
+					"volume": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Volume contains volume artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeArtifact"),
+						},
+					},
 					"raw": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Raw contains raw artifact location details",
@@ -267,7 +280,7 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.VolumeArtifact"},
 	}
 }
 
@@ -1872,6 +1885,41 @@ func schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref common.ReferenceCallback) c
 						},
 					},
 				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_VolumeArtifact(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "VolumeArtifact is the location of an HDFS artifact",
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the name of volume",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"subPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SubPath is the sub path to mount the volume",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path is the path to save or load a file",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name", "subPath", "path"},
 			},
 		},
 		Dependencies: []string{},

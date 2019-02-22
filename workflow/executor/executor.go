@@ -29,6 +29,7 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/http"
 	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
+	"github.com/argoproj/argo/workflow/artifacts/volume"
 	"github.com/argoproj/argo/workflow/common"
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
@@ -262,6 +263,10 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 			shallowCopy := *we.Template.ArchiveLocation.HDFS
 			art.HDFS = &shallowCopy
 			art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
+		} else if we.Template.ArchiveLocation.Volume != nil {
+			shallowCopy := *we.Template.ArchiveLocation.Volume
+			art.Volume = &shallowCopy
+			art.Volume.SubPath = path.Join(art.Volume.SubPath, fileName)
 		} else {
 			return errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 		}
@@ -406,6 +411,10 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 		shallowCopy := *we.Template.ArchiveLocation.HDFS
 		art.HDFS = &shallowCopy
 		art.HDFS.Path = path.Join(art.HDFS.Path, fileName)
+	} else if we.Template.ArchiveLocation.Volume != nil {
+		shallowCopy := *we.Template.ArchiveLocation.Volume
+		art.Volume = &shallowCopy
+		art.Volume.SubPath = path.Join(art.Volume.SubPath, fileName)
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
@@ -496,6 +505,9 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	}
 	if art.HDFS != nil {
 		return hdfs.CreateDriver(we, art.HDFS)
+	}
+	if art.Volume != nil {
+		return volume.CreateDriver(we, art.Volume)
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/argoproj/argo/errors"
@@ -132,7 +133,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		waitCtr, err := woc.newWaitContainer(tmpl)
+		waitCtr, err := woc.newWaitContainer()
 		if err != nil {
 			return nil, err
 		}
@@ -149,17 +150,23 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
-	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err := woc.addArchiveLocation(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	err = woc.addArtifactsVolumeMounts(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+	// volume ref for artifact volumes
+
+	err = woc.addVolumeReferences(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
 
 	err = woc.addInputArtifactsVolumes(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-
-	err = woc.addArchiveLocation(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -311,6 +318,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	volumes := []apiv1.Volume{
 		volumePodMetadata,
 	}
+
 	if woc.controller.Config.KubeConfig != nil {
 		name := woc.controller.Config.KubeConfig.VolumeName
 		if name == "" {
@@ -325,6 +333,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 			},
 		})
 	}
+
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI:
 		return volumes
@@ -418,64 +427,27 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func (woc *wfOperationCtx) addVolumeReferences(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
 	default:
 		return nil
 	}
 
-	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
-	getVolByName := func(name string) *apiv1.Volume {
-		for _, vol := range wfSpec.Volumes {
-			if vol.Name == name {
-				return &vol
-			}
-		}
-		for _, pvc := range pvcs {
-			if pvc.Name == name {
-				return &pvc
-			}
-		}
-		return nil
-	}
-
-	addVolumeRef := func(volMounts []apiv1.VolumeMount) error {
-		for _, volMnt := range volMounts {
-			vol := getVolByName(volMnt.Name)
-			if vol == nil {
-				return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
-			}
-			found := false
-			for _, v := range pod.Spec.Volumes {
-				if v.Name == vol.Name {
-					found = true
-					break
-				}
-			}
-			if !found {
-				if pod.Spec.Volumes == nil {
-					pod.Spec.Volumes = make([]apiv1.Volume, 0)
-				}
-				pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
-			}
-		}
-		return nil
-	}
 	if tmpl.Container != nil {
-		err := addVolumeRef(tmpl.Container.VolumeMounts)
+		err := woc.addVolumeRef(pod, tmpl.Container.VolumeMounts)
 		if err != nil {
 			return err
 		}
 	}
 	if tmpl.Script != nil {
-		err := addVolumeRef(tmpl.Script.VolumeMounts)
+		err := woc.addVolumeRef(pod, tmpl.Script.VolumeMounts)
 		if err != nil {
 			return err
 		}
 	}
 	for _, sidecar := range tmpl.Sidecars {
-		err := addVolumeRef(sidecar.VolumeMounts)
+		err := woc.addVolumeRef(pod, sidecar.VolumeMounts)
 		if err != nil {
 			return err
 		}
@@ -581,7 +553,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
 		}
 	}
-	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.Volume != nil {
 		// User explicitly set the location. nothing else to do.
 		return nil
 	}
@@ -714,6 +686,64 @@ func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	return nil
 }
 
+// addArtifactsVolumeMounts adds volume mounts for volume artifacts
+func (woc *wfOperationCtx) addArtifactsVolumeMounts(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	var err error
+
+	createVolumeMount := func(volArt *wfv1.VolumeArtifact) apiv1.VolumeMount {
+		return apiv1.VolumeMount{
+			Name:      volArt.Name,
+			SubPath:   volArt.SubPath,
+			MountPath: filepath.Join(common.VolumeArtifactMountPath, volArt.Name, volArt.SubPath),
+		}
+	}
+
+	inputVolumeMounts := []apiv1.VolumeMount{}
+	for _, art := range tmpl.Inputs.Artifacts {
+		if art.Volume != nil {
+			inputVolumeMounts = append(inputVolumeMounts, createVolumeMount(art.Volume))
+		}
+	}
+	if len(inputVolumeMounts) > 0 {
+		for i, ctr := range pod.Spec.InitContainers {
+			if ctr.Name == common.InitContainerName {
+				ctr.VolumeMounts = append(ctr.VolumeMounts, inputVolumeMounts...)
+				pod.Spec.InitContainers[i] = ctr
+				break
+			}
+		}
+		err = woc.addVolumeRef(pod, inputVolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+
+	outputVolumeMounts := []apiv1.VolumeMount{}
+	for _, art := range tmpl.Outputs.Artifacts {
+		if art.Volume != nil {
+			outputVolumeMounts = append(outputVolumeMounts, createVolumeMount(art.Volume))
+		}
+	}
+	if tmpl.ArchiveLocation != nil && tmpl.ArchiveLocation.Volume != nil {
+		outputVolumeMounts = append(outputVolumeMounts, createVolumeMount(tmpl.ArchiveLocation.Volume))
+	}
+	if len(outputVolumeMounts) > 0 {
+		for i, ctr := range pod.Spec.Containers {
+			if ctr.Name == common.WaitContainerName {
+				ctr.VolumeMounts = append(ctr.VolumeMounts, outputVolumeMounts...)
+				pod.Spec.Containers[i] = ctr
+				break
+			}
+		}
+		err = woc.addVolumeRef(pod, outputVolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // verifyResolvedVariables is a helper to ensure all {{variables}} have been resolved for a object
 func verifyResolvedVariables(obj interface{}) error {
 	str, err := json.Marshal(obj)
@@ -727,4 +757,43 @@ func verifyResolvedVariables(obj interface{}) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
+func (woc *wfOperationCtx) getVolByName(name string) *apiv1.Volume {
+	for _, vol := range woc.wf.Spec.Volumes {
+		if vol.Name == name {
+			return &vol
+		}
+	}
+	for _, pvc := range woc.wf.Status.PersistentVolumeClaims {
+		if pvc.Name == name {
+			return &pvc
+		}
+	}
+	return nil
+}
+
+// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
+func (woc *wfOperationCtx) addVolumeRef(pod *apiv1.Pod, volMounts []apiv1.VolumeMount) error {
+	for _, volMnt := range volMounts {
+		vol := woc.getVolByName(volMnt.Name)
+		if vol == nil {
+			return errors.Errorf(errors.CodeBadRequest, "volume '%s' not found in workflow spec", volMnt.Name)
+		}
+		found := false
+		for _, v := range pod.Spec.Volumes {
+			if v.Name == vol.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if pod.Spec.Volumes == nil {
+				pod.Spec.Volumes = make([]apiv1.Volume, 0)
+			}
+			pod.Spec.Volumes = append(pod.Spec.Volumes, *vol)
+		}
+	}
+	return nil
 }
