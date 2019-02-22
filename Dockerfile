@@ -77,6 +77,7 @@ RUN make $MAKE_TARGET
 ####################################################################################################
 FROM argoexec-base as argoexec
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argoexec /usr/local/bin/
+RUN mkdir /argo && chmod 777 /argo
 
 
 ####################################################################################################

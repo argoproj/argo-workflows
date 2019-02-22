@@ -17,6 +17,8 @@ spec:
       image: alpine:latest
       command: [sh, -c]
       args: ["cat /tmp/file"]
+    executorSecurityContext:
+      runAsUser: 1000
   volumes:
   - name: vol01
     hostPath:

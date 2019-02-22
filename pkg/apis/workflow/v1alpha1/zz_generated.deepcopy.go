@@ -835,6 +835,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.ExecutorSecurityContext != nil {
+		in, out := &in.ExecutorSecurityContext, &out.ExecutorSecurityContext
+		*out = new(v1.SecurityContext)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -1024,6 +1029,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.Priority, &out.Priority
 		*out = new(int32)
 		**out = **in
+	}
+	if in.ExecutorSecurityContext != nil {
+		in, out := &in.ExecutorSecurityContext, &out.ExecutorSecurityContext
+		*out = new(v1.SecurityContext)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

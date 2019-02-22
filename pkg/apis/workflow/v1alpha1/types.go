@@ -153,6 +153,9 @@ type WorkflowSpec struct {
 	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.
+	ExecutorSecurityContext *apiv1.SecurityContext `json:"executorSecurityContext,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -229,6 +232,9 @@ type Template struct {
 	// If neither specified, the pod will be dispatched by default scheduler.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.
+	ExecutorSecurityContext *apiv1.SecurityContext `json:"executorSecurityContext,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

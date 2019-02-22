@@ -1841,12 +1841,18 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"executorSecurityContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.",
+							Ref:         ref("k8s.io/api/core/v1.SecurityContext"),
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.Toleration"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sidecar", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.Toleration"},
 	}
 }
 
@@ -2190,12 +2196,18 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
+					"executorSecurityContext": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.",
+							Ref:         ref("k8s.io/api/core/v1.SecurityContext"),
+						},
+					},
 				},
 				Required: []string{"templates", "entrypoint"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 

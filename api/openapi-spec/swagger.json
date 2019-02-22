@@ -927,6 +927,10 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
+        "executorSecurityContext": {
+          "description": "ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
+        },
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
@@ -1124,6 +1128,10 @@
         "entrypoint": {
           "description": "Entrypoint is a template reference to the starting point of the workflow",
           "type": "string"
+        },
+        "executorSecurityContext": {
+          "description": "ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
         "hostNetwork": {
           "description": "Host networking requested for this workflow pod. Default to false.",

@@ -133,7 +133,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		waitCtr, err := woc.newWaitContainer()
+		waitCtr, err := woc.newWaitContainer(tmpl)
 		if err != nil {
 			return nil, err
 		}
@@ -254,13 +254,13 @@ func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.P
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName, false, "init")
+	ctr := woc.newExecContainer(common.InitContainerName, tmpl, false, "init")
 	ctr.VolumeMounts = append([]apiv1.VolumeMount{volumeMountPodMetadata}, ctr.VolumeMounts...)
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
-	ctr := woc.newExecContainer(common.WaitContainerName, false, "wait")
+	ctr := woc.newExecContainer(common.WaitContainerName, tmpl, false, "wait")
 	ctr.VolumeMounts = append(woc.createVolumeMounts(), ctr.VolumeMounts...)
 	return ctr, nil
 }
@@ -342,17 +342,24 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string, privileged bool, subCommand string) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template, privileged bool, subCommand string) *apiv1.Container {
+	securityContext := &apiv1.SecurityContext{
+		Privileged: &privileged,
+	}
+	// Set security context (if specified)
+	if tmpl.ExecutorSecurityContext != nil {
+		securityContext = tmpl.ExecutorSecurityContext.DeepCopy()
+	} else if woc.wf.Spec.ExecutorSecurityContext != nil {
+		securityContext = woc.wf.Spec.ExecutorSecurityContext.DeepCopy()
+	}
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
 		Env:             woc.createEnvVars(),
-		SecurityContext: &apiv1.SecurityContext{
-			Privileged: &privileged,
-		},
-		Command: []string{"argoexec"},
-		Args:    []string{subCommand},
+		SecurityContext: securityContext,
+		Command:         []string{"argoexec"},
+		Args:            []string{subCommand},
 	}
 	if woc.controller.Config.ExecutorResources != nil {
 		exec.Resources = *woc.controller.Config.ExecutorResources
