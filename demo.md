@@ -84,6 +84,9 @@ Login to the Minio UI using a web browser (port 9000) after exposing obtaining t
 ```
 kubectl get service argo-artifacts -o wide
 ```
+A recent version of the Minio UI uses `argo-artifacts-minio` as service name, instead of `argo-artifacts`. You can check this by running
+`kubectl get services` and inspecting the output.
+
 On Minikube:
 ```
 minikube service --url argo-artifacts
