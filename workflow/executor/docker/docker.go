@@ -78,6 +78,7 @@ func (d *DockerExecutor) Logs(containerID string, path string) error {
 	}
 	defer util.Close(outfile)
 	cmd.Stdout = outfile
+	cmd.Stderr = outfile
 	err = cmd.Start()
 	if err != nil {
 		return errors.InternalWrapError(err)
