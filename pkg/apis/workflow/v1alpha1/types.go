@@ -384,6 +384,10 @@ type WorkflowStep struct {
 
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty"`
+
+	// ContinueOn makes argo to proceed with the following step even if this step fails.
+	// Errors and Failed states can be specified
+	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -845,6 +849,10 @@ type DAGTask struct {
 
 	// When is an expression in which the task should conditionally execute
 	When string `json:"when,omitempty"`
+
+	// ContinueOn makes argo to proceed with the following step even if this step fails.
+	// Errors and Failed states can be specified
+	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -939,4 +947,36 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// ContinueOn defines if a workflow should continue even if a task or step fails/errors.
+// It can be specified if the workflow should continue when the pod errors, fails or both.
+type ContinueOn struct {
+	// +optional
+	Error bool `json:"error,omitempty"`
+	// +optional
+	Failed bool `json:"failed,omitempty"`
+}
+
+func continues(c *ContinueOn, phase NodePhase) bool {
+	if c == nil {
+		return false
+	}
+	if c.Error == true && phase == NodeError {
+		return true
+	}
+	if c.Failed == true && phase == NodeFailed {
+		return true
+	}
+	return false
+}
+
+// ContinuesOn returns whether the DAG should be proceeded if the task fails or errors.
+func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
+	return continues(t.ContinueOn, phase)
+}
+
+// ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
+func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
+	return continues(s.ContinueOn, phase)
 }
