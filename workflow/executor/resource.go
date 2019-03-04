@@ -31,10 +31,11 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isD
 	}
 
 	if action == "patch" {
-		args = append(args, "-p")
-		buff, err :=ioutil.ReadFile(manifestPath)
 
-		if(err != nil) {
+		args = append(args, "-p")
+		buff, err := ioutil.ReadFile(manifestPath)
+
+		if err != nil {
 			return "", "", errors.New(errors.CodeBadRequest, err.Error())
 		}
 
