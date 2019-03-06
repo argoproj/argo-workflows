@@ -95,6 +95,17 @@ data:
         cpu: 0.5
         memory: 512Mi
 
+    # mainContainerResources specifies the default resource requirement that will be used for
+    # the main container when running a kubectl command against a manifest. This is useful in 
+    # clusters which require resources to be specified as part of admission control.
+    mainContainerResources:
+      requests:
+        cpu: 0.1
+        memory: 64Mi
+      limits:
+        cpu: 0.5
+        memory: 512Mi
+
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:
       enabled: true

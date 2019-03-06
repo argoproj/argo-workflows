@@ -1487,6 +1487,9 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		},
 		Env: execEnvVars,
 	}
+	if woc.controller.Config.MainContainerResources != nil {
+		mainCtr.Resources = *woc.controller.Config.MainContainerResources
+	}
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())

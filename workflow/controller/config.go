@@ -30,6 +30,9 @@ type WorkflowControllerConfig struct {
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
+	// MainContainerResources specifies the default resource requirements that will be used for the main container
+	MainContainerResources *apiv1.ResourceRequirements `json:"mainContainerResources,omitempty"`
+
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
