@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 //IsFileOrDirExistInGZip return true if file or directory exists in GZip file
@@ -16,13 +18,12 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	defer fi.Close()
+	defer closeFile(fi)
 
 	fz, err := gzip.NewReader(fi)
 	if err != nil {
 		return false
 	}
-	defer fz.Close()
 	tr := tar.NewReader(fz)
 	for {
 		hdr, err := tr.Next()
@@ -30,6 +31,7 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 			break
 		}
 		if err != nil {
+
 			return false
 		}
 		if hdr.FileInfo().IsDir() && strings.Contains(strings.Trim(hdr.Name, "/"), strings.Trim(sourcePath, "/")) {
@@ -40,4 +42,11 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 		}
 	}
 	return false
+}
+
+func closeFile(f *os.File) {
+	err := f.Close()
+	if err != nil {
+		log.Warn("Failed to close the file. v%", err)
+	}
 }
