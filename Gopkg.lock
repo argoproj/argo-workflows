@@ -1162,6 +1162,7 @@
     "github.com/evanphx/json-patch",
     "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
+    "github.com/golang/glog",
     "github.com/gorilla/websocket",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
