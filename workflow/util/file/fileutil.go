@@ -2,8 +2,11 @@ package file
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
+	"encoding/base64"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -44,9 +47,60 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 	return false
 }
 
+//Close the file
 func closeFile(f *os.File) {
 	err := f.Close()
 	if err != nil {
 		log.Warn("Failed to close the file. v%", err)
 	}
+}
+
+//EncodeContent will encode using base64
+func EncodeContent(content []byte) string {
+	encoder := base64.StdEncoding
+	return encoder.EncodeToString(content)
+
+}
+
+//DecodeContent will decode using base64
+func DecodeContent(content string) ([]byte, error) {
+	encoder := base64.StdEncoding
+	return encoder.DecodeString(content)
+}
+
+//CompressEncodeString will return the compressed string with base64 encoded
+func CompressEncodeString(content string) string {
+	return EncodeContent(CompressContent([]byte(content)))
+}
+
+//DecodeDecompressString will return  decode and decompress the
+func DecodeDecompressString(content string) (string, error) {
+
+	buf, err := DecodeContent(content)
+	if err != nil {
+		return "", err
+	}
+	dBuf, err := DecompressContent(buf)
+	if err != nil {
+		return "", err
+	}
+	return string(dBuf), nil
+}
+
+//CompressContent will compress the byte array using zip writer
+func CompressContent(content []byte) []byte {
+	var buf bytes.Buffer
+	zipWriter := gzip.NewWriter(&buf)
+	zipWriter.Write(content)
+	zipWriter.Close()
+	return buf.Bytes()
+}
+
+//D
+func DecompressContent(content []byte) ([]byte, error) {
+
+	buf := bytes.NewReader(content)
+	gZipReader, _ := gzip.NewReader(buf)
+	defer gZipReader.Close()
+	return ioutil.ReadAll(gZipReader)
 }

@@ -5,10 +5,11 @@ metadata:
   generateName: pod-limits-
 spec:
   entrypoint: pod-limits
+  parallelism: 20
   arguments:
     parameters:
     - name: limit
-      value: 1000
+      value: 5
 
   templates:
   - name: pod-limits
@@ -19,7 +20,7 @@ spec:
           count: "{{workflow.parameters.limit}}"
 
   - name: run-pod
-    container:
-      image: "alpine:3.7"
-      command: [sh, -c]
-      args: ["echo sleeping 1s; sleep 1"]
+    script:
+      image: alpine:latest
+      command: [sh]
+      source: head /dev/urandom | tr -dc A-Za-z0-9 | head -c 1024 ; echo ''

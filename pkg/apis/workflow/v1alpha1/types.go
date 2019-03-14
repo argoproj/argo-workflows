@@ -477,6 +477,8 @@ type WorkflowStatus struct {
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty"`
 
+	CompressedNodes string `json:"compressedNodes,omitempty"`
+
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 

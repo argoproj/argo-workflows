@@ -243,6 +243,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)
+	//Decompress the node if it is compressed
+	woc.checkAndDecompress()
 	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)

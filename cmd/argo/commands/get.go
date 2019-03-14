@@ -8,6 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/util/file"
+
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -33,6 +36,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+			CheckAndDecompress(wf)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -43,6 +47,22 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
+}
+
+func CheckAndDecompress(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+		wf.Status.CompressedNodes = ""
+	}
+	return nil
 }
 
 func printWorkflow(wf *wfv1.Workflow, outFmt string) {
