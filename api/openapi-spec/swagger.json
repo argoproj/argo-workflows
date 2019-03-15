@@ -250,6 +250,10 @@
         "repo"
       ],
       "properties": {
+        "insecureIgnoreHostKey": {
+          "description": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone",
+          "type": "boolean"
+        },
         "passwordSecret": {
           "description": "PasswordSecret is the secret selector to the repository password",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
