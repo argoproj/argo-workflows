@@ -316,3 +316,28 @@ func TestOutOfCluster(t *testing.T) {
 		assert.Equal(t, "--kubeconfig=/some/path/config", pod.Spec.Containers[1].Args[1])
 	}
 }
+
+// TestPriority verifies the ability to carry forward priorityClassName and priority.
+func TestPriority(t *testing.T) {
+	priority := int32(15)
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].PriorityClassName = "foo"
+	woc.wf.Spec.Templates[0].Priority = &priority
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, pod.Spec.PriorityClassName, "foo")
+	assert.Equal(t, pod.Spec.Priority, &priority)
+}
+
+// TestSchedulerName verifies the ability to carry forward schedulerName.
+func TestSchedulerName(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].SchedulerName = "foo"
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, pod.Spec.SchedulerName, "foo")
+}
