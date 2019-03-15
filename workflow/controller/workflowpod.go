@@ -408,7 +408,26 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if len(wfSpec.Tolerations) > 0 {
 		pod.Spec.Tolerations = wfSpec.Tolerations
 	}
+
 	// Set scheduler name (if specified)
+	if tmpl.SchedulerName != "" {
+		pod.Spec.SchedulerName = tmpl.SchedulerName
+	} else if wfSpec.SchedulerName != "" {
+		pod.Spec.SchedulerName = wfSpec.SchedulerName
+	}
+	// Set priorityClass (if specified)
+	if tmpl.PriorityClassName != "" {
+		pod.Spec.PriorityClassName = tmpl.PriorityClassName
+	} else if wfSpec.PodPriorityClassName != "" {
+		pod.Spec.PriorityClassName = wfSpec.PodPriorityClassName
+	}
+	// Set priority (if specified)
+	if tmpl.Priority != nil {
+		pod.Spec.Priority = tmpl.Priority
+	} else if wfSpec.PodPriority != nil {
+		pod.Spec.Priority = wfSpec.PodPriority
+	}
+	// Set schedulerName (if specified)
 	if tmpl.SchedulerName != "" {
 		pod.Spec.SchedulerName = tmpl.SchedulerName
 	} else if wfSpec.SchedulerName != "" {

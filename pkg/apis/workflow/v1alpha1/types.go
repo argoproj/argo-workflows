@@ -145,6 +145,7 @@ type WorkflowSpec struct {
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
 	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
 	Priority *int32 `json:"priority,omitempty"`
 
@@ -153,6 +154,12 @@ type WorkflowSpec struct {
 	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PriorityClassName to apply to workflow pods.
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty"`
+
+	// Priority to apply to workflow pods.
+	PodPriority *int32 `json:"podPriority,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -229,6 +236,12 @@ type Template struct {
 	// If neither specified, the pod will be dispatched by default scheduler.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PriorityClassName to apply to workflow pods.
+	PriorityClassName string `json:"priorityClassName,omitempty"`
+
+	// Priority to apply to workflow pods.
+	Priority *int32 `json:"priority,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
