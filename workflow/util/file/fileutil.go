@@ -21,7 +21,7 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	defer closeFile(fi)
+	defer close(fi)
 
 	fz, err := gzip.NewReader(fi)
 	if err != nil {
