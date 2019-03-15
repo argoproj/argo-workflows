@@ -851,6 +851,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Priority != nil {
+		in, out := &in.Priority, &out.Priority
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 
@@ -1022,6 +1027,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 	}
 	if in.Priority != nil {
 		in, out := &in.Priority, &out.Priority
+		*out = new(int32)
+		**out = **in
+	}
+	if in.PodPriority != nil {
+		in, out := &in.PodPriority, &out.PodPriority
 		*out = new(int32)
 		**out = **in
 	}
