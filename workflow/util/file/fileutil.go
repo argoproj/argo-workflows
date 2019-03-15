@@ -91,11 +91,12 @@ func DecodeDecompressString(content string) (string, error) {
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
 	zipWriter := gzip.NewWriter(&buf)
-	defer close(zipWriter)
+
 	_, err := zipWriter.Write(content)
 	if err != nil {
 		log.Warn("Error in compressing. v%", err)
 	}
+	close(zipWriter)
 	return buf.Bytes()
 }
 
