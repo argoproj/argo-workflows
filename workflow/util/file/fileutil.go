@@ -48,10 +48,10 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 }
 
 //Close the file
-func closeFile(f *os.File) {
+func close(f io.Closer) {
 	err := f.Close()
 	if err != nil {
-		log.Warn("Failed to close the file. v%", err)
+		log.Warn("Failed to close the file/writer/reader. ", err)
 	}
 }
 
@@ -91,8 +91,11 @@ func DecodeDecompressString(content string) (string, error) {
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
 	zipWriter := gzip.NewWriter(&buf)
-	zipWriter.Write(content)
-	zipWriter.Close()
+	defer close(zipWriter)
+	_, err := zipWriter.Write(content)
+	if err != nil {
+		log.Warn("Error in compressing. v%", err)
+	}
 	return buf.Bytes()
 }
 
@@ -101,6 +104,6 @@ func DecompressContent(content []byte) ([]byte, error) {
 
 	buf := bytes.NewReader(content)
 	gZipReader, _ := gzip.NewReader(buf)
-	defer gZipReader.Close()
+	defer close(gZipReader)
 	return ioutil.ReadAll(gZipReader)
 }

@@ -282,7 +282,11 @@ func (woc *wfOperationCtx) persistUpdates() {
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	woc.log.Info("Final size", woc.getSize())
 	if woc.wf.Status.CompressedNodes != "" {
-		woc.checkAndCompress()
+
+		err := woc.checkAndCompress()
+		if err != nil {
+			woc.log.Warnf("Error compressing workflow: %v", err)
+		}
 		woc.clearNodeStatusMap()
 	}
 

@@ -36,7 +36,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-			CheckAndDecompress(wf)
+			err = CheckAndDecompress(wf)
 			if err != nil {
 				log.Fatal(err)
 			}
