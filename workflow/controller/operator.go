@@ -1651,9 +1651,9 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 }
 
 func (woc *wfOperationCtx) clearNodeStatusMap() {
-	for k := range woc.wf.Status.Nodes {
-		delete(woc.wf.Status.Nodes, k)
-	}
+	status := woc.wf.Status
+	status.Nodes = nil
+	woc.wf.Status = status
 }
 
 //checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
@@ -1668,6 +1668,7 @@ func (woc *wfOperationCtx) checkAndDecompress() error {
 		err = json.Unmarshal([]byte(nodeContent), &tempNodes)
 		if err != nil {
 			woc.log.Warn(err)
+			return err
 		}
 		woc.wf.Status.Nodes = tempNodes
 	}

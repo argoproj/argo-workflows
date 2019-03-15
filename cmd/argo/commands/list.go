@@ -134,6 +134,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
+	CheckAndDecompress(wf)
 	for _, node := range wf.Status.Nodes {
 		tmpl := wf.GetTemplate(node.TemplateName)
 		if tmpl == nil || !tmpl.IsPodType() {

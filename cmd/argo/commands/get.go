@@ -9,14 +9,12 @@ import (
 	"text/tabwriter"
 
 	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util/file"
-
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const onExitSuffix = "onExit"
