@@ -136,7 +136,11 @@ func (p *logPrinter) PrintPodLogs(podName string) error {
 // Prints logs for workflow pod steps and return most recent log timestamp per pod name
 func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*time.Time {
 	var podNodes []v1alpha1.NodeStatus
-	CheckAndDecompress(wf)
+	err := CheckAndDecompress(wf)
+	if err != nil {
+		log.Warn(err)
+		return nil
+	}
 	for _, node := range wf.Status.Nodes {
 		if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError {
 			podNodes = append(podNodes, node)
@@ -194,7 +198,11 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 	defer cancel()
 
 	processPods := func(wf *v1alpha1.Workflow) {
-		CheckAndDecompress(wf)
+		err := CheckAndDecompress(wf)
+		if err != nil {
+			log.Warn(err)
+			return
+		}
 		for id := range wf.Status.Nodes {
 			node := wf.Status.Nodes[id]
 			if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError && streamedPods[node.ID] == false {
