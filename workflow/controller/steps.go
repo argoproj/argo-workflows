@@ -155,6 +155,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node
 	}
+
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	stepGroup, err := woc.resolveReferences(stepGroup, stepsCtx.scope)
 	if err != nil {
@@ -166,6 +167,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	if err != nil {
 		return woc.markNodeError(sgNodeName, err)
 	}
+
+	// Maps nodes to their steps
+	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
@@ -202,6 +206,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 		}
 		if childNode != nil {
+			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
 		}
 	}
@@ -216,7 +221,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
-		if !childNode.Successful() {
+		step := nodeSteps[childNode.Name]
+		if !childNode.Successful() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.Infof("Step group node %s deemed failed: %s", node, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)

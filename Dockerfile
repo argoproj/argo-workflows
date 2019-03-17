@@ -3,7 +3,7 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM golang:1.11.4 as builder
+FROM golang:1.11.5 as builder
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -41,12 +41,13 @@ RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${G
 ####################################################################################################
 FROM debian:9.6-slim as argoexec-base
 # NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.13.1
+ENV KUBECTL_VERSION=1.13.4
 RUN apt-get update && \
     apt-get install -y curl jq procps git tar mime-support && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
     chmod +x /usr/local/bin/kubectl
+COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 
