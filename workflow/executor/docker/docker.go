@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/argo/workflow/util/file"
+
 	"github.com/argoproj/argo/util"
 
 	"github.com/argoproj/argo/errors"
@@ -51,6 +53,11 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	if err != nil {
 		return err
 	}
+	if !file.IsFileOrDirExistInGZip(sourcePath, destPath) {
+		errMsg := fmt.Sprintf("File or Artifact does not exist. %s", sourcePath)
+		log.Warn(errMsg)
+		return errors.InternalError(errMsg)
+	}
 	log.Infof("Archiving completed")
 	return nil
 }
@@ -78,6 +85,7 @@ func (d *DockerExecutor) Logs(containerID string, path string) error {
 	}
 	defer util.Close(outfile)
 	cmd.Stdout = outfile
+	cmd.Stderr = outfile
 	err = cmd.Start()
 	if err != nil {
 		return errors.InternalWrapError(err)

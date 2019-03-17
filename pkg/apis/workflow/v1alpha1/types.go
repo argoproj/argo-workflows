@@ -145,6 +145,7 @@ type WorkflowSpec struct {
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
 	// terminate a Running workflow
 	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty"`
+
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
 	Priority *int32 `json:"priority,omitempty"`
 
@@ -153,6 +154,12 @@ type WorkflowSpec struct {
 	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PriorityClassName to apply to workflow pods.
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty"`
+
+	// Priority to apply to workflow pods.
+	PodPriority *int32 `json:"podPriority,omitempty"`
 
 	// ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.
 	ExecutorSecurityContext *apiv1.SecurityContext `json:"executorSecurityContext,omitempty"`
@@ -232,6 +239,12 @@ type Template struct {
 	// If neither specified, the pod will be dispatched by default scheduler.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PriorityClassName to apply to workflow pods.
+	PriorityClassName string `json:"priorityClassName,omitempty"`
+
+	// Priority to apply to workflow pods.
+	Priority *int32 `json:"priority,omitempty"`
 
 	// ExecutorSecurityContext is used to set SecurityContext on executor containers explicitly.
 	ExecutorSecurityContext *apiv1.SecurityContext `json:"executorSecurityContext,omitempty"`
@@ -393,6 +406,10 @@ type WorkflowStep struct {
 
 	// When is an expression in which the step should conditionally execute
 	When string `json:"when,omitempty"`
+
+	// ContinueOn makes argo to proceed with the following step even if this step fails.
+	// Errors and Failed states can be specified
+	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -654,8 +671,12 @@ type GitArtifact struct {
 
 	// PasswordSecret is the secret selector to the repository password
 	PasswordSecret *apiv1.SecretKeySelector `json:"passwordSecret,omitempty"`
+
 	// SSHPrivateKeySecret is the secret selector to the repository ssh private key
 	SSHPrivateKeySecret *apiv1.SecretKeySelector `json:"sshPrivateKeySecret,omitempty"`
+
+	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
+	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty"`
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -864,6 +885,10 @@ type DAGTask struct {
 
 	// When is an expression in which the task should conditionally execute
 	When string `json:"when,omitempty"`
+
+	// ContinueOn makes argo to proceed with the following step even if this step fails.
+	// Errors and Failed states can be specified
+	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -958,4 +983,36 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// ContinueOn defines if a workflow should continue even if a task or step fails/errors.
+// It can be specified if the workflow should continue when the pod errors, fails or both.
+type ContinueOn struct {
+	// +optional
+	Error bool `json:"error,omitempty"`
+	// +optional
+	Failed bool `json:"failed,omitempty"`
+}
+
+func continues(c *ContinueOn, phase NodePhase) bool {
+	if c == nil {
+		return false
+	}
+	if c.Error == true && phase == NodeError {
+		return true
+	}
+	if c.Failed == true && phase == NodeFailed {
+		return true
+	}
+	return false
+}
+
+// ContinuesOn returns whether the DAG should be proceeded if the task fails or errors.
+func (t *DAGTask) ContinuesOn(phase NodePhase) bool {
+	return continues(t.ContinueOn, phase)
+}
+
+// ContinuesOn returns whether the StepGroup should be proceeded if the task fails or errors.
+func (s *WorkflowStep) ContinuesOn(phase NodePhase) bool {
+	return continues(s.ContinueOn, phase)
 }

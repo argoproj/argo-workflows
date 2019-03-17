@@ -81,7 +81,7 @@ data:
     # kubelet port when using kubelet executor (default: 10250)
     kubeletPort: 10250
 
-    # disable the TLS verification of the kubelet executo (default: false)
+    # disable the TLS verification of the kubelet executor (default: false)
     kubeletInsecure: false
 
     # executorResources specifies the resource requirements that will be used for the executor

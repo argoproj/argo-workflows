@@ -462,7 +462,9 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &http.HTTPArtifactDriver{}, nil
 	}
 	if art.Git != nil {
-		gitDriver := git.GitArtifactDriver{}
+		gitDriver := git.GitArtifactDriver{
+			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
+		}
 		if art.Git.UsernameSecret != nil {
 			usernameBytes, err := we.GetSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
 			if err != nil {

@@ -998,7 +998,7 @@ spec:
 
 ## Daemon Containers
 
-Argo workflows can start containers that run in the background (also known as `daemon containers`) while the workflow itself continues execution. Note that the daemons will be *automatically destroyed* when the workflow exits the template scope in which the daemon was invoked. Deamon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
+Argo workflows can start containers that run in the background (also known as `daemon containers`) while the workflow itself continues execution. Note that the daemons will be *automatically destroyed* when the workflow exits the template scope in which the daemon was invoked. Daemon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -1163,7 +1163,8 @@ spec:
   templates:
   - name: pi-tmpl
     resource:                   # indicates that this is a resource template
-      action: create            # can be any kubectl action (e.g. create, delete, apply, patch)
+      action: create            # can be any kubectl action (e.g. create, delete, apply, patch) 
+                                # Patch action will support only **json merge strategic**
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
