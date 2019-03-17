@@ -10,7 +10,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util/file"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -59,7 +59,6 @@ func CheckAndDecompress(wf *wfv1.Workflow) error {
 		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
 		if err != nil {
 			log.Fatal(err)
-			return err
 		}
 		wf.Status.CompressedNodes = ""
 	}

@@ -13,18 +13,6 @@ func TestCompressContentString(t *testing.T) {
 		"\"Succeeded\",\"boundaryID\":\"pod-limits-rrdm8\",\"startedAt\":\"2019-03-07T19:14:50Z\",\"finishedAt\":" +
 		"\"2019-03-07T19:14:55Z\"}}"
 
-	contentByte := []byte(content)
-	comByte := CompressContent(contentByte)
-	compressedContent := EncodeContent(comByte)
-	assert.True(t, len(contentByte) > len(compressedContent))
-	deCodeContent, _ := DecodeContent(compressedContent)
-
-	deCompress, _ := DecompressContent(deCodeContent)
-
-	deContent := string(deCompress)
-
-	assert.Equal(t, content, deContent)
-
 	compString := CompressEncodeString(content)
 
 	resultString, _ := DecodeDecompressString(compString)

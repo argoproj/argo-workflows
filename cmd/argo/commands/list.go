@@ -137,7 +137,6 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	err := CheckAndDecompress(wf)
 	if err != nil {
 		log.Fatal(err)
-		return pending, running, completed
 	}
 	for _, node := range wf.Status.Nodes {
 		tmpl := wf.GetTemplate(node.TemplateName)

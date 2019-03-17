@@ -55,28 +55,15 @@ func close(f io.Closer) {
 	}
 }
 
-//EncodeContent will encode using base64
-func EncodeContent(content []byte) string {
-	encoder := base64.StdEncoding
-	return encoder.EncodeToString(content)
-
-}
-
-//DecodeContent will decode using base64
-func DecodeContent(content string) ([]byte, error) {
-	encoder := base64.StdEncoding
-	return encoder.DecodeString(content)
-}
-
 //CompressEncodeString will return the compressed string with base64 encoded
 func CompressEncodeString(content string) string {
-	return EncodeContent(CompressContent([]byte(content)))
+	return base64.StdEncoding.EncodeToString(CompressContent([]byte(content)))
 }
 
 //DecodeDecompressString will return  decode and decompress the
 func DecodeDecompressString(content string) (string, error) {
 
-	buf, err := DecodeContent(content)
+	buf, err := base64.StdEncoding.DecodeString(content)
 	if err != nil {
 		return "", err
 	}
@@ -94,13 +81,13 @@ func CompressContent(content []byte) []byte {
 
 	_, err := zipWriter.Write(content)
 	if err != nil {
-		log.Warn("Error in compressing. v%", err)
+		log.Warn("Error in compressing.", err)
 	}
 	close(zipWriter)
 	return buf.Bytes()
 }
 
-//D
+//DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
 
 	buf := bytes.NewReader(content)

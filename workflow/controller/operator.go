@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/workflow/util/file"
-
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -26,6 +24,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -295,7 +294,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 			woc.persistWorkflowSizeLimitErr(wfClient, err)
 			return
 		}
-		if err != nil && !apierr.IsConflict(err) {
+		if !apierr.IsConflict(err) {
 			return
 		}
 		woc.log.Info("Re-appying updates on latest version and retrying update")
@@ -473,16 +472,8 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		if err != nil {
 			woc.wf.Status = origNodeStatus
 			nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
-			nodeID := woc.wf.NodeID(nodeNameForPod)
-			node := woc.wf.Status.Nodes[nodeID]
-			node.Message = fmt.Sprintf("%v", err)
-			woc.log.Warn(node.Message)
-			node.Outputs = nil
-			node.FinishedAt = metav1.Time{Time: time.Now().UTC()}
-			node.Phase = wfv1.NodeError
-			node.Completed()
-			woc.wf.Status.Nodes[nodeID] = node
-			woc.updated = true
+			woc.log.Warnf("%v", err)
+			woc.markNodeErrorClearOuput(nodeNameForPod, err)
 			err = woc.checkAndCompress()
 			if err != nil {
 				woc.markWorkflowError(err, true)
@@ -1170,6 +1161,14 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	}
 	woc.wf.Status.Nodes[node.ID] = *node
 	return node
+}
+
+// markNodeErrorClearOuput is a convenience method to mark a node with an error and clear the output
+func (woc *wfOperationCtx) markNodeErrorClearOuput(nodeName string, err error) *wfv1.NodeStatus {
+	nodeStatus := woc.markNodeError(nodeName, err)
+	nodeStatus.Outputs = nil
+	woc.wf.Status.Nodes[nodeStatus.ID] = *nodeStatus
+	return nodeStatus
 }
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error

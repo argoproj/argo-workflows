@@ -7,8 +7,8 @@ spec:
   entrypoint: pod-limits
   arguments:
     parameters:
-      - name: limit
-        value: 1000
+     - name: limit
+       value: 1000
 
   templates:
     - name: pod-limits
