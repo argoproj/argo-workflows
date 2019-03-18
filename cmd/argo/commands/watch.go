@@ -45,6 +45,8 @@ func watchWorkflow(name string) {
 		select {
 		case next := <-watchIf.ResultChan():
 			wf, _ = next.Object.(*wfv1.Workflow)
+			err := CheckAndDecompress(wf)
+			errors.CheckError(err)
 		case <-ticker.C:
 		}
 		if wf == nil {
