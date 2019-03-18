@@ -8,12 +8,13 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const onExitSuffix = "onExit"
@@ -36,6 +37,10 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+			err = CheckAndDecompress(wf)
+			if err != nil {
+				log.Fatal(err)
+			}
 			printWorkflow(wf, output)
 		},
 	}
@@ -43,6 +48,21 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
+}
+
+func CheckAndDecompress(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		if err != nil {
+			log.Fatal(err)
+		}
+		wf.Status.CompressedNodes = ""
+	}
+	return nil
 }
 
 func printWorkflow(wf *wfv1.Workflow, outFmt string) {
