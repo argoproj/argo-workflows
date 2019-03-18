@@ -8,3 +8,4 @@ cmd/**/debug
 hack/**/debug
 debug.test
 *.iml
+examples/k8s-jobs1.yaml

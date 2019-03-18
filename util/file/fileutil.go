@@ -51,7 +51,7 @@ func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 func close(f io.Closer) {
 	err := f.Close()
 	if err != nil {
-		log.Warn("Failed to close the file/writer/reader. ", err)
+		log.Warnf("Failed to close the file/writer/reader. %v", err)
 	}
 }
 
@@ -81,7 +81,7 @@ func CompressContent(content []byte) []byte {
 
 	_, err := zipWriter.Write(content)
 	if err != nil {
-		log.Warn("Error in compressing.", err)
+		log.Warnf("Error in compressing: %v", err)
 	}
 	close(zipWriter)
 	return buf.Bytes()
