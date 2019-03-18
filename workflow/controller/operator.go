@@ -284,7 +284,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.log.Warnf("Error compressing workflow: %v", err)
 	}
 	if woc.wf.Status.CompressedNodes != "" {
-		woc.clearNodeStatusMap()
+		woc.wf.Status.Nodes = nil
 	}
 
 	_, err = wfClient.Update(woc.wf)
@@ -1629,8 +1629,8 @@ func (woc *wfOperationCtx) getSize() int {
 	return len(nodeContent)
 }
 
-//checkAndCompress will check the workflow size and compress node status if total workflow size is more than maxWorkflowSize.
-//The compressed content will be assign to compressedNodes element and clear the nodestatus map.
+// checkAndCompress will check the workflow size and compress node status if total workflow size is more than maxWorkflowSize.
+// The compressed content will be assign to compressedNodes element and clear the nodestatus map.
 func (woc *wfOperationCtx) checkAndCompress() error {
 
 	if woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize) {
@@ -1649,13 +1649,7 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 	return nil
 }
 
-func (woc *wfOperationCtx) clearNodeStatusMap() {
-	status := woc.wf.Status
-	status.Nodes = nil
-	woc.wf.Status = status
-}
-
-//checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
+// checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
 func (woc *wfOperationCtx) checkAndDecompress() error {
 	if woc.wf.Status.CompressedNodes != "" {
 		nodeContent, err := file.DecodeDecompressString(woc.wf.Status.CompressedNodes)

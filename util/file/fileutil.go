@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//IsFileOrDirExistInGZip return true if file or directory exists in GZip file
+// IsFileOrDirExistInGZip return true if file or directory exists in GZip file
 func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
 
 	fi, err := os.Open(gzipFilePath)
@@ -55,12 +55,12 @@ func close(f io.Closer) {
 	}
 }
 
-//CompressEncodeString will return the compressed string with base64 encoded
+// CompressEncodeString will return the compressed string with base64 encoded
 func CompressEncodeString(content string) string {
 	return base64.StdEncoding.EncodeToString(CompressContent([]byte(content)))
 }
 
-//DecodeDecompressString will return  decode and decompress the
+// DecodeDecompressString will return  decode and decompress the
 func DecodeDecompressString(content string) (string, error) {
 
 	buf, err := base64.StdEncoding.DecodeString(content)
@@ -74,7 +74,7 @@ func DecodeDecompressString(content string) (string, error) {
 	return string(dBuf), nil
 }
 
-//CompressContent will compress the byte array using zip writer
+// CompressContent will compress the byte array using zip writer
 func CompressContent(content []byte) []byte {
 	var buf bytes.Buffer
 	zipWriter := gzip.NewWriter(&buf)
@@ -87,7 +87,7 @@ func CompressContent(content []byte) []byte {
 	return buf.Bytes()
 }
 
-//DecompressContent will return the uncompressed content
+// DecompressContent will return the uncompressed content
 func DecompressContent(content []byte) ([]byte, error) {
 
 	buf := bytes.NewReader(content)
