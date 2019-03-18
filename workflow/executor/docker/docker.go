@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/workflow/util/file"
+	"github.com/argoproj/argo/util/file"
 
 	"github.com/argoproj/argo/util"
 
