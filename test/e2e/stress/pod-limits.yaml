@@ -7,19 +7,19 @@ spec:
   entrypoint: pod-limits
   arguments:
     parameters:
-     - name: limit
-       value: 1000
+    - name: limit
+      value: 1000
 
   templates:
-    - name: pod-limits
-      steps:
-        - - name: run-pod
-            template: run-pod
-            withSequence:
-              count: "{{workflow.parameters.limit}}"
+  - name: pod-limits
+    steps:
+    - - name: run-pod
+        template: run-pod
+        withSequence:
+          count: "{{workflow.parameters.limit}}"
 
-    - name: run-pod
-      container:
-        image: "alpine:3.7"
-        command: [sh, -c]
-        args: ["echo sleeping 1s; sleep 1"]
+  - name: run-pod
+    container:
+      image: "alpine:3.7"
+      command: [sh, -c]
+      args: ["echo sleeping 1s; sleep 1"]
