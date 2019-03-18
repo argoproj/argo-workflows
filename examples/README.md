@@ -1164,7 +1164,7 @@ spec:
   - name: pi-tmpl
     resource:                   # indicates that this is a resource template
       action: create            # can be any kubectl action (e.g. create, delete, apply, patch) 
-                                # Patch action will support only **json merge strategic**
+                                # Patch action will perform a merge patch
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.

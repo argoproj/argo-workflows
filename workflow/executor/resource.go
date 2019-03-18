@@ -31,7 +31,8 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isD
 	}
 
 	if action == "patch" {
-
+		args = append(args, "--type")
+		args = append(args, "merge")
 		args = append(args, "-p")
 		buff, err := ioutil.ReadFile(manifestPath)
 
@@ -39,7 +40,7 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isD
 			return "", "", errors.New(errors.CodeBadRequest, err.Error())
 		}
 
-		args = append(args, string(buff))
+		args = append(args, "'"+string(buff)+"'")
 	}
 
 	args = append(args, "-f")
