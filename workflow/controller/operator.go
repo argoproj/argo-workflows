@@ -456,6 +456,11 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Completed() && !node.IsDaemoned() {
+				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
+					if tmpVal == "true" {
+						return
+					}
+				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
