@@ -7,37 +7,27 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// IsFileOrDirExistInGZip return true if file or directory exists in GZip file
-func IsFileOrDirExistInGZip(sourcePath string, gzipFilePath string) bool {
+type TarReader interface {
+	Next() (*tar.Header, error)
+}
 
-	fi, err := os.Open(gzipFilePath)
-
-	if os.IsNotExist(err) {
-		return false
-	}
-	defer close(fi)
-
-	fz, err := gzip.NewReader(fi)
-	if err != nil {
-		return false
-	}
-	tr := tar.NewReader(fz)
+// ExistsInTar return true if file or directory exists in tar
+func ExistsInTar(sourcePath string, tarReader TarReader) bool {
+	sourcePath = strings.Trim(sourcePath, "/")
 	for {
-		hdr, err := tr.Next()
+		hdr, err := tarReader.Next()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-
 			return false
 		}
-		if hdr.FileInfo().IsDir() && strings.Contains(strings.Trim(hdr.Name, "/"), strings.Trim(sourcePath, "/")) {
+		if hdr.FileInfo().IsDir() && strings.Contains(sourcePath, strings.Trim(hdr.Name, "/")) {
 			return true
 		}
 		if strings.Contains(sourcePath, hdr.Name) && hdr.Size > 0 {
