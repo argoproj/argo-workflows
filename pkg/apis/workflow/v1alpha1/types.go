@@ -319,6 +319,9 @@ type Artifact struct {
 
 	// Archive controls how the artifact will be saved to the artifact repository.
 	Archive *ArchiveStrategy `json:"archive,omitempty"`
+
+	// Make Artifacts optional, if Artifacts doesn't generate or exist
+	Optional bool `json:"optional,omitempty"`
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts

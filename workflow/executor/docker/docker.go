@@ -56,7 +56,7 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	if !file.IsFileOrDirExistInGZip(sourcePath, destPath) {
 		errMsg := fmt.Sprintf("File or Artifact does not exist. %s", sourcePath)
 		log.Warn(errMsg)
-		return errors.InternalError(errMsg)
+		return errors.Errorf(errors.CodeNotFound, errMsg)
 	}
 	log.Infof("Archiving completed")
 	return nil

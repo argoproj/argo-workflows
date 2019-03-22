@@ -148,10 +148,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		}
 		// artifact must be supplied
 		argArt := args.GetArtifactByName(inArt.Name)
-		if argArt == nil {
+		if !inArt.Optional && argArt == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 		}
-		if !argArt.HasLocation() && !validateOnly {
+		if !inArt.Optional && !argArt.HasLocation() && !validateOnly {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 		}
 		argArt.Path = inArt.Path
@@ -241,12 +241,16 @@ func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 	cmdStr := strings.Join(cmd.Args, " ")
 	log.Info(cmdStr)
-	_, err := cmd.Output()
+	cmdOutput, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
 		errOutput := string(exErr.Stderr)
 		log.Errorf("`%s` failed: %s", cmdStr, errOutput)
 		return errors.InternalError(strings.TrimSpace(errOutput))
+	}
+	if strings.Contains(string(cmdOutput), "Failed") {
+		return errors.InternalError(string(cmdOutput))
+
 	}
 	return nil
 }

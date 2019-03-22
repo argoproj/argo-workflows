@@ -94,6 +94,10 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "optional": {
+          "descrrition": "Make Artifacts optional, if Artifacts doesn't generate or exist",
+          "type": "boolean"
         }
       }
     },
