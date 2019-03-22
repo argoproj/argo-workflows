@@ -117,7 +117,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		log.Infof("Downloading artifact: %s", art.Name)
 		artDriver, err := we.InitDriver(art)
 		if err != nil {
-			if art.Optional{
+			if art.Optional {
 				log.Warnf("Error in loading Artifacts. Artifact configured as an optional so, Error will be  ignored. Error=", err)
 				return nil
 			}
@@ -236,7 +236,7 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 	localArtPath := path.Join(tempOutArtDir, fileName)
 	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
 	if err != nil {
-		if art.Optional && errors.IsCode(errors.CodeNotFound,err){
+		if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
 			log.Warnf("Error in saving Artifact. Artifact configured as an optional so, Error will be  ignored. Error=", err)
 			return nil
 		}
