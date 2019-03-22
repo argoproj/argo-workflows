@@ -31,6 +31,13 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isD
 	}
 
 	if action == "patch" {
+		mergeStrategy := "strategic"
+		if we.Template.Resource.MergeStrategy != "" {
+			mergeStrategy = we.Template.Resource.MergeStrategy
+		}
+
+		args = append(args, "--type")
+		args = append(args, mergeStrategy)
 
 		args = append(args, "-p")
 		buff, err := ioutil.ReadFile(manifestPath)

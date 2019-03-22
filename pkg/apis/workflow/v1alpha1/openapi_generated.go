@@ -1005,6 +1005,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"mergeStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"manifest": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Manifest contains the kubernetes manifest",
