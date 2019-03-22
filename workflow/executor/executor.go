@@ -430,7 +430,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor)  InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
+func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
 		var accessKey string
 		var secretKey string
