@@ -241,16 +241,12 @@ func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 	cmdStr := strings.Join(cmd.Args, " ")
 	log.Info(cmdStr)
-	cmdOutput, err := cmd.Output()
+	_, err := cmd.Output()
 	if err != nil {
 		exErr := err.(*exec.ExitError)
 		errOutput := string(exErr.Stderr)
 		log.Errorf("`%s` failed: %s", cmdStr, errOutput)
 		return errors.InternalError(strings.TrimSpace(errOutput))
-	}
-	if strings.Contains(string(cmdOutput), "Failed") {
-		return errors.InternalError(string(cmdOutput))
-
 	}
 	return nil
 }
