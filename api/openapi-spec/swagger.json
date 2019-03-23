@@ -83,6 +83,10 @@
           "description": "name of the artifact. must be unique within a template's inputs/outputs.",
           "type": "string"
         },
+        "optional": {
+          "description": "Make Artifacts optional, if Artifacts doesn't generate or exist",
+          "type": "boolean"
+        },
         "path": {
           "description": "Path is the container path to the artifact",
           "type": "string"
@@ -94,10 +98,6 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
-        },
-        "optional": {
-          "descrrition": "Make Artifacts optional, if Artifacts doesn't generate or exist",
-          "type": "boolean"
         }
       }
     },
