@@ -65,10 +65,9 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 		return err
 	}
 	if !file.ExistsInTar(sourcePath, tar.NewReader(gzipReader)) {
-    errMsg := fmt.Sprintf("path %s does not exist (or %s is empty) in archive %s", sourcePath, sourcePath, destPath)
+    	errMsg := fmt.Sprintf("path %s does not exist (or %s is empty) in archive %s", sourcePath, sourcePath, destPath)
 		log.Warn(errMsg)
 		return errors.Errorf(errors.CodeNotFound, errMsg)
-
 	}
 	log.Infof("Archiving completed")
 	return nil
