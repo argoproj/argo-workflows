@@ -542,6 +542,10 @@
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
         },
+        "mergeStrategy": {
+          "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
+          "type": "string"
+        },
         "successCondition": {
           "description": "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
           "type": "string"

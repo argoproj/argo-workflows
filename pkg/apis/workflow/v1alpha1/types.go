@@ -784,6 +784,10 @@ type ResourceTemplate struct {
 	// Must be one of: get, create, apply, delete, replace
 	Action string `json:"action"`
 
+	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
+	// Must be one of: strategic, merge, json
+	MergeStrategy string `json:"mergeStrategy,omitempty"`
+
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest"`
 

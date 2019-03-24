@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"os"
 	"os/exec"
@@ -53,10 +55,20 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	if err != nil {
 		return err
 	}
-	if !file.IsFileOrDirExistInGZip(sourcePath, destPath) {
-		errMsg := fmt.Sprintf("File or Artifact does not exist. %s", sourcePath)
+	copiedFile, err := os.Open(destPath)
+	if err != nil {
+		return err
+	}
+	defer util.Close(copiedFile)
+	gzipReader, err := gzip.NewReader(copiedFile)
+	if err != nil {
+		return err
+	}
+	if !file.ExistsInTar(sourcePath, tar.NewReader(gzipReader)) {
+    errMsg := fmt.Sprintf("path %s does not exist (or %s is empty) in archive %s", sourcePath, sourcePath, destPath)
 		log.Warn(errMsg)
 		return errors.Errorf(errors.CodeNotFound, errMsg)
+
 	}
 	log.Infof("Archiving completed")
 	return nil
