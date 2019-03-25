@@ -254,6 +254,12 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
+	for k, v := range woc.wf.ObjectMeta.Annotations {
+		woc.globalParams["workflow.annotations."+k] = v
+	}
+	for k, v := range woc.wf.ObjectMeta.Labels {
+		woc.globalParams["workflow.labels."+k] = v
+	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
 			woc.globalParams["workflow.outputs.parameters."+param.Name] = *param.Value

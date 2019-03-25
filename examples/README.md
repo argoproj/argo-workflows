@@ -1164,7 +1164,6 @@ spec:
   - name: pi-tmpl
     resource:                   # indicates that this is a resource template
       action: create            # can be any kubectl action (e.g. create, delete, apply, patch) 
-                                # Patch action will support only **json merge strategic**
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
@@ -1193,6 +1192,39 @@ spec:
 ```
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
+
+**Note:**
+When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
+
+```yaml
+apiVersion: "stable.example.com/v1"
+kind: CronTab
+spec:
+  cronSpec: "* * * * */5"
+  image: my-awesome-cron-image
+```
+
+This Crontab can be modified using the following Argo Workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-
+spec:
+  entrypoint: cront-tmpl
+  templates:
+  - name: cront-tmpl
+    resource:
+      action: patch
+      mergeStrategy: merge                 # Must be one of [strategic merge json]
+      manifest: |
+        apiVersion: "stable.example.com/v1"
+        kind: CronTab
+        spec:
+          cronSpec: "* * * * */10"
+          image: my-awesome-cron-image
+```
 
 ## Docker-in-Docker Using Sidecars
 
