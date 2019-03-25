@@ -252,9 +252,9 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 }
 
 // checkValidWorkflowVariablePrefix is a helper methood check variable starts workflow root elements
-func checkValidWorkflowVariablePrefix(tag string) bool{
-	for _,rootTag :=range common.GlobalVarValidWorkflowVariablePrefix{
-		if strings.HasPrefix(tag, rootTag){
+func checkValidWorkflowVariablePrefix(tag string) bool {
+	for _, rootTag := range common.GlobalVarValidWorkflowVariablePrefix {
+		if strings.HasPrefix(tag, rootTag) {
 			return true
 		}
 	}
