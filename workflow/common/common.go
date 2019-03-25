@@ -113,11 +113,10 @@ const (
 
 	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
-
-
 )
+
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
-var GlobalVarValidWorkflowVariablePrefix =[5]string{"item", "steps", "inputs", "outputs", "workflow"}
+var GlobalVarValidWorkflowVariablePrefix = [5]string{"item", "steps", "inputs", "outputs", "workflow"}
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container
 type ExecutionControl struct {
