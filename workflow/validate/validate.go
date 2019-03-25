@@ -36,7 +36,6 @@ const (
 	anyItemMagicValue = "item.*"
 )
 
-
 // ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
 // true, will skip some validations which is permissible during linting but not submission
 func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
