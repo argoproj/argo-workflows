@@ -886,3 +886,64 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, "testuser01", items[0].Value.(string))
 	assert.Equal(t, "testuser0A", items[9].Value.(string))
 }
+
+var metadataTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: metadata-template
+  labels:
+    image: foo:bar
+  annotations:
+    k8s-webhook-handler.io/repo: "git@github.com:argoproj/argo.git"
+    k8s-webhook-handler.io/revision: 1e111caa1d2cc672b3b53c202b96a5f660a7e9b2
+spec:
+  entrypoint: foo
+  templates:
+    - name: foo
+      container:
+        image: "{{workflow.labels.image}}"
+        env:
+          - name: REPO
+            value: "{{workflow.annotations.k8s-webhook-handler.io/repo}}"
+          - name: REVISION
+            value: "{{workflow.annotations.k8s-webhook-handler.io/revision}}"
+        command: [sh, -c]
+        args: ["echo hello world"]
+`
+
+func TestMetadataPassing(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(metadataTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	var (
+		pod       = pods.Items[0]
+		container = pod.Spec.Containers[0]
+		foundRepo = false
+		foundRev  = false
+	)
+	for _, ev := range container.Env {
+		switch ev.Name {
+		case "REPO":
+			assert.Equal(t, "git@github.com:argoproj/argo.git", ev.Value)
+			foundRepo = true
+		case "REVISION":
+			assert.Equal(t, "1e111caa1d2cc672b3b53c202b96a5f660a7e9b2", ev.Value)
+			foundRev = true
+		}
+	}
+	assert.True(t, foundRepo)
+	assert.True(t, foundRev)
+	assert.Equal(t, "foo:bar", container.Image)
+}
