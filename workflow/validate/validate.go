@@ -36,6 +36,7 @@ const (
 	anyItemMagicValue = "item.*"
 )
 
+
 // ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
 // true, will skip some validations which is permissible during linting but not submission
 func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
@@ -221,6 +222,11 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+
+		// Skip the custom variable references
+		if !checkValidWorkflowVariablePrefix(tag) {
+			return 0, nil
+		}
 		_, ok := scope[tag]
 		if !ok && unresolvedErr == nil {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
@@ -234,6 +240,16 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// checkValidWorkflowVariablePrefix is a helper methood check variable starts workflow root elements
+func checkValidWorkflowVariablePrefix(tag string) bool{
+	for _,rootTag :=range common.GlobalVarValidWorkflowVariablePrefix{
+		if strings.HasPrefix(tag, rootTag){
+			return true
+		}
+	}
+	return false
 }
 
 func validateNonLeaf(tmpl *wfv1.Template) error {
