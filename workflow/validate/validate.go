@@ -66,6 +66,14 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
+
+	for k := range ctx.wf.ObjectMeta.Annotations {
+		ctx.globalParams["workflow.annotations."+k] = placeholderValue
+	}
+	for k := range ctx.wf.ObjectMeta.Labels {
+		ctx.globalParams["workflow.labels."+k] = placeholderValue
+	}
+
 	if ctx.wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
@@ -111,6 +119,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		localParams[common.LocalVarPodName] = placeholderValue
 		scope[common.LocalVarPodName] = placeholderValue
 	}
+
 	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
