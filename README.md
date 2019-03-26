@@ -24,8 +24,6 @@ Argoproj is a collection of tools for getting work done with Kubernetes.
 * [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
 * [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
 * [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
-* [Argo CI](https://github.com/argoproj/argo-ci) - Simple CI based on GitHUb and Argo Workflows
-
 
 ## What is Argo Workflows?
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
@@ -91,9 +89,9 @@ Currently **officially** using Argo:
 1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
+1. [Quantibio](http://quantibio.com/us/en/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
-1. [Quantibio](http://quantibio.com/us/en/)
 
 ## Community Blogs and Presentations
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
