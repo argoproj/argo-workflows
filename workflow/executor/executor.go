@@ -114,13 +114,15 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
 	for _, art := range we.Template.Inputs.Artifacts {
+
 		log.Infof("Downloading artifact: %s", art.Name)
+
+		if !art.HasLocation() && art.Optional {
+			log.Warnf("Artifact doesn't have location. Artifact configured as an optional so, Artifact will be  ignored")
+			continue
+		}
 		artDriver, err := we.InitDriver(art)
 		if err != nil {
-			if art.Optional {
-				log.Warnf("Error in loading Artifacts. Artifact configured as an optional so, Error will be  ignored. Error=%v", err)
-				return nil
-			}
 			return err
 		}
 		// Determine the file path of where to load the artifact

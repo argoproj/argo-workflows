@@ -1,4 +1,4 @@
-# This example demonstrates the output artifacts optionals
+# This example demonstrates the output artifacts not optionals
 # from one step to the next.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
