@@ -493,9 +493,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			performAssessment(&tmpPod)
 			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
 			if err != nil {
-				woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
+				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
 			}
-			<- parallelPodNum
+			<-parallelPodNum
 		}(pod)
 	}
 
