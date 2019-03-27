@@ -114,7 +114,17 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 	log.Infof("Start loading input artifacts...")
 
 	for _, art := range we.Template.Inputs.Artifacts {
+
 		log.Infof("Downloading artifact: %s", art.Name)
+
+		if !art.HasLocation() {
+			if art.Optional {
+				log.Warnf("Artifact %s is not supplied. Artifact configured as an optional so, Artifact will be  ignored", art.Name)
+				continue
+			} else {
+				return errors.New("required artifact %s not supplied", art.Name)
+			}
+		}
 		artDriver, err := we.InitDriver(art)
 		if err != nil {
 			return err
@@ -232,6 +242,10 @@ func (we *WorkflowExecutor) saveArtifact(tempOutArtDir string, mainCtrID string,
 	localArtPath := path.Join(tempOutArtDir, fileName)
 	err := we.RuntimeExecutor.CopyFile(mainCtrID, art.Path, localArtPath)
 	if err != nil {
+		if art.Optional && errors.IsCode(errors.CodeNotFound, err) {
+			log.Warnf("Error in saving Artifact. Artifact configured as an optional so, Error will be  ignored. Error= %v", err)
+			return nil
+		}
 		return err
 	}
 	fileName, localArtPath, err = stageArchiveFile(fileName, localArtPath, art)
@@ -502,6 +516,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
 	}
+
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 }
 
