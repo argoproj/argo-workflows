@@ -68,7 +68,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if cliOpts == nil {
 		cliOpts = &cliSubmitOpts{}
 	}
-	InitWorkflowClient()
+
 	var workflows []wfv1.Workflow
 	if len(filePaths) == 1 && filePaths[0] == "-" {
 		reader := bufio.NewReader(os.Stdin)
@@ -102,6 +102,10 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
+	if !checkWfsInSameNs(workflows) {
+		log.Fatal("Workflows aren't at the same namespace")
+	}
+	InitWorkflowClient(workflows[0].Namespace)
 	if cliOpts.watch {
 		if len(workflows) > 1 {
 			log.Fatalf("Cannot watch more than one workflow")
@@ -149,4 +153,19 @@ func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	} else if cliSubmitOpts.watch {
 		watchWorkflow(workflowNames[0])
 	}
+}
+
+func checkWfsInSameNs(workflows []wfv1.Workflow) bool {
+	if len(workflows) < 1 {
+		return false
+	}
+
+	nsTarget := workflows[0].Namespace
+	for _, tmpWf := range workflows {
+		if tmpWf.Namespace != nsTarget {
+			return false
+		}
+	}
+
+	return true
 }
