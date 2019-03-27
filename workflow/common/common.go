@@ -116,7 +116,7 @@ const (
 )
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
-var GlobalVarValidWorkflowVariablePrefix = [6]string{"item", "steps", "inputs", "outputs", "workflow", "tasks"}
+var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "pod.", "workflow.", "tasks."}
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container
 type ExecutionControl struct {
