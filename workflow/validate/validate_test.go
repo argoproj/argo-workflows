@@ -1143,7 +1143,6 @@ func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	assert.Error(t, err)
 }
 
-
 var customVariableInput = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1156,9 +1155,10 @@ spec:
     container:
       image: docker/whalesay:{{user.username}}
 `
+
 // TestCustomTemplatVariable verifies custom template variable
 func TestCustomTemplatVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
 	err := ValidateWorkflow(wf, true)
-	assert.Equal(t,err,nil)
+	assert.Equal(t, err, nil)
 }
