@@ -117,9 +117,13 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 
 		log.Infof("Downloading artifact: %s", art.Name)
 
-		if !art.HasLocation() && art.Optional {
-			log.Warnf("Artifact doesn't have location. Artifact configured as an optional so, Artifact will be  ignored")
-			continue
+		if !art.HasLocation() {
+			if art.Optional {
+				log.Warnf("Artifact %s is not supplied. Artifact configured as an optional so, Artifact will be  ignored", art.Name)
+				continue
+			} else {
+				return errors.New("required artifact %s not supplied", art.Name)
+			}
 		}
 		artDriver, err := we.InitDriver(art)
 		if err != nil {
