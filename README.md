@@ -71,6 +71,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
+1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/) 
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
@@ -94,6 +95,7 @@ Currently **officially** using Argo:
 1. [Styra](https://www.styra.com/)
 
 ## Community Blogs and Presentations
+* [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 * [Argo integration review](http://dev.matt.hillsdon.net/2018/03/24/argo-integration-review.html)
