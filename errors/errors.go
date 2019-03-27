@@ -14,7 +14,7 @@ const (
 	CodeBadRequest     = "ERR_BAD_REQUEST"
 	CodeForbidden      = "ERR_FORBIDDEN"
 	CodeNotFound       = "ERR_NOT_FOUND"
-	CodeNotImplemented = "ERR_NOT_INPLEMENTED"
+	CodeNotImplemented = "ERR_NOT_IMPLEMENTED"
 	CodeTimeout        = "ERR_TIMEOUT"
 	CodeInternal       = "ERR_INTERNAL"
 )

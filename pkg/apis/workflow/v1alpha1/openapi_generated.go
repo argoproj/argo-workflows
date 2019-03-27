@@ -206,6 +206,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
 						},
 					},
+					"optional": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Make Artifacts optional, if Artifacts doesn't generate or exist",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
