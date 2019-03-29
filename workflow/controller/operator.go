@@ -490,10 +490,23 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		wg.Add(1)
 		go func(tmpPod apiv1.Pod) {
 			defer wg.Done()
+			wfNodesLock.Lock()
+			origNodeStatus := *woc.wf.Status.DeepCopy()
+			wfNodesLock.Unlock()
 			performAssessment(&tmpPod)
 			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
 			if err != nil {
 				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
+			}
+			wfNodesLock.Lock()
+			defer wfNodesLock.Unlock()
+			err = woc.checkAndCompress()
+			if err != nil {
+				woc.wf.Status = origNodeStatus
+				nodeNameForPod := tmpPod.Annotations[common.AnnotationKeyNodeName]
+				woc.log.Warnf("%v", err)
+				woc.markNodeErrorClearOuput(nodeNameForPod, err)
+				err = woc.checkAndCompress()
 			}
 			<-parallelPodNum
 		}(pod)
