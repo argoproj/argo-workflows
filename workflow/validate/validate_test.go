@@ -163,6 +163,38 @@ func TestUnresolved(t *testing.T) {
 	}
 }
 
+var ioArtifactPaths = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: passthrough-
+spec:
+  entrypoint: passthrough
+  arguments:
+    artifacts:
+    - name: art
+      raw:
+        data: Hello World
+  templates:
+  - name: passthrough
+    inputs:
+      artifacts:
+      - name: art
+        path: /inputs/art/data
+    outputs:
+      artifacts:
+      - name: art
+        path: /outputs/art/data
+    container:
+      image: busybox
+      command: [cp, "{{inputs.artifacts.art.path}}", "{{outputs.artifacts.art.path}}"]
+`
+
+func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
+	err := validate(ioArtifactPaths)
+	assert.Nil(t, err)
+}
+
 var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

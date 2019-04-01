@@ -1,0 +1,36 @@
+# This example demonstrates the how to refer to input and output artifact paths.
+# Referring to the path instead of copy/pasting it prevents errors when paths change.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-path-placeholders-
+spec:
+  entrypoint: grep
+  arguments:
+    parameters:
+    - name: regex
+      value: Argo
+    artifacts:
+    - name: text
+      raw:
+        data: |
+          Beginning with thee, O Phoebus,
+          I will recount the famous deeds of men of old,
+          who, at the behest of King Pelias,
+          down through the mouth of Pontus and between the Cyanean rocks,
+          sped well-benched Argo in quest of the golden fleece
+  templates:
+  - name: grep
+    inputs:
+      parameters:
+      - name: regex
+      artifacts:
+      - name: text
+        path: /inputs/text/data
+    outputs:
+      artifacts:
+      - name: text
+        path: /outputs/text/data
+    container:
+      image: busybox
+      command: [sh, -c, 'grep "{{inputs.parameters.regex}}" <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}"']
