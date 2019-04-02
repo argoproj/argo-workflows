@@ -363,7 +363,7 @@ func TestInitContainers(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.Volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-	woc.wf.Spec.Templates[0].InitContainers = []wfv1.InitContainer{
+	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
 		{
 			MirrorVolumeMounts: &mirrorVolumeMounts,
 			Container: apiv1.Container{
@@ -401,7 +401,7 @@ func TestSidecars(t *testing.T) {
 	woc := newWoc()
 	woc.wf.Spec.Volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-	woc.wf.Spec.Templates[0].Sidecars = []wfv1.Sidecar{
+	woc.wf.Spec.Templates[0].Sidecars = []wfv1.UserContainer{
 		{
 			MirrorVolumeMounts: &mirrorVolumeMounts,
 			Container: apiv1.Container{
