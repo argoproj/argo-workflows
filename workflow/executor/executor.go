@@ -422,18 +422,18 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 }
 
 // Retrive the Secrets from VolumeMount
-func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string,)([]byte, error){
+func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
 
-	file, err := os.Open(common.SecretVolMountPath+"/"+accessKeyName+"/"+accessKey)
+	file, err := os.Open(common.SecretVolMountPath + "/" + accessKeyName + "/" + accessKey)
 	if err != nil {
-		return nil ,err
+		return nil, err
 	}
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
 	line, _, err := reader.ReadLine()
-	if err != nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 	return line, nil
 

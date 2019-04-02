@@ -113,7 +113,7 @@ const (
 
 	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
-	SecretVolMountPath = "/argo/secret"
+	SecretVolMountPath          = "/argo/secret"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container

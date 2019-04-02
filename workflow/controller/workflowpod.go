@@ -839,7 +839,7 @@ func (woc *wfOperationCtx) createSecretVal(volMap map[string]apiv1.Volume, secre
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: secret.Name,
 					Items: []apiv1.KeyToPath{
-						apiv1.KeyToPath{
+						{
 							Key:  secret.Key,
 							Path: secret.Name + "/" + secret.Key,
 						},
