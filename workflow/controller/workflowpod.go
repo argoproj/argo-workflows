@@ -168,6 +168,8 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		addExecutorStagingVolume(pod)
 	}
 
+	// addInitContainers should be called after all volumes have been manipulated
+	// in the main container (in case sidecar requires volume mount mirroring)
 	err = addInitContainers(pod, tmpl)
 	if err != nil {
 		return nil, err
@@ -708,6 +710,7 @@ func addExecutorStagingVolume(pod *apiv1.Pod) {
 }
 
 // addInitContainers adds all init containers to the pod spec of the step
+// Optionally volume mounts from the main container to the init containers
 func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.InitContainers) == 0 {
 		return nil
