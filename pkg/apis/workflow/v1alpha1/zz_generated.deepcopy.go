@@ -1015,6 +1015,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		*out = new(v1.DNSPolicy)
 		**out = **in
 	}
+	if in.DNSConfig != nil {
+		in, out := &in.DNSConfig, &out.DNSConfig
+		*out = new(v1.PodDNSConfig)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.TTLSecondsAfterFinished != nil {
 		in, out := &in.TTLSecondsAfterFinished, &out.TTLSecondsAfterFinished
 		*out = new(int32)
