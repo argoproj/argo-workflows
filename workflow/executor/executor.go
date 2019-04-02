@@ -428,7 +428,12 @@ func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKe
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err == nil {
+			log.Warnf("Failed to close the secret file. %s", file.Name())
+		}
+	}()
 
 	reader := bufio.NewReader(file)
 	line, _, err := reader.ReadLine()
