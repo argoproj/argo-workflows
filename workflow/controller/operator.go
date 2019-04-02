@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
@@ -449,11 +450,21 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		return err
 	}
 	seenPods := make(map[string]bool)
+	seenPodLock := &sync.Mutex{}
+	wfNodesLock := &sync.RWMutex{}
 
 	performAssessment := func(pod *apiv1.Pod) {
+		if pod == nil {
+			return
+		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
+		seenPodLock.Lock()
 		seenPods[nodeID] = true
+		seenPodLock.Unlock()
+
+		wfNodesLock.Lock()
+		defer wfNodesLock.Unlock()
 		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
 			if newState := assessNodeStatus(pod, &node); newState != nil {
 				woc.wf.Status.Nodes[nodeID] = *newState
@@ -472,27 +483,36 @@ func (woc *wfOperationCtx) podReconciliation() error {
 		}
 	}
 
+	parallelPodNum := make(chan string, 500)
+	var wg sync.WaitGroup
 	for _, pod := range podList.Items {
-		origNodeStatus := *woc.wf.Status.DeepCopy()
-		performAssessment(&pod)
-		err = woc.applyExecutionControl(&pod)
-		if err != nil {
-			woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
-		}
-		err = woc.checkAndCompress()
-		if err != nil {
-			woc.wf.Status = origNodeStatus
-			nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
-			woc.log.Warnf("%v", err)
-			woc.markNodeErrorClearOuput(nodeNameForPod, err)
+		parallelPodNum <- pod.Name
+		wg.Add(1)
+		go func(tmpPod apiv1.Pod) {
+			defer wg.Done()
+			wfNodesLock.Lock()
+			origNodeStatus := *woc.wf.Status.DeepCopy()
+			wfNodesLock.Unlock()
+			performAssessment(&tmpPod)
+			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
+			if err != nil {
+				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
+			}
+			wfNodesLock.Lock()
+			defer wfNodesLock.Unlock()
 			err = woc.checkAndCompress()
 			if err != nil {
-				woc.markWorkflowError(err, true)
+				woc.wf.Status = origNodeStatus
+				nodeNameForPod := tmpPod.Annotations[common.AnnotationKeyNodeName]
+				woc.log.Warnf("%v", err)
+				woc.markNodeErrorClearOuput(nodeNameForPod, err)
+				err = woc.checkAndCompress()
 			}
-		}
-
+			<-parallelPodNum
+		}(pod)
 	}
 
+	wg.Wait()
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
