@@ -129,6 +129,10 @@ type WorkflowSpec struct {
 	// explicitly to 'ClusterFirstWithHostNet'.
 	DNSPolicy *apiv1.DNSPolicy `json:"dnsPolicy,omitempty"`
 
+	// PodDNSConfig defines the DNS parameters of a pod in addition to
+	// those generated from DNSPolicy.
+	DNSConfig *apiv1.PodDNSConfig `json:"dnsConfig,omitempty"`
+
 	// OnExit is a template reference which is invoked at the end of the
 	// workflow, irrespective of the success, failure, or error of the
 	// primary workflow.
