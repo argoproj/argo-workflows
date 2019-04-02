@@ -128,6 +128,14 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
+	err := woc.addArchiveLocation(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	volumes, volumeMounts := woc.createSecretVolumes(tmpl)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
+
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
@@ -136,6 +144,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if err != nil {
 			return nil, err
 		}
+		if len(volumeMounts) > 0 {
+			waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, volumeMounts...)
+		}
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
@@ -143,23 +154,21 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
 		initCtr := woc.newInitContainer(tmpl)
+		if len(volumeMounts) > 0 {
+			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volumeMounts...)
+		}
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
-	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err = addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
 
 	err = woc.addInputArtifactsVolumes(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-
-	err = woc.addArchiveLocation(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +371,8 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool, subCom
 			MountPath: path,
 			ReadOnly:  true,
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		}}
+		},
+		}
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
 	return &exec
@@ -746,4 +756,98 @@ func verifyResolvedVariables(obj interface{}) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// Retrieve and create Volumes and Volumemount object for Pod
+func (woc *wfOperationCtx) createSecretVolumes(tmpl *wfv1.Template) (secretVolumes []apiv1.Volume, secretVolMounts []apiv1.VolumeMount) {
+	var allVolumesMap = make(map[string]apiv1.Volume)
+	var uniqueKeyMap = make(map[string]bool)
+
+	woc.createArgoArtifactsRepoSecret(tmpl, allVolumesMap, uniqueKeyMap)
+
+	for _, art := range tmpl.Outputs.Artifacts {
+		woc.createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+	for _, art := range tmpl.Inputs.Artifacts {
+		woc.createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+
+	if len(allVolumesMap) > 0 {
+		for volMountName, val := range allVolumesMap {
+			secretVolumes = append(secretVolumes, val)
+			secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
+				Name:      volMountName,
+				MountPath: common.SecretVolMountPath,
+				ReadOnly:  true,
+			})
+		}
+	}
+	return
+}
+
+func (woc *wfOperationCtx) createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
+		woc.createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
+		woc.createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
+		woc.createSecretVal(volMap, *hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
+		woc.createSecretVal(volMap, *hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
+	} else if artRepo := tmpl.ArchiveLocation.Artifactory; artRepo != nil {
+		woc.createSecretVal(volMap, *artRepo.UsernameSecret, uniqueKeyMap)
+		woc.createSecretVal(volMap, *artRepo.PasswordSecret, uniqueKeyMap)
+	} else if gitRepo := tmpl.ArchiveLocation.Git; gitRepo != nil {
+		woc.createSecretVal(volMap, *gitRepo.UsernameSecret, uniqueKeyMap)
+		woc.createSecretVal(volMap, *gitRepo.PasswordSecret, uniqueKeyMap)
+		woc.createSecretVal(volMap, *gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+	}
+
+}
+
+func (woc *wfOperationCtx) createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
+
+	if art.S3 != nil {
+		woc.createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
+		woc.createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
+	} else if art.Git != nil {
+		woc.createSecretVal(volMap, *art.Git.UsernameSecret, keyMap)
+		woc.createSecretVal(volMap, *art.Git.PasswordSecret, keyMap)
+		woc.createSecretVal(volMap, *art.Git.SSHPrivateKeySecret, keyMap)
+	} else if art.Artifactory != nil {
+		woc.createSecretVal(volMap, *art.Artifactory.UsernameSecret, keyMap)
+		woc.createSecretVal(volMap, *art.Artifactory.PasswordSecret, keyMap)
+	} else if art.HDFS != nil {
+		woc.createSecretVal(volMap, *art.HDFS.KrbCCacheSecret, keyMap)
+		woc.createSecretVal(volMap, *art.HDFS.KrbKeytabSecret, keyMap)
+
+	}
+}
+
+func (woc *wfOperationCtx) createSecretVal(volMap map[string]apiv1.Volume, secret apiv1.SecretKeySelector, keyMap map[string]bool) {
+	if vol, ok := volMap[secret.Name]; ok {
+		key := apiv1.KeyToPath{
+			Key:  secret.Key,
+			Path: secret.Name + "/" + secret.Key,
+		}
+		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
+			keyMap[secret.Name+"-"+secret.Key] = true
+			vol.Secret.Items = append(vol.Secret.Items, key)
+		}
+	} else {
+		volume := apiv1.Volume{
+			Name: secret.Name,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: secret.Name,
+					Items: []apiv1.KeyToPath{
+						apiv1.KeyToPath{
+							Key:  secret.Key,
+							Path: secret.Name + "/" + secret.Key,
+						},
+					},
+				},
+			},
+		}
+		keyMap[secret.Name+"-"+secret.Key] = true
+		volMap[secret.Name] = volume
+	}
 }

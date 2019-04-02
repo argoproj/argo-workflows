@@ -113,6 +113,7 @@ const (
 
 	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
+	SecretVolMountPath = "/argo/secret"
 )
 
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container
@@ -126,5 +127,6 @@ type ExecutionControl struct {
 type ResourceInterface interface {
 	GetNamespace() string
 	GetSecrets(namespace, name, key string) ([]byte, error)
+	GetSecretFromVolMount(name, key string) ([]byte, error)
 	GetConfigMapKey(namespace, name, key string) (string, error)
 }
