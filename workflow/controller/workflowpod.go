@@ -124,6 +124,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.Spec.DNSPolicy = *woc.wf.Spec.DNSPolicy
 	}
 
+	if woc.wf.Spec.DNSConfig != nil {
+		pod.Spec.DNSConfig = woc.wf.Spec.DNSConfig
+	}
+
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
