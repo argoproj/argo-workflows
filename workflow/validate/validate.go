@@ -125,6 +125,11 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 				scope[fmt.Sprintf("outputs.artifacts.%s.path", art.Name)] = true
 			}
 		}
+		for _, param := range tmpl.Outputs.Parameters {
+			if param.ValueFrom != nil && param.ValueFrom.Path != "" {
+				scope[fmt.Sprintf("outputs.parameters.%s.path", param.Name)] = true
+			}
+		}
 	}
 
 	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)

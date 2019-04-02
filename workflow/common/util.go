@@ -205,6 +205,12 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
 		}
 	}
+	for _, param := range globalReplacedTmpl.Outputs.Parameters {
+		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
+			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+		}
+	}
+
 	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {

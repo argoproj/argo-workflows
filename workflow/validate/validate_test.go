@@ -195,6 +195,30 @@ func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+var outputParameterPath = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: get-current-date-
+spec:
+  entrypoint: get-current-date
+  templates:
+  - name: get-current-date
+    outputs:
+      parameters:
+      - name: current-date
+        valueFrom:
+          path: /tmp/current-date
+    container:
+      image: busybox
+      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']
+`
+
+func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
+	err := validate(outputParameterPath)
+	assert.Nil(t, err)
+}
+
 var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

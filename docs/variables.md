@@ -30,6 +30,7 @@ The following variables are made available to reference various metadata of a wo
 | `pod.name` | Pod name of the container/script |
 | `inputs.artifacts.<NAME>.path` | Local path of the input artifact |
 | `outputs.artifacts.<NAME>.path` | Local path of the output artifact |
+| `outputs.parameters.<NAME>.path` | Local path of the output parameter |
 
 ## Loops (withItems / withParam)
 | Variable | Description|
