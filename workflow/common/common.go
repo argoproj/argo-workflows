@@ -115,6 +115,9 @@ const (
 	KubeConfigDefaultVolumeName = "kubeconfig"
 )
 
+// GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
+var GlobalVarValidWorkflowVariablePrefix = []string{"item.", "steps.", "inputs.", "pod.", "workflow.", "tasks."}
+
 // ExecutionControl contains execution control parameters for executor to decide how to execute the container
 type ExecutionControl struct {
 	// Deadline is a max timestamp in which an executor can run the container before terminating it

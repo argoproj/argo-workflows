@@ -66,6 +66,14 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
+
+	for k := range ctx.wf.ObjectMeta.Annotations {
+		ctx.globalParams["workflow.annotations."+k] = placeholderValue
+	}
+	for k := range ctx.wf.ObjectMeta.Labels {
+		ctx.globalParams["workflow.labels."+k] = placeholderValue
+	}
+
 	if ctx.wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
@@ -111,6 +119,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		localParams[common.LocalVarPodName] = placeholderValue
 		scope[common.LocalVarPodName] = placeholderValue
 	}
+
 	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
@@ -221,6 +230,11 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+
+		// Skip the custom variable references
+		if !checkValidWorkflowVariablePrefix(tag) {
+			return 0, nil
+		}
 		_, ok := scope[tag]
 		if !ok && unresolvedErr == nil {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
@@ -234,6 +248,16 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// checkValidWorkflowVariablePrefix is a helper methood check variable starts workflow root elements
+func checkValidWorkflowVariablePrefix(tag string) bool {
+	for _, rootTag := range common.GlobalVarValidWorkflowVariablePrefix {
+		if strings.HasPrefix(tag, rootTag) {
+			return true
+		}
+	}
+	return false
 }
 
 func validateNonLeaf(tmpl *wfv1.Template) error {

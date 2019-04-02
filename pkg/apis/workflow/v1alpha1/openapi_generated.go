@@ -207,6 +207,13 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy"),
 						},
 					},
+					"optional": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Make Artifacts optional, if Artifacts doesn't generate or exist",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
@@ -1234,6 +1241,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 					"action": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"mergeStrategy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
 							Type:        []string{"string"},
 							Format:      "",
 						},

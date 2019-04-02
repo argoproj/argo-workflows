@@ -34,7 +34,7 @@ For a complete description of the Argo workflow spec, please refer to https://gi
 - [Kubernetes Resources](#kubernetes-resources)
 - [Docker-in-Docker Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
 - [Continuous Integration Example](#continuous-integration-example)
-
+- [Custom Template Variable Referrence](#Custom Template Variable Referrence)
 ## Argo CLI
 
 In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo command line interface (CLI) commands.
@@ -1164,7 +1164,6 @@ spec:
   - name: pi-tmpl
     resource:                   # indicates that this is a resource template
       action: create            # can be any kubectl action (e.g. create, delete, apply, patch) 
-                                # Patch action will support only **json merge strategic**
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
@@ -1193,6 +1192,39 @@ spec:
 ```
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
+
+**Note:**
+When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
+
+```yaml
+apiVersion: "stable.example.com/v1"
+kind: CronTab
+spec:
+  cronSpec: "* * * * */5"
+  image: my-awesome-cron-image
+```
+
+This Crontab can be modified using the following Argo Workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-
+spec:
+  entrypoint: cront-tmpl
+  templates:
+  - name: cront-tmpl
+    resource:
+      action: patch
+      mergeStrategy: merge                 # Must be one of [strategic merge json]
+      manifest: |
+        apiVersion: "stable.example.com/v1"
+        kind: CronTab
+        spec:
+          cronSpec: "* * * * */10"
+          image: my-awesome-cron-image
+```
 
 ## Docker-in-Docker Using Sidecars
 
@@ -1224,6 +1256,46 @@ spec:
       # dind daemon to (partially) see the same filesystem as the main container in
       # order to use features such as docker volume binding.
       mirrorVolumeMounts: true
+```
+
+## Custom Template Variable Referrence
+In this example, we can see how we can use the other template language variable reference (E.g: Jinja) in Argo workflow template.
+Argo will validate and resolve only the variable that starts with Argo allowed prefix
+{***"item", "steps", "inputs", "outputs", "workflow", "tasks"***}
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: custom-template-variable-
+spec:
+  entrypoint: hello-hello-hello
+
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello2a"}]
+          - name: hello2b
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello2b"}]
+
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{user.username}}"]
+        
 ```
 
 ## Continuous Integration Example

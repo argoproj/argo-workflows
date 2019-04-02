@@ -325,6 +325,9 @@ type Artifact struct {
 
 	// Archive controls how the artifact will be saved to the artifact repository.
 	Archive *ArchiveStrategy `json:"archive,omitempty"`
+
+	// Make Artifacts optional, if Artifacts doesn't generate or exist
+	Optional bool `json:"optional,omitempty"`
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -506,6 +509,9 @@ type WorkflowStatus struct {
 
 	// A human readable message indicating details about why the workflow is in this condition.
 	Message string `json:"message,omitempty"`
+
+	// Compressed and base64 decoded Nodes map
+	CompressedNodes string `json:"compressedNodes,omitempty"`
 
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
@@ -794,6 +800,10 @@ type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
 	// Must be one of: get, create, apply, delete, replace
 	Action string `json:"action"`
+
+	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
+	// Must be one of: strategic, merge, json
+	MergeStrategy string `json:"mergeStrategy,omitempty"`
 
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest"`

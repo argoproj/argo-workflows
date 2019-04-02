@@ -24,6 +24,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -71,6 +72,9 @@ var (
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
 const maxOperationTime time.Duration = 10 * time.Second
+
+//maxWorkflowSize is the maximum  size for workflow.yaml
+const maxWorkflowSize int = 1024 * 1024
 
 // newWorkflowOperationCtx creates and initializes a new wfOperationCtx object.
 func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOperationCtx {
@@ -250,6 +254,12 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	for _, param := range woc.wf.Spec.Arguments.Parameters {
 		woc.globalParams["workflow.parameters."+param.Name] = *param.Value
 	}
+	for k, v := range woc.wf.ObjectMeta.Annotations {
+		woc.globalParams["workflow.annotations."+k] = v
+	}
+	for k, v := range woc.wf.ObjectMeta.Labels {
+		woc.globalParams["workflow.labels."+k] = v
+	}
 	if woc.wf.Status.Outputs != nil {
 		for _, param := range woc.wf.Status.Outputs.Parameters {
 			woc.globalParams["workflow.outputs.parameters."+param.Name] = *param.Value
@@ -275,9 +285,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 		return
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
-	_, err := wfClient.Update(woc.wf)
+	err := woc.checkAndCompress()
 	if err != nil {
-		woc.log.Warnf("Error updating workflow: %v", err)
+		woc.log.Warnf("Error compressing workflow: %v", err)
+	}
+	if woc.wf.Status.CompressedNodes != "" {
+		woc.wf.Status.Nodes = nil
+	}
+
+	_, err = wfClient.Update(woc.wf)
+	if err != nil {
+		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
 			woc.persistWorkflowSizeLimitErr(wfClient, err)
 			return
@@ -444,17 +462,35 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			}
 			node := woc.wf.Status.Nodes[pod.ObjectMeta.Name]
 			if node.Completed() && !node.IsDaemoned() {
+				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
+					if tmpVal == "true" {
+						return
+					}
+				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}
 
 	for _, pod := range podList.Items {
+		origNodeStatus := *woc.wf.Status.DeepCopy()
 		performAssessment(&pod)
 		err = woc.applyExecutionControl(&pod)
 		if err != nil {
 			woc.log.Warnf("Failed to apply execution control to pod %s", pod.Name)
 		}
+		err = woc.checkAndCompress()
+		if err != nil {
+			woc.wf.Status = origNodeStatus
+			nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
+			woc.log.Warnf("%v", err)
+			woc.markNodeErrorClearOuput(nodeNameForPod, err)
+			err = woc.checkAndCompress()
+			if err != nil {
+				woc.markWorkflowError(err, true)
+			}
+		}
+
 	}
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
@@ -1138,6 +1174,14 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	return node
 }
 
+// markNodeErrorClearOuput is a convenience method to mark a node with an error and clear the output
+func (woc *wfOperationCtx) markNodeErrorClearOuput(nodeName string, err error) *wfv1.NodeStatus {
+	nodeStatus := woc.markNodeError(nodeName, err)
+	nodeStatus.Outputs = nil
+	woc.wf.Status.Nodes[nodeStatus.ID] = *nodeStatus
+	return nodeStatus
+}
+
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
@@ -1575,4 +1619,62 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 		}
 	}
 	return items, nil
+}
+
+// getSize return the entire workflow json string size
+func (woc *wfOperationCtx) getSize() int {
+	nodeContent, err := json.Marshal(woc.wf)
+	if err != nil {
+		return -1
+	}
+
+	compressNodeSize := len(woc.wf.Status.CompressedNodes)
+
+	if compressNodeSize > 0 {
+		nodeStatus, err := json.Marshal(woc.wf.Status.Nodes)
+		if err != nil {
+			return -1
+		}
+		return len(nodeContent) - len(nodeStatus)
+	}
+	return len(nodeContent)
+}
+
+// checkAndCompress will check the workflow size and compress node status if total workflow size is more than maxWorkflowSize.
+// The compressed content will be assign to compressedNodes element and clear the nodestatus map.
+func (woc *wfOperationCtx) checkAndCompress() error {
+
+	if woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize) {
+
+		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		buff := string(nodeContent)
+		woc.wf.Status.CompressedNodes = file.CompressEncodeString(buff)
+
+	}
+	if woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize {
+		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
+	}
+	return nil
+}
+
+// checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
+func (woc *wfOperationCtx) checkAndDecompress() error {
+	if woc.wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(woc.wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		var tempNodes map[string]wfv1.NodeStatus
+
+		err = json.Unmarshal([]byte(nodeContent), &tempNodes)
+		if err != nil {
+			woc.log.Warn(err)
+			return err
+		}
+		woc.wf.Status.Nodes = tempNodes
+	}
+	return nil
 }
