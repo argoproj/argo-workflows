@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -239,7 +240,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wf)
+	err := validate.ValidateWorkflow(wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -257,8 +258,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
-			t := true
-			wf.Spec.Suspend = &t
+			wf.Spec.Suspend = pointer.BoolPtr(true)
 			wf, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {

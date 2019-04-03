@@ -66,6 +66,12 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 			return nil
 		}
 	}
+	if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
+		// If the pod has already been explicitly signaled to terminate, then do nothing.
+		// This can happen when daemon steps are terminated.
+		woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
+		return nil
+	}
 	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, desiredExecCtl.Deadline, podExecCtl.Deadline)
 	return woc.updateExecutionControl(pod.Name, desiredExecCtl)
 }
@@ -122,7 +128,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 	woc.log.Infof("Signalling %s of updates", podName)
 	exec, err := common.ExecPodContainer(
 		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
-		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 1",
+		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {
 		return err

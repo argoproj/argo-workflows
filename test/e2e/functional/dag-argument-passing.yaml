@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-arg-passing-
+  generateName: dag-argument-passing-
 spec:
   entrypoint: dag-arg-passing
   templates:
@@ -16,7 +16,7 @@ spec:
     container:
       image: alpine:3.7
       command: [sh, -c, -x]
-      args: ['echo "{{inputs.parameters.message}}"; cat /tmp/passthrough']
+      args: ['sleep 1; echo "{{inputs.parameters.message}}"; cat /tmp/passthrough']
     outputs:
       parameters:
       - name: hosts

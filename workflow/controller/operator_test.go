@@ -435,14 +435,16 @@ func TestNestedTemplateParallelismLimit(t *testing.T) {
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
 func TestSidecarResourceLimits(t *testing.T) {
 	controller := newController()
-	controller.Config.ExecutorResources = &apiv1.ResourceRequirements{
-		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse("0.5"),
-			apiv1.ResourceMemory: resource.MustParse("512Mi"),
-		},
-		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse("0.1"),
-			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+	controller.Config.Executor = &apiv1.Container{
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.5"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("64Mi"),
+			},
 		},
 	}
 	wf := unmarshalWF(helloWorldWf)
@@ -929,7 +931,7 @@ func TestMetadataPassing(t *testing.T) {
 
 	var (
 		pod       = pods.Items[0]
-		container = pod.Spec.Containers[0]
+		container = pod.Spec.Containers[1]
 		foundRepo = false
 		foundRev  = false
 	)
@@ -999,5 +1001,5 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
-	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[0].Command)
+	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }
