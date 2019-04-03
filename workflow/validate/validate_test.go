@@ -167,27 +167,41 @@ var ioArtifactPaths = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: passthrough-
+  generateName: artifact-path-placeholders-
 spec:
-  entrypoint: passthrough
+  entrypoint: head-lines
   arguments:
+    parameters:
+    - name: lines-count
+      value: 3
     artifacts:
-    - name: art
+    - name: text
       raw:
-        data: Hello World
+        data: |
+          1
+          2
+          3
+          4
+          5
   templates:
-  - name: passthrough
+  - name: head-lines
     inputs:
+      parameters:
+      - name: lines-count
       artifacts:
-      - name: art
-        path: /inputs/art/data
+      - name: text
+        path: /inputs/text/data
     outputs:
+      parameters:
+      - name: actual-lines-count
+        valueFrom:
+          path: /outputs/actual-lines-count/data
       artifacts:
-      - name: art
-        path: /outputs/art/data
+      - name: text
+        path: /outputs/text/data
     container:
       image: busybox
-      command: [cp, "{{inputs.artifacts.art.path}}", "{{outputs.artifacts.art.path}}"]
+      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
 `
 
 func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
