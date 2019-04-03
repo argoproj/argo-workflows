@@ -4,6 +4,8 @@ Welcome to the Argo community!
 
 Argo is an open, community driven project to make it easy to use Kubernetes for getting useful work done.  This document describes the organizational structure of the Argo Community including the roles, responsibilities and processes that govern Argo projects and community.
 
+Community meeting notes is available [here](https://docs.google.com/document/d/16aWGQ1Te5IRptFuAIFtg3rONRQqHC1Z3X9rdDHYhYfE/edit?usp=sharing).
+
 ## Projects
 
 Argo is organized into a set of projects. Each project has at least one owner. The owner is responsible for publishing a roadmap and organizing community meetings for soliciting feedback, publishing meeting notes, and reporting on the current status of the project.
