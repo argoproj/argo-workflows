@@ -61,6 +61,15 @@ type wfOperationCtx struct {
 	// workflowDeadline is the deadline which the workflow is expected to complete before we
 	// terminate the workflow.
 	workflowDeadline *time.Time
+
+	// currentWFSize is current Workflow size
+	currentWFSize int
+
+	// unSavedNodeStatusSize is unsaved workflow size
+	unSavedNodeStatusSize int
+
+	// wfFailed is workflow failed status
+	isWFFailed bool
 }
 
 var (
@@ -124,7 +133,12 @@ func (woc *wfOperationCtx) operate() {
 			woc.log.Errorf("Recovered from panic: %+v\n%s", r, debug.Stack())
 		}
 	}()
+
 	woc.log.Infof("Processing workflow")
+
+	// Initialize Workflow failed status
+	woc.wfFailed = false
+
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
@@ -453,9 +467,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
-	performAssessment := func(pod *apiv1.Pod) {
+	performAssessment := func(pod *apiv1.Pod) string {
 		if pod == nil {
-			return
+			return ""
 		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
@@ -475,16 +489,20 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if node.Completed() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
-						return
+						return nodeID
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
+		return nodeID
 	}
 
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
+
+	woc.currentWFSize = woc.getSize()
+
 	for _, pod := range podList.Items {
 		parallelPodNum <- pod.Name
 		wg.Add(1)
@@ -493,20 +511,23 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			wfNodesLock.Lock()
 			origNodeStatus := *woc.wf.Status.DeepCopy()
 			wfNodesLock.Unlock()
-			performAssessment(&tmpPod)
+			nodeID := performAssessment(&tmpPod)
 			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
 			if err != nil {
 				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
 			}
 			wfNodesLock.Lock()
 			defer wfNodesLock.Unlock()
-			err = woc.checkAndCompress()
+			err = woc.checkAndEstimate(nodeID)
 			if err != nil {
 				woc.wf.Status = origNodeStatus
 				nodeNameForPod := tmpPod.Annotations[common.AnnotationKeyNodeName]
 				woc.log.Warnf("%v", err)
 				woc.markNodeErrorClearOuput(nodeNameForPod, err)
 				err = woc.checkAndCompress()
+				if err != nil {
+					woc.wfFailed = true
+				}
 			}
 			<-parallelPodNum
 		}(pod)
@@ -1664,17 +1685,19 @@ func (woc *wfOperationCtx) getSize() int {
 // The compressed content will be assign to compressedNodes element and clear the nodestatus map.
 func (woc *wfOperationCtx) checkAndCompress() error {
 
-	if woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize) {
-
+	if woc.isWFFailed == false && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
+		start := time.Now()
 		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		buff := string(nodeContent)
 		woc.wf.Status.CompressedNodes = file.CompressEncodeString(buff)
-
+		fmt.Println("checkAndCompress: %s", time.Since(start))
 	}
-	if woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize {
+
+	if woc.isWFFailed || (woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize) {
+		woc.isWFFailed = true
 		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
 	}
 	return nil
@@ -1695,6 +1718,32 @@ func (woc *wfOperationCtx) checkAndDecompress() error {
 			return err
 		}
 		woc.wf.Status.Nodes = tempNodes
+	}
+	return nil
+}
+
+// checkAndEstimate will check and estimate the workflow size with current nodestatus
+func (woc *wfOperationCtx) checkAndEstimate(nodeID string) error {
+	if nodeID == "" {
+		return nil
+	}
+
+	if woc.isWFFailed {
+		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+woc.unSavedNodeStatusSize))
+	}
+
+	if woc.wf.Status.CompressedNodes != "" {
+		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
+			content, err := json.Marshal(node)
+			if err != nil {
+				return errors.InternalWrapError(err)
+			}
+			nodeSize := len(file.CompressEncodeString(string(content)))
+			if (nodeSize + woc.unSavedNodeStatusSize + woc.currentWFSize) >= maxWorkflowSize {
+				return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+nodeSize+woc.unSavedNodeStatusSize))
+			}
+			woc.unSavedNodeStatusSize += nodeSize
+		}
 	}
 	return nil
 }
