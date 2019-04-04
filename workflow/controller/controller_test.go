@@ -38,6 +38,31 @@ spec:
       command: [cowsay]
       args: ["hello world"]
 `
+var helloWorldWf2 = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      action: create
+      manifests: |
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          generateName: job-
+        spec:
+          template:
+          spec:
+            containers:
+            - name: c1
+              image: docker/whalesay:latest
+              command: [cowsay]
+              args: ["hello world"]
+`
 
 func newController() *WorkflowController {
 	return &WorkflowController{

@@ -464,6 +464,38 @@ func TestSidecarResourceLimits(t *testing.T) {
 	assert.Equal(t, 2, len(waitCtr.Resources.Requests))
 }
 
+// TestMainResourceLimits verifies resouce limits on the main container can be set in the controller config
+func TestMainResourceLimits(t *testing.T) {
+	controller := newController()
+	controller.Config.MainContainerResources = &apiv1.ResourceRequirements{
+		Limits: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.5"),
+			apiv1.ResourceMemory: resource.MustParse("512Mi"),
+		},
+		Requests: apiv1.ResourceList{
+			apiv1.ResourceCPU:    resource.MustParse("0.1"),
+			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+		},
+	}
+	wf := unmarshalWF(helloWorldWf2)
+	_, err := controller.wfclientset.ArgoprojV1alpha1().Workflows("").Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pod, err := controller.kubeclientset.CoreV1().Pods("").Get("hello-world", metav1.GetOptions{})
+	assert.Nil(t, err)
+	var mainCtr *apiv1.Container
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name == "main" {
+			mainCtr = &ctr
+			break
+		}
+	}
+	assert.NotNil(t, mainCtr)
+	assert.Equal(t, 2, len(mainCtr.Resources.Limits))
+	assert.Equal(t, 2, len(mainCtr.Resources.Requests))
+}
+
 // TestSuspendResume tests the suspend and resume feature
 func TestSuspendResume(t *testing.T) {
 	controller := newController()
