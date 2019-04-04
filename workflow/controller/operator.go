@@ -137,7 +137,7 @@ func (woc *wfOperationCtx) operate() {
 	woc.log.Infof("Processing workflow")
 
 	// Initialize Workflow failed status
-	woc.wfFailed = false
+	woc.isWFFailed = false
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -526,7 +526,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.markNodeErrorClearOuput(nodeNameForPod, err)
 				err = woc.checkAndCompress()
 				if err != nil {
-					woc.wfFailed = true
+					woc.isWFFailed = true
 				}
 			}
 			<-parallelPodNum
