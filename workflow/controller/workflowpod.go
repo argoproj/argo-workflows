@@ -506,13 +506,13 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 	volumes, volumeMounts := createSecretVolumes(tmpl)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
 
-	for idx, container := range pod.Spec.Containers{
-		if container.Name == common.WaitContainerName{
+	for idx, container := range pod.Spec.Containers {
+		if container.Name == common.WaitContainerName {
 			pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
 			break
 		}
 	}
-	for idx, container := range pod.Spec.InitContainers{
+	for idx, container := range pod.Spec.InitContainers {
 		if container.Name == common.InitContainerName {
 			pod.Spec.InitContainers[idx].VolumeMounts = append(pod.Spec.InitContainers[idx].VolumeMounts, volumeMounts...)
 			break
