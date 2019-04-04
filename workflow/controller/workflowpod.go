@@ -133,9 +133,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	volumes, volumeMounts := woc.createSecretVolumes(tmpl)
-	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
-
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
@@ -144,9 +141,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		if err != nil {
 			return nil, err
 		}
-		if len(volumeMounts) > 0 {
-			waitCtr.VolumeMounts = append(waitCtr.VolumeMounts, volumeMounts...)
-		}
 		pod.Spec.Containers = append(pod.Spec.Containers, *waitCtr)
 	}
 
@@ -154,9 +148,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
 		initCtr := woc.newInitContainer(tmpl)
-		if len(volumeMounts) > 0 {
-			initCtr.VolumeMounts = append(initCtr.VolumeMounts, volumeMounts...)
-		}
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
 
@@ -491,6 +482,7 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 		}
 		return nil
 	}
+
 	if tmpl.Container != nil {
 		err := addVolumeRef(tmpl.Container.VolumeMounts)
 		if err != nil {
@@ -503,12 +495,30 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 			return err
 		}
 	}
+
 	for _, sidecar := range tmpl.Sidecars {
 		err := addVolumeRef(sidecar.VolumeMounts)
 		if err != nil {
 			return err
 		}
 	}
+
+	volumes, volumeMounts := createSecretVolumes(tmpl)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
+
+	for idx, container := range pod.Spec.Containers{
+		if container.Name == common.WaitContainerName{
+			pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
+			break
+		}
+	}
+	for idx, container := range pod.Spec.InitContainers{
+		if container.Name == common.InitContainerName {
+			pod.Spec.InitContainers[idx].VolumeMounts = append(pod.Spec.InitContainers[idx].VolumeMounts, volumeMounts...)
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -758,71 +768,72 @@ func verifyResolvedVariables(obj interface{}) error {
 	return unresolvedErr
 }
 
-// Retrieve and create Volumes and Volumemount object for Pod
-func (woc *wfOperationCtx) createSecretVolumes(tmpl *wfv1.Template) (secretVolumes []apiv1.Volume, secretVolMounts []apiv1.VolumeMount) {
+// createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
+func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
 	var allVolumesMap = make(map[string]apiv1.Volume)
 	var uniqueKeyMap = make(map[string]bool)
+	var secretVolumes []apiv1.Volume
+	var secretVolMounts []apiv1.VolumeMount
 
-	woc.createArgoArtifactsRepoSecret(tmpl, allVolumesMap, uniqueKeyMap)
+	createArgoArtifactsRepoSecret(tmpl, allVolumesMap, uniqueKeyMap)
 
 	for _, art := range tmpl.Outputs.Artifacts {
-		woc.createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
 	}
 	for _, art := range tmpl.Inputs.Artifacts {
-		woc.createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
 	}
 
-	if len(allVolumesMap) > 0 {
-		for volMountName, val := range allVolumesMap {
-			secretVolumes = append(secretVolumes, val)
-			secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
-				Name:      volMountName,
-				MountPath: common.SecretVolMountPath,
-				ReadOnly:  true,
-			})
-		}
+	for volMountName, val := range allVolumesMap {
+		secretVolumes = append(secretVolumes, val)
+		secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
+			Name:      volMountName,
+			MountPath: common.SecretVolMountPath,
+			ReadOnly:  true,
+		})
 	}
-	return
+
+	return secretVolumes, secretVolMounts
 }
 
-func (woc *wfOperationCtx) createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+func createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
 	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
-		woc.createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
-		woc.createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
 	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
-		woc.createSecretVal(volMap, *hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
-		woc.createSecretVal(volMap, *hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
+		createSecretVal(volMap, *hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
+		createSecretVal(volMap, *hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
 	} else if artRepo := tmpl.ArchiveLocation.Artifactory; artRepo != nil {
-		woc.createSecretVal(volMap, *artRepo.UsernameSecret, uniqueKeyMap)
-		woc.createSecretVal(volMap, *artRepo.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, *artRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, *artRepo.PasswordSecret, uniqueKeyMap)
 	} else if gitRepo := tmpl.ArchiveLocation.Git; gitRepo != nil {
-		woc.createSecretVal(volMap, *gitRepo.UsernameSecret, uniqueKeyMap)
-		woc.createSecretVal(volMap, *gitRepo.PasswordSecret, uniqueKeyMap)
-		woc.createSecretVal(volMap, *gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, *gitRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, *gitRepo.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, *gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
 	}
 
 }
 
-func (woc *wfOperationCtx) createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
+func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
 
 	if art.S3 != nil {
-		woc.createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
-		woc.createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
+		createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
+		createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
 	} else if art.Git != nil {
-		woc.createSecretVal(volMap, *art.Git.UsernameSecret, keyMap)
-		woc.createSecretVal(volMap, *art.Git.PasswordSecret, keyMap)
-		woc.createSecretVal(volMap, *art.Git.SSHPrivateKeySecret, keyMap)
+		createSecretVal(volMap, *art.Git.UsernameSecret, keyMap)
+		createSecretVal(volMap, *art.Git.PasswordSecret, keyMap)
+		createSecretVal(volMap, *art.Git.SSHPrivateKeySecret, keyMap)
 	} else if art.Artifactory != nil {
-		woc.createSecretVal(volMap, *art.Artifactory.UsernameSecret, keyMap)
-		woc.createSecretVal(volMap, *art.Artifactory.PasswordSecret, keyMap)
+		createSecretVal(volMap, *art.Artifactory.UsernameSecret, keyMap)
+		createSecretVal(volMap, *art.Artifactory.PasswordSecret, keyMap)
 	} else if art.HDFS != nil {
-		woc.createSecretVal(volMap, *art.HDFS.KrbCCacheSecret, keyMap)
-		woc.createSecretVal(volMap, *art.HDFS.KrbKeytabSecret, keyMap)
+		createSecretVal(volMap, *art.HDFS.KrbCCacheSecret, keyMap)
+		createSecretVal(volMap, *art.HDFS.KrbKeytabSecret, keyMap)
 
 	}
 }
 
-func (woc *wfOperationCtx) createSecretVal(volMap map[string]apiv1.Volume, secret apiv1.SecretKeySelector, keyMap map[string]bool) {
+func createSecretVal(volMap map[string]apiv1.Volume, secret apiv1.SecretKeySelector, keyMap map[string]bool) {
 	if vol, ok := volMap[secret.Name]; ok {
 		key := apiv1.KeyToPath{
 			Key:  secret.Key,

@@ -421,7 +421,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	return &art, nil
 }
 
-// Retrive the Secrets from VolumeMount
+// GetSecretFromVolMount will retrive the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
 
 	file, err := os.Open(common.SecretVolMountPath + "/" + accessKeyName + "/" + accessKey)
