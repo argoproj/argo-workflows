@@ -1682,7 +1682,7 @@ func (woc *wfOperationCtx) getSize() int {
 // The compressed content will be assign to compressedNodes element and clear the nodestatus map.
 func (woc *wfOperationCtx) checkAndCompress() error {
 
-	if woc.isWFCompressionFailed == false && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
+	if !woc.isWFCompressionFailed && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
 		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
 		if err != nil {
 			return errors.InternalWrapError(err)
