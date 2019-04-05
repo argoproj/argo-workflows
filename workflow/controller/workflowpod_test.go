@@ -341,3 +341,81 @@ func TestSchedulerName(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, pod.Spec.SchedulerName, "foo")
 }
+
+// TestInitContainers verifies the ability to set up initContainers
+func TestInitContainers(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+	mirrorVolumeMounts := true
+
+	woc := newWoc()
+	woc.wf.Spec.Volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
+		{
+			MirrorVolumeMounts: &mirrorVolumeMounts,
+			Container: apiv1.Container{
+				Name: "init-foo",
+			},
+		},
+	}
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pod.Spec.InitContainers))
+	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
+}
+
+// TestSidecars verifies the ability to set up sidecars
+func TestSidecars(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+	mirrorVolumeMounts := true
+
+	woc := newWoc()
+	woc.wf.Spec.Volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].Sidecars = []wfv1.UserContainer{
+		{
+			MirrorVolumeMounts: &mirrorVolumeMounts,
+			Container: apiv1.Container{
+				Name: "side-foo",
+			},
+		},
+	}
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(pod.Spec.Containers))
+	assert.Equal(t, "main", pod.Spec.Containers[0].Name)
+	assert.Equal(t, "wait", pod.Spec.Containers[1].Name)
+	assert.Equal(t, "side-foo", pod.Spec.Containers[2].Name)
+}
