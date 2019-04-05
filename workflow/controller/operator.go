@@ -68,8 +68,8 @@ type wfOperationCtx struct {
 	// unSavedNodeStatusSize is unsaved workflow size
 	unSavedNodeStatusSize int
 
-	// wfFailed is workflow failed status
-	isWFFailed bool
+	// isWFCompressionFailed is workflow compression failed status
+	isWFCompressionFailed bool
 }
 
 var (
@@ -135,9 +135,6 @@ func (woc *wfOperationCtx) operate() {
 	}()
 
 	woc.log.Infof("Processing workflow")
-
-	// Initialize Workflow failed status
-	woc.isWFFailed = false
 
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
@@ -526,7 +523,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.markNodeErrorClearOuput(nodeNameForPod, err)
 				err = woc.checkAndCompress()
 				if err != nil {
-					woc.isWFFailed = true
+					woc.isWFCompressionFailed = true
 				}
 			}
 			<-parallelPodNum
@@ -1685,7 +1682,7 @@ func (woc *wfOperationCtx) getSize() int {
 // The compressed content will be assign to compressedNodes element and clear the nodestatus map.
 func (woc *wfOperationCtx) checkAndCompress() error {
 
-	if woc.isWFFailed == false && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
+	if woc.isWFCompressionFailed == false && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
 		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
 		if err != nil {
 			return errors.InternalWrapError(err)
@@ -1694,8 +1691,8 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 		woc.wf.Status.CompressedNodes = file.CompressEncodeString(buff)
 	}
 
-	if woc.isWFFailed || (woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize) {
-		woc.isWFFailed = true
+	if woc.isWFCompressionFailed || (woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize) {
+		woc.isWFCompressionFailed = true
 		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
 	}
 	return nil
@@ -1726,7 +1723,7 @@ func (woc *wfOperationCtx) checkAndEstimate(nodeID string) error {
 		return nil
 	}
 
-	if woc.isWFFailed {
+	if woc.isWFCompressionFailed {
 		return errors.InternalErrorf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+woc.unSavedNodeStatusSize)
 	}
 
