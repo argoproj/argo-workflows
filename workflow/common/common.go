@@ -113,6 +113,7 @@ const (
 
 	KubeConfigDefaultMountPath  = "/kube/config"
 	KubeConfigDefaultVolumeName = "kubeconfig"
+	SecretVolMountPath          = "/argo/secret"
 )
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
@@ -129,5 +130,6 @@ type ExecutionControl struct {
 type ResourceInterface interface {
 	GetNamespace() string
 	GetSecrets(namespace, name, key string) ([]byte, error)
+	GetSecretFromVolMount(name, key string) ([]byte, error)
 	GetConfigMapKey(namespace, name, key string) (string, error)
 }
