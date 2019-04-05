@@ -1727,7 +1727,7 @@ func (woc *wfOperationCtx) checkAndEstimate(nodeID string) error {
 	}
 
 	if woc.isWFFailed {
-		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+woc.unSavedNodeStatusSize))
+		return errors.InternalErrorf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+woc.unSavedNodeStatusSize)
 	}
 
 	if woc.wf.Status.CompressedNodes != "" {
@@ -1738,7 +1738,7 @@ func (woc *wfOperationCtx) checkAndEstimate(nodeID string) error {
 			}
 			nodeSize := len(file.CompressEncodeString(string(content)))
 			if (nodeSize + woc.unSavedNodeStatusSize + woc.currentWFSize) >= maxWorkflowSize {
-				return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+nodeSize+woc.unSavedNodeStatusSize))
+				return errors.InternalErrorf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+nodeSize+woc.unSavedNodeStatusSize)
 			}
 			woc.unSavedNodeStatusSize += nodeSize
 		}
