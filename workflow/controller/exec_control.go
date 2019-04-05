@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -15,7 +16,10 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+	if pod == nil {
+		return nil
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -27,6 +31,8 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 			woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 			err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 			if err == nil {
+				wfNodesLock.Lock()
+				defer wfNodesLock.Unlock()
 				node := woc.wf.Status.Nodes[pod.Name]
 				var message string
 				if woc.workflowDeadline.IsZero() {

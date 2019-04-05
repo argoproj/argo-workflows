@@ -119,6 +119,18 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		localParams[common.LocalVarPodName] = placeholderValue
 		scope[common.LocalVarPodName] = placeholderValue
 	}
+	if tmpl.IsLeaf() {
+		for _, art := range tmpl.Outputs.Artifacts {
+			if art.Path != "" {
+				scope[fmt.Sprintf("outputs.artifacts.%s.path", art.Name)] = true
+			}
+		}
+		for _, param := range tmpl.Outputs.Parameters {
+			if param.ValueFrom != nil && param.ValueFrom.Path != "" {
+				scope[fmt.Sprintf("outputs.parameters.%s.path", param.Name)] = true
+			}
+		}
+	}
 
 	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
@@ -190,6 +202,7 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 			if art.Path == "" {
 				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path not specified", tmpl.Name, artRef)
 			}
+			scope[fmt.Sprintf("inputs.artifacts.%s.path", art.Name)] = true
 		} else {
 			if art.Path != "" {
 				return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.%s.path only valid in container/script templates", tmpl.Name, artRef)
@@ -230,6 +243,11 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+
+		// Skip the custom variable references
+		if !checkValidWorkflowVariablePrefix(tag) {
+			return 0, nil
+		}
 		_, ok := scope[tag]
 		if !ok && unresolvedErr == nil {
 			if (tag == "item" || strings.HasPrefix(tag, "item.")) && allowAllItemRefs {
@@ -243,6 +261,16 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// checkValidWorkflowVariablePrefix is a helper methood check variable starts workflow root elements
+func checkValidWorkflowVariablePrefix(tag string) bool {
+	for _, rootTag := range common.GlobalVarValidWorkflowVariablePrefix {
+		if strings.HasPrefix(tag, rootTag) {
+			return true
+		}
+	}
+	return false
 }
 
 func validateNonLeaf(tmpl *wfv1.Template) error {

@@ -148,10 +148,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		}
 		// artifact must be supplied
 		argArt := args.GetArtifactByName(inArt.Name)
-		if argArt == nil {
+		if !inArt.Optional && argArt == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
 		}
-		if !argArt.HasLocation() && !validateOnly {
+		if !inArt.Optional && !argArt.HasLocation() && !validateOnly {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
 		}
 		argArt.Path = inArt.Path
@@ -195,6 +195,22 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
+	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
+		if inArt.Path != "" {
+			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
+		}
+	}
+	for _, outArt := range globalReplacedTmpl.Outputs.Artifacts {
+		if outArt.Path != "" {
+			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
+		}
+	}
+	for _, param := range globalReplacedTmpl.Outputs.Parameters {
+		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
+			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+		}
+	}
+
 	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
