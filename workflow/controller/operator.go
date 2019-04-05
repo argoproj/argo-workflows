@@ -1686,14 +1686,12 @@ func (woc *wfOperationCtx) getSize() int {
 func (woc *wfOperationCtx) checkAndCompress() error {
 
 	if woc.isWFFailed == false && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
-		start := time.Now()
 		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
 		buff := string(nodeContent)
 		woc.wf.Status.CompressedNodes = file.CompressEncodeString(buff)
-		fmt.Println("checkAndCompress: %s", time.Since(start))
 	}
 
 	if woc.isWFFailed || (woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize) {
