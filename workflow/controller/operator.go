@@ -198,7 +198,8 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, _ = woc.executeTemplate(woc.wf.Spec.OnExit, woc.wf.Spec.Arguments, onExitNodeName, "")
+		tmpl := woc.wf.GetTemplate(woc.wf.Spec.OnExit)
+		onExitNode, _ = woc.executeTemplate(tmpl, woc.wf.Spec.Arguments, onExitNodeName, "")
 		if onExitNode == nil || !onExitNode.Completed() {
 			return
 		}
@@ -979,7 +980,7 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeTemplate(tmpl *wfv1.Template, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, templateName, boundaryID)
 
 	node := woc.getNodeByName(nodeName)
@@ -996,11 +997,6 @@ func (woc *wfOperationCtx) executeTemplate(templateName string, args wfv1.Argume
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	tmpl := woc.wf.GetTemplate(templateName)
-	if tmpl == nil {
-		err := errors.Errorf(errors.CodeBadRequest, "Node %v error: template '%s' undefined", node, templateName)
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, "", boundaryID, wfv1.NodeError, err.Error()), err
-	}
 	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
 		return node, err
 	}

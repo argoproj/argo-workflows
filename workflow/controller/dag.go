@@ -332,8 +332,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				continue
 			}
 		}
+
 		// Finally execute the template
-		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID)
+		tmpl := woc.wf.GetTemplate(t.Template)
+		_, _ = woc.executeTemplate(tmpl, t.Arguments, taskNodeName, dagCtx.boundaryID)
 	}
 
 	if taskGroupNode != nil {
