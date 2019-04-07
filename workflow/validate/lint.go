@@ -47,7 +47,7 @@ func LintWorkflowFile(filePath string, strict bool) error {
 		if err == nil {
 			workflows = []wfv1.Workflow{wf}
 		} else {
-			if wf.Kind != "" && wf.Kind != workflow.Kind {
+			if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
 				// If we get here, it was a k8s manifest which was not of type 'Workflow'
 				// We ignore these since we only care about validating Workflow manifests.
 				return nil

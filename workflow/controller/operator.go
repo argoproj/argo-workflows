@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
+
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -907,7 +909,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		woc.log.Infof("Creating pvc %s", pvcName)
 		pvcTmpl.ObjectMeta.Name = pvcName
 		pvcTmpl.OwnerReferences = []metav1.OwnerReference{
-			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
+			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
 		if err != nil {

@@ -361,7 +361,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
 	for key, val := range wf.ObjectMeta.Labels {
-		if strings.HasPrefix(key, workflow.FullName+"/") && key != common.LabelKeyControllerInstanceID {
+		if strings.HasPrefix(key, workflow.WorkflowFullName+"/") && key != common.LabelKeyControllerInstanceID {
 			continue
 		}
 		if newWF.ObjectMeta.Labels == nil {

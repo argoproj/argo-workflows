@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
@@ -101,7 +102,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				common.AnnotationKeyNodeName: nodeName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
+				*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 			},
 		},
 		Spec: apiv1.PodSpec{
