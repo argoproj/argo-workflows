@@ -171,6 +171,9 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name"`
 
+	// TemplateRef is the reference to the template resource which is used as the base of this template.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
+
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty"`
 
@@ -392,8 +395,11 @@ type WorkflowStep struct {
 	// Name of the step
 	Name string `json:"name,omitempty"`
 
-	// Template is a reference to the template to execute as the step
+	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty"`
+
+	// TemplateRef is the reference to the template resource to execute as the step.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
@@ -468,6 +474,17 @@ func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
 // the OpenAPI spec of this type.
 func (i Item) OpenAPISchemaFormat() string { return "item" }
 
+// TemplateRef is a reference of template resource.
+type TemplateRef struct {
+	// GroupVersionKind specifies the referenced resource.
+	// Currently supports Workflow and WorkflowTemplate (default).
+	*metav1.GroupVersionKind `json:",inline"`
+	// Name is the resource name of the template.
+	Name string `json:"name,omitempty"`
+	// Template is the name of referred template in the resource.
+	Template string `json:"template,omitempty"`
+}
+
 // Arguments to a template
 type Arguments struct {
 	// Parameters is the list of parameters to pass to the template or workflow
@@ -539,8 +556,13 @@ type NodeStatus struct {
 	// Type indicates type of node
 	Type NodeType `json:"type"`
 
-	// TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)
+	// TemplateName is the template name which this node corresponds to.
+	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateName string `json:"templateName,omitempty"`
+
+	// TemplateRef is the reference to the template resource which this node corresponds to.
+	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -867,6 +889,9 @@ type DAGTask struct {
 
 	// Name of template to execute
 	Template string `json:"template"`
+
+	// TemplateRef is the reference to the template resource to execute.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`

@@ -208,6 +208,10 @@
           "description": "Name of template to execute",
           "type": "string"
         },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
         "when": {
           "description": "When is an expression in which the task should conditionally execute",
           "type": "string"
@@ -902,6 +906,10 @@
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
         "tolerations": {
           "description": "Tolerations to apply to workflow pods.",
           "type": "array",
@@ -915,6 +923,19 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.TemplateRef": {
+      "description": "TemplateRef is a reference of template resource.",
+      "properties": {
+        "name": {
+          "description": "Name is the resource name of the template.",
+          "type": "string"
+        },
+        "template": {
+          "description": "Template is the name of referred template in the resource.",
+          "type": "string"
         }
       }
     },
@@ -1253,8 +1274,12 @@
           "type": "string"
         },
         "template": {
-          "description": "Template is a reference to the template to execute as the step",
+          "description": "Template is the name of the template to execute as the step",
           "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute as the step.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "when": {
           "description": "When is an expression in which the step should conditionally execute",
