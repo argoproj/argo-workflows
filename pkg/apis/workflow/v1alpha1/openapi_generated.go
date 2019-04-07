@@ -387,16 +387,16 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Format:      "",
 						},
 					},
-					"templateRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TemplateRef is the reference to the template resource to execute.",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
-						},
-					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments are the parameter and artifact arguments to the template",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
+						},
+					},
+					"templateRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateRef is the reference to the template resource to execute.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"dependencies": {
@@ -2326,16 +2326,16 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 							Format:      "",
 						},
 					},
-					"templateRef": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TemplateRef is the reference to the template resource to execute as the step.",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
-						},
-					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments"),
+						},
+					},
+					"templateRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateRef is the reference to the template resource to execute as the step.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
 					"withItems": {

@@ -398,11 +398,11 @@ type WorkflowStep struct {
 	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty"`
 
-	// TemplateRef is the reference to the template resource to execute as the step.
-	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
-
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
+
+	// TemplateRef is the reference to the template resource to execute as the step.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
 	WithItems []Item `json:"withItems,omitempty"`
@@ -890,11 +890,11 @@ type DAGTask struct {
 	// Name of template to execute
 	Template string `json:"template"`
 
-	// TemplateRef is the reference to the template resource to execute.
-	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
-
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
+
+	// TemplateRef is the reference to the template resource to execute.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// Dependencies are name of other targets which this depends on
 	Dependencies []string `json:"dependencies,omitempty"`
