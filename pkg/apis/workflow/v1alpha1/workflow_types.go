@@ -476,9 +476,6 @@ func (i Item) OpenAPISchemaFormat() string { return "item" }
 
 // TemplateRef is a reference of template resource.
 type TemplateRef struct {
-	// GroupVersionKind specifies the referenced resource.
-	// Currently supports Workflow and WorkflowTemplate (default).
-	*metav1.GroupVersionKind `json:",inline"`
 	// Name is the resource name of the template.
 	Name string `json:"name,omitempty"`
 	// Template is the name of referred template in the resource.
