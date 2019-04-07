@@ -483,6 +483,8 @@ type TemplateRef struct {
 	Name string `json:"name,omitempty"`
 	// Template is the name of referred template in the resource.
 	Template string `json:"template,omitempty"`
+	// Arguments contain the parameters and artifacts mapped into the template resource.
+	Arguments Arguments `json:"arguments,omitempty"`
 }
 
 // Arguments to a template

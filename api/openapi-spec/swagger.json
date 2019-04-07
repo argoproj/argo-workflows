@@ -929,6 +929,10 @@
     "io.argoproj.workflow.v1alpha1.TemplateRef": {
       "description": "TemplateRef is a reference of template resource.",
       "properties": {
+        "arguments": {
+          "description": "Arguments contain the parameters and artifacts mapped into the template resource.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
         "name": {
           "description": "Name is the resource name of the template.",
           "type": "string"
@@ -1305,7 +1309,7 @@
     "io.argoproj.workflow.v1alpha1.WorkflowTemplate": {
       "description": "WorkflowTemplate is the definition of a workflow template resource",
       "required": [
-        "templates"
+        "spec"
       ],
       "properties": {
         "apiVersion": {
@@ -1319,11 +1323,8 @@
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
-        "templates": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
         }
       }
     },
@@ -1350,6 +1351,25 @@
         },
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
+      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
+      "required": [
+        "templates"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments hold arguments to the template.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "templates": {
+          "description": "Templates is a list of workflow templates.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          }
         }
       }
     }

@@ -11,7 +11,7 @@ import (
 type WorkflowTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Templates         []Template `json:"templates"`
+	Spec              WorkflowTemplateSpec `json:"spec"`
 }
 
 // WorkflowTemplateList is list of WorkflowTemplate resources
@@ -20,4 +20,22 @@ type WorkflowTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	Items           []WorkflowTemplate `json:"items"`
+}
+
+// WorkflowTemplateSpec is a spec of WorkflowTemplate.
+type WorkflowTemplateSpec struct {
+	// Templates is a list of workflow templates.
+	Templates []Template `json:"templates"`
+	// Arguments hold arguments to the template.
+	Arguments Arguments `json:"arguments,omitempty"`
+}
+
+// GetTemplate retrieves a defined template by its name
+func (wftmpl *WorkflowTemplate) GetTemplate(name string) *Template {
+	for _, t := range wftmpl.Spec.Templates {
+		if t.Name == name {
+			return &t
+		}
+	}
+	return nil
 }
