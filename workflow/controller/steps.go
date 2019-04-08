@@ -49,7 +49,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateContex
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
-			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, &wfv1.SimpleTemplate{}, stepsCtx.boundaryID, wfv1.NodeRunning)
+			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, &wfv1.Template{}, stepsCtx.boundaryID, wfv1.NodeRunning)
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {

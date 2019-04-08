@@ -63,16 +63,6 @@ type TemplateHolder interface {
 	GetTemplateRef() *TemplateRef
 }
 
-// SimpleTemplate implements TemplateHolder just to refer to a template.
-type SimpleTemplate struct {
-	Name string `json:"name"`
-}
-
-var _ TemplateHolder = &SimpleTemplate{}
-
-func (t *SimpleTemplate) GetTemplateName() string      { return t.Name }
-func (t *SimpleTemplate) GetTemplateRef() *TemplateRef { return nil }
-
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
