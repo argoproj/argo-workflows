@@ -21,7 +21,7 @@ spec:
   templates:
   - name: whalesay-inner-template
     templateRef:
-      name: workflow-template-hello-world-template
+      name: workflow-template-whalesay-template
       template: whalesay-template
     inputs:
       parameters:
