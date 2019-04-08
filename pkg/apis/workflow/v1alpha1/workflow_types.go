@@ -21,6 +21,7 @@ const (
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -51,6 +52,26 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+// TemplateGetter is an interface to get templates.
+type TemplateGetter interface {
+	GetTemplateByName(name string) *Template
+}
+
+// TemplateHolder is an interface for holders of templates.
+type TemplateHolder interface {
+	GetTemplateName() string
+	GetTemplateRef() *TemplateRef
+}
+
+type SimpleTemplate struct {
+	Name string
+}
+
+var _ TemplateHolder = &SimpleTemplate{}
+
+func (t *SimpleTemplate) GetTemplateName() string      { return t.Name }
+func (t *SimpleTemplate) GetTemplateRef() *TemplateRef { return nil }
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -69,6 +90,8 @@ type WorkflowList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []Workflow `json:"items"`
 }
+
+var _ TemplateGetter = &Workflow{}
 
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
@@ -263,6 +286,20 @@ type Template struct {
 	Priority *int32 `json:"priority,omitempty"`
 }
 
+var _ TemplateHolder = &Template{}
+
+func (tmpl *Template) GetTemplateName() string {
+	if tmpl.Template != "" {
+		return tmpl.Template
+	} else {
+		return tmpl.Name
+	}
+}
+
+func (tmpl *Template) GetTemplateRef() *TemplateRef {
+	return tmpl.TemplateRef
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -426,6 +463,16 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
+}
+
+var _ TemplateHolder = &WorkflowStep{}
+
+func (step *WorkflowStep) GetTemplateName() string {
+	return step.Template
+}
+
+func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
+	return step.TemplateRef
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -611,6 +658,16 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty"`
+}
+
+var _ TemplateHolder = &NodeStatus{}
+
+func (n *NodeStatus) GetTemplateName() string {
+	return n.TemplateName
+}
+
+func (n *NodeStatus) GetTemplateRef() *TemplateRef {
+	return n.TemplateRef
 }
 
 func (n NodeStatus) String() string {
@@ -855,7 +912,7 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
-	return "Unknown"
+	return TemplateTypeUnknown
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -918,6 +975,16 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
+}
+
+var _ TemplateHolder = &DAGTask{}
+
+func (t *DAGTask) GetTemplateName() string {
+	return t.Template
+}
+
+func (t *DAGTask) GetTemplateRef() *TemplateRef {
+	return t.TemplateRef
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -994,8 +1061,8 @@ func (a *Artifact) HasLocation() bool {
 	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.HDFS != nil
 }
 
-// GetTemplate retrieves a defined template by its name
-func (wf *Workflow) GetTemplate(name string) *Template {
+// GetTemplateByName retrieves a defined template by its name
+func (wf *Workflow) GetTemplateByName(name string) *Template {
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
 			return &t

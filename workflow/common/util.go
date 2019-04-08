@@ -113,9 +113,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It substitutes:
 // * parameters in the template from the arguments
-// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
-// * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -159,12 +157,14 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
-
-	return substituteParams(tmpl, globalParams, localParams)
+	return tmpl, nil
 }
 
-// substituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
+// ProcessParams returns a new copy of the template with global, pod, and input parameters substituted
+// It substitutes:
+// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+// * local parameters (e.g. {{pod.name}})
+func ProcessParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -369,4 +369,85 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		manifests = append(manifests, wf)
 	}
 	return manifests, nil
+}
+
+// MergeReferredTemplate merges a referred template to the receiver template.
+func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
+	// Copy the referred template to deep copy template types.
+	newTmpl := referred.DeepCopy()
+
+	newTmpl.Name = tmpl.Name
+
+	newTmpl, err := ProcessArgs(newTmpl, tmpl.Arguments, false)
+	if err != nil {
+		return nil, err
+	}
+	newTmpl.Arguments = wfv1.Arguments{}
+
+	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
+	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(tmpl.NodeSelector) > 0 {
+		m := make(map[string]string, len(tmpl.NodeSelector))
+		for k, v := range tmpl.NodeSelector {
+			m[k] = v
+		}
+		newTmpl.NodeSelector = m
+	}
+	if tmpl.Affinity != nil {
+		newTmpl.Affinity = tmpl.Affinity.DeepCopy()
+	}
+	if len(newTmpl.Metadata.Annotations) > 0 || len(tmpl.Metadata.Labels) > 0 {
+		newTmpl.Metadata = *tmpl.Metadata.DeepCopy()
+	}
+	if tmpl.Daemon != nil {
+		v := *tmpl.Daemon
+		newTmpl.Daemon = &v
+	}
+	if len(tmpl.Volumes) > 0 {
+		volumes := make([]apiv1.Volume, len(tmpl.Volumes))
+		copy(volumes, tmpl.Volumes)
+		newTmpl.Volumes = volumes
+	}
+	if len(tmpl.InitContainers) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.InitContainers))
+		copy(containers, tmpl.InitContainers)
+		newTmpl.InitContainers = containers
+	}
+	if len(tmpl.Sidecars) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.Sidecars))
+		copy(containers, tmpl.Sidecars)
+		newTmpl.Sidecars = containers
+	}
+	if tmpl.ArchiveLocation != nil {
+		newTmpl.ArchiveLocation = tmpl.ArchiveLocation.DeepCopy()
+	}
+	if tmpl.ActiveDeadlineSeconds != nil {
+		v := *tmpl.ActiveDeadlineSeconds
+		newTmpl.ActiveDeadlineSeconds = &v
+	}
+	if tmpl.RetryStrategy != nil {
+		newTmpl.RetryStrategy = tmpl.RetryStrategy.DeepCopy()
+	}
+	if tmpl.Parallelism != nil {
+		v := *tmpl.Parallelism
+		newTmpl.Parallelism = &v
+	}
+	if len(tmpl.Tolerations) != 0 {
+		tolerations := make([]apiv1.Toleration, len(tmpl.Tolerations))
+		copy(tolerations, tmpl.Tolerations)
+		newTmpl.Tolerations = tolerations
+	}
+	if tmpl.SchedulerName != "" {
+		newTmpl.SchedulerName = tmpl.SchedulerName
+	}
+	if tmpl.PriorityClassName != "" {
+		newTmpl.PriorityClassName = tmpl.PriorityClassName
+	}
+	if tmpl.Priority != nil {
+		v := *tmpl.Priority
+		newTmpl.Priority = &v
+	}
+
+	return newTmpl, nil
 }

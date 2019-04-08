@@ -72,6 +72,9 @@ type wfOperationCtx struct {
 
 	// isWFCompressionFailed is workflow compression failed status
 	isWFCompressionFailed bool
+
+	// tmplCtx is the context of template search.
+	tmplCtx *templateContext
 }
 
 var (
@@ -105,6 +108,11 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		globalParams:  make(map[string]string),
 		completedPods: make(map[string]bool),
 		deadline:      time.Now().UTC().Add(maxOperationTime),
+		tmplCtx: &templateContext{
+			namespace:   wf.Namespace,
+			wfclientset: wfc.wfclientset,
+			tmplBase:    wf,
+		},
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -173,9 +181,15 @@ func (woc *wfOperationCtx) operate() {
 		woc.markWorkflowError(err, true)
 		return
 	}
+
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, _ := woc.executeTemplate(woc.wf.Spec.Entrypoint, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
+	node, err := woc.executeTemplate(&wfv1.SimpleTemplate{Name: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
+	if err != nil {
+		// the error are handled in the callee so just log it.
+		woc.log.Errorf("%s error in entry template execution: %+v", woc.wf.Name, err)
+		return
+	}
 	if node == nil || !node.Completed() {
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
@@ -198,8 +212,12 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		tmpl := woc.wf.GetTemplate(woc.wf.Spec.OnExit)
-		onExitNode, _ = woc.executeTemplate(tmpl, woc.wf.Spec.Arguments, onExitNodeName, "")
+		onExitNode, err = woc.executeTemplate(&wfv1.SimpleTemplate{Name: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, onExitNodeName, "")
+		if err != nil {
+			// the error are handled in the callee so just log it.
+			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
+			return
+		}
 		if onExitNode == nil || !onExitNode.Completed() {
 			return
 		}
@@ -980,8 +998,8 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(tmpl *wfv1.Template, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
-	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, templateName, boundaryID)
+func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplCtx *templateContext, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
+	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, tmplHolder.GetTemplateName(), boundaryID)
 
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
@@ -996,19 +1014,29 @@ func (woc *wfOperationCtx) executeTemplate(tmpl *wfv1.Template, args wfv1.Argume
 		return node, ErrDeadlineExceeded
 	}
 
-	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
-		return node, err
+	newTmplCtx, tmpl, err := tmplCtx.resolveTemplate(tmplHolder, 0)
+	if err != nil {
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmplHolder, boundaryID, wfv1.NodeError, err.Error()), err
 	}
-
-	// Perform parameter substitution of the template
+	// Perform parameter substitution of the template.
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
-	tmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
+	newTmpl := tmpl.DeepCopy()
+	newTmpl, err = common.ProcessArgs(newTmpl, args, false)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error()), err
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error()), err
+	}
+	newTmpl, err = common.ProcessParams(newTmpl, woc.globalParams, localParams)
+	if err != nil {
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error()), err
+	}
+	tmpl = newTmpl
+
+	// Check if we exceeded template or workflow parallelism and immediately return if we did
+	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
+		return node, err
 	}
 
 	// If the user has specified retries, node becomes a special retry node.
@@ -1020,7 +1048,7 @@ func (woc *wfOperationCtx) executeTemplate(tmpl *wfv1.Template, args wfv1.Argume
 	if tmpl.IsLeaf() && tmpl.RetryStrategy != nil {
 		retryNodeName = nodeName
 		if node == nil {
-			node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", boundaryID, wfv1.NodeRunning)
+			node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, tmpl, boundaryID, wfv1.NodeRunning)
 		}
 		if err := woc.processNodeRetries(node, *tmpl.RetryStrategy); err != nil {
 			woc.markNodeError(nodeName, err)
@@ -1050,18 +1078,18 @@ func (woc *wfOperationCtx) executeTemplate(tmpl *wfv1.Template, args wfv1.Argume
 	case wfv1.TemplateTypeContainer:
 		node = woc.executeContainer(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeSteps:
-		node = woc.executeSteps(workNodeName, tmpl, boundaryID)
+		node = woc.executeSteps(workNodeName, newTmplCtx, tmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
 		node = woc.executeScript(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeResource:
 		node = woc.executeResource(workNodeName, tmpl, boundaryID)
 	case wfv1.TemplateTypeDAG:
-		node = woc.executeDAG(workNodeName, tmpl, boundaryID)
+		node = woc.executeDAG(workNodeName, newTmplCtx, tmpl, boundaryID)
 	case wfv1.TemplateTypeSuspend:
 		node = woc.executeSuspend(workNodeName, tmpl, boundaryID)
 	default:
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", tmpl.Name)
-		node = woc.initializeNode(workNodeName, wfv1.NodeTypeSkipped, templateName, boundaryID, wfv1.NodeError, err.Error())
+		node = woc.initializeNode(workNodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
 
 	// Swap the node back to retry node and add worker node as child.
@@ -1145,16 +1173,18 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
-func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, templateName string, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeType, tmplHolder wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	nodeID := woc.wf.NodeID(nodeName)
 	_, ok := woc.wf.Status.Nodes[nodeID]
 	if ok {
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
 	}
+
 	node := wfv1.NodeStatus{
 		ID:           nodeID,
 		Name:         nodeName,
-		TemplateName: templateName,
+		TemplateName: tmplHolder.GetTemplateName(),
+		TemplateRef:  tmplHolder.GetTemplateRef(),
 		Type:         nodeType,
 		BoundaryID:   boundaryID,
 		Phase:        phase,
@@ -1245,7 +1275,10 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		// if we are about to execute a pod, make our parent hasn't reached it's limit
 		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 			boundaryNode := woc.wf.Status.Nodes[boundaryID]
-			boundaryTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
+			boundaryTemplate, err := woc.tmplCtx.getTemplate(&boundaryNode)
+			if err != nil {
+				return err
+			}
 			if boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
@@ -1268,9 +1301,9 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodePending)
 }
 
 func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
@@ -1349,9 +1382,9 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodePending)
 }
 
 // processNodeOutputs adds all of a nodes outputs to the local scope with the given prefix, as well
@@ -1417,9 +1450,9 @@ func (n loopNodes) Swap(i, j int) {
 
 // processAggregateNodeOutputs adds the aggregated outputs of a withItems/withParam template as a
 // parameter in the form of a JSON list
-func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) {
+func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scope *wfScope, prefix string, childNodes []wfv1.NodeStatus) error {
 	if len(childNodes) == 0 {
-		return
+		return nil
 	}
 	// need to sort the child node list so that the order of outputs are preserved
 	sort.Sort(loopNodes(childNodes))
@@ -1447,8 +1480,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scop
 			}
 		}
 	}
-	tmplType := woc.wf.GetTemplate(templateName).GetType()
-	if tmplType == wfv1.TemplateTypeScript {
+	if tmpl.GetType() == wfv1.TemplateTypeScript {
 		resultsJSON, _ := json.Marshal(resultsList)
 		key := fmt.Sprintf("%s.outputs.result", prefix)
 		scope.addParamToScope(key, string(resultsJSON))
@@ -1456,6 +1488,7 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(templateName string, scop
 	outputsJSON, _ := json.Marshal(paramList)
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
 	scope.addParamToScope(key, string(outputsJSON))
+	return nil
 }
 
 // addParamToGlobalScope exports any desired node outputs to the global scope, and adds it to the global outputs.
@@ -1569,9 +1602,9 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	}
 	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
 	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
-	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodePending)
+	return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodePending)
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {

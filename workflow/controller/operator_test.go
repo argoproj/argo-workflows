@@ -119,7 +119,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add the parent node for retries.
 	nodeName := "test-node"
 	nodeID := woc.wf.NodeID(nodeName)
-	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, "", "", wfv1.NodeRunning)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.SimpleTemplate{}, "", wfv1.NodeRunning)
 	retries := wfv1.RetryStrategy{}
 	var retryLimit int32
 	retryLimit = 2
@@ -136,7 +136,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	// Add child nodes.
 	for i := 0; i < 2; i++ {
 		childNode := fmt.Sprintf("child-node-%d", i)
-		woc.initializeNode(childNode, wfv1.NodeTypePod, "", "", wfv1.NodeRunning)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.SimpleTemplate{}, "", wfv1.NodeRunning)
 		woc.addChildNode(nodeName, childNode)
 	}
 
@@ -169,7 +169,7 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Add a third node that has failed.
 	childNode := "child-node-3"
-	woc.initializeNode(childNode, wfv1.NodeTypePod, "", "", wfv1.NodeFailed)
+	woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.SimpleTemplate{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
 	err = woc.processNodeRetries(n, retries)
@@ -352,11 +352,11 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 }
 
 var nestedParallelism = `
-# Example with vertical and horizontal scalability                                                                                                                                                                                      
-#                                                                                                                                                                                                                                                            
-# Imagine we have 'M' workers which work in parallel,                                                                                                                                                                                                        
-# each worker should performs 'N' loops sequentially                                                                                                                                                                                                         
-#                                                                                                                                                                                                                                                            
+# Example with vertical and horizontal scalability
+#
+# Imagine we have 'M' workers which work in parallel,
+# each worker should performs 'N' loops sequentially
+#
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:

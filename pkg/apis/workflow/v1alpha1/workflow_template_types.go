@@ -22,6 +22,8 @@ type WorkflowTemplateList struct {
 	Items           []WorkflowTemplate `json:"items"`
 }
 
+var _ TemplateGetter = &WorkflowTemplate{}
+
 // WorkflowTemplateSpec is a spec of WorkflowTemplate.
 type WorkflowTemplateSpec struct {
 	// Templates is a list of workflow templates.
@@ -30,8 +32,8 @@ type WorkflowTemplateSpec struct {
 	Arguments Arguments `json:"arguments,omitempty"`
 }
 
-// GetTemplate retrieves a defined template by its name
-func (wftmpl *WorkflowTemplate) GetTemplate(name string) *Template {
+// GetTemplateByName retrieves a defined template by its name
+func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 	for _, t := range wftmpl.Spec.Templates {
 		if t.Name == name {
 			return &t
