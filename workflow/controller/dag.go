@@ -130,6 +130,9 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	if node != nil && node.Completed() {
 		return node
 	}
+	if node == nil {
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl, boundaryID, wfv1.NodeRunning)
+	}
 	defer func() {
 		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
 			_ = woc.killDaemonedChildren(node.ID)
