@@ -211,7 +211,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 				return node
 			case ErrParallelismReached:
 			default:
-				errMsg := fmt.Sprintf("child '%s' errored", childNode.ID)
+				errMsg := fmt.Sprintf("child '%s' errored", childNodeName)
 				woc.log.Infof("Step group node %s deemed errored due to child %s error: %s", node, childNodeName, err.Error())
 				woc.addChildNode(sgNodeName, childNodeName)
 				return woc.markNodePhase(node.Name, wfv1.NodeError, errMsg)
