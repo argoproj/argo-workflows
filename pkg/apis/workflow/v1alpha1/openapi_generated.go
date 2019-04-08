@@ -1505,6 +1505,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"template": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Template is the name of the template which is used as the base of this template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"arguments": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Arguments hold arguments to the template.",

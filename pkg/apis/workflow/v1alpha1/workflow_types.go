@@ -171,6 +171,9 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name"`
 
+	// Template is the name of the template which is used as the base of this template.
+	Template string `json:"template,omitempty"`
+
 	// Arguments hold arguments to the template.
 	Arguments Arguments `json:"arguments,omitempty"`
 

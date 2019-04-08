@@ -910,6 +910,10 @@
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
+        "template": {
+          "description": "Template is the name of the template which is used as the base of this template.",
+          "type": "string"
+        },
         "templateRef": {
           "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
