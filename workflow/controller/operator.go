@@ -1023,12 +1023,8 @@ func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplC
 	if tmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
-	newTmpl := tmpl.DeepCopy()
-	newTmpl, err = common.ProcessArgs(newTmpl, args, false)
-	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error()), err
-	}
-	newTmpl, err = common.ProcessParams(newTmpl, woc.globalParams, localParams)
+	// Do not overwrite tmpl here because the old value is used in the error case.
+	newTmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}

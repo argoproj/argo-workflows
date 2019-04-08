@@ -163,11 +163,7 @@ func (ctx *tmplateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1
 		}
 	}
 
-	newTmpl, err := common.ProcessArgs(tmpl, args, true)
-	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
-	}
-	_, err = common.ProcessParams(newTmpl, ctx.globalParams, localParams)
+	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}

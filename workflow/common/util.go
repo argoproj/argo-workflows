@@ -113,7 +113,9 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // ProcessArgs sets in the inputs, the values either passed via arguments, or the hardwired values
 // It substitutes:
 // * parameters in the template from the arguments
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*wfv1.Template, error) {
+// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
+// * local parameters (e.g. {{pod.name}})
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -157,14 +159,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, validateOnly bool) (*
 		newInputArtifacts[i] = *argArt
 	}
 	tmpl.Inputs.Artifacts = newInputArtifacts
-	return tmpl, nil
+	return substituteParams(tmpl, globalParams, localParams)
 }
 
-// ProcessParams returns a new copy of the template with global, pod, and input parameters substituted
-// It substitutes:
-// * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
-// * local parameters (e.g. {{pod.name}})
-func ProcessParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
+// substituteParams returns a new copy of the template with global, pod, and input parameters substituted
+func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -378,7 +377,8 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 
 	newTmpl.Name = tmpl.Name
 
-	newTmpl, err := ProcessArgs(newTmpl, tmpl.Arguments, false)
+	emptymap := map[string]string{}
+	newTmpl, err := ProcessArgs(newTmpl, tmpl.Arguments, emptymap, emptymap, false)
 	if err != nil {
 		return nil, err
 	}
