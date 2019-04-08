@@ -163,11 +163,11 @@ func (ctx *tmplateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1
 		}
 	}
 
-	_, err = common.ProcessArgs(tmpl, args, true)
+	newTmpl, err := common.ProcessArgs(tmpl, args, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
-	_, err = common.ProcessParams(tmpl, ctx.globalParams, localParams)
+	_, err = common.ProcessParams(newTmpl, ctx.globalParams, localParams)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
@@ -445,6 +445,9 @@ func (ctx *tmplateValidationCtx) validateSteps(scope map[string]interface{}, tmp
 				return err
 			}
 			if step.TemplateRef == nil {
+				if step.Template == "" {
+					return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s.template is required", tmpl.Name, i, step.Name)
+				}
 				childTmpl := ctx.GetTemplateByName(step.Template)
 				if childTmpl == nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
