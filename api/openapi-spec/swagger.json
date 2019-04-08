@@ -788,6 +788,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.SimpleTemplate": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
     },

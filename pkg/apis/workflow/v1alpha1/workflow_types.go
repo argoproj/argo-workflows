@@ -63,8 +63,9 @@ type TemplateHolder interface {
 	GetTemplateRef() *TemplateRef
 }
 
+// SimpleTemplate implements TemplateHolder just to refer to a template.
 type SimpleTemplate struct {
-	Name string
+	Name string `json:"name"`
 }
 
 var _ TemplateHolder = &SimpleTemplate{}
