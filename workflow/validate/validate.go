@@ -16,14 +16,26 @@ import (
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
-// tmplateValidationCtx is the context for validating a workflow spec
-type tmplateValidationCtx struct {
+// templateValidationCtx is the context for validating a workflow spec
+type templateValidationCtx struct {
 	templateGetter wfv1.TemplateGetter
 	// globalParams keeps track of variables which are available the global
 	// scope and can be referenced from anywhere.
 	globalParams map[string]string
 	// results tracks if validation has already been run on a template
 	results map[string]bool
+}
+
+func newTemplateValidationCtx(getter wfv1.TemplateGetter) *templateValidationCtx {
+	globalParams := make(map[string]string)
+	globalParams[common.GlobalVarWorkflowName] = placeholderValue
+	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
+	globalParams[common.GlobalVarWorkflowUID] = placeholderValue
+	return &templateValidationCtx{
+		templateGetter: getter,
+		globalParams:   globalParams,
+		results:        make(map[string]bool),
+	}
 }
 
 const (
@@ -39,11 +51,7 @@ const (
 // ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
 // true, will skip some validations which is permissible during linting but not submission
 func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
-	ctx := tmplateValidationCtx{
-		templateGetter: wf,
-		globalParams:   make(map[string]string),
-		results:        make(map[string]bool),
-	}
+	ctx := newTemplateValidationCtx(wf)
 	linting := len(lint) > 0 && lint[0]
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
@@ -60,9 +68,6 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	if err != nil {
 		return err
 	}
-	ctx.globalParams[common.GlobalVarWorkflowName] = placeholderValue
-	ctx.globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
-	ctx.globalParams[common.GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range wf.Spec.Arguments.Parameters {
 		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
 	}
@@ -101,11 +106,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 }
 
 func ValidateWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
-	ctx := tmplateValidationCtx{
-		templateGetter: wftmpl,
-		globalParams:   make(map[string]string),
-		results:        make(map[string]bool),
-	}
+	ctx := newTemplateValidationCtx(wftmpl)
 	for _, template := range wftmpl.Spec.Templates {
 		err := ctx.validateTemplate(&template, wftmpl.Spec.Arguments)
 		if err != nil {
@@ -115,11 +116,11 @@ func ValidateWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
 	return nil
 }
 
-func (ctx tmplateValidationCtx) GetTemplateByName(name string) *wfv1.Template {
+func (ctx templateValidationCtx) GetTemplateByName(name string) *wfv1.Template {
 	return ctx.templateGetter.GetTemplateByName(name)
 }
 
-func (ctx *tmplateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
+func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
 	tmplID := getTemplateID(tmpl)
 	_, ok := ctx.results[tmplID]
 	if ok {
@@ -407,7 +408,7 @@ func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	return nil
 }
 
-func (ctx *tmplateValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
@@ -512,7 +513,7 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	return nil
 }
 
-func (ctx *tmplateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix string, scope map[string]interface{}, aggregate bool) {
+func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix string, scope map[string]interface{}, aggregate bool) {
 	if tmpl.Daemon != nil && *tmpl.Daemon {
 		scope[fmt.Sprintf("%s.ip", prefix)] = true
 	}
@@ -686,7 +687,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 	return nil
 }
 
-func (ctx *tmplateValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	err := validateNonLeaf(tmpl)
 	if err != nil {
 		return err
