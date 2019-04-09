@@ -818,42 +818,43 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 
 func createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
 	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
-		createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
-		createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &s3ArtRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &s3ArtRepo.SecretKeySecret, uniqueKeyMap)
 	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
-		createSecretVal(volMap, *hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
-		createSecretVal(volMap, *hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
+		createSecretVal(volMap, hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
+		createSecretVal(volMap, hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
 	} else if artRepo := tmpl.ArchiveLocation.Artifactory; artRepo != nil {
-		createSecretVal(volMap, *artRepo.UsernameSecret, uniqueKeyMap)
-		createSecretVal(volMap, *artRepo.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, artRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, artRepo.PasswordSecret, uniqueKeyMap)
 	} else if gitRepo := tmpl.ArchiveLocation.Git; gitRepo != nil {
-		createSecretVal(volMap, *gitRepo.UsernameSecret, uniqueKeyMap)
-		createSecretVal(volMap, *gitRepo.PasswordSecret, uniqueKeyMap)
-		createSecretVal(volMap, *gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, gitRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
 	}
 
 }
 
 func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
-
 	if art.S3 != nil {
-		createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
-		createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
+		createSecretVal(volMap, &art.S3.AccessKeySecret, keyMap)
+		createSecretVal(volMap, &art.S3.SecretKeySecret, keyMap)
 	} else if art.Git != nil {
-		createSecretVal(volMap, *art.Git.UsernameSecret, keyMap)
-		createSecretVal(volMap, *art.Git.PasswordSecret, keyMap)
-		createSecretVal(volMap, *art.Git.SSHPrivateKeySecret, keyMap)
+		createSecretVal(volMap, art.Git.UsernameSecret, keyMap)
+		createSecretVal(volMap, art.Git.PasswordSecret, keyMap)
+		createSecretVal(volMap, art.Git.SSHPrivateKeySecret, keyMap)
 	} else if art.Artifactory != nil {
-		createSecretVal(volMap, *art.Artifactory.UsernameSecret, keyMap)
-		createSecretVal(volMap, *art.Artifactory.PasswordSecret, keyMap)
+		createSecretVal(volMap, art.Artifactory.UsernameSecret, keyMap)
+		createSecretVal(volMap, art.Artifactory.PasswordSecret, keyMap)
 	} else if art.HDFS != nil {
-		createSecretVal(volMap, *art.HDFS.KrbCCacheSecret, keyMap)
-		createSecretVal(volMap, *art.HDFS.KrbKeytabSecret, keyMap)
-
+		createSecretVal(volMap, art.HDFS.KrbCCacheSecret, keyMap)
+		createSecretVal(volMap, art.HDFS.KrbKeytabSecret, keyMap)
 	}
 }
 
-func createSecretVal(volMap map[string]apiv1.Volume, secret apiv1.SecretKeySelector, keyMap map[string]bool) {
+func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySelector, keyMap map[string]bool) {
+	if secret == nil {
+		return
+	}
 	if vol, ok := volMap[secret.Name]; ok {
 		key := apiv1.KeyToPath{
 			Key:  secret.Key,
