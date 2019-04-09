@@ -370,6 +370,33 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 	return manifests, nil
 }
 
+// SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
+func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.WorkflowTemplate, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var wftmpl wfv1.WorkflowTemplate
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
+		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
+			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
+			// We ignore these since we only care about WorkflowTemplate manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, wftmpl)
+	}
+	return manifests, nil
+}
+
 // MergeReferredTemplate merges a referred template to the receiver template.
 func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
 	// Copy the referred template to deep copy template types.
