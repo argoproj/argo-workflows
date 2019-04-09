@@ -291,6 +291,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	err := woc.checkAndCompress()
 	if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
+		woc.markWorkflowFailed(err.Error())
 	}
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
@@ -488,7 +489,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
-	origNodeStatus := *woc.wf.Status.DeepCopy()
 
 	for _, pod := range podList.Items {
 		parallelPodNum <- pod.Name
@@ -505,14 +505,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	}
 
 	wg.Wait()
-
-	err = woc.checkAndCompress()
-	if err != nil {
-		woc.wf.Status = origNodeStatus
-		woc.log.Warnf("%v", err)
-		err = woc.checkAndCompress()
-		woc.markWorkflowFailed(err.Error())
-	}
 
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
