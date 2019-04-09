@@ -132,6 +132,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
 	}
 
+	err := woc.addArchiveLocation(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
@@ -153,7 +158,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
-	err := addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err = addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -163,13 +168,15 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	err = woc.addArchiveLocation(pod, tmpl)
-	if err != nil {
-		return nil, err
-	}
-
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
 		addExecutorStagingVolume(pod)
+	}
+
+	// addInitContainers should be called after all volumes have been manipulated
+	// in the main container (in case sidecar requires volume mount mirroring)
+	err = addInitContainers(pod, tmpl)
+	if err != nil {
+		return nil, err
 	}
 
 	// addSidecars should be called after all volumes have been manipulated
@@ -366,7 +373,8 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool, subCom
 			MountPath: path,
 			ReadOnly:  true,
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		}}
+		},
+		}
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
 	return &exec
@@ -485,6 +493,7 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 		}
 		return nil
 	}
+
 	if tmpl.Container != nil {
 		err := addVolumeRef(tmpl.Container.VolumeMounts)
 		if err != nil {
@@ -497,12 +506,30 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 			return err
 		}
 	}
+
 	for _, sidecar := range tmpl.Sidecars {
 		err := addVolumeRef(sidecar.VolumeMounts)
 		if err != nil {
 			return err
 		}
 	}
+
+	volumes, volumeMounts := createSecretVolumes(tmpl)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, volumes...)
+
+	for idx, container := range pod.Spec.Containers {
+		if container.Name == common.WaitContainerName {
+			pod.Spec.Containers[idx].VolumeMounts = append(pod.Spec.Containers[idx].VolumeMounts, volumeMounts...)
+			break
+		}
+	}
+	for idx, container := range pod.Spec.InitContainers {
+		if container.Name == common.InitContainerName {
+			pod.Spec.InitContainers[idx].VolumeMounts = append(pod.Spec.InitContainers[idx].VolumeMounts, volumeMounts...)
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -706,31 +733,40 @@ func addExecutorStagingVolume(pod *apiv1.Pod) {
 	}
 }
 
+// addInitContainers adds all init containers to the pod spec of the step
+// Optionally volume mounts from the main container to the init containers
+func addInitContainers(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if len(tmpl.InitContainers) == 0 {
+		return nil
+	}
+	mainCtr := findMainContainer(pod)
+	if mainCtr == nil {
+		panic("Unable to locate main container")
+	}
+	for _, ctr := range tmpl.InitContainers {
+		log.Debugf("Adding init container %s", ctr.Name)
+		if ctr.MirrorVolumeMounts != nil && *ctr.MirrorVolumeMounts {
+			mirrorVolumeMounts(mainCtr, &ctr.Container)
+		}
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ctr.Container)
+	}
+	return nil
+}
+
 // addSidecars adds all sidecars to the pod spec of the step.
 // Optionally volume mounts from the main container to the sidecar
 func addSidecars(pod *apiv1.Pod, tmpl *wfv1.Template) error {
 	if len(tmpl.Sidecars) == 0 {
 		return nil
 	}
-	var mainCtr *apiv1.Container
-	for _, ctr := range pod.Spec.Containers {
-		if ctr.Name != common.MainContainerName {
-			continue
-		}
-		mainCtr = &ctr
-		break
-	}
+	mainCtr := findMainContainer(pod)
 	if mainCtr == nil {
 		panic("Unable to locate main container")
 	}
 	for _, sidecar := range tmpl.Sidecars {
+		log.Debugf("Adding sidecar container %s", sidecar.Name)
 		if sidecar.MirrorVolumeMounts != nil && *sidecar.MirrorVolumeMounts {
-			for _, volMnt := range mainCtr.VolumeMounts {
-				if sidecar.VolumeMounts == nil {
-					sidecar.VolumeMounts = make([]apiv1.VolumeMount, 0)
-				}
-				sidecar.VolumeMounts = append(sidecar.VolumeMounts, volMnt)
-			}
+			mirrorVolumeMounts(mainCtr, &sidecar.Container)
 		}
 		pod.Spec.Containers = append(pod.Spec.Containers, sidecar.Container)
 	}
@@ -750,4 +786,124 @@ func verifyResolvedVariables(obj interface{}) error {
 		return 0, nil
 	})
 	return unresolvedErr
+}
+
+// createSecretVolumes will retrieve and create Volumes and Volumemount object for Pod
+func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMount) {
+	var allVolumesMap = make(map[string]apiv1.Volume)
+	var uniqueKeyMap = make(map[string]bool)
+	var secretVolumes []apiv1.Volume
+	var secretVolMounts []apiv1.VolumeMount
+
+	createArgoArtifactsRepoSecret(tmpl, allVolumesMap, uniqueKeyMap)
+
+	for _, art := range tmpl.Outputs.Artifacts {
+		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+	for _, art := range tmpl.Inputs.Artifacts {
+		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
+	}
+
+	for volMountName, val := range allVolumesMap {
+		secretVolumes = append(secretVolumes, val)
+		secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
+			Name:      volMountName,
+			MountPath: common.SecretVolMountPath,
+			ReadOnly:  true,
+		})
+	}
+
+	return secretVolumes, secretVolMounts
+}
+
+func createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
+		createSecretVal(volMap, s3ArtRepo.AccessKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
+		createSecretVal(volMap, *hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
+		createSecretVal(volMap, *hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
+	} else if artRepo := tmpl.ArchiveLocation.Artifactory; artRepo != nil {
+		createSecretVal(volMap, *artRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, *artRepo.PasswordSecret, uniqueKeyMap)
+	} else if gitRepo := tmpl.ArchiveLocation.Git; gitRepo != nil {
+		createSecretVal(volMap, *gitRepo.UsernameSecret, uniqueKeyMap)
+		createSecretVal(volMap, *gitRepo.PasswordSecret, uniqueKeyMap)
+		createSecretVal(volMap, *gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
+	}
+
+}
+
+func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
+
+	if art.S3 != nil {
+		createSecretVal(volMap, art.S3.AccessKeySecret, keyMap)
+		createSecretVal(volMap, art.S3.SecretKeySecret, keyMap)
+	} else if art.Git != nil {
+		createSecretVal(volMap, *art.Git.UsernameSecret, keyMap)
+		createSecretVal(volMap, *art.Git.PasswordSecret, keyMap)
+		createSecretVal(volMap, *art.Git.SSHPrivateKeySecret, keyMap)
+	} else if art.Artifactory != nil {
+		createSecretVal(volMap, *art.Artifactory.UsernameSecret, keyMap)
+		createSecretVal(volMap, *art.Artifactory.PasswordSecret, keyMap)
+	} else if art.HDFS != nil {
+		createSecretVal(volMap, *art.HDFS.KrbCCacheSecret, keyMap)
+		createSecretVal(volMap, *art.HDFS.KrbKeytabSecret, keyMap)
+
+	}
+}
+
+func createSecretVal(volMap map[string]apiv1.Volume, secret apiv1.SecretKeySelector, keyMap map[string]bool) {
+	if vol, ok := volMap[secret.Name]; ok {
+		key := apiv1.KeyToPath{
+			Key:  secret.Key,
+			Path: secret.Name + "/" + secret.Key,
+		}
+		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
+			keyMap[secret.Name+"-"+secret.Key] = true
+			vol.Secret.Items = append(vol.Secret.Items, key)
+		}
+	} else {
+		volume := apiv1.Volume{
+			Name: secret.Name,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: secret.Name,
+					Items: []apiv1.KeyToPath{
+						{
+							Key:  secret.Key,
+							Path: secret.Name + "/" + secret.Key,
+						},
+					},
+				},
+			},
+		}
+		keyMap[secret.Name+"-"+secret.Key] = true
+		volMap[secret.Name] = volume
+	}
+}
+
+// findMainContainer finds main container
+func findMainContainer(pod *apiv1.Pod) *apiv1.Container {
+	var mainCtr *apiv1.Container
+	for _, ctr := range pod.Spec.Containers {
+		if ctr.Name != common.MainContainerName {
+			continue
+		}
+		mainCtr = &ctr
+		break
+	}
+	return mainCtr
+}
+
+// mirrorVolumeMounts mirrors volumeMounts of source container to target container
+func mirrorVolumeMounts(sourceContainer, targetContainer *apiv1.Container) {
+	for _, volMnt := range sourceContainer.VolumeMounts {
+		if targetContainer.VolumeMounts == nil {
+			targetContainer.VolumeMounts = make([]apiv1.VolumeMount, 0)
+		}
+		log.Debugf("Adding volume mount %v to container %v", volMnt.Name, targetContainer.Name)
+		targetContainer.VolumeMounts = append(targetContainer.VolumeMounts, volMnt)
+
+	}
 }

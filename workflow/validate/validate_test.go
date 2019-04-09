@@ -163,6 +163,76 @@ func TestUnresolved(t *testing.T) {
 	}
 }
 
+var ioArtifactPaths = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-path-placeholders-
+spec:
+  entrypoint: head-lines
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+    artifacts:
+    - name: text
+      raw:
+        data: |
+          1
+          2
+          3
+          4
+          5
+  templates:
+  - name: head-lines
+    inputs:
+      parameters:
+      - name: lines-count
+      artifacts:
+      - name: text
+        path: /inputs/text/data
+    outputs:
+      parameters:
+      - name: actual-lines-count
+        valueFrom:
+          path: /outputs/actual-lines-count/data
+      artifacts:
+      - name: text
+        path: /outputs/text/data
+    container:
+      image: busybox
+      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
+`
+
+func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
+	err := validate(ioArtifactPaths)
+	assert.Nil(t, err)
+}
+
+var outputParameterPath = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: get-current-date-
+spec:
+  entrypoint: get-current-date
+  templates:
+  - name: get-current-date
+    outputs:
+      parameters:
+      - name: current-date
+        valueFrom:
+          path: /tmp/current-date
+    container:
+      image: busybox
+      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']
+`
+
+func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
+	err := validate(outputParameterPath)
+	assert.Nil(t, err)
+}
+
 var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

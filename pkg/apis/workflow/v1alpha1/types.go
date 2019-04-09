@@ -209,9 +209,15 @@ type Template struct {
 	// Suspend template subtype which can suspend a workflow when reaching the step
 	Suspend *SuspendTemplate `json:"suspend,omitempty"`
 
+	// Volumes is a list of volumes that can be mounted by containers in a template.
+	Volumes []apiv1.Volume `json:"volumes,omitempty"`
+
+	// InitContainers is a list of containers which run before the main container.
+	InitContainers []UserContainer `json:"initContainers,omitempty"`
+
 	// Sidecars is a list of containers which run alongside the main container
 	// Sidecars are automatically killed when the main container completes
-	Sidecars []Sidecar `json:"sidecars,omitempty"`
+	Sidecars []UserContainer `json:"sidecars,omitempty"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
@@ -471,12 +477,12 @@ type Arguments struct {
 	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
 
-// Sidecar is a container which runs alongside the main container
-type Sidecar struct {
+// UserContainer is a container specified by a user.
+type UserContainer struct {
 	apiv1.Container `json:",inline"`
 
 	// MirrorVolumeMounts will mount the same volumes specified in the main container
-	// to the sidecar (including artifacts), at the same mountPaths. This enables
+	// to the container (including artifacts), at the same mountPaths. This enables
 	// dind daemon to partially see the same filesystem as the main container in
 	// order to use features such as docker volume binding
 	MirrorVolumeMounts *bool `json:"mirrorVolumeMounts,omitempty"`

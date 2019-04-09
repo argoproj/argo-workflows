@@ -435,6 +435,13 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	return &art, nil
 }
 
+// GetSecretFromVolMount will retrive the Secrets from VolumeMount
+func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
+
+	return ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
+
+}
+
 // InitDriver initializes an instance of an artifact driver
 func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
 	if art.S3 != nil {
@@ -442,12 +449,12 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		var secretKey string
 
 		if art.S3.AccessKeySecret.Name != "" {
-			accessKeyBytes, err := we.GetSecrets(we.Namespace, art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
+			accessKeyBytes, err := we.GetSecretFromVolMount(art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			accessKey = string(accessKeyBytes)
-			secretKeyBytes, err := we.GetSecrets(we.Namespace, art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
+			secretKeyBytes, err := we.GetSecretFromVolMount(art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -471,21 +478,21 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
 		}
 		if art.Git.UsernameSecret != nil {
-			usernameBytes, err := we.GetSecrets(we.Namespace, art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
+			usernameBytes, err := we.GetSecretFromVolMount(art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Username = string(usernameBytes)
 		}
 		if art.Git.PasswordSecret != nil {
-			passwordBytes, err := we.GetSecrets(we.Namespace, art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
+			passwordBytes, err := we.GetSecretFromVolMount(art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
 			if err != nil {
 				return nil, err
 			}
 			gitDriver.Password = string(passwordBytes)
 		}
 		if art.Git.SSHPrivateKeySecret != nil {
-			sshPrivateKeyBytes, err := we.GetSecrets(we.Namespace, art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
+			sshPrivateKeyBytes, err := we.GetSecretFromVolMount(art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -495,11 +502,11 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		return &gitDriver, nil
 	}
 	if art.Artifactory != nil {
-		usernameBytes, err := we.GetSecrets(we.Namespace, art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
+		usernameBytes, err := we.GetSecretFromVolMount(art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		passwordBytes, err := we.GetSecrets(we.Namespace, art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
+		passwordBytes, err := we.GetSecretFromVolMount(art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
 		if err != nil {
 			return nil, err
 		}

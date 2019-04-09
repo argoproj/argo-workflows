@@ -73,6 +73,7 @@ Currently **officially** using Argo:
 
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/) 
+1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
 1. [CoreFiling](https://www.corefiling.com/)
@@ -86,6 +87,7 @@ Currently **officially** using Argo:
 1. [Google](https://www.google.com/intl/en/about/our-company/)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
+1. [Karius](https://www.kariusdx.com/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
 1. [NVIDIA](https://www.nvidia.com/)

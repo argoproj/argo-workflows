@@ -86,7 +86,7 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 		}
 	}
 	if art.KrbCCacheSecret != nil && art.KrbCCacheSecret.Name != "" {
-		bytes, err := ci.GetSecrets(namespace, art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
+		bytes, err := ci.GetSecretFromVolMount(art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 		}
 	}
 	if art.KrbKeytabSecret != nil && art.KrbKeytabSecret.Name != "" {
-		bytes, err := ci.GetSecrets(namespace, art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
+		bytes, err := ci.GetSecretFromVolMount(art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
 		if err != nil {
 			return nil, err
 		}
