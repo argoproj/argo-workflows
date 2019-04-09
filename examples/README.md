@@ -32,9 +32,10 @@ For a complete description of the Argo workflow spec, please refer to https://gi
 - [Sidecars](#sidecars)
 - [Hardwired Artifacts](#hardwired-artifacts)
 - [Kubernetes Resources](#kubernetes-resources)
-- [Docker-in-Docker Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
+- [Docker-in-Docker Using Sidecars](#docker-in-docker-using-sidecars)
+- [Custom Template Variable Reference](#custom-template-variable-reference)
 - [Continuous Integration Example](#continuous-integration-example)
-- [Custom Template Variable Referrence](#Custom Template Variable Referrence)
+
 ## Argo CLI
 
 In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo command line interface (CLI) commands.
@@ -68,7 +69,8 @@ Let's start by creating a very simple workflow template to echo "hello world" us
 <img src="whalesay.png" width="600">
 
 You can run this directly from your shell with a simple docker command:
-```
+
+```sh
 bash% docker run docker/whalesay cowsay "hello world"
  _____________
 < hello world >
@@ -148,6 +150,7 @@ spec:
 This time, the `whalesay` template takes an input parameter named `message` that is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g., ``"{{inputs.parameters.message}}"``), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
 
 The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the `message` parameter to "goodbye world" instead of the default "hello world".
+
 ```sh
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
@@ -159,6 +162,7 @@ message: goodbye world
 ```
 
 To run use following command:
+
 ```sh
 argo submit arguments-parameters.yaml --parameter-file params.yaml
 ```
@@ -254,7 +258,7 @@ spec:
 
 The above workflow spec prints three different flavors of "hello". The `hello-hello-hello` template consists of three `steps`. The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
 
-```
+```sh
 STEP                                     PODNAME
  ✔ arguments-parameters-rbm92
  ├---✔ hello1                   steps-rbm92-2023062412
@@ -371,6 +375,7 @@ The `artifact-example` template passes the `hello-art` artifact generated as an 
 ## The Structure of Workflow Specs
 
 We now know enough about the basic components of a workflow spec to review its basic structure:
+
 - Kubernetes header including metadata
 - Spec body
   - Entrypoint invocation with optionally arguments
@@ -389,7 +394,7 @@ Note that the controller section of the workflow spec will accept the same optio
 
 ## Secrets
 
-Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the (Kubernetes documentation)[https://kubernetes.io/docs/concepts/configuration/secret/] for more information.
+Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/secret/) for more information.
 
 ```yaml
 # To run this example, first create the secret by running:
@@ -429,6 +434,7 @@ spec:
 ```
 
 ## Scripts & Results
+
 Often, we just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
 
 ```yaml
@@ -655,6 +661,7 @@ spec:
 ```
 
 We can even dynamically generate the list of items to iterate over!
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -787,7 +794,7 @@ spec:
 
 Here's the result of a couple of runs of coinflip for comparison.
 
-```
+```sh
 argo get coinflip-recursive-tzcb5
 
 STEP                         PODNAME                              MESSAGE
@@ -811,6 +818,7 @@ STEP                          PODNAME                              MESSAGE
              └-·-✔ heads      coinflip-recursive-tzcb5-4080323273
                └-○ tails
 ```
+
 In the first run, the coin immediately comes up heads and we stop. In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
 
 ## Exit handlers
@@ -818,6 +826,7 @@ In the first run, the coin immediately comes up heads and we stop. In the second
 An exit handler is a template that *always* executes, irrespective of success or failure, at the end of the workflow.
 
 Some common use cases of exit handlers are:
+
 - cleaning up after a workflow runs
 - sending notifications of workflow status (e.g., e-mail/Slack)
 - posting the pass/fail status to a webhook result (e.g. GitHub build result)
@@ -871,6 +880,7 @@ spec:
 ```
 
 ## Timeouts
+
 To limit the elapsed time for a workflow, you can set the variable `activeDeadlineSeconds`.
 
 ```yaml
@@ -893,6 +903,7 @@ spec:
 ## Volumes
 
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1145,7 +1156,6 @@ spec:
       args: ["ls -l /src /bin/kubectl /s3"]
 ```
 
-
 ## Kubernetes Resources
 
 In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.
@@ -1163,7 +1173,7 @@ spec:
   templates:
   - name: pi-tmpl
     resource:                   # indicates that this is a resource template
-      action: create            # can be any kubectl action (e.g. create, delete, apply, patch) 
+      action: create            # can be any kubectl action (e.g. create, delete, apply, patch)
       # The successCondition and failureCondition are optional expressions.
       # If failureCondition is true, the step is considered failed.
       # If successCondition is true, the step is considered successful.
@@ -1258,7 +1268,8 @@ spec:
       mirrorVolumeMounts: true
 ```
 
-## Custom Template Variable Referrence
+## Custom Template Variable Reference
+
 In this example, we can see how we can use the other template language variable reference (E.g: Jinja) in Argo workflow template.
 Argo will validate and resolve only the variable that starts with Argo allowed prefix
 {***"item", "steps", "inputs", "outputs", "workflow", "tasks"***}
@@ -1295,7 +1306,7 @@ spec:
         image: docker/whalesay
         command: [cowsay]
         args: ["{{user.username}}"]
-        
+
 ```
 
 ## Continuous Integration Example
