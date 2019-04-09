@@ -137,6 +137,9 @@ func (ctx *tmplateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.template '%s' undefined", tmpl.Name, tmpl.Template)
 		}
 	} else {
+		if hasArguments(tmpl) {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.arguments must be used with template or templateRef", tmpl.Name)
+		}
 		if err := validateTemplateType(tmpl); err != nil {
 			return err
 		}
@@ -869,6 +872,10 @@ func isValidParamOrArtifactName(p string) []string {
 		return append(errs, "Parameter/Artifact name must consist of alpha-numeric characters, '_' or '-' e.g. my_param_1, MY-PARAM-1")
 	}
 	return errs
+}
+
+func hasArguments(tmpl *wfv1.Template) bool {
+	return len(tmpl.Arguments.Parameters) > 0 || len(tmpl.Arguments.Artifacts) > 0
 }
 
 const (
