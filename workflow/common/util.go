@@ -115,7 +115,7 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
@@ -405,7 +405,7 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	newTmpl.Name = tmpl.Name
 
 	emptymap := map[string]string{}
-	newTmpl, err := ProcessArgs(newTmpl, tmpl.Arguments, emptymap, emptymap, false)
+	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
 	if err != nil {
 		return nil, err
 	}

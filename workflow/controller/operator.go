@@ -1024,7 +1024,7 @@ func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplC
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 	// Do not overwrite tmpl here because the old value is used in the error case.
-	newTmpl, err := common.ProcessArgs(tmpl, args, woc.globalParams, localParams, false)
+	newTmpl, err := common.ProcessArgs(tmpl, &args, woc.globalParams, localParams, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}

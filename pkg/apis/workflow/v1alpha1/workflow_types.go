@@ -526,6 +526,11 @@ type TemplateRef struct {
 	Template string `json:"template,omitempty"`
 }
 
+type ArgumentsProvider interface {
+	GetParameterByName(name string) *Parameter
+	GetArtifactByName(name string) *Artifact
+}
+
 // Arguments to a template
 type Arguments struct {
 	// Parameters is the list of parameters to pass to the template or workflow
@@ -534,6 +539,8 @@ type Arguments struct {
 	// Artifacts is the list of artifacts to pass to the template or workflow
 	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
+
+var _ ArgumentsProvider = &Arguments{}
 
 // UserContainer is a container specified by a user.
 type UserContainer struct {

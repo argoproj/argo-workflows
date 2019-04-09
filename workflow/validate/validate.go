@@ -48,6 +48,19 @@ const (
 	anyItemMagicValue = "item.*"
 )
 
+type FakeArguments struct{}
+
+func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
+	s := placeholderValue
+	return &wfv1.Parameter{Name: name, Value: &s}
+}
+
+func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
+	return &wfv1.Artifact{Name: name}
+}
+
+var _ wfv1.ArgumentsProvider = &FakeArguments{}
+
 // ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
 // true, will skip some validations which is permissible during linting but not submission
 func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
@@ -86,7 +99,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 	if entryTmpl == nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", wf.Spec.Entrypoint)
 	}
-	err = ctx.validateTemplate(entryTmpl, wf.Spec.Arguments)
+	err = ctx.validateTemplate(entryTmpl, &wf.Spec.Arguments)
 	if err != nil {
 		return err
 	}
@@ -97,7 +110,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 		}
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
-		err = ctx.validateTemplate(exitTmpl, wf.Spec.Arguments)
+		err = ctx.validateTemplate(exitTmpl, &wf.Spec.Arguments)
 		if err != nil {
 			return err
 		}
@@ -107,8 +120,9 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 
 func ValidateWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
 	ctx := newTemplateValidationCtx(wftmpl)
+	args := FakeArguments{}
 	for _, template := range wftmpl.Spec.Templates {
-		err := ctx.validateTemplate(&template, wftmpl.Spec.Arguments)
+		err := ctx.validateTemplate(&template, &args)
 		if err != nil {
 			return err
 		}
@@ -120,7 +134,7 @@ func (ctx templateValidationCtx) GetTemplateByName(name string) *wfv1.Template {
 	return ctx.templateGetter.GetTemplateByName(name)
 }
 
-func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
+func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.ArgumentsProvider) error {
 	tmplID := getTemplateID(tmpl)
 	_, ok := ctx.results[tmplID]
 	if ok {
@@ -452,7 +466,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 				if childTmpl == nil {
 					return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s.template '%s' undefined", tmpl.Name, i, step.Name, step.Template)
 				}
-				err = ctx.validateTemplate(childTmpl, step.Arguments)
+				err = ctx.validateTemplate(childTmpl, &step.Arguments)
 				if err != nil {
 					return err
 				}
@@ -795,7 +809,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 			if taskTmpl == nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s.template '%s' undefined", tmpl.Name, task.Name, task.Template)
 			}
-			err = ctx.validateTemplate(taskTmpl, task.Arguments)
+			err = ctx.validateTemplate(taskTmpl, &task.Arguments)
 			if err != nil {
 				return err
 			}
