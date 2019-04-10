@@ -23,6 +23,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -63,15 +64,6 @@ type wfOperationCtx struct {
 	// workflowDeadline is the deadline which the workflow is expected to complete before we
 	// terminate the workflow.
 	workflowDeadline *time.Time
-
-	// currentWFSize is current Workflow size
-	currentWFSize int
-
-	// unSavedNodeStatusSize is unsaved workflow size
-	unSavedNodeStatusSize int
-
-	// isWFCompressionFailed is workflow compression failed status
-	isWFCompressionFailed bool
 
 	// tmplCtx is the context of template search.
 	tmplCtx *templateContext
@@ -149,7 +141,8 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
-		err := validate.ValidateWorkflow(woc.wf)
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.Config.ContainerRuntimeExecutor}
+		err := validate.ValidateWorkflow(woc.wf, validateOpts)
 		if err != nil {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
@@ -321,6 +314,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	err := woc.checkAndCompress()
 	if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
+		woc.markWorkflowFailed(err.Error())
 	}
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
@@ -485,9 +479,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	seenPodLock := &sync.Mutex{}
 	wfNodesLock := &sync.RWMutex{}
 
-	performAssessment := func(pod *apiv1.Pod) string {
+	performAssessment := func(pod *apiv1.Pod) {
 		if pod == nil {
-			return ""
+			return
 		}
 		nodeNameForPod := pod.Annotations[common.AnnotationKeyNodeName]
 		nodeID := woc.wf.NodeID(nodeNameForPod)
@@ -507,51 +501,34 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			if node.Completed() && !node.IsDaemoned() {
 				if tmpVal, tmpOk := pod.Labels[common.LabelKeyCompleted]; tmpOk {
 					if tmpVal == "true" {
-						return nodeID
+						return
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
-		return nodeID
+		return
 	}
 
 	parallelPodNum := make(chan string, 500)
 	var wg sync.WaitGroup
-
-	woc.currentWFSize = woc.getSize()
 
 	for _, pod := range podList.Items {
 		parallelPodNum <- pod.Name
 		wg.Add(1)
 		go func(tmpPod apiv1.Pod) {
 			defer wg.Done()
-			wfNodesLock.Lock()
-			origNodeStatus := *woc.wf.Status.DeepCopy()
-			wfNodesLock.Unlock()
-			nodeID := performAssessment(&tmpPod)
+			performAssessment(&tmpPod)
 			err = woc.applyExecutionControl(&tmpPod, wfNodesLock)
 			if err != nil {
 				woc.log.Warnf("Failed to apply execution control to pod %s", tmpPod.Name)
-			}
-			wfNodesLock.Lock()
-			defer wfNodesLock.Unlock()
-			err = woc.checkAndEstimate(nodeID)
-			if err != nil {
-				woc.wf.Status = origNodeStatus
-				nodeNameForPod := tmpPod.Annotations[common.AnnotationKeyNodeName]
-				woc.log.Warnf("%v", err)
-				woc.markNodeErrorClearOuput(nodeNameForPod, err)
-				err = woc.checkAndCompress()
-				if err != nil {
-					woc.isWFCompressionFailed = true
-				}
 			}
 			<-parallelPodNum
 		}(pod)
 	}
 
 	wg.Wait()
+
 	// Now check for deleted pods. Iterate our nodes. If any one of our nodes does not show up in
 	// the seen list it implies that the pod was deleted without the controller seeing the event.
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
@@ -642,15 +619,14 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newDaemonStatus *bool
 	var message string
 	updated := false
-	f := false
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 		message = getPendingReason(pod)
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		if node.IsDaemoned() {
@@ -658,7 +634,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		} else {
 			newPhase, message = inferFailedReason(pod)
 		}
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
@@ -681,8 +657,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			}
 			// proceed to mark node status as running (and daemoned)
 			newPhase = wfv1.NodeRunning
-			t := true
-			newDaemonStatus = &t
+			newDaemonStatus = pointer.BoolPtr(true)
 			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
 	default:
@@ -1586,17 +1561,12 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	if node != nil {
 		return node
 	}
-	mainCtr := apiv1.Container{
-		Image:           woc.controller.executorImage(),
-		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-		Command:         []string{"argoexec"},
-		Args:            []string{"resource", tmpl.Resource.Action},
-		VolumeMounts: []apiv1.VolumeMount{
-			volumeMountPodMetadata,
-		},
-		Env: execEnvVars,
+	mainCtr := woc.newExecContainer(common.MainContainerName)
+	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
+	mainCtr.VolumeMounts = []apiv1.VolumeMount{
+		volumeMountPodMetadata,
 	}
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1709,7 +1679,7 @@ func (woc *wfOperationCtx) getSize() int {
 // The compressed content will be assign to compressedNodes element and clear the nodestatus map.
 func (woc *wfOperationCtx) checkAndCompress() error {
 
-	if !woc.isWFCompressionFailed && (woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize)) {
+	if woc.wf.Status.CompressedNodes != "" || (woc.wf.Status.CompressedNodes == "" && woc.getSize() >= maxWorkflowSize) {
 		nodeContent, err := json.Marshal(woc.wf.Status.Nodes)
 		if err != nil {
 			return errors.InternalWrapError(err)
@@ -1718,54 +1688,9 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 		woc.wf.Status.CompressedNodes = file.CompressEncodeString(buff)
 	}
 
-	if woc.isWFCompressionFailed || (woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize) {
-		woc.isWFCompressionFailed = true
+	if woc.wf.Status.CompressedNodes != "" && woc.getSize() >= maxWorkflowSize {
 		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
 	}
-	return nil
-}
 
-// checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
-func (woc *wfOperationCtx) checkAndDecompress() error {
-	if woc.wf.Status.CompressedNodes != "" {
-		nodeContent, err := file.DecodeDecompressString(woc.wf.Status.CompressedNodes)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		var tempNodes map[string]wfv1.NodeStatus
-
-		err = json.Unmarshal([]byte(nodeContent), &tempNodes)
-		if err != nil {
-			woc.log.Warn(err)
-			return err
-		}
-		woc.wf.Status.Nodes = tempNodes
-	}
-	return nil
-}
-
-// checkAndEstimate will check and estimate the workflow size with current nodestatus
-func (woc *wfOperationCtx) checkAndEstimate(nodeID string) error {
-	if nodeID == "" {
-		return nil
-	}
-
-	if woc.isWFCompressionFailed {
-		return errors.InternalErrorf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+woc.unSavedNodeStatusSize)
-	}
-
-	if woc.wf.Status.CompressedNodes != "" {
-		if node, ok := woc.wf.Status.Nodes[nodeID]; ok {
-			content, err := json.Marshal(node)
-			if err != nil {
-				return errors.InternalWrapError(err)
-			}
-			nodeSize := len(file.CompressEncodeString(string(content)))
-			if (nodeSize + woc.unSavedNodeStatusSize + woc.currentWFSize) >= maxWorkflowSize {
-				return errors.InternalErrorf("Workflow is longer than maximum allowed size. Size=%d", woc.currentWFSize+nodeSize+woc.unSavedNodeStatusSize)
-			}
-			woc.unSavedNodeStatusSize += nodeSize
-		}
-	}
 	return nil
 }

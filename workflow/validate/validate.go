@@ -8,17 +8,34 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/valyala/fasttemplate"
+	apivalidation "k8s.io/apimachinery/pkg/util/validation"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/valyala/fasttemplate"
-	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
+// ValidateOpts provides options when linting
+type ValidateOpts struct {
+	// Lint indicates if this is performing validation in the context of linting. If true, will
+	// skip some validations which is permissible during linting but not submission (e.g. missing
+	// input parameters to the workflow)
+	Lint bool
+	// ContainerRuntimeExecutor will trigger additional validation checks specific to different
+	// types of executors. For example, the inability of kubelet/k8s executors to copy artifacts
+	// out of the base image layer. If unspecified, will use docker executor validation
+	ContainerRuntimeExecutor string
+}
+
+// wfValidationCtx is the context for validating a workflow spec
 // templateValidationCtx is the context for validating a workflow spec
 type templateValidationCtx struct {
+	ValidateOpts
+
 	templateGetter wfv1.TemplateGetter
+
 	// globalParams keeps track of variables which are available the global
 	// scope and can be referenced from anywhere.
 	globalParams map[string]string
@@ -26,12 +43,13 @@ type templateValidationCtx struct {
 	results map[string]bool
 }
 
-func newTemplateValidationCtx(getter wfv1.TemplateGetter) *templateValidationCtx {
+func newTemplateValidationCtx(getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderValue
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
 	globalParams[common.GlobalVarWorkflowUID] = placeholderValue
 	return &templateValidationCtx{
+		ValidateOpts:   opts,
 		templateGetter: getter,
 		globalParams:   globalParams,
 		results:        make(map[string]bool),
@@ -61,17 +79,14 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
-// ValidateWorkflow accepts a workflow and performs validation against it. If lint is specified as
-// true, will skip some validations which is permissible during linting but not submission
-func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
-	ctx := newTemplateValidationCtx(wf)
-	linting := len(lint) > 0 && lint[0]
-
+// ValidateWorkflow accepts a workflow and performs validation against it.
+func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
+	ctx := newTemplateValidationCtx(wf, opts)
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
 	}
-	if linting {
+	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
 		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
@@ -119,7 +134,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, lint ...bool) error {
 }
 
 func ValidateWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
-	ctx := newTemplateValidationCtx(wftmpl)
+	ctx := newTemplateValidationCtx(wftmpl, ValidateOpts{})
 	args := FakeArguments{}
 	for _, template := range wftmpl.Spec.Templates {
 		err := ctx.validateTemplate(&template, &args)
@@ -200,6 +215,10 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv
 		return err
 	}
 	err = validateOutputs(scope, tmpl)
+	if err != nil {
+		return err
+	}
+	err = ctx.validateBaseImageOutputs(tmpl)
 	if err != nil {
 		return err
 	}
@@ -621,6 +640,51 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 			errs := isValidParamOrArtifactName(param.GlobalName)
 			if len(errs) > 0 {
 				return errors.Errorf(errors.CodeBadRequest, "%s.globalName: %s", paramRef, errs[0])
+			}
+		}
+	}
+	return nil
+}
+
+// validateBaseImageOutputs detects if the template contains an output from
+func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
+	switch ctx.ContainerRuntimeExecutor {
+	case "", common.ContainerRuntimeExecutorDocker:
+		// docker executor supports all modes of artifact outputs
+	case common.ContainerRuntimeExecutorPNS:
+		// pns supports copying from the base image, but only if there is no volume mount underneath it
+		errMsg := "pns executor does not support outputs from base image layer with volume mounts. must use emptyDir"
+		for _, out := range tmpl.Outputs.Artifacts {
+			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
+				// output is in the base image layer. need to verify there are no volume mounts under it
+				if tmpl.Container != nil {
+					for _, volMnt := range tmpl.Container.VolumeMounts {
+						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
+							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
+						}
+					}
+
+				}
+				if tmpl.Script != nil {
+					for _, volMnt := range tmpl.Container.VolumeMounts {
+						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
+							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
+						}
+					}
+				}
+			}
+		}
+	case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
+		// for kubelet/k8s fail validation if we detect artifact is copied from base image layer
+		errMsg := fmt.Sprintf("%s executor does not support outputs from base image layer. must use emptyDir", ctx.ContainerRuntimeExecutor)
+		for _, out := range tmpl.Outputs.Artifacts {
+			if common.FindOverlappingVolume(tmpl, out.Path) == nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
+			}
+		}
+		for _, out := range tmpl.Outputs.Parameters {
+			if out.ValueFrom != nil && common.FindOverlappingVolume(tmpl, out.ValueFrom.Path) == nil {
+				return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters.%s: %s", tmpl.Name, out.Name, errMsg)
 			}
 		}
 	}

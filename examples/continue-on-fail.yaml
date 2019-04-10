@@ -1,0 +1,36 @@
+# Example on specifying parallelism on the outer workflow and limiting the number of its
+# children workflowss to be run at the same time.
+#
+# If the parallelism of A is 1, the four steps of seq-step will run sequentially.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: continue-on-fail-
+spec:
+  entrypoint: workflow-ignore
+  templates:
+  - name: workflow-ignore
+    steps:
+    - - name: A
+        template: whalesay
+    - - name: B
+        template: whalesay
+      - name: C
+        template: intentional-fail
+        continueOn:
+          failed: true
+    - - name: D
+        template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]

@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/argoproj/pkg/json"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/pkg/json"
 )
 
 // LintWorkflowDir validates all workflow manifests in a directory. Ignores non-workflow manifests
@@ -60,7 +61,7 @@ func LintWorkflowFile(filePath string, strict bool) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, wf := range workflows {
-		err = ValidateWorkflow(&wf, true)
+		err = ValidateWorkflow(&wf, ValidateOpts{Lint: true})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}

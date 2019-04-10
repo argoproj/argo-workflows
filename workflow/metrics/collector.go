@@ -112,16 +112,12 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 
 	addGauge(descWorkflowInfo, 1, wf.Spec.Entrypoint, wf.Spec.ServiceAccountName, joinTemplates(wf.Spec.Templates))
 
-	if phase := wf.Status.Phase; phase != "" {
-		// TODO: we do not have queuing feature yet so are not adding to a 'Pending' guague.
-		// Uncomment when we support queueing.
-		//addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodePending), string(wfv1.NodePending))
-		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeRunning), string(wfv1.NodeRunning))
-		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeSucceeded), string(wfv1.NodeSucceeded))
-		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeSkipped), string(wfv1.NodeSkipped))
-		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeFailed), string(wfv1.NodeFailed))
-		addGauge(descWorkflowStatusPhase, boolFloat64(phase == wfv1.NodeError), string(wfv1.NodeError))
-	}
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodePending || wf.Status.Phase == ""), string(wfv1.NodePending))
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeRunning), string(wfv1.NodeRunning))
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeSucceeded), string(wfv1.NodeSucceeded))
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeSkipped), string(wfv1.NodeSkipped))
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeFailed), string(wfv1.NodeFailed))
+	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeError), string(wfv1.NodeError))
 
 	if !wf.CreationTimestamp.IsZero() {
 		addGauge(descWorkflowCreated, float64(wf.CreationTimestamp.Unix()))
