@@ -49,6 +49,7 @@ spec:
       command: [sh, -xc]
       args:
       - |
+        sleep 1 &&
         echo {{inputs.parameters.num}} > /tmp/num &&
         if [ $(({{inputs.parameters.num}}%2)) -eq 0 ]; then
           echo "even" > /tmp/even;

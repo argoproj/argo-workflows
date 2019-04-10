@@ -38,6 +38,7 @@ spec:
       image: docker/whalesay:latest
       command: [sh, -c]
       args: ["
+        sleep 1;
         cowsay hello world | tee /tmp/my-output-artifact.txt &&
         echo 'my-output-parameter' > /tmp/my-output-parameter.txt
       "]

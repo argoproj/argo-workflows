@@ -5,6 +5,9 @@ metadata:
   generateName: ui-nested-steps-
 spec:
   entrypoint: ui-nested-steps
+  volumes:
+  - name: workdir
+    emptyDir: {}
   templates:
   - name: ui-nested-steps
     steps:       
@@ -24,14 +27,17 @@ spec:
   - name: locate-faces
     container:
       image: alpine:latest
-      command: ["sh", "-c"]
+      command: [sh, -c]
       args:
-      - echo '[1, 2, 3]' > /result.json
+      - echo '[1, 2, 3]' > /workdir/result.json
+      volumeMounts:
+      - name: workdir
+        mountPath: /workdir
     outputs:
       parameters:
       - name: imagemagick-commands
         valueFrom:
-          path: /result.json
+          path: /workdir/result.json
 
   - name: handle-individual-faces
     steps:

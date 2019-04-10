@@ -22,12 +22,18 @@ import (
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
 type WorkflowControllerConfig struct {
 	// ExecutorImage is the image name of the executor to use when running pods
+	// DEPRECATED: use --executor-image flag to workflow-controller instead
 	ExecutorImage string `json:"executorImage,omitempty"`
 
 	// ExecutorImagePullPolicy is the imagePullPolicy of the executor to use when running pods
+	// DEPRECATED: use `executor.imagePullPolicy` in configmap instead
 	ExecutorImagePullPolicy string `json:"executorImagePullPolicy,omitempty"`
 
+	// Executor holds container customizations for the executor to use when running pods
+	Executor *apiv1.Container `json:"executor,omitempty"`
+
 	// ExecutorResources specifies the resource requirements that will be used for the executor sidecar
+	// DEPRECATED: use `executor.resources` in configmap instead
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
 	// KubeConfig specifies a kube config file for the wait & init containers
@@ -162,13 +168,13 @@ func (wfc *WorkflowController) executorImage() string {
 
 // executorImagePullPolicy returns the imagePullPolicy to use for the workflow executor
 func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
-	var policy string
 	if wfc.cliExecutorImagePullPolicy != "" {
-		policy = wfc.cliExecutorImagePullPolicy
+		return apiv1.PullPolicy(wfc.cliExecutorImagePullPolicy)
+	} else if wfc.Config.Executor != nil && wfc.Config.Executor.ImagePullPolicy != "" {
+		return wfc.Config.Executor.ImagePullPolicy
 	} else {
-		policy = wfc.Config.ExecutorImagePullPolicy
+		return apiv1.PullPolicy(wfc.Config.ExecutorImagePullPolicy)
 	}
-	return apiv1.PullPolicy(policy)
 }
 
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {

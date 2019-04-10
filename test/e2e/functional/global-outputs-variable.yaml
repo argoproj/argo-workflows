@@ -23,7 +23,7 @@ spec:
     container:
       image: alpine:3.7
       command: [sh, -c]
-      args: ["echo -n hello world > /tmp/hello_world.txt"]
+      args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
       parameters:
       - name: hello-param

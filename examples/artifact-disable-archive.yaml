@@ -1,0 +1,51 @@
+# This example demonstrates the ability to disable the default behavior of archiving (tar.gz)
+# when saving output artifacts. For directories, when archive is set to none, files in directory
+# will be copied recursively in the case of S3.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-disable-archive-
+spec:
+  entrypoint: artifact-disable-archive
+  templates:
+  - name: artifact-disable-archive
+    steps:
+    - - name: generate-artifact
+        template: whalesay
+    - - name: consume-artifact
+        template: print-message
+        arguments:
+          artifacts:
+          - name: etc
+            from: "{{steps.generate-artifact.outputs.artifacts.etc}}"
+          - name: hello-txt
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-txt}}"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt ; sleep 1"]
+    outputs:
+      artifacts:
+      - name: etc
+        path: /etc
+        archive:
+          none: {}
+      - name: hello-txt
+        path: /tmp/hello_world.txt
+        archive:
+          none: {}
+
+  - name: print-message
+    inputs:
+      artifacts:
+      - name: etc
+        path: /tmp/etc
+      - name: hello-txt
+        path: /tmp/hello.txt
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args:
+      - cat /tmp/hello.txt && cd /tmp/etc && find .
