@@ -75,9 +75,12 @@ Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositori
 uses Minio for the sake of portability. Instructions on how to configure other artifact repositories
 are [here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 ```
-brew install kubernetes-helm # mac
-helm init
-helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer --set persistence.enabled=false
+helm install stable/minio \
+  --name argo-artifacts \
+  --set service.type=LoadBalancer \
+  --set defaultBucket.enabled=true \
+  --set defaultBucket.name=my-bucket \
+  --set persistence.enabled=false
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.

@@ -1,8 +1,11 @@
 package kubelet
 
 import (
-	"github.com/argoproj/argo/errors"
+	"io"
+
 	log "github.com/sirupsen/logrus"
+
+	"github.com/argoproj/argo/errors"
 )
 
 type KubeletExecutor struct {
@@ -28,15 +31,15 @@ func (k *KubeletExecutor) CopyFile(containerID string, sourcePath string, destPa
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the kubelet executor.")
 }
 
-// GetOutput returns the entirety of the container output as a string
-// Used to capturing script results as an output parameter
-func (k *KubeletExecutor) GetOutput(containerID string) (string, error) {
-	return k.cli.GetContainerLogs(containerID)
+func (k *KubeletExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
+	if !combinedOutput {
+		log.Warn("non combined output unsupported")
+	}
+	return k.cli.GetLogStream(containerID)
 }
 
-// Logs copies logs to a given path
-func (k *KubeletExecutor) Logs(containerID, path string) error {
-	return k.cli.SaveLogsToFile(containerID, path)
+func (k *KubeletExecutor) WaitInit() error {
+	return nil
 }
 
 // Wait for the container to complete

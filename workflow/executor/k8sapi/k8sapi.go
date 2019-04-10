@@ -1,10 +1,13 @@
 package k8sapi
 
 import (
-	"github.com/argoproj/argo/errors"
+	"io"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo/errors"
 )
 
 type K8sAPIExecutor struct {
@@ -30,17 +33,16 @@ func (k *K8sAPIExecutor) CopyFile(containerID string, sourcePath string, destPat
 	return errors.Errorf(errors.CodeNotImplemented, "CopyFile() is not implemented in the k8sapi executor.")
 }
 
-// GetOutput returns the entirety of the container output as a string
-// Used to capturing script results as an output parameter
-func (k *K8sAPIExecutor) GetOutput(containerID string) (string, error) {
+func (k *K8sAPIExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	log.Infof("Getting output of %s", containerID)
-	return k.client.getLogs(containerID)
+	if !combinedOutput {
+		log.Warn("non combined output unsupported")
+	}
+	return k.client.getLogsAsStream(containerID)
 }
 
-// Logs copies logs to a given path
-func (k *K8sAPIExecutor) Logs(containerID, path string) error {
-	log.Infof("Saving output of %s to %s", containerID, path)
-	return k.client.saveLogs(containerID, path)
+func (k *K8sAPIExecutor) WaitInit() error {
+	return nil
 }
 
 // Wait for the container to complete

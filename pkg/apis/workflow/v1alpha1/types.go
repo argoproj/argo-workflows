@@ -665,6 +665,10 @@ func (s *S3Artifact) String() string {
 	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
 }
 
+func (s *S3Artifact) HasLocation() bool {
+	return s != nil && s.Bucket != ""
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository
@@ -684,6 +688,10 @@ type GitArtifact struct {
 
 	// InsecureIgnoreHostKey disables SSH strict host key checking during git clone
 	InsecureIgnoreHostKey bool `json:"insecureIgnoreHostKey,omitempty"`
+}
+
+func (g *GitArtifact) HasLocation() bool {
+	return g != nil && g.Repo != ""
 }
 
 // ArtifactoryAuth describes the secret selectors required for authenticating to artifactory
@@ -706,6 +714,10 @@ func (a *ArtifactoryArtifact) String() string {
 	return a.URL
 }
 
+func (a *ArtifactoryArtifact) HasLocation() bool {
+	return a != nil && a.URL != ""
+}
+
 // HDFSArtifact is the location of an HDFS artifact
 type HDFSArtifact struct {
 	HDFSConfig `json:",inline"`
@@ -715,6 +727,10 @@ type HDFSArtifact struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
+}
+
+func (h *HDFSArtifact) HasLocation() bool {
+	return h != nil && len(h.Addresses) > 0
 }
 
 // HDFSConfig is configurations for HDFS
@@ -774,10 +790,18 @@ type RawArtifact struct {
 	Data string `json:"data"`
 }
 
+func (r *RawArtifact) HasLocation() bool {
+	return r != nil
+}
+
 // HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container
 type HTTPArtifact struct {
 	// URL of the artifact
 	URL string `json:"url"`
+}
+
+func (h *HTTPArtifact) HasLocation() bool {
+	return h != nil && h.URL != ""
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
@@ -963,7 +987,12 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 
 // HasLocation whether or not an artifact has a location defined
 func (a *Artifact) HasLocation() bool {
-	return a.S3 != nil || a.Git != nil || a.HTTP != nil || a.Artifactory != nil || a.Raw != nil || a.HDFS != nil
+	return a.S3.HasLocation() ||
+		a.Git.HasLocation() ||
+		a.HTTP.HasLocation() ||
+		a.Artifactory.HasLocation() ||
+		a.Raw.HasLocation() ||
+		a.HDFS.HasLocation()
 }
 
 // GetTemplate retrieves a defined template by its name

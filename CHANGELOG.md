@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.0 (Not Yet Released)
+
+### Deprecation Notice
+The workflow-controller-configmap introduces a new config field, `executor`, which is a container 
+spec and provides controls over the executor sidecar container (i.e. `init`/`wait`). The fields
+`executorImage`, `executorResources`, and `executorImagePullPolicy` are deprecated and will be
+removed in a future release.
+
 ## 2.2.1 (2018-10-18)
 
 ### Changelog since v2.2.0
