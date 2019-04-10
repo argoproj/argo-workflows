@@ -142,7 +142,7 @@ spec:
   selector:
     app: argo-ui
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: argo-ui
@@ -157,6 +157,8 @@ spec:
     spec:
       containers:
       - env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         - name: ARGO_NAMESPACE
           valueFrom:
             fieldRef:
@@ -168,11 +170,11 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.2.1
+        image: argoproj/argoui:v2.3.0-rc1
         name: argo-ui
       serviceAccountName: argo-ui
 ---
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: workflow-controller
@@ -190,9 +192,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.2.1
+        - argoproj/argoexec:v2.3.0-rc1
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.2.1
+        image: argoproj/workflow-controller:v2.3.0-rc1
         name: workflow-controller
       serviceAccountName: argo
