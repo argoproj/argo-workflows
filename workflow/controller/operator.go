@@ -1672,22 +1672,3 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 
 	return nil
 }
-
-// checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
-func (woc *wfOperationCtx) checkAndDecompress() error {
-	if woc.wf.Status.CompressedNodes != "" {
-		nodeContent, err := file.DecodeDecompressString(woc.wf.Status.CompressedNodes)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		var tempNodes map[string]wfv1.NodeStatus
-
-		err = json.Unmarshal([]byte(nodeContent), &tempNodes)
-		if err != nil {
-			woc.log.Warn(err)
-			return err
-		}
-		woc.wf.Status.Nodes = tempNodes
-	}
-	return nil
-}
