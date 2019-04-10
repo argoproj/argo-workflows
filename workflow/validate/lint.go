@@ -10,11 +10,12 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
 )
 
 // LintWorkflowDir validates all workflow manifests in a directory. Ignores non-workflow manifests
-func LintWorkflowDir(dirPath string, strict bool) error {
+func LintWorkflowDir(wfClientset wfclientset.Interface, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -25,14 +26,14 @@ func LintWorkflowDir(dirPath string, strict bool) error {
 		default:
 			return nil
 		}
-		return LintWorkflowFile(path, strict)
+		return LintWorkflowFile(wfClientset, path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // LintWorkflowFile lints a json file, or multiple workflow manifest in a single yaml file. Ignores
 // non-workflow manifests
-func LintWorkflowFile(filePath string, strict bool) error {
+func LintWorkflowFile(wfClientset wfclientset.Interface, filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
@@ -61,7 +62,7 @@ func LintWorkflowFile(filePath string, strict bool) error {
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, wf := range workflows {
-		err = ValidateWorkflow(&wf, ValidateOpts{Lint: true})
+		err = ValidateWorkflow(wfClientset, &wf, ValidateOpts{Lint: true})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}

@@ -7,15 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
 )
+
+var wfClientset = fakewfclientset.NewSimpleClientset()
 
 // validate is a test helper to accept YAML as a string and return
 // its validation result.
 func validate(yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wf, ValidateOpts{})
+	return ValidateWorkflow(wfClientset, wf, ValidateOpts{})
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -821,13 +824,13 @@ spec:
 func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
-	err := ValidateWorkflow(wf, ValidateOpts{})
+	err := ValidateWorkflow(wfClientset, wf, ValidateOpts{})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "already mounted")
 	}
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
-	err = ValidateWorkflow(wf, ValidateOpts{})
+	err = ValidateWorkflow(wfClientset, wf, ValidateOpts{})
 	assert.Nil(t, err)
 }
 
@@ -1113,7 +1116,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
+	err := ValidateWorkflow(wfClientset, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
 	assert.Nil(t, err)
 }
 
@@ -1138,9 +1141,9 @@ spec:
 // TestSpecArgumentNoValue we allow parameters to have no value at the spec level during linting
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
-	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wfClientset, wf, ValidateOpts{Lint: true})
 	assert.Nil(t, err)
-	err = ValidateWorkflow(wf, ValidateOpts{})
+	err = ValidateWorkflow(wfClientset, wf, ValidateOpts{})
 	assert.NotNil(t, err)
 }
 
@@ -1175,7 +1178,7 @@ spec:
 // TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
-	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wfClientset, wf, ValidateOpts{Lint: true})
 	assert.Nil(t, err)
 }
 
@@ -1210,7 +1213,7 @@ spec:
 // TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
-	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wfClientset, wf, ValidateOpts{Lint: true})
 	assert.Error(t, err)
 }
 
@@ -1230,7 +1233,7 @@ spec:
 // TestCustomTemplatVariable verifies custom template variable
 func TestCustomTemplatVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
-	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wfClientset, wf, ValidateOpts{Lint: true})
 	assert.Equal(t, err, nil)
 }
 
@@ -1331,28 +1334,28 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
 		switch executor {
 		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorPNS:
-			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorDocker, "":
-			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wfClientset, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 		}
-		err = ValidateWorkflow(wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+		err = ValidateWorkflow(wfClientset, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 		assert.NoError(t, err)
 	}
 }

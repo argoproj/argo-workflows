@@ -15,6 +15,7 @@ var (
 	restConfig   *rest.Config
 	clientConfig clientcmd.ClientConfig
 	clientset    *kubernetes.Clientset
+	wfClientset  *wfclientset.Clientset
 	wftmplClient v1alpha1.WorkflowTemplateInterface
 )
 
@@ -52,7 +53,7 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 			log.Fatal(err)
 		}
 	}
-	wftmplcs := wfclientset.NewForConfigOrDie(restConfig)
-	wftmplClient = wftmplcs.ArgoprojV1alpha1().WorkflowTemplates(namespace)
+	wfClientset = wfclientset.NewForConfigOrDie(restConfig)
+	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
 	return wftmplClient
 }

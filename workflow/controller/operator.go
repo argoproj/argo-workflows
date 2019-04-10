@@ -142,7 +142,7 @@ func (woc *wfOperationCtx) operate() {
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
 		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.Config.ContainerRuntimeExecutor}
-		err := validate.ValidateWorkflow(woc.wf, validateOpts)
+		err := validate.ValidateWorkflow(woc.controller.wfclientset, woc.wf, validateOpts)
 		if err != nil {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return

@@ -31,6 +31,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/util/file"
@@ -145,7 +146,7 @@ type SubmitOpts struct {
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -240,7 +241,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wf, validate.ValidateOpts{})
+	err := validate.ValidateWorkflow(wfClientset, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}

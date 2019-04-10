@@ -13,6 +13,7 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 )
@@ -34,6 +35,8 @@ type ValidateOpts struct {
 type templateValidationCtx struct {
 	ValidateOpts
 
+	wfClientset wfclientset.Interface
+
 	templateGetter wfv1.TemplateGetter
 
 	// globalParams keeps track of variables which are available the global
@@ -43,7 +46,7 @@ type templateValidationCtx struct {
 	results map[string]bool
 }
 
-func newTemplateValidationCtx(getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
+func newTemplateValidationCtx(wfClientset wfclientset.Interface, getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderValue
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
@@ -51,6 +54,7 @@ func newTemplateValidationCtx(getter wfv1.TemplateGetter, opts ValidateOpts) *te
 	return &templateValidationCtx{
 		ValidateOpts:   opts,
 		templateGetter: getter,
+		wfClientset:    wfClientset,
 		globalParams:   globalParams,
 		results:        make(map[string]bool),
 	}
@@ -80,8 +84,8 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
-	ctx := newTemplateValidationCtx(wf, opts)
+func ValidateWorkflow(wfClientset wfclientset.Interface, wf *wfv1.Workflow, opts ValidateOpts) error {
+	ctx := newTemplateValidationCtx(wfClientset, wf, opts)
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.templates%s", err.Error())
@@ -133,8 +137,8 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 	return nil
 }
 
-func ValidateWorkflowTemplate(wftmpl *wfv1.WorkflowTemplate) error {
-	ctx := newTemplateValidationCtx(wftmpl, ValidateOpts{})
+func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, wftmpl *wfv1.WorkflowTemplate) error {
+	ctx := newTemplateValidationCtx(wfClientset, wftmpl, ValidateOpts{})
 	args := FakeArguments{}
 	for _, template := range wftmpl.Spec.Templates {
 		err := ctx.validateTemplate(&template, &args)
@@ -158,7 +162,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv
 	}
 	ctx.results[tmplID] = true
 	if tmpl.TemplateRef != nil {
-		if err := validateTemplateRef(tmpl); err != nil {
+		if err := ctx.validateTemplateRef(tmpl); err != nil {
 			return err
 		}
 	} else if tmpl.Template != "" {
@@ -232,7 +236,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv
 }
 
 // validateTemplateRef validates template reference.
-func validateTemplateRef(tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateTemplateRef(tmpl *wfv1.Template) error {
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
 		return errors.New(errors.CodeBadRequest, "template ref can not be used with template type.")
 	}
