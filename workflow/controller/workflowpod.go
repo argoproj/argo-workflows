@@ -622,31 +622,42 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 	return nil
 }
 
-// addArchiveLocation updates the template with the default artifact repository information
-// configured in the controller. This is skipped for templates which have explicitly set an archive
-// location in the template.
+// addArchiveLocation conditionally updates the template with the default artifact repository
+// information configured in the controller, for the purposes of archiving outputs. This is skipped
+// for templates which do not need to archive anything, or have explicitly set an archive location
+// in the template.
 func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Template) error {
-	if tmpl.ArchiveLocation == nil {
-		tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-			ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
-		}
-	}
-	if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
-		// User explicitly set the location. nothing else to do.
-		return nil
-	}
 	// needLocation keeps track if the workflow needs to have an archive location set.
 	// If so, and one was not supplied (or defaulted), we will return error
 	var needLocation bool
-	if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
-		needLocation = true
-	}
 
+	if tmpl.ArchiveLocation != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+			// User explicitly set the location. nothing else to do.
+			return nil
+		}
+		if tmpl.ArchiveLocation.ArchiveLogs != nil && *tmpl.ArchiveLocation.ArchiveLogs {
+			needLocation = true
+		}
+	}
+	for _, art := range tmpl.Outputs.Artifacts {
+		if !art.HasLocation() {
+			needLocation = true
+			break
+		}
+	}
+	if !needLocation {
+		woc.log.Debugf("archive location unecessary")
+		return nil
+	}
+	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
+		ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+	}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
 	if s3Location := woc.controller.Config.ArtifactRepository.S3; s3Location != nil {
-		log.Debugf("Setting s3 artifact repository information")
+		woc.log.Debugf("Setting s3 artifact repository information")
 		artLocationKey := s3Location.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
 		if artLocationKey == "" {
@@ -657,7 +668,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			Key:      artLocationKey,
 		}
 	} else if woc.controller.Config.ArtifactRepository.Artifactory != nil {
-		log.Debugf("Setting artifactory artifact repository information")
+		woc.log.Debugf("Setting artifactory artifact repository information")
 		repoURL := ""
 		if woc.controller.Config.ArtifactRepository.Artifactory.RepoURL != "" {
 			repoURL = woc.controller.Config.ArtifactRepository.Artifactory.RepoURL + "/"
@@ -668,22 +679,14 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			URL:             artURL,
 		}
 	} else if hdfsLocation := woc.controller.Config.ArtifactRepository.HDFS; hdfsLocation != nil {
-		log.Debugf("Setting HDFS artifact repository information")
+		woc.log.Debugf("Setting HDFS artifact repository information")
 		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
 			HDFSConfig: hdfsLocation.HDFSConfig,
 			Path:       hdfsLocation.PathFormat,
 			Force:      hdfsLocation.Force,
 		}
 	} else {
-		for _, art := range tmpl.Outputs.Artifacts {
-			if !art.HasLocation() {
-				needLocation = true
-				break
-			}
-		}
-		if needLocation {
-			return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
-		}
+		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
 	}
 	return nil
 }
@@ -795,7 +798,7 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	var secretVolumes []apiv1.Volume
 	var secretVolMounts []apiv1.VolumeMount
 
-	createArgoArtifactsRepoSecret(tmpl, allVolumesMap, uniqueKeyMap)
+	createArchiveLocationSecret(tmpl, allVolumesMap, uniqueKeyMap)
 
 	for _, art := range tmpl.Outputs.Artifacts {
 		createSecretVolume(allVolumesMap, art, uniqueKeyMap)
@@ -816,7 +819,10 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 	return secretVolumes, secretVolMounts
 }
 
-func createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Volume, uniqueKeyMap map[string]bool) {
+	if tmpl.ArchiveLocation == nil {
+		return
+	}
 	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
 		createSecretVal(volMap, &s3ArtRepo.AccessKeySecret, uniqueKeyMap)
 		createSecretVal(volMap, &s3ArtRepo.SecretKeySecret, uniqueKeyMap)
@@ -831,7 +837,6 @@ func createArgoArtifactsRepoSecret(tmpl *wfv1.Template, volMap map[string]apiv1.
 		createSecretVal(volMap, gitRepo.PasswordSecret, uniqueKeyMap)
 		createSecretVal(volMap, gitRepo.SSHPrivateKeySecret, uniqueKeyMap)
 	}
-
 }
 
 func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMap map[string]bool) {
