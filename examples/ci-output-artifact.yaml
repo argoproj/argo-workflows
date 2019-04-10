@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ci-example-
+  generateName: ci-output-artifact-
 spec:
   entrypoint: ci-example
   # a temporary volume, named workdir, will be used as a working
@@ -75,7 +75,10 @@ spec:
 
   - name: release-artifact
     container:
-      image: debian:9.4
+      image: alpine:3.8
+      volumeMounts:
+      - name: workdir
+        mountPath: /go
     outputs:
       artifacts:
       - name: release

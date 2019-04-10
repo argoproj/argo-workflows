@@ -61,10 +61,11 @@ const (
 	// Each artifact will be named according to its input name (e.g: /argo/inputs/artifacts/CODE)
 	ExecutorArtifactBaseDir = "/argo/inputs/artifacts"
 
-	// InitContainerMainFilesystemDir is a path made available to the init container such that the init container
-	// can access the same volume mounts used in the main container. This is used for the purposes of artifact loading
-	// (when there is overlapping paths between artifacts and volume mounts)
-	InitContainerMainFilesystemDir = "/mainctrfs"
+	// ExecutorMainFilesystemDir is a path made available to the init/wait containers such that they
+	// can access the same volume mounts used in the main container. This is used for the purposes
+	// of artifact loading (when there is overlapping paths between artifacts and volume mounts),
+	// as well as artifact collection by the wait container.
+	ExecutorMainFilesystemDir = "/mainctrfs"
 
 	// ExecutorStagingEmptyDir is the path of the emptydir which is used as a staging area to transfer a file between init/main container for script/resource templates
 	ExecutorStagingEmptyDir = "/argo/staging"
@@ -74,9 +75,6 @@ const (
 	ExecutorResourceManifestPath = "/tmp/manifest.yaml"
 
 	// Various environment variables containing pod information exposed to the executor container(s)
-
-	// EnvVarPodName contains the name of the pod (currently unused)
-	EnvVarPodName = "ARGO_POD_NAME"
 
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
@@ -95,6 +93,9 @@ const (
 
 	// ContainerRuntimeExecutorK8sAPI to use the Kubernetes API server as container runtime executor
 	ContainerRuntimeExecutorK8sAPI = "k8sapi"
+
+	// ContainerRuntimeExecutorPNS indicates to use process namespace sharing as the container runtime executor
+	ContainerRuntimeExecutorPNS = "pns"
 
 	// Variables that are added to the scope during template execution and can be referenced using {{}} syntax
 

@@ -22,7 +22,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+      args: ["sleep 1; cowsay hello world | tee /tmp/hello_world.txt"]
     outputs:
       artifacts:
       - name: hello-art

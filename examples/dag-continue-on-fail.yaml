@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-contiueOn-fail-
+  generateName: dag-contiue-on-fail-
 spec:
   entrypoint: workflow
   templates:
@@ -14,7 +14,7 @@ spec:
         dependencies: [A]
         template: intentional-fail
         continueOn:
-            failed: true
+          failed: true
       - name: C
         dependencies: [A]
         template: whalesay
