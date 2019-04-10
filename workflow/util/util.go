@@ -32,6 +32,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -524,4 +525,20 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
+}
+
+// DecompressWorkflow decompresses the compressed status of a workflow (if compressed)
+func DecompressWorkflow(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		if err != nil {
+			return err
+		}
+		wf.Status.CompressedNodes = ""
+	}
+	return nil
 }
