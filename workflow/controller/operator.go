@@ -31,6 +31,7 @@ import (
 	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -66,7 +67,7 @@ type wfOperationCtx struct {
 	workflowDeadline *time.Time
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateContext
+	tmplCtx *templateresolution.Context
 }
 
 var (
@@ -100,11 +101,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		globalParams:  make(map[string]string),
 		completedPods: make(map[string]bool),
 		deadline:      time.Now().UTC().Add(maxOperationTime),
-		tmplCtx: &templateContext{
-			namespace:   wf.Namespace,
-			wfclientset: wfc.wfclientset,
-			tmplBase:    wf,
-		},
+		tmplCtx:       templateresolution.NewContext(wf.Namespace, wfc.wfclientset, wf),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -973,7 +970,7 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplCtx *templateContext, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, nodeName string, boundaryID string) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, tmplHolder.GetTemplateName(), boundaryID)
 
 	node := woc.getNodeByName(nodeName)
@@ -989,7 +986,7 @@ func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplC
 		return node, ErrDeadlineExceeded
 	}
 
-	newTmplCtx, tmpl, err := tmplCtx.resolveTemplate(tmplHolder, 0)
+	newTmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder, 0)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmplHolder, boundaryID, wfv1.NodeError, err.Error()), err
 	}
@@ -1246,7 +1243,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 		// if we are about to execute a pod, make our parent hasn't reached it's limit
 		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
 			boundaryNode := woc.wf.Status.Nodes[boundaryID]
-			boundaryTemplate, err := woc.tmplCtx.getTemplate(&boundaryNode)
+			boundaryTemplate, err := woc.tmplCtx.GetTemplate(&boundaryNode)
 			if err != nil {
 				return err
 			}

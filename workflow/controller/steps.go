@@ -9,6 +9,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -21,10 +22,10 @@ type stepsContext struct {
 	scope *wfScope
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateContext
+	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateContext, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmpl, boundaryID, wfv1.NodeRunning)
@@ -102,7 +103,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateContex
 						childNodes = append(childNodes, node)
 					}
 				}
-				tmpl, err := stepsCtx.tmplCtx.getTemplate(&step)
+				tmpl, err := stepsCtx.tmplCtx.GetTemplate(&step)
 				if err != nil {
 					return woc.markNodeError(nodeName, err)
 				}

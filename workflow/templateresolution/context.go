@@ -1,4 +1,4 @@
-package controller
+package templateresolution
 
 import (
 	"github.com/argoproj/argo/errors"
@@ -11,19 +11,28 @@ import (
 // maxResolveDepth is the limit of template reference resolution.
 const maxResolveDepth int = 10
 
-// templateContext is a context of template search.
-type templateContext struct {
+// Context is a context of template search.
+type Context struct {
 	// namespace is the namespace of template search.
 	namespace string
-	// wfclientset is the clientset to get workflow templates.
-	wfclientset wfclientset.Interface
+	// wfClientset is the clientset to get workflow templates.
+	wfClientset wfclientset.Interface
 	// tmplBase is the base of local template search.
 	tmplBase wfv1.TemplateGetter
 }
 
-// getTemplateFromRef returns a template found by a given template ref.
-func (ctx *templateContext) getTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
-	wftmpl, err := ctx.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+// NewContext returns new Context.
+func NewContext(namespace string, wfClientset wfclientset.Interface, tmplBase wfv1.TemplateGetter) *Context {
+	return &Context{
+		namespace:   namespace,
+		wfClientset: wfClientset,
+		tmplBase:    tmplBase,
+	}
+}
+
+// GetTemplateFromRef returns a template found by a given template ref.
+func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
+	wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -34,11 +43,11 @@ func (ctx *templateContext) getTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1
 	return tmpl.DeepCopy(), nil
 }
 
-// getTemplate returns a template found by template name or template ref.
-func (ctx *templateContext) getTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template, error) {
+// GetTemplate returns a template found by template name or template ref.
+func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
-		return ctx.getTemplateFromRef(tmplRef)
+		return ctx.GetTemplateFromRef(tmplRef)
 	} else {
 		tmplName := tmplHolder.GetTemplateName()
 		tmpl := ctx.tmplBase.GetTemplateByName(tmplName)
@@ -49,43 +58,39 @@ func (ctx *templateContext) getTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.T
 	}
 }
 
-// getTemplateBase returns a template base of a found template.
-func (ctx *templateContext) getTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
+// GetTemplateBase returns a template base of a found template.
+func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
-		return ctx.wfclientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+		return ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
 	} else {
 		return ctx.tmplBase, nil
 	}
 }
 
-// getTemplateAndContext returns a template found by template name or template ref with its search context.
-func (ctx *templateContext) getTemplateAndContext(tmplHolder wfv1.TemplateHolder) (*templateContext, *wfv1.Template, error) {
-	tmpl, err := ctx.getTemplate(tmplHolder)
+// GetTemplateAndContext returns a template found by template name or template ref with its search context.
+func (ctx *Context) GetTemplateAndContext(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
+	tmpl, err := ctx.GetTemplate(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
-	tmplBase, err := ctx.getTemplateBase(tmplHolder)
+	tmplBase, err := ctx.GetTemplateBase(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
-	newCtx := &templateContext{
-		namespace:   ctx.namespace,
-		wfclientset: ctx.wfclientset,
-		tmplBase:    tmplBase,
-	}
+	newCtx := NewContext(ctx.namespace, ctx.wfClientset, tmplBase)
 	return newCtx, tmpl, nil
 }
 
-// resolveTemplate digs into referenes and returns a merged template.
-func (ctx *templateContext) resolveTemplate(tmplHolder wfv1.TemplateHolder, depth int) (*templateContext, *wfv1.Template, error) {
+// ResolveTemplate digs into referenes and returns a merged template.
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
 	// Avoid infinite referenes
 	if depth > maxResolveDepth {
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
 
 	// Find template and context
-	newTmplCtx, tmpl, err := ctx.getTemplateAndContext(tmplHolder)
+	newTmplCtx, tmpl, err := ctx.GetTemplateAndContext(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -96,7 +101,7 @@ func (ctx *templateContext) resolveTemplate(tmplHolder wfv1.TemplateHolder, dept
 	}
 
 	// Dig into nested references with new template base.
-	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplate(tmpl, depth+1)
+	finalTmplCtx, newTmpl, err := newTmplCtx.ResolveTemplate(tmpl, depth+1)
 	if err != nil {
 		return nil, nil, err
 	}

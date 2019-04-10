@@ -8,6 +8,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/valyala/fasttemplate"
 )
 
@@ -32,7 +33,7 @@ type dagContext struct {
 	wf *wfv1.Workflow
 
 	// tmplCtx is the context of template search.
-	tmplCtx *templateContext
+	tmplCtx *templateresolution.Context
 }
 
 func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
@@ -120,7 +121,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	}
 	// pick the first child to determine it's template type
 	childNode := d.wf.Status.Nodes[node.Children[0]]
-	tmpl, err := d.tmplCtx.getTemplate(&childNode)
+	tmpl, err := d.tmplCtx.GetTemplate(&childNode)
 	if err != nil {
 		return false
 	}
@@ -130,7 +131,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateContext, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
 		return node
@@ -380,7 +381,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			tmpl, err := dagCtx.tmplCtx.getTemplate(ancestorNode)
+			tmpl, err := dagCtx.tmplCtx.GetTemplate(ancestorNode)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
