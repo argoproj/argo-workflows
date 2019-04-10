@@ -21,6 +21,7 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -130,7 +131,8 @@ func (woc *wfOperationCtx) operate() {
 	// Perform one-time workflow validation
 	if woc.wf.Status.Phase == "" {
 		woc.markWorkflowRunning()
-		err := validate.ValidateWorkflow(woc.wf)
+		validateOpts := validate.ValidateOpts{ContainerRuntimeExecutor: woc.controller.Config.ContainerRuntimeExecutor}
+		err := validate.ValidateWorkflow(woc.wf, validateOpts)
 		if err != nil {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
@@ -596,15 +598,14 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	var newDaemonStatus *bool
 	var message string
 	updated := false
-	f := false
 	switch pod.Status.Phase {
 	case apiv1.PodPending:
 		newPhase = wfv1.NodePending
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 		message = getPendingReason(pod)
 	case apiv1.PodSucceeded:
 		newPhase = wfv1.NodeSucceeded
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodFailed:
 		// ignore pod failure for daemoned steps
 		if node.IsDaemoned() {
@@ -612,7 +613,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		} else {
 			newPhase, message = inferFailedReason(pod)
 		}
-		newDaemonStatus = &f
+		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
 		newPhase = wfv1.NodeRunning
 		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
@@ -635,8 +636,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			}
 			// proceed to mark node status as running (and daemoned)
 			newPhase = wfv1.NodeRunning
-			t := true
-			newDaemonStatus = &t
+			newDaemonStatus = pointer.BoolPtr(true)
 			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
 		}
 	default:
@@ -1534,17 +1534,12 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	if node != nil {
 		return node
 	}
-	mainCtr := apiv1.Container{
-		Image:           woc.controller.executorImage(),
-		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-		Command:         []string{"argoexec"},
-		Args:            []string{"resource", tmpl.Resource.Action},
-		VolumeMounts: []apiv1.VolumeMount{
-			volumeMountPodMetadata,
-		},
-		Env: execEnvVars,
+	mainCtr := woc.newExecContainer(common.MainContainerName)
+	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
+	mainCtr.VolumeMounts = []apiv1.VolumeMount{
+		volumeMountPodMetadata,
 	}
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1670,24 +1665,5 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
 	}
 
-	return nil
-}
-
-// checkAndDecompress will decompress the compressednode and assign to workflow.status.nodes map.
-func (woc *wfOperationCtx) checkAndDecompress() error {
-	if woc.wf.Status.CompressedNodes != "" {
-		nodeContent, err := file.DecodeDecompressString(woc.wf.Status.CompressedNodes)
-		if err != nil {
-			return errors.InternalWrapError(err)
-		}
-		var tempNodes map[string]wfv1.NodeStatus
-
-		err = json.Unmarshal([]byte(nodeContent), &tempNodes)
-		if err != nil {
-			woc.log.Warn(err)
-			return err
-		}
-		woc.wf.Status.Nodes = tempNodes
-	}
 	return nil
 }

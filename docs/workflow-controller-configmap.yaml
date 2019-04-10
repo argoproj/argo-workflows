@@ -49,6 +49,8 @@ data:
         endpoint: s3.amazonaws.com
         bucket: my-bucket
         region: us-west-2
+        # insecure will disable TLS. Primarily used for minio installs not configured with TLS
+        insecure: false
         # keyFormat is a format pattern to define how artifacts will be organized in a bucket.
         # It can reference workflow metadata variables such as workflow.namespace, workflow.name,
         # pod.name. Can also use strftime formating of workflow.creationTimestamp so that workflow
@@ -63,10 +65,8 @@ data:
           /{{workflow.creationTimestamp.d}}\
           /{{workflow.name}}\
           /{{pod.name}}"
-        # insecure will disable TLS. used for minio installs not configured with TLS
-        insecure: false
         # The actual secret object (in this example my-s3-credentials), should be created in every
-        # namespace which a workflow wants which wants to store its artifacts to S3. If omitted,
+        # namespace where a workflow needs to store its artifacts to S3. If omitted,
         # attempts to use IAM role to access the bucket (instead of accessKey/secretKey).
         accessKeySecret:
           name: my-s3-credentials
@@ -84,16 +84,27 @@ data:
     # disable the TLS verification of the kubelet executor (default: false)
     kubeletInsecure: false
 
-    # executorResources specifies the resource requirements that will be used for the executor
-    # sidecar/init container. This is useful in clusters which require resources to be specified as
-    # part of admission control.
-    executorResources:
-      requests:
-        cpu: 0.1
-        memory: 64Mi
-      limits:
-        cpu: 0.5
-        memory: 512Mi
+    # executor controls how the init and wait container should be customized
+    # (available since Argo v2.3)
+    executor:
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 0.1
+          memory: 64Mi
+        limits:
+          cpu: 0.5
+          memory: 512Mi
+      # args & env allows command line arguments and environment variables to be appended to the
+      # executor container and is mainly used for development/debugging purposes.
+      args:
+      - --loglevel
+      - debug
+      - --gloglevel
+      - "6"
+      env:
+      - name: DEBUG_FLAG
+        value: "1"
 
     # metricsConfig controls the path and port for prometheus metrics
     metricsConfig:

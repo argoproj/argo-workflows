@@ -243,12 +243,12 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)
-	//Decompress the node if it is compressed
 
-	err = woc.checkAndDecompress()
+	// Decompress the node if it is compressed
+	err = util.DecompressWorkflow(woc.wf)
 	if err != nil {
-		log.Warnf("Failed to decompress  '%s' to workflow object: %v", key, err)
-		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
+		woc.log.Warnf("workflow decompression failed: %v", err)
+		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
 		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true

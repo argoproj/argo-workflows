@@ -1,15 +1,11 @@
-resources:
-- ../base/01a_workflow-crd.yaml
-- ../base/02a_workflow-controller-sa.yaml
-- ./02b_workflow-controller-role.yaml
-- ./02c_workflow-controller-rolebinding.yaml
-- ./02d_workflow-controller-configmap.yaml
-- ../base/02e_workflow-controller-deployment.yaml
-- ../base/03a_argo-ui-sa.yaml
-- ./03b_argo-ui-role.yaml
-- ./03c_argo-ui-rolebinding.yaml
-- ../base/03d_argo-ui-deployment.yaml
-- ../base/03e_argo-ui-service.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 
-patches:
-- ./overlays/03d_argo-ui-deployment.yaml
+bases:
+- ../base
+- ./workflow-controller-rbac
+- ./argo-ui-rbac
+
+patchesStrategicMerge:
+- ./overlays/workflow-controller-configmap.yaml
+- ./overlays/argo-ui-deployment.yaml

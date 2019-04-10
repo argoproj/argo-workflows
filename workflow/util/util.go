@@ -26,12 +26,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -238,7 +240,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wf)
+	err := validate.ValidateWorkflow(wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -256,8 +258,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 			return false, errSuspendedCompletedWorkflow
 		}
 		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
-			t := true
-			wf.Spec.Suspend = &t
+			wf.Spec.Suspend = pointer.BoolPtr(true)
 			wf, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
@@ -524,4 +525,20 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
+}
+
+// DecompressWorkflow decompresses the compressed status of a workflow (if compressed)
+func DecompressWorkflow(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		if err != nil {
+			return err
+		}
+		wf.Status.CompressedNodes = ""
+	}
+	return nil
 }

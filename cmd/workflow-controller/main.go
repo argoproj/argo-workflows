@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/argoproj/pkg/kube/cli"
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -44,15 +43,10 @@ func NewRootCommand() *cobra.Command {
 		Use:   CLIName,
 		Short: "workflow-controller is the controller to operate on workflows",
 		RunE: func(c *cobra.Command, args []string) error {
-
-			cmdutil.SetLogLevel(logLevel)
+			cli.SetLogLevel(logLevel)
+			cli.SetGLogLevel(glogLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
-
-			// Set the glog level for the k8s go-client
-			_ = flag.CommandLine.Parse([]string{})
-			_ = flag.Lookup("logtostderr").Value.Set("true")
-			_ = flag.Lookup("v").Value.Set(strconv.Itoa(glogLevel))
 
 			config, err := clientConfig.ClientConfig()
 			if err != nil {
@@ -89,7 +83,7 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 
-	clientConfig = cli.AddKubectlFlagsToCmd(&command)
+	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")

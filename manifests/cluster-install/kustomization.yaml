@@ -1,15 +1,7 @@
-namespace: argo
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 
-resources:
-- ../base/01a_workflow-crd.yaml
-- ../base/01b_workflow-aggregate-roles.yaml
-- ../base/02a_workflow-controller-sa.yaml
-- ../base/02b_workflow-controller-clusterrole.yaml
-- ../base/02c_workflow-controller-clusterrolebinding.yaml
-- ../base/02d_workflow-controller-configmap.yaml
-- ../base/02e_workflow-controller-deployment.yaml
-- ../base/03a_argo-ui-sa.yaml
-- ../base/03b_argo-ui-clusterrole.yaml
-- ../base/03c_argo-ui-clusterrolebinding.yaml
-- ../base/03d_argo-ui-deployment.yaml
-- ../base/03e_argo-ui-service.yaml
+bases:
+- ../base
+- ./workflow-controller-rbac
+- ./argo-ui-rbac

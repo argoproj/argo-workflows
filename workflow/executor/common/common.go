@@ -19,7 +19,7 @@ const (
 
 // killGracePeriod is the time in seconds after sending SIGTERM before
 // forcefully killing the sidecar with SIGKILL (value matches k8s)
-const killGracePeriod = 10
+const KillGracePeriod = 10
 
 // GetContainerID returns container ID of a ContainerStatus resource
 func GetContainerID(container *v1.ContainerStatus) string {
@@ -94,7 +94,7 @@ func KillGracefully(c KubernetesClientInterface, containerID string) error {
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(c, containerID, time.Second*killGracePeriod)
+	err = WaitForTermination(c, containerID, time.Second*KillGracePeriod)
 	if err == nil {
 		log.Infof("ContainerID %q successfully killed", containerID)
 		return nil
@@ -104,7 +104,7 @@ func KillGracefully(c KubernetesClientInterface, containerID string) error {
 	if err != nil {
 		return err
 	}
-	err = WaitForTermination(c, containerID, time.Second*killGracePeriod)
+	err = WaitForTermination(c, containerID, time.Second*KillGracePeriod)
 	if err != nil {
 		return err
 	}
