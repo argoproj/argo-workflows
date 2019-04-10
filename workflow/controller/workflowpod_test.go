@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -181,7 +182,16 @@ func TestWorkflowControllerArchiveConfig(t *testing.T) {
 // TestWorkflowControllerArchiveConfigUnresolvable verifies workflow fails when archive location has
 // unresolvable variables
 func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
-	woc := newWoc()
+	wf := unmarshalWF(helloWorldWf)
+	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
+		Artifacts: []wfv1.Artifact{
+			{
+				Name: "foo",
+				Path: "/tmp/file",
+			},
+		},
+	}
+	woc := newWoc(*wf)
 	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
@@ -192,6 +202,53 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 	podName := getPodName(woc.wf)
 	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Error(t, err)
+}
+
+// TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
+func TestConditionalNoAddArchiveLocation(t *testing.T) {
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyFormat: "path/in/bucket",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.NoError(t, err)
+	var tmpl wfv1.Template
+	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	assert.NoError(t, err)
+	assert.Nil(t, tmpl.ArchiveLocation)
+}
+
+// TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
+func TestConditionalArchiveLocation(t *testing.T) {
+	wf := unmarshalWF(helloWorldWf)
+	wf.Spec.Templates[0].Outputs = wfv1.Outputs{
+		Artifacts: []wfv1.Artifact{
+			{
+				Name: "foo",
+				Path: "/tmp/file",
+			},
+		},
+	}
+	woc := newWoc()
+	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyFormat: "path/in/bucket",
+	}
+	woc.operate()
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.NoError(t, err)
+	var tmpl wfv1.Template
+	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	assert.NoError(t, err)
+	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
 // TestVolumeAndVolumeMounts verifies the ability to carry forward volumes and volumeMounts from workflow.spec
