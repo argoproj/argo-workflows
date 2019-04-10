@@ -1747,6 +1747,13 @@ func schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"runtimeResolution": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

@@ -941,6 +941,10 @@
           "description": "Name is the resource name of the template.",
           "type": "string"
         },
+        "runtimeResolution": {
+          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+          "type": "boolean"
+        },
         "template": {
           "description": "Template is the name of referred template in the resource.",
           "type": "string"

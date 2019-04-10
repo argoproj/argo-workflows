@@ -82,7 +82,7 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 
 	var workflowTemplateNames []string
 	for _, wftmpl := range workflowTemplates {
-		err := validate.ValidateWorkflowTemplate(&wftmpl)
+		err := validate.ValidateWorkflowTemplate(&wftmpl, validate.ValidateOpts{})
 		if err != nil {
 			log.Fatalf("Failed to submit workflow template: %v", err)
 		}

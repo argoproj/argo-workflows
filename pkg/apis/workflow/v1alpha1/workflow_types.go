@@ -524,6 +524,9 @@ type TemplateRef struct {
 	Name string `json:"name,omitempty"`
 	// Template is the name of referred template in the resource.
 	Template string `json:"template,omitempty"`
+	// RuntimeResolution skips validation at creation time.
+	// By enabling this option, you can create the referred workflow template before the actual runtime.
+	RuntimeResolution bool `json:"runtimeResolution,omitempty"`
 }
 
 type ArgumentsProvider interface {

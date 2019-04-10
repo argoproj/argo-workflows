@@ -239,6 +239,10 @@ func validateTemplateRef(tmpl *wfv1.Template) error {
 	if tmpl.Template != "" {
 		return errors.Errorf(errors.CodeBadRequest, "template cannot be specified with templateRef")
 	}
+	if tmpl.TemplateRef.RuntimeResolution {
+		// Let's see if the template exists at runtime.
+		return nil
+	}
 	if tmpl.TemplateRef.Name == "" {
 		return errors.Errorf(errors.CodeBadRequest, "resource name is required")
 	}
