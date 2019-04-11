@@ -21,13 +21,13 @@ import (
 )
 
 type k8sAPIClient struct {
-	execcommon.KubernetesClientInterface
-
 	clientset *kubernetes.Clientset
 	config    *restclient.Config
 	podName   string
 	namespace string
 }
+
+var _ execcommon.KubernetesClientInterface = &k8sAPIClient{}
 
 func newK8sAPIClient(clientset *kubernetes.Clientset, config *restclient.Config, podName, namespace string) (*k8sAPIClient, error) {
 	return &k8sAPIClient{
@@ -39,7 +39,7 @@ func newK8sAPIClient(clientset *kubernetes.Clientset, config *restclient.Config,
 }
 
 func (c *k8sAPIClient) getFileContents(containerID, sourcePath string) (string, error) {
-	_, containerStatus, err := c.getContainerStatus(containerID)
+	_, containerStatus, err := c.GetContainerStatus(containerID)
 	if err != nil {
 		return "", err
 	}
@@ -55,8 +55,8 @@ func (c *k8sAPIClient) getFileContents(containerID, sourcePath string) (string, 
 	return stdOut.String(), nil
 }
 
-func (c *k8sAPIClient) createArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
-	_, containerStatus, err := c.getContainerStatus(containerID)
+func (c *k8sAPIClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+	_, containerStatus, err := c.GetContainerStatus(containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (c *k8sAPIClient) createArchive(containerID, sourcePath string) (*bytes.Buf
 }
 
 func (c *k8sAPIClient) getLogsAsStream(containerID string) (io.ReadCloser, error) {
-	_, containerStatus, err := c.getContainerStatus(containerID)
+	_, containerStatus, err := c.GetContainerStatus(containerID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (c *k8sAPIClient) getPod() (*v1.Pod, error) {
 	return c.clientset.CoreV1().Pods(c.namespace).Get(c.podName, metav1.GetOptions{})
 }
 
-func (c *k8sAPIClient) getContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
+func (c *k8sAPIClient) GetContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
 	pod, err := c.getPod()
 	if err != nil {
 		return nil, nil, err
@@ -132,7 +132,7 @@ func (c *k8sAPIClient) waitForTermination(containerID string, timeout time.Durat
 	return execcommon.WaitForTermination(c, containerID, timeout)
 }
 
-func (c *k8sAPIClient) killContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
+func (c *k8sAPIClient) KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
 	command := []string{"/bin/sh", "-c", fmt.Sprintf("kill -%d 1", sig)}
 	exec, err := common.ExecPodContainer(c.config, c.namespace, c.podName, container.Name, false, false, command...)
 	if err != nil {
