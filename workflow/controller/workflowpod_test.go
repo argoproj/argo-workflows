@@ -272,7 +272,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Docker executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
@@ -291,7 +291,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Kubelet executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
 
@@ -309,7 +309,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For K8sAPI executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorK8sAPI
 
@@ -428,7 +428,7 @@ func TestInitContainers(t *testing.T) {
 	mirrorVolumeMounts := true
 
 	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
+	woc.volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
 		{
@@ -466,7 +466,7 @@ func TestSidecars(t *testing.T) {
 	mirrorVolumeMounts := true
 
 	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
+	woc.volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].Sidecars = []wfv1.UserContainer{
 		{

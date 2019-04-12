@@ -380,6 +380,13 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 
 	// Perform replacement
+	// Replace woc.volumes
+	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace task's parameters
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
