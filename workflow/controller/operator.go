@@ -49,6 +49,9 @@ type wfOperationCtx struct {
 	// globalParams holds any parameters that are available to be referenced
 	// in the global scope (e.g. workflow.parameters.XXX).
 	globalParams map[string]string
+	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
+	// It is then used in addVolumeReferences() when creating a pod.
+	volumes []apiv1.Volume
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
@@ -93,6 +96,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		}),
 		controller:    wfc,
 		globalParams:  make(map[string]string),
+		volumes:       wf.Spec.DeepCopy().Volumes,
 		completedPods: make(map[string]bool),
 		deadline:      time.Now().UTC().Add(maxOperationTime),
 	}
@@ -158,7 +162,14 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters()
 
-	err := woc.createPVCs()
+	err := woc.substituteParamsInVolumes(woc.globalParams)
+	if err != nil {
+		woc.log.Errorf("%s volumes global param substitution error: %+v", woc.wf.ObjectMeta.Name, err)
+		woc.markWorkflowError(err, true)
+		return
+	}
+
+	err = woc.createPVCs()
 	if err != nil {
 		woc.log.Errorf("%s pvc create error: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
@@ -1665,5 +1676,29 @@ func (woc *wfOperationCtx) checkAndCompress() error {
 		return errors.InternalError(fmt.Sprintf("Workflow is longer than maximum allowed size. Size=%d", woc.getSize()))
 	}
 
+	return nil
+}
+
+func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) error {
+	if woc.volumes == nil {
+		return nil
+	}
+
+	volumes := woc.volumes
+	volumesBytes, err := json.Marshal(volumes)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	fstTmpl := fasttemplate.New(string(volumesBytes), "{{", "}}")
+	newVolumesStr, err := common.Replace(fstTmpl, params, true)
+	if err != nil {
+		return err
+	}
+	var newVolumes []apiv1.Volume
+	err = json.Unmarshal([]byte(newVolumesStr), &newVolumes)
+	if err != nil {
+		return errors.InternalWrapError(err)
+	}
+	woc.volumes = newVolumes
 	return nil
 }
