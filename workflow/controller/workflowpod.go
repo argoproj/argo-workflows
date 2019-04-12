@@ -148,7 +148,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
-	err = addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -183,8 +183,13 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	// Perform one last variable substitution here. Some variables come from the from workflow
-	// configmap (e.g. archive location), and were not substituted in executeTemplate.
-	pod, err = substituteGlobals(pod, woc.globalParams)
+	// configmap (e.g. archive location) or volumes attribute, and were not substituted
+	// in executeTemplate.
+	podParams := woc.globalParams
+	for _, inParam := range tmpl.Inputs.Parameters {
+		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
+	}
+	pod, err = substitutePodParams(pod, podParams)
 	if err != nil {
 		return nil, err
 	}
@@ -220,20 +225,20 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	return created, nil
 }
 
-// substituteGlobals returns a pod spec with global parameter references substituted as well as pod.name
-func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.Pod, error) {
-	newGlobalParams := make(map[string]string)
-	for k, v := range globalParams {
-		newGlobalParams[k] = v
+// substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
+func substitutePodParams(pod *apiv1.Pod, podParams map[string]string) (*apiv1.Pod, error) {
+	newPodParams := make(map[string]string)
+	for k, v := range podParams {
+		newPodParams[k] = v
 	}
-	newGlobalParams[common.LocalVarPodName] = pod.Name
-	globalParams = newGlobalParams
+	newPodParams[common.LocalVarPodName] = pod.Name
+	podParams = newPodParams
 	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err
 	}
 	fstTmpl := fasttemplate.New(string(specBytes), "{{", "}}")
-	newSpecBytes, err := common.Replace(fstTmpl, globalParams, true)
+	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +460,7 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
 	default:
@@ -464,7 +469,7 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 
 	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 	getVolByName := func(name string) *apiv1.Volume {
-		for _, vol := range wfSpec.Volumes {
+		for _, vol := range vols {
 			if vol.Name == name {
 				return &vol
 			}
