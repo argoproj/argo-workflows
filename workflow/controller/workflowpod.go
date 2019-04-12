@@ -848,7 +848,7 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 		secretVolumes = append(secretVolumes, val)
 		secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
 			Name:      volMountName,
-			MountPath: common.SecretVolMountPath,
+			MountPath: common.SecretVolMountPath + "/" + val.Name,
 			ReadOnly:  true,
 		})
 	}
@@ -900,7 +900,7 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 	if vol, ok := volMap[secret.Name]; ok {
 		key := apiv1.KeyToPath{
 			Key:  secret.Key,
-			Path: secret.Name + "/" + secret.Key,
+			Path: secret.Key,
 		}
 		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
 			keyMap[secret.Name+"-"+secret.Key] = true
@@ -915,7 +915,7 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 					Items: []apiv1.KeyToPath{
 						{
 							Key:  secret.Key,
-							Path: secret.Name + "/" + secret.Key,
+							Path: secret.Key,
 						},
 					},
 				},
