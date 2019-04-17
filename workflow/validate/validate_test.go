@@ -25,11 +25,18 @@ func createWorkflowTemplate(yamlStr string) error {
 	return err
 }
 
-// validate is a test helper to accept YAML as a string and return
+// validate is a test helper to accept Workflow YAML as a string and return
 // its validation result.
 func validate(yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
 	return ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+}
+
+// validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
+// its validation result.
+func validateWorkflowTemplate(yamlStr string) error {
+	wftmpl := unmarshalWftmpl(yamlStr)
+	return ValidateWorkflowTemplate(wfClientset, metav1.NamespaceDefault, wftmpl)
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -1447,6 +1454,11 @@ spec:
       name: template-ref-target
       template: A
 `
+
+func TestWorkflowTemplate(t *testing.T) {
+	err := validateWorkflowTemplate(templateRefTarget)
+	assert.Nil(t, err)
+}
 
 func TestTemplateRef(t *testing.T) {
 	err := createWorkflowTemplate(templateRefTarget)
