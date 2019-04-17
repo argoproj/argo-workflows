@@ -18,6 +18,10 @@ import (
 
 const onExitSuffix = "onExit"
 
+var (
+	status string
+)
+
 func NewGetCommand() *cobra.Command {
 	var (
 		output string
@@ -46,6 +50,7 @@ func NewGetCommand() *cobra.Command {
 
 	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().StringVar(&status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	return command
 }
 
@@ -411,6 +416,9 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
+		if status != "" && string(node.Phase) != status {
+			return
+		}
 		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
