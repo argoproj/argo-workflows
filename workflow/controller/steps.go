@@ -291,6 +291,12 @@ func shouldExecute(when string) (bool, error) {
 func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
+	// Step 0: replace all parameter scope references for volumes
+	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	if err != nil {
+		return nil, err
+	}
+
 	for i, step := range stepGroup {
 		// Step 1: replace all parameter scope references in the step
 		// TODO: improve this
@@ -298,15 +304,8 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		replaceMap := make(map[string]string)
-		for key, val := range scope.scope {
-			valStr, ok := val.(string)
-			if ok {
-				replaceMap[key] = valStr
-			}
-		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
+		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
 		if err != nil {
 			return nil, err
 		}
