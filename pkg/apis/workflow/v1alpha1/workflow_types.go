@@ -61,6 +61,7 @@ type TemplateGetter interface {
 type TemplateHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
+	IsConcreteTemplate() bool
 }
 
 // Workflow is the definition of a workflow resource
@@ -291,6 +292,10 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+func (tmpl *Template) IsConcreteTemplate() bool {
+	return tmpl.GetType() != TemplateTypeUnknown
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -464,6 +469,10 @@ func (step *WorkflowStep) GetTemplateName() string {
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
+}
+
+func (step *WorkflowStep) IsConcreteTemplate() bool {
+	return false
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -669,6 +678,10 @@ func (n *NodeStatus) GetTemplateName() string {
 
 func (n *NodeStatus) GetTemplateRef() *TemplateRef {
 	return n.TemplateRef
+}
+
+func (n *NodeStatus) IsConcreteTemplate() bool {
+	return false
 }
 
 func (n NodeStatus) String() string {
@@ -1010,6 +1023,10 @@ func (t *DAGTask) GetTemplateName() string {
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {
 	return t.TemplateRef
+}
+
+func (t *DAGTask) IsConcreteTemplate() bool {
+	return false
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time

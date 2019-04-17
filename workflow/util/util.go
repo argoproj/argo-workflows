@@ -146,7 +146,7 @@ type SubmitOpts struct {
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -241,7 +241,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wfClientset, wf, validate.ValidateOpts{})
+	err := validate.ValidateWorkflow(wfClientset, namespace, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}

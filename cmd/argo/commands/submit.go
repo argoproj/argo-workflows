@@ -112,10 +112,15 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
+	namespace, _, err := clientConfig.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var workflowNames []string
 	for _, wf := range workflows {
 		wf.Spec.Priority = cliOpts.priority
-		created, err := util.SubmitWorkflow(wfClient, wfClientset, &wf, submitOpts)
+		created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}

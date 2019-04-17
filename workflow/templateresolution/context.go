@@ -30,6 +30,15 @@ func NewContext(namespace string, wfClientset wfclientset.Interface, tmplBase wf
 	}
 }
 
+// GetTemplateByName returns a template by name in the context.
+func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
+	tmpl := ctx.tmplBase.GetTemplateByName(name)
+	if tmpl == nil {
+		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", name)
+	}
+	return tmpl.DeepCopy(), nil
+}
+
 // GetTemplateFromRef returns a template found by a given template ref.
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
 	wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
@@ -38,7 +47,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	}
 	tmpl := wftmpl.GetTemplateByName(tmplRef.Template)
 	if tmpl == nil {
-		return nil, errors.Errorf(errors.CodeBadRequest, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
+		return nil, errors.Errorf(errors.CodeNotFound, "template %s not found in workflow template %s", tmplRef.Template, tmplRef.Name)
 	}
 	return tmpl.DeepCopy(), nil
 }
@@ -52,7 +61,7 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 		tmplName := tmplHolder.GetTemplateName()
 		tmpl := ctx.tmplBase.GetTemplateByName(tmplName)
 		if tmpl == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "template %s not found", tmplName)
+			return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", tmplName)
 		}
 		return tmpl.DeepCopy(), nil
 	}
