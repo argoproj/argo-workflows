@@ -5,6 +5,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,6 +44,9 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
 	wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
 	if err != nil {
+		if apierr.IsNotFound(err) {
+			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Template)
+		}
 		return nil, err
 	}
 	tmpl := wftmpl.GetTemplateByName(tmplRef.Template)
@@ -71,7 +75,11 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
-		return ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+		wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+		if err != nil && apierr.IsNotFound(err) {
+			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Template)
+		}
+		return wftmpl, err
 	} else {
 		return ctx.tmplBase, nil
 	}

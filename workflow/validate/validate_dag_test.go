@@ -116,7 +116,7 @@ spec:
       - name: A
         template: echo
         arguments:
-          parameters: 
+          parameters:
           - name: message
             value: val
       - name: B
@@ -154,14 +154,14 @@ spec:
       - name: A
         template: echo
         arguments:
-          parameters: 
+          parameters:
           - name: message
             value: val
       - name: B
         dependencies: [A]
         template: echo
         arguments:
-          parameters: 
+          parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
       - name: C
@@ -199,14 +199,14 @@ spec:
       - name: A
         template: echo
         arguments:
-          parameters: 
+          parameters:
           - name: message
             value: val
       - name: B
         dependencies: [A]
         template: echo
         arguments:
-          parameters: 
+          parameters:
           - name: message
             value: "{{tasks.A.outputs.parameters.hosts}}"
       - name: C

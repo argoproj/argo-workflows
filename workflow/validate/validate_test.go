@@ -5,6 +5,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -14,6 +15,15 @@ import (
 )
 
 var wfClientset = fakewfclientset.NewSimpleClientset()
+
+func createWorkflowTemplate(yamlStr string) error {
+	wftmpl := unmarshalWftmpl(yamlStr)
+	_, err := wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault).Create(wftmpl)
+	if err != nil && apierr.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
+}
 
 // validate is a test helper to accept YAML as a string and return
 // its validation result.
@@ -29,6 +39,15 @@ func unmarshalWf(yamlStr string) *wfv1.Workflow {
 		panic(err)
 	}
 	return &wf
+}
+
+func unmarshalWftmpl(yamlStr string) *wfv1.WorkflowTemplate {
+	var wftmpl wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
+	if err != nil {
+		panic(err)
+	}
+	return &wftmpl
 }
 
 const invalidErr = "is invalid"
@@ -1359,5 +1378,172 @@ func TestBaseImageOutputVerify(t *testing.T) {
 		}
 		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 		assert.NoError(t, err)
+	}
+}
+
+var localTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: local-template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    template: B
+  - name: B
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+func TestLocalTemplateRef(t *testing.T) {
+	err := validate(localTemplateRef)
+	assert.Nil(t, err)
+}
+
+var undefinedLocalTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: undefined-local-template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    template: undef
+`
+
+func TestUndefinedLocalTemplateRef(t *testing.T) {
+	err := validate(undefinedLocalTemplateRef)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "not found")
+	}
+}
+
+var templateRefTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-target
+spec:
+  templates:
+  - name: A
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+var templateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    templateRef:
+      name: template-ref-target
+      template: A
+`
+
+func TestTemplateRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.Nil(t, err)
+	err = validate(templateRef)
+	assert.Nil(t, err)
+}
+
+var templateRefNestedTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-nested-target
+spec:
+  templates:
+  - name: A
+    templateRef:
+      name: template-ref-target
+      template: A
+`
+
+var nestedTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    templateRef:
+      name: template-ref-nested-target
+      template: A
+`
+
+func TestNestedTemplateRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefTarget)
+	assert.Nil(t, err)
+	err = createWorkflowTemplate(templateRefNestedTarget)
+	assert.Nil(t, err)
+	err = validate(nestedTemplateRef)
+	assert.Nil(t, err)
+}
+
+var templateRefNestedLocalTarget = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: template-ref-nested-local-target
+spec:
+  templates:
+  - name: A
+    template: B
+  - name: B
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+`
+
+var nestedLocalTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    templateRef:
+      name: template-ref-nested-local-target
+      template: A
+`
+
+func TestNestedLocalTemplateRef(t *testing.T) {
+	err := createWorkflowTemplate(templateRefNestedLocalTarget)
+	assert.Nil(t, err)
+	err = validate(nestedLocalTemplateRef)
+	assert.Nil(t, err)
+}
+
+var undefinedTemplateRef = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: undefined-template-ref-
+spec:
+  entrypoint: A
+  templates:
+  - name: A
+    templateRef:
+      name: foo
+      template: echo
+`
+
+func TestUndefinedTemplateRef(t *testing.T) {
+	err := validate(undefinedTemplateRef)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "not found")
 	}
 }

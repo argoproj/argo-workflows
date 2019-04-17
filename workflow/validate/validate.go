@@ -262,6 +262,13 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 	}
 	tmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder, 0)
 	if err != nil {
+		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
+			if tmplRef != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "template reference %s.%s not found", tmplRef.Name, tmplRef.Template)
+			}
+			// this error should not occur.
+			return nil, errors.InternalWrapError(err)
+		}
 		return nil, err
 	}
 	return tmpl, ctx.validateTemplate(tmpl, tmplCtx, args)
