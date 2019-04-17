@@ -141,8 +141,8 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 	if wftmpl.Namespace != "" {
 		namespace = wftmpl.Namespace
 	}
-	ctx := newTemplateValidationCtx(wftmpl.Namespace, wfClientset, wftmpl, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmpl.Namespace, wfClientset, wftmpl)
+	ctx := newTemplateValidationCtx(namespace, wfClientset, wftmpl, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(namespace, wfClientset, wftmpl)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
