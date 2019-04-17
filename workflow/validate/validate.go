@@ -260,7 +260,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.New(errors.CodeBadRequest, "template ref can not be used with template type.")
 		}
 	}
-	tmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder, 0)
+	tmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {

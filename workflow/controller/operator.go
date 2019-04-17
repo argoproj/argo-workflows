@@ -986,7 +986,7 @@ func (woc *wfOperationCtx) executeTemplate(tmplHolder wfv1.TemplateHolder, tmplC
 		return node, ErrDeadlineExceeded
 	}
 
-	newTmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder, 0)
+	newTmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmplHolder, boundaryID, wfv1.NodeError, err.Error()), err
 	}

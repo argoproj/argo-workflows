@@ -45,7 +45,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 	wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) {
-			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Template)
+			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
 		}
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.Templa
 	if tmplRef != nil {
 		wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
 		if err != nil && apierr.IsNotFound(err) {
-			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Template)
+			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
 		}
 		return wftmpl, err
 	} else {
@@ -85,32 +85,29 @@ func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.Templa
 	}
 }
 
-// GetTemplateAndContext returns a template found by template name or template ref with its search context.
-func (ctx *Context) GetTemplateAndContext(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
-	tmpl, err := ctx.GetTemplate(tmplHolder)
-	if err != nil {
-		return nil, nil, err
-	}
-	tmplBase, err := ctx.GetTemplateBase(tmplHolder)
-	if err != nil {
-		return nil, nil, err
-	}
-	newCtx := NewContext(ctx.namespace, ctx.wfClientset, tmplBase)
-	return newCtx, tmpl, nil
+// ResolveTemplate digs into referenes and returns a merged template.
+// This method is the public start point of template resolution.
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
+	return ctx.resolveTemplateImpl(tmplHolder, 0)
 }
 
-// ResolveTemplate digs into referenes and returns a merged template.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
+// resolveTemplateImpl digs into referenes and returns a merged template.
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
 	// Avoid infinite referenes
 	if depth > maxResolveDepth {
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
 
 	// Find template and context
-	newTmplCtx, tmpl, err := ctx.GetTemplateAndContext(tmplHolder)
+	tmpl, err := ctx.GetTemplate(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
+	newTmplBase, err := ctx.GetTemplateBase(tmplHolder)
+	if err != nil {
+		return nil, nil, err
+	}
+	newTmplCtx := NewContext(ctx.namespace, ctx.wfClientset, newTmplBase)
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
@@ -118,7 +115,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, depth int) (
 	}
 
 	// Dig into nested references with new template base.
-	finalTmplCtx, newTmpl, err := newTmplCtx.ResolveTemplate(tmpl, depth+1)
+	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
 	if err != nil {
 		return nil, nil, err
 	}
