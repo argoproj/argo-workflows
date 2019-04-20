@@ -1026,6 +1026,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"setOwnerReference": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"successCondition": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
