@@ -1356,3 +1356,51 @@ func TestBaseImageOutputVerify(t *testing.T) {
 		assert.NoError(t, err)
 	}
 }
+
+var validResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-resource-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+`
+
+// TestValidResourceWorkflow verifies a workflow of a valid resource.
+func TestValidResourceWorkflow(t *testing.T) {
+	wf := unmarshalWf(validResourceWorkflow)
+	err := ValidateWorkflow(wf, ValidateOpts{})
+	assert.Equal(t, err, nil)
+}
+
+var invalidResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-resource-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      manifest: |
+        invalid-yaml-line
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+`
+
+// TestInvalidResourceWorkflow verifies an error aganist a workflow of an invalid resource.
+func TestInvalidResourceWorkflow(t *testing.T) {
+	wf := unmarshalWf(invalidResourceWorkflow)
+	err := ValidateWorkflow(wf, ValidateOpts{})
+	assert.Error(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
+}
