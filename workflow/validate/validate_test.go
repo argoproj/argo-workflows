@@ -1385,7 +1385,7 @@ var invalidResourceWorkflow = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: valid-resource-
+  generateName: invalid-resource-
 spec:
   entrypoint: whalesay
   templates:
