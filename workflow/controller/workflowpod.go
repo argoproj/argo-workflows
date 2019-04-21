@@ -269,10 +269,35 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 				},
 			},
 		}
+		if hasPrivilegedContainers(tmpl) {
+			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
+			// in order to SIGTERM/SIGKILL the pid
+			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
+		}
 	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountDockerSock)
 	}
 	return ctr, nil
+}
+
+// hasPrivilegedContainers tests if the main container or sidecars is privileged
+func hasPrivilegedContainers(tmpl *wfv1.Template) bool {
+	if containerIsPrivileged(tmpl.Container) {
+		return true
+	}
+	for _, side := range tmpl.Sidecars {
+		if containerIsPrivileged(&side.Container) {
+			return true
+		}
+	}
+	return false
+}
+
+func containerIsPrivileged(ctr *apiv1.Container) bool {
+	if ctr != nil && ctr.SecurityContext != nil && ctr.SecurityContext.Privileged != nil && *ctr.SecurityContext.Privileged {
+		return true
+	}
+	return false
 }
 
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
