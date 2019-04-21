@@ -1398,7 +1398,7 @@ spec:
           name: whalesay-cm
 `
 
-// TestInvalidResourceWorkflow verifies an error aganist a workflow of an invalid resource.
+// TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
 	err := ValidateWorkflow(wf, ValidateOpts{})
