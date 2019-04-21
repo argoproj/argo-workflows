@@ -74,8 +74,10 @@ func initExecutor() *executor.WorkflowExecutor {
 	clientset, err := kubernetes.NewForConfig(config)
 	checkErr(err)
 
-	podName, err := os.Hostname()
-	checkErr(err)
+	podName, ok := os.LookupEnv(common.EnvVarPodName)
+	if !ok {
+		log.Fatalf("Unable to determine pod name from environment variable %s", common.EnvVarPodName)
+	}
 
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
 	checkErr(err)
@@ -96,7 +98,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
 	vers := argo.GetVersion()
-	log.Infof("Executor (version: %s, build_date: %s) initialized with template:\n%s", vers, vers.BuildDate, string(yamlBytes))
+	log.Infof("Executor (version: %s, build_date: %s) initialized (pod: %s/%s) with template:\n%s", vers, vers.BuildDate, namespace, podName, string(yamlBytes))
 	return &wfExecutor
 }
 
