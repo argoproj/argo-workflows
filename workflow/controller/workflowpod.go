@@ -598,7 +598,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		switch ctr.Name {
 		case common.MainContainerName:
 			mainCtrIndex = i
-			break
 		}
 	}
 	if mainCtrIndex == -1 {
@@ -907,7 +906,7 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 			Key:  secret.Key,
 			Path: secret.Key,
 		}
-		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
+		if val := keyMap[secret.Name+"-"+secret.Key]; !val {
 			keyMap[secret.Name+"-"+secret.Key] = true
 			vol.Secret.Items = append(vol.Secret.Items, key)
 		}

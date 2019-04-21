@@ -491,7 +491,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	return &art, nil
 }
 
-// GetSecretFromVolMount will retrive the Secrets from VolumeMount
+// GetSecretFromVolMount will retrieve the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
 	return ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
 }
@@ -538,7 +538,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			Endpoint:  art.S3.Endpoint,
 			AccessKey: accessKey,
 			SecretKey: secretKey,
-			Secure:    art.S3.Insecure == nil || *art.S3.Insecure == false,
+			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
 			Region:    art.S3.Region,
 		}
 		return &driver, nil

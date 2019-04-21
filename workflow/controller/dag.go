@@ -202,9 +202,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 			woc.log.Println(depName)
 		}
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-		for _, outNodeID := range outboundNodeIDs {
-			outbound = append(outbound, outNodeID)
-		}
+		outbound = append(outbound, outboundNodeIDs...)
 	}
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
 	node.OutboundNodes = outbound

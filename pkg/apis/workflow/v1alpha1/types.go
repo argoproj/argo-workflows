@@ -1028,10 +1028,10 @@ func continues(c *ContinueOn, phase NodePhase) bool {
 	if c == nil {
 		return false
 	}
-	if c.Error == true && phase == NodeError {
+	if c.Error && phase == NodeError {
 		return true
 	}
-	if c.Failed == true && phase == NodeFailed {
+	if c.Failed && phase == NodeFailed {
 		return true
 	}
 	return false

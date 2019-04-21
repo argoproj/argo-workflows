@@ -497,7 +497,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
-		return
 	}
 
 	parallelPodNum := make(chan string, 500)
@@ -657,7 +656,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	}
 
 	if newDaemonStatus != nil {
-		if *newDaemonStatus == false {
+		if !*newDaemonStatus {
 			// if the daemon status switched to false, we prefer to just unset daemoned status field
 			// (as opposed to setting it to false)
 			newDaemonStatus = nil
@@ -1198,14 +1197,6 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	return node
 }
 
-// markNodeErrorClearOuput is a convenience method to mark a node with an error and clear the output
-func (woc *wfOperationCtx) markNodeErrorClearOuput(nodeName string, err error) *wfv1.NodeStatus {
-	nodeStatus := woc.markNodeError(nodeName, err)
-	nodeStatus.Outputs = nil
-	woc.wf.Status.Nodes[nodeStatus.ID] = *nodeStatus
-	return nodeStatus
-}
-
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
@@ -1288,9 +1279,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 			outbound = append(outbound, outboundNodeID)
 		} else {
 			subOutIDs := woc.getOutboundNodes(outboundNodeID)
-			for _, subOutID := range subOutIDs {
-				outbound = append(outbound, subOutID)
-			}
+			outbound = append(outbound, subOutIDs...)
 		}
 	}
 	return outbound
