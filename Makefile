@@ -127,7 +127,7 @@ endif
 
 .PHONY: lint
 lint:
-	gometalinter --config gometalinter.json ./...
+	golangci-lint run --config golangci.yml
 
 .PHONY: test
 test:
