@@ -87,25 +87,6 @@ var (
 	execEnvVars = []apiv1.EnvVar{
 		envFromField(common.EnvVarPodName, "metadata.name"),
 	}
-
-	volumeMountGoogleSecret = apiv1.VolumeMount{
-		Name:      common.GoogleSecretVolumeName,
-		MountPath: "/var/secrets/google",
-	}
-
-	googleCredentialSecretEnvVar = apiv1.EnvVar{
-		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-		Value: "/var/secrets/google/key.json",
-	}
-
-	volumeGoogleSecret = apiv1.Volume{
-		Name: common.GoogleSecretVolumeName,
-		VolumeSource: apiv1.VolumeSource{
-			Secret: &apiv1.SecretVolumeSource{
-				SecretName: common.GoogleSecretName,
-			},
-		},
-	}
 )
 
 // envFromField is a helper to return a EnvVar with the name and field
@@ -155,10 +136,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 	if woc.controller.Config.InstanceID != "" {
 		pod.ObjectMeta.Labels[common.LabelKeyControllerInstanceID] = woc.controller.Config.InstanceID
-	}
-
-	if common.GoogleSecretName != "" {
-		pod.Spec.Volumes = append(pod.Spec.Volumes, volumeGoogleSecret)
 	}
 
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
@@ -373,10 +350,6 @@ func (woc *wfOperationCtx) newExecContainer(name string, privileged bool) *apiv1
 		exec.Resources = *woc.controller.Config.ExecutorResources
 	}
 
-	if common.GoogleSecretName != "" {
-		exec.VolumeMounts = append(exec.VolumeMounts, volumeMountGoogleSecret)
-		exec.Env = append(exec.Env, googleCredentialSecretEnvVar)
-	}
 	return &exec
 }
 

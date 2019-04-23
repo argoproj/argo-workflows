@@ -599,7 +599,8 @@ func (s *S3Artifact) String() string {
 
 // GCSBucket contains the access information required for acting with a GCS bucket
 type GCSBucket struct {
-	Bucket string `json:"bucket"`
+	Bucket            string                  `json:"bucket"`
+	CredentialsSecret apiv1.SecretKeySelector `json:"credentialsSecret"`
 }
 
 // GCSArtifact is the location of a GCS artifact

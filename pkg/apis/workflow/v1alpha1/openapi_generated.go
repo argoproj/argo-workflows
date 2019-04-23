@@ -459,6 +459,11 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 							Format: "",
 						},
 					},
+					"credentialsSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
@@ -466,10 +471,11 @@ func schema_pkg_apis_workflow_v1alpha1_GCSArtifact(ref common.ReferenceCallback)
 						},
 					},
 				},
-				Required: []string{"bucket", "key"},
+				Required: []string{"bucket", "credentialsSecret", "key"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
@@ -485,11 +491,17 @@ func schema_pkg_apis_workflow_v1alpha1_GCSBucket(ref common.ReferenceCallback) c
 							Format: "",
 						},
 					},
+					"credentialsSecret": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 				},
-				Required: []string{"bucket"},
+				Required: []string{"bucket", "credentialsSecret"},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 

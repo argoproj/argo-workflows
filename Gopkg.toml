@@ -48,3 +48,11 @@ required = [
 [[constraint]]
   name = "github.com/ghodss/yaml"
   branch = "master"
+
+[[constraint]]
+  name = "cloud.google.com/go"
+  version = "0.26.0"
+
+[[constraint]]
+  name = "google.golang.org/api"
+  version = "0.3.2"
