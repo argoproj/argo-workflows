@@ -19,7 +19,7 @@ spec:
         value: 127.0.0.1
     sidecars:
     - name: dind
-      image: docker:17.10-dind
+      image: docker:18.09.4-dind
       securityContext:
         privileged: true
       # mirrorVolumeMounts will mount the same volumes specified in the main container

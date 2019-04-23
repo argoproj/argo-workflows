@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -11,16 +12,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfinformers "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	pkgwatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/watch"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	workflowv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/errors"
 )
 
 type logEntry struct {
@@ -101,8 +107,8 @@ func (p *logPrinter) PrintWorkflowLogs(workflow string) error {
 		return err
 	}
 	timeByPod := p.printRecentWorkflowLogs(wf)
-	if p.follow && wf.Status.Phase == v1alpha1.NodeRunning {
-		p.printLiveWorkflowLogs(wf, timeByPod)
+	if p.follow {
+		p.printLiveWorkflowLogs(wf.Name, wfClient, timeByPod)
 	}
 	return nil
 }
@@ -114,7 +120,7 @@ func (p *logPrinter) PrintPodLogs(podName string) error {
 		return err
 	}
 	var logs []logEntry
-	err = p.getPodLogs("", podName, namespace, p.follow, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
+	err = p.getPodLogs(context.Background(), "", podName, namespace, p.follow, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
 		logs = append(logs, entry)
 	})
 	if err != nil {
@@ -129,6 +135,11 @@ func (p *logPrinter) PrintPodLogs(podName string) error {
 // Prints logs for workflow pod steps and return most recent log timestamp per pod name
 func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*time.Time {
 	var podNodes []v1alpha1.NodeStatus
+	err := util.DecompressWorkflow(wf)
+	if err != nil {
+		log.Warn(err)
+		return nil
+	}
 	for _, node := range wf.Status.Nodes {
 		if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError {
 			podNodes = append(podNodes, node)
@@ -144,7 +155,7 @@ func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*
 		go func() {
 			defer wg.Done()
 			var podLogs []logEntry
-			err := p.getPodLogs(getDisplayName(node), node.ID, wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
+			err := p.getPodLogs(context.Background(), getDisplayName(node), node.ID, wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
 				podLogs = append(podLogs, entry)
 			})
 
@@ -178,35 +189,19 @@ func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*
 	return timeByPod
 }
 
-func (p *logPrinter) setupWorkflowInformer(namespace string, name string, callback func(wf *v1alpha1.Workflow, done bool)) cache.SharedIndexInformer {
-	wfcClientset := wfclientset.NewForConfigOrDie(restConfig)
-	wfInformerFactory := wfinformers.NewFilteredSharedInformerFactory(wfcClientset, 20*time.Minute, namespace, nil)
-	informer := wfInformerFactory.Argoproj().V1alpha1().Workflows().Informer()
-	informer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(old, new interface{}) {
-				updatedWf := new.(*v1alpha1.Workflow)
-				if updatedWf.Name == name {
-					callback(updatedWf, updatedWf.Status.Phase != v1alpha1.NodeRunning)
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				deletedWf := obj.(*v1alpha1.Workflow)
-				if deletedWf.Name == name {
-					callback(deletedWf, true)
-				}
-			},
-		},
-	)
-	return informer
-}
-
 // Prints live logs for workflow pods, starting from time specified in timeByPod name.
-func (p *logPrinter) printLiveWorkflowLogs(workflow *v1alpha1.Workflow, timeByPod map[string]*time.Time) {
+func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflowv1.WorkflowInterface, timeByPod map[string]*time.Time) {
 	logs := make(chan logEntry)
 	streamedPods := make(map[string]bool)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	processPods := func(wf *v1alpha1.Workflow) {
+		err := util.DecompressWorkflow(wf)
+		if err != nil {
+			log.Warn(err)
+			return
+		}
 		for id := range wf.Status.Nodes {
 			node := wf.Status.Nodes[id]
 			if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError && streamedPods[node.ID] == false {
@@ -218,7 +213,7 @@ func (p *logPrinter) printLiveWorkflowLogs(workflow *v1alpha1.Workflow, timeByPo
 						sinceTime := metav1.NewTime(podTime.Add(time.Second))
 						sinceTimePtr = &sinceTime
 					}
-					err := p.getPodLogs(getDisplayName(node), node.ID, wf.Namespace, true, nil, nil, sinceTimePtr, func(entry logEntry) {
+					err := p.getPodLogs(ctx, getDisplayName(node), node.ID, wf.Namespace, true, nil, nil, sinceTimePtr, func(entry logEntry) {
 						logs <- entry
 					})
 					if err != nil {
@@ -229,20 +224,31 @@ func (p *logPrinter) printLiveWorkflowLogs(workflow *v1alpha1.Workflow, timeByPo
 		}
 	}
 
-	processPods(workflow)
-	informer := p.setupWorkflowInformer(workflow.Namespace, workflow.Name, func(wf *v1alpha1.Workflow, done bool) {
-		if done {
-			close(logs)
-		} else {
-			processPods(wf)
-		}
-	})
-
-	stopChannel := make(chan struct{})
 	go func() {
-		informer.Run(stopChannel)
+		defer close(logs)
+		fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
+		listOpts := metav1.ListOptions{FieldSelector: fieldSelector.String()}
+		lw := &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return wfClient.List(listOpts)
+			},
+			WatchFunc: func(options metav1.ListOptions) (pkgwatch.Interface, error) {
+				return wfClient.Watch(listOpts)
+			},
+		}
+		_, err := watch.UntilWithSync(ctx, lw, &v1alpha1.Workflow{}, nil, func(event pkgwatch.Event) (b bool, e error) {
+			if wf, ok := event.Object.(*v1alpha1.Workflow); ok {
+				if !wf.Status.Completed() {
+					processPods(wf)
+				}
+				return wf.Status.Completed(), nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
-	defer close(stopChannel)
 
 	for entry := range logs {
 		p.printLogEntry(entry)
@@ -273,35 +279,56 @@ func (p *logPrinter) printLogEntry(entry logEntry) {
 	fmt.Println(line)
 }
 
-func (p *logPrinter) ensureContainerStarted(podName string, podNamespace string, container string, retryCnt int, retryTimeout time.Duration) error {
-	for retryCnt > 0 {
-		pod, err := p.kubeClient.CoreV1().Pods(podNamespace).Get(podName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		var containerStatus *v1.ContainerStatus
-		for _, status := range pod.Status.ContainerStatuses {
-			if status.Name == container {
-				containerStatus = &status
-				break
-			}
-		}
-		if containerStatus == nil || containerStatus.State.Waiting != nil {
-			time.Sleep(retryTimeout)
-			retryCnt--
-		} else {
-			return nil
+func (p *logPrinter) hasContainerStarted(podName string, podNamespace string, container string) (bool, error) {
+	pod, err := p.kubeClient.CoreV1().Pods(podNamespace).Get(podName, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	var containerStatus *v1.ContainerStatus
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == container {
+			containerStatus = &status
+			break
 		}
 	}
-	return fmt.Errorf("container '%s' of pod '%s' has not started within expected timeout", container, podName)
+	if containerStatus == nil {
+		return false, nil
+	}
+
+	if containerStatus.State.Waiting != nil {
+		return false, nil
+	}
+	return true, nil
 }
 
 func (p *logPrinter) getPodLogs(
-	displayName string, podName string, podNamespace string, follow bool, tail *int64, sinceSeconds *int64, sinceTime *metav1.Time, callback func(entry logEntry)) error {
-	err := p.ensureContainerStarted(podName, podNamespace, p.container, 10, time.Second)
-	if err != nil {
-		return err
+	ctx context.Context,
+	displayName string,
+	podName string,
+	podNamespace string,
+	follow bool,
+	tail *int64,
+	sinceSeconds *int64,
+	sinceTime *metav1.Time,
+	callback func(entry logEntry)) error {
+
+	for ctx.Err() == nil {
+		hasStarted, err := p.hasContainerStarted(podName, podNamespace, p.container)
+
+		if err != nil {
+			return err
+		}
+		if !hasStarted {
+			if follow {
+				time.Sleep(1 * time.Second)
+			} else {
+				return nil
+			}
+		} else {
+			break
+		}
 	}
+
 	stream, err := p.kubeClient.CoreV1().Pods(podNamespace).GetLogs(podName, &v1.PodLogOptions{
 		Container:    p.container,
 		Follow:       follow,

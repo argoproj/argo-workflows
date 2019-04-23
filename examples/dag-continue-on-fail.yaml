@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-contiue-on-fail-
+spec:
+  entrypoint: workflow
+  templates:
+  - name: workflow
+    dag:
+      tasks:
+      - name: A
+        template: whalesay
+      - name: B
+        dependencies: [A]
+        template: intentional-fail
+        continueOn:
+          failed: true
+      - name: C
+        dependencies: [A]
+        template: whalesay
+      - name: D
+        dependencies: [B, C]
+        template: whalesay
+      - name: E
+        dependencies: [A]
+        template: intentional-fail
+      - name: F
+        dependencies: [A]
+        template: whalesay
+      - name: G
+        dependencies: [E, F]
+        template: whalesay
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo intentional failure; exit 1"]

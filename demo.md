@@ -32,13 +32,16 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 ```
 
 ## 3. Configure the service account to run workflows
-For clusters with RBAC enabled, the 'default' service account is too limited to support features
-like artifacts, outputs, access to secrets, etc... Run the following command to grant admin
-privileges to the 'default' service account in the namespace 'default':
+
+To run all of the examples in this guide, the 'default' service account is too limited to support
+features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
+command to grant admin privileges to the 'default' service account in the namespace 'default':
 ```
 kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
-NOTE: You can also submit workflows which run with a different service account using:
+For the bare minimum set of privileges which a workflow needs to function, see
+[Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
+service account using:
 ```
 argo submit --serviceaccount <name>
 ```
@@ -64,7 +67,7 @@ kubectl get po --selector=workflows.argoproj.io/workflow=hello-world-xxx --show-
 kubectl logs hello-world-yyy -c main
 ```
 
-Additional examples are availabe [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
+Additional examples are available [here](https://github.com/argoproj/argo/blob/master/examples/README.md).
 
 ## 5. Install an Artifact Repository
 
@@ -72,18 +75,21 @@ Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositori
 uses Minio for the sake of portability. Instructions on how to configure other artifact repositories
 are [here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 ```
-brew install kubernetes-helm # mac
-helm init
-helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer --set persistence.enabled=false
+helm install stable/minio \
+  --name argo-artifacts \
+  --set service.type=LoadBalancer \
+  --set defaultBucket.enabled=true \
+  --set defaultBucket.name=my-bucket \
+  --set persistence.enabled=false
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-kubectl get service argo-artifacts-minio -o wide
+kubectl get service argo-artifacts -o wide
 ```
 On Minikube:
 ```
-minikube service --url argo-artifacts-minio
+minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -95,8 +101,8 @@ Create a bucket named `my-bucket` from the Minio UI.
 
 ## 6. Reconfigure the workflow controller to use the Minio artifact repository
 
-Edit the workflow-controller config map to reference the service name (argo-artifacts-minio) and
-secret (argo-artifacts-minio) created by the helm install:
+Edit the workflow-controller config map to reference the service name (argo-artifacts) and
+secret (argo-artifacts) created by the helm install:
 ```
 kubectl edit cm -n argo workflow-controller-configmap
 ...
@@ -105,18 +111,18 @@ data:
     artifactRepository:
       s3:
         bucket: my-bucket
-        endpoint: argo-artifacts-minio.default:9000
+        endpoint: argo-artifacts.default:9000
         insecure: true
         # accessKeySecret and secretKeySecret are secret selectors.
-        # It references the k8s secret named 'argo-artifacts-minio'
+        # It references the k8s secret named 'argo-artifacts'
         # which was created during the minio helm install. The keys,
         # 'accesskey' and 'secretkey', inside that secret are where the
         # actual minio credentials are stored.
         accessKeySecret:
-          name: argo-artifacts-minio
+          name: argo-artifacts
           key: accesskey
         secretKeySecret:
-          name: argo-artifacts-minio
+          name: argo-artifacts
           key: secretkey
 ```
 

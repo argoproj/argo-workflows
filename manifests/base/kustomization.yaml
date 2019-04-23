@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+- crds
+- workflow-controller
+- argo-ui
+
+images:
+- name: argoproj/argoui
+  newName: argoproj/argoui
+  newTag: v2.3.0-rc2
+- name: argoproj/workflow-controller
+  newName: argoproj/workflow-controller
+  newTag: v2.3.0-rc2

@@ -435,14 +435,16 @@ func TestNestedTemplateParallelismLimit(t *testing.T) {
 // TestSidecarResourceLimits verifies resource limits on the sidecar can be set in the controller config
 func TestSidecarResourceLimits(t *testing.T) {
 	controller := newController()
-	controller.Config.ExecutorResources = &apiv1.ResourceRequirements{
-		Limits: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse("0.5"),
-			apiv1.ResourceMemory: resource.MustParse("512Mi"),
-		},
-		Requests: apiv1.ResourceList{
-			apiv1.ResourceCPU:    resource.MustParse("0.1"),
-			apiv1.ResourceMemory: resource.MustParse("64Mi"),
+	controller.Config.Executor = &apiv1.Container{
+		Resources: apiv1.ResourceRequirements{
+			Limits: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.5"),
+				apiv1.ResourceMemory: resource.MustParse("512Mi"),
+			},
+			Requests: apiv1.ResourceList{
+				apiv1.ResourceCPU:    resource.MustParse("0.1"),
+				apiv1.ResourceMemory: resource.MustParse("64Mi"),
+			},
 		},
 	}
 	wf := unmarshalWF(helloWorldWf)
@@ -765,19 +767,19 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 		},
 	}
 	// Make sure if the artifact is not global, don't add to scope
-	woc.addArtifactToGlobalScope(art)
+	woc.addArtifactToGlobalScope(art, nil)
 	assert.Nil(t, woc.wf.Status.Outputs)
 
 	// Now mark it as global. Verify it is added to workflow outputs
 	art.GlobalName = "global-art"
-	woc.addArtifactToGlobalScope(art)
+	woc.addArtifactToGlobalScope(art, nil)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "some/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
 
 	// Change the value and verify update is reflected
 	art.S3.Key = "new/key"
-	woc.addArtifactToGlobalScope(art)
+	woc.addArtifactToGlobalScope(art, nil)
 	assert.Equal(t, 1, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[0].Name)
 	assert.Equal(t, "new/key", woc.wf.Status.Outputs.Artifacts[0].S3.Key)
@@ -785,7 +787,7 @@ func TestAddGlobalArtifactToScope(t *testing.T) {
 	// Add a new global artifact
 	art.GlobalName = "global-art2"
 	art.S3.Key = "new/new/key"
-	woc.addArtifactToGlobalScope(art)
+	woc.addArtifactToGlobalScope(art, nil)
 	assert.Equal(t, 2, len(woc.wf.Status.Outputs.Artifacts))
 	assert.Equal(t, art.GlobalName, woc.wf.Status.Outputs.Artifacts[1].Name)
 	assert.Equal(t, "new/new/key", woc.wf.Status.Outputs.Artifacts[1].S3.Key)
@@ -885,4 +887,119 @@ func TestExpandWithSequence(t *testing.T) {
 	assert.Equal(t, 10, len(items))
 	assert.Equal(t, "testuser01", items[0].Value.(string))
 	assert.Equal(t, "testuser0A", items[9].Value.(string))
+}
+
+var metadataTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: metadata-template
+  labels:
+    image: foo:bar
+  annotations:
+    k8s-webhook-handler.io/repo: "git@github.com:argoproj/argo.git"
+    k8s-webhook-handler.io/revision: 1e111caa1d2cc672b3b53c202b96a5f660a7e9b2
+spec:
+  entrypoint: foo
+  templates:
+    - name: foo
+      container:
+        image: "{{workflow.labels.image}}"
+        env:
+          - name: REPO
+            value: "{{workflow.annotations.k8s-webhook-handler.io/repo}}"
+          - name: REVISION
+            value: "{{workflow.annotations.k8s-webhook-handler.io/revision}}"
+        command: [sh, -c]
+        args: ["echo hello world"]
+`
+
+func TestMetadataPassing(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(metadataTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	var (
+		pod       = pods.Items[0]
+		container = pod.Spec.Containers[1]
+		foundRepo = false
+		foundRev  = false
+	)
+	for _, ev := range container.Env {
+		switch ev.Name {
+		case "REPO":
+			assert.Equal(t, "git@github.com:argoproj/argo.git", ev.Value)
+			foundRepo = true
+		case "REVISION":
+			assert.Equal(t, "1e111caa1d2cc672b3b53c202b96a5f660a7e9b2", ev.Value)
+			foundRev = true
+		}
+	}
+	assert.True(t, foundRepo)
+	assert.True(t, foundRev)
+	assert.Equal(t, "foo:bar", container.Image)
+}
+
+var ioPathPlaceholders = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-path-placeholders-
+spec:
+  entrypoint: head-lines
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+    artifacts:
+    - name: text
+      raw:
+        data: |
+          1
+          2
+          3
+          4
+          5
+  templates:
+  - name: head-lines
+    inputs:
+      parameters:
+      - name: lines-count
+      artifacts:
+      - name: text
+        path: /inputs/text/data
+    outputs:
+      parameters:
+      - name: actual-lines-count
+        valueFrom:
+          path: /outputs/actual-lines-count/data
+      artifacts:
+      - name: text
+        path: /outputs/text/data
+    container:
+      image: busybox
+      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
+`
+
+func TestResolveIOPathPlaceholders(t *testing.T) {
+	wf := unmarshalWF(ioPathPlaceholders)
+	woc := newWoc(*wf)
+	woc.controller.Config.ArtifactRepository.S3 = new(S3ArtifactRepository)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
 }

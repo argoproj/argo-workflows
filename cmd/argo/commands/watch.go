@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 func NewWatchCommand() *cobra.Command {
@@ -53,6 +54,8 @@ func watchWorkflow(name string) {
 			errors.CheckError(err)
 			continue
 		}
+		err := util.DecompressWorkflow(wf)
+		errors.CheckError(err)
 		print("\033[H\033[2J")
 		print("\033[0;0H")
 		printWorkflowHelper(wf, "")

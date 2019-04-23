@@ -28,7 +28,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 	}
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
-			_ = woc.killDeamonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
 	stepsCtx := stepsContext{
@@ -155,6 +155,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		woc.log.Debugf("Step group node %v already marked completed", node)
 		return node
 	}
+
 	// First, resolve any references to outputs from previous steps, and perform substitution
 	stepGroup, err := woc.resolveReferences(stepGroup, stepsCtx.scope)
 	if err != nil {
@@ -167,6 +168,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		return woc.markNodeError(sgNodeName, err)
 	}
 
+	// Maps nodes to their steps
+	nodeSteps := make(map[string]wfv1.WorkflowStep)
+
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -174,6 +178,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, "", stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
@@ -201,10 +206,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 		}
 		if childNode != nil {
+			nodeSteps[childNodeName] = step
 			woc.addChildNode(sgNodeName, childNodeName)
-			if childNode.Completed() && !childNode.Successful() {
-				break
-			}
 		}
 	}
 
@@ -218,7 +221,8 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
-		if !childNode.Successful() {
+		step := nodeSteps[childNode.Name]
+		if !childNode.Successful() && !step.ContinuesOn(childNode.Phase) {
 			failMessage := fmt.Sprintf("child '%s' failed", childNodeID)
 			woc.log.Infof("Step group node %s deemed failed: %s", node, failMessage)
 			return woc.markNodePhase(node.Name, wfv1.NodeFailed, failMessage)
@@ -274,6 +278,12 @@ func shouldExecute(when string) (bool, error) {
 func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scope *wfScope) ([]wfv1.WorkflowStep, error) {
 	newStepGroup := make([]wfv1.WorkflowStep, len(stepGroup))
 
+	// Step 0: replace all parameter scope references for volumes
+	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	if err != nil {
+		return nil, err
+	}
+
 	for i, step := range stepGroup {
 		// Step 1: replace all parameter scope references in the step
 		// TODO: improve this
@@ -281,15 +291,8 @@ func (woc *wfOperationCtx) resolveReferences(stepGroup []wfv1.WorkflowStep, scop
 		if err != nil {
 			return nil, errors.InternalWrapError(err)
 		}
-		replaceMap := make(map[string]string)
-		for key, val := range scope.scope {
-			valStr, ok := val.(string)
-			if ok {
-				replaceMap[key] = valStr
-			}
-		}
 		fstTmpl := fasttemplate.New(string(stepBytes), "{{", "}}")
-		newStepStr, err := common.Replace(fstTmpl, replaceMap, true)
+		newStepStr, err := common.Replace(fstTmpl, scope.replaceMap(), true)
 		if err != nil {
 			return nil, err
 		}

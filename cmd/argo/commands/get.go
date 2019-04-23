@@ -8,12 +8,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const onExitSuffix = "onExit"
@@ -33,6 +33,10 @@ func NewGetCommand() *cobra.Command {
 			}
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = util.DecompressWorkflow(wf)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -71,7 +75,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 		serviceAccount = "default"
 	}
 	fmt.Printf(fmtStr, "ServiceAccount:", serviceAccount)
-	fmt.Printf(fmtStr, "Status:", worklowStatus(wf))
+	fmt.Printf(fmtStr, "Status:", workflowStatus(wf))
 	if wf.Status.Message != "" {
 		fmt.Printf(fmtStr, "Message:", wf.Status.Message)
 	}

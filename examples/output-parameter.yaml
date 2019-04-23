@@ -32,7 +32,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["echo -n hello world > /tmp/hello_world.txt"]
+      args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
     outputs:
       parameters:
       - name: hello-param

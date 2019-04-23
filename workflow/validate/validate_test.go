@@ -3,17 +3,19 @@ package validate
 import (
 	"testing"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/common"
 )
 
 // validate is a test helper to accept YAML as a string and return
 // its validation result.
 func validate(yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wf)
+	return ValidateWorkflow(wf, ValidateOpts{})
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -161,6 +163,76 @@ func TestUnresolved(t *testing.T) {
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "failed to resolve")
 	}
+}
+
+var ioArtifactPaths = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-path-placeholders-
+spec:
+  entrypoint: head-lines
+  arguments:
+    parameters:
+    - name: lines-count
+      value: 3
+    artifacts:
+    - name: text
+      raw:
+        data: |
+          1
+          2
+          3
+          4
+          5
+  templates:
+  - name: head-lines
+    inputs:
+      parameters:
+      - name: lines-count
+      artifacts:
+      - name: text
+        path: /inputs/text/data
+    outputs:
+      parameters:
+      - name: actual-lines-count
+        valueFrom:
+          path: /outputs/actual-lines-count/data
+      artifacts:
+      - name: text
+        path: /outputs/text/data
+    container:
+      image: busybox
+      command: [sh, -c, 'head -n {{inputs.parameters.lines-count}} <"{{inputs.artifacts.text.path}}" | tee "{{outputs.artifacts.text.path}}" | wc -l > "{{outputs.parameters.actual-lines-count.path}}"']
+`
+
+func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
+	err := validate(ioArtifactPaths)
+	assert.Nil(t, err)
+}
+
+var outputParameterPath = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: get-current-date-
+spec:
+  entrypoint: get-current-date
+  templates:
+  - name: get-current-date
+    outputs:
+      parameters:
+      - name: current-date
+        valueFrom:
+          path: /tmp/current-date
+    container:
+      image: busybox
+      command: [sh, -c, 'date > {{outputs.parameters.current-date.path}}']
+`
+
+func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
+	err := validate(outputParameterPath)
+	assert.Nil(t, err)
 }
 
 var stepOutputReferences = `
@@ -749,13 +821,13 @@ spec:
 func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
-	err := ValidateWorkflow(wf)
+	err := ValidateWorkflow(wf, ValidateOpts{})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "already mounted")
 	}
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
-	err = ValidateWorkflow(wf)
+	err = ValidateWorkflow(wf, ValidateOpts{})
 	assert.Nil(t, err)
 }
 
@@ -1041,7 +1113,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"))
+	err := ValidateWorkflow(test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
 	assert.Nil(t, err)
 }
 
@@ -1066,9 +1138,9 @@ spec:
 // TestSpecArgumentNoValue we allow parameters to have no value at the spec level during linting
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
-	err := ValidateWorkflow(wf, true)
+	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
 	assert.Nil(t, err)
-	err = ValidateWorkflow(wf)
+	err = ValidateWorkflow(wf, ValidateOpts{})
 	assert.NotNil(t, err)
 }
 
@@ -1103,7 +1175,7 @@ spec:
 // TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
-	err := ValidateWorkflow(wf, true)
+	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
 	assert.Nil(t, err)
 }
 
@@ -1133,12 +1205,154 @@ spec:
     container:
       image: alpine:latest
       command: [echo, "{{inputs.parameters.num}}"]
-
 `
 
 // TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
-	err := ValidateWorkflow(wf, true)
+	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
 	assert.Error(t, err)
+}
+
+var customVariableInput = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:{{user.username}}
+`
+
+// TestCustomTemplatVariable verifies custom template variable
+func TestCustomTemplatVariable(t *testing.T) {
+	wf := unmarshalWf(customVariableInput)
+	err := ValidateWorkflow(wf, ValidateOpts{Lint: true})
+	assert.Equal(t, err, nil)
+}
+
+var baseImageOutputArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: base-image-out-art-
+spec:
+  entrypoint: base-image-out-art
+  templates:
+  - name: base-image-out-art
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+    outputs:
+      artifacts:
+      - name: tmp
+        path: /tmp
+`
+
+var baseImageOutputParameter = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: base-image-out-art-
+spec:
+  entrypoint: base-image-out-art
+  templates:
+  - name: base-image-out-art
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+    outputs:
+      parameters:
+      - name: tmp
+        valueFrom:
+          path: /tmp/file
+`
+
+var volumeMountOutputArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: base-image-out-art-
+spec:
+  entrypoint: base-image-out-art
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  templates:
+  - name: base-image-out-art
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+    outputs:
+      artifacts:
+      - name: workdir
+        path: /mnt/vol
+`
+
+var baseImageDirWithEmptyDirOutputArtifact = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: base-image-out-art-
+spec:
+  entrypoint: base-image-out-art
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  templates:
+  - name: base-image-out-art
+    container:
+      image: alpine:latest
+      command: [echo, hello]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/vol
+    outputs:
+      artifacts:
+      - name: workdir
+        path: /mnt
+`
+
+// TestBaseImageOutputVerify verifies we error when we detect the condition when the container
+// runtime executor doesn't support output artifacts from a base image layer, and fails validation
+func TestBaseImageOutputVerify(t *testing.T) {
+	wfBaseOutArt := unmarshalWf(baseImageOutputArtifact)
+	wfBaseOutParam := unmarshalWf(baseImageOutputParameter)
+	wfEmptyDirOutArt := unmarshalWf(volumeMountOutputArtifact)
+	wfBaseWithEmptyDirOutArt := unmarshalWf(baseImageDirWithEmptyDirOutputArtifact)
+	var err error
+
+	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
+		switch executor {
+		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
+			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.Error(t, err)
+			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.Error(t, err)
+			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.Error(t, err)
+		case common.ContainerRuntimeExecutorPNS:
+			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
+			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
+			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.Error(t, err)
+		case common.ContainerRuntimeExecutorDocker, "":
+			err = ValidateWorkflow(wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
+			err = ValidateWorkflow(wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
+			err = ValidateWorkflow(wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			assert.NoError(t, err)
+		}
+		err = ValidateWorkflow(wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+		assert.NoError(t, err)
+	}
 }

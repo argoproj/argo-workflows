@@ -31,7 +31,7 @@ required = [
 
 [[constraint]]
   name = "github.com/spf13/cobra"
-  branch = "master"
+  revision = "fe5e611709b0c57fa4a89136deaa8e1d4004d053"
 
 [[constraint]]
   name = "gopkg.in/src-d/go-git.v4"
@@ -48,6 +48,20 @@ required = [
 [[constraint]]
   name = "github.com/ghodss/yaml"
   branch = "master"
+
+# vendor/k8s.io/client-go/plugin/pkg/client/auth/azure/azure.go:300:25:
+# cannot call non-function spt.Token (type adal.Token)
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
+
+[[constraint]]
+  name = "github.com/colinmarc/hdfs"
+  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+
+[[constraint]]
+  name = "gopkg.in/jcmturner/gokrb5.v5"
+  version = "5.3.0"
 
 [[constraint]]
   name = "cloud.google.com/go"

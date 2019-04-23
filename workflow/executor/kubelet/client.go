@@ -15,8 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/argoproj/argo/util"
-
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
@@ -30,8 +28,6 @@ const (
 )
 
 type kubeletClient struct {
-	execcommon.KubernetesClientInterface
-
 	httpClient      *http.Client
 	httpHeader      http.Header
 	websocketDialer *websocket.Dialer
@@ -41,6 +37,8 @@ type kubeletClient struct {
 	// - my-host.com:10250
 	kubeletEndpoint string
 }
+
+var _ execcommon.KubernetesClientInterface = &kubeletClient{}
 
 func newKubeletClient() (*kubeletClient, error) {
 	kubeletHost := os.Getenv(common.EnvVarDownwardAPINodeIP)
@@ -127,6 +125,26 @@ func (k *kubeletClient) getPodList() (*v1.PodList, error) {
 	return podList, resp.Body.Close()
 }
 
+func (k *kubeletClient) GetLogStream(containerID string) (io.ReadCloser, error) {
+	podList, err := k.getPodList()
+	if err != nil {
+		return nil, err
+	}
+	for _, pod := range podList.Items {
+		for _, container := range pod.Status.ContainerStatuses {
+			if execcommon.GetContainerID(&container) != containerID {
+				continue
+			}
+			resp, err := k.doRequestLogs(pod.Namespace, pod.Name, container.Name)
+			if err != nil {
+				return nil, err
+			}
+			return resp.Body, nil
+		}
+	}
+	return nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
+}
+
 func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) (*http.Response, error) {
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/containerLogs/%s/%s/%s", k.kubeletEndpoint, namespace, podName, containerName))
 	if err != nil {
@@ -147,39 +165,7 @@ func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) 
 	return resp, nil
 }
 
-func (k *kubeletClient) getLogs(namespace, podName, containerName string) (string, error) {
-	resp, err := k.doRequestLogs(namespace, podName, containerName)
-	if resp != nil {
-		defer func() { _ = resp.Body.Close() }()
-	}
-	if err != nil {
-		return "", err
-	}
-	b, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", errors.InternalWrapError(err)
-	}
-	return string(b), resp.Body.Close()
-}
-
-func (k *kubeletClient) saveLogsToFile(namespace, podName, containerName, path string) error {
-	resp, err := k.doRequestLogs(namespace, podName, containerName)
-	if resp != nil {
-		defer func() { _ = resp.Body.Close() }()
-	}
-	if err != nil {
-		return err
-	}
-	outFile, err := os.Create(path)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	defer util.Close(outFile)
-	_, err = io.Copy(outFile, resp.Body)
-	return err
-}
-
-func (k *kubeletClient) getContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
+func (k *kubeletClient) GetContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
 	podList, err := k.getPodList()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
@@ -193,38 +179,6 @@ func (k *kubeletClient) getContainerStatus(containerID string) (*v1.Pod, *v1.Con
 		}
 	}
 	return nil, nil, errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
-}
-
-func (k *kubeletClient) GetContainerLogs(containerID string) (string, error) {
-	podList, err := k.getPodList()
-	if err != nil {
-		return "", errors.InternalWrapError(err)
-	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&container) != containerID {
-				continue
-			}
-			return k.getLogs(pod.Namespace, pod.Name, container.Name)
-		}
-	}
-	return "", errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
-}
-
-func (k *kubeletClient) SaveLogsToFile(containerID, path string) error {
-	podList, err := k.getPodList()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	for _, pod := range podList.Items {
-		for _, container := range pod.Status.ContainerStatuses {
-			if execcommon.GetContainerID(&container) != containerID {
-				continue
-			}
-			return k.saveLogsToFile(pod.Namespace, pod.Name, container.Name, path)
-		}
-	}
-	return errors.New(errors.CodeNotFound, fmt.Sprintf("containerID %q is not found in the pod list", containerID))
 }
 
 func (k *kubeletClient) exec(u *url.URL) (*url.URL, error) {
@@ -287,7 +241,7 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 	}
 }
 
-// CreateArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
+// createArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
 func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
 	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
 }
@@ -330,7 +284,7 @@ func (k *kubeletClient) WaitForTermination(containerID string, timeout time.Dura
 	return execcommon.WaitForTermination(k, containerID, timeout)
 }
 
-func (k *kubeletClient) killContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
+func (k *kubeletClient) KillContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
 	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
 	if err != nil {
 		return errors.InternalWrapError(err)

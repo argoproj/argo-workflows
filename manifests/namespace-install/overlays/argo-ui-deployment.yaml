@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-ui
+spec:
+  template:
+    spec:
+      containers:
+        - name: argo-ui
+          env:
+          - name: FORCE_NAMESPACE_ISOLATION
+            value: "true"

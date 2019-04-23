@@ -79,7 +79,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 			unsuccessfulPhase = node.Phase
 		}
 		if node.Type == wfv1.NodeTypeRetry {
-			if hasMoreRetries(&node, d.wf) {
+			if node.Successful() {
+				retriesExhausted = false
+			} else if hasMoreRetries(&node, d.wf) {
 				retriesExhausted = false
 			}
 		}
@@ -106,6 +108,10 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 }
 
 func hasMoreRetries(node *wfv1.NodeStatus, wf *wfv1.Workflow) bool {
+	if node.Phase == wfv1.NodeSucceeded {
+		return false
+	}
+
 	if len(node.Children) == 0 {
 		return true
 	}
@@ -126,7 +132,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	}
 	defer func() {
 		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
-			_ = woc.killDeamonedChildren(node.ID)
+			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
 
@@ -227,7 +233,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.getTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
-				if !depNode.Successful() {
+				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
 				}
 				continue
@@ -251,12 +257,21 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	// All our dependencies were satisfied and successful. It's our turn to run
 
+	taskGroupNode := woc.getNodeByName(nodeName)
+	if taskGroupNode != nil && taskGroupNode.Type != wfv1.NodeTypeTaskGroup {
+		taskGroupNode = nil
+	}
 	// connectDependencies is a helper to connect our dependencies to current task as children
 	connectDependencies := func(taskNodeName string) {
-		if len(task.Dependencies) == 0 {
+		if len(task.Dependencies) == 0 || taskGroupNode != nil {
 			// if we had no dependencies, then we are a root task, and we should connect the
 			// boundary node as our parent
-			woc.addChildNode(dagCtx.boundaryName, taskNodeName)
+			if taskGroupNode == nil {
+				woc.addChildNode(dagCtx.boundaryName, taskNodeName)
+			} else {
+				woc.addChildNode(taskGroupNode.Name, taskNodeName)
+			}
+
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range task.Dependencies {
@@ -287,6 +302,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		return
 	}
 
+	// If DAG task has withParam of with withSequence then we need to create virtual node of type TaskGroup.
+	// For example, if we had task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
+	// need to create a node for A.
+	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
+		if taskGroupNode == nil {
+			connectDependencies(nodeName)
+			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task.Template, dagCtx.boundaryID, wfv1.NodeRunning, "")
+		}
+	}
+
 	for _, t := range expandedTasks {
 		node = dagCtx.getTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
@@ -311,12 +336,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		_, _ = woc.executeTemplate(t.Template, t.Arguments, taskNodeName, dagCtx.boundaryID)
 	}
 
-	// If we expanded the task, we still need to create the task entry for the non-expanded node,
-	// since dependant tasks will look to it, when deciding when to execute. For example, if we had
-	// task A with withItems of ['foo', 'bar'] which expanded to ['A(0:foo)', 'A(1:bar)'], we still
-	// need to create a node for A, after the withItems have completed.
-	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
-		nodeStatus := wfv1.NodeSucceeded
+	if taskGroupNode != nil {
+		groupPhase := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.getTaskNode(t.Name)
@@ -324,17 +345,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 				return
 			}
 			if !node.Successful() {
-				nodeStatus = node.Phase
+				groupPhase = node.Phase
 			}
 		}
-		woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task.Template, dagCtx.boundaryID, nodeStatus, "")
-		if len(expandedTasks) > 0 {
-			for _, t := range expandedTasks {
-				woc.addChildNode(dagCtx.taskNodeName(t.Name), nodeName)
-			}
-		} else {
-			connectDependencies(nodeName)
-		}
+		woc.markNodePhase(taskGroupNode.Name, groupPhase)
 	}
 }
 
@@ -366,6 +380,13 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 
 	// Perform replacement
+	// Replace woc.volumes
+	err := woc.substituteParamsInVolumes(scope.replaceMap())
+	if err != nil {
+		return nil, err
+	}
+
+	// Replace task's parameters
 	taskBytes, err := json.Marshal(task)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)

@@ -18,16 +18,18 @@ import (
 
 // cliSubmitOpts holds submition options specific to CLI submission (e.g. controlling output)
 type cliSubmitOpts struct {
-	output string // --output
-	wait   bool   // --wait
-	watch  bool   // --watch
-	strict bool   // --strict
+	output   string // --output
+	wait     bool   // --wait
+	watch    bool   // --watch
+	strict   bool   // --strict
+	priority *int32 // --priority
 }
 
 func NewSubmitCommand() *cobra.Command {
 	var (
 		submitOpts    util.SubmitOpts
 		cliSubmitOpts cliSubmitOpts
+		priority      int32
 	)
 	var command = &cobra.Command{
 		Use:   "submit FILE1 FILE2...",
@@ -37,6 +39,10 @@ func NewSubmitCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
+			if cmd.Flag("priority").Changed {
+				cliSubmitOpts.priority = &priority
+			}
+
 			SubmitWorkflows(args, &submitOpts, &cliSubmitOpts)
 		},
 	}
@@ -51,6 +57,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	return command
 }
 
@@ -106,6 +113,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 
 	var workflowNames []string
 	for _, wf := range workflows {
+		wf.Spec.Priority = cliOpts.priority
 		created, err := util.SubmitWorkflow(wfClient, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
@@ -137,7 +145,7 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 
 func waitOrWatch(workflowNames []string, cliSubmitOpts cliSubmitOpts) {
 	if cliSubmitOpts.wait {
-		WaitWorkflows(workflowNames, false, cliSubmitOpts.output == "json")
+		WaitWorkflows(workflowNames, false, !(cliSubmitOpts.output == "" || cliSubmitOpts.output == "wide"))
 	} else if cliSubmitOpts.watch {
 		watchWorkflow(workflowNames[0])
 	}
