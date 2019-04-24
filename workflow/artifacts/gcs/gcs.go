@@ -6,6 +6,7 @@ import (
 	"errors"
 	argoErrors "github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 	"io"
@@ -59,7 +60,7 @@ func (gcsDriver *GCSArtifactDriver) saveToFile(inputArtifact *wfv1.Artifact, fil
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer util.Close(r)
 
 	_, err = io.Copy(outputFile, r)
 	if err != nil {
@@ -97,7 +98,7 @@ func (gcsDriver *GCSArtifactDriver) saveToGCS(outputArtifact *wfv1.Artifact, fil
 		return errors.New("only single files can be saved to GCS, not entire directories")
 	}
 
-	defer inputFile.Close()
+	defer util.Close(inputFile)
 
 	bucket := gcsClient.Bucket(outputArtifact.GCS.Bucket)
 	object := bucket.Object(outputArtifact.GCS.Key)

@@ -554,7 +554,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			return nil, err
 		}
 		driver := gcs.GCSArtifactDriver{
-			CredsJSONData: []byte(credsJSONData),
+			CredsJSONData: credsJSONData,
 		}
 		return &driver, nil
 	}
