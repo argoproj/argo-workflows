@@ -4,7 +4,6 @@ import (
 	"cloud.google.com/go/storage"
 	"context"
 	"errors"
-	"fmt"
 	argoErrors "github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
@@ -21,7 +20,6 @@ type GCSArtifactDriver struct {
 func (gcsDriver *GCSArtifactDriver) newGcsClient() (client *storage.Client, err error) {
 	gcsDriver.Context = context.Background()
 
-	fmt.Println(string(gcsDriver.CredsJSONData))
 	client, err = storage.NewClient(gcsDriver.Context, option.WithCredentialsJSON(gcsDriver.CredsJSONData))
 	if err != nil {
 		return nil, argoErrors.InternalWrapError(err)

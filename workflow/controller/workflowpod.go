@@ -387,7 +387,6 @@ func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 		Name:            name,
 		Image:           woc.controller.executorImage(),
 		ImagePullPolicy: woc.controller.executorImagePullPolicy(),
-		VolumeMounts:    []apiv1.VolumeMount{},
 		Env:             woc.createEnvVars(),
 		VolumeMounts: []apiv1.VolumeMount{
 			volumeMountPodMetadata,

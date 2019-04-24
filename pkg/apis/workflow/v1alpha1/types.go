@@ -688,6 +688,10 @@ func (s *GCSArtifact) String() string {
 	return fmt.Sprintf("gs://%s/%s", s.Bucket, s.Key)
 }
 
+func (s *GCSArtifact) HasLocation() bool {
+	return s != nil && s.Bucket != ""
+}
+
 // GitArtifact is the location of an git artifact
 type GitArtifact struct {
 	// Repo is the git repository

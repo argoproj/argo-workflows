@@ -96,7 +96,7 @@ type ArtifactRepository struct {
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
 	// HDFS stores artifacts in HDFS
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
-	GCS         *GCSArtifactRepository         `json:"gcs,omitempty"`
+	GCS  *GCSArtifactRepository  `json:"gcs,omitempty"`
 }
 
 // S3ArtifactRepository defines the controller configuration for an S3 artifact repository
