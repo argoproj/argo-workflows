@@ -10,13 +10,14 @@ import (
 
 // Externally visible error codes
 const (
-	CodeUnauthorized   = "ERR_UNAUTHORIZED"
-	CodeBadRequest     = "ERR_BAD_REQUEST"
-	CodeForbidden      = "ERR_FORBIDDEN"
-	CodeNotFound       = "ERR_NOT_FOUND"
-	CodeNotImplemented = "ERR_NOT_IMPLEMENTED"
-	CodeTimeout        = "ERR_TIMEOUT"
-	CodeInternal       = "ERR_INTERNAL"
+	CodeUnauthorized        = "ERR_UNAUTHORIZED"
+	CodeBadRequest          = "ERR_BAD_REQUEST"
+	CodeForbidden           = "ERR_FORBIDDEN"
+	CodeNotFound            = "ERR_NOT_FOUND"
+	CodeNotImplemented      = "ERR_NOT_IMPLEMENTED"
+	CodeTimeout             = "ERR_TIMEOUT"
+	CodeInternal            = "ERR_INTERNAL"
+	CodeDBUpdateRowNotFound = "ERR_DB_UPDATE_ROW_NOT_FOUND"
 )
 
 // ArgoError is an error interface that additionally adds support for
@@ -76,6 +77,18 @@ func InternalWrapError(err error, message ...string) error {
 // InternalWrapErrorf annotates the error with the ERR_INTERNAL code and a stack trace, optional message
 func InternalWrapErrorf(err error, format string, args ...interface{}) error {
 	return Wrap(err, CodeInternal, fmt.Sprintf(format, args...))
+}
+
+func DBUpdateNoRowFoundError(err error, message ...string) error {
+	if len(message) == 0 {
+		return Wrap(err, CodeDBUpdateRowNotFound, err.Error())
+	}
+	return Wrap(err, CodeDBUpdateRowNotFound, message[0])
+}
+
+// InternalWrapErrorf annotates the error with the ERR_INTERNAL code and a stack trace, optional message
+func IDBUpdateNoRowFoundErrorf(err error, format string, args ...interface{}) error {
+	return Wrap(err, CodeDBUpdateRowNotFound, fmt.Sprintf(format, args...))
 }
 
 // Wrap returns an error annotating err with a stack trace at the point Wrap is called,

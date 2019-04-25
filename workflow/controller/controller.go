@@ -3,6 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"strings"
 	"time"
 
@@ -37,7 +39,7 @@ type WorkflowController struct {
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
 	// Config is the workflow controller's configuration
-	Config WorkflowControllerConfig
+	Config config.WorkflowControllerConfig
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -57,6 +59,7 @@ type WorkflowController struct {
 	podQueue      workqueue.RateLimitingInterface
 	completedPods chan string
 	throttler     Throttler
+	wfDBctx       sqldb.DBRepository
 }
 
 const (
@@ -230,7 +233,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-		woc.persistUpdates()
+		woc.persistUpdates(wfc.wfDBctx)
 		wfc.throttler.Remove(key)
 		return true
 	}
@@ -242,6 +245,14 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
+	// Loading running workflow from persistence storage if SupportLargeWorkflow enabled
+	if wfc.wfDBctx.(*sqldb.WorkflowDBContext) != nil && wfc.wfDBctx.IsSupportLargeWorkflow() {
+		wfDB := wfc.wfDBctx.Get(string(wf.UID))
+		if wfDB.UID != "" {
+			wf = wfDB
+		}
+	}
+
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Decompress the node if it is compressed
@@ -249,11 +260,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
-		woc.persistUpdates()
+		woc.persistUpdates(wfc.wfDBctx)
 		wfc.throttler.Remove(key)
 		return true
 	}
-	woc.operate()
+	woc.operate(wfc.wfDBctx)
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
 	}
@@ -438,4 +449,21 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
+
+	var wfDBCtx sqldb.WorkflowDBContext
+	var err error
+
+	wfDBCtx.TableName = wfc.Config.PersistConfig.TableName
+	wfDBCtx.SupportLargeWorkflow = wfc.Config.PersistConfig.SupportLargeWorkflow
+
+	wfDBCtx.Session, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.PersistConfig)
+	if err != nil {
+		log.Errorf("Error in createPersistenceContext. %v", err)
+		return nil, err
+	}
+
+	return &wfDBCtx, nil
 }

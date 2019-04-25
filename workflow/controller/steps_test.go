@@ -13,6 +13,6 @@ import (
 func TestStepsFailedRetries(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/steps-failed-retries.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
+	woc.operate(nil)
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }

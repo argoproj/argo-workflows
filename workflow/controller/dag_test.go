@@ -13,7 +13,7 @@ import (
 func TestDagXfail(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag_xfail.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
+	woc.operate(nil)
 	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
 }
 
@@ -21,6 +21,6 @@ func TestDagXfail(t *testing.T) {
 func TestDagRetrySucceeded(t *testing.T) {
 	wf := test.LoadTestWorkflow("testdata/dag_retry_succeeded.yaml")
 	woc := newWoc(*wf)
-	woc.operate()
+	woc.operate(nil)
 	assert.Equal(t, string(wfv1.NodeSucceeded), string(woc.wf.Status.Phase))
 }

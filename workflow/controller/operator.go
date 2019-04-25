@@ -3,15 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"regexp"
-	"runtime/debug"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
+	"github.com/argoproj/argo/workflow/persist/sqldb"
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -22,6 +14,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
+	"reflect"
+	"regexp"
+	"runtime/debug"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -108,12 +108,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
-func (woc *wfOperationCtx) operate() {
+func (woc *wfOperationCtx) operate(wfdx sqldb.DBRepository) {
 	defer func() {
 		if woc.wf.Status.Completed() {
 			_ = woc.killDaemonedChildren("")
 		}
-		woc.persistUpdates()
+		woc.persistUpdates(wfdx)
 	}()
 	defer func() {
 		if r := recover(); r != nil {
@@ -285,7 +285,7 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
 // It also labels any pods as completed if we have extracted everything we need from it.
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
-func (woc *wfOperationCtx) persistUpdates() {
+func (woc *wfOperationCtx) persistUpdates(db sqldb.DBRepository) {
 	if !woc.updated {
 		return
 	}
@@ -298,8 +298,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
 	}
+	var wfDB = woc.wf.DeepCopy()
+	if db != nil && db.IsSupportLargeWorkflow() {
+		woc.wf.Status.Nodes = nil
+		woc.wf.Status.CompressedNodes = ""
+	}
 
-	_, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
+	wfDB.ResourceVersion = wf.ResourceVersion
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -316,6 +322,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 	}
+
+	if db != nil && !db.IsInterfaceNil() {
+		err = db.Save(wfDB)
+		if err != nil {
+			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
+			if db.IsSupportLargeWorkflow() {
+				woc.markWorkflowFailed(err.Error())
+				return
+			}
+		}
+	}
+
 	woc.log.Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
