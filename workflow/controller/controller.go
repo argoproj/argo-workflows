@@ -248,7 +248,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// Loading running workflow from persistence storage if SupportLargeWorkflow enabled
 	if wfc.wfDBctx.(*sqldb.WorkflowDBContext) != nil && wfc.wfDBctx.IsSupportLargeWorkflow() {
 		wfDB := wfc.wfDBctx.Get(string(wf.UID))
-		if wfDB.UID != "" {
+		if wfDB != nil && wfDB.UID != "" {
 			wf = wfDB
 		}
 	}

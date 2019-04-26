@@ -16,10 +16,9 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	if persistConfig == nil {
 		return nil, errors.InternalError("Persistence config is not found")
 	}
-	//if persistConfig.Postgresql != nil {
-	//	return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.Postgresql, persistConfig.PersistConnectPool)
-	//}
-	if persistConfig.Mysql != nil {
+	if persistConfig.Postgresql != nil {
+		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.Postgresql, persistConfig.PersistConnectPool)
+	}else if persistConfig.Mysql != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.Mysql, persistConfig.PersistConnectPool)
 	}
 
