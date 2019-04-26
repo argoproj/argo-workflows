@@ -91,19 +91,25 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 
 func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	tx, err := wdc.Session.NewTx(nil)
+	if err != nil {
+		return errors.InternalErrorf("Error in creating transaction. %v", err)
+	}
 	err = tx.Collection(wdc.TableName).InsertReturning(wfDB)
 	if err != nil {
-		return errors.InternalErrorf("Error in inserting workflow in persistence %v", err)
+		return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		return errors.InternalErrorf("Error in Committing workflow insert in persistence %v", err)
+		return errors.InternalErrorf("Error in Committing workflow insert in persistence. %v", err)
 	}
 	return nil
 }
 
 func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	tx, err := wdc.Session.NewTx(nil)
+	if err != nil {
+		return errors.InternalErrorf("Error in creating transaction. %v", err)
+	}
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
