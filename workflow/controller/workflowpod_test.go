@@ -272,7 +272,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Docker executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
@@ -291,7 +291,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Kubelet executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
 
@@ -309,7 +309,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For K8sAPI executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorK8sAPI
 
@@ -323,6 +323,48 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	}
+}
+
+func TestVolumesPodSubstitution(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "{{inputs.parameters.volume-name}}",
+				},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+	tmpStr := "test-name"
+	inputParameters := []wfv1.Parameter{
+		{
+			Name:  "volume-name",
+			Value: &tmpStr,
+		},
+	}
+
+	woc := newWoc()
+	woc.volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].Inputs.Parameters = inputParameters
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }
 
 func TestOutOfCluster(t *testing.T) {
@@ -428,7 +470,7 @@ func TestInitContainers(t *testing.T) {
 	mirrorVolumeMounts := true
 
 	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
+	woc.volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
 		{
@@ -466,7 +508,7 @@ func TestSidecars(t *testing.T) {
 	mirrorVolumeMounts := true
 
 	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
+	woc.volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].Sidecars = []wfv1.UserContainer{
 		{
