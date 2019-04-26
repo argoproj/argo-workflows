@@ -560,6 +560,13 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 		}
 	}
 
+	for _, container := range tmpl.InitContainers {
+		err := addVolumeRef(container.VolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, sidecar := range tmpl.Sidecars {
 		err := addVolumeRef(sidecar.VolumeMounts)
 		if err != nil {
