@@ -10,7 +10,6 @@ import (
 	"upper.io/db.v3/postgresql"
 )
 
-
 // CreateDBSession creates the dB session
 func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, error) {
 	if persistConfig == nil {
@@ -18,12 +17,13 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	}
 	if persistConfig.Postgresql != nil {
 		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.Postgresql, persistConfig.PersistConnectPool)
-	}else if persistConfig.Mysql != nil {
+	} else if persistConfig.Mysql != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.Mysql, persistConfig.PersistConnectPool)
 	}
 
 	return nil, nil
 }
+
 // CreatePostGresDBSession creates postgresDB session
 func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.PostgresqlConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, error) {
 
@@ -43,11 +43,9 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	}
 	session, err := postgresql.Open(settings)
 
-
 	return session, err
 
 }
-
 
 // CreatePostGresDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.MysqlConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, error) {

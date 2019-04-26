@@ -54,7 +54,7 @@ func convert(wf *wfv1.Workflow) *WorkflowDB {
 
 }
 
-func (wdc *WorkflowDBContext) IsInterfaceNil() bool{
+func (wdc *WorkflowDBContext) IsInterfaceNil() bool {
 	return wdc == nil
 }
 func (wdc *WorkflowDBContext) IsSupportLargeWorkflow() bool {
@@ -64,7 +64,6 @@ func (wdc *WorkflowDBContext) IsSupportLargeWorkflow() bool {
 func (wdc *WorkflowDBContext) Init(sess sqlbuilder.Database) {
 	wdc.Session = sess
 }
-
 
 // Save will upset the workflow
 func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
@@ -81,7 +80,7 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 			return wdc.insert(wfdb)
 		} else {
 			log.Warn(err)
-			return errors.InternalError("Error in inserting workflow in persistance")
+			return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
 		}
 	}
 
@@ -90,26 +89,32 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 	return nil
 }
 
-
 func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	tx, err := wdc.Session.NewTx(nil)
-	defer tx.Commit()
 	err = tx.Collection(wdc.TableName).InsertReturning(wfDB)
 	if err != nil {
-		return errors.InternalErrorf("Error in inserting workflow in persistance %v", err)
+		return errors.InternalErrorf("Error in inserting workflow in persistence %v", err)
+	}
+	err = tx.Commit()
+	if err != nil {
+		return errors.InternalErrorf("Error in Committing workflow insert in persistence %v", err)
 	}
 	return nil
 }
 
 func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	tx, err := wdc.Session.NewTx(nil)
-	defer tx.Commit()
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
 			return errors.DBUpdateNoRowFoundError(err, "")
 		}
-		return errors.InternalErrorf("Error in updating workflow in persistance %v", err)
+		return errors.InternalErrorf("Error in updating workflow in persistence %v", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return errors.InternalErrorf("Error in Committing workflow update in persistence %v", err)
 	}
 	return nil
 }
@@ -118,11 +123,14 @@ func (wdc *WorkflowDBContext) Get(uid string) *wfv1.Workflow {
 	var wfDB WorkflowDB
 	var wf wfv1.Workflow
 	if wdc.Session == nil {
+		log.Warn("DB is not initiallized")
 		return nil
 	}
 
-	wdc.Session.Collection(wdc.TableName).Find("id", uid).One(&wfDB)
+	err := wdc.Session.Collection(wdc.TableName).Find("id", uid).One(&wfDB)
+	if err != nil {
 
+	}
 	if wfDB.Id != "" {
 		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
 		if err != nil {
@@ -140,13 +148,13 @@ func (wdc *WorkflowDBContext) ListAll() []wfv1.Workflow {
 		log.Fatal(err)
 		return nil
 	}
-	var wfs [] wfv1.Workflow
+	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
 		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
 		if err != nil {
 			log.Warn(" Workflow unmarshalling is failed for ")
-		}else{
+		} else {
 			wfs = append(wfs, wf)
 		}
 	}
@@ -160,13 +168,13 @@ func (wdc *WorkflowDBContext) Query(condition interface{}) []wfv1.Workflow {
 		log.Fatal(err)
 		return nil
 	}
-	var wfs [] wfv1.Workflow
+	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
 		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
 		if err != nil {
 			log.Warn(" Workflow unmarshalling is failed for ")
-		}else{
+		} else {
 			wfs = append(wfs, wf)
 		}
 	}
@@ -176,4 +184,3 @@ func (wdc *WorkflowDBContext) Query(condition interface{}) []wfv1.Workflow {
 func (wdc *WorkflowDBContext) Close() error {
 	return wdc.Session.Close()
 }
-
