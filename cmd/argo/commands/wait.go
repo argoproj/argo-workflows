@@ -63,7 +63,7 @@ func waitOnOne(workflowName string, ignoreNotFound, quiet bool) {
 	watchIf, err := wfClient.Watch(opts)
 	errors.CheckError(err)
 	defer watchIf.Stop()
-	for{
+	for {
 		next := <-watchIf.ResultChan()
 		wf, _ := next.Object.(*wfv1.Workflow)
 		if wf == nil {
