@@ -39,7 +39,7 @@ func (gcsDriver *GCSArtifactDriver) saveToFile(inputArtifact *wfv1.Artifact, fil
 		return err
 	}
 
-	if stat.IsDir() {
+	if stat != nil && stat.IsDir() {
 		return errors.New("output artifact path is a directory")
 	}
 
