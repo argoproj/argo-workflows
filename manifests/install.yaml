@@ -191,7 +191,7 @@ kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
 data:
-  containerRuntimeExecutor=pns
+  containerRuntimeExecutor: pns
 ---
 apiVersion: v1
 kind: Service
