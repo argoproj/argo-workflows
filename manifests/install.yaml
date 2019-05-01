@@ -251,6 +251,8 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:v2.3.0-rc2
+        - --containerRuntimeExecutor
+        - pns
         command:
         - workflow-controller
         image: argoproj/workflow-controller:v2.3.0-rc2

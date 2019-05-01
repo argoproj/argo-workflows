@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cross-
+spec:
+  entrypoint: start
+  templates:
+  - name: start
+    steps:
+    - - name: init
+        template: init
+    - - name: main
+        template: main
+    - - name: end-run
+        template: end-run
+
+  - name: init
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"foo\" >> /tmp/output.log"]
+    outputs:
+      parameters:
+        - name: nodes
+          valueFrom:
+            path: /tmp/output.log
+
+  - name: main
+    inputs:
+      parameters:
+      - name: msg
+        value: "{{steps.init.outputs.parameters.nodes}}"
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"foo\" >> /tmp/output.log"]
+
+  - name: end-run
+    container:
+      image: alpine:3.6
+      command: [sh, -c]
+      args: ["echo \"foo\" >> /tmp/output.log"]
