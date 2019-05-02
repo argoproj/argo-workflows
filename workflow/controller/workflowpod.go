@@ -731,12 +731,12 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		return nil
 	}
 	tmpl.ArchiveLocation = &wfv1.ArtifactLocation{
-		ArchiveLogs: woc.controller.Config.ArtifactRepository.ArchiveLogs,
+		ArchiveLogs: woc.artifactRepository.ArchiveLogs,
 	}
 	// artifact location is defaulted using the following formula:
 	// <worflow_name>/<pod_name>/<artifact_name>.tgz
 	// (e.g. myworkflowartifacts/argo-wf-fhljp/argo-wf-fhljp-123291312382/src.tgz)
-	if s3Location := woc.controller.Config.ArtifactRepository.S3; s3Location != nil {
+	if s3Location := woc.artifactRepository.S3; s3Location != nil {
 		woc.log.Debugf("Setting s3 artifact repository information")
 		artLocationKey := s3Location.KeyFormat
 		// NOTE: we use unresolved variables, will get substituted later
@@ -747,18 +747,18 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			S3Bucket: s3Location.S3Bucket,
 			Key:      artLocationKey,
 		}
-	} else if woc.controller.Config.ArtifactRepository.Artifactory != nil {
+	} else if woc.artifactRepository.Artifactory != nil {
 		woc.log.Debugf("Setting artifactory artifact repository information")
 		repoURL := ""
-		if woc.controller.Config.ArtifactRepository.Artifactory.RepoURL != "" {
-			repoURL = woc.controller.Config.ArtifactRepository.Artifactory.RepoURL + "/"
+		if woc.artifactRepository.Artifactory.RepoURL != "" {
+			repoURL = woc.artifactRepository.Artifactory.RepoURL + "/"
 		}
 		artURL := fmt.Sprintf("%s%s", repoURL, common.DefaultArchivePattern)
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
-			ArtifactoryAuth: woc.controller.Config.ArtifactRepository.Artifactory.ArtifactoryAuth,
+			ArtifactoryAuth: woc.artifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
 		}
-	} else if hdfsLocation := woc.controller.Config.ArtifactRepository.HDFS; hdfsLocation != nil {
+	} else if hdfsLocation := woc.artifactRepository.HDFS; hdfsLocation != nil {
 		woc.log.Debugf("Setting HDFS artifact repository information")
 		tmpl.ArchiveLocation.HDFS = &wfv1.HDFSArtifact{
 			HDFSConfig: hdfsLocation.HDFSConfig,

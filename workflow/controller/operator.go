@@ -52,6 +52,8 @@ type wfOperationCtx struct {
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
+	// ArtifactRepository contains the default location of an artifact repository for container artifacts
+	artifactRepository *ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
@@ -94,11 +96,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:    wfc,
-		globalParams:  make(map[string]string),
-		volumes:       wf.Spec.DeepCopy().Volumes,
-		completedPods: make(map[string]bool),
-		deadline:      time.Now().UTC().Add(maxOperationTime),
+		controller:         wfc,
+		globalParams:       make(map[string]string),
+		volumes:            wf.Spec.DeepCopy().Volumes,
+		artifactRepository: &wfc.Config.ArtifactRepository,
+		completedPods:      make(map[string]bool),
+		deadline:           time.Now().UTC().Add(maxOperationTime),
 	}
 
 	if woc.wf.Status.Nodes == nil {
