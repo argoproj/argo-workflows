@@ -165,6 +165,16 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters()
 
+	if woc.wf.Spec.ArtifactRepositoryRef != nil {
+		repoReference := woc.wf.Spec.ArtifactRepositoryRef
+		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key)
+		if err == nil {
+			woc.artifactRepository = repo
+		} else {
+			woc.log.Errorf("Failed to load artifact repository configMap: %+v", err)
+		}
+	}
+
 	err := woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
 		woc.log.Errorf("%s volumes global param substitution error: %+v", woc.wf.ObjectMeta.Name, err)
