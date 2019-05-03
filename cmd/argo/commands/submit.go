@@ -68,7 +68,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if cliOpts == nil {
 		cliOpts = &cliSubmitOpts{}
 	}
-	InitWorkflowClient()
+	defaultWFClient := InitWorkflowClient()
 	var workflows []wfv1.Workflow
 	if len(filePaths) == 1 && filePaths[0] == "-" {
 		reader := bufio.NewReader(os.Stdin)
@@ -114,6 +114,10 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	var workflowNames []string
 	for _, wf := range workflows {
 		wf.Spec.Priority = cliOpts.priority
+		wfClient := defaultWFClient
+		if wf.Namespace != "" {
+			wfClient = InitWorkflowClient(wf.Namespace)
+		}
 		created, err := util.SubmitWorkflow(wfClient, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)

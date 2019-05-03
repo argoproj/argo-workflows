@@ -82,12 +82,8 @@ func (c *workflows) Watch(opts v1.ListOptions) (watch.Interface, error) {
 // Create takes the representation of a workflow and creates it.  Returns the server's representation of the workflow, and an error, if there is any.
 func (c *workflows) Create(workflow *v1alpha1.Workflow) (result *v1alpha1.Workflow, err error) {
 	result = &v1alpha1.Workflow{}
-	wfNamespace := c.ns
-	if workflow.Namespace != "" && c.ns == "default" {
-		wfNamespace = workflow.Namespace
-	}
 	err = c.client.Post().
-		Namespace(wfNamespace).
+		Namespace(c.ns).
 		Resource("workflows").
 		Body(workflow).
 		Do().
@@ -98,13 +94,8 @@ func (c *workflows) Create(workflow *v1alpha1.Workflow) (result *v1alpha1.Workfl
 // Update takes the representation of a workflow and updates it. Returns the server's representation of the workflow, and an error, if there is any.
 func (c *workflows) Update(workflow *v1alpha1.Workflow) (result *v1alpha1.Workflow, err error) {
 	result = &v1alpha1.Workflow{}
-	wfNamespace := c.ns
-	if workflow.Namespace != "" && c.ns == "default" {
-		wfNamespace = workflow.Namespace
-	}
-
 	err = c.client.Put().
-		Namespace(wfNamespace).
+		Namespace(c.ns).
 		Resource("workflows").
 		Name(workflow.Name).
 		Body(workflow).
