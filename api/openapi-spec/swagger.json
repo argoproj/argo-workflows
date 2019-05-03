@@ -881,6 +881,10 @@
           "description": "Script runs a portion of code against an interpreter",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
+        "serviceAccount": {
+          "description": "ServiceAccount to apply to workflow pods",
+          "type": "string"
+        },
         "sidecars": {
           "description": "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
           "type": "array",
