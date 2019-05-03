@@ -134,6 +134,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
+      "properties": {
+        "configMap": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifact": {
       "description": "ArtifactoryArtifact is the location of an artifactory artifact",
       "required": [
@@ -1136,6 +1146,10 @@
         "arguments": {
           "description": "Arguments contain the parameters and artifacts sent to the workflow entrypoint Parameters are referencable globally using the 'workflow' variable prefix. e.g. {{workflow.parameters.myparam}}",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "artifactRepositoryRef": {
+          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
         },
         "dnsConfig": {
           "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
