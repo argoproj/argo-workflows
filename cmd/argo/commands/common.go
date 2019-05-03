@@ -82,7 +82,6 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 		return wfClient
 	}
 	initKubeClient()
-	//var namespace string
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]
