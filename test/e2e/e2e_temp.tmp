@@ -1,0 +1,38 @@
+package e2e
+
+import (
+	"github.com/argoproj/argo/cmd/argo/commands"
+	"log"
+	"os"
+	"path/filepath"
+	"regexp"
+	"testing"
+)
+//var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
+// TestSuspendResume tests the suspend and resume feature
+func TestSubmitWorkflow(t *testing.T) {
+	testRunWorkflows()
+
+}
+
+func testRunWorkflows() {
+	commands.NewCommand()
+	commands.InitWorkflowClient()
+	err := filepath.Walk(".",
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			r, err := regexp.MatchString(".yaml", info.Name())
+			if err == nil && r {
+				filename := "./"+path
+				commands.SubmitWorkflows([]string{filename}, nil, nil)
+			}
+			return nil
+		})
+	if err != nil {
+		log.Println(err)
+	}
+
+}
