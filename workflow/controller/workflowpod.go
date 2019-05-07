@@ -73,9 +73,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
-	tmplServiceAccount := woc.wf.Spec.ServiceAccountName
-	if tmpl.ServiceAccount != "" {
-		tmplServiceAccount = tmpl.ServiceAccount
+	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
+	if tmpl.ServiceAccountName != "" {
+		tmplServiceAccountName = tmpl.ServiceAccountName
 	}
 
 	mainCtr.Name = common.MainContainerName
@@ -98,7 +98,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    tmplServiceAccount,
+			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -225,7 +225,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s), serviceaccount=%s ", nodeName, created.Name, tmplServiceAccount)
+	woc.log.Infof("Created pod: %s (%s), serviceaccount=%s ", nodeName, created.Name, tmplServiceAccountName)
 	woc.activePods++
 	return created, nil
 }

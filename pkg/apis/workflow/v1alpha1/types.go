@@ -253,8 +253,8 @@ type Template struct {
 	// Priority to apply to workflow pods.
 	Priority *int32 `json:"priority,omitempty"`
 
-	// ServiceAccount to apply to workflow pods
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	// ServiceAccountName to apply to workflow pods
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another

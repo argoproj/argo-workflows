@@ -1689,7 +1689,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "int32",
 						},
 					},
-					"serviceAccount": {
+					"serviceAccountName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ServiceAccount to apply to workflow pods",
 							Type:        []string{"string"},

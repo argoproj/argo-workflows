@@ -881,7 +881,7 @@
           "description": "Script runs a portion of code against an interpreter",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
-        "serviceAccount": {
+        "serviceAccountName": {
           "description": "ServiceAccount to apply to workflow pods",
           "type": "string"
         },
