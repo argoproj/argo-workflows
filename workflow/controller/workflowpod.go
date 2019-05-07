@@ -503,11 +503,19 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 
 	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 	getVolByName := func(name string) *apiv1.Volume {
+		// Find a volume from template-local volumes.
+		for _, vol := range tmpl.Volumes {
+			if vol.Name == name {
+				return &vol
+			}
+		}
+		// Find a volume from global volumes.
 		for _, vol := range vols {
 			if vol.Name == name {
 				return &vol
 			}
 		}
+		// Find a volume from pvcs.
 		for _, pvc := range pvcs {
 			if pvc.Name == name {
 				return &pvc
@@ -547,6 +555,13 @@ func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Templat
 	}
 	if tmpl.Script != nil {
 		err := addVolumeRef(tmpl.Script.VolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, container := range tmpl.InitContainers {
+		err := addVolumeRef(container.VolumeMounts)
 		if err != nil {
 			return err
 		}
