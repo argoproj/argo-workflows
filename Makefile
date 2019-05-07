@@ -127,7 +127,9 @@ endif
 
 .PHONY: lint
 lint:
-	golangci-lint run --config golangci.yml
+	# Use golangci-lint instead of gometalinter after a migration time.
+	gometalinter --config gometalinter.json ./...
+	# golangci-lint run --config golangci.yml
 
 .PHONY: test
 test:
