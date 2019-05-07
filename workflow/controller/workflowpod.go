@@ -933,7 +933,7 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 }
 
 func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySelector, keyMap map[string]bool) {
-	if secret == nil {
+	if secret == nil || secret.Name == "" || secret.Key == "" {
 		return
 	}
 	if vol, ok := volMap[secret.Name]; ok {
