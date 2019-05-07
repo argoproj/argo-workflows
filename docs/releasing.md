@@ -12,6 +12,11 @@ make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
 
 4. Commit VERSION and manifest changes
 
+```
+git add .
+git commit -m "Update version to vX.Y.Z"
+```
+
 5. git tag the release
 
 ```
