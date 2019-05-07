@@ -9,11 +9,13 @@ import (
 func TestShouldExecute(t *testing.T) {
 	trueExpressions := []string{
 		"foo == foo",
+		"'ref/branch/master' == 'ref/branch/master'",
 		"foo != bar",
 		"1 == 1",
 		"1 != 2",
 		"1 < 2",
 		"1 <= 1",
+		"1/2 == 0.5",
 		"a < b",
 		"(foo == bar) || (foo == foo)",
 		"(1 > 0) && (1 < 2)",
@@ -29,11 +31,13 @@ func TestShouldExecute(t *testing.T) {
 
 	falseExpressions := []string{
 		"foo != foo",
+		"'ref/branch/master' != 'ref/branch/master'",
 		"foo == bar",
 		"1 != 1",
 		"1 == 2",
 		"1 > 2",
 		"1 <= 0",
+		"1/2 != 0.5",
 		"a > b",
 		"(foo == bar) || (bar == foo)",
 		"(1 > 0) && (11 < 2)",
