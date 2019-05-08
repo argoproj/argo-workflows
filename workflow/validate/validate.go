@@ -329,7 +329,7 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	if tmpl.Resource != nil {
 		switch tmpl.Resource.Action {
-		case "get", "create", "apply", "delete", "replace":
+		case "get", "create", "apply", "delete", "replace", "patch":
 			// OK
 		default:
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)

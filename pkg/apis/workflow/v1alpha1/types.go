@@ -815,7 +815,7 @@ type ScriptTemplate struct {
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
 type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
-	// Must be one of: get, create, apply, delete, replace
+	// Must be one of: get, create, apply, delete, replace, patch
 	Action string `json:"action"`
 
 	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
