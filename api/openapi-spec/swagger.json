@@ -882,7 +882,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "serviceAccountName": {
-          "description": "ServiceAccount to apply to workflow pods",
+          "description": "ServiceAccountName to apply to workflow pods",
           "type": "string"
         },
         "sidecars": {
