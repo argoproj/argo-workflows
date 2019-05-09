@@ -1,5 +1,17 @@
 # Changelog
 
+
+## 2.3.0-rc3 (2019-05-07)
+
+### Changes since 2.3.0-rc2
+- argo submit --wait and argo wait quits while workflow is running (#1347)
+- Fix validate the secret credentials name and key (#1358)
+- Fix input artifacts with multiple ssh keys (#1338) (@almariah)
+- Add when test for character that included `/` (@hideto0710)
+- Fix parameter substitution bug (#1345) (@elikatsis)
+- Fix missing template local volumes, Handle volumes only used in init containers (#1342)
+
+
 ## 2.3.0-rc2 (2019-04-21)
 
 ### Changes since 2.3.0-rc1
