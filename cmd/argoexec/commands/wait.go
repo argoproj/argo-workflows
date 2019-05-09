@@ -48,7 +48,6 @@ func waitContainer() error {
 	}
 	// Saving output parameters
 	err = wfExecutor.SaveParameters()
-	err = errors.New(errors.CodeInternal, "sdfsdfds")
 	if err != nil {
 		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to save the parameters"))
 		return err
