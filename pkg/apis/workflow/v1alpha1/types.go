@@ -825,6 +825,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest"`
 
+	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
+	SetOwnerReference bool `json:"setOwnerReference,omitempty"`
+
 	// SuccessCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which it is acceptable to proceed to the following step
 	SuccessCondition string `json:"successCondition,omitempty"`
