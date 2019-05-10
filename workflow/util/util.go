@@ -463,6 +463,14 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed:
+			if !strings.HasPrefix(node.Name, onExitNodeName) && node.Type == wfv1.NodeTypeDAG {
+				newNode := node.DeepCopy()
+				newNode.Phase = wfv1.NodeRunning
+				newNode.Message = ""
+				newNode.FinishedAt = metav1.Time{}
+				newWF.Status.Nodes[newNode.ID] = *newNode
+				continue
+			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
