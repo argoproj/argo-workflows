@@ -24,6 +24,7 @@ var (
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
+	namespace        string
 )
 
 func init() {
@@ -80,11 +81,10 @@ func initKubeClient() *kubernetes.Clientset {
 
 // InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
 func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
-	if wfClient != nil {
+	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
 		return wfClient
 	}
 	initKubeClient()
-	var namespace string
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]
