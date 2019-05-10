@@ -1016,6 +1016,7 @@ spec:
   templates:
   - name: resource
     resource:
+      action: create
       manifest: |
         apiVersion: v1
         kind: ConfigMap
@@ -1074,6 +1075,7 @@ spec:
         template: resource-3
   - name: resource-1
     resource:
+      action: create
       manifest: |
         apiVersion: v1
         kind: ConfigMap
@@ -1087,6 +1089,7 @@ spec:
             uid: "manual-ref-uid"
   - name: resource-2
     resource:
+      action: create
       setOwnerReference: true
       manifest: |
         apiVersion: v1
@@ -1095,6 +1098,7 @@ spec:
           name: resource-cm-2
   - name: resource-3
     resource:
+      action: create
       setOwnerReference: true
       manifest: |
         apiVersion: v1
