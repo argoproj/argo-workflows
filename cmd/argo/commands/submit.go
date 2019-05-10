@@ -118,7 +118,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
-		printWorkflow(created, cliOpts.output)
+		printWorkflow(created, cliOpts.output, DefaultStatus)
 		workflowNames = append(workflowNames, created.Name)
 	}
 	waitOrWatch(workflowNames, *cliOpts)
