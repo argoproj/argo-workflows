@@ -164,6 +164,9 @@ type WorkflowSpec struct {
 
 	// Priority to apply to workflow pods.
 	PodPriority *int32 `json:"podPriority,omitempty"`
+
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -252,6 +255,9 @@ type Template struct {
 
 	// Priority to apply to workflow pods.
 	Priority *int32 `json:"priority,omitempty"`
+
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
