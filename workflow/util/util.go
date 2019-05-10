@@ -257,9 +257,9 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		if IsWorkflowCompleted(wf) {
 			return false, errSuspendedCompletedWorkflow
 		}
-		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
+		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
 			wf.Spec.Suspend = pointer.BoolPtr(true)
-			wf, err = wfIf.Update(wf)
+			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
@@ -298,7 +298,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 			}
 		}
 		if updated {
-			wf, err = wfIf.Update(wf)
+			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
