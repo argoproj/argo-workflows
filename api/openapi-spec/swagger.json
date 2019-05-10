@@ -531,7 +531,7 @@
       ],
       "properties": {
         "action": {
-          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
+          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
           "type": "string"
         },
         "failureCondition": {
