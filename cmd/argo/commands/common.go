@@ -46,6 +46,9 @@ const (
 	FgDefault = 39
 )
 
+// Default status for printWorkflow
+const DefaultStatus = ""
+
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
 		wfv1.NodePending:   ansiFormat("◷", FgYellow),
