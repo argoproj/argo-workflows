@@ -76,6 +76,7 @@ data:
           key: secretKey
 
     # Specifies the container runtime interface to use (default: docker)
+    # must be one of: docker, kubelet, k8sapi, pns
     containerRuntimeExecutor: docker
 
     # kubelet port when using kubelet executor (default: 10250)
@@ -103,7 +104,7 @@ data:
       - --gloglevel
       - "6"
       env:
-      - name: DEBUG_FLAG
+      - name: SOME_ENV_VAR
         value: "1"
 
     # metricsConfig controls the path and port for prometheus metrics

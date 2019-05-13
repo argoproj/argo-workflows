@@ -79,15 +79,16 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if !node.Completed() {
 			return wfv1.NodeRunning
 		}
-		if !node.Successful() && unsuccessfulPhase == "" {
+		if node.Successful() {
+			continue
+		}
+		// failed retry attempts should not factor into the overall unsuccessful phase of the dag
+		// because the subsequent attempt may have succeeded
+		if unsuccessfulPhase == "" && !isRetryAttempt(node, nodes) {
 			unsuccessfulPhase = node.Phase
 		}
-		if node.Type == wfv1.NodeTypeRetry {
-			if node.Successful() {
-				retriesExhausted = false
-			} else if d.hasMoreRetries(&node) {
-				retriesExhausted = false
-			}
+		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
+			retriesExhausted = false
 		}
 	}
 	if unsuccessfulPhase != "" {
@@ -109,6 +110,20 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	}
 	// If we get here, all our dependencies were completed and successful
 	return wfv1.NodeSucceeded
+}
+
+// isRetryAttempt detects if a node is part of a retry
+func isRetryAttempt(node wfv1.NodeStatus, nodes map[string]wfv1.NodeStatus) bool {
+	for _, potentialParent := range nodes {
+		if potentialParent.Type == wfv1.NodeTypeRetry {
+			for _, child := range potentialParent.Children {
+				if child == node.ID {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
@@ -209,9 +224,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 			woc.log.Println(depName)
 		}
 		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-		for _, outNodeID := range outboundNodeIDs {
-			outbound = append(outbound, outNodeID)
-		}
+		outbound = append(outbound, outboundNodeIDs...)
 	}
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
 	node.OutboundNodes = outbound

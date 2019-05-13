@@ -1559,3 +1559,74 @@ func TestUndefinedTemplateRef(t *testing.T) {
 		assert.Contains(t, err.Error(), "not found")
 	}
 }
+
+var validResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-resource-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+`
+
+// TestValidResourceWorkflow verifies a workflow of a valid resource.
+func TestValidResourceWorkflow(t *testing.T) {
+	wf := unmarshalWf(validResourceWorkflow)
+	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	assert.Equal(t, err, nil)
+}
+
+var invalidResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-resource-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      manifest: |
+        invalid-yaml-line
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
+`
+
+var invalidActionResourceWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-resource-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    resource:
+      action: foo
+      manifest: |
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: whalesay-cm
+`
+
+// TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
+func TestInvalidResourceWorkflow(t *testing.T) {
+	wf := unmarshalWf(invalidResourceWorkflow)
+	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	assert.Error(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
+
+	wf = unmarshalWf(invalidActionResourceWorkflow)
+	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	assert.Error(t, err, "templates.whalesay.resource.action must be either get, create, apply, delete or replace")
+}

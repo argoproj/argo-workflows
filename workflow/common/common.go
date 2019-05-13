@@ -76,6 +76,8 @@ const (
 
 	// Various environment variables containing pod information exposed to the executor container(s)
 
+	// EnvVarPodName contains the name of the pod (currently unused)
+	EnvVarPodName = "ARGO_POD_NAME"
 	// EnvVarContainerRuntimeExecutor contains the name of the container runtime executor to use, empty is equal to "docker"
 	EnvVarContainerRuntimeExecutor = "ARGO_CONTAINER_RUNTIME_EXECUTOR"
 	// EnvVarDownwardAPINodeIP is the envvar used to get the `status.hostIP`

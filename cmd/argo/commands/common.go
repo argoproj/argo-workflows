@@ -26,6 +26,7 @@ var (
 	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
+	namespace        string
 )
 
 func init() {
@@ -47,6 +48,9 @@ const (
 	FgWhite   = 37
 	FgDefault = 39
 )
+
+// Default status for printWorkflow
+const DefaultStatus = ""
 
 func initializeSession() {
 	jobStatusIconMap = map[wfv1.NodePhase]string{
@@ -79,11 +83,10 @@ func initKubeClient() *kubernetes.Clientset {
 
 // InitWorkflowClient creates a new client for the Kubernetes Workflow CRD.
 func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
-	if wfClient != nil {
+	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
 		return wfClient
 	}
 	initKubeClient()
-	var namespace string
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]

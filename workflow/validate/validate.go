@@ -8,7 +8,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/valyala/fasttemplate"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	apivalidation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/argoproj/argo/errors"
@@ -417,6 +419,20 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts[%d].path '%s' already mounted in %s", tmpl.Name, i, art.Path, prev)
 			}
 			mountPaths[art.Path] = fmt.Sprintf("inputs.artifacts.%s", art.Name)
+		}
+	}
+	if tmpl.Resource != nil {
+		switch tmpl.Resource.Action {
+		case "get", "create", "apply", "delete", "replace", "patch":
+			// OK
+		default:
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)
+		}
+		// Try to unmarshal the given manifest.
+		obj := unstructured.Unstructured{}
+		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.manifest must be a valid yaml", tmpl.Name)
 		}
 	}
 	if tmpl.ActiveDeadlineSeconds != nil {
