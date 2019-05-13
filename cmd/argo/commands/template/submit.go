@@ -85,7 +85,6 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 		log.Fatal(err)
 	}
 
-	var workflowTemplateNames []string
 	for _, wftmpl := range workflowTemplates {
 		err := validate.ValidateWorkflowTemplate(wfClientset, namespace, &wftmpl)
 		if err != nil {
@@ -96,7 +95,6 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 			log.Fatalf("Failed to submit workflow template: %v", err)
 		}
 		printWorkflowTemplate(created, cliOpts.output)
-		workflowTemplateNames = append(workflowTemplateNames, created.Name)
 	}
 }
 

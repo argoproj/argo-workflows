@@ -65,16 +65,12 @@ func printTable(wfList []wfv1.WorkflowTemplate, listArgs *listFlags) {
 		fmt.Fprint(w, "NAMESPACE\t")
 	}
 	fmt.Fprint(w, "NAME")
-	if listArgs.output == "wide" {
-	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
 		fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Name)
-		if listArgs.output == "wide" {
-		}
 		fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()
