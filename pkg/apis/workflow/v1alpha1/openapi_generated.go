@@ -1032,7 +1032,7 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 				Properties: map[string]spec.Schema{
 					"action": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
+							Description: "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1048,6 +1048,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 						SchemaProps: spec.SchemaProps{
 							Description: "Manifest contains the kubernetes manifest",
 							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"setOwnerReference": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
+							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},

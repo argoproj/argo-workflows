@@ -16,8 +16,8 @@ spec:
     outputs: {}
   - name: randomly-fail
     retryStrategy:
-      limit: 10
+      limit: 20
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["exit $(( ${RANDOM} % 3 ))"]
+      args: ["exit $(( ${RANDOM} % 5 ))"]

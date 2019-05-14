@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.3.0-rc2"
+    "version": "v2.3.0-rc3"
   },
   "paths": {},
   "definitions": {
@@ -541,7 +541,7 @@
       ],
       "properties": {
         "action": {
-          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace",
+          "description": "Action is the action to perform to the resource. Must be one of: get, create, apply, delete, replace, patch",
           "type": "string"
         },
         "failureCondition": {
@@ -555,6 +555,10 @@
         "mergeStrategy": {
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
           "type": "string"
+        },
+        "setOwnerReference": {
+          "description": "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
+          "type": "boolean"
         },
         "successCondition": {
           "description": "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
