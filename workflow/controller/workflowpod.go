@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -93,6 +94,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.wf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+
+	var ActiveDeadlineSeconds *int64
+	wfDeadline := woc.getWorkflowDeadline()
+	if wfDeadline == nil {
+		ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+	} else {
+		wfActiveDeadlineSeconds := int64((*wfDeadline).Sub(time.Now().UTC()).Seconds())
+		if wfActiveDeadlineSeconds < 0 {
+			ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		} else if tmpl.ActiveDeadlineSeconds == nil || wfActiveDeadlineSeconds < *tmpl.ActiveDeadlineSeconds {
+			ActiveDeadlineSeconds = &wfActiveDeadlineSeconds
+		} else {
+			ActiveDeadlineSeconds = tmpl.ActiveDeadlineSeconds
+		}
+	}
+
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,
@@ -111,7 +128,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		Spec: apiv1.PodSpec{
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
+<<<<<<< HEAD
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+=======
+			ActiveDeadlineSeconds: ActiveDeadlineSeconds,
+			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+>>>>>>> .
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
