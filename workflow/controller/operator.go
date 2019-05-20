@@ -896,10 +896,12 @@ func (woc *wfOperationCtx) createPVCs() error {
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
-
-		if err != nil && isPVCExistErr(err) {
+		if err != nil && apierr.IsAlreadyExists(err) {
 			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
 			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+			if pvc.OwnerReferences == nil {
+				return errors.New(errors.CodeForbidden, "%s pvc has already exists and ownerreference is different")
+			}
 		}
 
 		//continue
@@ -920,9 +922,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 	return nil
 }
 
-func isPVCExistErr(err error) bool {
-	return strings.Contains(err.Error(), "persistentvolumeclaims") && strings.Contains(err.Error(), "already exists")
-}
+
 
 func (woc *wfOperationCtx) deletePVCs() error {
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
