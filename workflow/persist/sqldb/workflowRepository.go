@@ -99,8 +99,15 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
 	}
-	defer func() { if tx != nil {tx.Close()}}()
-	_,err = tx.Collection(wdc.TableName).Insert(wfDB)
+	defer func() {
+		if tx != nil {
+			err := tx.Close()
+			if err != nil {
+				log.Warnf("Transaction failed to close")
+			}
+		}
+	}()
+	_, err = tx.Collection(wdc.TableName).Insert(wfDB)
 	if err != nil {
 		return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
 	}
@@ -120,7 +127,14 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
 	}
-	defer func() { if tx != nil {tx.Close()}}()
+	defer func() {
+		if tx != nil {
+			err := tx.Close()
+			if err != nil {
+				log.Warnf("Transaction failed to close")
+			}
+		}
+	}()
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
@@ -203,9 +217,6 @@ func (wdc *WorkflowDBContext) Query(condition interface{}) ([]wfv1.Workflow, err
 	}
 	return wfs, nil
 }
-
-
-
 
 func (wdc *WorkflowDBContext) Close() error {
 	if wdc.Session == nil {
