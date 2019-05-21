@@ -25,11 +25,11 @@ import (
 	"github.com/argoproj/argo"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/argo/workflow/config"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
 )
 
 // WorkflowController is the controller for workflow resources

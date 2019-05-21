@@ -100,7 +100,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		Password: string(passwordByte),
 		Host:     postgresConfig.Host + ":" + postgresConfig.Port,
 		Database: postgresConfig.Database,
-		Options:  postgresConfig.Options,
+
 	}
 	session, err := mysql.Open(settings)
 

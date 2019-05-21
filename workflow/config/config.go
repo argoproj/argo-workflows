@@ -99,9 +99,9 @@ type PersistConnectPool struct {
 	MaxOpenConns int `json:"maxOpenConns"`
 }
 type PostgreSQLConfig struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Database string `json:"database"`
+	Host           string                  `json:"host"`
+	Port           string                  `json:"port"`
+	Database       string                  `json:"database"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 }
@@ -110,7 +110,7 @@ type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
-	Options        map[string]string	   `json:"options"`
+	Options        map[string]string       `json:"options"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 }

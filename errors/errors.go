@@ -10,13 +10,13 @@ import (
 
 // Externally visible error codes
 const (
-	CodeUnauthorized        = "ERR_UNAUTHORIZED"
-	CodeBadRequest          = "ERR_BAD_REQUEST"
-	CodeForbidden           = "ERR_FORBIDDEN"
-	CodeNotFound            = "ERR_NOT_FOUND"
-	CodeNotImplemented      = "ERR_NOT_IMPLEMENTED"
-	CodeTimeout             = "ERR_TIMEOUT"
-	CodeInternal            = "ERR_INTERNAL"
+	CodeUnauthorized   = "ERR_UNAUTHORIZED"
+	CodeBadRequest     = "ERR_BAD_REQUEST"
+	CodeForbidden      = "ERR_FORBIDDEN"
+	CodeNotFound       = "ERR_NOT_FOUND"
+	CodeNotImplemented = "ERR_NOT_IMPLEMENTED"
+	CodeTimeout        = "ERR_TIMEOUT"
+	CodeInternal       = "ERR_INTERNAL"
 )
 
 // ArgoError is an error interface that additionally adds support for
@@ -77,8 +77,6 @@ func InternalWrapError(err error, message ...string) error {
 func InternalWrapErrorf(err error, format string, args ...interface{}) error {
 	return Wrap(err, CodeInternal, fmt.Sprintf(format, args...))
 }
-
-
 
 // Wrap returns an error annotating err with a stack trace at the point Wrap is called,
 // and a new supplied message. The previous original is preserved and accessible via Cause().

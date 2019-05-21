@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -22,8 +21,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
-	"github.com/argoproj/pkg/strftime"
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -32,6 +29,8 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
+	"github.com/argoproj/pkg/strftime"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
