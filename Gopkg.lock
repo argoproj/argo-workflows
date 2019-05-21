@@ -1254,7 +1254,6 @@
     "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/gorilla/websocket",
-    "github.com/lib/pq",
     "github.com/mitchellh/go-ps",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
