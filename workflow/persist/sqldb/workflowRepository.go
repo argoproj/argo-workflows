@@ -142,7 +142,7 @@ func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
 
 	err := wdc.Session.Collection(wdc.TableName).Find("id", uid).One(&wfDB)
 	if err != nil {
-		DBOperationError(err, "DB GET operation failed")
+		return nil, DBOperationError(err, "DB GET operation failed")
 	}
 	if wfDB.Id != "" {
 		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
