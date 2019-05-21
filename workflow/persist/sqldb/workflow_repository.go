@@ -2,14 +2,15 @@ package sqldb
 
 import (
 	"encoding/json"
+
 	"strings"
 	"time"
 
 	"upper.io/db.v3/lib/sqlbuilder"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/prometheus/common/log"
 )
 
 type (

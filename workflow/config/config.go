@@ -57,7 +57,8 @@ type WorkflowControllerConfig struct {
 	// Parallelism limits the max total parallel workflows that can execute at the same time
 	Parallelism int `json:"parallelism,omitempty"`
 
-	PersistConfig *PersistConfig `json:"persistConfig,omitempty"`
+	// Persistence contains the workflow persistence DB configuration
+	Persistence *PersistConfig `json:"persistence,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,

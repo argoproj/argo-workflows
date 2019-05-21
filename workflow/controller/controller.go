@@ -459,10 +459,10 @@ func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBCont
 	var wfDBCtx sqldb.WorkflowDBContext
 	var err error
 
-	wfDBCtx.TableName = wfc.Config.PersistConfig.TableName
-	wfDBCtx.SupportLargeWorkflow = wfc.Config.PersistConfig.SupportLargeWorkflow
+	wfDBCtx.TableName = wfc.Config.Persistence.TableName
+	wfDBCtx.SupportLargeWorkflow = wfc.Config.Persistence.SupportLargeWorkflow
 
-	wfDBCtx.Session, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.PersistConfig)
+	wfDBCtx.Session, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
 	if err != nil {
 		log.Errorf("Error in createPersistenceContext. %v", err)
 		return nil, err

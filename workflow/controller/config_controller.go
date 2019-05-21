@@ -45,7 +45,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	}
 	wfc.Config = config
 
-	if wfc.Config.PersistConfig != nil {
+	if wfc.Config.Persistence != nil {
 		log.Info("Persistence configuration enabled")
 		wfc.wfDBctx, err = wfc.createPersistenceContext()
 		if err != nil {
