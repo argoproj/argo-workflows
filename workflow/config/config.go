@@ -91,29 +91,27 @@ type PersistConfig struct {
 	SupportLargeWorkflow bool                `json:"supportLargeWorkflow"`
 	TableName            string              `json:"tableName"`
 	PersistConnectPool   *PersistConnectPool `json:"persistConnectPool"`
-	Postgresql           *PostgresqlConfig   `json:"postgresql,omitempty"`
-	Mysql                *MysqlConfig        `json:"mysql,omitempty"`
+	PostgreSQL           *PostgreSQLConfig   `json:"postgresql,omitempty"`
+	MySQL                *MySQLConfig        `json:"mysql,omitempty"`
 }
 type PersistConnectPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
 	MaxOpenConns int `json:"maxOpenConns"`
 }
-type PostgresqlConfig struct {
+type PostgreSQLConfig struct {
 	Host     string `json:"host"`
 	Port     string `json:"port"`
 	Database string `json:"database"`
-
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 }
 
-type MysqlConfig struct {
+type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
+	Options        map[string]string	   `json:"options"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
-
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 }
 

@@ -175,7 +175,7 @@ func TestWorkflowControllerArchiveConfig(t *testing.T) {
 		},
 		KeyFormat: "{{workflow.creationTimestamp.Y}}/{{workflow.creationTimestamp.m}}/{{workflow.creationTimestamp.d}}/{{workflow.name}}/{{pod.name}}",
 	}
-	woc.operate(nil)
+	woc.operate()
 	podName := getPodName(woc.wf)
 	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -200,7 +200,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 		KeyFormat: "{{workflow.unresolvable}}",
 	}
-	woc.operate(nil)
+	woc.operate()
 	podName := getPodName(woc.wf)
 	_, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Error(t, err)
@@ -215,7 +215,7 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 		},
 		KeyFormat: "path/in/bucket",
 	}
-	woc.operate(nil)
+	woc.operate()
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.NoError(t, err)
@@ -243,7 +243,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		},
 		KeyFormat: "path/in/bucket",
 	}
-	woc.operate(nil)
+	woc.operate()
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.NoError(t, err)

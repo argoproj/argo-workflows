@@ -3,8 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/workflow/config"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"strings"
 	"time"
 
@@ -30,6 +28,8 @@ import (
 	"github.com/argoproj/argo/workflow/metrics"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/persist/sqldb"
 )
 
 // WorkflowController is the controller for workflow resources
@@ -233,7 +233,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
-		woc.persistUpdates(wfc.wfDBctx)
+		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
 	}
@@ -246,8 +246,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	// Loading running workflow from persistence storage if SupportLargeWorkflow enabled
-	if wfc.wfDBctx.(*sqldb.WorkflowDBContext) != nil && wfc.wfDBctx.IsSupportLargeWorkflow() {
-		wfDB := wfc.wfDBctx.Get(string(wf.UID))
+	if wfc.wfDBctx != nil && wfc.wfDBctx.IsSupportLargeWorkflow() {
+		wfDB, err := wfc.wfDBctx.Get(string(wf.UID))
+		if err != nil {
+			log.Warnf("DB get operation failed. %v", err)
+		}
 		if wfDB != nil && wfDB.UID != "" {
 			wf = wfDB
 		}
@@ -260,11 +263,11 @@ func (wfc *WorkflowController) processNextItem() bool {
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
-		woc.persistUpdates(wfc.wfDBctx)
+		woc.persistUpdates()
 		wfc.throttler.Remove(key)
 		return true
 	}
-	woc.operate(wfc.wfDBctx)
+	woc.operate()
 	if woc.wf.Status.Completed() {
 		wfc.throttler.Remove(key)
 	}

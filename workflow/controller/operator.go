@@ -3,17 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
-	"github.com/argoproj/pkg/strftime"
-	jsonpatch "github.com/evanphx/json-patch"
-	log "github.com/sirupsen/logrus"
-	"github.com/valyala/fasttemplate"
-	apiv1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/utils/pointer"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -23,6 +12,18 @@ import (
 	"sync"
 	"time"
 
+
+	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasttemplate"
+	apiv1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
+
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
+	"github.com/argoproj/pkg/strftime"
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -108,12 +109,12 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 // and its pods and decides how to proceed down the execution path.
 // TODO: an error returned by this method should result in requeuing the workflow to be retried at a
 // later time
-func (woc *wfOperationCtx) operate(wfdx sqldb.DBRepository) {
+func (woc *wfOperationCtx) operate() {
 	defer func() {
 		if woc.wf.Status.Completed() {
 			_ = woc.killDaemonedChildren("")
 		}
-		woc.persistUpdates(wfdx)
+		woc.persistUpdates()
 	}()
 	defer func() {
 		if r := recover(); r != nil {
@@ -285,7 +286,7 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
 // It also labels any pods as completed if we have extracted everything we need from it.
 // NOTE: a previous implementation used Patch instead of Update, but Patch does not work with
 // the fake CRD clientset which makes unit testing extremely difficult.
-func (woc *wfOperationCtx) persistUpdates(db sqldb.DBRepository) {
+func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
@@ -299,7 +300,7 @@ func (woc *wfOperationCtx) persistUpdates(db sqldb.DBRepository) {
 		woc.wf.Status.Nodes = nil
 	}
 	var wfDB = woc.wf.DeepCopy()
-	if db != nil && db.IsSupportLargeWorkflow() {
+	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsSupportLargeWorkflow() {
 		woc.wf.Status.Nodes = nil
 		woc.wf.Status.CompressedNodes = ""
 	}
@@ -323,11 +324,11 @@ func (woc *wfOperationCtx) persistUpdates(db sqldb.DBRepository) {
 		}
 	}
 
-	if db != nil && !db.IsInterfaceNil() {
-		err = db.Save(wfDB)
+	if woc.controller.wfDBctx != nil {
+		err = woc.controller.wfDBctx.Save(wfDB)
 		if err != nil {
 			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
-			if db.IsSupportLargeWorkflow() {
+			if woc.controller.wfDBctx.IsSupportLargeWorkflow() {
 				woc.markWorkflowFailed(err.Error())
 				return
 			}

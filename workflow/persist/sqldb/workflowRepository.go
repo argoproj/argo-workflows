@@ -2,12 +2,14 @@ package sqldb
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
+	"upper.io/db.v3/lib/sqlbuilder"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/prometheus/common/log"
-	"strings"
-	"time"
-	"upper.io/db.v3/lib/sqlbuilder"
 )
 
 type (
@@ -19,9 +21,9 @@ type (
 
 	DBRepository interface {
 		Save(wf *wfv1.Workflow) error
-		Get(uid string) *wfv1.Workflow
-		ListAll() []wfv1.Workflow
-		Query(condition interface{}) []wfv1.Workflow
+		Get(uid string) (*wfv1.Workflow, error)
+		ListAll() ([]wfv1.Workflow, error)
+		Query(condition interface{}) ([]wfv1.Workflow, error)
 		Close() error
 		IsSupportLargeWorkflow() bool
 		IsInterfaceNil() bool
@@ -69,14 +71,14 @@ func (wdc *WorkflowDBContext) Init(sess sqlbuilder.Database) {
 func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 
 	if wdc != nil && wdc.Session == nil {
-		return errors.InternalError("DB is not initiallized")
+		return DBInvalidSession(nil, "DB session is not initialized")
 	}
 	wfdb := convert(wf)
 
 	err := wdc.update(wfdb)
 
 	if err != nil {
-		if errors.IsCode(errors.CodeDBUpdateRowNotFound, err) {
+		if errors.IsCode(CodeDBUpdateRowNotFound, err) {
 			return wdc.insert(wfdb)
 		} else {
 			log.Warn(err)
@@ -90,6 +92,9 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 }
 
 func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
+	if wdc.Session == nil {
+		return DBInvalidSession(nil, "DB session is not initialized")
+	}
 	tx, err := wdc.Session.NewTx(nil)
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
@@ -106,6 +111,9 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 }
 
 func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
+	if wdc.Session == nil {
+		return DBInvalidSession(nil, "DB session is not initialized")
+	}
 	tx, err := wdc.Session.NewTx(nil)
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
@@ -113,7 +121,7 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
-			return errors.DBUpdateNoRowFoundError(err, "")
+			return DBUpdateNoRowFoundError(err, "")
 		}
 		return errors.InternalErrorf("Error in updating workflow in persistence %v", err)
 	}
@@ -125,68 +133,77 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	return nil
 }
 
-func (wdc *WorkflowDBContext) Get(uid string) *wfv1.Workflow {
+func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
 	var wfDB WorkflowDB
 	var wf wfv1.Workflow
 	if wdc.Session == nil {
-		log.Warn("DB is not initiallized")
-		return nil
+		return nil, DBInvalidSession(nil, "DB session is not initiallized")
 	}
 
 	err := wdc.Session.Collection(wdc.TableName).Find("id", uid).One(&wfDB)
 	if err != nil {
-
+		DBOperationError(err, "DB GET operation failed")
 	}
 	if wfDB.Id != "" {
 		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
 		if err != nil {
-			log.Warn(" Workflow unmarshalling is failed for ")
+			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
 		}
+	} else {
+		return nil, DBOperationError(nil, "Row is not found")
 	}
-	return &wf
+	return &wf, nil
 
 }
 
-func (wdc *WorkflowDBContext) ListAll() []wfv1.Workflow {
+func (wdc *WorkflowDBContext) ListAll() ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
+
+	if wdc.Session == nil {
+		return nil, DBInvalidSession(nil, "DB session is not initialized")
+	}
 
 	if err := wdc.Session.Collection(wdc.TableName).Find().OrderBy(" startedAt DESC").All(&wfDBs); err != nil {
-		log.Fatal(err)
-		return nil
+		return nil, DBOperationError(err, "DB List operation failed")
 	}
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
 		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
 		if err != nil {
-			log.Warn(" Workflow unmarshalling is failed for ")
+			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
 		} else {
 			wfs = append(wfs, wf)
 		}
 	}
-	return wfs
+	return wfs, nil
 }
 
-func (wdc *WorkflowDBContext) Query(condition interface{}) []wfv1.Workflow {
+func (wdc *WorkflowDBContext) Query(condition interface{}) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
+	if wdc.Session == nil {
+		return nil, DBInvalidSession(nil, "DB session is not initialized")
+	}
 
 	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(" startedAt DESC").All(&wfDBs); err != nil {
-		log.Fatal(err)
-		return nil
+		return nil, DBOperationError(err, "DB Query opeartion failed")
 	}
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
 		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
 		if err != nil {
-			log.Warn(" Workflow unmarshalling is failed for ")
+			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
 		} else {
 			wfs = append(wfs, wf)
 		}
 	}
-	return wfs
+	return wfs, nil
 }
 
 func (wdc *WorkflowDBContext) Close() error {
+	if wdc.Session == nil {
+		return DBInvalidSession(nil, "DB session is not initialized")
+	}
 	return wdc.Session.Close()
 }

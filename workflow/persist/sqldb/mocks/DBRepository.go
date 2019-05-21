@@ -26,7 +26,7 @@ func (_m *DBRepository) Close() error {
 }
 
 // Get provides a mock function with given fields: uid
-func (_m *DBRepository) Get(uid string) *v1alpha1.Workflow {
+func (_m *DBRepository) Get(uid string) (*v1alpha1.Workflow, error) {
 	ret := _m.Called(uid)
 
 	var r0 *v1alpha1.Workflow
@@ -38,7 +38,14 @@ func (_m *DBRepository) Get(uid string) *v1alpha1.Workflow {
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(uid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // IsInterfaceNil provides a mock function with given fields:
@@ -70,7 +77,7 @@ func (_m *DBRepository) IsSupportLargeWorkflow() bool {
 }
 
 // ListAll provides a mock function with given fields:
-func (_m *DBRepository) ListAll() []v1alpha1.Workflow {
+func (_m *DBRepository) ListAll() ([]v1alpha1.Workflow, error) {
 	ret := _m.Called()
 
 	var r0 []v1alpha1.Workflow
@@ -82,11 +89,18 @@ func (_m *DBRepository) ListAll() []v1alpha1.Workflow {
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Query provides a mock function with given fields: condition
-func (_m *DBRepository) Query(condition interface{}) []v1alpha1.Workflow {
+func (_m *DBRepository) Query(condition interface{}) ([]v1alpha1.Workflow, error) {
 	ret := _m.Called(condition)
 
 	var r0 []v1alpha1.Workflow
@@ -98,7 +112,14 @@ func (_m *DBRepository) Query(condition interface{}) []v1alpha1.Workflow {
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(interface{}) error); ok {
+		r1 = rf(condition)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Save provides a mock function with given fields: wf

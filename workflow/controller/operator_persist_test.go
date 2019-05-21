@@ -1,13 +1,15 @@
 package controller
 
 import (
+	"testing"
+
 	"github.com/argoproj/argo/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"github.com/argoproj/argo/workflow/persist/sqldb/mocks"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"testing"
 )
 
 func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) sqldb.DBRepository {
@@ -51,9 +53,9 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	if err != nil {
 
 	}
-
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(getMockDBCtx(errors.DBUpdateNoRowFoundError(nil, "testt"), false, false))
+	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
 
 }
@@ -67,10 +69,11 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	if err != nil {
 
 	}
-
-	woc := newWorkflowOperationCtx(wf, controller)
 	var err1 error = errors.New("23324", "test")
-	woc.operate(getMockDBCtx(errors.DBUpdateNoRowFoundError(err1, "testt"), false, false))
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), false, false)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
 
 }
@@ -84,9 +87,9 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	if err != nil {
 
 	}
-
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
-	woc.operate(getMockDBCtx(errors.DBUpdateNoRowFoundError(nil, "testt"), true, true))
+	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
 
 }
@@ -100,10 +103,11 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	if err != nil {
 
 	}
-
-	woc := newWorkflowOperationCtx(wf, controller)
 	var err1 error = errors.New("23324", "test")
-	woc.operate(getMockDBCtx(errors.DBUpdateNoRowFoundError(err1, "testt"), true, false))
+	controller.wfDBctx  = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), true, false)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeFailed)
 
 }

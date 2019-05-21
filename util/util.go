@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/prometheus/common/log"
@@ -24,10 +23,6 @@ func Close(c Closer) {
 // GetSecrets retrieves a secret value and memoizes the result
 func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]byte, error) {
 
-	secretMaps := make(map[string][]byte)
-
-	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
-
 	secretsIf := clientSet.CoreV1().Secrets(namespace)
 	var secret *apiv1.Secret
 	var err error
@@ -45,12 +40,7 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 	if err != nil {
 		return []byte{}, errors.InternalWrapError(err)
 	}
-	// memoize all keys in the secret since it's highly likely we will need to get a
-	// subsequent key in the secret (e.g. username + password) and we can save an API call
-	for k, v := range secret.Data {
-		secretMaps[fmt.Sprintf("%s/%s/%s", namespace, name, k)] = v
-	}
-	val, ok := secretMaps[cachedKey]
+	val, ok := secret.Data[key]
 	if !ok {
 		return []byte{}, errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
