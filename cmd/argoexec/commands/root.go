@@ -106,6 +106,6 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
-		panic("InitExecutor failed in sidecar. " + err.Error())
+		panic(err.Error())
 	}
 }

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/pkg/stats"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -29,12 +28,12 @@ func loadArtifacts() error {
 	// Download input artifacts
 	err := wfExecutor.StageFiles()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Init container failed to stage the files"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	err = wfExecutor.LoadArtifacts()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Init container failed to load the artifacts"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	return nil
