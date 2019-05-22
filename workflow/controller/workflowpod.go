@@ -488,12 +488,11 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.SchedulerName != "" {
 		pod.Spec.SchedulerName = wfSpec.SchedulerName
 	}
+
 	// set hostaliases
-	if len(tmpl.HostAliases) > 0 {
-		pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
-	} else if len(wfSpec.HostAliases) > 0 {
-		pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
-	}
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
+
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
