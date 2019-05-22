@@ -922,8 +922,6 @@ func (woc *wfOperationCtx) createPVCs() error {
 	return nil
 }
 
-
-
 func (woc *wfOperationCtx) deletePVCs() error {
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
 	if totalPVCs == 0 {
