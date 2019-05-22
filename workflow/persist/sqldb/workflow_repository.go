@@ -27,7 +27,6 @@ type (
 		Query(condition interface{}) ([]wfv1.Workflow, error)
 		Close() error
 		IsSupportLargeWorkflow() bool
-		IsInterfaceNil() bool
 	}
 )
 
@@ -57,9 +56,6 @@ func convert(wf *wfv1.Workflow) *WorkflowDB {
 
 }
 
-func (wdc *WorkflowDBContext) IsInterfaceNil() bool {
-	return wdc == nil
-}
 func (wdc *WorkflowDBContext) IsSupportLargeWorkflow() bool {
 	return wdc.SupportLargeWorkflow
 }
