@@ -77,7 +77,7 @@ func testRunWorkflows(t *testing.T) {
 		workflowPath = append(workflowPath, wf.Path)
 
 	}
-	submittedWf := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
+	submittedWf := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,true,false,nil) )
 
 	var waitgroup sync.WaitGroup
 	for  i := range submittedWf{
@@ -86,9 +86,8 @@ func testRunWorkflows(t *testing.T) {
 			e2eWf := statusMap[wfname]
 			if e2eWf != nil {
 				if e2eWf.Timeout == 0 {
-					e2eWf.Timeout = 300
+					e2eWf.Timeout = 600
 				}
-
 				waitgroup.Add(1)
 				go func() {
 					defer waitgroup.Done()
@@ -151,6 +150,7 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 			return ""
 		}
 		time.Sleep(1 * time.Second)
+		log.Printf("%s is still running ", wfName)
 	}
 	return ""
 }
