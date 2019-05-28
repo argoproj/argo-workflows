@@ -154,7 +154,7 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 		//	return ""
 		//}
 		time.Sleep(1 * time.Minute)
-		log.Printf("%s is still in  % ", wfName, result)
+		log.Printf("%s is still in  %s", wfName, result)
 	}
 	return ""
 }
