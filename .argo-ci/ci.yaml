@@ -109,9 +109,8 @@ spec:
       touch /var/lib/rancher/k3s/ready && until ls /etc/rancher/k3s/k3s.yaml; do sleep 3; done && \
       ls /var/lib/rancher/k3s/agent/images/ && \
       kubectl create ns argo && kubectl get ns && \
-      kubectl apply -n argo -f manifests/install.yaml && \
-      kubectl create -f r.yaml && \
-      make test
+      kubectl apply -n argo -f manifests/install-e2e.yaml && \
+      go test ./test/e2e
        "]
       workingDir: /go/src/github.com/argoproj/argo
       env:
