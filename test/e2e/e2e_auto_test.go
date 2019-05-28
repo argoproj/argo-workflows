@@ -77,7 +77,7 @@ func testRunWorkflows(t *testing.T) {
 		workflowPath = append(workflowPath, wf.Path)
 
 	}
-	submittedWf := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,true,false,nil) )
+	submittedWf := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
 
 	var waitgroup sync.WaitGroup
 	for  i := range submittedWf{
