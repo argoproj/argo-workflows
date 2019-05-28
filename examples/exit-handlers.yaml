@@ -9,7 +9,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-handlers-
+  generateName: exit-handlers1-
 spec:
   entrypoint: intentional-fail
   onExit: exit-handler

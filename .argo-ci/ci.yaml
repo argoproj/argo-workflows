@@ -3,72 +3,164 @@ kind: Workflow
 metadata:
   generateName: argo-ci-
 spec:
+  volumes:
+    - name: k3setc
+      emptyDir: {}
+    - name: k3svar
+      emptyDir: {}
+    - name: tmp
+      emptyDir: {}
+    - name: dockerdemon
+      emptyDir: {}
+    - name: lib
+      emptyDir: {}
+    - name: log
+      emptyDir: {}
   entrypoint: argo-ci
   arguments:
     parameters:
     - name: revision
-      value: master
+      value: Issue678
     - name: repo
-      value: https://github.com/argoproj/argo.git
+      value:  https://github.com/sarabala1979/argo.git
 
   templates:
   - name: argo-ci
     steps:
-    - - name: build
-        template: ci-dind
-        arguments:
-          parameters:
-          - name: cmd
-            value: "{{item}}"
-        withItems:
-        - make controller-image executor-image
-        - make release-clis
-      - name: test
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: cmd
-            value: dep ensure && make lint test verify-codegen
+#    - - name: build
+#        template: ci-dind
+#        arguments:
+#          parameters:
+#          - name: cmd
+#            value: "{{item}}"
+#        withItems:
+#        - make controller-image executor-image
+#        - make release-clis
+#      - name: test
+#        template: ci-builder
+#        arguments:
+#          parameters:
+#          - name: cmd
+#            value: dep ensure && make lint test verify-codegen
+    - - name: e2e-test
+        template: ci-builder-e2e
 
-  - name: ci-builder
-    inputs:
-      parameters:
-      - name: cmd
-      artifacts:
-      - name: code
-        path: /go/src/github.com/argoproj/argo
-        git:
-          repo: "{{workflow.parameters.repo}}"
-          revision: "{{workflow.parameters.revision}}"
-    container:
-      image: argoproj/argo-ci-builder:latest
-      command: [sh, -c]
-      args: ["{{inputs.parameters.cmd}}"]
-      workingDir: /go/src/github.com/argoproj/argo
 
-  - name: ci-dind
+#  - name: ci-builder
+#    inputs:
+#      parameters:
+#      - name: cmd
+#      artifacts:
+#      - name: code
+#        path: /go/src/github.com/argoproj/argo
+#        git:
+#          repo: "{{workflow.parameters.repo}}"
+#          revision: "{{workflow.parameters.revision}}"
+#    container:
+#      image: argoproj/argo-ci-builder:latest
+#      command: [sh, -c]
+#      args: ["{{inputs.parameters.cmd}}"]
+#      workingDir: /go/src/github.com/argoproj/argo
+
+#  - name: ci-dind
+#    inputs:
+#      parameters:
+#      - name: cmd
+#      artifacts:
+#      - name: code
+#        path: /go/src/github.com/argoproj/argo
+#        git:
+#          repo: "{{workflow.parameters.repo}}"
+#          revision: "{{workflow.parameters.revision}}"
+#    container:
+#      image: argoproj/argo-ci-builder:latest
+#      command: [sh, -c]
+#      args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
+#      workingDir: /go/src/github.com/argoproj/argo
+#      env:
+#      - name: DOCKER_HOST
+#        value: 127.0.0.1
+#      - name: DOCKER_BUILDKIT
+#        value: "1"
+#    sidecars:
+#    - name: dind
+#      image: docker:18.09-dind
+#      securityContext:
+#        privileged: true
+#      mirrorVolumeMounts: true
+
+  - name: ci-builder-e2e
     inputs:
-      parameters:
-      - name: cmd
       artifacts:
-      - name: code
-        path: /go/src/github.com/argoproj/argo
-        git:
-          repo: "{{workflow.parameters.repo}}"
-          revision: "{{workflow.parameters.revision}}"
+        - name: code
+          path: /go/src/github.com/argoproj/argo
+          git:
+            repo: "{{workflow.parameters.repo}}"
+            revision: "{{workflow.parameters.revision}}"
     container:
-      image: argoproj/argo-ci-builder:latest
+      image: argoproj/argo-cd-ci-builder:v0.13.1
+      imagePullPolicy: Always
       command: [sh, -c]
-      args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
+      args: ["
+      dep ensure && until docker ps; do sleep 3; done && \
+      make cli controller-image executor-image DEV_IMAGE=true && mkdir -p /var/lib/rancher/k3s/agent/images && \
+      docker save workflow-controller:latest > /var/lib/rancher/k3s/agent/images/workflow-controller.tar && \
+      docker save argoexec:latest > /var/lib/rancher/k3s/agent/images/argoexec.tar && \
+      touch /var/lib/rancher/k3s/ready && until ls /etc/rancher/k3s/k3s.yaml; do sleep 3; done && \
+      ls /var/lib/rancher/k3s/agent/images/ && \
+      kubectl create ns argo && kubectl get ns && \
+      kubectl apply -n argo -f manifests/install.yaml && \
+      kubectl create -f r.yaml && \
+      make test
+       "]
       workingDir: /go/src/github.com/argoproj/argo
       env:
-      - name: DOCKER_HOST
-        value: 127.0.0.1
-      - name: DOCKER_BUILDKIT
-        value: "1"
+        - name: USER
+          value: argocd
+        - name: DOCKER_HOST
+          value: 127.0.0.1
+        - name: DOCKER_BUILDKIT
+          value: "1"
+        - name: KUBECONFIG
+          value: /etc/rancher/k3s/k3s.yaml
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: k3setc
+          mountPath: /etc/rancher/k3s
+        - name: k3svar
+          mountPath: /var/lib/rancher/k3s
     sidecars:
-    - name: dind
-      image: docker:18.09-dind
-      securityContext:
-        privileged: true
-      mirrorVolumeMounts: true
+      - name: dind
+        image: docker:18.09-dind
+        securityContext:
+          privileged: true
+        mirrorVolumeMounts: true
+        volumeMounts:
+          - name: dockerdemon
+            mountPath: /var/run
+          - name: lib
+            mountPath: /var/lib/pods
+          - name: log
+            mountPath: /var/log/pods
+
+      - name: k3s
+        image: rancher/k3s:v0.3.0-rc1
+        imagePullPolicy: Always
+        command: [sh, -c]
+        args: ["until ls /var/lib/rancher/k3s/ready; do sleep 3; done &&  k3s server || true"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+          - name: k3setc
+            mountPath: /etc/rancher/k3s
+          - name: k3svar
+            mountPath: /var/lib/rancher/k3s
+          - name: dockerdemon
+            mountPath: /var/run
+          - name: lib
+            mountPath: /var/lib/pods
+          - name: log
+            mountPath: /var/log/pods

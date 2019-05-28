@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: dag-target-
+  generateName: dag-target-input-param-
 spec:
   entrypoint: dag-target
   arguments:

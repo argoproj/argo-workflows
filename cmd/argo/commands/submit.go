@@ -25,6 +25,11 @@ type cliSubmitOpts struct {
 	priority *int32 // --priority
 }
 
+func NewCliSubmitOpts(output string, wait bool, watch bool, strict bool, priority *int32) *cliSubmitOpts {
+	return &cliSubmitOpts{output:output, wait:wait, watch:watch,strict:strict,priority:priority}
+
+}
+
 func NewSubmitCommand() *cobra.Command {
 	var (
 		submitOpts    util.SubmitOpts
@@ -61,7 +66,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) {
+func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) []string{
 	if submitOpts == nil {
 		submitOpts = &util.SubmitOpts{}
 	}
@@ -122,6 +127,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		workflowNames = append(workflowNames, created.Name)
 	}
 	waitOrWatch(workflowNames, *cliOpts)
+	return workflowNames
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
