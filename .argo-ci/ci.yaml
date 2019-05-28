@@ -103,6 +103,7 @@ spec:
       command: [sh, -c]
       args: ["
       dep ensure && until docker ps; do sleep 3; done && \
+      make cli controller-image executor-image DEV_IMAGE=true && mkdir -p /var/lib/rancher/k3s/agent/images && \
       docker save workflow-controller:latest > /var/lib/rancher/k3s/agent/images/workflow-controller.tar && \
       docker save argoexec:latest > /var/lib/rancher/k3s/agent/images/argoexec.tar && \
       touch /var/lib/rancher/k3s/ready && until ls /etc/rancher/k3s/k3s.yaml; do sleep 3; done && \
