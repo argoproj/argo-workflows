@@ -57,30 +57,18 @@ func testRunWorkflows(t *testing.T) {
 	statusMap := make(map[string]*E2EWorkflow)
 	property := getConf()
 	commands.NewCommand()
-	//err := filepath.Walk("./expectedfailures",
-	//	func(path string, info os.FileInfo, err error) error {
-	//		if err != nil {
-	//			return err
-	//		}
-	//		r, err := regexp.MatchString(".yaml", info.Name())
-	//		if err == nil && r {
-	//			filename := "./"+path
-	//			go commands.SubmitWorkflows([]string{filename}, nil, nil)
-	//		}
-	//		return nil
-	//	})
 
-	var submittedWfs []string
+	var workflowPath []string
 	for i :=range property.Workflows{
 		wf := property.Workflows[i]
 		statusMap[wf.Name] = &wf
-		//workflowPath = append(workflowPath, wf.Path)
-		submittedWf := commands.SubmitWorkflows([]string{wf.Path}, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
-		log.Printf("%s submitted successfully", submittedWf)
-		submittedWfs = append(submittedWfs, submittedWf...)
+		workflowPath = append(workflowPath, wf.Path)
+		//submittedWf := commands.SubmitWorkflows([]string{wf.Path}, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
+		//log.Printf("%s submitted successfully", submittedWf)
+		//submittedWfs = append(submittedWfs, submittedWf...)
 
 	}
-	//submittedWf := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
+	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
 
 	var waitgroup sync.WaitGroup
 	for  i := range submittedWfs{
@@ -89,7 +77,7 @@ func testRunWorkflows(t *testing.T) {
 			e2eWf := statusMap[wfname]
 			if e2eWf != nil {
 				if e2eWf.Timeout == 0 {
-					e2eWf.Timeout = 600
+					e2eWf.Timeout = 900
 				}
 				waitgroup.Add(1)
 				go func() {
@@ -139,8 +127,8 @@ func testRunWorkflows(t *testing.T) {
 func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePhase{
 	wfClient := commands.InitWorkflowClient()
 	defer CleanUpWorkflow(wfName)
-	//for start := time.Now(); ;
-	for{
+	for start := time.Now(); ;{
+	//for{
 		wf,_ := wfClient.Get(wfName, v1.GetOptions{})
 		result := wf.Status.Phase
 
@@ -149,12 +137,12 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 			return result
 		}
 
-		//if time.Since(start) > e2eWf.Timeout *time.Second {
-		//	assert.True(t,false)
-		//	return ""
-		//}
+		if time.Since(start) > e2eWf.Timeout *time.Second {
+			assert.True(t,false)
+			return ""
+		}
 		time.Sleep(1 * time.Minute)
-		log.Printf("%s is still in  %s", wfName, result)
+		//log.Printf("%s is still in  %s", wfName, result)
 	}
 	return ""
 }
