@@ -2,7 +2,7 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/util"
 	"os"
 
 	"github.com/argoproj/pkg/cli"
@@ -67,7 +67,7 @@ func NewRootCommand() *cobra.Command {
 
 func initExecutor() *executor.WorkflowExecutor {
 	config, err := clientConfig.ClientConfig()
-	checkErr(errors.Wrap(err, errors.CodeInternal, "Failed to initialize client config in Sidecar"))
+	checkErr(err)
 
 	namespace, _, err := clientConfig.Namespace()
 	checkErr(err)
@@ -81,7 +81,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	}
 
 	tmpl, err := executor.LoadTemplate(podAnnotationsPath)
-	checkErr(errors.Wrap(err, errors.CodeInternal, "Failed to load the template"))
+	checkErr(err)
 
 	var cre executor.ContainerRuntimeExecutor
 	switch os.Getenv(common.EnvVarContainerRuntimeExecutor) {
@@ -94,7 +94,7 @@ func initExecutor() *executor.WorkflowExecutor {
 	default:
 		cre, err = docker.NewDockerExecutor()
 	}
-	checkErr(errors.Wrap(err, errors.CodeInternal, "Failed to initialize Executor"))
+	checkErr(err)
 
 	wfExecutor := executor.NewExecutor(clientset, podName, namespace, podAnnotationsPath, cre, *tmpl)
 	yamlBytes, _ := json.Marshal(&wfExecutor.Template)
@@ -106,6 +106,7 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
+		util.WriteTeriminateMessage(err.Error())
 		panic(err.Error())
 	}
 }

@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/errors"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -32,41 +31,40 @@ func waitContainer() error {
 	// Wait for main container to complete
 	err := wfExecutor.Wait()
 	if err != nil {
-
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to wait for main container to complete "))
+		wfExecutor.AddError(err)
 		// do not return here so we can still try to kill sidecars & save outputs
 	}
 	err = wfExecutor.KillSidecars()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container kill failed"))
+		wfExecutor.AddError(err)
 		// do not return here so we can still try save outputs
 	}
 	logArt, err := wfExecutor.SaveLogs()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to save the logs"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	// Saving output parameters
 	err = wfExecutor.SaveParameters()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to save the parameters"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to save the artifacts"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	// Capture output script result
 	err = wfExecutor.CaptureScriptResult()
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to capture the script results"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	err = wfExecutor.AnnotateOutputs(logArt)
 	if err != nil {
-		wfExecutor.AddError(errors.Wrap(err, errors.CodeInternal, " Wait container failed to annotate the outputs"))
+		wfExecutor.AddError(err)
 		return err
 	}
 	return nil
