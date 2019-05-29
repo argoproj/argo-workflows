@@ -252,9 +252,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoexec:latest
+        - argoexec:dev
         command:
         - workflow-controller
-        image: workflow-controller:latest
+        image: workflow-controller:dev
         name: workflow-controller
       serviceAccountName: argo
