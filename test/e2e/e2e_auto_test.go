@@ -68,6 +68,8 @@ func testRunWorkflows(t *testing.T) {
 		//submittedWfs = append(submittedWfs, submittedWf...)
 
 	}
+	log.Printf("Workflow List: %v", workflowPath)
+
 	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
 
 	var waitgroup sync.WaitGroup
@@ -78,7 +80,7 @@ func testRunWorkflows(t *testing.T) {
 			if e2eWf != nil {
 				if e2eWf.Timeout == 0 {
 
-					e2eWf.Timeout = 900
+					e2eWf.Timeout = 1800
 				}
 				waitgroup.Add(1)
 				go func() {
@@ -128,6 +130,7 @@ func testRunWorkflows(t *testing.T) {
 func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePhase{
 	wfClient := commands.InitWorkflowClient()
 	defer CleanUpWorkflow(wfName)
+	log.Printf("Start checking status : %s", wfName)
 	for start := time.Now(); ;{
 	//for{
 		wf,_ := wfClient.Get(wfName, v1.GetOptions{})
@@ -144,7 +147,7 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 			return ""
 		}
 		time.Sleep(1 * time.Minute)
-		//log.Printf("%s is still in  %s", wfName, result)
+		log.Printf("%s is still in  %s", wfName, result)
 	}
 	return ""
 }
