@@ -77,6 +77,7 @@ func testRunWorkflows(t *testing.T) {
 			e2eWf := statusMap[wfname]
 			if e2eWf != nil {
 				if e2eWf.Timeout == 0 {
+
 					e2eWf.Timeout = 900
 				}
 				waitgroup.Add(1)
@@ -138,6 +139,7 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 		}
 
 		if time.Since(start) > e2eWf.Timeout *time.Second {
+			log.Printf("Workflow execution timed out. %s ", wfName)
 			assert.True(t,false)
 			return ""
 		}
