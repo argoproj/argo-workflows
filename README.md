@@ -102,6 +102,7 @@ Currently **officially** using Argo:
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
+1. [Max Kelsen](https://maxkelsen.com/)
 
 ## Community Blogs and Presentations
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
