@@ -825,6 +825,13 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
+        "hostAliases": {
+          "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
+          }
+        },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
           "type": "array",
@@ -1152,6 +1159,13 @@
         "entrypoint": {
           "description": "Entrypoint is a template reference to the starting point of the workflow",
           "type": "string"
+        },
+        "hostAliases": {
+          "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
+          }
         },
         "hostNetwork": {
           "description": "Host networking requested for this workflow pod. Default to false.",
