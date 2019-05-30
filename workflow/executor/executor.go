@@ -183,7 +183,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 		if art.Mode != nil {
 			err = os.Chmod(artPath, os.FileMode(*art.Mode))
 			if err != nil {
-				return errors.InternalWrapError(err, "Container failed to load the artifacts")
+				return errors.InternalWrapError(err)
 			}
 		}
 	}
@@ -208,7 +208,7 @@ func (we *WorkflowExecutor) StageFiles() error {
 	}
 	err := ioutil.WriteFile(filePath, body, 0644)
 	if err != nil {
-		return errors.InternalWrapError(err, "Container failed to load the stage files")
+		return errors.InternalWrapError(err)
 	}
 	return nil
 }
