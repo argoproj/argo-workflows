@@ -612,3 +612,33 @@ func TestTemplateLocalVolumes(t *testing.T) {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
 }
+
+// TestWFLevelHostAliases verifies the ability to carry forward workflow level HostAliases to Podspec
+func TestWFLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
+}
+
+// TestTmplLevelHostAliases verifies the ability to carry forward template level HostAliases to Podspec
+func TestTmplLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
+}
