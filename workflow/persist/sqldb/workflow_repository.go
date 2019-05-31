@@ -1,6 +1,7 @@
 package sqldb
 
 import (
+	"context"
 	"encoding/json"
 
 	"strings"
@@ -92,7 +93,7 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
-	tx, err := wdc.Session.NewTx(nil)
+	tx, err := wdc.Session.NewTx(context.TODO())
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
 	}
@@ -119,7 +120,7 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
-	tx, err := wdc.Session.NewTx(nil)
+	tx, err := wdc.Session.NewTx(context.TODO())
 
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
@@ -183,7 +184,7 @@ func (wdc *WorkflowDBContext) ListAll() ([]wfv1.Workflow, error) {
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
-		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
+		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
 		if err != nil {
 			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
 		} else {
@@ -205,7 +206,7 @@ func (wdc *WorkflowDBContext) Query(condition interface{}) ([]wfv1.Workflow, err
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
-		err := json.Unmarshal([]byte(wfDB.Workflow), wf)
+		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
 		if err != nil {
 			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
 		} else {
