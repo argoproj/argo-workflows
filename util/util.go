@@ -1,5 +1,7 @@
 package util
 
+import "io/ioutil"
+
 type Closer interface {
 	Close() error
 }
@@ -8,4 +10,12 @@ type Closer interface {
 // Used to satisfy errcheck lint
 func Close(c Closer) {
 	_ = c.Close()
+}
+
+// Write the Terminate message in pod spec
+func WriteTeriminateMessage(message string) {
+	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0644)
+	if err != nil {
+		panic(err)
+	}
 }

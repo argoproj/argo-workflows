@@ -1,9 +1,10 @@
 package raw
 
 import (
+	"os"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"os"
 )
 
 type RawArtifactDriver struct {

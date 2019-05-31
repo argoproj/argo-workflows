@@ -488,6 +488,11 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.SchedulerName != "" {
 		pod.Spec.SchedulerName = wfSpec.SchedulerName
 	}
+
+	// set hostaliases
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
+
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
@@ -645,7 +650,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		switch ctr.Name {
 		case common.MainContainerName:
 			mainCtrIndex = i
-			break
 		}
 	}
 	if mainCtrIndex == -1 {
@@ -954,7 +958,7 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 			Key:  secret.Key,
 			Path: secret.Key,
 		}
-		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
+		if val := keyMap[secret.Name+"-"+secret.Key]; !val {
 			keyMap[secret.Name+"-"+secret.Key] = true
 			vol.Secret.Items = append(vol.Secret.Items, key)
 		}
