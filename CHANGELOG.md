@@ -1,6 +1,22 @@
 # Changelog
 
-## 2.3.0-rc1 (2019-04-10)
+## 2.3.0 (2019-05-20)
+
+### Notes about upgrading from v2.2
+
+* Artifact repository secrets are passed to the wait sidecar using volumeMounts instead of the
+  previous behavior of performing K8s API calls performed by the executor. This is much more secure
+  since it removes privileges of the workflow pod to no longer require secret access. However, as a
+  consequence, workflow pods which reference a secret that does not exist, will now indefinitely
+  stay in a Pending state, as opposed to the previous behavior of failing during runtime.
+
+### Deprecation Notice
+The workflow-controller-configmap introduces a new config field, `executor`, which is a container
+spec and provides controls over the executor sidecar container (i.e. `init`/`wait`). The fields
+`executorImage`, `executorResources`, and `executorImagePullPolicy` are deprecated and will be
+removed in a future release.
+
+### New Features:
 + Support for PNS (Process Namespace Sharing) executor (#1214)
 + Support for K8s API based Executor (#1010) (@dtaniwaki)
 + Adds limited support for Kubelet/K8s API artifact collection by mirroring volume mounts to wait sidecar
@@ -25,7 +41,9 @@
 + Add support for init containers (#1183) (@dtaniwaki)
 + Secrets should be passed to pods using volumes instead of API calls (#1302)
 + Azure AKS authentication issues #1079 (@gerardaus)
++ Support parameter substitution in the volumes attribute (#1238)
 
+### Refactoring & Improvements:
 * Update dependencies to K8s v1.12 and client-go 9.0
 * Add namespace explicitly to pod metadata (#1059) (@dvavili)
 * Raise not implemented error when artifact saving is unsupported (#1062) (@dtaniwaki)
@@ -36,6 +54,7 @@
 * Git cloning via SSH was not verifying host public key (#1261)
 * Speed up podReconciliation using parallel goroutine (#1286) (@xianlubird)
 
+### Bug Fixes
 - Initialize child node before marking phase. Fixes panic on invalid `When` (#1075) (@jmcarp)
 - Submodules are dirty after checkout -- need to update (#1052) (@andreimc)
 - Fix output artifact and parameter conflict (#1125) (@Ark-kun)
@@ -58,12 +77,13 @@
 - Fix bug with DockerExecutor's CopyFile (#1275)
 - Fix for Resource creation where template has same parameter templating (#1283)
 - Fixes an issue where daemon steps were not getting terminated properly
+- argo submit --wait and argo wait quits while workflow is running (#1347)
+- Fix input artifacts with multiple ssh keys (#1338) (@almariah)
+- Add when test for character that included `/` (@hideto0710)
+- Fix parameter substitution bug (#1345) (@elikatsis)
+- Fix missing template local volumes, Handle volumes only used in init containers (#1342)
+- Export the methods of `KubernetesClientInterface` (#1294)
 
-### Deprecation Notice
-The workflow-controller-configmap introduces a new config field, `executor`, which is a container 
-spec and provides controls over the executor sidecar container (i.e. `init`/`wait`). The fields
-`executorImage`, `executorResources`, and `executorImagePullPolicy` are deprecated and will be
-removed in a future release.
 
 ## 2.2.1 (2018-10-18)
 

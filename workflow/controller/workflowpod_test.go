@@ -273,7 +273,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Docker executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
 
@@ -292,7 +292,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For Kubelet executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorKubelet
 
@@ -310,7 +310,7 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 	// For K8sAPI executor
 	{
 		woc := newWoc()
-		woc.wf.Spec.Volumes = volumes
+		woc.volumes = volumes
 		woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 		woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorK8sAPI
 
@@ -324,6 +324,48 @@ func TestVolumeAndVolumeMounts(t *testing.T) {
 		assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
 		assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 	}
+}
+
+func TestVolumesPodSubstitution(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "{{inputs.parameters.volume-name}}",
+				},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+	tmpStr := "test-name"
+	inputParameters := []wfv1.Parameter{
+		{
+			Name:  "volume-name",
+			Value: &tmpStr,
+		},
+	}
+
+	woc := newWoc()
+	woc.volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].Inputs.Parameters = inputParameters
+	woc.controller.Config.ContainerRuntimeExecutor = common.ContainerRuntimeExecutorDocker
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(pod.Spec.Volumes))
+	assert.Equal(t, "volume-name", pod.Spec.Volumes[2].Name)
+	assert.Equal(t, "test-name", pod.Spec.Volumes[2].PersistentVolumeClaim.ClaimName)
+	assert.Equal(t, 1, len(pod.Spec.Containers[1].VolumeMounts))
+	assert.Equal(t, "volume-name", pod.Spec.Containers[1].VolumeMounts[0].Name)
 }
 
 func TestOutOfCluster(t *testing.T) {
@@ -419,40 +461,8 @@ func TestInitContainers(t *testing.T) {
 				EmptyDir: &apiv1.EmptyDirVolumeSource{},
 			},
 		},
-	}
-	volumeMounts := []apiv1.VolumeMount{
 		{
-			Name:      "volume-name",
-			MountPath: "/test",
-		},
-	}
-	mirrorVolumeMounts := true
-
-	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
-	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
-	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
-		{
-			MirrorVolumeMounts: &mirrorVolumeMounts,
-			Container: apiv1.Container{
-				Name: "init-foo",
-			},
-		},
-	}
-
-	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
-	podName := getPodName(woc.wf)
-	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pod.Spec.InitContainers))
-	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
-}
-
-// TestSidecars verifies the ability to set up sidecars
-func TestSidecars(t *testing.T) {
-	volumes := []apiv1.Volume{
-		{
-			Name: "volume-name",
+			Name: "init-volume-name",
 			VolumeSource: apiv1.VolumeSource{
 				EmptyDir: &apiv1.EmptyDirVolumeSource{},
 			},
@@ -464,16 +474,80 @@ func TestSidecars(t *testing.T) {
 			MountPath: "/test",
 		},
 	}
+	initVolumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "init-volume-name",
+			MountPath: "/init-test",
+		},
+	}
 	mirrorVolumeMounts := true
 
 	woc := newWoc()
-	woc.wf.Spec.Volumes = volumes
+	woc.volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].InitContainers = []wfv1.UserContainer{
+		{
+			MirrorVolumeMounts: &mirrorVolumeMounts,
+			Container: apiv1.Container{
+				Name:         "init-foo",
+				VolumeMounts: initVolumeMounts,
+			},
+		},
+	}
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pod.Spec.InitContainers))
+	assert.Equal(t, "init-foo", pod.Spec.InitContainers[0].Name)
+	for _, v := range volumes {
+		assert.Contains(t, pod.Spec.Volumes, v)
+	}
+	assert.Equal(t, 2, len(pod.Spec.InitContainers[0].VolumeMounts))
+	assert.Equal(t, "init-volume-name", pod.Spec.InitContainers[0].VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", pod.Spec.InitContainers[0].VolumeMounts[1].Name)
+}
+
+// TestSidecars verifies the ability to set up sidecars
+func TestSidecars(t *testing.T) {
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: "sidecar-volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+	}
+	sidecarVolumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "sidecar-volume-name",
+			MountPath: "/sidecar-test",
+		},
+	}
+	mirrorVolumeMounts := true
+
+	woc := newWoc()
+	woc.volumes = volumes
 	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
 	woc.wf.Spec.Templates[0].Sidecars = []wfv1.UserContainer{
 		{
 			MirrorVolumeMounts: &mirrorVolumeMounts,
 			Container: apiv1.Container{
-				Name: "side-foo",
+				Name:         "side-foo",
+				VolumeMounts: sidecarVolumeMounts,
 			},
 		},
 	}
@@ -486,4 +560,86 @@ func TestSidecars(t *testing.T) {
 	assert.Equal(t, "wait", pod.Spec.Containers[0].Name)
 	assert.Equal(t, "main", pod.Spec.Containers[1].Name)
 	assert.Equal(t, "side-foo", pod.Spec.Containers[2].Name)
+	for _, v := range volumes {
+		assert.Contains(t, pod.Spec.Volumes, v)
+	}
+	assert.Equal(t, 2, len(pod.Spec.Containers[2].VolumeMounts))
+	assert.Equal(t, "sidecar-volume-name", pod.Spec.Containers[2].VolumeMounts[0].Name)
+	assert.Equal(t, "volume-name", pod.Spec.Containers[2].VolumeMounts[1].Name)
+}
+
+func TestTemplateLocalVolumes(t *testing.T) {
+
+	volumes := []apiv1.Volume{
+		{
+			Name: "volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	localVolumes := []apiv1.Volume{
+		{
+			Name: "local-volume-name",
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		},
+	}
+	volumeMounts := []apiv1.VolumeMount{
+		{
+			Name:      "volume-name",
+			MountPath: "/test",
+		},
+		{
+			Name:      "local-volume-name",
+			MountPath: "/local-test",
+		},
+	}
+
+	woc := newWoc()
+	woc.volumes = volumes
+	woc.wf.Spec.Templates[0].Container.VolumeMounts = volumeMounts
+	woc.wf.Spec.Templates[0].Volumes = localVolumes
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	for _, v := range volumes {
+		assert.Contains(t, pod.Spec.Volumes, v)
+	}
+	for _, v := range localVolumes {
+		assert.Contains(t, pod.Spec.Volumes, v)
+	}
+}
+
+// TestWFLevelHostAliases verifies the ability to carry forward workflow level HostAliases to Podspec
+func TestWFLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
+}
+
+// TestTmplLevelHostAliases verifies the ability to carry forward template level HostAliases to Podspec
+func TestTmplLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
 }

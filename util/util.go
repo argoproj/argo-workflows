@@ -1,14 +1,19 @@
 package util
 
+
 import (
-	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/util/retry"
-	"github.com/prometheus/common/log"
-	apiv1 "k8s.io/api/core/v1"
+  "io/ioutil"
+
+  apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+  log "github.com/sirupsen/logrus"
+  
+  "github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/util/retry"
 )
+
 
 type Closer interface {
 	Close() error
@@ -45,4 +50,12 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 		return []byte{}, errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
+
+// Write the Terminate message in pod spec
+func WriteTeriminateMessage(message string) {
+	err := ioutil.WriteFile("/dev/termination-log", []byte(message), 0644)
+	if err != nil {
+		panic(err)
+	}
+
 }

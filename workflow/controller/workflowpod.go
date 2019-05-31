@@ -148,7 +148,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	addSchedulingConstraints(pod, wfSpec, tmpl)
 	woc.addMetadata(pod, tmpl)
 
-	err = addVolumeReferences(pod, wfSpec, tmpl, woc.wf.Status.PersistentVolumeClaims)
+	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
 		return nil, err
 	}
@@ -183,8 +183,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	pod.ObjectMeta.Annotations[common.AnnotationKeyTemplate] = string(tmplBytes)
 
 	// Perform one last variable substitution here. Some variables come from the from workflow
-	// configmap (e.g. archive location), and were not substituted in executeTemplate.
-	pod, err = substituteGlobals(pod, woc.globalParams)
+	// configmap (e.g. archive location) or volumes attribute, and were not substituted
+	// in executeTemplate.
+	pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -220,20 +221,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	return created, nil
 }
 
-// substituteGlobals returns a pod spec with global parameter references substituted as well as pod.name
-func substituteGlobals(pod *apiv1.Pod, globalParams map[string]string) (*apiv1.Pod, error) {
-	newGlobalParams := make(map[string]string)
+// substitutePodParams returns a pod spec with parameter references substituted as well as pod.name
+func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+	podParams := make(map[string]string)
 	for k, v := range globalParams {
-		newGlobalParams[k] = v
+		podParams[k] = v
 	}
-	newGlobalParams[common.LocalVarPodName] = pod.Name
-	globalParams = newGlobalParams
+	for _, inParam := range tmpl.Inputs.Parameters {
+		podParams["inputs.parameters."+inParam.Name] = *inParam.Value
+	}
+	podParams[common.LocalVarPodName] = pod.Name
 	specBytes, err := json.Marshal(pod)
 	if err != nil {
 		return nil, err
 	}
 	fstTmpl := fasttemplate.New(string(specBytes), "{{", "}}")
-	newSpecBytes, err := common.Replace(fstTmpl, globalParams, true)
+	newSpecBytes, err := common.Replace(fstTmpl, podParams, true)
 	if err != nil {
 		return nil, err
 	}
@@ -264,16 +267,50 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 				},
 			},
 		}
+		if hasPrivilegedContainers(tmpl) {
+			// if the main or sidecar is privileged, the wait sidecar must also run privileged,
+			// in order to SIGTERM/SIGKILL the pid
+			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
+		}
 	case "", common.ContainerRuntimeExecutorDocker:
 		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountDockerSock)
 	}
 	return ctr, nil
 }
 
+// hasPrivilegedContainers tests if the main container or sidecars is privileged
+func hasPrivilegedContainers(tmpl *wfv1.Template) bool {
+	if containerIsPrivileged(tmpl.Container) {
+		return true
+	}
+	for _, side := range tmpl.Sidecars {
+		if containerIsPrivileged(&side.Container) {
+			return true
+		}
+	}
+	return false
+}
+
+func containerIsPrivileged(ctr *apiv1.Container) bool {
+	if ctr != nil && ctr.SecurityContext != nil && ctr.SecurityContext.Privileged != nil && *ctr.SecurityContext.Privileged {
+		return true
+	}
+	return false
+}
+
 func (woc *wfOperationCtx) createEnvVars() []apiv1.EnvVar {
 	var execEnvVars []apiv1.EnvVar
+	execEnvVars = append(execEnvVars, apiv1.EnvVar{
+		Name: common.EnvVarPodName,
+		ValueFrom: &apiv1.EnvVarSource{
+			FieldRef: &apiv1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "metadata.name",
+			},
+		},
+	})
 	if woc.controller.Config.Executor != nil {
-		execEnvVars = woc.controller.Config.Executor.Env
+		execEnvVars = append(execEnvVars, woc.controller.Config.Executor.Env...)
 	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorK8sAPI:
@@ -451,11 +488,16 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.SchedulerName != "" {
 		pod.Spec.SchedulerName = wfSpec.SchedulerName
 	}
+
+	// set hostaliases
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
+
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
 // These are either specified in the workflow.spec.volumes or the workflow.spec.volumeClaimTemplate section
-func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
+func addVolumeReferences(pod *apiv1.Pod, vols []apiv1.Volume, tmpl *wfv1.Template, pvcs []apiv1.Volume) error {
 	switch tmpl.GetType() {
 	case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
 	default:
@@ -464,11 +506,19 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 
 	// getVolByName is a helper to retrieve a volume by its name, either from the volumes or claims section
 	getVolByName := func(name string) *apiv1.Volume {
-		for _, vol := range wfSpec.Volumes {
+		// Find a volume from template-local volumes.
+		for _, vol := range tmpl.Volumes {
 			if vol.Name == name {
 				return &vol
 			}
 		}
+		// Find a volume from global volumes.
+		for _, vol := range vols {
+			if vol.Name == name {
+				return &vol
+			}
+		}
+		// Find a volume from pvcs.
 		for _, pvc := range pvcs {
 			if pvc.Name == name {
 				return &pvc
@@ -508,6 +558,13 @@ func addVolumeReferences(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *wfv1.T
 	}
 	if tmpl.Script != nil {
 		err := addVolumeRef(tmpl.Script.VolumeMounts)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, container := range tmpl.InitContainers {
+		err := addVolumeRef(container.VolumeMounts)
 		if err != nil {
 			return err
 		}
@@ -593,7 +650,6 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		switch ctr.Name {
 		case common.MainContainerName:
 			mainCtrIndex = i
-			break
 		}
 	}
 	if mainCtrIndex == -1 {
@@ -848,7 +904,7 @@ func createSecretVolumes(tmpl *wfv1.Template) ([]apiv1.Volume, []apiv1.VolumeMou
 		secretVolumes = append(secretVolumes, val)
 		secretVolMounts = append(secretVolMounts, apiv1.VolumeMount{
 			Name:      volMountName,
-			MountPath: common.SecretVolMountPath,
+			MountPath: common.SecretVolMountPath + "/" + val.Name,
 			ReadOnly:  true,
 		})
 	}
@@ -894,15 +950,15 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 }
 
 func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySelector, keyMap map[string]bool) {
-	if secret == nil {
+	if secret == nil || secret.Name == "" || secret.Key == "" {
 		return
 	}
 	if vol, ok := volMap[secret.Name]; ok {
 		key := apiv1.KeyToPath{
 			Key:  secret.Key,
-			Path: secret.Name + "/" + secret.Key,
+			Path: secret.Key,
 		}
-		if val, _ := keyMap[secret.Name+"-"+secret.Key]; !val {
+		if val := keyMap[secret.Name+"-"+secret.Key]; !val {
 			keyMap[secret.Name+"-"+secret.Key] = true
 			vol.Secret.Items = append(vol.Secret.Items, key)
 		}
@@ -915,7 +971,7 @@ func createSecretVal(volMap map[string]apiv1.Volume, secret *apiv1.SecretKeySele
 					Items: []apiv1.KeyToPath{
 						{
 							Key:  secret.Key,
-							Path: secret.Name + "/" + secret.Key,
+							Path: secret.Key,
 						},
 					},
 				},

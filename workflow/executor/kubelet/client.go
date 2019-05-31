@@ -20,7 +20,7 @@ import (
 	execcommon "github.com/argoproj/argo/workflow/executor/common"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -28,8 +28,6 @@ const (
 )
 
 type kubeletClient struct {
-	execcommon.KubernetesClientInterface
-
 	httpClient      *http.Client
 	httpHeader      http.Header
 	websocketDialer *websocket.Dialer
@@ -39,6 +37,8 @@ type kubeletClient struct {
 	// - my-host.com:10250
 	kubeletEndpoint string
 }
+
+var _ execcommon.KubernetesClientInterface = &kubeletClient{}
 
 func newKubeletClient() (*kubeletClient, error) {
 	kubeletHost := os.Getenv(common.EnvVarDownwardAPINodeIP)
@@ -98,7 +98,7 @@ func checkHTTPErr(resp *http.Response) error {
 	return nil
 }
 
-func (k *kubeletClient) getPodList() (*v1.PodList, error) {
+func (k *kubeletClient) getPodList() (*corev1.PodList, error) {
 	u, err := url.ParseRequestURI(fmt.Sprintf("https://%s/pods", k.kubeletEndpoint))
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -116,7 +116,7 @@ func (k *kubeletClient) getPodList() (*v1.PodList, error) {
 		return nil, err
 	}
 	podListDecoder := json.NewDecoder(resp.Body)
-	podList := &v1.PodList{}
+	podList := &corev1.PodList{}
 	err = podListDecoder.Decode(podList)
 	if err != nil {
 		_ = resp.Body.Close()
@@ -165,7 +165,7 @@ func (k *kubeletClient) doRequestLogs(namespace, podName, containerName string) 
 	return resp, nil
 }
 
-func (k *kubeletClient) getContainerStatus(containerID string) (*v1.Pod, *v1.ContainerStatus, error) {
+func (k *kubeletClient) GetContainerStatus(containerID string) (*corev1.Pod, *corev1.ContainerStatus, error) {
 	podList, err := k.getPodList()
 	if err != nil {
 		return nil, nil, errors.InternalWrapError(err)
@@ -242,7 +242,7 @@ func (k *kubeletClient) readFileContents(u *url.URL) (*bytes.Buffer, error) {
 }
 
 // createArchive exec in the given containerID and create a tarball of the given sourcePath. Works with directory
-func (k *kubeletClient) createArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
+func (k *kubeletClient) CreateArchive(containerID, sourcePath string) (*bytes.Buffer, error) {
 	return k.getCommandOutput(containerID, fmt.Sprintf("command=tar&command=-cf&command=-&command=%s&output=1", sourcePath))
 }
 
@@ -284,7 +284,7 @@ func (k *kubeletClient) WaitForTermination(containerID string, timeout time.Dura
 	return execcommon.WaitForTermination(k, containerID, timeout)
 }
 
-func (k *kubeletClient) killContainer(pod *v1.Pod, container *v1.ContainerStatus, sig syscall.Signal) error {
+func (k *kubeletClient) KillContainer(pod *corev1.Pod, container *corev1.ContainerStatus, sig syscall.Signal) error {
 	u, err := url.ParseRequestURI(fmt.Sprintf("wss://%s/exec/%s/%s/%s?command=/bin/sh&&command=-c&command=kill+-%d+1&output=1&error=1", k.kubeletEndpoint, pod.Namespace, pod.Name, container.Name, sig))
 	if err != nil {
 		return errors.InternalWrapError(err)

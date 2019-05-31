@@ -1,0 +1,159 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  creationTimestamp: "2019-05-10T01:04:45Z"
+  generateName: retry-with-dags-
+  generation: 12
+  labels:
+    workflows.argoproj.io/phase: Running
+  name: retry-with-dags-52zdr
+  namespace: default
+  resourceVersion: "1171"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/retry-with-dags-52zdr
+  uid: 99aeb0ac-72bf-11e9-823d-d6003286b4aa
+spec:
+  arguments: {}
+  entrypoint: retry-with-dags
+  templates:
+  - dag:
+      tasks:
+      - arguments: {}
+        name: success1
+        template: success
+      - arguments: {}
+        dependencies:
+        - success1
+        name: sub-dag1
+        template: sub-dag
+      - arguments: {}
+        dependencies:
+        - sub-dag1
+        name: success2
+        template: success
+    inputs: {}
+    metadata: {}
+    name: retry-with-dags
+    outputs: {}
+  - dag:
+      tasks:
+      - arguments: {}
+        name: fail
+        template: fail
+    inputs: {}
+    metadata: {}
+    name: sub-dag
+    outputs: {}
+  - container:
+      command:
+      - sh
+      - -c
+      - exit 1
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: fail
+    outputs: {}
+    retryStrategy:
+      limit: 1
+  - container:
+      command:
+      - sh
+      - -c
+      - exit 0
+      image: alpine
+      name: ""
+      resources: {}
+    inputs: {}
+    metadata: {}
+    name: success
+    outputs: {}
+    retryStrategy:
+      limit: 1
+status:
+  finishedAt: null
+  nodes:
+    retry-with-dags-52zdr:
+      children:
+      - retry-with-dags-52zdr-1651444810
+      displayName: retry-with-dags-52zdr
+      finishedAt: null
+      id: retry-with-dags-52zdr
+      name: retry-with-dags-52zdr
+      phase: Running
+      startedAt: "2019-05-10T01:05:11Z"
+      templateName: retry-with-dags
+      type: DAG
+    retry-with-dags-52zdr-139017483:
+      boundaryID: retry-with-dags-52zdr-1777128546
+      displayName: fail(0)
+      finishedAt: "2019-05-10T01:05:18Z"
+      id: retry-with-dags-52zdr-139017483
+      message: failed with exit code 1
+      name: retry-with-dags-52zdr.sub-dag1.fail(0)
+      phase: Failed
+      startedAt: "2019-05-10T01:05:16Z"
+      templateName: fail
+      type: Pod
+    retry-with-dags-52zdr-743158862:
+      boundaryID: retry-with-dags-52zdr-1777128546
+      displayName: fail(1)
+      finishedAt: "2019-05-10T01:05:23Z"
+      id: retry-with-dags-52zdr-743158862
+      message: failed with exit code 1
+      name: retry-with-dags-52zdr.sub-dag1.fail(1)
+      phase: Failed
+      startedAt: "2019-05-10T01:05:20Z"
+      templateName: fail
+      type: Pod
+    retry-with-dags-52zdr-1617789624:
+      boundaryID: retry-with-dags-52zdr-1777128546
+      children:
+      - retry-with-dags-52zdr-139017483
+      - retry-with-dags-52zdr-743158862
+      displayName: fail
+      finishedAt: "2019-05-10T01:05:24Z"
+      id: retry-with-dags-52zdr-1617789624
+      message: No more retries left
+      name: retry-with-dags-52zdr.sub-dag1.fail
+      phase: Failed
+      startedAt: "2019-05-10T01:05:16Z"
+      type: Retry
+    retry-with-dags-52zdr-1651444810:
+      boundaryID: retry-with-dags-52zdr
+      children:
+      - retry-with-dags-52zdr-2712951537
+      displayName: success1
+      finishedAt: "2019-05-10T01:05:15Z"
+      id: retry-with-dags-52zdr-1651444810
+      name: retry-with-dags-52zdr.success1
+      phase: Succeeded
+      startedAt: "2019-05-10T01:05:11Z"
+      type: Retry
+    retry-with-dags-52zdr-1777128546:
+      boundaryID: retry-with-dags-52zdr
+      children:
+      - retry-with-dags-52zdr-1617789624
+      displayName: sub-dag1
+      finishedAt: "2019-05-10T01:05:24Z"
+      id: retry-with-dags-52zdr-1777128546
+      name: retry-with-dags-52zdr.sub-dag1
+      phase: Failed
+      startedAt: "2019-05-10T01:05:16Z"
+      templateName: sub-dag
+      type: DAG
+    retry-with-dags-52zdr-2712951537:
+      boundaryID: retry-with-dags-52zdr
+      children:
+      - retry-with-dags-52zdr-1777128546
+      displayName: success1(0)
+      finishedAt: "2019-05-10T01:05:13Z"
+      id: retry-with-dags-52zdr-2712951537
+      name: retry-with-dags-52zdr.success1(0)
+      phase: Succeeded
+      startedAt: "2019-05-10T01:05:11Z"
+      templateName: success
+      type: Pod
+  phase: Running
+  startedAt: "2019-05-10T01:05:11Z"
