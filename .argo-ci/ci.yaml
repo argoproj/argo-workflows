@@ -42,7 +42,7 @@ spec:
           parameters:
           - name: cmd
             value: dep ensure && make lint test verify-codegen
-    - - name: e2e-test
+      - name: e2e-test
         template: ci-builder-e2e
 
 
