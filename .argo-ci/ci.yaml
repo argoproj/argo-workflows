@@ -27,67 +27,67 @@ spec:
   templates:
   - name: argo-ci
     steps:
-#    - - name: build
-#        template: ci-dind
-#        arguments:
-#          parameters:
-#          - name: cmd
-#            value: "{{item}}"
-#        withItems:
-#        - make controller-image executor-image
-#        - make release-clis
-#      - name: test
-#        template: ci-builder
-#        arguments:
-#          parameters:
-#          - name: cmd
-#            value: dep ensure && make lint test verify-codegen
+    - - name: build
+        template: ci-dind
+        arguments:
+          parameters:
+          - name: cmd
+            value: "{{item}}"
+        withItems:
+        - make controller-image executor-image
+        - make release-clis
+      - name: test
+        template: ci-builder
+        arguments:
+          parameters:
+          - name: cmd
+            value: dep ensure && make lint test verify-codegen
     - - name: e2e-test
         template: ci-builder-e2e
 
 
-#  - name: ci-builder
-#    inputs:
-#      parameters:
-#      - name: cmd
-#      artifacts:
-#      - name: code
-#        path: /go/src/github.com/argoproj/argo
-#        git:
-#          repo: "{{workflow.parameters.repo}}"
-#          revision: "{{workflow.parameters.revision}}"
-#    container:
-#      image: argoproj/argo-ci-builder:latest
-#      command: [sh, -c]
-#      args: ["{{inputs.parameters.cmd}}"]
-#      workingDir: /go/src/github.com/argoproj/argo
+  - name: ci-builder
+    inputs:
+      parameters:
+      - name: cmd
+      artifacts:
+      - name: code
+        path: /go/src/github.com/argoproj/argo
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+    container:
+      image: argoproj/argo-ci-builder:latest
+      command: [sh, -c]
+      args: ["{{inputs.parameters.cmd}}"]
+      workingDir: /go/src/github.com/argoproj/argo
 
-#  - name: ci-dind
-#    inputs:
-#      parameters:
-#      - name: cmd
-#      artifacts:
-#      - name: code
-#        path: /go/src/github.com/argoproj/argo
-#        git:
-#          repo: "{{workflow.parameters.repo}}"
-#          revision: "{{workflow.parameters.revision}}"
-#    container:
-#      image: argoproj/argo-ci-builder:latest
-#      command: [sh, -c]
-#      args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
-#      workingDir: /go/src/github.com/argoproj/argo
-#      env:
-#      - name: DOCKER_HOST
-#        value: 127.0.0.1
-#      - name: DOCKER_BUILDKIT
-#        value: "1"
-#    sidecars:
-#    - name: dind
-#      image: docker:18.09-dind
-#      securityContext:
-#        privileged: true
-#      mirrorVolumeMounts: true
+  - name: ci-dind
+    inputs:
+      parameters:
+      - name: cmd
+      artifacts:
+      - name: code
+        path: /go/src/github.com/argoproj/argo
+        git:
+          repo: "{{workflow.parameters.repo}}"
+          revision: "{{workflow.parameters.revision}}"
+    container:
+      image: argoproj/argo-ci-builder:latest
+      command: [sh, -c]
+      args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
+      workingDir: /go/src/github.com/argoproj/argo
+      env:
+      - name: DOCKER_HOST
+        value: 127.0.0.1
+      - name: DOCKER_BUILDKIT
+        value: "1"
+    sidecars:
+    - name: dind
+      image: docker:18.09-dind
+      securityContext:
+        privileged: true
+      mirrorVolumeMounts: true
 
   - name: ci-builder-e2e
     inputs:
