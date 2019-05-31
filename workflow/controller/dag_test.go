@@ -24,3 +24,11 @@ func TestDagRetrySucceeded(t *testing.T) {
 	woc.operate()
 	assert.Equal(t, string(wfv1.NodeSucceeded), string(woc.wf.Status.Phase))
 }
+
+// TestDagRetryExhaustedXfail verifies we fail properly when we exhaust our retries
+func TestDagRetryExhaustedXfail(t *testing.T) {
+	wf := test.LoadTestWorkflow("testdata/dag-exhausted-retries-xfail.yaml")
+	woc := newWoc(*wf)
+	woc.operate()
+	assert.Equal(t, string(wfv1.NodeFailed), string(woc.wf.Status.Phase))
+}

@@ -474,7 +474,7 @@ func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
 	return ancestry
 }
 
-var yamlSeparator = regexp.MustCompile("\\n---")
+var yamlSeparator = regexp.MustCompile(`\n---`)
 
 // SplitYAMLFile is a helper to split a body into multiple workflow objects
 func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {

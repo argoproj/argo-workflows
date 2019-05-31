@@ -4,6 +4,12 @@
 
 ![Argo Image](argo.png)
 
+## Quickstart
+```bash
+kubectl create namespace argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+```
+
 ## News
 
 KubeCon 2018 in Seattle was the biggest KubeCon yet with 8000 developers attending. We connected with many existing and new Argoproj users and contributions, and gave away a lot of Argo T-shirts at our booth sponsored by Intuit!
@@ -71,6 +77,7 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
+1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/) 
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
@@ -95,6 +102,7 @@ Currently **officially** using Argo:
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
+1. [Max Kelsen](https://maxkelsen.com/)
 
 ## Community Blogs and Presentations
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)

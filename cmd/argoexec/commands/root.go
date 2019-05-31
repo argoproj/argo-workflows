@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"github.com/argoproj/argo/util"
 	"os"
 
 	"github.com/argoproj/pkg/cli"
@@ -105,6 +106,7 @@ func initExecutor() *executor.WorkflowExecutor {
 // checkErr is a convenience function to panic upon error
 func checkErr(err error) {
 	if err != nil {
+		util.WriteTeriminateMessage(err.Error())
 		panic(err.Error())
 	}
 }
