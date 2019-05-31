@@ -65,9 +65,6 @@ workflows:
     - name: "dag-argument-passing"
       path: "functional/dag-argument-passing.yaml"
       expectedStatus: "Succeeded"
-    - name: "dag-diamond-coinflip"
-      path: "functional/dag-coinflip.yaml"
-      expectedStatus: "Succeeded"
 
     - name: "dag-diamond"
       path: "functional/dag-diamond.yaml"
