@@ -900,8 +900,19 @@ func (woc *wfOperationCtx) createPVCs() error {
 		if err != nil && apierr.IsAlreadyExists(err) {
 			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
 			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
-			if pvc.OwnerReferences == nil {
-				return errors.New(errors.CodeForbidden, "%s pvc has already exists and ownerreference is different")
+			if err != nil {
+				return err
+			}
+			hasOwnerReference := false
+			for i := range pvc.OwnerReferences {
+				ownerRef := pvc.OwnerReferences[i]
+				if ownerRef.UID != "" && ownerRef.UID == woc.wf.UID {
+					hasOwnerReference = true
+					break
+				}
+			}
+			if !hasOwnerReference {
+				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
 			}
 		}
 
@@ -909,6 +920,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 		if err != nil {
 			return err
 		}
+
 		vol := apiv1.Volume{
 			Name: refName,
 			VolumeSource: apiv1.VolumeSource{
