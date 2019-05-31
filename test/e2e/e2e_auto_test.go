@@ -1,30 +1,30 @@
 package e2e
 
 import (
-
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
+
 type E2ETestProp struct {
 	Workflows []E2EWorkflow `yaml:"workflows"`
-
 }
 type E2EWorkflow struct {
-
-		Name string `yaml:"name"`
-		Path string `yaml:"path"`
-		ExpectedStatus v1alpha1.NodePhase `yaml:"expectedStatus"`
-		Timeout time.Duration `yaml:"timeout"`
+	Name           string             `yaml:"name"`
+	Path           string             `yaml:"path"`
+	ExpectedStatus v1alpha1.NodePhase `yaml:"expectedStatus"`
+	Timeout        time.Duration      `yaml:"timeout"`
 }
 
 //var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
@@ -36,8 +36,7 @@ func TestRunWorkflowAuto(t *testing.T) {
 
 }
 
-
-func  getConf() *E2ETestProp {
+func getConf() *E2ETestProp {
 	e2eProp := E2ETestProp{}
 	yamlFile, err := ioutil.ReadFile("./e2e_test_prop.yaml")
 	if err != nil {
@@ -59,7 +58,7 @@ func testRunWorkflows(t *testing.T) {
 	commands.NewCommand()
 
 	var workflowPath []string
-	for i :=range property.Workflows{
+	for i := range property.Workflows {
 		wf := property.Workflows[i]
 		statusMap[wf.Name] = &wf
 		workflowPath = append(workflowPath, wf.Path)
@@ -70,26 +69,26 @@ func testRunWorkflows(t *testing.T) {
 	}
 	log.Printf("Workflow List: %v", workflowPath)
 
-	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("",true,false,false,nil) )
+	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("", true, false, false, nil))
 
 	var waitgroup sync.WaitGroup
-	for  i := range submittedWfs{
-		   name := submittedWfs[i]
-			wfname := name[:strings.LastIndex(name, "-")]
-			e2eWf := statusMap[wfname]
-			if e2eWf != nil {
-				if e2eWf.Timeout == 0 {
+	for i := range submittedWfs {
+		name := submittedWfs[i]
+		wfname := name[:strings.LastIndex(name, "-")]
+		e2eWf := statusMap[wfname]
+		if e2eWf != nil {
+			if e2eWf.Timeout == 0 {
 
-					e2eWf.Timeout = 1800
-				}
-				waitgroup.Add(1)
-				go func() {
-					defer waitgroup.Done()
-					result := getStatus(t, name ,e2eWf)
-					fmt.Println(name, result, e2eWf.ExpectedStatus)
-					assert.True(t, result == e2eWf.ExpectedStatus)
-				}()
+				e2eWf.Timeout = 1800
 			}
+			waitgroup.Add(1)
+			go func() {
+				defer waitgroup.Done()
+				result := getStatus(t, name, e2eWf)
+				fmt.Println(name, result, e2eWf.ExpectedStatus)
+				assert.True(t, result == e2eWf.ExpectedStatus)
+			}()
+		}
 	}
 	waitgroup.Wait()
 	//cmd := exec.Command ("kubectl", "get", "wf")
@@ -127,23 +126,23 @@ func testRunWorkflows(t *testing.T) {
 	//waitgroup.Wait()
 }
 
-func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePhase{
+func getStatus(t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePhase {
 	wfClient := commands.InitWorkflowClient()
 	defer CleanUpWorkflow(wfName)
 	log.Printf("Start checking status : %s", wfName)
-	for start := time.Now(); ;{
-	//for{
-		wf,_ := wfClient.Get(wfName, v1.GetOptions{})
+	for start := time.Now(); ; {
+		//for{
+		wf, _ := wfClient.Get(wfName, v1.GetOptions{})
 		result := wf.Status.Phase
 
-		if result == "Succeeded" || result == "Failed" ||result == "Error" || result == e2eWf.ExpectedStatus {
+		if result == "Succeeded" || result == "Failed" || result == "Error" || result == e2eWf.ExpectedStatus {
 
 			return result
 		}
 
-		if time.Since(start) > e2eWf.Timeout *time.Second {
+		if time.Since(start) > e2eWf.Timeout*time.Second {
 			log.Printf("Workflow execution timed out. %s ", wfName)
-			assert.True(t,false)
+			assert.True(t, false)
 			return ""
 		}
 		time.Sleep(1 * time.Minute)
@@ -152,7 +151,7 @@ func getStatus( t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePh
 	return ""
 }
 
-func CleanUpWorkflow(wfName string ){
+func CleanUpWorkflow(wfName string) {
 	//log.Println("Cleaning up workflows")
 	wfClient := commands.InitWorkflowClient()
 
