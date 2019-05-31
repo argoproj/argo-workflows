@@ -1701,6 +1701,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Description: "ServiceAccountName to apply to workflow pods",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
 					"hostAliases": {
 						SchemaProps: spec.SchemaProps{
 							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
