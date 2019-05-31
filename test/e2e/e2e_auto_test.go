@@ -24,7 +24,7 @@ type E2EWorkflow struct {
 		Name string `yaml:"name"`
 		Path string `yaml:"path"`
 		ExpectedStatus v1alpha1.NodePhase `yaml:"expectedStatus"`
-		Timeout time.Duration `yaml:"timeout", default:"120"`
+		Timeout time.Duration `yaml:"timeout"`
 }
 
 //var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
