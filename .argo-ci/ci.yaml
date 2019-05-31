@@ -27,7 +27,7 @@ spec:
   templates:
   - name: argo-ci
     steps:
-    -  - name: build
+      - name: build
         template: ci-dind
         arguments:
           parameters:
