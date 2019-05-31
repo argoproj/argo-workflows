@@ -50,6 +50,7 @@ func GetSecrets(clientSet kubernetes.Interface, namespace, name, key string) ([]
 		return []byte{}, errors.Errorf(errors.CodeBadRequest, "secret '%s' does not have the key '%s'", name, key)
 	}
 	return val, nil
+}
 
 // Write the Terminate message in pod spec
 func WriteTeriminateMessage(message string) {
@@ -57,5 +58,4 @@ func WriteTeriminateMessage(message string) {
 	if err != nil {
 		panic(err)
 	}
-
 }
