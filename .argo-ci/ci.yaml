@@ -27,7 +27,7 @@ spec:
   templates:
   - name: argo-ci
     steps:
-    - - name: build
+    -  - name: build
         template: ci-dind
         arguments:
           parameters:
@@ -111,7 +111,7 @@ spec:
       kubectl create ns argo && kubectl get ns && \
       kubectl create ns argoci-workflows && kubectl get ns && \
       kubectl apply -n argo -f manifests/install-e2e.yaml && \
-      go test -timeout 120m ./test/e2e
+      go test -timeout 120m --tags=e2e ./test/e2e
        "]
       workingDir: /go/src/github.com/argoproj/argo
       env:

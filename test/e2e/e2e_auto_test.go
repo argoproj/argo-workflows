@@ -1,3 +1,5 @@
+// +build e2e
+
 package e2e
 
 import (
@@ -27,11 +29,9 @@ type E2EWorkflow struct {
 	Timeout        time.Duration      `yaml:"timeout"`
 }
 
-//var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
-// TestSuspendResume tests the suspend and resume feature
+func TestE2EWorkflow(t *testing.T) {
 
-func TestRunWorkflowAuto(t *testing.T) {
-
+	fmt.Println("Starting End-to-End Testing")
 	testRunWorkflows(t)
 
 }
