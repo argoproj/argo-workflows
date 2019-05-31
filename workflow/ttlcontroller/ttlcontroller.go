@@ -188,7 +188,7 @@ func (c *Controller) deleteWorkflow(key string) error {
 	if c.ttlExpired(wf) {
 		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
 		policy := metav1.DeletePropagationForeground
-		err = c.wfclientset.Argoproj().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
+		err = c.wfclientset.ArgoprojV1alpha1().Workflows(wf.Namespace).Delete(wf.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
 		if err != nil {
 			return err
 		}

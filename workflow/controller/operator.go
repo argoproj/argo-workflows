@@ -15,11 +15,13 @@ import (
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
+	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
@@ -497,7 +499,6 @@ func (woc *wfOperationCtx) podReconciliation() error {
 				woc.completedPods[pod.ObjectMeta.Name] = true
 			}
 		}
-		return
 	}
 
 	parallelPodNum := make(chan string, 500)
@@ -657,7 +658,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	}
 
 	if newDaemonStatus != nil {
-		if *newDaemonStatus == false {
+		if !*newDaemonStatus {
 			// if the daemon status switched to false, we prefer to just unset daemoned status field
 			// (as opposed to setting it to false)
 			newDaemonStatus = nil
@@ -1198,14 +1199,6 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 	return node
 }
 
-// markNodeErrorClearOuput is a convenience method to mark a node with an error and clear the output
-func (woc *wfOperationCtx) markNodeErrorClearOuput(nodeName string, err error) *wfv1.NodeStatus {
-	nodeStatus := woc.markNodeError(nodeName, err)
-	nodeStatus.Outputs = nil
-	woc.wf.Status.Nodes[nodeStatus.ID] = *nodeStatus
-	return nodeStatus
-}
-
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
@@ -1288,9 +1281,7 @@ func (woc *wfOperationCtx) getOutboundNodes(nodeID string) []string {
 			outbound = append(outbound, outboundNodeID)
 		} else {
 			subOutIDs := woc.getOutboundNodes(outboundNodeID)
-			for _, subOutID := range subOutIDs {
-				outbound = append(outbound, subOutID)
-			}
+			outbound = append(outbound, subOutIDs...)
 		}
 	}
 	return outbound
@@ -1541,16 +1532,36 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+	tmpl = tmpl.DeepCopy()
+
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return node
 	}
+
+	// Try to unmarshal the given manifest.
+	obj := unstructured.Unstructured{}
+	err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
+	if err != nil {
+		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+	}
+
+	if tmpl.Resource.SetOwnerReference {
+		ownerReferences := obj.GetOwnerReferences()
+		obj.SetOwnerReferences(append(ownerReferences, *metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind)))
+		bytes, err := yaml.Marshal(obj.Object)
+		if err != nil {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
+		}
+		tmpl.Resource.Manifest = string(bytes)
+	}
+
 	mainCtr := woc.newExecContainer(common.MainContainerName)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	mainCtr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	_, err := woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
