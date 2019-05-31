@@ -62,9 +62,6 @@ workflows:
     - name: "custom-template-variable"
       path: "functional/custom_template_variable.yaml"
       expectedStatus: "Succeeded"
-    - name: "dag-argument-passing"
-      path: "functional/dag-argument-passing.yaml"
-      expectedStatus: "Succeeded"
 
     - name: "dag-diamond"
       path: "functional/dag-diamond.yaml"
