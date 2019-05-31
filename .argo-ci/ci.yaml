@@ -20,9 +20,9 @@ spec:
   arguments:
     parameters:
     - name: revision
-      value: Issue678
+      value: master
     - name: repo
-      value:  https://github.com/sarabala1979/argo.git
+      value: https://github.com/argoproj/argo.git
 
   templates:
   - name: argo-ci
