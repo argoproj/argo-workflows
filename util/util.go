@@ -1,19 +1,17 @@
 package util
 
-
 import (
-  "io/ioutil"
+	"io/ioutil"
 
-  apiv1 "k8s.io/api/core/v1"
+	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-  log "github.com/sirupsen/logrus"
-  
-  "github.com/argoproj/argo/errors"
+
+	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/retry"
 )
-
 
 type Closer interface {
 	Close() error
