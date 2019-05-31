@@ -26,7 +26,7 @@ type cliSubmitOpts struct {
 }
 
 func NewCliSubmitOpts(output string, wait bool, watch bool, strict bool, priority *int32) *cliSubmitOpts {
-	return &cliSubmitOpts{output:output, wait:wait, watch:watch,strict:strict,priority:priority}
+	return &cliSubmitOpts{output: output, wait: wait, watch: watch, strict: strict, priority: priority}
 
 }
 
@@ -66,7 +66,7 @@ func NewSubmitCommand() *cobra.Command {
 	return command
 }
 
-func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) []string{
+func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *cliSubmitOpts) []string {
 	if submitOpts == nil {
 		submitOpts = &util.SubmitOpts{}
 	}
