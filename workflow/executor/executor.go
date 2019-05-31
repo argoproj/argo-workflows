@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -112,9 +113,11 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 func (we *WorkflowExecutor) HandleError() {
 	if r := recover(); r != nil {
 		_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
+		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
+			util.WriteTeriminateMessage(we.errors[0].Error())
 			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, we.errors[0].Error())
 		}
 	}
