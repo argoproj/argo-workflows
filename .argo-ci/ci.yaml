@@ -27,23 +27,23 @@ spec:
   templates:
   - name: argo-ci
     steps:
-      - name: build
-        template: ci-dind
-        arguments:
-          parameters:
-          - name: cmd
-            value: "{{item}}"
-        withItems:
-        - make controller-image executor-image
-        - make release-clis
-      - name: test
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: cmd
-            value: dep ensure && make lint test verify-codegen
-      - name: e2e-test
-        template: ci-builder-e2e
+      - - name: build
+          template: ci-dind
+          arguments:
+            parameters:
+            - name: cmd
+              value: "{{item}}"
+          withItems:
+          - make controller-image executor-image
+          - make release-clis
+        - name: test
+          template: ci-builder
+          arguments:
+            parameters:
+            - name: cmd
+              value: dep ensure && make lint test verify-codegen
+        - name: e2e-test
+          template: ci-builder-e2e
 
 
   - name: ci-builder
@@ -110,7 +110,10 @@ spec:
       ls /var/lib/rancher/k3s/agent/images/ && \
       kubectl create ns argo && kubectl get ns && \
       kubectl create ns argoci-workflows && kubectl get ns && \
-      kubectl apply -n argo -f manifests/install-e2e.yaml && \
+      kubectl apply -n argo -f https://raw.githubusercontent.com/sarabala1979/argo/Issue678/manifests/install-e2e.yaml && \
+      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-pvc.yaml?raw=true && \
+      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-deployment.yaml?raw=true && \
+      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-service.yaml?raw=true && \
       go test -timeout 120m --tags=e2e ./test/e2e
        "]
       workingDir: /go/src/github.com/argoproj/argo
