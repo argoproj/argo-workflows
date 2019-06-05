@@ -192,8 +192,8 @@ metadata:
   name: workflow-controller-configmap
   namespace: argo
 data:
-  containerRuntimeExecutor: pns
   config: |
+    containerRuntimeExecutor: pns
     artifactRepository:
       s3:
         bucket: my-bucket
