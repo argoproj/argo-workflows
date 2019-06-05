@@ -200,14 +200,14 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 				}
 			}
 
-			yamlParams := map[string]interface{}{}
+			yamlParams := map[string]json.RawMessage{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
 
 			for k, v := range yamlParams {
-				value := fmt.Sprintf("%v", v)
+				value := fmt.Sprintf("%s", v)
 				param := wfv1.Parameter{
 					Name:  k,
 					Value: &value,
