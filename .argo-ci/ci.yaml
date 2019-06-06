@@ -121,6 +121,7 @@ spec:
       kubectl apply -f test/e2e/manifests/install-e2e-default.yaml && \
       (kubectl proxy --port=9000 &) && \
       ./mc config host add local http://localhost:9000 minio minio123 --api S3v4 && \
+      ./mc mb local/my-bucket && \
       go test -timeout 120m --tags=e2e ./test/e2e
        "]
 #              go test -timeout 120m --tags=e2e ./test/e2e && \

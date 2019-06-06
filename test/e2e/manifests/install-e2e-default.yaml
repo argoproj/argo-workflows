@@ -20,6 +20,21 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
   apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-e2e-rbac-1
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: argoci-workflows
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
 
 ---
 apiVersion: v1
