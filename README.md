@@ -101,6 +101,7 @@ Currently **officially** using Argo:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Max Kelsen](https://maxkelsen.com/)
