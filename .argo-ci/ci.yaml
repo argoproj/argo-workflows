@@ -110,12 +110,20 @@ spec:
       ls /var/lib/rancher/k3s/agent/images/ && \
       kubectl create ns argo && kubectl get ns && \
       kubectl create ns argoci-workflows && kubectl get ns && \
-      kubectl apply -n argo -f https://raw.githubusercontent.com/sarabala1979/argo/Issue678/manifests/install-e2e.yaml && \
-      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-pvc.yaml?raw=true && \
-      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-deployment.yaml?raw=true && \
-      kubectl create -f https://github.com/minio/minio/blob/master/docs/orchestration/kubernetes/minio-standalone-service.yaml?raw=true && \
+      wget https://dl.min.io/client/mc/release/linux-amd64/mc && \
+      chmod +x mc && \
+      kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml && \
+      kubectl patch storageclass local-path -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}' &&\
+      kubectl create -f  test/e2e/manifests/minio-standalone-pvc.yaml && \
+      kubectl create -f test/e2e/manifests/minio-standalone-deployment.yaml && \
+      kubectl create -f test/e2e/manifests/minio-standalone-service.yaml && \
+      kubectl apply -f test/e2e/manifests/install-e2e-argo.yaml -n argo && \
+      kubectl apply -f test/e2e/manifests/install-e2e-default.yaml && \
+      (kubectl proxy --port=9000 &) && \
+      ./mc config host add local http://localhost:9000 minio minio123 --api S3v4 && \
       go test -timeout 120m --tags=e2e ./test/e2e
        "]
+#              go test -timeout 120m --tags=e2e ./test/e2e && \
       workingDir: /go/src/github.com/argoproj/argo
       env:
         - name: USER

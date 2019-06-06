@@ -5,7 +5,7 @@ metadata:
   name: minio-service
 spec:
   type: LoadBalancer
-  externalTrafficPolicy: Local
+  externalTrafficPolicy: Cluster
   ports:
     - port: 9000
       targetPort: 9000
