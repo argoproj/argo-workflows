@@ -80,7 +80,7 @@ Currently **officially** using Argo:
 
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
-1. [Adobe](https://www.adobe.com/) 
+1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
@@ -104,6 +104,8 @@ Currently **officially** using Argo:
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Max Kelsen](https://maxkelsen.com/)
+1. [Mirantis](https://mirantis.com/)
+
 
 ## Community Blogs and Presentations
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
