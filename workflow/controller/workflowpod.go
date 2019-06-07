@@ -221,7 +221,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		woc.log.Infof("Failed to create pod %s (%s): %v", nodeName, nodeID, err)
 		return nil, errors.InternalWrapError(err)
 	}
-	woc.log.Infof("Created pod: %s (%s), serviceaccount=%s ", nodeName, created.Name, tmplServiceAccountName)
+	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
 	woc.activePods++
 	return created, nil
 }
