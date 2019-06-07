@@ -906,7 +906,7 @@ func (woc *wfOperationCtx) createPVCs() error {
 			hasOwnerReference := false
 			for i := range pvc.OwnerReferences {
 				ownerRef := pvc.OwnerReferences[i]
-				if ownerRef.UID != "" && ownerRef.UID == woc.wf.UID {
+				if ownerRef.UID == woc.wf.UID {
 					hasOwnerReference = true
 					break
 				}
