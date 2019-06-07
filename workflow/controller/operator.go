@@ -897,9 +897,30 @@ func (woc *wfOperationCtx) createPVCs() error {
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
+		if err != nil && apierr.IsAlreadyExists(err) {
+			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
+			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			hasOwnerReference := false
+			for i := range pvc.OwnerReferences {
+				ownerRef := pvc.OwnerReferences[i]
+				if ownerRef.UID == woc.wf.UID {
+					hasOwnerReference = true
+					break
+				}
+			}
+			if !hasOwnerReference {
+				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
+			}
+		}
+
+		//continue
 		if err != nil {
 			return err
 		}
+
 		vol := apiv1.Volume{
 			Name: refName,
 			VolumeSource: apiv1.VolumeSource{
