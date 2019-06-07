@@ -30,6 +30,7 @@ Argoproj is a collection of tools for getting work done with Kubernetes.
 * [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
 * [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
 * [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
+* [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Deployment CR with support for Canary and Blue Green deployment strategies
 
 ## What is Argo Workflows?
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
@@ -79,7 +80,7 @@ Currently **officially** using Argo:
 
 1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
-1. [Adobe](https://www.adobe.com/) 
+1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
@@ -100,11 +101,15 @@ Currently **officially** using Argo:
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Max Kelsen](https://maxkelsen.com/)
+1. [Mirantis](https://mirantis.com/)
+
 
 ## Community Blogs and Presentations
+* [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
