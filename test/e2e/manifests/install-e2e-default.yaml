@@ -47,4 +47,18 @@ stringData:
   accesskey: mypassword
   secretkey: password
 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-existing-volume
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
 
