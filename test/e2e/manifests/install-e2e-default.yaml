@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: minio-service
-  namespace: default
+  namespace: argoci-workflows
 type: Opaque
 stringData:
   accesskey: minio
@@ -41,7 +41,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: my-secret
-  namespace: default
+  namespace: argoci-workflows
 type: Opaque
 stringData:
   accesskey: mypassword
