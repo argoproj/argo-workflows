@@ -44,9 +44,8 @@ metadata:
   namespace: argoci-workflows
 type: Opaque
 stringData:
-  accesskey: mypassword
-  secretkey: password
-
+  mypassword: mypassword
+ 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
