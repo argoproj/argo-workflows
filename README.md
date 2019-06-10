@@ -106,6 +106,7 @@ Currently **officially** using Argo:
 1. [Styra](https://www.styra.com/)
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Mirantis](https://mirantis.com/)
+1. [IBM](https://ibm.com)
 
 
 ## Community Blogs and Presentations
