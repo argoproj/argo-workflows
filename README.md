@@ -93,19 +93,20 @@ Currently **officially** using Argo:
 1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [IBM](https://ibm.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
 1. [Karius](https://www.kariusdx.com/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
+1. [Max Kelsen](https://maxkelsen.com/)
+1. [Mirantis](https://mirantis.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
-1. [Max Kelsen](https://maxkelsen.com/)
-1. [Mirantis](https://mirantis.com/)
 
 
 ## Community Blogs and Presentations
