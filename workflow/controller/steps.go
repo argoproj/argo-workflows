@@ -44,7 +44,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmpl *wfv1.Template, bo
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
-			sgNode = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
+			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, "", stepsCtx.boundaryID, wfv1.NodeRunning)
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {
@@ -137,9 +137,7 @@ func (woc *wfOperationCtx) updateOutboundNodes(nodeName string, tmpl *wfv1.Templ
 	for _, childID := range lastSGNode.Children {
 		outboundNodeIDs := woc.getOutboundNodes(childID)
 		woc.log.Infof("Outbound nodes of %s is %s", childID, outboundNodeIDs)
-		for _, outNodeID := range outboundNodeIDs {
-			outbound = append(outbound, outNodeID)
-		}
+		outbound = append(outbound, outboundNodeIDs...)
 	}
 	node := woc.getNodeByName(nodeName)
 	woc.log.Infof("Outbound nodes of %s is %s", node.ID, outbound)
@@ -332,9 +330,7 @@ func (woc *wfOperationCtx) expandStepGroup(stepGroup []wfv1.WorkflowStep) ([]wfv
 		if err != nil {
 			return nil, err
 		}
-		for _, newStep := range expandedStep {
-			newStepGroup = append(newStepGroup, newStep)
-		}
+		newStepGroup = append(newStepGroup, expandedStep...)
 	}
 	return newStepGroup, nil
 }

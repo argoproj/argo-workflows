@@ -11,20 +11,17 @@ the workflows. Here are the requirements and steps to run the workflows.
 
 ## 1. Download Argo
 
-On Mac:
+Download the latest Argo CD version from https://github.com/argoproj/argo/releases/latest.
+
+Also available in Mac Homebrew:
 ```
 brew install argoproj/tap/argo
-```
-On Linux:
-```
-curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.2.1/argo-linux-amd64
-chmod +x /usr/local/bin/argo
 ```
 
 ## 2. Install the Controller and UI
 ```
-kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.2.1/manifests/install.yaml
+kubectl create namespace argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
 ```
 NOTE: On GKE, you may need to grant your account the ability to create new clusterroles
 ```

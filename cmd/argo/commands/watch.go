@@ -58,7 +58,7 @@ func watchWorkflow(name string) {
 		errors.CheckError(err)
 		print("\033[H\033[2J")
 		print("\033[0;0H")
-		printWorkflowHelper(wf, "")
+		printWorkflowHelper(wf, getFlags{})
 		if !wf.Status.FinishedAt.IsZero() {
 			break
 		}
