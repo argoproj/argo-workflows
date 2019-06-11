@@ -5,7 +5,9 @@ metadata:
 spec:
   entrypoint: generate-globals
   onExit: consume-globals
-
+  volumes:
+    - name: workdir
+      emptyDir: {}
   templates:
   - name: generate-globals
     dag:
@@ -21,20 +23,23 @@ spec:
     container:
       image: alpine:3.7
       command: [sh, -c]
-      args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
+      args: ["sleep 1; echo -n hello world > /mnt/vol/hello_world.txt"]
+      volumeMounts:
+        - name: workdir
+          mountPath: /mnt/vol
     outputs:
       parameters:
       # export a global parameter. The parameter will be programatically available in the completed
       # workflow object under: workflow.status.outputs.parameters
       - name: hello-param
         valueFrom:
-          path: /tmp/hello_world.txt
+          path: /mnt/vol/hello_world.txt
         globalName: my-global-param
       # export a global artifact. The artifact will be programatically available in the completed
       # workflow object under: workflow.status.outputs.artifacts
       artifacts:
       - name: hello-art
-        path: /tmp/hello_world.txt
+        path: /mnt/vol/hello_world.txt
         globalName: my-global-art
 
   # Once exported, global outputs are referenceable in later parts of the workflow.

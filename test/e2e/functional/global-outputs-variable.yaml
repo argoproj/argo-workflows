@@ -5,7 +5,9 @@ metadata:
   generateName: global-outputs-variable-
 spec:
   entrypoint: generate-globals
-
+  volumes:
+    - name: workdir
+      emptyDir: {}
   templates:
   - name: generate-globals
     steps:
@@ -23,10 +25,13 @@ spec:
     container:
       image: alpine:3.7
       command: [sh, -c]
-      args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt"]
+      args: ["sleep 1; echo -n hello world > /mnt/vol/hello_world.txt"]
+      volumeMounts:
+        - name: workdir
+          mountPath: /mnt/vol
     outputs:
       parameters:
       - name: hello-param
         valueFrom:
-          path: /tmp/hello_world.txt
+          path: /mnt/vol/hello_world.txt
         globalName: "{{inputs.parameters.globalname}}"

@@ -5,6 +5,9 @@ metadata:
   generateName: nested-dag-outputs-
 spec:
   entrypoint: nested-dag-outputs
+  volumes:
+    - name: workdir
+      emptyDir: {}
   templates:
   - name: nested-dag-outputs
     dag:
@@ -39,17 +42,20 @@ spec:
       command: [sh, -c]
       args: ["
         sleep 1;
-        cowsay hello world | tee /tmp/my-output-artifact.txt &&
-        echo 'my-output-parameter' > /tmp/my-output-parameter.txt
+        cowsay hello world | tee /mnt/vol/my-output-artifact.txt &&
+        echo 'my-output-parameter' > /mnt/vol/my-output-parameter.txt
       "]
+      volumeMounts:
+        - name: workdir
+          mountPath: /mnt/vol
     outputs:
       parameters:
       - name: out-parameter
         valueFrom:
-          path: /tmp/my-output-parameter.txt
+          path: /mnt/vol/my-output-parameter.txt
       artifacts:
       - name: out-artifact
-        path: /tmp/my-output-artifact.txt
+        path: /mnt/vol/my-output-artifact.txt
 
   # dag template which consumes an input artifact and also produces
   # its own output parameters and artifacts taken from one of its tasks.
