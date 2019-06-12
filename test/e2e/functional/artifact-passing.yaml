@@ -42,4 +42,4 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["cat /mnt/vol/message"]
+      args: ["cat /tmp/message"]

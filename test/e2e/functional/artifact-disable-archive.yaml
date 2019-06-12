@@ -49,7 +49,7 @@ spec:
       - name: etc
         path: /tmp/etc
       - name: hello-txt
-        path: /mnt/vol/hello.txt
+        path: /tmp/hello.txt
     container:
       image: alpine:latest
       command: [sh, -c]
