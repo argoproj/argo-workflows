@@ -6,6 +6,9 @@ metadata:
   generateName: output-input-artifact-optional-
 spec:
   entrypoint: artifact-example
+  volumes:
+    - name: workdir
+      emptyDir: {}
   templates:
     - name: artifact-example
       steps:
@@ -21,12 +24,15 @@ spec:
       container:
         image: docker/whalesay:latest
         command: [sh, -c]
-        args: ["sleep 1; cowsay hello world | tee /tmp/hello_world123.txt"]
+        args: ["sleep 1; cowsay hello world | tee /mnt/vol/hello_world123.txt"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
       outputs:
         artifacts:
           - name: hello-art
             optional: true
-            path: /tmp/hello_world.txt
+            path: /mnt/vol/hello_world.txt
 
     - name: print-message
       inputs:

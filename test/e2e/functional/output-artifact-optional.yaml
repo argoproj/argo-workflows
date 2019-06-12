@@ -5,6 +5,9 @@ kind: Workflow
 metadata:
   generateName: output-artifact-optional-
 spec:
+  volumes:
+    - name: workdir
+      emptyDir: {}
   entrypoint: artifact-example
   templates:
     - name: artifact-example
@@ -16,9 +19,12 @@ spec:
       container:
         image: docker/whalesay:latest
         command: [sh, -c]
-        args: ["sleep 1; cowsay hello world | tee /tmp/hello_world12.txt"]
+        args: ["sleep 1; cowsay hello world | tee /mnt/vol/hello_world12.txt"]
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/vol
       outputs:
         artifacts:
           - name: hello-art
             optional: true
-            path: /tmp/hello_world.txt
+            path: /mnt/vol/hello_world.txt
