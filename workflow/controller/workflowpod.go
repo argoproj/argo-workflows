@@ -51,9 +51,11 @@ var (
 
 func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
 	dockerSockPath := "/var/run/docker.sock"
+
 	if woc.controller.Config.DockerSockPath != "" {
 		dockerSockPath = woc.controller.Config.DockerSockPath
 	}
+	
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
 		MountPath: dockerSockPath,
@@ -63,6 +65,7 @@ func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
 
 func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 	dockerSockPath := "/var/run/docker.sock"
+
 	if woc.controller.Config.DockerSockPath != "" {
 		dockerSockPath = woc.controller.Config.DockerSockPath
 	}
