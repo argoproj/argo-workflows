@@ -86,39 +86,6 @@ func testRunWorkflows(t *testing.T) {
 		}
 	}
 	waitgroup.Wait()
-	//cmd := exec.Command ("kubectl", "get", "wf")
-	//var out bytes.Buffer
-	//cmd.Stdout = &out
-	//
-	//err := cmd.Run()
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//var waitgroup sync.WaitGroup
-	//
-	//sc := bufio.NewScanner(strings.NewReader(out.String()))
-	//for sc.Scan() {
-	//	line := strings.Split(sc.Text()," ")
-	//	if line[0] == "NAME" {
-	//		continue
-	//	}
-	//
-	//	name := line[0][:strings.LastIndex(line[0], "-")]
-	//	fmt.Println(name)
-	//
-	//	e2eWf := statusMap[name]
-	//
-	//	if e2eWf != nil {
-	//		waitgroup.Add(1)
-	//		go func() {
-	//			status := getStatus(line[0], t, e2eWf.ExpectedStatus, e2eWf.Timeout)
-	//			assert.True(t, status == e2eWf.ExpectedStatus)
-	//			fmt.Printf("%s workflow completed. status=%s", line[0], status)
-	//			waitgroup.Done()
-	//		}()
-	//	}
-	//}
-	//waitgroup.Wait()
 }
 
 func getStatus(t *testing.T, wfName string, e2eWf *E2EWorkflow) v1alpha1.NodePhase {
