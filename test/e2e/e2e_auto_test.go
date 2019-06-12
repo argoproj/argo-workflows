@@ -65,7 +65,7 @@ func testRunWorkflows(t *testing.T) {
 	}
 	log.Printf("Workflow List: %v", workflowPath)
 
-	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("", true, false, false, nil))
+	submittedWfs := commands.SubmitWorkflows(workflowPath, nil, commands.NewCliSubmitOpts("", false, false, false, nil))
 
 	var waitgroup sync.WaitGroup
 	for i := range submittedWfs {
