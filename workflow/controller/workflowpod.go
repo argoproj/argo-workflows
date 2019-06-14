@@ -55,7 +55,7 @@ func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
 	if woc.controller.Config.DockerSockPath != "" {
 		dockerSockPath = woc.controller.Config.DockerSockPath
 	}
-	
+
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
 		MountPath: dockerSockPath,
