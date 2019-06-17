@@ -3,8 +3,6 @@ owners:
 
 approvers:
 - alexmt
+- dtaniwaki
 - edlee2121
 - jessesuen
-
-reviewers:
-- dtaniwaki
