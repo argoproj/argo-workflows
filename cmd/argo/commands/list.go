@@ -30,7 +30,7 @@ type listFlags struct {
 	running       bool   // --running
 	output        string // --output
 	since         string // --since
-	limit         int64  // --limit
+	chunkSize     int64  // --chunk-size
 }
 
 func NewListCommand() *cobra.Command {
@@ -62,7 +62,9 @@ func NewListCommand() *cobra.Command {
 				labelSelector = labelSelector.Add(*req)
 			}
 			listOpts.LabelSelector = labelSelector.String()
-			listOpts.Limit = listArgs.limit
+			if listArgs.chunkSize != 0 {
+				listOpts.Limit = listArgs.chunkSize
+			}
 			wfList, err := wfClient.List(listOpts)
 			if err != nil {
 				log.Fatal(err)
@@ -114,7 +116,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
-	command.Flags().Int64VarP(&listArgs.limit, "limit", "", 100, "Limit per num in one request")
+	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command
 }
 
