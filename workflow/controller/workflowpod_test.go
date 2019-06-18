@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/workflow/config"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -168,7 +169,7 @@ func TestMetadata(t *testing.T) {
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -193,7 +194,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 	}
 	woc := newWoc(*wf)
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -208,7 +209,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -236,7 +237,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		},
 	}
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -385,7 +386,7 @@ func TestOutOfCluster(t *testing.T) {
 	// default mount path & volume name
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 		}
@@ -405,7 +406,7 @@ func TestOutOfCluster(t *testing.T) {
 	// custom mount path & volume name, in case name collision
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 			MountPath:  "/some/path/config",

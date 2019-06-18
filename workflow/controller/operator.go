@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
-	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +31,8 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
+	"github.com/argoproj/pkg/strftime"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -311,8 +311,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
 	}
+	var wfDB = woc.wf.DeepCopy()
+	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsSupportLargeWorkflow() {
+		woc.wf.Status.Nodes = nil
+		woc.wf.Status.CompressedNodes = ""
+	}
 
-	_, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
+	wfDB.ResourceVersion = wf.ResourceVersion
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -329,6 +335,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 	}
+
+	if woc.controller.wfDBctx != nil {
+		err = woc.controller.wfDBctx.Save(wfDB)
+		if err != nil {
+			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
+			if woc.controller.wfDBctx.IsSupportLargeWorkflow() {
+				woc.markWorkflowFailed(err.Error())
+				return
+			}
+		}
+	}
+
 	woc.log.Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
