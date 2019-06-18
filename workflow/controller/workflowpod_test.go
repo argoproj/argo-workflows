@@ -98,10 +98,6 @@ func TestTmplServiceAccount(t *testing.T) {
 	assert.Equal(t, pod.Spec.ServiceAccountName, "tmpl")
 }
 
-
-
-
-
 // TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
 func TestImagePullSecrets(t *testing.T) {
 	woc := newWoc()
