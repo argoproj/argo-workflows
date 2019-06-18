@@ -1056,10 +1056,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars() error {
-	if len(we.Template.Sidecars) == 0 {
-		log.Infof("No sidecars")
-		return nil
-	}
 	log.Infof("Killing sidecars")
 	pod, err := we.getPod()
 	if err != nil {
