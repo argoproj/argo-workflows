@@ -47,26 +47,43 @@ var (
 	}
 
 	hostPathSocket = apiv1.HostPathSocket
+)
+
+func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
+	dockerSockPath := "/var/run/docker.sock"
+
+	if woc.controller.Config.DockerSockPath != "" {
+		dockerSockPath = woc.controller.Config.DockerSockPath
+	}
+
+	return apiv1.VolumeMount{
+		Name:      common.DockerSockVolumeName,
+		MountPath: dockerSockPath,
+		ReadOnly:  true,
+	}
+}
+
+func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
+	dockerSockPath := "/var/run/docker.sock"
+
+	if woc.controller.Config.DockerSockPath != "" {
+		dockerSockPath = woc.controller.Config.DockerSockPath
+	}
 
 	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
 	// The primary purpose of this is to make available `docker cp` to collect an output artifact
 	// from a container. Alternatively, we could use `kubectl cp`, but `docker cp` avoids the extra
 	// hop to the kube api server.
-	volumeDockerSock = apiv1.Volume{
+	return apiv1.Volume{
 		Name: common.DockerSockVolumeName,
 		VolumeSource: apiv1.VolumeSource{
 			HostPath: &apiv1.HostPathVolumeSource{
-				Path: "/var/run/docker.sock",
+				Path: dockerSockPath,
 				Type: &hostPathSocket,
 			},
 		},
 	}
-	volumeMountDockerSock = apiv1.VolumeMount{
-		Name:      volumeDockerSock.Name,
-		MountPath: "/var/run/docker.sock",
-		ReadOnly:  true,
-	}
-)
+}
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
@@ -273,7 +290,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
 	case "", common.ContainerRuntimeExecutorDocker:
-		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountDockerSock)
+		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock())
 	}
 	return ctr, nil
 }
@@ -376,7 +393,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
-		return append(volumes, volumeDockerSock)
+		return append(volumes, woc.getVolumeDockerSock())
 	}
 }
 
