@@ -224,6 +224,7 @@ func (p *PNSExecutor) GetOutputStream(containerID string, combinedOutput bool) (
 	}
 	opts := v1.PodLogOptions{
 		Container: common.MainContainerName,
+		Follow:    true,
 	}
 	return p.clientset.CoreV1().Pods(p.namespace).GetLogs(p.podName, &opts).Stream()
 }
