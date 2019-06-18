@@ -18,13 +18,38 @@ __argo_get_workflow() {
 	fi
 }
 
+__argo_get_logs() {
+	# Determine if were completing a workflow or not.
+	local workflow=0
+	for comp_word in "${COMP_WORDS[@]}"; do
+		if [[ $comp_word =~ ^(-w|--workflow)$ ]]; then
+			workflow=1
+			break
+		fi
+	done
+
+	# If completing a workflow, call normal function.
+	if [[ $workflow -eq 1 ]]; then
+		__argo_get_workflow && return $?
+	fi
+
+	# Otherwise, complete the list of pods
+	local kubectl_out
+	if kubectl_out=$(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow | awk '{if ($6!="") print $1}'); then
+		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
+	fi
+}
+
 __argo_custom_func() {
 	case ${last_command} in
-		argo_delete | argo_get | argo_logs |\
+		argo_delete | argo_get |\
 		argo_resubmit | argo_resume | argo_retry | argo_suspend |\
 		argo_terminate | argo_wait | argo_watch)
 			__argo_get_workflow
 			return
+			;;
+		argo_logs)
+			__argo_get_logs
 			;;
 		*)
 			;;
