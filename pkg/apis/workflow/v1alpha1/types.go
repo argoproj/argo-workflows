@@ -256,6 +256,9 @@ type Template struct {
 	// Priority to apply to workflow pods.
 	Priority *int32 `json:"priority,omitempty"`
 
+	// ServiceAccountName to apply to workflow pods
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
 }

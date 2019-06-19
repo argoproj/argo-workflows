@@ -59,6 +59,10 @@ type WorkflowControllerConfig struct {
 
 	// Persistence contains the workflow persistence DB configuration
 	Persistence *PersistConfig `json:"persistence,omitempty"`
+
+	// Config customized Docker Sock path
+	DockerSockPath string `json:"dockerSockPath,omitempty"`
+
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
