@@ -51,7 +51,9 @@ func NewListCommand() *cobra.Command {
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
 				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
-				labelSelector = labelSelector.Add(*req)
+				if req != nil {
+					labelSelector = labelSelector.Add(*req)
+				}
 			}
 			if listArgs.completed {
 				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
