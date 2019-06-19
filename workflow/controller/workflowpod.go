@@ -90,6 +90,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
+	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
+	if tmpl.ServiceAccountName != "" {
+		tmplServiceAccountName = tmpl.ServiceAccountName
+	}
+
 	mainCtr.Name = common.MainContainerName
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +115,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
