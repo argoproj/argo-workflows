@@ -40,6 +40,10 @@ __argo_get_logs() {
 	fi
 }
 
+__argo_list_manifest_files() {
+	COMPREPLY+=( $( compgen -f -o plusdirs -X '!*.@(yaml|yml|json)' -- "$cur" ) )
+}
+
 __argo_custom_func() {
 	case ${last_command} in
 		argo_delete | argo_get |\
@@ -50,6 +54,9 @@ __argo_custom_func() {
 			;;
 		argo_logs)
 			__argo_get_logs
+			;;
+		argo_submit)
+			__argo_list_manifest_files
 			;;
 		*)
 			;;
