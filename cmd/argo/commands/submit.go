@@ -59,7 +59,10 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	// Only complete files with appropriate extension.
-	command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
+	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return command
 }
