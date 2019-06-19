@@ -24,13 +24,13 @@ import (
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	status        string // --status
-	completed     bool   // --completed
-	running       bool   // --running
-	output        string // --output
-	since         string // --since
-	chunkSize     int64  // --chunk-size
+	allNamespaces bool     // --all-namespaces
+	status        []string // --status
+	completed     bool     // --completed
+	running       bool     // --running
+	output        string   // --output
+	since         string   // --since
+	chunkSize     int64    // --chunk-size
 }
 
 func NewListCommand() *cobra.Command {
@@ -49,8 +49,8 @@ func NewListCommand() *cobra.Command {
 			}
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
-			if listArgs.status != "" {
-				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, strings.Split(listArgs.status, ","))
+			if len(listArgs.status) != 0 {
+				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
 				labelSelector = labelSelector.Add(*req)
 			}
 			if listArgs.completed {
@@ -111,7 +111,7 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
-	command.Flags().StringVar(&listArgs.status, "status", "", "Filter by status (comma separated)")
+	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")

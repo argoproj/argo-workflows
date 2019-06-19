@@ -12,8 +12,9 @@ import (
 const (
 	bashCompletionFunc = `
 __argo_get_workflow() {
+	local status="$1"
 	local argo_out
-	if argo_out=$(argo list --output name 2>/dev/null); then
+	if argo_out=$(argo list --status="$status" --output name 2>/dev/null); then
 		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
 	fi
 }
@@ -46,17 +47,29 @@ __argo_list_manifest_files() {
 
 __argo_custom_func() {
 	case ${last_command} in
-		argo_delete | argo_get |\
-		argo_resubmit | argo_resume | argo_retry | argo_suspend |\
-		argo_terminate | argo_wait | argo_watch)
+		argo_delete | argo_get | argo_resubmit)
 			__argo_get_workflow
+			return
+			;;
+		argo_suspend | argo_terminate | argo_wait | argo_watch)
+			__argo_get_workflow "Running,Pending"
+			return
+			;;
+		argo_resume)
+			__argo_get_workflow "Running"
+			return
+			;;
+		argo_retry)
+			__argo_get_workflow "Failed"
 			return
 			;;
 		argo_logs)
 			__argo_get_logs
+			return
 			;;
 		argo_submit)
 			__argo_list_manifest_files
+			return
 			;;
 		*)
 			;;
