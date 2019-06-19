@@ -102,6 +102,7 @@ Currently **officially** using Argo:
 1. [Max Kelsen](https://maxkelsen.com/)
 1. [Mirantis](https://mirantis.com/)
 1. [NVIDIA](https://www.nvidia.com/)
+1. [OVH](https://www.ovh.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
