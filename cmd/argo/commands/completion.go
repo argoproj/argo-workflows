@@ -13,8 +13,8 @@ const (
 	bashCompletionFunc = `
 __argo_get_workflow() {
 	local status="$1"
-	local argo_out
-	if argo_out=$(argo list --status="$status" --output name 2>/dev/null); then
+	local -a argo_out
+	if argo_out=($(argo list --status="$status" --output name 2>/dev/null)); then
 		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
 	fi
 }
@@ -35,8 +35,8 @@ __argo_get_logs() {
 	fi
 
 	# Otherwise, complete the list of pods
-	local kubectl_out
-	if kubectl_out=$(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow | awk '{if ($6!="") print $1}'); then
+	local -a kubectl_out
+	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow | awk '{if ($6!="") print $1}')); then
 		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
 	fi
 }
