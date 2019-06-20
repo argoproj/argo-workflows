@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/util"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -112,9 +113,11 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 func (we *WorkflowExecutor) HandleError() {
 	if r := recover(); r != nil {
 		_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
+		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
+			util.WriteTeriminateMessage(we.errors[0].Error())
 			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, we.errors[0].Error())
 		}
 	}
@@ -491,7 +494,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	return &art, nil
 }
 
-// GetSecretFromVolMount will retrive the Secrets from VolumeMount
+// GetSecretFromVolMount will retrieve the Secrets from VolumeMount
 func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
 	return ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
 }
@@ -538,7 +541,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			Endpoint:  art.S3.Endpoint,
 			AccessKey: accessKey,
 			SecretKey: secretKey,
-			Secure:    art.S3.Insecure == nil || *art.S3.Insecure == false,
+			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
 			Region:    art.S3.Region,
 		}
 		return &driver, nil
@@ -1053,10 +1056,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars() error {
-	if len(we.Template.Sidecars) == 0 {
-		log.Infof("No sidecars")
-		return nil
-	}
 	log.Infof("Killing sidecars")
 	pod, err := we.getPod()
 	if err != nil {

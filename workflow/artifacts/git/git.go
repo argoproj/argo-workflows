@@ -58,7 +58,7 @@ func writePrivateKey(key string, insecureIgnoreHostKey bool) error {
 		return errors.InternalWrapError(err)
 	}
 	sshDir := fmt.Sprintf("%s/.ssh", usr.HomeDir)
-	err = os.Mkdir(sshDir, 0700)
+	err = os.MkdirAll(sshDir, 0700)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}

@@ -30,6 +30,7 @@ type listFlags struct {
 	running       bool   // --running
 	output        string // --output
 	since         string // --since
+	chunkSize     int64  // --chunk-size
 }
 
 func NewListCommand() *cobra.Command {
@@ -61,20 +62,35 @@ func NewListCommand() *cobra.Command {
 				labelSelector = labelSelector.Add(*req)
 			}
 			listOpts.LabelSelector = labelSelector.String()
+			if listArgs.chunkSize != 0 {
+				listOpts.Limit = listArgs.chunkSize
+			}
 			wfList, err := wfClient.List(listOpts)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			var tmpWorkFlows []wfv1.Workflow
+			tmpWorkFlows = wfList.Items
+			for wfList.ListMeta.Continue != "" {
+				listOpts.Continue = wfList.ListMeta.Continue
+				wfList, err = wfClient.List(listOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
+			}
+
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = wfList.Items
+				workflows = tmpWorkFlows
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
 				}
-				for _, wf := range wfList.Items {
+				for _, wf := range tmpWorkFlows {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
@@ -100,6 +116,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
+	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command
 }
 

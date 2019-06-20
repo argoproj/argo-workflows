@@ -164,6 +164,9 @@ type WorkflowSpec struct {
 
 	// Priority to apply to workflow pods.
 	PodPriority *int32 `json:"podPriority,omitempty"`
+
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -252,6 +255,12 @@ type Template struct {
 
 	// Priority to apply to workflow pods.
 	Priority *int32 `json:"priority,omitempty"`
+
+	// ServiceAccountName to apply to workflow pods
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -815,7 +824,7 @@ type ScriptTemplate struct {
 // ResourceTemplate is a template subtype to manipulate kubernetes resources
 type ResourceTemplate struct {
 	// Action is the action to perform to the resource.
-	// Must be one of: get, create, apply, delete, replace
+	// Must be one of: get, create, apply, delete, replace, patch
 	Action string `json:"action"`
 
 	// MergeStrategy is the strategy used to merge a patch. It defaults to "strategic"
@@ -824,6 +833,9 @@ type ResourceTemplate struct {
 
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest"`
+
+	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
+	SetOwnerReference bool `json:"setOwnerReference,omitempty"`
 
 	// SuccessCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which it is acceptable to proceed to the following step
@@ -1028,10 +1040,10 @@ func continues(c *ContinueOn, phase NodePhase) bool {
 	if c == nil {
 		return false
 	}
-	if c.Error == true && phase == NodeError {
+	if c.Error && phase == NodeError {
 		return true
 	}
-	if c.Failed == true && phase == NodeFailed {
+	if c.Failed && phase == NodeFailed {
 		return true
 	}
 	return false

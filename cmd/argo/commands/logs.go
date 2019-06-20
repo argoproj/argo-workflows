@@ -204,7 +204,7 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 		}
 		for id := range wf.Status.Nodes {
 			node := wf.Status.Nodes[id]
-			if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError && streamedPods[node.ID] == false {
+			if node.Type == v1alpha1.NodeTypePod && node.Phase != v1alpha1.NodeError && !streamedPods[node.ID] {
 				streamedPods[node.ID] = true
 				go func() {
 					var sinceTimePtr *metav1.Time
@@ -369,7 +369,7 @@ func mergeSorted(logs [][]logEntry) []logEntry {
 		left := logs[0]
 		right := logs[1]
 		size, i, j := len(left)+len(right), 0, 0
-		merged := make([]logEntry, size, size)
+		merged := make([]logEntry, size)
 
 		for k := 0; k < size; k++ {
 			if i > len(left)-1 && j <= len(right)-1 {
