@@ -36,7 +36,7 @@ __argo_get_logs() {
 
 	# Otherwise, complete the list of pods
 	local -a kubectl_out
-	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow | awk '{if ($6!="") print $1}')); then
+	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow 2>/dev/null | awk '{if ($6!="") print $1}' 2>/dev/null)); then
 		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
 	fi
 }
