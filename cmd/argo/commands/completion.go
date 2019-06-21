@@ -41,7 +41,7 @@ __argo_get_logs() {
 	fi
 }
 
-__argo_list_manifest_files() {
+__argo_list_files() {
 	COMPREPLY+=( $( compgen -f -o plusdirs -X '!*.@(yaml|yml|json)' -- "$cur" ) )
 }
 
@@ -68,7 +68,11 @@ __argo_custom_func() {
 			return
 			;;
 		argo_submit)
-			__argo_list_manifest_files
+			__argo_list_files
+			return
+			;;
+		argo_lint)
+			__argo_list_files
 			return
 			;;
 		*)
