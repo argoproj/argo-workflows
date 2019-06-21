@@ -250,6 +250,25 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 					dependenciesSuccessful = false
 				}
 				continue
+			} else if depNode.Type == wfv1.NodeTypeRetry {
+				// For retry type node
+				// Maybe one of children node already success, but the retry node hasn't sync to latest status
+				// So skip these steps, the next process function will make the status to be right
+				tmpContinueFlag := false
+				for _, tmpChildName := range depNode.Children {
+					tmpChild, tmpOK := woc.wf.Status.Nodes[tmpChildName]
+					if !tmpOK {
+						continue
+					}
+					if tmpChild.Successful() {
+						tmpContinueFlag = true
+						break
+					}
+				}
+				if tmpContinueFlag {
+					woc.markNodePhase(depNode.Name, wfv1.NodeSucceeded)
+					continue
+				}
 			}
 		}
 		dependenciesCompleted = false
