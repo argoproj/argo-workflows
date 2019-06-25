@@ -24,7 +24,7 @@ type (
 	DBRepository interface {
 		Save(wf *wfv1.Workflow) error
 		Get(uid string) (*wfv1.Workflow, error)
-		ListAll() ([]wfv1.Workflow, error)
+		List() ([]wfv1.Workflow, error)
 		Query(condition interface{}) ([]wfv1.Workflow, error)
 		Close() error
 		IsSupportLargeWorkflow() bool
@@ -171,7 +171,7 @@ func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
 
 }
 
-func (wdc *WorkflowDBContext) ListAll() ([]wfv1.Workflow, error) {
+func (wdc *WorkflowDBContext) List() ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 
 	if wdc.Session == nil {
