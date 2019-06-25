@@ -1068,6 +1068,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.FailFast != nil {
+		in, out := &in.FailFast, &out.FailFast
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
