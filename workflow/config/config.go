@@ -93,7 +93,6 @@ type ArtifactRepository struct {
 
 type PersistConfig struct {
 	SupportLargeWorkflow bool                `json:"supportLargeWorkflow"`
-	TableName            string              `json:"tableName"`
 	PersistConnectPool   *PersistConnectPool `json:"persistConnectPool"`
 	PostgreSQL           *PostgreSQLConfig   `json:"postgresql,omitempty"`
 	MySQL                *MySQLConfig        `json:"mysql,omitempty"`
@@ -106,6 +105,7 @@ type PostgreSQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
+	TableName      string                  `json:"tableName"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
 }
@@ -114,6 +114,7 @@ type MySQLConfig struct {
 	Host           string                  `json:"host"`
 	Port           string                  `json:"port"`
 	Database       string                  `json:"database"`
+	TableName      string                  `json:"tableName"`
 	Options        map[string]string       `json:"options"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`

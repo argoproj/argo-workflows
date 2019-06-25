@@ -48,30 +48,37 @@ func DBUpdateNoRowFoundErrorf(err error, format string, args ...interface{}) err
 }
 
 // CreateDBSession creates the dB session
-func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, error) {
+func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (sqlbuilder.Database, string, error) {
 	if persistConfig == nil {
-		return nil, errors.InternalError("Persistence config is not found")
+		return nil, "", errors.InternalError("Persistence config is not found")
 	}
+
 	if persistConfig.PostgreSQL != nil {
 		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.PersistConnectPool)
 	} else if persistConfig.MySQL != nil {
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.PersistConnectPool)
 	}
 
-	return nil, nil
+	return nil, "", nil
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.PostgreSQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, error) {
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.PostgreSQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, string, error) {
+
+	if postgresConfig.TableName == "" {
+		return nil, "", errors.InternalError("TableName is empty")
+	}
 
 	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, postgresConfig.UsernameSecret.Name, postgresConfig.UsernameSecret.Key)
+
 	if err != nil {
-		return nil, err
+		return nil, postgresConfig.TableName, err
 	}
 	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, postgresConfig.PasswordSecret.Name, postgresConfig.PasswordSecret.Key)
 	if err != nil {
-		return nil, err
+		return nil, postgresConfig.TableName, err
 	}
+
 	var settings = postgresql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
@@ -80,29 +87,52 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	}
 	session, err := postgresql.Open(settings)
 
-	return session, err
+	if err != nil {
+		return nil, postgresConfig.TableName, err
+	}
+
+	if persistPool != nil {
+		session.SetMaxOpenConns(persistPool.MaxOpenConns)
+		session.SetMaxIdleConns(persistPool.MaxIdleConns)
+	}
+
+	return session, postgresConfig.TableName, err
 
 }
 
 // CreatePostGresDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.MySQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, mysqlConfig *config.MySQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, string, error) {
 
-	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, postgresConfig.UsernameSecret.Name, postgresConfig.UsernameSecret.Key)
-	if err != nil {
-		return nil, err
+	if mysqlConfig.TableName == "" {
+		return nil, "", errors.InternalError("TableName is empty")
 	}
-	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, postgresConfig.PasswordSecret.Name, postgresConfig.PasswordSecret.Key)
+
+	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, mysqlConfig.UsernameSecret.Name, mysqlConfig.UsernameSecret.Key)
 	if err != nil {
-		return nil, err
+		return nil, mysqlConfig.TableName, err
+	}
+	passwordByte, err := util.GetSecrets(kubectlConfig, namespace, mysqlConfig.PasswordSecret.Name, mysqlConfig.PasswordSecret.Key)
+	if err != nil {
+		return nil, mysqlConfig.TableName, err
 	}
 	var settings = mysql.ConnectionURL{
 		User:     string(userNameByte),
 		Password: string(passwordByte),
-		Host:     postgresConfig.Host + ":" + postgresConfig.Port,
-		Database: postgresConfig.Database,
+		Host:     mysqlConfig.Host + ":" + mysqlConfig.Port,
+		Database: mysqlConfig.Database,
 	}
+
 	session, err := mysql.Open(settings)
 
-	return session, err
+	if err != nil {
+		return nil, mysqlConfig.TableName, err
+	}
+
+	if persistPool != nil {
+		session.SetMaxOpenConns(persistPool.MaxOpenConns)
+		session.SetMaxIdleConns(persistPool.MaxIdleConns)
+	}
+
+	return session, mysqlConfig.TableName, err
 
 }

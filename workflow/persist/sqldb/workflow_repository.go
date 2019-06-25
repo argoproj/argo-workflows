@@ -37,8 +37,8 @@ type WorkflowDB struct {
 	Phase      wfv1.NodePhase `db:"phase"`
 	Namespace  string         `db:"namespace"`
 	Workflow   string         `db:"workflow"`
-	StartedAt  time.Time      `db:"startedAt"`
-	FinishedAt time.Time      `db:"finishedAt"`
+	StartedAt  time.Time      `db:"startedat"`
+	FinishedAt time.Time      `db:"finishedat"`
 }
 
 func convert(wf *wfv1.Workflow) *WorkflowDB {
