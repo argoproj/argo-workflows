@@ -76,7 +76,7 @@ func (_m *DBRepository) IsSupportLargeWorkflow() bool {
 	return r0
 }
 
-// ListAll provides a mock function with given fields:
+// List provides a mock function with given fields:
 func (_m *DBRepository) List() ([]v1alpha1.Workflow, error) {
 	ret := _m.Called()
 
