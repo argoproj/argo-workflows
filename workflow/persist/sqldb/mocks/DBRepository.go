@@ -62,8 +62,8 @@ func (_m *DBRepository) IsInterfaceNil() bool {
 	return r0
 }
 
-// IsSupportLargeWorkflow provides a mock function with given fields:
-func (_m *DBRepository) IsSupportLargeWorkflow() bool {
+// IsNodeStatusOffload provides a mock function with given fields:
+func (_m *DBRepository) IsNodeStatusOffload() bool {
 	ret := _m.Called()
 
 	var r0 bool

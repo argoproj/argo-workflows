@@ -8,3 +8,4 @@ cmd/**/debug
 hack/**/debug
 debug.test
 *.iml
+c.yaml

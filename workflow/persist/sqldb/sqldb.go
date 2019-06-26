@@ -54,16 +54,16 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 	}
 
 	if persistConfig.PostgreSQL != nil {
-		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.PersistConnectPool)
+		return CreatePostGresDBSession(kubectlConfig, namespace, persistConfig.PostgreSQL, persistConfig.ConnectionPool)
 	} else if persistConfig.MySQL != nil {
-		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.PersistConnectPool)
+		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
 
 	return nil, "", nil
 }
 
 // CreatePostGresDBSession creates postgresDB session
-func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.PostgreSQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, string, error) {
+func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, postgresConfig *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if postgresConfig.TableName == "" {
 		return nil, "", errors.InternalError("TableName is empty")
@@ -101,7 +101,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 }
 
 // CreatePostGresDBSession creates Mysql DB session
-func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, mysqlConfig *config.MySQLConfig, persistPool *config.PersistConnectPool) (sqlbuilder.Database, string, error) {
+func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, mysqlConfig *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if mysqlConfig.TableName == "" {
 		return nil, "", errors.InternalError("TableName is empty")

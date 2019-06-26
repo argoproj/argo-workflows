@@ -17,7 +17,7 @@ func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceN
 	mockDBRepo := &mocks.DBRepository{}
 
 	mockDBRepo.On("Save", mock.Anything).Return(expectedResullt)
-	mockDBRepo.On("IsSupportLargeWorkflow").Return(largeWfSupport)
+	mockDBRepo.On("IsNodeStatusOffload").Return(largeWfSupport)
 	mockDBRepo.On("IsInterfaceNil").Return(isInterfaceNil)
 	return mockDBRepo
 }

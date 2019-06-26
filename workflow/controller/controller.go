@@ -245,8 +245,8 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	// Loading running workflow from persistence storage if SupportLargeWorkflow enabled
-	if wfc.wfDBctx != nil && wfc.wfDBctx.IsSupportLargeWorkflow() {
+	// Loading running workflow from persistence storage if NodeStatusOffload enabled
+	if wfc.wfDBctx != nil && wfc.wfDBctx.IsNodeStatusOffload() {
 		wfDB, err := wfc.wfDBctx.Get(string(wf.UID))
 		if err != nil {
 			log.Warnf("DB get operation failed. %v", err)
@@ -460,7 +460,7 @@ func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBCont
 	var err error
 
 	//wfDBCtx.TableName = wfc.Config.Persistence.TableName
-	wfDBCtx.SupportLargeWorkflow = wfc.Config.Persistence.SupportLargeWorkflow
+	wfDBCtx.NodeStatusOffload = wfc.Config.Persistence.NodeStatusOffload
 
 	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
 

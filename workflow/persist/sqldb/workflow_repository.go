@@ -16,9 +16,9 @@ import (
 
 type (
 	WorkflowDBContext struct {
-		TableName            string
-		SupportLargeWorkflow bool
-		Session              sqlbuilder.Database
+		TableName         string
+		NodeStatusOffload bool
+		Session           sqlbuilder.Database
 	}
 
 	DBRepository interface {
@@ -27,7 +27,7 @@ type (
 		List() ([]wfv1.Workflow, error)
 		Query(condition interface{}) ([]wfv1.Workflow, error)
 		Close() error
-		IsSupportLargeWorkflow() bool
+		IsNodeStatusOffload() bool
 	}
 )
 
@@ -57,8 +57,8 @@ func convert(wf *wfv1.Workflow) *WorkflowDB {
 
 }
 
-func (wdc *WorkflowDBContext) IsSupportLargeWorkflow() bool {
-	return wdc.SupportLargeWorkflow
+func (wdc *WorkflowDBContext) IsNodeStatusOffload() bool {
+	return wdc.NodeStatusOffload
 }
 
 func (wdc *WorkflowDBContext) Init(sess sqlbuilder.Database) {

@@ -92,12 +92,12 @@ type ArtifactRepository struct {
 }
 
 type PersistConfig struct {
-	SupportLargeWorkflow bool                `json:"supportLargeWorkflow"`
-	PersistConnectPool   *PersistConnectPool `json:"persistConnectPool"`
-	PostgreSQL           *PostgreSQLConfig   `json:"postgresql,omitempty"`
-	MySQL                *MySQLConfig        `json:"mysql,omitempty"`
+	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
+	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
+	PostgreSQL        *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL             *MySQLConfig      `json:"mysql,omitempty"`
 }
-type PersistConnectPool struct {
+type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
 	MaxOpenConns int `json:"maxOpenConns"`
 }

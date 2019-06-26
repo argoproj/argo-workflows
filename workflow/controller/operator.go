@@ -312,7 +312,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		woc.wf.Status.Nodes = nil
 	}
 	var wfDB = woc.wf.DeepCopy()
-	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsSupportLargeWorkflow() {
+	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload() {
 		woc.wf.Status.Nodes = nil
 		woc.wf.Status.CompressedNodes = ""
 	}
@@ -340,7 +340,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		err = woc.controller.wfDBctx.Save(wfDB)
 		if err != nil {
 			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
-			if woc.controller.wfDBctx.IsSupportLargeWorkflow() {
+			if woc.controller.wfDBctx.IsNodeStatusOffload() {
 				woc.markWorkflowFailed(err.Error())
 				return
 			}
