@@ -167,14 +167,6 @@ type WorkflowSpec struct {
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
-
-	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
-	// as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed
-	// before failing the DAG itself.
-	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
-	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
-	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
-	FailFast *bool `json:"failFast,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -899,6 +891,14 @@ type DAGTemplate struct {
 
 	// Tasks are a list of DAG tasks
 	Tasks []DAGTask `json:"tasks"`
+
+	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
+	// as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed
+	// before failing the DAG itself.
+	// The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to
+	// completion (either success or failure), regardless of the failed outcomes of branches in the DAG.
+	// More info and example about this feature at https://github.com/argoproj/argo/issues/1442
+	FailFast *bool `json:"failFast,omitempty"`
 }
 
 // DAGTask represents a node in the graph during DAG execution

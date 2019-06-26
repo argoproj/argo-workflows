@@ -3,7 +3,6 @@ kind: Workflow
 metadata:
   generateName: dag-primay-branch-
 spec:
-  failFast: false
   entrypoint: statis
   templates:
   - name: a
@@ -32,6 +31,7 @@ spec:
       args: ["hello world"]
   - name: statis
     dag:
+      failFast: false
       tasks:
       - name: A
         template: a

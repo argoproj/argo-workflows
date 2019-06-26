@@ -251,6 +251,11 @@ func (in *DAGTemplate) DeepCopyInto(out *DAGTemplate) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.FailFast != nil {
+		in, out := &in.FailFast, &out.FailFast
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
@@ -1067,11 +1072,6 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
-	}
-	if in.FailFast != nil {
-		in, out := &in.FailFast, &out.FailFast
-		*out = new(bool)
-		**out = **in
 	}
 	return
 }
