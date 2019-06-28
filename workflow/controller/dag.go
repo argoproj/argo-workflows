@@ -89,26 +89,24 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	}
 
 	if unsuccessfulPhase != "" {
-		if d.tmpl != nil && d.tmpl.DAG != nil {
-			// If failFast set to false, we should return Running to continue this workflow for other DAG branch
-			if d.tmpl.DAG.FailFast != nil && !*d.tmpl.DAG.FailFast {
-				tmpOverAllFinished := true
-				// If all the nodes have finished, we should mark the failed node to finish overall workflow
-				// So we should check all the targetTasks have finished
-				for _, tmpDepName := range targetTasks {
-					tmpDepNode := d.getTaskNode(tmpDepName)
-					if tmpDepNode == nil {
-						tmpOverAllFinished = false
-						break
-					}
-					if tmpDepNode.Type == wfv1.NodeTypeRetry && hasMoreRetries(tmpDepNode, d.wf) {
-						tmpOverAllFinished = false
-						break
-					}
+		// If failFast set to false, we should return Running to continue this workflow for other DAG branch
+		if d.tmpl.DAG.FailFast != nil && !*d.tmpl.DAG.FailFast {
+			tmpOverAllFinished := true
+			// If all the nodes have finished, we should mark the failed node to finish overall workflow
+			// So we should check all the targetTasks have finished
+			for _, tmpDepName := range targetTasks {
+				tmpDepNode := d.getTaskNode(tmpDepName)
+				if tmpDepNode == nil {
+					tmpOverAllFinished = false
+					break
 				}
-				if !tmpOverAllFinished {
-					return wfv1.NodeRunning
+				if tmpDepNode.Type == wfv1.NodeTypeRetry && hasMoreRetries(tmpDepNode, d.wf) {
+					tmpOverAllFinished = false
+					break
 				}
+			}
+			if !tmpOverAllFinished {
+				return wfv1.NodeRunning
 			}
 		}
 
