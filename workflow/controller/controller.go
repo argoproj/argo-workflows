@@ -25,7 +25,9 @@ import (
 	"github.com/argoproj/argo"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -37,7 +39,7 @@ type WorkflowController struct {
 	// configMap is the name of the config map in which to derive configuration of the controller from
 	configMap string
 	// Config is the workflow controller's configuration
-	Config WorkflowControllerConfig
+	Config config.WorkflowControllerConfig
 
 	// cliExecutorImage is the executor image as specified from the command line
 	cliExecutorImage string
@@ -57,6 +59,7 @@ type WorkflowController struct {
 	podQueue      workqueue.RateLimitingInterface
 	completedPods chan string
 	throttler     Throttler
+	wfDBctx       sqldb.DBRepository
 }
 
 const (
@@ -240,6 +243,17 @@ func (wfc *WorkflowController) processNextItem() bool {
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
 		return true
+	}
+
+	// Loading running workflow from persistence storage if NodeStatusOffload enabled
+	if wfc.wfDBctx != nil && wfc.wfDBctx.IsNodeStatusOffload() {
+		wfDB, err := wfc.wfDBctx.Get(string(wf.UID))
+		if err != nil {
+			log.Warnf("DB get operation failed. %v", err)
+		}
+		if wfDB != nil && wfDB.UID != "" {
+			wf = wfDB
+		}
 	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)
@@ -438,4 +452,22 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
+
+	var wfDBCtx sqldb.WorkflowDBContext
+	var err error
+
+	//wfDBCtx.TableName = wfc.Config.Persistence.TableName
+	wfDBCtx.NodeStatusOffload = wfc.Config.Persistence.NodeStatusOffload
+
+	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
+
+	if err != nil {
+		log.Errorf("Error in createPersistenceContext. %v", err)
+		return nil, err
+	}
+
+	return &wfDBCtx, nil
 }
