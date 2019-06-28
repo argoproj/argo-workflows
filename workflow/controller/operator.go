@@ -822,7 +822,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			continue
 		}
 		if ctr.State.Terminated.Message != "" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Message
+			errMsg := ctr.State.Terminated.Message
+			if ctr.Name != common.MainContainerName {
+				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
+			}
+			failMessages[ctr.Name] = errMsg
 			continue
 		}
 		if ctr.State.Terminated.Reason == "OOMKilled" {
