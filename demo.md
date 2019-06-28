@@ -77,7 +77,8 @@ helm install stable/minio \
   --set service.type=LoadBalancer \
   --set defaultBucket.enabled=true \
   --set defaultBucket.name=my-bucket \
-  --set persistence.enabled=false
+  --set persistence.enabled=false \
+  --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
