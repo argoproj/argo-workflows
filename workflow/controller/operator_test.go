@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/workflow/config"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -996,7 +997,7 @@ spec:
 func TestResolveIOPathPlaceholders(t *testing.T) {
 	wf := unmarshalWF(ioPathPlaceholders)
 	woc := newWoc(*wf)
-	woc.controller.Config.ArtifactRepository.S3 = new(S3ArtifactRepository)
+	woc.controller.Config.ArtifactRepository.S3 = new(config.S3ArtifactRepository)
 	woc.operate()
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
