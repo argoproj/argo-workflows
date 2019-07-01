@@ -62,3 +62,8 @@ required = [
 [[constraint]]
   name = "gopkg.in/jcmturner/gokrb5.v5"
   version = "5.3.0"
+
+[[constraint]]
+  name = "upper.io/db.v3"
+  version ="3.5.7"
+

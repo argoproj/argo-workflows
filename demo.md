@@ -32,9 +32,9 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 
 To run all of the examples in this guide, the 'default' service account is too limited to support
 features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
-command to grant admin privileges to the 'argo' service account in the namespace 'argo':
+command to grant admin privileges to the 'default' service account in the namespace 'default':
 ```
-kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:argo
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
 For the bare minimum set of privileges which a workflow needs to function, see
 [Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
@@ -77,7 +77,8 @@ helm install stable/minio \
   --set service.type=LoadBalancer \
   --set defaultBucket.enabled=true \
   --set defaultBucket.name=my-bucket \
-  --set persistence.enabled=false
+  --set persistence.enabled=false \
+  --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.

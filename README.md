@@ -108,6 +108,7 @@ Currently **officially** using Argo:
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
+1. [Threekit](https://www.threekit.com/)
 
 
 ## Community Blogs and Presentations

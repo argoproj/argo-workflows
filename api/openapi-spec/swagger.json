@@ -235,6 +235,10 @@
         "tasks"
       ],
       "properties": {
+        "failFast": {
+          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442",
+          "type": "boolean"
+        },
         "target": {
           "description": "Target are one or more names of targets to execute in a DAG",
           "type": "string"
@@ -891,6 +895,10 @@
         "script": {
           "description": "Script runs a portion of code against an interpreter",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName to apply to workflow pods",
+          "type": "string"
         },
         "sidecars": {
           "description": "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
