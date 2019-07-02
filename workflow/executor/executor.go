@@ -44,7 +44,7 @@ import (
 
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
-	tempOutArtDir = "/argo/outputs/artifacts"
+	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
 // WorkflowExecutor is program which runs as the init/wait container
@@ -444,7 +444,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	tempLogsDir := "/argo/outputs/logs"
+	tempLogsDir := "/tmp/argo/outputs/logs"
 	err = os.MkdirAll(tempLogsDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
