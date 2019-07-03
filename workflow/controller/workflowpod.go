@@ -105,7 +105,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
-				common.AnnotationKeyNodeName: nodeName,
+				common.AnnotationKeyNodeName:    nodeName,
 				common.AnnotationIncludeOutputs: strconv.FormatBool(includeScriptOutput),
 			},
 			OwnerReferences: []metav1.OwnerReference{
