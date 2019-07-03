@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/executor"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/argoproj/pkg/stats"
@@ -28,8 +32,18 @@ func waitContainer() error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
+	includeOutput, err := executor.GetAnnotationField(wfExecutor.PodAnnotationsPath, common.AnnotationIncludeOutputs)
+	if err != nil {
+		wfExecutor.AddError(err)
+	}
+
+	includeOutputFlag, err := strconv.ParseBool(strings.Trim(includeOutput, "\""))
+
+	if err != nil {
+		wfExecutor.AddError(err)
+	}
 	// Wait for main container to complete
-	err := wfExecutor.Wait()
+	err = wfExecutor.Wait()
 	if err != nil {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try to kill sidecars & save outputs
@@ -56,16 +70,20 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-	// Capture output script result
-	err = wfExecutor.CaptureScriptResult()
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	err = wfExecutor.AnnotateOutputs(logArt)
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
+
+	if includeOutputFlag {
+		// Capture output script result
+		err = wfExecutor.CaptureScriptResult()
+		if err != nil {
+			wfExecutor.AddError(err)
+			return err
+		}
+
+		err = wfExecutor.AnnotateOutputs(logArt)
+		if err != nil {
+			wfExecutor.AddError(err)
+			return err
+		}
 	}
 	return nil
 }

@@ -85,7 +85,7 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
+func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
@@ -106,6 +106,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 			Annotations: map[string]string{
 				common.AnnotationKeyNodeName: nodeName,
+				common.AnnotationIncludeOutputs: strconv.FormatBool(includeScriptOutput),
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),

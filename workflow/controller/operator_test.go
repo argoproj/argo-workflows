@@ -1159,3 +1159,73 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 		assert.Equal(t, "resource-with-ownerreference-template", objectMetas["resource-cm-3"].OwnerReferences[1].Name)
 	}
 }
+
+var stepScriptTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: resource-with-ownerreference-template
+spec:
+  entrypoint: start
+  templates:
+  - name: start
+    steps:
+    - - name: resource-1
+        template: resource-1
+      - name: resource-2
+        template: resource-2	
+        arguments:
+           parameters: [{name: message, value: "{{steps.resource-1.output.result}}"}]
+      - name: resource-3
+        template: resource-3 `
+
+var dagScriptTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  arguments:
+    parameters:
+    - name: target
+      value: E
+
+  templates:
+  - name: dag-target
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: "{{dag.A.output.result}}"}]
+      - name: D
+        dependencies: [B, C]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: D}]`
+
+func TestGetNodeName(t *testing.T) {
+
+	// Steps Workflow
+	wf := unmarshalWF(stepScriptTmpl)
+
+	assert.True(t, HasOutputResultRef("resource-1", &wf.Spec.Templates[0]))
+	assert.False(t, HasOutputResultRef("resource-2", &wf.Spec.Templates[0]))
+
+	// DAG workflow
+	wf = unmarshalWF(dagScriptTmpl)
+
+	assert.True(t, HasOutputResultRef("A", &wf.Spec.Templates[0]))
+	assert.False(t, HasOutputResultRef("B", &wf.Spec.Templates[0]))
+}

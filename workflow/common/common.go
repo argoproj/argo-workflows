@@ -34,6 +34,10 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.FullName + "/node-name"
+
+	// AnnotationIncludeOutputs is the pod metadata annotation key containing flag to include script output
+	AnnotationIncludeOutputs = workflow.FullName + "/include-output"
+
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
 	AnnotationKeyNodeMessage = workflow.FullName + "/node-message"

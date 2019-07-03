@@ -1290,7 +1290,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		return node
 	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1362,14 +1362,76 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
+
+	nodeName := "." + name + "."
+
+	if parentTmpl.DAG != nil {
+		for _, dagTask := range parentTmpl.DAG.Tasks {
+
+			if strings.Contains(dagTask.When, nodeName) {
+				return true
+			}
+
+			for _, artf := range dagTask.Arguments.Parameters {
+				if strings.Contains(*artf.Value, "{{") && (strings.Contains(*artf.Value, nodeName) || (artf.ValueFrom != nil && strings.Contains(artf.ValueFrom.Parameter, nodeName))) {
+					return true
+				}
+			}
+		}
+	}
+
+	if parentTmpl.Steps != nil {
+		for idx := range parentTmpl.Steps {
+			stepGroup := parentTmpl.Steps[idx]
+			for _, step := range stepGroup {
+
+				if strings.Contains(step.When, nodeName) {
+					return true
+				}
+				for _, artf := range step.Arguments.Parameters {
+					if strings.Contains(*artf.Value, "{{") && (strings.Contains(*artf.Value, nodeName) || (artf.ValueFrom != nil && strings.Contains(artf.ValueFrom.Parameter, nodeName))) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	for _, param := range parentTmpl.Outputs.Parameters {
+		if strings.Contains(*param.Value, "{{") && (strings.Contains(*param.Value, nodeName) || (param.ValueFrom != nil && strings.Contains(param.ValueFrom.Parameter, nodeName))) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetStepOrDAGTaskName(nodeName string) string {
+	if strings.Contains(nodeName, ".") {
+		return nodeName[strings.LastIndex(nodeName, ".")+1:]
+	}
+	return nodeName
+}
+
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+
+	boundaryNode := woc.wf.Status.Nodes[boundaryID]
+	parentTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
+
+	includeScriptOutput := false
+	if parentTemplate != nil {
+		name := GetStepOrDAGTaskName(nodeName)
+		includeScriptOutput = HasOutputResultRef(name, parentTemplate)
+	}
 	node := woc.getNodeByName(nodeName)
+
 	if node != nil {
 		return node
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl, includeScriptOutput)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1604,7 +1666,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	mainCtr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
