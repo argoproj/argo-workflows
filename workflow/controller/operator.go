@@ -1365,6 +1365,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	nodeName := "." + name + "."
+	fmt.Println(nodeName)
 
 	if parentTmpl.DAG != nil {
 		for _, dagTask := range parentTmpl.DAG.Tasks {
@@ -1409,6 +1410,11 @@ func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 func GetStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
+		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
+		// Check retry scenario
+		if strings.Contains(name, "(") {
+			return name[0:strings.Index(name, "(")]
+		}
 		return nodeName[strings.LastIndex(nodeName, ".")+1:]
 	}
 	return nodeName
@@ -1424,6 +1430,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 		name := GetStepOrDAGTaskName(nodeName)
 		includeScriptOutput = HasOutputResultRef(name, parentTemplate)
 	}
+	fmt.Println(includeScriptOutput)
 	node := woc.getNodeByName(nodeName)
 
 	if node != nil {
