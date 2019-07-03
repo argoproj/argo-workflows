@@ -767,7 +767,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(nil, task.Name, tmpl.DAG.Tasks)
 		for _, ancestor := range ancestry {
 			ancestorTask := nameToTask[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)
