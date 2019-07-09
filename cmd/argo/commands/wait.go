@@ -76,6 +76,9 @@ func waitOnOne(workflowName string, ignoreNotFound, quiet bool) {
 			if !quiet {
 				fmt.Printf("%s completed at %v\n", workflowName, wf.Status.FinishedAt)
 			}
+			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
+				os.Exit(1)
+			}
 			return
 		}
 	}
