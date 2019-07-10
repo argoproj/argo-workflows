@@ -61,6 +61,30 @@ func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
+// Assert all branch finished for failFast:disable function
+func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
+	// We should ensure that from the bottom to the top,
+	// all the nodes of this branch have at least one failure.
+	// If successful, we should continue to run down until the leaf node
+	taskNode := d.getTaskNode(targetTaskName)
+	if taskNode == nil {
+		taskObject := d.getTask(targetTaskName)
+		if taskObject != nil {
+			// Make sure all the dependency node have one failed
+			for _, tmpTaskName := range taskObject.Dependencies {
+				// Recursive check until top root node
+				return d.assertBranchFinished(tmpTaskName)
+			}
+		}
+	} else if !taskNode.Successful() {
+		return true
+	}
+
+	// In failFast situation, if node is successful, it will run to leaf node, above
+	// the function, we have already check the leaf node status
+	return false
+}
+
 // assessDAGPhase assesses the overall DAG status
 func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.NodeStatus) wfv1.NodePhase {
 	// First check all our nodes to see if anything is still running. If so, then the DAG is
@@ -93,17 +117,20 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		if d.tmpl.DAG.FailFast != nil && !*d.tmpl.DAG.FailFast {
 			tmpOverAllFinished := true
 			// If all the nodes have finished, we should mark the failed node to finish overall workflow
-			// So we should check all the targetTasks have finished
+			// So we should check all the targetTasks branch have finished
 			for _, tmpDepName := range targetTasks {
 				tmpDepNode := d.getTaskNode(tmpDepName)
 				if tmpDepNode == nil {
+					// If leaf node is nil, we should check it's parent node and recursive check
+					if !d.assertBranchFinished(tmpDepName) {
+						tmpOverAllFinished = false
+					}
+				} else if tmpDepNode.Type == wfv1.NodeTypeRetry && hasMoreRetries(tmpDepNode, d.wf) {
 					tmpOverAllFinished = false
 					break
 				}
-				if tmpDepNode.Type == wfv1.NodeTypeRetry && hasMoreRetries(tmpDepNode, d.wf) {
-					tmpOverAllFinished = false
-					break
-				}
+
+				//If leaf node has finished, we should mark the error workflow
 			}
 			if !tmpOverAllFinished {
 				return wfv1.NodeRunning
