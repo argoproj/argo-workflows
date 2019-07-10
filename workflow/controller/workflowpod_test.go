@@ -3,8 +3,9 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/workflow/config"
 	"testing"
+
+	"github.com/argoproj/argo/workflow/config"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
@@ -655,4 +656,34 @@ func TestTmplLevelHostAliases(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, pod.Spec.HostAliases)
 
+}
+
+// TestWFLevelSecurityContext verifies the ability to carry forward workflow level SecurityContext to Podspec
+func TestWFLevelSecurityContext(t *testing.T) {
+	woc := newWoc()
+	runAsUser := int64(1234)
+	woc.wf.Spec.SecurityContext = &apiv1.PodSecurityContext{
+		RunAsUser: &runAsUser,
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.SecurityContext)
+	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
+}
+
+// TestTmplLevelSecurityContext verifies the ability to carry forward template level SecurityContext to Podspec
+func TestTmplLevelSecurityContext(t *testing.T) {
+	woc := newWoc()
+	runAsUser := int64(1234)
+	woc.wf.Spec.Templates[0].SecurityContext = &apiv1.PodSecurityContext{
+		RunAsUser: &runAsUser,
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.SecurityContext)
+	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
 }
