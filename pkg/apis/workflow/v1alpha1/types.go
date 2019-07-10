@@ -167,6 +167,11 @@ type WorkflowSpec struct {
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
+
+	// SecurityContext holds pod-level security attributes and common container settings.
+	// Optional: Defaults to empty.  See type description for default values of each field.
+	// +optional
+	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -261,6 +266,11 @@ type Template struct {
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
+
+	// SecurityContext holds pod-level security attributes and common container settings.
+	// Optional: Defaults to empty.  See type description for default values of each field.
+	// +optional
+	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
