@@ -1,0 +1,43 @@
+# This workflow demonstrates the use of a generator step which produces a list within list of items as a result.
+# This list is subsequently used for expanding the next step into multiple parallel steps.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: loops-param-result-array-
+spec:
+  entrypoint: loop-param-result-example
+  templates:
+  - name: loop-param-result-example
+    steps:
+    - - name: generate
+        template: gen-number-list
+    - - name: sleep
+        template: sleep-n-sec
+        arguments:
+          parameters:
+          - name: seconds
+            value: "{{item}}"
+        withParam: "{{steps.generate.outputs.result}}"
+
+  - name: gen-number-list
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        json.dump([["sd","sdf","SDfs"],[4,5,6],[7,8,9]], sys.stdout)
+
+  - name: sleep-n-sec
+    inputs:
+      parameters:
+      - name: seconds
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import sys
+        y = {{inputs.parameters.seconds}}
+        for item in y:
+            print(item)
