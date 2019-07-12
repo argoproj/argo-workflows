@@ -39,6 +39,12 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try save outputs
 	}
+	// Capture output script result
+	err = wfExecutor.CaptureScriptResult()
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
+	}
 	logArt, err := wfExecutor.SaveLogs()
 	if err != nil {
 		wfExecutor.AddError(err)
@@ -52,12 +58,6 @@ func waitContainer() error {
 	}
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts()
-	if err != nil {
-		wfExecutor.AddError(err)
-		return err
-	}
-	// Capture output script result
-	err = wfExecutor.CaptureScriptResult()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
