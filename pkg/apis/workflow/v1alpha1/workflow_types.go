@@ -299,10 +299,10 @@ type Template struct {
 var _ TemplateHolder = &Template{}
 
 func (tmpl *Template) GetTemplateName() string {
-	if tmpl.GetType() != TemplateTypeUnknown {
-		return tmpl.Name
-	} else {
+	if tmpl.Template != "" {
 		return tmpl.Template
+	} else {
+		return tmpl.Name
 	}
 }
 
