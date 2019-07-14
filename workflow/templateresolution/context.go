@@ -58,17 +58,21 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 // GetTemplate returns a template found by template name or template ref.
 func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template, error) {
+	tmplName := tmplHolder.GetTemplateName()
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
 		return ctx.GetTemplateFromRef(tmplRef)
+	} else if tmplName != "" {
+		return ctx.GetTemplateByName(tmplName)
 	} else {
-		tmplName := tmplHolder.GetTemplateName()
-		tmpl := ctx.tmplBase.GetTemplateByName(tmplName)
-		if tmpl == nil {
-			return nil, errors.Errorf(errors.CodeNotFound, "template %s not found", tmplName)
+		if tmpl, ok := tmplHolder.(*wfv1.Template); ok {
+			if tmpl.GetType() != wfv1.TemplateTypeUnknown {
+				return tmpl.DeepCopy(), nil
+			}
+			return nil, errors.Errorf(errors.CodeNotFound, "template %s is not a concrete template", tmpl.Name)
 		}
-		return tmpl.DeepCopy(), nil
 	}
+	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
 
 // GetTemplateBase returns a template base of a found template.

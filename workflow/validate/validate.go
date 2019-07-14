@@ -116,21 +116,21 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	if wf.Spec.Entrypoint == "" {
 		return errors.New(errors.CodeBadRequest, "spec.entrypoint is required")
 	}
-	_, err = ctx.validateTemplateHolder(&wfv1.Template{Name: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments)
+	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint %s", err.Error())
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
-		_, err = ctx.validateTemplateHolder(&wfv1.Template{Name: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
+		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "spec.onExit %s", err.Error())
 		}
 	}
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Name: template.Name}, tmplCtx, &FakeArguments{})
+		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -148,7 +148,7 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Name: template.Name}, tmplCtx, &FakeArguments{})
+		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
@@ -258,8 +258,10 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, err
 		}
 	} else {
-		if tmplHolder.IsConcreteTemplate() {
-			return nil, errors.New(errors.CodeBadRequest, "template ref can not be used with template type.")
+		if tmpl, ok := tmplHolder.(*wfv1.Template); ok {
+			if tmpl.GetType() != wfv1.TemplateTypeUnknown {
+				return nil, errors.New(errors.CodeBadRequest, "template ref can not be used with template type.")
+			}
 		}
 	}
 	tmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder)

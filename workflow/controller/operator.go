@@ -187,7 +187,7 @@ func (woc *wfOperationCtx) operate() {
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, err := woc.executeTemplate(&wfv1.Template{Name: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
+	node, err := woc.executeTemplate(&wfv1.Template{Template: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, woc.wf.ObjectMeta.Name, "")
 	if err != nil {
 		// the error are handled in the callee so just log it.
 		woc.log.Errorf("%s error in entry template execution: %+v", woc.wf.Name, err)
@@ -215,7 +215,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, err = woc.executeTemplate(&wfv1.Template{Name: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, onExitNodeName, "")
+		onExitNode, err = woc.executeTemplate(&wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, onExitNodeName, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
