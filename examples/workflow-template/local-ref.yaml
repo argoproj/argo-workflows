@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: workflow-template-local-ref-
 spec:
   entrypoint: whalesay
   templates:
