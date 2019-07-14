@@ -1,10 +1,13 @@
 package templateresolution
 
 import (
+	"fmt"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
+	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -58,6 +61,8 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 // GetTemplate returns a template found by template name or template ref.
 func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template, error) {
+	log.Debugf("Getting the template of %s on %s", getHolderDebugString(tmplHolder), getGetterDebugString(ctx.tmplBase))
+
 	tmplName := tmplHolder.GetTemplateName()
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
@@ -102,6 +107,8 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
 
+	log.Debugf("Resolving %s on %s (%d)", getHolderDebugString(tmplHolder), getGetterDebugString(ctx.tmplBase), depth)
+
 	// Find template and context
 	tmpl, err := ctx.GetTemplate(tmplHolder)
 	if err != nil {
@@ -136,4 +143,20 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
 	return NewContext(ctx.wfClientset, ctx.namespace, tmplBase)
+}
+
+// getGetterDebugString returns a string for debugging.
+func getGetterDebugString(getter wfv1.TemplateGetter) string {
+	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
+}
+
+// getHolderDebugString returns a string for debugging.
+func getHolderDebugString(tmplHolder wfv1.TemplateHolder) string {
+	tmplName := tmplHolder.GetTemplateName()
+	tmplRef := tmplHolder.GetTemplateRef()
+	if tmplRef != nil {
+		return fmt.Sprintf("%T TemplateRef(name=%s,template=%s)", tmplHolder, tmplRef.Name, tmplRef.Template)
+	} else {
+		return fmt.Sprintf("%T Template(%s)", tmplHolder, tmplName)
+	}
 }

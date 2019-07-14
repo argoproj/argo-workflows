@@ -54,6 +54,8 @@ const (
 
 // TemplateGetter is an interface to get templates.
 type TemplateGetter interface {
+	GetNamespace() string
+	GetName() string
 	GetTemplateByName(name string) *Template
 }
 
