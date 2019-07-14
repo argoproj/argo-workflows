@@ -25,10 +25,10 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, orgTmpl, boundaryID, wfv1.NodeRunning)
 	}
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -50,7 +50,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, &wfv1.Template{}, stepsCtx.boundaryID, wfv1.NodeRunning)
+			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, orgTmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {
@@ -203,7 +203,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
-		childNode, err := woc.executeTemplate(&step, stepsCtx.tmplCtx, step.Arguments, childNodeName, stepsCtx.boundaryID)
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:

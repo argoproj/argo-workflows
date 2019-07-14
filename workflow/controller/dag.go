@@ -168,13 +168,13 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
 	if node != nil && node.Completed() {
 		return node
 	}
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, orgTmpl, boundaryID, wfv1.NodeRunning)
 	}
 	defer func() {
 		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
@@ -376,7 +376,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		}
 
 		// Finally execute the template
-		_, _ = woc.executeTemplate(&t, dagCtx.tmplCtx, t.Arguments, taskNodeName, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
 	}
 
 	if taskGroupNode != nil {
