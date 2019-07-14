@@ -93,3 +93,59 @@ spec:
           parameters:
           - name: message
             value: "inner-hello2b"
+---
+# The following workflow executes a diamond workflow
+#
+#   A
+#  / \
+# B   C
+#  \ /
+#   D
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-inner-dag
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+  - name: inner-diamond
+    dag:
+      tasks:
+      - name: inner-A
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-A
+      - name: inner-B
+        dependencies: [inner-A]
+        template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-B
+      - name: inner-C
+        dependencies: [inner-A]
+        template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-C
+      - name: inner-D
+        dependencies: [inner-B, inner-C]
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: inner-D

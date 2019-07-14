@@ -35,8 +35,8 @@ spec:
       - name: C
         dependencies: [A]
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-inner-dag
+          template: inner-diamond
         arguments:
           parameters:
           - name: message
