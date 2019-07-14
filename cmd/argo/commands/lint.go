@@ -30,7 +30,6 @@ func NewLintCommand() *cobra.Command {
 			}
 
 			validateDir := cmdutil.MustIsDir(args[0])
-			InitWorkflowTemplateClient()
 			if validateDir {
 				if len(args) > 1 {
 					fmt.Printf("Validation of a single directory supported")

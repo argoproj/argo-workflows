@@ -23,7 +23,6 @@ var (
 	clientset        *kubernetes.Clientset
 	wfClientset      *wfclientset.Clientset
 	wfClient         v1alpha1.WorkflowInterface
-	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
 	namespace        string
@@ -99,27 +98,6 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	wfClientset = wfclientset.NewForConfigOrDie(restConfig)
 	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
 	return wfClient
-}
-
-// InitWorkflowTemplateClient creates a new client for the Kubernetes WorkflowTemplate CRD.
-func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface {
-	if wftmplClient != nil {
-		return wftmplClient
-	}
-	initKubeClient()
-	var namespace string
-	var err error
-	if len(ns) > 0 {
-		namespace = ns[0]
-	} else {
-		namespace, _, err = clientConfig.Namespace()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	wfClientset = wfclientset.NewForConfigOrDie(restConfig)
-	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
-	return wftmplClient
 }
 
 // ansiFormat wraps ANSI escape codes to a string to format the string to a desired color.

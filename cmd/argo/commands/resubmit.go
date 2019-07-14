@@ -30,7 +30,6 @@ func NewResubmitCommand() *cobra.Command {
 			}
 
 			wfClient := InitWorkflowClient()
-			InitWorkflowTemplateClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
 			errors.CheckError(err)
 			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)

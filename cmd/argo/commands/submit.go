@@ -75,7 +75,6 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		cliOpts = &cliSubmitOpts{}
 	}
 	defaultWFClient := InitWorkflowClient()
-	InitWorkflowTemplateClient()
 	var workflows []wfv1.Workflow
 	if len(filePaths) == 1 && filePaths[0] == "-" {
 		reader := bufio.NewReader(os.Stdin)
