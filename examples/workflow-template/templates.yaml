@@ -54,3 +54,42 @@ spec:
       command: [python, -c]
       # fail with a 66% probability
       args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: workflow-template-inner-steps
+spec:
+  templates:
+  - name: whalesay-template
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]
+  - name: inner-steps
+    steps:
+    - - name: inner-hello1
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello1"
+    - - name: inner-hello2a
+        templateRef:
+          name: workflow-template-whalesay-template
+          template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello2a"
+      - name: inner-hello2b
+        template: whalesay-template
+        arguments:
+          parameters:
+          - name: message
+            value: "inner-hello2b"

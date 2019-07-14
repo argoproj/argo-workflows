@@ -17,8 +17,8 @@ spec:
             value: "hello1"
     - - name: hello2a
         templateRef:
-          name: workflow-template-whalesay-template
-          template: whalesay-template
+          name: workflow-template-inner-steps
+          template: inner-steps
         arguments:
           parameters:
           - name: message
