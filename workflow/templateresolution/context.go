@@ -107,7 +107,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	if err != nil {
 		return nil, nil, err
 	}
-	newTmplCtx := NewContext(ctx.namespace, ctx.wfClientset, newTmplBase)
+	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
@@ -127,4 +127,9 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	}
 
 	return finalTmplCtx, mergedTmpl, nil
+}
+
+// WithTemplateBase creates new context with a wfv1.TemplateGetter.
+func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
+	return NewContext(ctx.namespace, ctx.wfClientset, tmplBase)
 }
