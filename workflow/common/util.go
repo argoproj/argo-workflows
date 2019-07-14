@@ -490,6 +490,7 @@ func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
 		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
+			log.Warnf("%s is not a workflow", wf.Kind)
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
@@ -517,6 +518,7 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
 		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
+			log.Warnf("%s is not a workflow template", wftmpl.Kind)
 			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
 			// We ignore these since we only care about WorkflowTemplate manifests.
 			continue
