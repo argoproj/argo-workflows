@@ -45,7 +45,7 @@ type templateValidationCtx struct {
 	results map[string]bool
 }
 
-func newTemplateValidationCtx(namespace string, wfClientset wfclientset.Interface, getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
+func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace string, getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderValue
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
@@ -85,8 +85,8 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	if wf.Namespace != "" {
 		namespace = wf.Namespace
 	}
-	ctx := newTemplateValidationCtx(namespace, wfClientset, wf, opts)
-	tmplCtx := templateresolution.NewContext(namespace, wfClientset, wf)
+	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
+	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -143,8 +143,8 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 	if wftmpl.Namespace != "" {
 		namespace = wftmpl.Namespace
 	}
-	ctx := newTemplateValidationCtx(namespace, wfClientset, wftmpl, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(namespace, wfClientset, wftmpl)
+	ctx := newTemplateValidationCtx(wfClientset, namespace, wftmpl, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wftmpl)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {

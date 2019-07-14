@@ -107,7 +107,7 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		volumes:       wf.Spec.DeepCopy().Volumes,
 		completedPods: make(map[string]bool),
 		deadline:      time.Now().UTC().Add(maxOperationTime),
-		tmplCtx:       templateresolution.NewContext(wf.Namespace, wfc.wfclientset, wf),
+		tmplCtx:       templateresolution.NewContext(wfc.wfclientset, wf.Namespace, wf),
 	}
 
 	if woc.wf.Status.Nodes == nil {

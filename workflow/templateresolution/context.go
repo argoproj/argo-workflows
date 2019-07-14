@@ -14,19 +14,19 @@ const maxResolveDepth int = 10
 
 // Context is a context of template search.
 type Context struct {
-	// namespace is the namespace of template search.
-	namespace string
 	// wfClientset is the clientset to get workflow templates.
 	wfClientset wfclientset.Interface
+	// namespace is the namespace of template search.
+	namespace string
 	// tmplBase is the base of local template search.
 	tmplBase wfv1.TemplateGetter
 }
 
 // NewContext returns new Context.
-func NewContext(namespace string, wfClientset wfclientset.Interface, tmplBase wfv1.TemplateGetter) *Context {
+func NewContext(wfClientset wfclientset.Interface, namespace string, tmplBase wfv1.TemplateGetter) *Context {
 	return &Context{
-		namespace:   namespace,
 		wfClientset: wfClientset,
+		namespace:   namespace,
 		tmplBase:    tmplBase,
 	}
 }
@@ -131,5 +131,5 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
-	return NewContext(ctx.namespace, ctx.wfClientset, tmplBase)
+	return NewContext(ctx.wfClientset, ctx.namespace, tmplBase)
 }

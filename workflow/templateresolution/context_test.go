@@ -107,7 +107,7 @@ spec:
 func TestGetTemplateByName(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContext(metav1.NamespaceDefault, wfClientset, wftmpl)
+	ctx := NewContext(wfClientset, metav1.NamespaceDefault, wftmpl)
 
 	tmpl, err := ctx.GetTemplateByName("whalesay")
 	if !assert.NoError(t, err) {
@@ -131,7 +131,7 @@ func TestGetTemplateFromRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContext(metav1.NamespaceDefault, wfClientset, wftmpl)
+	ctx := NewContext(wfClientset, metav1.NamespaceDefault, wftmpl)
 
 	// Get the template of existing template reference.
 	tmplRef := wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}
@@ -164,7 +164,7 @@ func TestGetTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContext(metav1.NamespaceDefault, wfClientset, wftmpl)
+	ctx := NewContext(wfClientset, metav1.NamespaceDefault, wftmpl)
 
 	// Get the template of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
@@ -206,7 +206,7 @@ func TestGetTemplateBase(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContext(metav1.NamespaceDefault, wfClientset, wftmpl)
+	ctx := NewContext(wfClientset, metav1.NamespaceDefault, wftmpl)
 
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
@@ -261,7 +261,7 @@ func TestResolveTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContext(metav1.NamespaceDefault, wfClientset, wftmpl)
+	ctx := NewContext(wfClientset, metav1.NamespaceDefault, wftmpl)
 
 	// Get the template of template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
