@@ -56,7 +56,7 @@ func LintWorkflowFile(wfClientset wfclientset.Interface, namespace, filePath str
 			}
 		}
 	} else {
-		workflows, err = common.SplitYAMLFile(body, strict)
+		workflows, err = common.SplitWorkflowYAMLFile(body, strict)
 	}
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)

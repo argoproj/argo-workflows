@@ -150,7 +150,7 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := common.SplitYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitWorkflowYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}
