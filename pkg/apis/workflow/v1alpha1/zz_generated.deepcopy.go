@@ -256,6 +256,11 @@ func (in *DAGTemplate) DeepCopyInto(out *DAGTemplate) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.FailFast != nil {
+		in, out := &in.FailFast, &out.FailFast
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
@@ -864,6 +869,18 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.HostAliases != nil {
+		in, out := &in.HostAliases, &out.HostAliases
+		*out = make([]v1.HostAlias, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.SecurityContext != nil {
+		in, out := &in.SecurityContext, &out.SecurityContext
+		*out = new(v1.PodSecurityContext)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -1085,6 +1102,18 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		in, out := &in.PodPriority, &out.PodPriority
 		*out = new(int32)
 		**out = **in
+	}
+	if in.HostAliases != nil {
+		in, out := &in.HostAliases, &out.HostAliases
+		*out = make([]v1.HostAlias, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.SecurityContext != nil {
+		in, out := &in.SecurityContext, &out.SecurityContext
+		*out = new(v1.PodSecurityContext)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }

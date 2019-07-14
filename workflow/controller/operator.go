@@ -329,8 +329,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
 	}
+	var wfDB = woc.wf.DeepCopy()
+	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload() {
+		woc.wf.Status.Nodes = nil
+		woc.wf.Status.CompressedNodes = ""
+	}
 
-	_, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
+	wfDB.ResourceVersion = wf.ResourceVersion
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -347,6 +353,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 	}
+
+	if woc.controller.wfDBctx != nil {
+		err = woc.controller.wfDBctx.Save(wfDB)
+		if err != nil {
+			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
+			if woc.controller.wfDBctx.IsNodeStatusOffload() {
+				woc.markWorkflowFailed(err.Error())
+				return
+			}
+		}
+	}
+
 	woc.log.Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
@@ -840,7 +858,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			continue
 		}
 		if ctr.State.Terminated.Message != "" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Message
+			errMsg := ctr.State.Terminated.Message
+			if ctr.Name != common.MainContainerName {
+				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
+			}
+			failMessages[ctr.Name] = errMsg
 			continue
 		}
 		if ctr.State.Terminated.Reason == "OOMKilled" {
@@ -915,9 +937,30 @@ func (woc *wfOperationCtx) createPVCs() error {
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemeGroupVersion.WithKind(workflow.WorkflowKind)),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
+		if err != nil && apierr.IsAlreadyExists(err) {
+			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
+			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			hasOwnerReference := false
+			for i := range pvc.OwnerReferences {
+				ownerRef := pvc.OwnerReferences[i]
+				if ownerRef.UID == woc.wf.UID {
+					hasOwnerReference = true
+					break
+				}
+			}
+			if !hasOwnerReference {
+				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
+			}
+		}
+
+		//continue
 		if err != nil {
 			return err
 		}
+
 		vol := apiv1.Volume{
 			Name: refName,
 			VolumeSource: apiv1.VolumeSource{

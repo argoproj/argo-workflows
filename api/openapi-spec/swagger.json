@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.3.0-rc3"
+    "version": "v2.4.0"
   },
   "paths": {},
   "definitions": {
@@ -239,6 +239,10 @@
         "tasks"
       ],
       "properties": {
+        "failFast": {
+          "description": "This flag is for DAG logic. The DAG logic has a built-in \"fail fast\" feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself. The FailFast flag default is true,  if set to false, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at https://github.com/argoproj/argo/issues/1442",
+          "type": "boolean"
+        },
         "target": {
           "description": "Target are one or more names of targets to execute in a DAG",
           "type": "string"
@@ -833,6 +837,13 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
+        "hostAliases": {
+          "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
+          }
+        },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
           "type": "array",
@@ -892,6 +903,14 @@
         "script": {
           "description": "Script runs a portion of code against an interpreter",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
+        },
+        "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
+        },
+        "serviceAccountName": {
+          "description": "ServiceAccountName to apply to workflow pods",
+          "type": "string"
         },
         "sidecars": {
           "description": "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
@@ -1186,6 +1205,13 @@
           "description": "Entrypoint is a template reference to the starting point of the workflow",
           "type": "string"
         },
+        "hostAliases": {
+          "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
+          }
+        },
         "hostNetwork": {
           "description": "Host networking requested for this workflow pod. Default to false.",
           "type": "boolean"
@@ -1230,6 +1256,10 @@
         "schedulerName": {
           "description": "Set scheduler name for all pods. Will be overridden if container/script template's scheduler name is set. Default scheduler will be used if neither specified.",
           "type": "string"
+        },
+        "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+          "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.",

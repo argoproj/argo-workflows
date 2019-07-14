@@ -4,6 +4,12 @@
 
 ![Argo Image](argo.png)
 
+## Quickstart
+```bash
+kubectl create namespace argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+```
+
 ## News
 
 KubeCon 2018 in Seattle was the biggest KubeCon yet with 8000 developers attending. We connected with many existing and new Argoproj users and contributions, and gave away a lot of Argo T-shirts at our booth sponsored by Intuit!
@@ -24,6 +30,7 @@ Argoproj is a collection of tools for getting work done with Kubernetes.
 * [Argo Workflows](https://github.com/argoproj/argo) - Container-native Workflow Engine
 * [Argo CD](https://github.com/argoproj/argo-cd) - Declarative GitOps Continuous Delivery
 * [Argo Events](https://github.com/argoproj/argo-events) - Event-based Dependency Manager
+* [Argo Rollouts](https://github.com/argoproj/argo-rollouts) - Deployment CR with support for Canary and Blue Green deployment strategies
 
 ## What is Argo Workflows?
 Argo Workflows is an open source container-native workflow engine for orchestrating parallel jobs on Kubernetes. Argo Workflows is implemented as a Kubernetes CRD (Custom Resource Definition).
@@ -71,11 +78,13 @@ As the Argo Community grows, we'd like to keep track of our users. Please send a
 
 Currently **officially** using Argo:
 
+1. [Adevinta](https://www.adevinta.com/)
 1. [Admiralty](https://admiralty.io/)
-1. [Adobe](https://www.adobe.com/) 
+1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
+1. [Codec](https://www.codec.ai/)
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
@@ -85,18 +94,26 @@ Currently **officially** using Argo:
 1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [IBM](https://ibm.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
 1. [Karius](https://www.kariusdx.com/)
 1. [KintoHub](https://www.kintohub.com/)
 1. [Localytics](https://www.localytics.com/)
+1. [Max Kelsen](https://maxkelsen.com/)
+1. [Mirantis](https://mirantis.com/)
 1. [NVIDIA](https://www.nvidia.com/)
+1. [OVH](https://www.ovh.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
+1. [Threekit](https://www.threekit.com/)
+
 
 ## Community Blogs and Presentations
+* [CI/CD with Argo on Kubernetes](https://medium.com/@bouwe.ceunen/ci-cd-with-argo-on-kubernetes-28c1a99616a9)
 * [Running Argo Workflows Across Multiple Kubernetes Clusters](https://admiralty.io/blog/running-argo-workflows-across-multiple-kubernetes-clusters/)
 * [Open Source Model Management Roundup: Polyaxon, Argo, and Seldon](https://www.anaconda.com/blog/developer-blog/open-source-model-management-roundup-polyaxon-argo-and-seldon/)
 * [Producing 200 OpenStreetMap extracts in 35 minutes using a scalable data workflow](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)

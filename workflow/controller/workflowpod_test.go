@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/argo/workflow/config"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/ghodss/yaml"
@@ -83,6 +85,19 @@ func TestServiceAccount(t *testing.T) {
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, pod.Spec.ServiceAccountName, "foo")
+}
+
+// TestTmplServiceAccount verifies the ability to carry forward the Template level service account name
+// for the pod from workflow.spec.serviceAccountName.
+func TestTmplServiceAccount(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.ServiceAccountName = "foo"
+	woc.wf.Spec.Templates[0].ServiceAccountName = "tmpl"
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, pod.Spec.ServiceAccountName, "tmpl")
 }
 
 // TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
@@ -168,7 +183,7 @@ func TestMetadata(t *testing.T) {
 // TestWorkflowControllerArchiveConfig verifies archive location substitution of workflow
 func TestWorkflowControllerArchiveConfig(t *testing.T) {
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -193,7 +208,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 		},
 	}
 	woc := newWoc(*wf)
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -208,7 +223,7 @@ func TestWorkflowControllerArchiveConfigUnresolvable(t *testing.T) {
 // TestConditionalNoAddArchiveLocation verifies we do not add archive location if it is not needed
 func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -236,7 +251,7 @@ func TestConditionalArchiveLocation(t *testing.T) {
 		},
 	}
 	woc := newWoc()
-	woc.controller.Config.ArtifactRepository.S3 = &S3ArtifactRepository{
+	woc.controller.Config.ArtifactRepository.S3 = &config.S3ArtifactRepository{
 		S3Bucket: wfv1.S3Bucket{
 			Bucket: "foo",
 		},
@@ -385,7 +400,7 @@ func TestOutOfCluster(t *testing.T) {
 	// default mount path & volume name
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 		}
@@ -405,7 +420,7 @@ func TestOutOfCluster(t *testing.T) {
 	// custom mount path & volume name, in case name collision
 	{
 		woc := newWoc()
-		woc.controller.Config.KubeConfig = &KubeConfig{
+		woc.controller.Config.KubeConfig = &config.KubeConfig{
 			SecretName: "foo",
 			SecretKey:  "bar",
 			MountPath:  "/some/path/config",
@@ -611,4 +626,64 @@ func TestTemplateLocalVolumes(t *testing.T) {
 	for _, v := range localVolumes {
 		assert.Contains(t, pod.Spec.Volumes, v)
 	}
+}
+
+// TestWFLevelHostAliases verifies the ability to carry forward workflow level HostAliases to Podspec
+func TestWFLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
+}
+
+// TestTmplLevelHostAliases verifies the ability to carry forward template level HostAliases to Podspec
+func TestTmplLevelHostAliases(t *testing.T) {
+	woc := newWoc()
+	woc.wf.Spec.Templates[0].HostAliases = []apiv1.HostAlias{
+		{IP: "127.0.0.1"},
+		{IP: "127.0.0.1"},
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.HostAliases)
+
+}
+
+// TestWFLevelSecurityContext verifies the ability to carry forward workflow level SecurityContext to Podspec
+func TestWFLevelSecurityContext(t *testing.T) {
+	woc := newWoc()
+	runAsUser := int64(1234)
+	woc.wf.Spec.SecurityContext = &apiv1.PodSecurityContext{
+		RunAsUser: &runAsUser,
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.SecurityContext)
+	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
+}
+
+// TestTmplLevelSecurityContext verifies the ability to carry forward template level SecurityContext to Podspec
+func TestTmplLevelSecurityContext(t *testing.T) {
+	woc := newWoc()
+	runAsUser := int64(1234)
+	woc.wf.Spec.Templates[0].SecurityContext = &apiv1.PodSecurityContext{
+		RunAsUser: &runAsUser,
+	}
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.NotNil(t, pod.Spec.SecurityContext)
+	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
 }

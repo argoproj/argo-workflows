@@ -12,18 +12,67 @@ import (
 const (
 	bashCompletionFunc = `
 __argo_get_workflow() {
-	local argo_out
-	if argo_out=$(argo list --output name 2>/dev/null); then
+	local status="$1"
+	local -a argo_out
+	if argo_out=($(argo list --status="$status" --output name 2>/dev/null)); then
 		COMPREPLY+=( $( compgen -W "${argo_out[*]}" -- "$cur" ) )
 	fi
 }
 
+__argo_get_logs() {
+	# Determine if were completing a workflow or not.
+	local workflow=0
+	for comp_word in "${COMP_WORDS[@]}"; do
+		if [[ $comp_word =~ ^(-w|--workflow)$ ]]; then
+			workflow=1
+			break
+		fi
+	done
+
+	# If completing a workflow, call normal function.
+	if [[ $workflow -eq 1 ]]; then
+		__argo_get_workflow && return $?
+	fi
+
+	# Otherwise, complete the list of pods
+	local -a kubectl_out
+	if kubectl_out=($(kubectl get pods --no-headers --label-columns=workflows.argoproj.io/workflow 2>/dev/null | awk '{if ($6!="") print $1}' 2>/dev/null)); then
+		COMPREPLY+=( $( compgen -W "${kubectl_out[*]}" -- "$cur" ) )
+	fi
+}
+
+__argo_list_files() {
+	COMPREPLY+=( $( compgen -f -o plusdirs -X '!*.@(yaml|yml|json)' -- "$cur" ) )
+}
+
 __argo_custom_func() {
 	case ${last_command} in
-		argo_delete | argo_get | argo_logs |\
-		argo_resubmit | argo_resume | argo_retry | argo_suspend |\
-		argo_terminate | argo_wait | argo_watch)
+		argo_delete | argo_get | argo_resubmit)
 			__argo_get_workflow
+			return
+			;;
+		argo_suspend | argo_terminate | argo_wait | argo_watch)
+			__argo_get_workflow "Running,Pending"
+			return
+			;;
+		argo_resume)
+			__argo_get_workflow "Running"
+			return
+			;;
+		argo_retry)
+			__argo_get_workflow "Failed"
+			return
+			;;
+		argo_logs)
+			__argo_get_logs
+			return
+			;;
+		argo_submit)
+			__argo_list_files
+			return
+			;;
+		argo_lint)
+			__argo_list_files
 			return
 			;;
 		*)

@@ -50,6 +50,8 @@ In argo repo:
 ```bash
 git push upstream
 git push upstream ${ARGO_RELEASE}
+git tag stable
+git push upstream stable
 ```
 
 In argo-ui repo:

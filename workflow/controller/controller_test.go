@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/argoproj/argo/workflow/config"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -41,7 +42,7 @@ spec:
 
 func newController() *WorkflowController {
 	return &WorkflowController{
-		Config: WorkflowControllerConfig{
+		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
 		},
 		kubeclientset: fake.NewSimpleClientset(),

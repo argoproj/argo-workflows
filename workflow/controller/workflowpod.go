@@ -47,32 +47,54 @@ var (
 	}
 
 	hostPathSocket = apiv1.HostPathSocket
+)
+
+func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
+	dockerSockPath := "/var/run/docker.sock"
+
+	if woc.controller.Config.DockerSockPath != "" {
+		dockerSockPath = woc.controller.Config.DockerSockPath
+	}
+
+	return apiv1.VolumeMount{
+		Name:      common.DockerSockVolumeName,
+		MountPath: dockerSockPath,
+		ReadOnly:  true,
+	}
+}
+
+func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
+	dockerSockPath := "/var/run/docker.sock"
+
+	if woc.controller.Config.DockerSockPath != "" {
+		dockerSockPath = woc.controller.Config.DockerSockPath
+	}
 
 	// volumeDockerSock provides the wait container direct access to the minion's host docker daemon.
 	// The primary purpose of this is to make available `docker cp` to collect an output artifact
 	// from a container. Alternatively, we could use `kubectl cp`, but `docker cp` avoids the extra
 	// hop to the kube api server.
-	volumeDockerSock = apiv1.Volume{
+	return apiv1.Volume{
 		Name: common.DockerSockVolumeName,
 		VolumeSource: apiv1.VolumeSource{
 			HostPath: &apiv1.HostPathVolumeSource{
-				Path: "/var/run/docker.sock",
+				Path: dockerSockPath,
 				Type: &hostPathSocket,
 			},
 		},
 	}
-	volumeMountDockerSock = apiv1.VolumeMount{
-		Name:      volumeDockerSock.Name,
-		MountPath: "/var/run/docker.sock",
-		ReadOnly:  true,
-	}
-)
+}
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
+	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
+	if tmpl.ServiceAccountName != "" {
+		tmplServiceAccountName = tmpl.ServiceAccountName
+	}
+
 	mainCtr.Name = common.MainContainerName
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -93,7 +115,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    woc.wf.Spec.ServiceAccountName,
+			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -273,7 +295,7 @@ func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Contain
 			ctr.SecurityContext.Privileged = pointer.BoolPtr(true)
 		}
 	case "", common.ContainerRuntimeExecutorDocker:
-		ctr.VolumeMounts = append(ctr.VolumeMounts, volumeMountDockerSock)
+		ctr.VolumeMounts = append(ctr.VolumeMounts, woc.getVolumeMountDockerSock())
 	}
 	return ctr, nil
 }
@@ -376,7 +398,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
 	default:
-		return append(volumes, volumeDockerSock)
+		return append(volumes, woc.getVolumeDockerSock())
 	}
 }
 
@@ -487,6 +509,17 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 		pod.Spec.SchedulerName = tmpl.SchedulerName
 	} else if wfSpec.SchedulerName != "" {
 		pod.Spec.SchedulerName = wfSpec.SchedulerName
+	}
+
+	// set hostaliases
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
+	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
+
+	// set pod security context
+	if tmpl.SecurityContext != nil {
+		pod.Spec.SecurityContext = tmpl.SecurityContext
+	} else if wfSpec.SecurityContext != nil {
+		pod.Spec.SecurityContext = wfSpec.SecurityContext
 	}
 }
 

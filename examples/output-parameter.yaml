@@ -1,7 +1,7 @@
 # Output parameters provide a way to use the contents of a file,
 # as a parameter value in a workflow. In that regard, they are
 # similar in concept to script templates, with the difference being
-# that the ouput parameter values are obtained via file contents
+# that the output parameter values are obtained via file contents
 # instead of stdout (as with script templates). Secondly, there can
 # be multiple 'output.parameters.xxx' in a single template, versus
 # a single 'output.result' from a script template.
