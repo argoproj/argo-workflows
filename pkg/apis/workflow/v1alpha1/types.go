@@ -86,6 +86,10 @@ type WorkflowSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.
+	// +optional
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	Volumes []apiv1.Volume `json:"volumes,omitempty"`
 
@@ -263,6 +267,10 @@ type Template struct {
 
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.
+	// +optional
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`

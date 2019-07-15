@@ -90,6 +90,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
+
 	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
 	if tmpl.ServiceAccountName != "" {
 		tmplServiceAccountName = tmpl.ServiceAccountName
@@ -112,12 +113,17 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:         apiv1.RestartPolicyNever,
-			Volumes:               woc.createVolumes(),
-			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    tmplServiceAccountName,
-			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
+			RestartPolicy:                apiv1.RestartPolicyNever,
+			Volumes:                      woc.createVolumes(),
+			ActiveDeadlineSeconds:        tmpl.ActiveDeadlineSeconds,
+			ServiceAccountName:           tmplServiceAccountName,
+			AutomountServiceAccountToken: woc.wf.Spec.AutomountServiceAccountToken,
+			ImagePullSecrets:             woc.wf.Spec.ImagePullSecrets,
 		},
+	}
+
+	if tmpl.AutomountServiceAccountToken != nil {
+		pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
 	}
 
 	if woc.wf.Spec.HostNetwork != nil {

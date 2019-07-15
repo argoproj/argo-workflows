@@ -853,6 +853,11 @@ func (in *Template) DeepCopyInto(out *Template) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.AutomountServiceAccountToken != nil {
+		in, out := &in.AutomountServiceAccountToken, &out.AutomountServiceAccountToken
+		*out = new(bool)
+		**out = **in
+	}
 	if in.HostAliases != nil {
 		in, out := &in.HostAliases, &out.HostAliases
 		*out = make([]v1.HostAlias, len(*in))
@@ -988,6 +993,11 @@ func (in *WorkflowSpec) DeepCopyInto(out *WorkflowSpec) {
 		}
 	}
 	in.Arguments.DeepCopyInto(&out.Arguments)
+	if in.AutomountServiceAccountToken != nil {
+		in, out := &in.AutomountServiceAccountToken, &out.AutomountServiceAccountToken
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Volumes != nil {
 		in, out := &in.Volumes, &out.Volumes
 		*out = make([]v1.Volume, len(*in))

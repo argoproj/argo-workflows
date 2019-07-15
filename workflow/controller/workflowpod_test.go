@@ -100,6 +100,30 @@ func TestTmplServiceAccount(t *testing.T) {
 	assert.Equal(t, pod.Spec.ServiceAccountName, "tmpl")
 }
 
+// TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
+func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
+	woc := newWoc()
+	automountServiceAccountToken := false
+	woc.wf.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+}
+
+// TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
+func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
+	woc := newWoc()
+	automountServiceAccountToken := false
+	woc.wf.Spec.Templates[0].AutomountServiceAccountToken = &automountServiceAccountToken
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, *pod.Spec.AutomountServiceAccountToken, false)
+}
+
 // TestImagePullSecrets verifies the ability to carry forward imagePullSecrets from workflow.spec
 func TestImagePullSecrets(t *testing.T) {
 	woc := newWoc()
