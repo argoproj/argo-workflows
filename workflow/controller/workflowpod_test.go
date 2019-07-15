@@ -465,6 +465,32 @@ func TestOutOfCluster(t *testing.T) {
 	}
 }
 
+// TestServiceAccountTokenName verifies a volume and volumeMount of mounting a given service account token.
+func TestServiceAccountTokenName(t *testing.T) {
+	verifyServiceAccountTokenVolume := func(ctr apiv1.Container, volName, mountPath string) {
+		for _, vol := range ctr.VolumeMounts {
+			if vol.Name == volName && vol.MountPath == mountPath {
+				return
+			}
+		}
+		t.Fatalf("%v does not have serviceAccountToken mounted properly (name: %s, mountPath: %s)", ctr, volName, mountPath)
+	}
+
+	woc := newWoc()
+	woc.controller.Config.ServiceAccountTokenName = "foo"
+
+	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
+	podName := getPodName(woc.wf)
+	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[1].Name)
+	assert.Equal(t, "foo", pod.Spec.Volumes[1].VolumeSource.Secret.SecretName)
+
+	waitCtr := pod.Spec.Containers[0]
+	verifyServiceAccountTokenVolume(waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
+}
+
 // TestPriority verifies the ability to carry forward priorityClassName and priority.
 func TestPriority(t *testing.T) {
 	priority := int32(15)
