@@ -114,11 +114,11 @@ const (
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
-	KubeConfigDefaultMountPath  = "/kube/config"
-	KubeConfigDefaultVolumeName = "kubeconfig"
+	KubeConfigDefaultMountPath    = "/kube/config"
+	KubeConfigDefaultVolumeName   = "kubeconfig"
 	ServiceAccountTokenMountPath  = "/var/run/secrets/kubernetes.io/serviceaccount"
 	ServiceAccountTokenVolumeName = "exec-sa-token"
-	SecretVolMountPath          = "/argo/secret"
+	SecretVolMountPath            = "/argo/secret"
 )
 
 // GlobalVarWorkflowRootTags is a list of root tags in workflow which could be used for variable reference
