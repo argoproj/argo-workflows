@@ -113,17 +113,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			},
 		},
 		Spec: apiv1.PodSpec{
-			RestartPolicy:                apiv1.RestartPolicyNever,
-			Volumes:                      woc.createVolumes(),
-			ActiveDeadlineSeconds:        tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:           tmplServiceAccountName,
-			AutomountServiceAccountToken: woc.wf.Spec.AutomountServiceAccountToken,
-			ImagePullSecrets:             woc.wf.Spec.ImagePullSecrets,
+			RestartPolicy:         apiv1.RestartPolicyNever,
+			Volumes:               woc.createVolumes(),
+			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
+			ServiceAccountName:    tmplServiceAccountName,
+			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
-	}
-
-	if tmpl.AutomountServiceAccountToken != nil {
-		pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
 	}
 
 	if woc.wf.Spec.HostNetwork != nil {
@@ -151,6 +146,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	if tmpl.GetType() != wfv1.TemplateTypeResource {
+		if woc.wf.Spec.AutomountServiceAccountToken != nil {
+			pod.Spec.AutomountServiceAccountToken = woc.wf.Spec.AutomountServiceAccountToken
+		} else if tmpl.AutomountServiceAccountToken != nil {
+			pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
+		}
+
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.

@@ -87,6 +87,7 @@ type WorkflowSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.
+	// It is ignored in resource templates.
 	// +optional
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
 
@@ -269,6 +270,7 @@ type Template struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.
+	// It cannot be set in resource templates.
 	// +optional
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
 

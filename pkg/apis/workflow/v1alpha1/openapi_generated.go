@@ -1712,7 +1712,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted. It cannot be set in resource templates.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -2149,7 +2149,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted. It is ignored in resource templates.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

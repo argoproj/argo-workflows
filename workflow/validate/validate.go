@@ -334,6 +334,9 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		default:
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)
 		}
+		if tmpl.AutomountServiceAccountToken != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.automountServiceAccountToken can not be set in resource templates", tmpl.Name)
+		}
 		// Try to unmarshal the given manifest.
 		obj := unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)

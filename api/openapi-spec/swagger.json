@@ -818,7 +818,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted. It cannot be set in resource templates.",
           "type": "boolean"
         },
         "container": {
@@ -1165,7 +1165,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted. It is ignored in resource templates.",
           "type": "boolean"
         },
         "dnsConfig": {
