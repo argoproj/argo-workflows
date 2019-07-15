@@ -103,6 +103,7 @@ func TestTmplServiceAccount(t *testing.T) {
 // TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
+	woc.controller.Config.ServiceAccountTokenName = "foo"
 	automountServiceAccountToken := false
 	woc.wf.Spec.AutomountServiceAccountToken = &automountServiceAccountToken
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")
@@ -115,6 +116,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
+	woc.controller.Config.ServiceAccountTokenName = "foo"
 	automountServiceAccountToken := false
 	woc.wf.Spec.Templates[0].AutomountServiceAccountToken = &automountServiceAccountToken
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], "")

@@ -151,8 +151,10 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		} else if tmpl.AutomountServiceAccountToken != nil {
 			pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
 		}
-		if woc.controller.Config.KubeConfig == nil && woc.controller.Config.ServiceAccountTokenName == "" {
-			return nil, errors.Errorf(errors.CodeBadRequest, "automountServiceAccountToken cannot be set because the controller is not configured with kubeConfig nor serviceAccountTokenName")
+		if pod.Spec.AutomountServiceAccountToken != nil && !*pod.Spec.AutomountServiceAccountToken {
+			if woc.controller.Config.KubeConfig == nil && woc.controller.Config.ServiceAccountTokenName == "" {
+				return nil, errors.Errorf(errors.CodeBadRequest, "automountServiceAccountToken cannot be set because the controller is not configured with kubeConfig nor serviceAccountTokenName")
+			}
 		}
 
 		// we do not need the wait container for resource templates because
