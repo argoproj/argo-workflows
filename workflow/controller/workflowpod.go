@@ -151,6 +151,9 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		} else if tmpl.AutomountServiceAccountToken != nil {
 			pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
 		}
+		if woc.controller.Config.KubeConfig == nil && woc.controller.Config.ServiceAccountTokenName == "" {
+			return nil, errors.Errorf(errors.CodeBadRequest, "automountServiceAccountToken cannot be set because the controller is not configured with kubeConfig nor serviceAccountTokenName")
+		}
 
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
@@ -401,6 +404,16 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 			},
 		})
 	}
+	if woc.controller.Config.ServiceAccountTokenName != "" {
+		volumes = append(volumes, apiv1.Volume{
+			Name: common.ServiceAccountTokenVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: woc.controller.Config.ServiceAccountTokenName,
+				},
+			},
+		})
+	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
@@ -436,14 +449,20 @@ func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 		if name == "" {
 			name = common.KubeConfigDefaultVolumeName
 		}
-		exec.VolumeMounts = []apiv1.VolumeMount{{
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      name,
 			MountPath: path,
 			ReadOnly:  true,
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		},
-		}
+		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
+	}
+	if woc.controller.Config.ServiceAccountTokenName != "" {
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
+			Name:      common.ServiceAccountTokenVolumeName,
+			MountPath: common.ServiceAccountTokenMountPath,
+			ReadOnly:  true,
+		})
 	}
 	return &exec
 }
