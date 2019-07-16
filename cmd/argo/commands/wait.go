@@ -40,7 +40,7 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	for _, workflowName := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			if !waitOnOne(name, ignoreNotFound, quiet){
+			if !waitOnOne(name, ignoreNotFound, quiet) {
 				wfSuccessStatus = false
 			}
 			wg.Done()
@@ -50,7 +50,7 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	wg.Wait()
 
 	if !wfSuccessStatus {
-			os.Exit(1)
+		os.Exit(1)
 	}
 }
 
