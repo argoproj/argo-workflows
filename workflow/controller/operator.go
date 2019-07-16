@@ -1365,7 +1365,6 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	nodeName := "." + name + "."
-	fmt.Println(nodeName)
 
 	if parentTmpl.DAG != nil {
 		for _, dagTask := range parentTmpl.DAG.Tasks {

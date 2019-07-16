@@ -105,8 +105,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				common.LabelKeyCompleted: "false",                // Allows filtering by incomplete workflow pods
 			},
 			Annotations: map[string]string{
-				common.AnnotationKeyNodeName:    nodeName,
-				common.AnnotationIncludeOutputs: strconv.FormatBool(includeScriptOutput),
+				common.AnnotationKeyNodeName: nodeName,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
@@ -169,7 +168,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	addSchedulingConstraints(pod, wfSpec, tmpl)
-	woc.addMetadata(pod, tmpl)
+	woc.addMetadata(pod, tmpl, includeScriptOutput)
 
 	err = addVolumeReferences(pod, woc.volumes, tmpl, woc.wf.Status.PersistentVolumeClaims)
 	if err != nil {
@@ -447,23 +446,28 @@ func isResourcesSpecified(ctr *apiv1.Container) bool {
 }
 
 // addMetadata applies metadata specified in the template
-func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template) {
+func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, includeScriptOutput bool) {
 	for k, v := range tmpl.Metadata.Annotations {
 		pod.ObjectMeta.Annotations[k] = v
 	}
 	for k, v := range tmpl.Metadata.Labels {
 		pod.ObjectMeta.Labels[k] = v
 	}
-	if woc.workflowDeadline != nil {
-		execCtl := common.ExecutionControl{
-			Deadline: woc.workflowDeadline,
-		}
-		execCtlBytes, err := json.Marshal(execCtl)
-		if err != nil {
-			panic(err)
-		}
-		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
+
+	execCtl := common.ExecutionControl{
+		IncludeScriptOutput: includeScriptOutput,
 	}
+
+	if woc.workflowDeadline != nil {
+		execCtl.Deadline = woc.workflowDeadline
+
+	}
+	execCtlBytes, err := json.Marshal(execCtl)
+	if err != nil {
+		panic(err)
+	}
+
+	pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template
