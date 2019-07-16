@@ -1,5 +1,5 @@
 workflows:
-    - name: "exit-handlers"
+    - name: "exit-handlers-failed"
       path: "expectedfailures/exit-handler-failed.yaml"
       expectedStatus: "Failed"
     - name: "exit-handlers1"

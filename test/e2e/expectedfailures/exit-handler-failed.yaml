@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: exit-handlers-
+  generateName: exit-handlers-failed-
 spec:
   entrypoint: pass
   onExit: fail
