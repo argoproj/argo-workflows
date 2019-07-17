@@ -110,6 +110,7 @@ Currently **officially** using Argo:
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
+1. [Commodus Tech](https://www.commodus.tech)
 
 
 ## Community Blogs and Presentations
