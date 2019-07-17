@@ -1,6 +1,9 @@
 owners:
 - jessesuen
 
+reviewers:
+- xianlubird
+
 approvers:
 - alexmt
 - dtaniwaki
