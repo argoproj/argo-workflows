@@ -157,11 +157,17 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
 	labels := wf.GetLabels()
-	if opts.Labels != "" {
-		labels, _ = cmdutil.ParseLabels(opts.Labels)
-	}
 	if labels == nil {
 		labels = make(map[string]string)
+	}
+	if opts.Labels != "" {
+		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+		}
+		for k, v := range passedLabels {
+			labels[k] = v
+		}
 	}
 	if opts.InstanceID != "" {
 		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
