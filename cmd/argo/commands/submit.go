@@ -117,6 +117,11 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
+	if len(workflows) == 0 {
+		log.Println("No Workflow found in given files")
+		os.Exit(1)
+	}
+
 	var workflowNames []string
 	for _, wf := range workflows {
 		wf.Spec.Priority = cliOpts.priority
