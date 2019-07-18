@@ -6,6 +6,7 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `inputs.parameters.<NAME>`| Input parameter to a template |
+| `inputs.parameters`| All input parameters to a template as a JSON string |
 | `inputs.artifacts.<NAME>` | Input artifact to a template |
 
 ## Steps Templates:
