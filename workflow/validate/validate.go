@@ -78,8 +78,19 @@ func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
 	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
+func (args *FakeArguments) GetParametersByRegexp(regexp string) ([]wfv1.Parameter, error) {
+	arr := make([]wfv1.Parameter, 1)
+	s := placeholderValue
+	arr[0] = wfv1.Parameter{PassthroughRegexp: regexp, Value: &s}
+	return arr, nil
+}
+
 func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 	return &wfv1.Artifact{Name: name}
+}
+
+func (args *FakeArguments) HasPassthroughRegexpParameter() bool {
+	return true
 }
 
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
@@ -100,9 +111,9 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	if ctx.Lint {
 		// if we are just linting we don't care if spec.arguments.parameters.XXX doesn't have an
 		// explicit value. workflows without a default value is a desired use case
-		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments)
+		err = validateArgumentsFieldNames("spec.arguments.", wf.Spec.Arguments, true)
 	} else {
-		err = validateArguments("spec.arguments.", wf.Spec.Arguments)
+		err = validateArguments("spec.arguments.", wf.Spec.Arguments, true)
 	}
 	if err != nil {
 		return err
@@ -326,7 +337,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 }
 
 func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map[string]interface{}, error) {
-	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
+	err := validateInputParameterField(tmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.parameters%s", tmpl.Name, err.Error())
 	}
@@ -339,7 +350,11 @@ func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map
 		scope[name] = value
 	}
 	for _, param := range tmpl.Inputs.Parameters {
-		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
+		if param.Regexp != "" {
+			scope[fmt.Sprintf("inputs.parameters.regexp.%s", param.Regexp)] = true
+		} else {
+			scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
+		}
 	}
 	if len(tmpl.Inputs.Parameters) > 0 {
 		scope["inputs.parameters"] = true
@@ -390,6 +405,15 @@ func validateArtifactLocation(errPrefix string, art wfv1.ArtifactLocation) error
 func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	var unresolvedErr error
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
+
+	//inputs.parameters.regexp. stores regexps for input parameters
+	inputRegexps := make([]string, 0)
+	for k := range scope {
+		if strings.HasPrefix(k, "inputs.parameters.regexp.") {
+			inputRegexps = append(inputRegexps, strings.Replace(k, ".regexp", "", -1))
+		}
+	}
+
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -405,7 +429,20 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 				// NOTE: this is far from foolproof.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
-				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
+				//check for regexp matches
+				foundRegexpMatch := false
+				for _, regexpToMatch := range inputRegexps {
+					match, err := regexp.MatchString(regexpToMatch, tag)
+					if err != nil {
+						return 0, err
+					}
+					if match {
+						foundRegexpMatch = true
+					}
+				}
+				if foundRegexpMatch == false {
+					unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
+				}
 			}
 		}
 		return 0, nil
@@ -498,24 +535,27 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 	return nil
 }
 
-func validateArguments(prefix string, arguments wfv1.Arguments) error {
-	err := validateArgumentsFieldNames(prefix, arguments)
+func validateArguments(prefix string, arguments wfv1.Arguments, isValidatingForWorkflow bool) error {
+	err := validateArgumentsFieldNames(prefix, arguments, isValidatingForWorkflow)
 	if err != nil {
 		return err
 	}
 	return validateArgumentsValues(prefix, arguments)
 }
 
-func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error {
-	fieldToSlices := map[string]interface{}{
-		"parameters": arguments.Parameters,
-		"artifacts":  arguments.Artifacts,
+func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments, isValidatingForWorkflow bool) error {
+	var err error
+	if isValidatingForWorkflow {
+		err = validateWorkflowArgumentParameterField(arguments.Parameters)
+	} else {
+		err = validateArgumentParameterField(arguments.Parameters)
 	}
-	for fieldName, lst := range fieldToSlices {
-		err := validateWorkflowFieldNames(lst)
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s%s%s", prefix, fieldName, err.Error())
-		}
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s%s", prefix, "parameters", err.Error())
+	}
+	err = validateWorkflowFieldNames(arguments.Artifacts)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s%s%s", prefix, "artifacts", err.Error())
 	}
 	return nil
 }
@@ -523,7 +563,7 @@ func validateArgumentsFieldNames(prefix string, arguments wfv1.Arguments) error 
 // validateArgumentsValues ensures that all arguments have parameter values or artifact locations
 func validateArgumentsValues(prefix string, arguments wfv1.Arguments) error {
 	for _, param := range arguments.Parameters {
-		if param.Value == nil {
+		if param.Value == nil && param.PassthroughRegexp == "" {
 			return errors.Errorf(errors.CodeBadRequest, "%s%s.value is required", prefix, param.Name)
 		}
 	}
@@ -569,7 +609,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
-			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments)
+			err = validateArguments(fmt.Sprintf("templates.%s.steps[%d].%s.arguments.", tmpl.Name, i, step.Name), step.Arguments, false)
 			if err != nil {
 				return err
 			}
@@ -672,7 +712,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 }
 
 func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
-	err := validateWorkflowFieldNames(tmpl.Outputs.Parameters)
+	err := validateParameterNameField(tmpl.Outputs.Parameters)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.parameters %s", tmpl.Name, err.Error())
 	}
@@ -812,6 +852,104 @@ func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
 	return nil
 }
 
+// validateWorkflowArgumentParameterField takes a list of workflow-level arguments and verifies
+// * Name is provided
+// * Name is valid
+// * Names are unique
+func validateWorkflowArgumentParameterField(parameters []wfv1.Parameter) error {
+
+	names := make(map[string]bool)
+
+	for i, parameter := range parameters {
+		if parameter.Name == "" {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name is required", i)
+		} else {
+			name := parameter.Name
+			errs := isValidParamOrArtifactName(name)
+			if len(errs) != 0 {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
+			}
+			_, ok := names[name]
+			if ok {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
+			}
+			names[name] = true
+		}
+	}
+	return nil
+}
+
+// validateInputParameterField takes a set of input parameters and verifies
+// * Either Name or PassthroughRegexp is provided
+// * PassthroughRegexp is a valid regex if provided
+// * Name validations
+func validateInputParameterField(parameters []wfv1.Parameter) error {
+
+	for i, parameter := range parameters {
+		if parameter.Name == "" && (parameter.Regexp == "") {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name or .regexp is required", i)
+		}
+
+		if parameter.Regexp != "" {
+			_, err := regexp.Compile(parameter.Regexp)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].regexp could not be parsed: %s", i, err)
+			}
+			if parameter.Name != "" {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].regexp and .name cannot both be supplied", i)
+			}
+		}
+	}
+	return validateParameterNameField(parameters)
+}
+
+// validateArgumentParameterField takes a set of argument parameters and verifies
+// * Either Name or PassthroughRegexp is provided
+// * PassthroughRegexp is a valid regex if provided
+// * Name validations
+func validateArgumentParameterField(parameters []wfv1.Parameter) error {
+
+	for i, parameter := range parameters {
+		if parameter.Name == "" && (parameter.PassthroughRegexp == "") {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].name or .passthroughRegexp is required", i)
+		}
+
+		if parameter.PassthroughRegexp != "" {
+			_, err := regexp.Compile(parameter.PassthroughRegexp)
+			if err != nil {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].passthroughRegexp could not be parsed: %s", i, err)
+			}
+			if parameter.Name != "" {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].passthroughRegexp and .name cannot both be supplied", i)
+			}
+		}
+	}
+	return validateParameterNameField(parameters)
+}
+
+// validateParameterNameField takes a set of parameters and verifies
+// * Name is valid if provided
+// * Names are unique
+func validateParameterNameField(parameters []wfv1.Parameter) error {
+
+	names := make(map[string]bool)
+	for i, parameter := range parameters {
+		if parameter.Name != "" {
+			name := parameter.Name
+			errs := isValidParamOrArtifactName(name)
+			if len(errs) != 0 {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].name: '%s' is invalid: %s", i, name, strings.Join(errs, ";"))
+			}
+			_, ok := names[name]
+			if ok {
+				return errors.Errorf(errors.CodeBadRequest, "[%d].name '%s' is not unique", i, name)
+			}
+			names[name] = true
+		}
+	}
+	return nil
+}
+
 // validateWorkflowFieldNames accepts a slice of structs and
 // verifies that the Name field of the structs are:
 // * unique
@@ -848,7 +986,7 @@ func validateWorkflowFieldNames(slice interface{}) error {
 		}
 		var errs []string
 		t := reflect.TypeOf(item)
-		if t == reflect.TypeOf(wfv1.Parameter{}) || t == reflect.TypeOf(wfv1.Artifact{}) {
+		if t == reflect.TypeOf(wfv1.Artifact{}) {
 			errs = isValidParamOrArtifactName(name)
 		} else {
 			errs = isValidWorkflowFieldName(name)
@@ -946,7 +1084,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
-		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments)
+		err = validateArguments(fmt.Sprintf("templates.%s.tasks.%s.arguments.", tmpl.Name, task.Name), task.Arguments, false)
 		if err != nil {
 			return err
 		}

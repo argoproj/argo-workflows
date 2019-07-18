@@ -717,6 +717,64 @@ func TestSuspendTemplate(t *testing.T) {
 	assert.Equal(t, 1, len(pods.Items))
 }
 
+var passthroughTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: good-regexp-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+  - name: good-regexp-steps
+    inputs:
+      parameters:
+        - regexp: ".*"
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+            - passthroughRegexp: ".*" 
+            - name: extra-parameter
+              value: extra-value
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+    inputs:
+      parameters:
+        - regexp: ".*"
+`
+
+func TestPassthroughParams(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(passthroughTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+
+	woc.operate()
+	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	found := false
+	for _, node := range updatedWf.Status.Nodes {
+		if node.TemplateName == "whalesay" {
+			assert.Equal(t, "message", node.Inputs.Parameters[0].Name)
+			assert.Equal(t, "test1", *node.Inputs.Parameters[0].Value)
+			assert.Equal(t, "extra-parameter", node.Inputs.Parameters[1].Name)
+			assert.Equal(t, "extra-value", *node.Inputs.Parameters[1].Value)
+			found = true
+		}
+	}
+	assert.Equal(t, true, found)
+}
+
 var volumeWithParam = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

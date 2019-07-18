@@ -1245,6 +1245,20 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
+					"passthroughRegexp": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PassthroughRegexp matches argument multiple parameter names using a regexp and passes through their values",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"regexp": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Regexp matches multiple input parameter names using a regexp",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"default": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Default is the default value to use for an input parameter if a value was not supplied",

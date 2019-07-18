@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -419,6 +420,12 @@ type Parameter struct {
 	// Name is the parameter name
 	Name string `json:"name"`
 
+	// PassthroughRegexp matches argument multiple parameter names using a regexp and passes through their values
+	PassthroughRegexp string `json:"passthroughRegexp,omitempty"`
+
+	// Regexp matches multiple input parameter names using a regexp
+	Regexp string `json:"regexp,omitempty"`
+
 	// Default is the default value to use for an input parameter if a value was not supplied
 	Default *string `json:"default,omitempty"`
 
@@ -657,7 +664,9 @@ type TemplateRef struct {
 
 type ArgumentsProvider interface {
 	GetParameterByName(name string) *Parameter
+	GetParametersByRegexp(regexp string) ([]Parameter, error)
 	GetArtifactByName(name string) *Artifact
+	HasPassthroughRegexpParameter() bool
 }
 
 // Arguments to a template
@@ -1212,6 +1221,38 @@ func (in *Inputs) HasInputs() bool {
 	return false
 }
 
+// GetParametersByRegexp retrives input parameters whose names match a regexp
+func (in *Inputs) GetParametersByRegexp(regexp string) ([]Parameter, error) {
+	return getParametersByRegexp(in.Parameters, regexp)
+}
+
+// Indicates whether the input parameters contain any passthrough parameters
+func (in *Inputs) DoesContainRegexpParameters() bool {
+	found := false
+	for _, param := range in.Parameters {
+		if param.Regexp != "" {
+			found = true
+		}
+	}
+	return found
+}
+
+// getParametersByRegexp retrives parameters whose names match a regexp
+func getParametersByRegexp(parameters []Parameter, regexpToMatch string) ([]Parameter, error) {
+	foundParameters := make([]Parameter, 0)
+	compiledRegex, err := regexp.Compile(regexpToMatch)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, param := range parameters {
+		if compiledRegex.MatchString(param.Name) {
+			foundParameters = append(foundParameters, param)
+		}
+	}
+	return foundParameters, nil
+}
+
 // HasOutputs returns whether or not there are any outputs
 func (out *Outputs) HasOutputs() bool {
 	if out.Result != nil {
@@ -1244,6 +1285,21 @@ func (args *Arguments) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
+}
+
+// HasPassthroughRegexpParameter indicates whether any of the arguments contains a regexp
+func (args *Arguments) HasPassthroughRegexpParameter() bool {
+	for _, param := range args.Parameters {
+		if param.PassthroughRegexp != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// GetParametersByRegexp retrieves argument parameters whose name matches a regexp
+func (args *Arguments) GetParametersByRegexp(regexp string) ([]Parameter, error) {
+	return getParametersByRegexp(args.Parameters, regexp)
 }
 
 // HasLocation whether or not an artifact has a location defined

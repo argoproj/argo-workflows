@@ -145,8 +145,168 @@ func TestDuplicateOrEmptyNames(t *testing.T) {
 	}
 	err = validate(emptyName)
 	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "name or .regexp is required")
+	}
+}
+
+var badInputRegex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: bad-regex
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+  - name: bad-regex
+    container:
+      image: docker/whalesay:latest
+    inputs:
+      parameters:
+        - regexp: "("
+`
+
+var noPassthroughInGlobalArgs = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: bad-regex
+  arguments:
+    parameters:
+      - passthroughRegexp: "("
+  templates:
+  - name: bad-regex
+    container:
+      image: docker/whalesay:latest
+`
+
+var badArgsRegex = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: bad-regex-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+  - name: bad-regex-steps
+    inputs:
+      parameters:
+        - regexp: ".*"
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+            - passthroughRegexp: "("
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+`
+
+var nonMatchingPassthrough = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: good-regex-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+  - name: good-regex-steps
+    inputs:
+      parameters:
+        - regexp: "xzz.*"
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+            - passthroughRegexp: ".*"
+            - name: parameter
+              value: "{{inputs.parameters.testing}}"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+`
+
+var goodPassthrough = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: passthrough-parameters-
+spec:
+  entrypoint: passthrough-parameters-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+    - name: passthrough-parameters-steps
+      inputs:
+        parameters:
+          - regexp: ".*"
+      steps:
+        - - name: display-parameters
+            template: display-parameters
+            arguments:
+              parameters:
+                - passthroughRegexp: ".*"
+                - name: extra-parameter
+                  value: extra-value
+
+    - name: display-parameters
+      inputs:
+        parameters:
+          - name: message
+          - name: extra-parameter
+      script:
+        image: alpine:latest
+        command: [sh, -x]
+        source: |
+          #!/bin/sh
+          echo {{inputs.parameters.message}}
+          echo {{inputs.parameters.extra-parameter}}
+
+`
+
+func TestPassthrough(t *testing.T) {
+	err := validate(goodPassthrough)
+	assert.Nil(t, err)
+
+	err = validate(noPassthroughInGlobalArgs)
+	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "name is required")
 	}
+
+	err = validate(badArgsRegex)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "regexp ( could not be processed")
+	}
+
+	err = validate(badInputRegex)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "regexp could not be parsed")
+	}
+
+	err = validate(nonMatchingPassthrough)
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{inputs.parameters.testing}}")
+	}
+
 }
 
 var unresolvedInput = `

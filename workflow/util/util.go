@@ -467,9 +467,9 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 }
 
 // convertNodeID converts an old nodeID to a new nodeID
-func convertNodeID(newWf *wfv1.Workflow, regex *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
+func convertNodeID(newWf *wfv1.Workflow, regexp *regexp.Regexp, oldNodeID string, oldNodes map[string]wfv1.NodeStatus) string {
 	node := oldNodes[oldNodeID]
-	newNodeName := regex.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
+	newNodeName := regexp.ReplaceAllString(node.Name, newWf.ObjectMeta.Name)
 	return newWf.NodeID(newNodeName)
 }
 

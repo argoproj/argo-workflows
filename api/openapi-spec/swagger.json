@@ -669,6 +669,14 @@
           "description": "Name is the parameter name",
           "type": "string"
         },
+        "passthroughRegexp": {
+          "description": "PassthroughRegexp matches argument multiple parameter names using a regexp and passes through their values",
+          "type": "string"
+        },
+        "regexp": {
+          "description": "Regexp matches multiple input parameter names using a regexp",
+          "type": "string"
+        },
         "value": {
           "description": "Value is the literal value to use for the parameter. If specified in the context of an input parameter, the value takes precedence over any passed values",
           "type": "string"

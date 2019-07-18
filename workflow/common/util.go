@@ -247,26 +247,50 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * local parameters (e.g. {{pod.name}})
 func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
-	// 1) check if was supplied as argument. if so use the supplied value from arg
-	// 2) if not, use default value.
-	// 3) if no default value, it is an error
+	// 1) check if it's a passthrough regexp, in which case substitute with matching arguments
+	// 2) check if was supplied as argument. if so use the supplied value from arg
+	// 3) if not, use default value.
+	// 4) if no default value, it is an error
 	newTmpl := tmpl.DeepCopy()
-	for i, inParam := range newTmpl.Inputs.Parameters {
-		if inParam.Default != nil {
-			// first set to default value
-			inParam.Value = inParam.Default
+	newInputParameters := make([]wfv1.Parameter, 0)
+
+	for _, inParam := range newTmpl.Inputs.Parameters {
+		if inParam.Regexp != "" {
+			argParams, err := args.GetParametersByRegexp(inParam.Regexp)
+			if err != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "regexp %s could not be processed", inParam.Regexp)
+			}
+			for _, argParam := range argParams {
+				newName := argParam.Name
+				newValue := argParam.Value
+				newRegexp := argParam.PassthroughRegexp //used for workflow templates where all arguments may not have been resolved already
+				newParameter := wfv1.Parameter{Name: newName, Value: newValue, Regexp: newRegexp}
+
+				newInputParameters = append(newInputParameters, newParameter)
+			}
+		} else {
+			if inParam.Default != nil {
+				// first set to default value
+				inParam.Value = inParam.Default
+			}
+			// overwrite value from argument (if supplied)
+			argParam := args.GetParameterByName(inParam.Name)
+			if argParam != nil && argParam.Value != nil {
+				newValue := *argParam.Value
+				inParam.Value = &newValue
+			}
+			//if one of the args is a regexp (this can be true during validation) then we add a placeholder
+			if args.HasPassthroughRegexpParameter() {
+				newValue := "placeholder"
+				inParam.Value = &newValue
+			}
+			if inParam.Value == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+			}
+			newInputParameters = append(newInputParameters, inParam)
 		}
-		// overwrite value from argument (if supplied)
-		argParam := args.GetParameterByName(inParam.Name)
-		if argParam != nil && argParam.Value != nil {
-			newValue := *argParam.Value
-			inParam.Value = &newValue
-		}
-		if inParam.Value == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
-		}
-		newTmpl.Inputs.Parameters[i] = inParam
 	}
+	newTmpl.Inputs.Parameters = newInputParameters
 
 	// Performs substitutions of input artifacts
 	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
@@ -296,7 +320,52 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 	newTmpl.Inputs.Artifacts = newInputArtifacts
 
+	//copy passthrough parameters from Inputs to Arguments
+	if newTmpl.Steps != nil {
+		for i, stepList := range newTmpl.Steps {
+			for j, step := range stepList {
+				updatedParameters, err := handlePassthroughParameters(newTmpl.Inputs, step.Arguments.Parameters)
+				if err != nil {
+					return nil, err
+				}
+				newTmpl.Steps[i][j].Arguments.Parameters = updatedParameters
+			}
+		}
+	}
+	if newTmpl.DAG != nil {
+		for i, task := range newTmpl.DAG.Tasks {
+			updatedParameters, err := handlePassthroughParameters(tmpl.Inputs, task.Arguments.Parameters)
+			if err != nil {
+				return nil, err
+			}
+			newTmpl.DAG.Tasks[i].Arguments.Parameters = updatedParameters
+		}
+	}
+
 	return SubstituteParams(newTmpl, globalParams, localParams)
+}
+
+// handlePassthroughParameters returns parameter argument list where items matching PassthroughRegexp are added from input parameters
+func handlePassthroughParameters(inputs wfv1.Inputs, argumentParameters []wfv1.Parameter) ([]wfv1.Parameter, error) {
+	updatedArgumentParameters := make([]wfv1.Parameter, 0)
+
+	for _, parameter := range argumentParameters {
+		if parameter.PassthroughRegexp != "" {
+
+			inputParams, err := inputs.GetParametersByRegexp(parameter.PassthroughRegexp)
+			if err != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "regexp %s could not be processed", parameter.PassthroughRegexp)
+			}
+
+			for _, inputParam := range inputParams {
+				newParameter := wfv1.Parameter{Name: inputParam.Name, Value: inputParam.Value}
+				updatedArgumentParameters = append(updatedArgumentParameters, newParameter)
+			}
+		} else {
+			updatedArgumentParameters = append(updatedArgumentParameters, parameter)
+		}
+	}
+	return updatedArgumentParameters, nil
 }
 
 // SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted

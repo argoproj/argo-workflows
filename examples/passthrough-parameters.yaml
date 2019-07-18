@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: passthrough-parameters-
+spec:
+  entrypoint: passthrough-parameters-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+    - name: passthrough-parameters-steps
+      inputs:
+        parameters:
+          - regexp: ".*"
+      steps:
+        - - name: display-parameters
+            template: display-parameters
+            arguments:
+              parameters:
+                - passthroughRegexp: ".*"
+                - name: extra-parameter
+                  value: extra-value
+
+    - name: display-parameters
+      inputs:
+        parameters:
+          - name: message
+          - name: extra-parameter
+      script:
+        image: alpine:latest
+        command: [sh, -x]
+        source: |
+          #!/bin/sh
+          echo {{inputs.parameters.message}}
+          echo {{inputs.parameters.extra-parameter}}
