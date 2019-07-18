@@ -504,6 +504,64 @@ func TestSuspendResume(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 }
 
+var inputParametersAsJson = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: whalesay
+spec:
+  entrypoint: steps
+  arguments:
+    parameters:
+    - name: parameter1
+      value: value1
+    - name: parameter2
+      value: value2
+  templates:
+  - name: steps
+    inputs:
+      parameters:
+      - name: parameter1
+      - name: parameter2
+    steps:
+      - - name: step1
+          template: whalesay
+          arguments:
+            parameters:
+            - name: json
+              value: "{{inputs.parameters}}"
+
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: json
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+`
+
+func TestInputParametersAsJson(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	wf := unmarshalWF(inputParametersAsJson)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	updatedWf, err := wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	found := false
+	for _, node := range updatedWf.Status.Nodes {
+		if node.Type == wfv1.NodeTypePod {
+			expectedJson := `[{"name":"parameter1","value":"value1"},{"name":"parameter2","value":"value2"}]`
+			assert.Equal(t, expectedJson, *node.Inputs.Parameters[0].Value)
+			found = true
+		}
+	}
+	assert.Equal(t, true, found)
+}
+
 var expandWithItems = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

@@ -213,6 +213,9 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 	for _, param := range tmpl.Inputs.Parameters {
 		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 	}
+	if (len(tmpl.Inputs.Parameters) > 0) {
+		scope["inputs.parameters"] = true
+	}
 
 	for _, art := range tmpl.Inputs.Artifacts {
 		artRef := fmt.Sprintf("inputs.artifacts.%s", art.Name)

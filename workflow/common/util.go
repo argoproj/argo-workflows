@@ -325,6 +325,12 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
+	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
+	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
 		if inArt.Path != "" {
 			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
@@ -356,8 +362,7 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template. prefixFilter will apply the replacements only
-// to variables with the specified prefix
+// remaining in the substituted template.
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
