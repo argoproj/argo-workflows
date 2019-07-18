@@ -30,6 +30,12 @@ spec:
           # sshPrivateKeySecret:
           #   name: github-creds
           #   key: ssh-private-key
+          # 
+          # insecureIgnoreHostKey disables SSH strict host key checking during the git clone
+          # NOTE: this is unnecessary for the well-known public SSH keys from the major git
+          # providers (github, bitbucket, gitlab, azure) as these keys are already baked into
+          # the executor image which performs the clone.
+          # insecureIgnoreHostKey: true
     container:
       image: golang:1.10
       command: [sh, -c]

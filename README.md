@@ -84,6 +84,7 @@ Currently **officially** using Argo:
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
+1. [Codec](https://www.codec.ai/)
 1. [CoreFiling](https://www.corefiling.com/)
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
@@ -109,6 +110,7 @@ Currently **officially** using Argo:
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
+1. [Commodus Tech](https://www.commodus.tech)
 
 
 ## Community Blogs and Presentations
