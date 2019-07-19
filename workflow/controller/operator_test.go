@@ -1170,7 +1170,7 @@ spec:
   arguments:
     parameters:
     - name: input
-      value: '[1,2,3,4]'
+      value: '[[1,2],[3,4],[4,5],[6,7]]'
   templates:
   - name: expand-with-items
     steps:
