@@ -1160,7 +1160,6 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 	}
 }
 
-
 var withParamAsJsonList = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
