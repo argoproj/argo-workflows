@@ -1220,12 +1220,12 @@ func TestGetNodeName(t *testing.T) {
 	// Steps Workflow
 	wf := unmarshalWF(stepScriptTmpl)
 
-	assert.True(t, HasOutputResultRef("resource-1", &wf.Spec.Templates[0]))
-	assert.False(t, HasOutputResultRef("resource-2", &wf.Spec.Templates[0]))
+	assert.True(t, hasOutputResultRef("resource-1", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("resource-2", &wf.Spec.Templates[0]))
 
 	// DAG workflow
 	wf = unmarshalWF(dagScriptTmpl)
 
-	assert.True(t, HasOutputResultRef("A", &wf.Spec.Templates[0]))
-	assert.False(t, HasOutputResultRef("B", &wf.Spec.Templates[0]))
+	assert.True(t, hasOutputResultRef("A", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("B", &wf.Spec.Templates[0]))
 }

@@ -70,7 +70,7 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sy
 		return nil
 	}
 
-	// Assign new Dealing value to PodExeCtl
+	// Assign new deadline value to PodExeCtl
 	podExecCtl.Deadline = woc.workflowDeadline
 
 	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)

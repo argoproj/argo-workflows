@@ -462,12 +462,14 @@ func (woc *wfOperationCtx) addMetadata(pod *apiv1.Pod, tmpl *wfv1.Template, incl
 		execCtl.Deadline = woc.workflowDeadline
 
 	}
-	execCtlBytes, err := json.Marshal(execCtl)
-	if err != nil {
-		panic(err)
-	}
+	if woc.workflowDeadline != nil || includeScriptOutput {
+		execCtlBytes, err := json.Marshal(execCtl)
+		if err != nil {
+			panic(err)
+		}
 
-	pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
+		pod.ObjectMeta.Annotations[common.AnnotationKeyExecutionControl] = string(execCtlBytes)
+	}
 }
 
 // addSchedulingConstraints applies any node selectors or affinity rules to the pod, either set in the workflow or the template

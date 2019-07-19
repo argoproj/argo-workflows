@@ -69,8 +69,6 @@ type WorkflowExecutor struct {
 	// list of errors that occurred during execution.
 	// the first of these is used as the overall message of the node
 	errors []error
-
-	ExcludeOutput bool
 }
 
 // ContainerRuntimeExecutor is the interface for interacting with a container runtime (e.g. docker)
@@ -1101,58 +1099,6 @@ func LoadTemplate(path string) (*wfv1.Template, error) {
 		return nil, err
 	}
 	return &tmpl, nil
-}
-
-func GetAnnotationField(filePath string, key string) (string, error) {
-	// Read the annotation file
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Errorf("ERROR opening annotation file from %s", filePath)
-		return "", errors.InternalWrapError(err)
-	}
-	content := ""
-	defer func() {
-		_ = file.Close()
-	}()
-	reader := bufio.NewReader(file)
-
-	// Prefix of key property in the annotation file
-	prefix := fmt.Sprintf("%s=", key)
-
-	for {
-		// Read line-by-line
-		var buffer bytes.Buffer
-		var l []byte
-		var isPrefix bool
-		for {
-			l, isPrefix, err = reader.ReadLine()
-			buffer.Write(l)
-			// If we've reached the end of the line, stop reading.
-			if !isPrefix {
-				break
-			}
-			// If we're just at the EOF, break
-			if err != nil {
-				break
-			}
-		}
-
-		line := buffer.String()
-
-		// Read property
-		if strings.HasPrefix(line, prefix) {
-			// Trim the prefix
-			content = strings.TrimPrefix(line, prefix)
-			break
-		}
-
-		// The end of the annotation file
-		if err == io.EOF {
-			break
-		}
-	}
-
-	return content, nil
 }
 
 // unmarshalAnnotationField unmarshals the value of an annotation key into the supplied interface

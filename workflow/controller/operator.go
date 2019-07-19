@@ -1362,19 +1362,23 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
-func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
+// hasOutputResultRef will check given template output has any reference
+func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 	nodeName := "." + name + "."
 
 	if parentTmpl.DAG != nil {
+		nodeOutputName := "{{tasks." + name + ".outputs.result}}"
 		for _, dagTask := range parentTmpl.DAG.Tasks {
 
-			if strings.Contains(dagTask.When, nodeName) {
+			if dagTask.When == nodeOutputName {
 				return true
 			}
 
 			for _, artf := range dagTask.Arguments.Parameters {
-				if strings.Contains(*artf.Value, "{{") && (strings.Contains(*artf.Value, nodeName) || (artf.ValueFrom != nil && strings.Contains(artf.ValueFrom.Parameter, nodeName))) {
+				if strings.Contains(*artf.Value, "{{") &&
+					(strings.Contains(*artf.Value, nodeName) ||
+						(artf.ValueFrom != nil && artf.ValueFrom.Parameter == nodeOutputName)) {
 					return true
 				}
 			}
@@ -1382,15 +1386,18 @@ func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	}
 
 	if parentTmpl.Steps != nil {
+		nodeOutputName := "{{steps." + name + ".outputs.result}}"
 		for idx := range parentTmpl.Steps {
 			stepGroup := parentTmpl.Steps[idx]
 			for _, step := range stepGroup {
 
-				if strings.Contains(step.When, nodeName) {
+				if step.When == nodeOutputName {
 					return true
 				}
 				for _, artf := range step.Arguments.Parameters {
-					if strings.Contains(*artf.Value, "{{") && (strings.Contains(*artf.Value, nodeName) || (artf.ValueFrom != nil && strings.Contains(artf.ValueFrom.Parameter, nodeName))) {
+					if strings.Contains(*artf.Value, "{{") &&
+						(strings.Contains(*artf.Value, nodeName) ||
+							(artf.ValueFrom != nil && artf.ValueFrom.Parameter == nodeOutputName)) {
 						return true
 					}
 				}
@@ -1399,7 +1406,13 @@ func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	}
 
 	for _, param := range parentTmpl.Outputs.Parameters {
-		if strings.Contains(*param.Value, "{{") && (strings.Contains(*param.Value, nodeName) || (param.ValueFrom != nil && strings.Contains(param.ValueFrom.Parameter, nodeName))) {
+		taskNodeOutputName := "{{tasks." + name + ".outputs.result}}"
+		stepNodeOutputName := "{{steps." + name + ".outputs.result}}"
+
+		if strings.Contains(*param.Value, "{{") &&
+			(strings.Contains(*param.Value, nodeName) ||
+				(param.ValueFrom != nil && (param.ValueFrom.Parameter == taskNodeOutputName ||
+					param.ValueFrom.Parameter == stepNodeOutputName))) {
 			return true
 		}
 	}
@@ -1407,7 +1420,8 @@ func HasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 	return false
 }
 
-func GetStepOrDAGTaskName(nodeName string) string {
+// getStepOrDAGTaskName will extract the node from NodeStatus Name
+func getStepOrDAGTaskName(nodeName string) string {
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Check retry scenario
@@ -1426,8 +1440,8 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 
 	includeScriptOutput := false
 	if parentTemplate != nil {
-		name := GetStepOrDAGTaskName(nodeName)
-		includeScriptOutput = HasOutputResultRef(name, parentTemplate)
+		name := getStepOrDAGTaskName(nodeName)
+		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}
 	fmt.Println(includeScriptOutput)
 	node := woc.getNodeByName(nodeName)

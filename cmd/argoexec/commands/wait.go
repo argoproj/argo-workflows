@@ -65,11 +65,13 @@ func waitContainer() error {
 			return err
 		}
 
-		err = wfExecutor.AnnotateOutputs(logArt)
-		if err != nil {
-			wfExecutor.AddError(err)
-			return err
-		}
 	}
+
+	err = wfExecutor.AnnotateOutputs(logArt)
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
+	}
+
 	return nil
 }
