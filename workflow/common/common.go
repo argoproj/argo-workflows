@@ -130,7 +130,7 @@ type ExecutionControl struct {
 	// used to support workflow or steps/dag level timeouts.
 	Deadline *time.Time `json:"deadline,omitempty"`
 	// IncludeScriptOutput is containing flag to include script output
-	IncludeScriptOutput bool `json:"includeScriptOutput,omitemptysssss"`
+	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
 }
 
 type ResourceInterface interface {
