@@ -1315,7 +1315,7 @@ spec:
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
 
-func TestWithParamAsJsonList(t *testing.T){
+func TestWithParamAsJsonList(t *testing.T) {
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
