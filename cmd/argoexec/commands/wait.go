@@ -57,14 +57,12 @@ func waitContainer() error {
 		return err
 	}
 
-
-		// Capture output script result
-		err = wfExecutor.CaptureScriptResult()
-		if err != nil {
-			wfExecutor.AddError(err)
-			return err
-		}
-
+	// Capture output script result
+	err = wfExecutor.CaptureScriptResult()
+	if err != nil {
+		wfExecutor.AddError(err)
+		return err
+	}
 
 	err = wfExecutor.AnnotateOutputs(logArt)
 	if err != nil {
