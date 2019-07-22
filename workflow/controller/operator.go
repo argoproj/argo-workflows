@@ -1422,13 +1422,14 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
+	fmt.Println("NodeName:",nodeName)
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Check retry scenario
 		if strings.Contains(name, "(") {
 			return name[0:strings.Index(name, "(")]
 		}
-		return nodeName[strings.LastIndex(nodeName, ".")+1:]
+		return name
 	}
 	return nodeName
 }
@@ -1443,7 +1444,6 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, b
 		name := getStepOrDAGTaskName(nodeName)
 		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}
-	fmt.Println(includeScriptOutput)
 	node := woc.getNodeByName(nodeName)
 
 	if node != nil {

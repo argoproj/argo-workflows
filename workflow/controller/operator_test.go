@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/argoproj/argo/workflow/config"
+	"strings"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -1164,20 +1165,37 @@ var stepScriptTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: resource-with-ownerreference-template
+  generateName: scripts-bash-
 spec:
-  entrypoint: start
+  entrypoint: bash-script-example
   templates:
-  - name: start
+  - name: bash-script-example
     steps:
-    - - name: resource-1
-        template: resource-1
-      - name: resource-2
-        template: resource-2	
+    - - name: generate
+        template: gen-random-int
+    - - name: print
+        template: print-message
         arguments:
-           parameters: [{name: message, value: "{{steps.resource-1.output.result}}"}]
-      - name: resource-3
-        template: resource-3 `
+          parameters:
+          - name: message
+            value: "{{steps.generate.outputs.result}}"
+
+  - name: gen-random-int
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
 
 var dagScriptTmpl = `
 apiVersion: argoproj.io/v1alpha1
@@ -1200,7 +1218,6 @@ spec:
         arguments:
           parameters: [{name: message, value: A}]
       - name: B
-        dependencies: [A]
         template: echo
         arguments:
           parameters: [{name: message, value: B}]
@@ -1209,23 +1226,60 @@ spec:
         template: echo
         arguments:
           parameters: [{name: message, value: "{{dag.A.output.result}}"}]
-      - name: D
-        dependencies: [B, C]
-        template: echo
-        arguments:
-          parameters: [{name: message, value: D}]`
+  - name: echo
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'`
 
-func TestGetNodeName(t *testing.T) {
+func TestStepWFGetNodeName(t *testing.T) {
 
-	// Steps Workflow
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
 	wf := unmarshalWF(stepScriptTmpl)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	assert.True(t, hasOutputResultRef("generate", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("print-message", &wf.Spec.Templates[0]))
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(wf.Status.Nodes))
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "generate") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "generate")
+		} else if strings.Contains(node.Name, "print-message") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "print-message")
+		}
+	}
+}
 
-	assert.True(t, hasOutputResultRef("resource-1", &wf.Spec.Templates[0]))
-	assert.False(t, hasOutputResultRef("resource-2", &wf.Spec.Templates[0]))
+func TestDAGWFGetNodeName(t *testing.T) {
 
-	// DAG workflow
-	wf = unmarshalWF(dagScriptTmpl)
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(dagScriptTmpl)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
 	assert.True(t, hasOutputResultRef("A", &wf.Spec.Templates[0]))
 	assert.False(t, hasOutputResultRef("B", &wf.Spec.Templates[0]))
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(wf.Status.Nodes))
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, ".A") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "A")
+		}
+		if strings.Contains(node.Name, ".B") {
+			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
+		}
+	}
 }
