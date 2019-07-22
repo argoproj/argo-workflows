@@ -1422,7 +1422,6 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
 func getStepOrDAGTaskName(nodeName string) string {
-	fmt.Println("NodeName:",nodeName)
 	if strings.Contains(nodeName, ".") {
 		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
 		// Check retry scenario
