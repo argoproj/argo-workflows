@@ -1282,6 +1282,7 @@ func TestDAGWFGetNodeName(t *testing.T) {
 			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
 		}
 	}
+}
 
 var withParamAsJsonList = `
 apiVersion: argoproj.io/v1alpha1
@@ -1314,7 +1315,7 @@ spec:
       args: ["echo result was: {{inputs.parameters.message}}"]
 `
 
-func TestWithParamAsJsonList(t *testing.T) {
+func TestWithParamAsJsonList(t *testing.T){
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
