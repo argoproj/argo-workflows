@@ -522,6 +522,12 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
 	pod.Spec.HostAliases = append(pod.Spec.HostAliases, tmpl.HostAliases...)
 
+	// set pod security context
+	if tmpl.SecurityContext != nil {
+		pod.Spec.SecurityContext = tmpl.SecurityContext
+	} else if wfSpec.SecurityContext != nil {
+		pod.Spec.SecurityContext = wfSpec.SecurityContext
+	}
 }
 
 // addVolumeReferences adds any volumeMounts that a container/sidecar is referencing, to the pod.spec.volumes
