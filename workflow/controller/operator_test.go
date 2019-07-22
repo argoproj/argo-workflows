@@ -1282,4 +1282,49 @@ func TestDAGWFGetNodeName(t *testing.T) {
 			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
 		}
 	}
+
+var withParamAsJsonList = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: expand-with-items
+spec:
+  entrypoint: expand-with-items
+  arguments:
+    parameters:
+    - name: input
+      value: '[[1,2],[3,4],[4,5],[6,7]]'
+  templates:
+  - name: expand-with-items
+    steps:
+    - - name: whalesay
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{item}}"
+        withParam: "{{workflow.parameters.input}}"
+  - name: whalesay 
+    inputs:
+      parameters:
+      - name: message
+    script:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+func TestWithParamAsJsonList(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// Test list expansion
+	wf := unmarshalWF(withParamAsJsonList)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(pods.Items))
 }

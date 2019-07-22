@@ -1721,8 +1721,15 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
+	case []interface{}:
+		byteVal, err := json.Marshal(val)
+		if err != nil {
+			return "", errors.InternalWrapError(err)
+		}
+		replaceMap["item"] = string(byteVal)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", index, val)
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %s", index, val)
 	}
 	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 	if err != nil {
