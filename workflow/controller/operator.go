@@ -1599,7 +1599,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName)
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
 	mainCtr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,

@@ -26,9 +26,6 @@ type WorkflowControllerConfig struct {
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 
-	// ServiceAccountTokenName specifies a service account token name for the wait & init containers.
-	ServiceAccountTokenName string `json:"serviceAccountTokenName,omitempty"`
-
 	// ContainerRuntimeExecutor specifies the container runtime interface to use, default is docker
 	ContainerRuntimeExecutor string `json:"containerRuntimeExecutor,omitempty"`
 

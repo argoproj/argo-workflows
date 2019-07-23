@@ -91,11 +91,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
 
-	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
-	if tmpl.ServiceAccountName != "" {
-		tmplServiceAccountName = tmpl.ServiceAccountName
-	}
-
 	mainCtr.Name = common.MainContainerName
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +111,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -145,18 +139,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, err
 	}
 
-	if tmpl.GetType() != wfv1.TemplateTypeResource {
-		if woc.wf.Spec.AutomountServiceAccountToken != nil {
-			pod.Spec.AutomountServiceAccountToken = woc.wf.Spec.AutomountServiceAccountToken
-		} else if tmpl.AutomountServiceAccountToken != nil {
-			pod.Spec.AutomountServiceAccountToken = tmpl.AutomountServiceAccountToken
-		}
-		if pod.Spec.AutomountServiceAccountToken != nil && !*pod.Spec.AutomountServiceAccountToken {
-			if woc.controller.Config.KubeConfig == nil && woc.controller.Config.ServiceAccountTokenName == "" {
-				return nil, errors.Errorf(errors.CodeBadRequest, "automountServiceAccountToken cannot be set because the controller is not configured with kubeConfig nor serviceAccountTokenName")
-			}
-		}
+	err = woc.setupServiceAccount(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
 
+	if tmpl.GetType() != wfv1.TemplateTypeResource {
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
@@ -283,13 +271,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *w
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName)
+	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "init"}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
-	ctr := woc.newExecContainer(common.WaitContainerName)
+	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorPNS:
@@ -406,16 +394,6 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 			},
 		})
 	}
-	if woc.controller.Config.ServiceAccountTokenName != "" {
-		volumes = append(volumes, apiv1.Volume{
-			Name: common.ServiceAccountTokenVolumeName,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: woc.controller.Config.ServiceAccountTokenName,
-				},
-			},
-		})
-	}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorPNS:
 		return volumes
@@ -424,7 +402,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
@@ -459,7 +437,13 @@ func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
-	if woc.controller.Config.ServiceAccountTokenName != "" {
+	executorServiceAccountTokenName := ""
+	if tmpl.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = tmpl.ExecutorServiceAccountTokenName
+	} else if woc.wf.Spec.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = woc.wf.Spec.ExecutorServiceAccountTokenName
+	}
+	if executorServiceAccountTokenName != "" {
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      common.ServiceAccountTokenVolumeName,
 			MountPath: common.ServiceAccountTokenMountPath,
@@ -840,6 +824,45 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+	}
+	return nil
+}
+
+// setupServiceAccount sets up service account and token.
+func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if tmpl.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
+	} else if woc.wf.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
+	}
+
+	var automountServiceAccountToken *bool
+	if tmpl.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
+	} else if woc.wf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = woc.wf.Spec.AutomountServiceAccountToken
+	}
+	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
+	}
+
+	executorServiceAccountTokenName := ""
+	if tmpl.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = tmpl.ExecutorServiceAccountTokenName
+	} else if woc.wf.Spec.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = woc.wf.Spec.ExecutorServiceAccountTokenName
+	}
+	if executorServiceAccountTokenName != "" {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
+			Name: common.ServiceAccountTokenVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: executorServiceAccountTokenName,
+				},
+			},
+		})
+	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		return errors.Errorf(errors.CodeBadRequest, "executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
 }

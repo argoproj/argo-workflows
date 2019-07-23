@@ -160,7 +160,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmpl)
 	default:
-		err = validateLeaf(scope, tmpl)
+		err = ctx.validateLeaf(scope, tmpl)
 	}
 	if err != nil {
 		return err
@@ -302,7 +302,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func (ctx *wfValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -334,9 +334,6 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		default:
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)
 		}
-		if tmpl.AutomountServiceAccountToken != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.automountServiceAccountToken can not be set in resource templates", tmpl.Name)
-		}
 		// Try to unmarshal the given manifest.
 		obj := unstructured.Unstructured{}
 		err := yaml.Unmarshal([]byte(tmpl.Resource.Manifest), &obj)
@@ -351,6 +348,21 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	if tmpl.Parallelism != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
+	}
+	var automountServiceAccountToken *bool
+	if tmpl.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
+	} else if ctx.wf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = ctx.wf.Spec.AutomountServiceAccountToken
+	}
+	executorServiceAccountTokenName := ""
+	if tmpl.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = tmpl.ExecutorServiceAccountTokenName
+	} else if ctx.wf.Spec.ExecutorServiceAccountTokenName != "" {
+		executorServiceAccountTokenName = ctx.wf.Spec.ExecutorServiceAccountTokenName
+	}
+	if automountServiceAccountToken != nil && !*automountServiceAccountToken && executorServiceAccountTokenName == "" {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false", tmpl.Name)
 	}
 	return nil
 }

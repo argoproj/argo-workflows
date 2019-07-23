@@ -1427,3 +1427,90 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 	err = ValidateWorkflow(wf, ValidateOpts{})
 	assert.Error(t, err, "templates.whalesay.resource.action must be either get, create, apply, delete or replace")
 }
+
+var validAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  - name: per-tmpl-automount
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: true
+    executorServiceAccountTokenName: ""
+  automountServiceAccountToken: false
+  executorServiceAccountTokenName: foo
+`
+
+var validAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    executorServiceAccountTokenName: foo
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: false
+`
+
+// TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
+func TestAutomountServiceAccountTokenUse(t *testing.T) {
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
+	}
+}
