@@ -1601,9 +1601,6 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 
 	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	mainCtr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-	}
 	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
