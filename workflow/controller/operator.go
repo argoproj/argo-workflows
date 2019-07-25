@@ -1365,62 +1365,30 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+func checkVariableRefInTmpl(template *wfv1.Template, variable string) bool {
+	jsonValue, err := json.Marshal(template)
+	if err != nil {
+		log.Warnf("Unable to marshal the template. %v, %v", template, err)
+	}
+	jsonStr := string(jsonValue)
+
+	if strings.Contains(jsonStr, variable) {
+		return true
+	}
+	return false
+}
+
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 
-	nodeName := "." + name + "."
-
+	var variableRefName string
 	if parentTmpl.DAG != nil {
-		nodeOutputName := "{{tasks." + name + ".outputs.result}}"
-		for _, dagTask := range parentTmpl.DAG.Tasks {
-
-			if dagTask.When == nodeOutputName {
-				return true
-			}
-
-			for _, artf := range dagTask.Arguments.Parameters {
-				if strings.Contains(*artf.Value, "{{") &&
-					(strings.Contains(*artf.Value, nodeName) ||
-						(artf.ValueFrom != nil && artf.ValueFrom.Parameter == nodeOutputName)) {
-					return true
-				}
-			}
-		}
+		variableRefName = "{{tasks." + name + ".outputs.result}}"
+	} else if parentTmpl.Steps != nil {
+		variableRefName = "{{steps." + name + ".outputs.result}}"
 	}
 
-	if parentTmpl.Steps != nil {
-		nodeOutputName := "{{steps." + name + ".outputs.result}}"
-		for idx := range parentTmpl.Steps {
-			stepGroup := parentTmpl.Steps[idx]
-			for _, step := range stepGroup {
-
-				if step.When == nodeOutputName {
-					return true
-				}
-				for _, artf := range step.Arguments.Parameters {
-					if strings.Contains(*artf.Value, "{{") &&
-						(strings.Contains(*artf.Value, nodeName) ||
-							(artf.ValueFrom != nil && artf.ValueFrom.Parameter == nodeOutputName)) {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	for _, param := range parentTmpl.Outputs.Parameters {
-		taskNodeOutputName := "{{tasks." + name + ".outputs.result}}"
-		stepNodeOutputName := "{{steps." + name + ".outputs.result}}"
-
-		if strings.Contains(*param.Value, "{{") &&
-			(strings.Contains(*param.Value, nodeName) ||
-				(param.ValueFrom != nil && (param.ValueFrom.Parameter == taskNodeOutputName ||
-					param.ValueFrom.Parameter == stepNodeOutputName))) {
-			return true
-		}
-	}
-
-	return false
+	return checkVariableRefInTmpl(parentTmpl, variableRefName)
 }
 
 // getStepOrDAGTaskName will extract the node from NodeStatus Name
