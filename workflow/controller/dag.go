@@ -66,7 +66,7 @@ func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
 	// We should ensure that from the bottom to the top,
 	// all the nodes of this branch have at least one failure.
 	// If successful, we should continue to run down until the leaf node
-	taskNode := d.getTaskNode(targetTaskName)
+	taskNode := d.GetTaskNode(targetTaskName)
 	if taskNode == nil {
 		taskObject := d.getTask(targetTaskName)
 		if taskObject != nil {
