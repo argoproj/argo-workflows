@@ -1225,7 +1225,7 @@ spec:
         dependencies: [A]
         template: echo
         arguments:
-          parameters: [{name: message, value: "{{dag.A.output.result}}"}]
+          parameters: [{name: message, value: "{{tasks.A.outputs.result}}"}]
   - name: echo
     script:
       image: debian:9.4
@@ -1248,12 +1248,11 @@ func TestStepWFGetNodeName(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(wf.Status.Nodes))
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, "generate") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "generate")
+			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "generate")
 		} else if strings.Contains(node.Name, "print-message") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "print-message")
+			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil ) == "print-message")
 		}
 	}
 }
@@ -1273,13 +1272,12 @@ func TestDAGWFGetNodeName(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(wf.Status.Nodes))
 	for _, node := range wf.Status.Nodes {
 		if strings.Contains(node.Name, ".A") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "A")
+			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "A")
 		}
 		if strings.Contains(node.Name, ".B") {
-			assert.True(t, getStepOrDAGTaskName(node.Name) == "B")
+			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "B")
 		}
 	}
 }
