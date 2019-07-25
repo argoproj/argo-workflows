@@ -1252,7 +1252,7 @@ func TestStepWFGetNodeName(t *testing.T) {
 		if strings.Contains(node.Name, "generate") {
 			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "generate")
 		} else if strings.Contains(node.Name, "print-message") {
-			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil ) == "print-message")
+			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "print-message")
 		}
 	}
 }
