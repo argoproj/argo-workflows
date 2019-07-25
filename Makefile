@@ -1,21 +1,21 @@
-PACKAGE=github.com/argoproj/argo
-CURRENT_DIR=$(shell pwd)
-DIST_DIR=${CURRENT_DIR}/dist
-ARGO_CLI_NAME=argo
+PACKAGE                = github.com/argoproj/argo
+CURRENT_DIR            = $(shell pwd)
+DIST_DIR               = ${CURRENT_DIR}/dist
+ARGO_CLI_NAME          = argo
 
-VERSION=$(shell cat ${CURRENT_DIR}/VERSION)
-BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-GIT_COMMIT=$(shell git rev-parse HEAD)
-GIT_TAG=$(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
-GIT_TREE_STATE=$(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+VERSION                = $(shell cat ${CURRENT_DIR}/VERSION)
+BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+GIT_COMMIT             = $(shell git rev-parse HEAD)
+GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
+GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 # docker image publishing options
-DOCKER_PUSH=false
-IMAGE_TAG=latest
+DOCKER_PUSH           ?= false
+IMAGE_TAG             ?= latest
 # perform static compilation
-STATIC_BUILD=true
+STATIC_BUILD          ?= true
 # build development images
-DEV_IMAGE=false
+DEV_IMAGE             ?= false
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
@@ -28,7 +28,7 @@ override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq (${GIT_TAG},)
-IMAGE_TAG=${GIT_TAG}
+IMAGE_TAG = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
@@ -39,7 +39,7 @@ endif
 endif
 
 ifdef IMAGE_NAMESPACE
-IMAGE_PREFIX=${IMAGE_NAMESPACE}/
+IMAGE_PREFIX = ${IMAGE_NAMESPACE}/
 endif
 
 # Build the project
