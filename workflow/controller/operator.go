@@ -1372,10 +1372,7 @@ func checkVariableRefInTmpl(template *wfv1.Template, variable string) bool {
 	}
 	jsonStr := string(jsonValue)
 
-	if strings.Contains(jsonStr, variable) {
-		return true
-	}
-	return false
+	return strings.Contains(jsonStr, variable)
 }
 
 // hasOutputResultRef will check given template output has any reference
