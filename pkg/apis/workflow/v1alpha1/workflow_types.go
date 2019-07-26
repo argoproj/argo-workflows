@@ -1202,6 +1202,47 @@ func (wf *Workflow) NodeID(name string) string {
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
 }
 
+// Pod names may be no longer than 253 characters, and we need to verify that
+// they are unique, so we leave 10 spaces for a hash, and 1 space for a dash
+const maxPodNameLength = 242
+
+// PodName returns a modified version of `name` which is valid as a pod name
+func (wf *Workflow) PodName(name, id string) string {
+	if name == wf.ObjectMeta.Name {
+		return wf.ObjectMeta.Name
+	}
+	podname := strings.ToLower(name)
+	replaceWithDashChars := ".(["
+	for _, c := range replaceWithDashChars {
+		podname = strings.Replace(podname, string(c), "-", -1)
+	}
+	removeChars := ")]"
+	for _, c := range removeChars {
+		podname = strings.Replace(podname, string(c), "", -1)
+	}
+	if len(podname) > maxPodNameLength {
+		podname = podname[:maxPodNameLength]
+		// Truncating the name creates the possibility for a pod name
+		// to end with a dash. Since pod names ending in dashes
+		// are invalid, we truncate that character here
+		lastChar := podname[len(podname)-1]
+		if lastChar == '-' {
+			podname = podname[:len(podname)-1]
+		}
+	}
+
+	// Strip off the hash from the id
+	idParts := strings.Split(id, "-")
+	hash := idParts[len(idParts)-1]
+
+	// At this point, the podname is at most maxPodNameLength characters
+	// long, so we should have space for the 10 character hash, plus a
+	// dash.  Not that the hash is a uint32, which means the largest (and
+	// therefore longest) number it can be is 4294967295. This number is 10
+	// characters long, thus the 10 character limit
+	return fmt.Sprintf("%s-%s", podname, hash)
+}
+
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
 // It can be specified if the workflow should continue when the pod errors, fails or both.
 type ContinueOn struct {

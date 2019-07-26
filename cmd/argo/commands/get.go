@@ -429,7 +429,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
-		args = []interface{}{nodePrefix, nodeName, node.ID, duration, node.Message}
+		args = []interface{}{nodePrefix, nodeName, wf.PodName(node.Name, node.ID), duration, node.Message}
 	} else {
 		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
 	}

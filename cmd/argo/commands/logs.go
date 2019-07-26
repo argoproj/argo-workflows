@@ -156,7 +156,7 @@ func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*
 		go func() {
 			defer wg.Done()
 			var podLogs []logEntry
-			err := p.getPodLogs(context.Background(), getDisplayName(node), node.ID, wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
+			err := p.getPodLogs(context.Background(), getDisplayName(node), wf.PodName(node.Name, node.ID), wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
 				podLogs = append(podLogs, entry)
 			})
 
