@@ -118,7 +118,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
-	if submitOpts.DryRun{
+	if submitOpts.DryRun {
 		if cliOpts.watch {
 			log.Fatalf("--watch cannot be combined with --dry-run")
 		}
@@ -136,7 +136,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	var workflowNames []string
 
 	for _, wf := range workflows {

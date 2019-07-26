@@ -142,7 +142,7 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
-	DryRun		   bool					  // --dry-run
+	DryRun         bool                   // --dry-run
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
@@ -246,7 +246,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if err != nil {
 		return nil, err
 	}
-	if opts.DryRun  {
+	if opts.DryRun {
 		// Keep the workflow metadata because it will be removed by the Post request
 		workflowTypeMeta := wf.TypeMeta
 		err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().

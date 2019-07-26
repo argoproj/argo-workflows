@@ -3,10 +3,11 @@ package controller
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/argoproj/argo/workflow/config"
 	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/argoproj/argo/workflow/config"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
