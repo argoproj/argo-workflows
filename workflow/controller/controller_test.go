@@ -7,16 +7,16 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/argoproj/argo/workflow/config"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/workflow/config"
 )
 
 var helloWorldWf = `

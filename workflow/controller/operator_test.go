@@ -6,17 +6,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/argoproj/argo/workflow/config"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // TestOperateWorkflowPanicRecover ensures we can recover from unexpected panics
@@ -1458,7 +1458,7 @@ spec:
           - name: message
             value: "{{item}}"
         withParam: "{{workflow.parameters.input}}"
-  - name: whalesay 
+  - name: whalesay
     inputs:
       parameters:
       - name: message

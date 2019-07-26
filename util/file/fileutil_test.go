@@ -3,10 +3,12 @@ package file_test
 import (
 	"archive/tar"
 	"bytes"
-	"github.com/argoproj/argo/util/file"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo/util/file"
 )
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
