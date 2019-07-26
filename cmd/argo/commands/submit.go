@@ -52,6 +52,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "display the declarative form without creating the flow")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
@@ -117,19 +118,34 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
+	if submitOpts.DryRun{
+		if cliOpts.watch {
+			log.Fatalf("--watch cannot be combined with --dry-run")
+		}
+		if cliOpts.wait {
+			log.Fatalf("--wait cannot be combined with --dry-run")
+		}
+	}
+
 	if len(workflows) == 0 {
 		log.Println("No Workflow found in given files")
 		os.Exit(1)
 	}
 
+	namespace, _, err := clientConfig.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	var workflowNames []string
+
 	for _, wf := range workflows {
 		wf.Spec.Priority = cliOpts.priority
 		wfClient := defaultWFClient
 		if wf.Namespace != "" {
 			wfClient = InitWorkflowClient(wf.Namespace)
 		}
-		created, err := util.SubmitWorkflow(wfClient, &wf, submitOpts)
+		created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
