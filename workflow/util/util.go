@@ -31,6 +31,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/util/file"
@@ -141,11 +142,12 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
+	DryRun		   bool					  // --dry-run
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -244,7 +246,21 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 	if err != nil {
 		return nil, err
 	}
-	return wfIf.Create(wf)
+	if opts.DryRun  {
+		// Keep the workflow metadata because it will be removed by the Post request
+		workflowTypeMeta := wf.TypeMeta
+		err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+			Namespace(namespace).
+			Resource("workflows").
+			Body(wf).
+			Param("dryRun", "All").
+			Do().
+			Into(wf)
+		wf.TypeMeta = workflowTypeMeta
+		return wf, err
+	} else {
+		return wfIf.Create(wf)
+	}
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
