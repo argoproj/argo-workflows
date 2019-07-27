@@ -283,6 +283,9 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.String()
+	if woc.wf.Spec.Priority != nil {
+		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.wf.Spec.Priority))
+	}
 	for char := range strftime.FormatChars {
 		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
@@ -1663,8 +1666,15 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
+	case []interface{}:
+		byteVal, err := json.Marshal(val)
+		if err != nil {
+			return "", errors.InternalWrapError(err)
+		}
+		replaceMap["item"] = string(byteVal)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", index, val)
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %s", index, val)
 	}
 	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 	if err != nil {

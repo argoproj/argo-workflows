@@ -863,7 +863,7 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(nil, task.Name, tmpl.DAG.Tasks)
 		for _, ancestor := range ancestry {
 			ancestorTask := nameToTask[ancestor]
 			resolvedTmpl := resolvedTemplates[ancestor]

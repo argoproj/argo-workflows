@@ -446,33 +446,6 @@ func IsPodTemplate(tmpl *wfv1.Template) bool {
 	return false
 }
 
-// GetTaskAncestry returns a list of taskNames which are ancestors of this task
-func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
-	taskByName := make(map[string]wfv1.DAGTask)
-	for _, task := range tasks {
-		taskByName[task.Name] = task
-	}
-
-	visited := make(map[string]bool)
-	var getAncestry func(s string)
-	getAncestry = func(currTask string) {
-		task := taskByName[currTask]
-		for _, depTask := range task.Dependencies {
-			getAncestry(depTask)
-		}
-		if currTask != taskName {
-			visited[currTask] = true
-		}
-	}
-
-	getAncestry(taskName)
-	ancestry := make([]string, 0)
-	for ancestor := range visited {
-		ancestry = append(ancestry, ancestor)
-	}
-	return ancestry
-}
-
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
 // SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects

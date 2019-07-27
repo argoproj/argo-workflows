@@ -109,8 +109,10 @@ const (
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
-	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflows metadata.creationTimestamp field
+	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflow's metadata.creationTimestamp field
 	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
+	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
+	GlobalVarWorkflowPriority = "workflow.priority"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 

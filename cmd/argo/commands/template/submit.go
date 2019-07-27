@@ -46,7 +46,7 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 	if cliOpts == nil {
 		cliOpts = &cliSubmitOpts{}
 	}
-	wftmplClient := InitWorkflowTemplateClient()
+	defaultWFTmplClient := InitWorkflowTemplateClient()
 	var workflowTemplates []wfv1.WorkflowTemplate
 	if len(filePaths) == 1 && filePaths[0] == "-" {
 		reader := bufio.NewReader(os.Stdin)
@@ -80,15 +80,14 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 		}
 	}
 
-	namespace, _, err := clientConfig.Namespace()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	for _, wftmpl := range workflowTemplates {
 		err := validate.ValidateWorkflowTemplate(wfClientset, namespace, &wftmpl)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow template: %v", err)
+		}
+		wftmplClient := defaultWFTmplClient
+		if wftmpl.Namespace != "" {
+			wftmplClient = InitWorkflowTemplateClient(wftmpl.Namespace)
 		}
 		created, err := wftmplClient.Create(&wftmpl)
 		if err != nil {

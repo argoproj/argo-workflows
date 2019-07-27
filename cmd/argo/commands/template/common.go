@@ -17,6 +17,7 @@ var (
 	clientset    *kubernetes.Clientset
 	wfClientset  *wfclientset.Clientset
 	wftmplClient v1alpha1.WorkflowTemplateInterface
+	namespace    string
 )
 
 func initKubeClient() *kubernetes.Clientset {
@@ -43,7 +44,6 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 		return wftmplClient
 	}
 	initKubeClient()
-	var namespace string
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]

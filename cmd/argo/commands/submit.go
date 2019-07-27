@@ -117,9 +117,9 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
-	namespace, _, err := clientConfig.Namespace()
-	if err != nil {
-		log.Fatal(err)
+	if len(workflows) == 0 {
+		log.Println("No Workflow found in given files")
+		os.Exit(1)
 	}
 
 	var workflowNames []string
