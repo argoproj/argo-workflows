@@ -80,6 +80,11 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 		}
 	}
 
+	if len(workflowTemplates) == 0 {
+		log.Println("No WorkflowTemplate found in given files")
+		os.Exit(1)
+	}
+
 	for _, wftmpl := range workflowTemplates {
 		err := validate.ValidateWorkflowTemplate(wfClientset, namespace, &wftmpl)
 		if err != nil {
