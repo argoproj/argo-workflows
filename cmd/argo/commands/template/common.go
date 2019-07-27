@@ -3,7 +3,7 @@ package template
 import (
 	"log"
 
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -15,7 +15,7 @@ var (
 	restConfig   *rest.Config
 	clientConfig clientcmd.ClientConfig
 	clientset    *kubernetes.Clientset
-	wfClientset  *wfclientset.Clientset
+	wfClientset  *versioned.Clientset
 	wftmplClient v1alpha1.WorkflowTemplateInterface
 	namespace    string
 )
@@ -53,7 +53,7 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 			log.Fatal(err)
 		}
 	}
-	wfClientset = wfclientset.NewForConfigOrDie(restConfig)
+	wfClientset = versioned.NewForConfigOrDie(restConfig)
 	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
 	return wftmplClient
 }
