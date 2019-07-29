@@ -79,7 +79,13 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx.globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
 	ctx.globalParams[common.GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
-		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+		if param.Name != "" {
+			if param.Value != nil {
+				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
+			} else {
+				ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+			}
+		}
 	}
 
 	for k := range ctx.wf.ObjectMeta.Annotations {
