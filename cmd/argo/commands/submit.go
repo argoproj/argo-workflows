@@ -139,14 +139,14 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		wfClient := defaultWFClient
 		if wf.Namespace != "" {
 			wfClient = InitWorkflowClient(wf.Namespace)
-		} /*else {
+		} else {
 			// This is here to avoid passing an empty namespace when using --dry-run
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
 				log.Fatal(err)
 			}
 			wf.Namespace = namespace
-		}*/
+		}
 		created, err := util.SubmitWorkflow(wfClient, wfClientset, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
