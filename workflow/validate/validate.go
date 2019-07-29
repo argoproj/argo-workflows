@@ -147,34 +147,34 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		}
 	}
 
-	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
+	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
 	}
-	switch tmpl.GetType() {
+	switch newTmpl.GetType() {
 	case wfv1.TemplateTypeSteps:
-		err = ctx.validateSteps(scope, tmpl)
+		err = ctx.validateSteps(scope, newTmpl)
 	case wfv1.TemplateTypeDAG:
-		err = ctx.validateDAG(scope, tmpl)
+		err = ctx.validateDAG(scope, newTmpl)
 	default:
-		err = validateLeaf(scope, tmpl)
+		err = validateLeaf(scope, newTmpl)
 	}
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(scope, tmpl)
+	err = validateOutputs(scope, newTmpl)
 	if err != nil {
 		return err
 	}
-	err = ctx.validateBaseImageOutputs(tmpl)
+	err = ctx.validateBaseImageOutputs(newTmpl)
 	if err != nil {
 		return err
 	}
-	if tmpl.ArchiveLocation != nil {
-		err = validateArtifactLocation("templates.archiveLocation", *tmpl.ArchiveLocation)
+	if newTmpl.ArchiveLocation != nil {
+		err = validateArtifactLocation("templates.archiveLocation", *newTmpl.ArchiveLocation)
 		if err != nil {
 			return err
 		}
