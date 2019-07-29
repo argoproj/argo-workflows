@@ -67,6 +67,5 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
-
 	return nil
 }
