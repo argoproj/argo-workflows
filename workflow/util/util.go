@@ -147,7 +147,7 @@ type SubmitOpts struct {
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -250,7 +250,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		// Keep the workflow metadata because it will be removed by the Post request
 		workflowTypeMeta := wf.TypeMeta
 		err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
-			Namespace(namespace).
+			Namespace(wf.Namespace).
 			Resource("workflows").
 			Body(wf).
 			Param("dryRun", "All").

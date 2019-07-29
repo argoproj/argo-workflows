@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"log"
 	"os"
 
 	"github.com/argoproj/argo/workflow/util"
@@ -24,17 +23,12 @@ func NewResubmitCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			namespace, _, err := clientConfig.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
 			errors.CheckError(err)
 			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
 			errors.CheckError(err)
-			created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, newWF, nil)
+			created, err := util.SubmitWorkflow(wfClient, wfClientset, newWF, nil)
 			errors.CheckError(err)
 			printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
 			waitOrWatch([]string{created.Name}, cliSubmitOpts)
