@@ -247,20 +247,29 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 	if opts.DryRun {
-		// Keep the workflow metadata because it will be removed by the Post request
-		workflowTypeMeta := wf.TypeMeta
-		err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
-			Namespace(wf.Namespace).
-			Resource("workflows").
-			Body(wf).
-			Param("dryRun", "All").
-			Do().
-			Into(wf)
-		wf.TypeMeta = workflowTypeMeta
+		wf, err := CreateDryRun(wf, wfClientset)
+		if err != nil {
+			return nil, err
+		}
 		return wf, err
 	} else {
 		return wfIf.Create(wf)
 	}
+}
+
+// CreateDryRun fills the workflow with the server's representation without creating it and returns an error, if there is any
+func CreateDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+	// Keep the workflow metadata because it will be overwritten by the Post request
+	workflowTypeMeta := wf.TypeMeta
+	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+		Namespace(wf.Namespace).
+		Resource("workflows").
+		Body(wf).
+		Param("dryRun", "All").
+		Do().
+		Into(wf)
+	wf.TypeMeta = workflowTypeMeta
+	return wf, err
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
