@@ -47,7 +47,7 @@ RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${G
 ####################################################################################################
 FROM debian:9.6-slim as argoexec-base
 # NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.13.4
+ENV KUBECTL_VERSION=1.15.0
 RUN apt-get update && \
     apt-get install -y curl jq procps git tar mime-support && \
     rm -rf /var/lib/apt/lists/* && \
