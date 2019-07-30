@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/argoproj/argo/workflow/config"
 	"strings"
@@ -1006,6 +1007,43 @@ func TestResolveIOPathPlaceholders(t *testing.T) {
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 
 	assert.Equal(t, []string{"sh", "-c", "head -n 3 <\"/inputs/text/data\" | tee \"/outputs/text/data\" | wc -l > \"/outputs/actual-lines-count/data\""}, pods.Items[0].Spec.Containers[1].Command)
+}
+
+var outputValuePlaceholders = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-placeholders-wf
+spec:
+  entrypoint: tell-pod-name
+  templates:
+  - name: tell-pod-name
+    outputs:
+      parameters:
+      - name: pod-name
+        value: "{{pod.name}}"
+    container:
+      image: busybox
+`
+
+func TestResolvePlaceholdersInOutputValues(t *testing.T) {
+	wf := unmarshalWF(outputValuePlaceholders)
+	woc := newWoc(*wf)
+	woc.controller.Config.ArtifactRepository.S3 = new(S3ArtifactRepository)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
+	var template wfv1.Template
+	err = json.Unmarshal([]byte(templateString), &template)
+	assert.Nil(t, err)
+	parameterValue := template.Outputs.Parameters[0].Value
+	assert.NotNil(t, parameterValue)
+	assert.NotEmpty(t, *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
 }
 
 var resourceTemplate = `
