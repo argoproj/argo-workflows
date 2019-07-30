@@ -52,7 +52,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
-	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "display the declarative form without creating the flow")
+	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "display the declarative form without creating the workflow")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
@@ -124,6 +124,9 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 		if cliOpts.wait {
 			log.Fatalf("--wait cannot be combined with --dry-run")
+		}
+		if cliOpts.output == "" {
+			log.Fatalf("--dry-run should have an output option")
 		}
 	}
 
