@@ -1293,7 +1293,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		return node
 	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1365,14 +1365,57 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+// hasOutputResultRef will check given template output has any reference
+func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
+
+	var variableRefName string
+	if parentTmpl.DAG != nil {
+		variableRefName = "{{tasks." + name + ".outputs.result}}"
+	} else if parentTmpl.Steps != nil {
+		variableRefName = "{{steps." + name + ".outputs.result}}"
+	}
+
+	jsonValue, err := json.Marshal(parentTmpl)
+	if err != nil {
+		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
+	}
+
+	return strings.Contains(string(jsonValue), variableRefName)
+}
+
+// getStepOrDAGTaskName will extract the node from NodeStatus Name
+func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
+	if strings.Contains(nodeName, ".") {
+		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
+		// Check retry scenario
+		if hasRetryStrategy {
+			if indx := strings.LastIndex(name, "("); indx > 0 {
+				return name[0:indx]
+			}
+		}
+		return name
+	}
+	return nodeName
+}
+
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+
+	boundaryNode := woc.wf.Status.Nodes[boundaryID]
+	parentTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
+
+	includeScriptOutput := false
+	if parentTemplate != nil {
+		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
+	}
 	node := woc.getNodeByName(nodeName)
+
 	if node != nil {
 		return node
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl, includeScriptOutput)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1607,7 +1650,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	mainCtr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}

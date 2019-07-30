@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/argoproj/argo/workflow/config"
+	"strings"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -1160,6 +1161,127 @@ func TestResourceWithOwnerReferenceTemplate(t *testing.T) {
 	}
 }
 
+var stepScriptTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: generate
+        template: gen-random-int
+    - - name: print
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate.outputs.result}}"
+
+  - name: gen-random-int
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+var dagScriptTmpl = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-target-
+spec:
+  entrypoint: dag-target
+  arguments:
+    parameters:
+    - name: target
+      value: E
+
+  templates:
+  - name: dag-target
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters: [{name: message, value: A}]
+      - name: B
+        template: echo
+        arguments:
+          parameters: [{name: message, value: B}]
+      - name: C
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters: [{name: message, value: "{{tasks.A.outputs.result}}"}]
+  - name: echo
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'`
+
+func TestStepWFGetNodeName(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(stepScriptTmpl)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	assert.True(t, hasOutputResultRef("generate", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("print-message", &wf.Spec.Templates[0]))
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "generate") {
+			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "generate")
+		} else if strings.Contains(node.Name, "print-message") {
+			assert.True(t, getStepOrDAGTaskName(node.Name, &wf.Spec.Templates[0].RetryStrategy != nil) == "print-message")
+		}
+	}
+}
+
+func TestDAGWFGetNodeName(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(dagScriptTmpl)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	assert.True(t, hasOutputResultRef("A", &wf.Spec.Templates[0]))
+	assert.False(t, hasOutputResultRef("B", &wf.Spec.Templates[0]))
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, ".A") {
+			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "A")
+		}
+		if strings.Contains(node.Name, ".B") {
+			assert.True(t, getStepOrDAGTaskName(node.Name, wf.Spec.Templates[0].RetryStrategy != nil) == "B")
+		}
+	}
+}
+
 var withParamAsJsonList = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1181,14 +1303,14 @@ spec:
           - name: message
             value: "{{item}}"
         withParam: "{{workflow.parameters.input}}"
-  - name: whalesay
+  - name: whalesay 
     inputs:
       parameters:
       - name: message
-    container:
+    script:
       image: alpine:latest
       command: [sh, -c]
-      args: ["echo "]
+      args: ["echo result was: {{inputs.parameters.message}}"]
 `
 
 func TestWithParamAsJsonList(t *testing.T) {
