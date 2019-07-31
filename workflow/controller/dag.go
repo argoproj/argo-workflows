@@ -3,11 +3,12 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/valyala/fasttemplate"
-	"strings"
 )
 
 // dagContext holds context information about this context's DAG

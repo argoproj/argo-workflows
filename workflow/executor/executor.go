@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/argoproj/argo/util"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
