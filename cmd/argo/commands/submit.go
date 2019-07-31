@@ -52,7 +52,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
-	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "display the declarative form without creating the workflow")
+	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
@@ -118,15 +118,15 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		}
 	}
 
-	if submitOpts.DryRun {
+	if submitOpts.ServerDryRun {
 		if cliOpts.watch {
-			log.Fatalf("--watch cannot be combined with --dry-run")
+			log.Fatalf("--watch cannot be combined with --server-dry-run")
 		}
 		if cliOpts.wait {
-			log.Fatalf("--wait cannot be combined with --dry-run")
+			log.Fatalf("--wait cannot be combined with --server-dry-run")
 		}
 		if cliOpts.output == "" {
-			log.Fatalf("--dry-run should have an output option")
+			log.Fatalf("--server-dry-run should have an output option")
 		}
 	}
 
@@ -143,7 +143,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if wf.Namespace != "" {
 			wfClient = InitWorkflowClient(wf.Namespace)
 		} else {
-			// This is here to avoid passing an empty namespace when using --dry-run
+			// This is here to avoid passing an empty namespace when using --server-dry-run
 			namespace, _, err := clientConfig.Namespace()
 			if err != nil {
 				log.Fatal(err)

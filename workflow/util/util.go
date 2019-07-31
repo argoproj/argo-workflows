@@ -142,7 +142,7 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
-	DryRun         bool                   // --dry-run
+	ServerDryRun   bool                   // --server-dry-run
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
@@ -246,8 +246,8 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if err != nil {
 		return nil, err
 	}
-	if opts.DryRun {
-		wf, err := CreateDryRun(wf, wfClientset)
+	if opts.ServerDryRun {
+		wf, err := CreateServerDryRun(wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
@@ -257,8 +257,8 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	}
 }
 
-// CreateDryRun fills the workflow with the server's representation without creating it and returns an error, if there is any
-func CreateDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
+func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
 	// Keep the workflow metadata because it will be overwritten by the Post request
 	workflowTypeMeta := wf.TypeMeta
 	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
