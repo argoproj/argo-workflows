@@ -55,6 +55,7 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
 	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
@@ -119,15 +120,30 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.wait {
 			log.Fatalf("--wait cannot be combined with --watch")
 		}
+		if submitOpts.DryRun {
+			log.Fatalf("--watch cannot be combined with --dry-run")
+		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--watch cannot be combined with --server-dry-run")
+		}
+	}
+
+	if cliOpts.wait {
+		if submitOpts.DryRun {
+			log.Fatalf("--wait cannot be combined with --dry-run")
+		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--wait cannot be combined with --server-dry-run")
+		}
+	}
+
+	if submitOpts.DryRun {
+		if cliOpts.output == "" {
+			log.Fatalf("--dry-run should have an output option")
+		}
 	}
 
 	if submitOpts.ServerDryRun {
-		if cliOpts.watch {
-			log.Fatalf("--watch cannot be combined with --server-dry-run")
-		}
-		if cliOpts.wait {
-			log.Fatalf("--wait cannot be combined with --server-dry-run")
-		}
 		if cliOpts.output == "" {
 			log.Fatalf("--server-dry-run should have an output option")
 		}
