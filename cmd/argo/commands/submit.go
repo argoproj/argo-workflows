@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
@@ -128,6 +131,17 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.output == "" {
 			log.Fatalf("--server-dry-run should have an output option")
 		}
+		serverVersion, err := wfClientset.Discovery().ServerVersion()
+		if err != nil {
+			log.Fatalf("Unexpected error while getting the server's api version")
+		}
+		isCompatible, err := checkServerVersionForDryRun(serverVersion)
+		if err != nil {
+			log.Fatalf("Unexpected error while checking the server's api version compatibility with --server-dry-run")
+		}
+		if !isCompatible {
+			log.Fatalf("--server-dry-run is not available for server api versions older than v1.12")
+		}
 	}
 
 	if len(workflows) == 0 {
@@ -158,6 +172,24 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		workflowNames = append(workflowNames, created.Name)
 	}
 	waitOrWatch(workflowNames, *cliOpts)
+}
+
+// Checks whether the server has support for the dry-run option
+func checkServerVersionForDryRun(serverVersion *apimachineryversion.Info) (bool, error) {
+	majorVersion, err := strconv.Atoi(serverVersion.Major)
+	if err != nil {
+		return false, err
+	}
+	minorVersion, err := strconv.Atoi(serverVersion.Minor)
+	if err != nil {
+		return false, err
+	}
+	if majorVersion < 1 {
+		return false, nil
+	} else if majorVersion == 1 && minorVersion < 12 {
+		return false, nil
+	}
+	return true, nil
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
