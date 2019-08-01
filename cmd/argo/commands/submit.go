@@ -141,6 +141,9 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.output == "" {
 			log.Fatalf("--dry-run should have an output option")
 		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--dry-run cannot be combined with --server-dry-run")
+		}
 	}
 
 	if submitOpts.ServerDryRun {
