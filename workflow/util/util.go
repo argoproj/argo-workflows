@@ -28,8 +28,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
 
-	"k8s.io/apiserver/pkg/storage/names"
-
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -250,10 +248,6 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 
-	if wf.ObjectMeta.Name == "" && wf.ObjectMeta.GenerateName == "" {
-		log.Fatalf("name and generateName cannot be both empty")
-	}
-
 	if opts.ServerDryRun {
 		wf, err := CreateServerDryRun(wf, wfClientset)
 		if err != nil {
@@ -261,9 +255,6 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		}
 		return wf, err
 	} else if opts.DryRun {
-		if wf.ObjectMeta.Name == "" {
-			wf.ObjectMeta.Name = names.SimpleNameGenerator.GenerateName(wf.ObjectMeta.GenerateName)
-		}
 		return wf, nil
 	} else {
 		return wfIf.Create(wf)
