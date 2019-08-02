@@ -86,6 +86,7 @@ func NewLogsCommand() *cobra.Command {
 	command.Flags().StringVar(&sinceTime, "since-time", "", "Only return logs after a specific date (RFC3339). Defaults to all logs. Only one of since-time / since may be used.")
 	command.Flags().Int64Var(&tail, "tail", -1, "Lines of recent log file to display. Defaults to -1 with no selector, showing all log lines otherwise 10, if a selector is provided.")
 	command.Flags().BoolVar(&printer.timestamps, "timestamps", false, "Include timestamps on each line in the log output")
+	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	return command
 }
 

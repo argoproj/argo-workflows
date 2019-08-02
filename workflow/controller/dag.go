@@ -52,13 +52,38 @@ func (d *dagContext) taskNodeID(taskName string) string {
 	return d.wf.NodeID(nodeName)
 }
 
-func (d *dagContext) getTaskNode(taskName string) *wfv1.NodeStatus {
+// GetTaskNode returns the node status of a task.
+func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
 	nodeID := d.taskNodeID(taskName)
 	node, ok := d.wf.Status.Nodes[nodeID]
 	if !ok {
 		return nil
 	}
 	return &node
+}
+
+// Assert all branch finished for failFast:disable function
+func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
+	// We should ensure that from the bottom to the top,
+	// all the nodes of this branch have at least one failure.
+	// If successful, we should continue to run down until the leaf node
+	taskNode := d.GetTaskNode(targetTaskName)
+	if taskNode == nil {
+		taskObject := d.getTask(targetTaskName)
+		if taskObject != nil {
+			// Make sure all the dependency node have one failed
+			for _, tmpTaskName := range taskObject.Dependencies {
+				// Recursive check until top root node
+				return d.assertBranchFinished(tmpTaskName)
+			}
+		}
+	} else if !taskNode.Successful() {
+		return true
+	}
+
+	// In failFast situation, if node is successful, it will run to leaf node, above
+	// the function, we have already check the leaf node status
+	return false
 }
 
 // assessDAGPhase assesses the overall DAG status
@@ -87,7 +112,32 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 			retriesExhausted = false
 		}
 	}
+
 	if unsuccessfulPhase != "" {
+		// If failFast set to false, we should return Running to continue this workflow for other DAG branch
+		if d.tmpl.DAG.FailFast != nil && !*d.tmpl.DAG.FailFast {
+			tmpOverAllFinished := true
+			// If all the nodes have finished, we should mark the failed node to finish overall workflow
+			// So we should check all the targetTasks branch have finished
+			for _, tmpDepName := range targetTasks {
+				tmpDepNode := d.GetTaskNode(tmpDepName)
+				if tmpDepNode == nil {
+					// If leaf node is nil, we should check it's parent node and recursive check
+					if !d.assertBranchFinished(tmpDepName) {
+						tmpOverAllFinished = false
+					}
+				} else if tmpDepNode.Type == wfv1.NodeTypeRetry && hasMoreRetries(tmpDepNode, d.wf) {
+					tmpOverAllFinished = false
+					break
+				}
+
+				//If leaf node has finished, we should mark the error workflow
+			}
+			if !tmpOverAllFinished {
+				return wfv1.NodeRunning
+			}
+		}
+
 		// if we were unsuccessful, we can return *only* if all retry nodes have ben exhausted.
 		if retriesExhausted {
 			return unsuccessfulPhase
@@ -95,7 +145,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	}
 	// There are no currently running tasks. Now check if our dependencies were met
 	for _, depName := range targetTasks {
-		depNode := d.getTaskNode(depName)
+		depNode := d.GetTaskNode(depName)
 		if depNode == nil {
 			return wfv1.NodeRunning
 		}
@@ -191,7 +241,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 		scope: make(map[string]interface{}),
 	}
 	for _, task := range tmpl.DAG.Tasks {
-		taskNode := dagCtx.getTaskNode(task.Name)
+		taskNode := dagCtx.GetTaskNode(task.Name)
 		if taskNode == nil {
 			// Can happen when dag.target was specified
 			continue
@@ -212,7 +262,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmpl *wfv1.Template, boun
 	node = woc.getNodeByName(nodeName)
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
-		depNode := dagCtx.getTaskNode(depName)
+		depNode := dagCtx.GetTaskNode(depName)
 		if depNode == nil {
 			woc.log.Println(depName)
 		}
@@ -233,7 +283,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	dagCtx.visited[taskName] = true
 
-	node := dagCtx.getTaskNode(taskName)
+	node := dagCtx.GetTaskNode(taskName)
 	if node != nil && node.Completed() {
 		return
 	}
@@ -243,7 +293,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	dependenciesSuccessful := true
 	nodeName := dagCtx.taskNodeName(taskName)
 	for _, depName := range task.Dependencies {
-		depNode := dagCtx.getTaskNode(depName)
+		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
 				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
@@ -288,7 +338,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		} else {
 			// Otherwise, add all outbound nodes of our dependencies as parents to this node
 			for _, depName := range task.Dependencies {
-				depNode := dagCtx.getTaskNode(depName)
+				depNode := dagCtx.GetTaskNode(depName)
 				outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
 				woc.log.Infof("DAG outbound nodes of %s are %s", depNode, outboundNodeIDs)
 				for _, outNodeID := range outboundNodeIDs {
@@ -326,7 +376,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 
 	for _, t := range expandedTasks {
-		node = dagCtx.getTaskNode(t.Name)
+		node = dagCtx.GetTaskNode(t.Name)
 		taskNodeName := dagCtx.taskNodeName(t.Name)
 		if node == nil {
 			woc.log.Infof("All of node %s dependencies %s completed", taskNodeName, task.Dependencies)
@@ -353,7 +403,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		groupPhase := wfv1.NodeSucceeded
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
-			node := dagCtx.getTaskNode(t.Name)
+			node := dagCtx.GetTaskNode(t.Name)
 			if node == nil || !node.Completed() {
 				return
 			}
@@ -375,9 +425,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	}
 	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, &scope)
 
-	ancestors := common.GetTaskAncestry(task.Name, dagCtx.tasks)
+	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
-		ancestorNode := dagCtx.getTaskNode(ancestor)
+		ancestorNode := dagCtx.GetTaskNode(ancestor)
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
 			var ancestorNodes []wfv1.NodeStatus

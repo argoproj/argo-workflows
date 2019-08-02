@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	argokubeerr "github.com/argoproj/pkg/kube/errors"
-	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +31,8 @@ import (
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+	argokubeerr "github.com/argoproj/pkg/kube/errors"
+	"github.com/argoproj/pkg/strftime"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -279,6 +279,9 @@ func (woc *wfOperationCtx) setGlobalParameters() {
 	woc.globalParams[common.GlobalVarWorkflowNamespace] = woc.wf.ObjectMeta.Namespace
 	woc.globalParams[common.GlobalVarWorkflowUID] = string(woc.wf.ObjectMeta.UID)
 	woc.globalParams[common.GlobalVarWorkflowCreationTimestamp] = woc.wf.ObjectMeta.CreationTimestamp.String()
+	if woc.wf.Spec.Priority != nil {
+		woc.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*woc.wf.Spec.Priority))
+	}
 	for char := range strftime.FormatChars {
 		cTimeVar := fmt.Sprintf("%s.%s", common.GlobalVarWorkflowCreationTimestamp, string(char))
 		woc.globalParams[cTimeVar] = strftime.Format("%"+string(char), woc.wf.ObjectMeta.CreationTimestamp.Time)
@@ -325,8 +328,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.wf.Status.CompressedNodes != "" {
 		woc.wf.Status.Nodes = nil
 	}
+	var wfDB = woc.wf.DeepCopy()
+	if woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload() {
+		woc.wf.Status.Nodes = nil
+		woc.wf.Status.CompressedNodes = ""
+	}
 
-	_, err = wfClient.Update(woc.wf)
+	wf, err := wfClient.Update(woc.wf)
+	wfDB.ResourceVersion = wf.ResourceVersion
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
 		if argokubeerr.IsRequestEntityTooLargeErr(err) {
@@ -343,6 +352,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 			return
 		}
 	}
+
+	if woc.controller.wfDBctx != nil {
+		err = woc.controller.wfDBctx.Save(wfDB)
+		if err != nil {
+			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
+			if woc.controller.wfDBctx.IsNodeStatusOffload() {
+				woc.markWorkflowFailed(err.Error())
+				return
+			}
+		}
+	}
+
 	woc.log.Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
@@ -836,7 +857,11 @@ func inferFailedReason(pod *apiv1.Pod) (wfv1.NodePhase, string) {
 			continue
 		}
 		if ctr.State.Terminated.Message != "" {
-			failMessages[ctr.Name] = ctr.State.Terminated.Message
+			errMsg := ctr.State.Terminated.Message
+			if ctr.Name != common.MainContainerName {
+				errMsg = fmt.Sprintf("sidecar '%s' %s", ctr.Name, errMsg)
+			}
+			failMessages[ctr.Name] = errMsg
 			continue
 		}
 		if ctr.State.Terminated.Reason == "OOMKilled" {
@@ -911,9 +936,30 @@ func (woc *wfOperationCtx) createPVCs() error {
 			*metav1.NewControllerRef(woc.wf, wfv1.SchemaGroupVersionKind),
 		}
 		pvc, err := pvcClient.Create(&pvcTmpl)
+		if err != nil && apierr.IsAlreadyExists(err) {
+			woc.log.Infof("%s pvc has already exists. Workflow is re-using it", pvcTmpl.Name)
+			pvc, err = pvcClient.Get(pvcTmpl.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			hasOwnerReference := false
+			for i := range pvc.OwnerReferences {
+				ownerRef := pvc.OwnerReferences[i]
+				if ownerRef.UID == woc.wf.UID {
+					hasOwnerReference = true
+					break
+				}
+			}
+			if !hasOwnerReference {
+				return errors.New(errors.CodeForbidden, "%s pvc has already exists with different ownerreference")
+			}
+		}
+
+		//continue
 		if err != nil {
 			return err
 		}
+
 		vol := apiv1.Volume{
 			Name: refName,
 			VolumeSource: apiv1.VolumeSource{
@@ -1261,7 +1307,7 @@ func (woc *wfOperationCtx) executeContainer(nodeName string, tmpl *wfv1.Template
 		return node
 	}
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
-	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1333,14 +1379,57 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	return &outputs, nil
 }
 
+// hasOutputResultRef will check given template output has any reference
+func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
+
+	var variableRefName string
+	if parentTmpl.DAG != nil {
+		variableRefName = "{{tasks." + name + ".outputs.result}}"
+	} else if parentTmpl.Steps != nil {
+		variableRefName = "{{steps." + name + ".outputs.result}}"
+	}
+
+	jsonValue, err := json.Marshal(parentTmpl)
+	if err != nil {
+		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
+	}
+
+	return strings.Contains(string(jsonValue), variableRefName)
+}
+
+// getStepOrDAGTaskName will extract the node from NodeStatus Name
+func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
+	if strings.Contains(nodeName, ".") {
+		name := nodeName[strings.LastIndex(nodeName, ".")+1:]
+		// Check retry scenario
+		if hasRetryStrategy {
+			if indx := strings.LastIndex(name, "("); indx > 0 {
+				return name[0:indx]
+			}
+		}
+		return name
+	}
+	return nodeName
+}
+
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, boundaryID string) *wfv1.NodeStatus {
+
+	boundaryNode := woc.wf.Status.Nodes[boundaryID]
+	parentTemplate := woc.wf.GetTemplate(boundaryNode.TemplateName)
+
+	includeScriptOutput := false
+	if parentTemplate != nil {
+		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
+	}
 	node := woc.getNodeByName(nodeName)
+
 	if node != nil {
 		return node
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl, includeScriptOutput)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1575,7 +1664,7 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 	mainCtr.VolumeMounts = []apiv1.VolumeMount{
 		volumeMountPodMetadata,
 	}
-	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl)
+	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, tmpl.Name, boundaryID, wfv1.NodeError, err.Error())
 	}
@@ -1608,8 +1697,15 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
+	case []interface{}:
+		byteVal, err := json.Marshal(val)
+		if err != nil {
+			return "", errors.InternalWrapError(err)
+		}
+		replaceMap["item"] = string(byteVal)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, or map. received: %s", index, val)
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %s", index, val)
 	}
 	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 	if err != nil {

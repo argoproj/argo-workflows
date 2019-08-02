@@ -695,7 +695,7 @@ func TestInvalidOutputParam(t *testing.T) {
 	}
 	err = validate(invalidOutputMissingValueFrom)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "valueFrom not specified")
+		assert.Contains(t, err.Error(), "does not have valueFrom or value specified")
 	}
 	err = validate(invalidOutputMultipleValueFrom)
 	if assert.NotNil(t, err) {

@@ -34,6 +34,7 @@ const (
 
 	// AnnotationKeyNodeName is the pod metadata annotation key containing the workflow node name
 	AnnotationKeyNodeName = workflow.FullName + "/node-name"
+
 	// AnnotationKeyNodeMessage is the pod metadata annotation key the executor will use to
 	// communicate errors encountered by the executor during artifact load/save, etc...
 	AnnotationKeyNodeMessage = workflow.FullName + "/node-message"
@@ -109,8 +110,10 @@ const (
 	GlobalVarWorkflowUID = "workflow.uid"
 	// GlobalVarWorkflowStatus is a global workflow variable referencing the workflow's status.phase field
 	GlobalVarWorkflowStatus = "workflow.status"
-	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflows metadata.creationTimestamp field
+	// GlobalVarWorkflowCreationTimestamp is the workflow variable referencing the workflow's metadata.creationTimestamp field
 	GlobalVarWorkflowCreationTimestamp = "workflow.creationTimestamp"
+	// GlobalVarWorkflowPriority is the workflow variable referencing the workflow's priority field
+	GlobalVarWorkflowPriority = "workflow.priority"
 	// LocalVarPodName is a step level variable that references the name of the pod
 	LocalVarPodName = "pod.name"
 
@@ -128,6 +131,8 @@ type ExecutionControl struct {
 	// It is used to signal the executor to terminate a daemoned container. In the future it will be
 	// used to support workflow or steps/dag level timeouts.
 	Deadline *time.Time `json:"deadline,omitempty"`
+	// IncludeScriptOutput is containing flag to include script output
+	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
 }
 
 type ResourceInterface interface {

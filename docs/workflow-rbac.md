@@ -32,13 +32,4 @@ rules:
   verbs:
   - get
   - watch
-# secrets get is used to retrieve credentials to artifact repository. NOTE: starting n Argo v2.3,
-# the API secret access will be removed in favor of volume mounting the secrets to the workflow pod
-# (issue #1072)
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
 ```

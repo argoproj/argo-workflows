@@ -559,19 +559,21 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		if err != nil {
 			return err
 		}
-		tmplType := tmpl.GetType()
-		switch tmplType {
-		case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
-			if param.ValueFrom.Path == "" {
-				return errors.Errorf(errors.CodeBadRequest, "%s.path must be specified for %s templates", paramRef, tmplType)
-			}
-		case wfv1.TemplateTypeResource:
-			if param.ValueFrom.JQFilter == "" && param.ValueFrom.JSONPath == "" {
-				return errors.Errorf(errors.CodeBadRequest, "%s .jqFilter or jsonPath must be specified for %s templates", paramRef, tmplType)
-			}
-		case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
-			if param.ValueFrom.Parameter == "" {
-				return errors.Errorf(errors.CodeBadRequest, "%s.parameter must be specified for %s templates", paramRef, tmplType)
+		if param.ValueFrom != nil {
+			tmplType := tmpl.GetType()
+			switch tmplType {
+			case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript:
+				if param.ValueFrom.Path == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s.path must be specified for %s templates", paramRef, tmplType)
+				}
+			case wfv1.TemplateTypeResource:
+				if param.ValueFrom.JQFilter == "" && param.ValueFrom.JSONPath == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s .jqFilter or jsonPath must be specified for %s templates", paramRef, tmplType)
+				}
+			case wfv1.TemplateTypeDAG, wfv1.TemplateTypeSteps:
+				if param.ValueFrom.Parameter == "" {
+					return errors.Errorf(errors.CodeBadRequest, "%s.parameter must be specified for %s templates", paramRef, tmplType)
+				}
 			}
 		}
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
@@ -631,8 +633,14 @@ func (ctx *wfValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error 
 
 // validateOutputParameter verifies that only one of valueFrom is defined in an output
 func validateOutputParameter(paramRef string, param *wfv1.Parameter) error {
+	if param.ValueFrom != nil && param.Value != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s has both valueFrom and value specified. Choose one.", paramRef)
+	}
+	if param.Value != nil {
+		return nil
+	}
 	if param.ValueFrom == nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s.valueFrom not specified", paramRef)
+		return errors.Errorf(errors.CodeBadRequest, "%s does not have valueFrom or value specified", paramRef)
 	}
 	paramTypes := 0
 	for _, value := range []string{param.ValueFrom.Path, param.ValueFrom.JQFilter, param.ValueFrom.JSONPath, param.ValueFrom.Parameter} {
@@ -767,7 +775,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 		for k, v := range scope {
 			taskScope[k] = v
 		}
-		ancestry := common.GetTaskAncestry(task.Name, tmpl.DAG.Tasks)
+		ancestry := common.GetTaskAncestry(nil, task.Name, tmpl.DAG.Tasks)
 		for _, ancestor := range ancestry {
 			ancestorTask := nameToTask[ancestor]
 			ancestorPrefix := fmt.Sprintf("tasks.%s", ancestor)

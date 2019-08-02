@@ -19,6 +19,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/argoproj/argo/util"
+
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -44,7 +46,7 @@ import (
 
 const (
 	// This directory temporarily stores the tarballs of the artifacts before uploading
-	tempOutArtDir = "/argo/outputs/artifacts"
+	tempOutArtDir = "/tmp/argo/outputs/artifacts"
 )
 
 // WorkflowExecutor is program which runs as the init/wait container
@@ -112,9 +114,11 @@ func NewExecutor(clientset kubernetes.Interface, podName, namespace, podAnnotati
 func (we *WorkflowExecutor) HandleError() {
 	if r := recover(); r != nil {
 		_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, fmt.Sprintf("%v", r))
+		util.WriteTeriminateMessage(fmt.Sprintf("%v", r))
 		log.Fatalf("executor panic: %+v\n%s", r, debug.Stack())
 	} else {
 		if len(we.errors) > 0 {
+			util.WriteTeriminateMessage(we.errors[0].Error())
 			_ = we.AddAnnotation(common.AnnotationKeyNodeMessage, we.errors[0].Error())
 		}
 	}
@@ -444,7 +448,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	if err != nil {
 		return nil, err
 	}
-	tempLogsDir := "/argo/outputs/logs"
+	tempLogsDir := "/tmp/argo/outputs/logs"
 	err = os.MkdirAll(tempLogsDir, os.ModePerm)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -729,6 +733,11 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult() error {
+
+	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
+		log.Infof("No Script output reference in workflow. Capturing script output ignored")
+		return nil
+	}
 	if we.Template.Script == nil {
 		return nil
 	}
@@ -1053,10 +1062,6 @@ func (we *WorkflowExecutor) monitorDeadline(ctx context.Context, annotationsUpda
 
 // KillSidecars kills any sidecars to the main container
 func (we *WorkflowExecutor) KillSidecars() error {
-	if len(we.Template.Sidecars) == 0 {
-		log.Infof("No sidecars")
-		return nil
-	}
 	log.Infof("Killing sidecars")
 	pod, err := we.getPod()
 	if err != nil {

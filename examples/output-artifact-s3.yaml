@@ -18,7 +18,7 @@ spec:
       - name: message
         path: /tmp
         # It is possible to disable tar.gz archiving by setting the archive strategy to 'none'
-        # Disabling archiving has the following limitations on S3: symboloic links will not be
+        # Disabling archiving has the following limitations on S3: symbolic links will not be
         # uploaded, as S3 does not support the concept/file mode of symlinks.
         # archive:
         #   none: {}

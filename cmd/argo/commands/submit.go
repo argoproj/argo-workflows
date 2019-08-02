@@ -50,7 +50,6 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringVar(&submitOpts.GenerateName, "generate-name", "", "override metadata.generateName")
 	command.Flags().StringVar(&submitOpts.Entrypoint, "entrypoint", "", "override entrypoint")
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
-	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
@@ -58,6 +57,13 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
+	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	// Only complete files with appropriate extension.
+	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return command
 }
 
@@ -109,6 +115,11 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.wait {
 			log.Fatalf("--wait cannot be combined with --watch")
 		}
+	}
+
+	if len(workflows) == 0 {
+		log.Println("No Workflow found in given files")
+		os.Exit(1)
 	}
 
 	var workflowNames []string
