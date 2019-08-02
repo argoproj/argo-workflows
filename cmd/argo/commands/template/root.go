@@ -18,7 +18,7 @@ func NewTemplateCommand() *cobra.Command {
 
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewListCommand())
-	command.AddCommand(NewSubmitCommand())
+	command.AddCommand(NewCreateCommand())
 	command.AddCommand(NewDeleteCommand())
 
 	addKubectlFlagsToCmd(command)

@@ -16,35 +16,35 @@ import (
 	"github.com/argoproj/argo/workflow/validate"
 )
 
-type cliSubmitOpts struct {
+type cliCreateOpts struct {
 	output string // --output
 	strict bool   // --strict
 }
 
-func NewSubmitCommand() *cobra.Command {
+func NewCreateCommand() *cobra.Command {
 	var (
-		cliSubmitOpts cliSubmitOpts
+		cliCreateOpts cliCreateOpts
 	)
 	var command = &cobra.Command{
-		Use:   "submit FILE1 FILE2...",
-		Short: "submit a workflow template",
+		Use:   "create FILE1 FILE2...",
+		Short: "create a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
 
-			SubmitWorkflowTemplates(args, &cliSubmitOpts)
+			CreateWorkflowTemplates(args, &cliCreateOpts)
 		},
 	}
-	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
-	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
+	command.Flags().StringVarP(&cliCreateOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
+	command.Flags().BoolVar(&cliCreateOpts.strict, "strict", true, "perform strict workflow validation")
 	return command
 }
 
-func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
+func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	if cliOpts == nil {
-		cliOpts = &cliSubmitOpts{}
+		cliOpts = &cliCreateOpts{}
 	}
 	defaultWFTmplClient := InitWorkflowTemplateClient()
 	var workflowTemplates []wfv1.WorkflowTemplate
@@ -88,7 +88,7 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 	for _, wftmpl := range workflowTemplates {
 		err := validate.ValidateWorkflowTemplate(wfClientset, namespace, &wftmpl)
 		if err != nil {
-			log.Fatalf("Failed to submit workflow template: %v", err)
+			log.Fatalf("Failed to create workflow template: %v", err)
 		}
 		wftmplClient := defaultWFTmplClient
 		if wftmpl.Namespace != "" {
@@ -96,7 +96,7 @@ func SubmitWorkflowTemplates(filePaths []string, cliOpts *cliSubmitOpts) {
 		}
 		created, err := wftmplClient.Create(&wftmpl)
 		if err != nil {
-			log.Fatalf("Failed to submit workflow template: %v", err)
+			log.Fatalf("Failed to create workflow template: %v", err)
 		}
 		printWorkflowTemplate(created, cliOpts.output)
 	}
