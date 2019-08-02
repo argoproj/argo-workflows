@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/util"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/argoproj/argo/util"
 
 	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
@@ -732,6 +733,11 @@ func (we *WorkflowExecutor) GetMainContainerID() (string, error) {
 
 // CaptureScriptResult will add the stdout of a script template as output result
 func (we *WorkflowExecutor) CaptureScriptResult() error {
+
+	if we.ExecutionControl == nil || !we.ExecutionControl.IncludeScriptOutput {
+		log.Infof("No Script output reference in workflow. Capturing script output ignored")
+		return nil
+	}
 	if we.Template.Script == nil {
 		return nil
 	}

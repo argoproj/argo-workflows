@@ -2,8 +2,9 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/argoproj/argo/util"
 	"os"
+
+	"github.com/argoproj/argo/util"
 
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"
