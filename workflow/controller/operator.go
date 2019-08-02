@@ -174,6 +174,7 @@ func (woc *wfOperationCtx) operate() {
 			woc.artifactRepository = repo
 		} else {
 			woc.log.Errorf("Failed to load artifact repository configMap: %+v", err)
+			woc.markWorkflowError(err, true)
 		}
 	}
 
