@@ -21,7 +21,7 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
-	wfClientset      *wfclientset.Clientset
+	wfClientset      *wfclientset.Clientset // wfClientset is used for the server-dry-run submit option
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
