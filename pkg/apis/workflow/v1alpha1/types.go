@@ -696,6 +696,13 @@ type GitArtifact struct {
 	// Revision is the git commit, tag, branch to checkout
 	Revision string `json:"revision,omitempty"`
 
+	// Depth specifies clones/fetches should be shallow and include the given
+	// number of commits from the branch tip
+	Depth *uint `json:"depth,omitempty"`
+
+	// Fetch specifies a number of refs that should be fetched before checkout
+	Fetch []string `json:"fetch,omitempty"`
+
 	// UsernameSecret is the secret selector to the repository username
 	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`
 
