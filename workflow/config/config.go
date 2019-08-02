@@ -1,18 +1,6 @@
 package config
 
 import (
-	"context"
-	"fmt"
-
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-
-	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/metrics"
 	apiv1 "k8s.io/api/core/v1"
@@ -160,17 +148,4 @@ type HDFSArtifactRepository struct {
 
 	// Force copies a file forcibly even if it exists (default: false)
 	Force bool `json:"force,omitempty"`
-}
-
-func getArtifactRepositoryRef(wfc *WorkflowController, configMapName string, key string) (*ArtifactRepository, error) {
-	configStr, err := ReadConfigMapValue(wfc.kubeclientset, wfc.namespace, configMapName, key)
-	if err != nil {
-		return nil, err
-	}
-	var config ArtifactRepository
-	err = yaml.Unmarshal([]byte(configStr), &config)
-	if err != nil {
-		return nil, errors.InternalWrapError(err)
-	}
-	return &config, nil
 }
