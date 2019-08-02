@@ -141,6 +141,7 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
+	Labels         string                 // --labels
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
@@ -155,14 +156,23 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
-	if opts.InstanceID != "" {
-		labels := wf.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-		wf.SetLabels(labels)
+	labels := wf.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
 	}
+	if opts.Labels != "" {
+		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+		}
+		for k, v := range passedLabels {
+			labels[k] = v
+		}
+	}
+	if opts.InstanceID != "" {
+		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
+	}
+	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
