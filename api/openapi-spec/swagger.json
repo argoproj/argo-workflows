@@ -258,6 +258,18 @@
         "repo"
       ],
       "properties": {
+        "depth": {
+          "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
+          "type": "integer",
+          "format": "int32"
+        },
+        "fetch": {
+          "description": "Fetch specifies a number of refs that should be fetched before checkout",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "insecureIgnoreHostKey": {
           "description": "InsecureIgnoreHostKey disables SSH strict host key checking during git clone",
           "type": "boolean"
