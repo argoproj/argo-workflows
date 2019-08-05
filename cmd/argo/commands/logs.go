@@ -356,6 +356,12 @@ func (p *logPrinter) getPodLogs(
 						})
 					}
 				}
+			} else {
+				callback(logEntry{
+					pod:         podName,
+					displayName: displayName,
+					line:        line,
+				})
 			}
 		}
 	}
