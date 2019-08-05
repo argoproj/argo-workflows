@@ -1440,25 +1440,26 @@ func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
 }
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
-	boundaryNode := woc.wf.Status.Nodes[boundaryID]
-	parentTemplate, err := woc.tmplCtx.GetTemplate(&boundaryNode)
-	if err != nil {
-		return woc.initializeNode(nodeName, wfv1.NodeTypePod, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
-	}
-
 	includeScriptOutput := false
-	if parentTemplate != nil {
-		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
-		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
-	}
-	node := woc.getNodeByName(nodeName)
+	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
+		parentTemplate, err := woc.tmplCtx.GetTemplate(&boundaryNode)
+		if err != nil {
+			return woc.initializeNode(nodeName, wfv1.NodeTypePod, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
+		}
 
+		if parentTemplate != nil {
+			name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+			includeScriptOutput = hasOutputResultRef(name, parentTemplate)
+		}
+	}
+
+	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return node
 	}
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
-	_, err = woc.createWorkflowPod(nodeName, mainCtr, tmpl, includeScriptOutput)
+	_, err := woc.createWorkflowPod(nodeName, mainCtr, tmpl, includeScriptOutput)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypePod, orgTmpl, boundaryID, wfv1.NodeError, err.Error())
 	}
