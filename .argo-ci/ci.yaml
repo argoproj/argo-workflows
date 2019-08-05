@@ -28,7 +28,7 @@ spec:
         arguments:
           parameters:
           - name: cmd
-            value: make lint test verify-codegen
+            value: make download-dependencies lint test verify-codegen
 
   - name: ci-builder
     inputs:

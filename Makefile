@@ -185,3 +185,7 @@ release-clis: cli-image
 
 .PHONY: release
 release: release-precheck controller-image executor-image cli-image release-clis
+
+.PHONY: download-dependencies
+download-dependencies:
+	go mod download
