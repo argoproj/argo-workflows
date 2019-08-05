@@ -28,7 +28,7 @@ func NewResubmitCommand() *cobra.Command {
 			errors.CheckError(err)
 			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
 			errors.CheckError(err)
-			created, err := util.SubmitWorkflow(wfClient, newWF, nil)
+			created, err := util.SubmitWorkflow(wfClient, wfClientset, newWF, nil)
 			errors.CheckError(err)
 			printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
 			waitOrWatch([]string{created.Name}, cliSubmitOpts)
