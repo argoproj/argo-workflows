@@ -3,9 +3,10 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/argoproj/argo/workflow/config"
 	"strings"
 	"testing"
+
+	"github.com/argoproj/argo/workflow/config"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
