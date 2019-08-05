@@ -1,4 +1,4 @@
-package commands
+package template
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short: "validate a file or directory of workflow manifests",
+		Short: "validate a file or directory of workflow template manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -29,14 +29,15 @@ func NewLintCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
+			_ = InitWorkflowTemplateClient()
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
 				if len(args) > 1 {
 					fmt.Printf("Validation of a single directory supported")
 					os.Exit(1)
 				}
-				fmt.Printf("Verifying all workflow manifests in directory: %s\n", args[0])
-				err = validate.LintWorkflowDir(wfClientset, namespace, args[0], strict)
+				fmt.Printf("Verifying all workflow template manifests in directory: %s\n", args[0])
+				err = validate.LintWorkflowTemplateDir(wfClientset, namespace, args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -47,7 +48,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = validate.LintWorkflowFile(wfClientset, namespace, yamlFile, strict)
+					err = validate.LintWorkflowTemplateFile(wfClientset, namespace, yamlFile, strict)
 					if err != nil {
 						break
 					}

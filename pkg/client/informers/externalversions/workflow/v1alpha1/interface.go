@@ -10,6 +10,8 @@ import (
 type Interface interface {
 	// Workflows returns a WorkflowInformer.
 	Workflows() WorkflowInformer
+	// WorkflowTemplates returns a WorkflowTemplateInformer.
+	WorkflowTemplates() WorkflowTemplateInformer
 }
 
 type version struct {
@@ -26,4 +28,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Workflows returns a WorkflowInformer.
 func (v *version) Workflows() WorkflowInformer {
 	return &workflowInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// WorkflowTemplates returns a WorkflowTemplateInformer.
+func (v *version) WorkflowTemplates() WorkflowTemplateInformer {
+	return &workflowTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

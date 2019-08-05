@@ -10,6 +10,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -28,6 +30,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
   verbs:
   - create
   - delete
@@ -51,6 +55,8 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
+  - workflowtemplates
+  - workflowtemplates/finalizers
   verbs:
   - create
   - delete

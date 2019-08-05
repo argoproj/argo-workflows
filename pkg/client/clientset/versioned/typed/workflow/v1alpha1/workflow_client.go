@@ -12,6 +12,7 @@ import (
 type ArgoprojV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	WorkflowsGetter
+	WorkflowTemplatesGetter
 }
 
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
@@ -21,6 +22,10 @@ type ArgoprojV1alpha1Client struct {
 
 func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
 	return newWorkflows(c, namespace)
+}
+
+func (c *ArgoprojV1alpha1Client) WorkflowTemplates(namespace string) WorkflowTemplateInterface {
+	return newWorkflowTemplates(c, namespace)
 }
 
 // NewForConfig creates a new ArgoprojV1alpha1Client for the given config.
