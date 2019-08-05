@@ -113,6 +113,9 @@ type WorkflowSpec struct {
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty"`
 
+	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty"`
+
 	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
 	Suspend *bool `json:"suspend,omitempty"`
 
@@ -431,6 +434,11 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
+}
+
+type ArtifactRepositoryRef struct {
+	ConfigMap string `json:"configMap,omitempty"`
+	Key       string `json:"key,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -780,6 +788,13 @@ type GitArtifact struct {
 
 	// Revision is the git commit, tag, branch to checkout
 	Revision string `json:"revision,omitempty"`
+
+	// Depth specifies clones/fetches should be shallow and include the given
+	// number of commits from the branch tip
+	Depth *uint `json:"depth,omitempty"`
+
+	// Fetch specifies a number of refs that should be fetched before checkout
+	Fetch []string `json:"fetch,omitempty"`
 
 	// UsernameSecret is the secret selector to the repository username
 	UsernameSecret *apiv1.SecretKeySelector `json:"usernameSecret,omitempty"`

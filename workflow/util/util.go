@@ -142,6 +142,9 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
+	DryRun         bool                   // --dry-run
+	ServerDryRun   bool                   // --server-dry-run
+	Labels         string                 // --labels
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
@@ -156,14 +159,23 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
-	if opts.InstanceID != "" {
-		labels := wf.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-		wf.SetLabels(labels)
+	labels := wf.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
 	}
+	if opts.Labels != "" {
+		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+		}
+		for k, v := range passedLabels {
+			labels[k] = v
+		}
+	}
+	if opts.InstanceID != "" {
+		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
+	}
+	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
@@ -245,7 +257,33 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if err != nil {
 		return nil, err
 	}
-	return wfIf.Create(wf)
+
+	if opts.ServerDryRun {
+		wf, err := CreateServerDryRun(wf, wfClientset)
+		if err != nil {
+			return nil, err
+		}
+		return wf, err
+	} else if opts.DryRun {
+		return wf, nil
+	} else {
+		return wfIf.Create(wf)
+	}
+}
+
+// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
+func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+	// Keep the workflow metadata because it will be overwritten by the Post request
+	workflowTypeMeta := wf.TypeMeta
+	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+		Namespace(wf.Namespace).
+		Resource("workflows").
+		Body(wf).
+		Param("dryRun", "All").
+		Do().
+		Into(wf)
+	wf.TypeMeta = workflowTypeMeta
+	return wf, err
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors

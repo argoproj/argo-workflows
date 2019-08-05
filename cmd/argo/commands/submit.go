@@ -6,9 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
+
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
@@ -52,12 +55,15 @@ func NewSubmitCommand() *cobra.Command {
 	command.Flags().StringArrayVarP(&submitOpts.Parameters, "parameter", "p", []string{}, "pass an input parameter")
 	command.Flags().StringVar(&submitOpts.ServiceAccount, "serviceaccount", "", "run all pods in the workflow using specified serviceaccount")
 	command.Flags().StringVar(&submitOpts.InstanceID, "instanceid", "", "submit with a specific controller's instance id label")
+	command.Flags().BoolVar(&submitOpts.DryRun, "dry-run", false, "modify the workflow on the client-side without creating it")
+	command.Flags().BoolVar(&submitOpts.ServerDryRun, "server-dry-run", false, "send request to server with dry-run flag which will modify the workflow without creating it")
 	command.Flags().StringVarP(&cliSubmitOpts.output, "output", "o", "", "Output format. One of: name|json|yaml|wide")
 	command.Flags().BoolVarP(&cliSubmitOpts.wait, "wait", "w", false, "wait for the workflow to complete")
 	command.Flags().BoolVar(&cliSubmitOpts.watch, "watch", false, "watch the workflow until it completes")
 	command.Flags().BoolVar(&cliSubmitOpts.strict, "strict", true, "perform strict workflow validation")
 	command.Flags().Int32Var(&priority, "priority", 0, "workflow priority")
 	command.Flags().StringVarP(&submitOpts.ParameterFile, "parameter-file", "f", "", "pass a file containing all input parameters")
+	command.Flags().StringVarP(&submitOpts.Labels, "labels", "l", "", "Comma separated labels to apply to the workflow. Will override previous values.")
 	// Only complete files with appropriate extension.
 	err := command.Flags().SetAnnotation("parameter-file", cobra.BashCompFilenameExt, []string{"json", "yaml", "yml"})
 	if err != nil {
@@ -115,6 +121,47 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		if cliOpts.wait {
 			log.Fatalf("--wait cannot be combined with --watch")
 		}
+		if submitOpts.DryRun {
+			log.Fatalf("--watch cannot be combined with --dry-run")
+		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--watch cannot be combined with --server-dry-run")
+		}
+	}
+
+	if cliOpts.wait {
+		if submitOpts.DryRun {
+			log.Fatalf("--wait cannot be combined with --dry-run")
+		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--wait cannot be combined with --server-dry-run")
+		}
+	}
+
+	if submitOpts.DryRun {
+		if cliOpts.output == "" {
+			log.Fatalf("--dry-run should have an output option")
+		}
+		if submitOpts.ServerDryRun {
+			log.Fatalf("--dry-run cannot be combined with --server-dry-run")
+		}
+	}
+
+	if submitOpts.ServerDryRun {
+		if cliOpts.output == "" {
+			log.Fatalf("--server-dry-run should have an output option")
+		}
+		serverVersion, err := wfClientset.Discovery().ServerVersion()
+		if err != nil {
+			log.Fatalf("Unexpected error while getting the server's api version")
+		}
+		isCompatible, err := checkServerVersionForDryRun(serverVersion)
+		if err != nil {
+			log.Fatalf("Unexpected error while checking the server's api version compatibility with --server-dry-run")
+		}
+		if !isCompatible {
+			log.Fatalf("--server-dry-run is not available for server api versions older than v1.12")
+		}
 	}
 
 	if len(workflows) == 0 {
@@ -123,11 +170,19 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	}
 
 	var workflowNames []string
+
 	for _, wf := range workflows {
 		wf.Spec.Priority = cliOpts.priority
 		wfClient := defaultWFClient
 		if wf.Namespace != "" {
 			wfClient = InitWorkflowClient(wf.Namespace)
+		} else {
+			// This is here to avoid passing an empty namespace when using --server-dry-run
+			namespace, _, err := clientConfig.Namespace()
+			if err != nil {
+				log.Fatal(err)
+			}
+			wf.Namespace = namespace
 		}
 		created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
 		if err != nil {
@@ -137,6 +192,24 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		workflowNames = append(workflowNames, created.Name)
 	}
 	waitOrWatch(workflowNames, *cliOpts)
+}
+
+// Checks whether the server has support for the dry-run option
+func checkServerVersionForDryRun(serverVersion *apimachineryversion.Info) (bool, error) {
+	majorVersion, err := strconv.Atoi(serverVersion.Major)
+	if err != nil {
+		return false, err
+	}
+	minorVersion, err := strconv.Atoi(serverVersion.Minor)
+	if err != nil {
+		return false, err
+	}
+	if majorVersion < 1 {
+		return false, nil
+	} else if majorVersion == 1 && minorVersion < 12 {
+		return false, nil
+	}
+	return true, nil
 }
 
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml

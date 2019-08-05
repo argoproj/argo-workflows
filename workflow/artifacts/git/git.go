@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
@@ -86,10 +87,39 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 		Auth:              auth,
 	}
-	_, err := git.PlainClone(path, false, &cloneOptions)
+	if inputArtifact.Git.Depth != nil {
+		cloneOptions.Depth = int(*inputArtifact.Git.Depth)
+	}
+
+	repo, err := git.PlainClone(path, false, &cloneOptions)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+
+	if inputArtifact.Git.Fetch != nil {
+		refSpecs := make([]config.RefSpec, len(inputArtifact.Git.Fetch))
+		for i, spec := range inputArtifact.Git.Fetch {
+			refSpecs[i] = config.RefSpec(spec)
+		}
+
+		fetchOptions := git.FetchOptions{
+			RefSpecs: refSpecs,
+		}
+		if inputArtifact.Git.Depth != nil {
+			fetchOptions.Depth = int(*inputArtifact.Git.Depth)
+		}
+
+		err = fetchOptions.Validate()
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+
+		err = repo.Fetch(&fetchOptions)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	}
+
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)

@@ -269,7 +269,7 @@ var stepOutputReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: hello-world-
+  generateName: step-output-ref-
 spec:
   entrypoint: whalesay
   templates:
@@ -297,8 +297,64 @@ spec:
             value: "{{steps.one.outputs.parameters.outparam}}"
 `
 
-func TestStepReference(t *testing.T) {
+func TestStepOutputReference(t *testing.T) {
 	err := validate(stepOutputReferences)
+	assert.Nil(t, err)
+}
+
+var stepArtReferences = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: step-art-ref-
+spec:
+  entrypoint: stepref
+  templates:
+  - name: generate
+    container:
+      image: alpine:3.7
+      command: [echo, generate]
+    outputs:
+      artifacts:
+      - name: generated_hosts
+        path: /etc/hosts
+
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+      artifacts:
+      - name: passthrough
+        path: /tmp/passthrough
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+    outputs:
+      parameters:
+      - name: hosts
+        valueFrom:
+          path: /etc/hosts
+      artifacts:
+      - name: someoutput
+        path: /tmp/passthrough
+
+  - name: stepref
+    steps:
+    - - name: one
+        template: generate
+    - - name: two
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: val
+          artifacts:
+          - name: passthrough
+            from: "{{steps.one.outputs.artifacts.generated_hosts}}"
+`
+
+func TestStepArtReference(t *testing.T) {
+	err := validate(stepArtReferences)
 	assert.Nil(t, err)
 }
 

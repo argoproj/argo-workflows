@@ -13,46 +13,47 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy":      schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments":            schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact":             schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation":     schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":  schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":      schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":           schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":              schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":          schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact":          schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact":         schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSConfig":           schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":        schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact":         schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":               schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                 schema_pkg_apis_workflow_v1alpha1_Item(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":             schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":         schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":              schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":            schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":          schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":     schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":        schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":           schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":             schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":       schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":             schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":      schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy":          schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template":             schema_pkg_apis_workflow_v1alpha1_Template(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef":          schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer":        schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":            schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":             schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":         schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":         schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep":         schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplate":     schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateList": schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec": schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy":       schema_pkg_apis_workflow_v1alpha1_ArchiveStrategy(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments":             schema_pkg_apis_workflow_v1alpha1_Arguments(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact":              schema_pkg_apis_workflow_v1alpha1_Artifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation":      schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef": schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":   schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":       schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":            schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact":           schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact":          schema_pkg_apis_workflow_v1alpha1_HDFSArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSConfig":            schema_pkg_apis_workflow_v1alpha1_HDFSConfig(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSKrbConfig":         schema_pkg_apis_workflow_v1alpha1_HDFSKrbConfig(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact":          schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                  schema_pkg_apis_workflow_v1alpha1_Item(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":              schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":          schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":               schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":             schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":           schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":      schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":         schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":            schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":              schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate":        schema_pkg_apis_workflow_v1alpha1_ScriptTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Sequence":              schema_pkg_apis_workflow_v1alpha1_Sequence(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate":       schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TarStrategy":           schema_pkg_apis_workflow_v1alpha1_TarStrategy(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template":              schema_pkg_apis_workflow_v1alpha1_Template(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef":           schema_pkg_apis_workflow_v1alpha1_TemplateRef(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer":         schema_pkg_apis_workflow_v1alpha1_UserContainer(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ValueFrom":             schema_pkg_apis_workflow_v1alpha1_ValueFrom(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":              schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":          schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":          schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep":          schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplate":      schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":  schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateSpec":  schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateSpec(ref),
 	}
 }
 
@@ -280,6 +281,30 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Properties: map[string]spec.Schema{
+					"configMap": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
 	}
 }
 
@@ -522,6 +547,27 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Description: "Revision is the git commit, tag, branch to checkout",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"depth": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fetch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Fetch specifies a number of refs that should be fetched before checkout",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
 						},
 					},
 					"usernameSecret": {
@@ -2236,6 +2282,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 							Format:      "int64",
 						},
 					},
+					"artifactRepositoryRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef"),
+						},
+					},
 					"suspend": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Suspend will suspend the workflow and prevent execution of any future steps in the workflow",
@@ -2382,7 +2434,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 

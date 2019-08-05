@@ -33,6 +33,7 @@ import (
 	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -57,6 +58,8 @@ type wfOperationCtx struct {
 	// volumes holds a DeepCopy of wf.Spec.Volumes to perform substitutions.
 	// It is then used in addVolumeReferences() when creating a pod.
 	volumes []apiv1.Volume
+	// ArtifactRepository contains the default location of an artifact repository for container artifacts
+	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
@@ -102,12 +105,13 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 			"workflow":  wf.ObjectMeta.Name,
 			"namespace": wf.ObjectMeta.Namespace,
 		}),
-		controller:    wfc,
-		globalParams:  make(map[string]string),
-		volumes:       wf.Spec.DeepCopy().Volumes,
-		completedPods: make(map[string]bool),
-		deadline:      time.Now().UTC().Add(maxOperationTime),
-		tmplCtx:       templateresolution.NewContext(wfc.wfclientset, wf.Namespace, wf),
+		controller:         wfc,
+		globalParams:       make(map[string]string),
+		volumes:            wf.Spec.DeepCopy().Volumes,
+		artifactRepository: &wfc.Config.ArtifactRepository,
+		completedPods:      make(map[string]bool),
+		deadline:           time.Now().UTC().Add(maxOperationTime),
+		tmplCtx:            templateresolution.NewContext(wfc.wfclientset, wf.Namespace, wf),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -170,6 +174,17 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	woc.setGlobalParameters()
+
+	if woc.wf.Spec.ArtifactRepositoryRef != nil {
+		repoReference := woc.wf.Spec.ArtifactRepositoryRef
+		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key)
+		if err == nil {
+			woc.artifactRepository = repo
+		} else {
+			woc.log.Errorf("Failed to load artifact repository configMap: %+v", err)
+			woc.markWorkflowError(err, true)
+		}
+	}
 
 	err := woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
