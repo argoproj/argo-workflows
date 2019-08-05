@@ -244,8 +244,8 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
-	tmpl = tmpl.DeepCopy()
-	for i, inParam := range tmpl.Inputs.Parameters {
+	newTmpl := tmpl.DeepCopy()
+	for i, inParam := range newTmpl.Inputs.Parameters {
 		if inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
@@ -259,12 +259,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
-		tmpl.Inputs.Parameters[i] = inParam
+		newTmpl.Inputs.Parameters[i] = inParam
 	}
 
 	// Performs substitutions of input artifacts
-	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-	for i, inArt := range tmpl.Inputs.Artifacts {
+	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
+	for i, inArt := range newTmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
 		if inArt.HasLocation() {
 			newInputArtifacts[i] = inArt
@@ -288,9 +288,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 			newInputArtifacts[i] = inArt
 		}
 	}
-	tmpl.Inputs.Artifacts = newInputArtifacts
+	newTmpl.Inputs.Artifacts = newInputArtifacts
 
-	return substituteParams(tmpl, globalParams, localParams)
+	return substituteParams(newTmpl, globalParams, localParams)
+
 }
 
 // substituteParams returns a new copy of the template with global, pod, and input parameters substituted
