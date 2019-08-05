@@ -100,7 +100,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *
 
 // resolveTemplateImpl digs into referenes and returns a merged template.
 func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
-	// Avoid infinite referenes
+	// Avoid infinite references
 	if depth > maxResolveDepth {
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
