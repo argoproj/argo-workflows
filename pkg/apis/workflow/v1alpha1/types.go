@@ -97,6 +97,9 @@ type WorkflowSpec struct {
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty"`
 
+	// ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config.
+	ArtifactRepositoryRef *ArtifactRepositoryRef `json:"artifactRepositoryRef,omitempty"`
+
 	// Suspend will suspend the workflow and prevent execution of any future steps in the workflow
 	Suspend *bool `json:"suspend,omitempty"`
 
@@ -392,6 +395,11 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
+}
+
+type ArtifactRepositoryRef struct {
+	ConfigMap string `json:"configMap,omitempty"`
+	Key       string `json:"key,omitempty"`
 }
 
 // Outputs hold parameters, artifacts, and results from a step
