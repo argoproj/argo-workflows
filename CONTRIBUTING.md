@@ -21,17 +21,14 @@ Go to https://github.com/argoproj/
 ## How to setup your dev environment
 
 ### Requirements
-* Golang 1.11
+* Golang 1.12
 * Docker
-* dep v0.5
-   * Mac Install: `brew install dep`
 * golangci-lint v1.16.0
 
 ### Quickstart
 ```
 $ go get github.com/argoproj/argo
 $ cd $(go env GOPATH)/src/github.com/argoproj/argo
-$ dep ensure -vendor-only
 $ make
 ```
 
