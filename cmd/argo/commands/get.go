@@ -421,6 +421,11 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 		return
 	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
+	if node.TemplateRef != nil {
+		nodeName = fmt.Sprintf("%s (%s/%s)", nodeName, node.TemplateRef.Name, node.TemplateRef.Template)
+	} else if node.TemplateName != "" {
+		nodeName = fmt.Sprintf("%s (%s)", nodeName, node.TemplateName)
+	}
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {

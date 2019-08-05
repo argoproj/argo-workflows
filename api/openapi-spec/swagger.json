@@ -218,6 +218,10 @@
           "description": "Name of template to execute",
           "type": "string"
         },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
         "when": {
           "description": "When is an expression in which the task should conditionally execute",
           "type": "string"
@@ -839,6 +843,10 @@
           "description": "Location in which all files related to the step will be stored (logs, artifacts, etc...). Can be overridden by individual items in Outputs. If omitted, will use the default artifact repository location configured in the controller, appended with the \u003cworkflowname\u003e/\u003cnodename\u003e in the key.",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactLocation"
         },
+        "arguments": {
+          "description": "Arguments hold arguments to the template.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
         "container": {
           "description": "Container is the main container image to run in the pod",
           "$ref": "#/definitions/io.k8s.api.core.v1.Container"
@@ -947,6 +955,14 @@
           "description": "Suspend template subtype which can suspend a workflow when reaching the step",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.SuspendTemplate"
         },
+        "template": {
+          "description": "Template is the name of the template which is used as the base of this template.",
+          "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource which is used as the base of this template.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
         "tolerations": {
           "description": "Tolerations to apply to workflow pods.",
           "type": "array",
@@ -960,6 +976,23 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
           }
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.TemplateRef": {
+      "description": "TemplateRef is a reference of template resource.",
+      "properties": {
+        "name": {
+          "description": "Name is the resource name of the template.",
+          "type": "string"
+        },
+        "runtimeResolution": {
+          "description": "RuntimeResolution skips validation at creation time. By enabling this option, you can create the referred workflow template before the actual runtime.",
+          "type": "boolean"
+        },
+        "template": {
+          "description": "Template is the name of referred template in the resource.",
+          "type": "string"
         }
       }
     },
@@ -1313,8 +1346,12 @@
           "type": "string"
         },
         "template": {
-          "description": "Template is a reference to the template to execute as the step",
+          "description": "Template is the name of the template to execute as the step",
           "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource to execute as the step.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
         "when": {
           "description": "When is an expression in which the step should conditionally execute",
@@ -1334,6 +1371,73 @@
         "withSequence": {
           "description": "WithSequence expands a step into a numeric sequence",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Sequence"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplate": {
+      "description": "WorkflowTemplate is the definition of a workflow template resource",
+      "required": [
+        "spec"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateList": {
+      "description": "WorkflowTemplateList is list of WorkflowTemplate resources",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowTemplate"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
+      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
+      "required": [
+        "templates"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments hold arguments to the template.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
+        },
+        "templates": {
+          "description": "Templates is a list of workflow templates.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          }
         }
       }
     }
