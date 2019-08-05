@@ -1544,11 +1544,17 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		}
 	}
 	if tmpl.GetType() == wfv1.TemplateTypeScript {
-		resultsJSON, _ := json.Marshal(resultsList)
+		resultsJSON, err := json.Marshal(resultsList)
+		if err != nil {
+			return err
+		}
 		key := fmt.Sprintf("%s.outputs.result", prefix)
 		scope.addParamToScope(key, string(resultsJSON))
 	}
-	outputsJSON, _ := json.Marshal(paramList)
+	outputsJSON, err := json.Marshal(paramList)
+	if err != nil {
+		return err
+	}
 	key := fmt.Sprintf("%s.outputs.parameters", prefix)
 	scope.addParamToScope(key, string(outputsJSON))
 	return nil
