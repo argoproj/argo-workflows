@@ -514,6 +514,27 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 							Format:      "",
 						},
 					},
+					"depth": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"fetch": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Fetch specifies a number of refs that should be fetched before checkout",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
 					"usernameSecret": {
 						SchemaProps: spec.SchemaProps{
 							Description: "UsernameSecret is the secret selector to the repository username",
