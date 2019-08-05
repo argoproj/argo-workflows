@@ -21,6 +21,7 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
+	wfClientset      *wfclientset.Clientset // wfClientset is used for the server-dry-run submit option
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
@@ -94,8 +95,8 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 			log.Fatal(err)
 		}
 	}
-	wfcs := wfclientset.NewForConfigOrDie(restConfig)
-	wfClient = wfcs.ArgoprojV1alpha1().Workflows(namespace)
+	wfClientset = wfclientset.NewForConfigOrDie(restConfig)
+	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
 	return wfClient
 }
 
