@@ -8,11 +8,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// SchemeGroupVersion is group version used to register these objects
 var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion     = schema.GroupVersion{Group: workflow.Group, Version: "v1alpha1"}
-	SchemaGroupVersionKind = schema.GroupVersionKind{Group: workflow.Group, Version: "v1alpha1", Kind: workflow.Kind}
+	SchemeGroupVersion = schema.GroupVersion{Group: workflow.Group, Version: "v1alpha1"}
 )
+
+// Kind takes an unqualified kind and returns back a Group qualified GroupKind
+func Kind(kind string) schema.GroupKind {
+	return SchemeGroupVersion.WithKind(kind).GroupKind()
+}
 
 // Resource takes an unqualified resource and returns a Group-qualified GroupResource.
 func Resource(resource string) schema.GroupResource {
@@ -29,6 +33,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Workflow{},
 		&WorkflowList{},
+		&WorkflowTemplate{},
+		&WorkflowTemplateList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

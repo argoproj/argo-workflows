@@ -11,3 +11,17 @@ spec:
     plural: workflows
     shortNames:
     - wf
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: workflowtemplates.argoproj.io
+spec:
+  group: argoproj.io
+  version: v1alpha1
+  scope: Namespaced
+  names:
+    kind: WorkflowTemplate
+    plural: workflowtemplates
+    shortNames:
+    - wftmpl

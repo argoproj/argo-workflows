@@ -184,7 +184,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 			}
 			wf.Namespace = namespace
 		}
-		created, err := util.SubmitWorkflow(wfClient, wfClientset, &wf, submitOpts)
+		created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
@@ -223,7 +223,7 @@ func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}
-	yamlWfs, err := common.SplitYAMLFile(wfBytes, strict)
+	yamlWfs, err := common.SplitWorkflowYAMLFile(wfBytes, strict)
 	if err == nil {
 		return yamlWfs
 	}

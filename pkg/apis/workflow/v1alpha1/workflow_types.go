@@ -21,6 +21,7 @@ const (
 	TemplateTypeResource  TemplateType = "Resource"
 	TemplateTypeDAG       TemplateType = "DAG"
 	TemplateTypeSuspend   TemplateType = "Suspend"
+	TemplateTypeUnknown   TemplateType = "Unknown"
 )
 
 // NodePhase is a label for the condition of a node at the current time.
@@ -51,6 +52,19 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+// TemplateGetter is an interface to get templates.
+type TemplateGetter interface {
+	GetNamespace() string
+	GetName() string
+	GetTemplateByName(name string) *Template
+}
+
+// TemplateHolder is an interface for holders of templates.
+type TemplateHolder interface {
+	GetTemplateName() string
+	GetTemplateRef() *TemplateRef
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -69,6 +83,8 @@ type WorkflowList struct {
 	metav1.ListMeta `json:"metadata"`
 	Items           []Workflow `json:"items"`
 }
+
+var _ TemplateGetter = &Workflow{}
 
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
@@ -182,6 +198,15 @@ type Template struct {
 	// Name is the name of the template
 	Name string `json:"name"`
 
+	// Template is the name of the template which is used as the base of this template.
+	Template string `json:"template,omitempty"`
+
+	// Arguments hold arguments to the template.
+	Arguments Arguments `json:"arguments,omitempty"`
+
+	// TemplateRef is the reference to the template resource which is used as the base of this template.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
+
 	// Inputs describe what inputs parameters and artifacts are supplied to this template
 	Inputs Inputs `json:"inputs,omitempty"`
 
@@ -274,6 +299,20 @@ type Template struct {
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
+}
+
+var _ TemplateHolder = &Template{}
+
+func (tmpl *Template) GetTemplateName() string {
+	if tmpl.Template != "" {
+		return tmpl.Template
+	} else {
+		return tmpl.Name
+	}
+}
+
+func (tmpl *Template) GetTemplateRef() *TemplateRef {
+	return tmpl.TemplateRef
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -419,11 +458,14 @@ type WorkflowStep struct {
 	// Name of the step
 	Name string `json:"name,omitempty"`
 
-	// Template is a reference to the template to execute as the step
+	// Template is the name of the template to execute as the step
 	Template string `json:"template,omitempty"`
 
 	// Arguments hold arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
+
+	// TemplateRef is the reference to the template resource to execute as the step.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// WithItems expands a step into multiple parallel steps from the items in the list
 	WithItems []Item `json:"withItems,omitempty"`
@@ -441,6 +483,16 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
+}
+
+var _ TemplateHolder = &WorkflowStep{}
+
+func (step *WorkflowStep) GetTemplateName() string {
+	return step.Template
+}
+
+func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
+	return step.TemplateRef
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -495,6 +547,22 @@ func (i Item) OpenAPISchemaType() []string { return []string{"string"} }
 // the OpenAPI spec of this type.
 func (i Item) OpenAPISchemaFormat() string { return "item" }
 
+// TemplateRef is a reference of template resource.
+type TemplateRef struct {
+	// Name is the resource name of the template.
+	Name string `json:"name,omitempty"`
+	// Template is the name of referred template in the resource.
+	Template string `json:"template,omitempty"`
+	// RuntimeResolution skips validation at creation time.
+	// By enabling this option, you can create the referred workflow template before the actual runtime.
+	RuntimeResolution bool `json:"runtimeResolution,omitempty"`
+}
+
+type ArgumentsProvider interface {
+	GetParameterByName(name string) *Parameter
+	GetArtifactByName(name string) *Artifact
+}
+
 // Arguments to a template
 type Arguments struct {
 	// Parameters is the list of parameters to pass to the template or workflow
@@ -503,6 +571,8 @@ type Arguments struct {
 	// Artifacts is the list of artifacts to pass to the template or workflow
 	Artifacts []Artifact `json:"artifacts,omitempty"`
 }
+
+var _ ArgumentsProvider = &Arguments{}
 
 // UserContainer is a container specified by a user.
 type UserContainer struct {
@@ -566,8 +636,13 @@ type NodeStatus struct {
 	// Type indicates type of node
 	Type NodeType `json:"type"`
 
-	// TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)
+	// TemplateName is the template name which this node corresponds to.
+	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateName string `json:"templateName,omitempty"`
+
+	// TemplateRef is the reference to the template resource which this node corresponds to.
+	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -613,6 +688,16 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty"`
+}
+
+var _ TemplateHolder = &NodeStatus{}
+
+func (n *NodeStatus) GetTemplateName() string {
+	return n.TemplateName
+}
+
+func (n *NodeStatus) GetTemplateRef() *TemplateRef {
+	return n.TemplateRef
 }
 
 func (n NodeStatus) String() string {
@@ -891,7 +976,7 @@ func (tmpl *Template) GetType() TemplateType {
 	if tmpl.Suspend != nil {
 		return TemplateTypeSuspend
 	}
-	return "Unknown"
+	return TemplateTypeUnknown
 }
 
 // IsPodType returns whether or not the template is a pod type
@@ -940,6 +1025,9 @@ type DAGTask struct {
 	// Arguments are the parameter and artifact arguments to the template
 	Arguments Arguments `json:"arguments,omitempty"`
 
+	// TemplateRef is the reference to the template resource to execute.
+	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
+
 	// Dependencies are name of other targets which this depends on
 	Dependencies []string `json:"dependencies,omitempty"`
 
@@ -959,6 +1047,16 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty"`
+}
+
+var _ TemplateHolder = &DAGTask{}
+
+func (t *DAGTask) GetTemplateName() string {
+	return t.Template
+}
+
+func (t *DAGTask) GetTemplateRef() *TemplateRef {
+	return t.TemplateRef
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
@@ -1040,8 +1138,8 @@ func (a *Artifact) HasLocation() bool {
 		a.HDFS.HasLocation()
 }
 
-// GetTemplate retrieves a defined template by its name
-func (wf *Workflow) GetTemplate(name string) *Template {
+// GetTemplateByName retrieves a defined template by its name
+func (wf *Workflow) GetTemplateByName(name string) *Template {
 	for _, t := range wf.Spec.Templates {
 		if t.Name == name {
 			return &t
