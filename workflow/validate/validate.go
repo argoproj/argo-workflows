@@ -79,7 +79,13 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 	ctx.globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
 	ctx.globalParams[common.GlobalVarWorkflowUID] = placeholderValue
 	for _, param := range ctx.wf.Spec.Arguments.Parameters {
-		ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+		if param.Name != "" {
+			if param.Value != nil {
+				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
+			} else {
+				ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+			}
+		}
 	}
 
 	for k := range ctx.wf.ObjectMeta.Annotations {
@@ -96,7 +102,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 	if entryTmpl == nil {
 		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint template '%s' undefined", ctx.wf.Spec.Entrypoint)
 	}
-	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments)
+	err = ctx.validateTemplate(entryTmpl, ctx.wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
 		return err
 	}
@@ -107,7 +113,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 		}
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
-		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments)
+		err = ctx.validateTemplate(exitTmpl, ctx.wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
 		}
@@ -115,7 +121,7 @@ func ValidateWorkflow(wf *wfv1.Workflow, opts ValidateOpts) error {
 	return nil
 }
 
-func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments) error {
+func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Arguments, extraScope map[string]interface{}) error {
 	_, ok := ctx.results[tmpl.Name]
 	if ok {
 		// we already processed this template
@@ -125,7 +131,7 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 	if err := validateTemplateType(tmpl); err != nil {
 		return err
 	}
-	scope, err := validateInputs(tmpl)
+	scope, err := validateInputs(tmpl, extraScope)
 	if err != nil {
 		return err
 	}
@@ -147,34 +153,34 @@ func (ctx *wfValidationCtx) validateTemplate(tmpl *wfv1.Template, args wfv1.Argu
 		}
 	}
 
-	_, err = common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
+	newTmpl, err := common.ProcessArgs(tmpl, args, ctx.globalParams, localParams, true)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", tmpl.Name, err)
 	}
 	for globalVar, val := range ctx.globalParams {
 		scope[globalVar] = val
 	}
-	switch tmpl.GetType() {
+	switch newTmpl.GetType() {
 	case wfv1.TemplateTypeSteps:
-		err = ctx.validateSteps(scope, tmpl)
+		err = ctx.validateSteps(scope, newTmpl)
 	case wfv1.TemplateTypeDAG:
-		err = ctx.validateDAG(scope, tmpl)
+		err = ctx.validateDAG(scope, newTmpl)
 	default:
-		err = validateLeaf(scope, tmpl)
+		err = validateLeaf(scope, newTmpl)
 	}
 	if err != nil {
 		return err
 	}
-	err = validateOutputs(scope, tmpl)
+	err = validateOutputs(scope, newTmpl)
 	if err != nil {
 		return err
 	}
-	err = ctx.validateBaseImageOutputs(tmpl)
+	err = ctx.validateBaseImageOutputs(newTmpl)
 	if err != nil {
 		return err
 	}
-	if tmpl.ArchiveLocation != nil {
-		err = validateArtifactLocation("templates.archiveLocation", *tmpl.ArchiveLocation)
+	if newTmpl.ArchiveLocation != nil {
+		err = validateArtifactLocation("templates.archiveLocation", *newTmpl.ArchiveLocation)
 		if err != nil {
 			return err
 		}
@@ -200,7 +206,7 @@ func validateTemplateType(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
+func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map[string]interface{}, error) {
 	err := validateWorkflowFieldNames(tmpl.Inputs.Parameters)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.parameters%s", tmpl.Name, err.Error())
@@ -210,6 +216,9 @@ func validateInputs(tmpl *wfv1.Template) (map[string]interface{}, error) {
 		return nil, errors.Errorf(errors.CodeBadRequest, "templates.%s.inputs.artifacts%s", tmpl.Name, err.Error())
 	}
 	scope := make(map[string]interface{})
+	for name, value := range extraScope {
+		scope[name] = value
+	}
 	for _, param := range tmpl.Inputs.Parameters {
 		scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 	}
@@ -429,7 +438,7 @@ func (ctx *wfValidationCtx) validateSteps(scope map[string]interface{}, tmpl *wf
 			if err != nil {
 				return err
 			}
-			err = ctx.validateTemplate(childTmpl, step.Arguments)
+			err = ctx.validateTemplate(childTmpl, step.Arguments, scope)
 			if err != nil {
 				return err
 			}
@@ -795,7 +804,7 @@ func (ctx *wfValidationCtx) validateDAG(scope map[string]interface{}, tmpl *wfv1
 			return err
 		}
 		taskTmpl := ctx.wf.GetTemplate(task.Template)
-		err = ctx.validateTemplate(taskTmpl, task.Arguments)
+		err = ctx.validateTemplate(taskTmpl, task.Arguments, scope)
 		if err != nil {
 			return err
 		}
