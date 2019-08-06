@@ -134,6 +134,15 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 			return errors.Errorf(errors.CodeBadRequest, "spec.onExit %s", err.Error())
 		}
 	}
+
+	if wf.Spec.PodGC != nil {
+		switch wf.Spec.PodGC.Strategy {
+		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
+		default:
+			return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+		}
+	}
+
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})

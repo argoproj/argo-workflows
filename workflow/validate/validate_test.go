@@ -1686,3 +1686,27 @@ func TestInvalidResourceWorkflow(t *testing.T) {
 	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
 	assert.Error(t, err, "templates.whalesay.resource.action must be either get, create, apply, delete or replace")
 }
+
+var invalidPodGC = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-gc-strategy-unknown-
+spec:
+  podGC:
+    strategy: Foo
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
+func TestUnknownPodGCStrategy(t *testing.T) {
+	wf := unmarshalWf(invalidResourceWorkflow)
+	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	assert.Error(t, err, "podGC.strategy unknown strategy 'Foo'")
+}
