@@ -541,6 +541,14 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.PodGC": {
+      "description": "PodGC describes how to delete completed pods as they complete",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.RawArtifact": {
       "description": "RawArtifact allows raw string content to be placed as an artifact in a container",
       "required": [
@@ -1265,9 +1273,9 @@
           "type": "integer",
           "format": "int64"
         },
-        "podGCStrategy": {
-          "description": "PodReclaimation is the strategy when to delete the completed pods 1. Retain: always retain completed pods 2. Delete：delete pod immediately when it is completed 3. DeleteLater：delete completed pod when its workflow is completed",
-          "type": "string"
+        "podGC": {
+          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",

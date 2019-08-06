@@ -57,10 +57,10 @@ type PodGCStrategy string
 
 // PodGCStrategy
 const (
-	PodGCUponPodCompleted      PodGCStrategy = "upon-pod-completed"
-	PodGCUponPodSucceeded      PodGCStrategy = "upon-pod-succeeded"
-	PodGCUponWorkflowCompleted PodGCStrategy = "upon-workflow-completed"
-	PodGCUponWorkflowSucceeded PodGCStrategy = "upon-workflow-succeeded"
+	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
+	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
+	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
+	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
 )
 
 // TemplateGetter is an interface to get templates.
@@ -189,11 +189,8 @@ type WorkflowSpec struct {
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
 
-	// PodReclaimation is the strategy when to delete the completed pods
-	// 1. Retain: always retain completed pods
-	// 2. Delete：delete pod immediately when it is completed
-	// 3. DeleteLater：delete completed pod when its workflow is completed
-	PodGCStrategy PodGCStrategy `json:"podGCStrategy,omitempty"`
+	// PodGC describes the strategy to use when to deleting completed pods
+	PodGC *PodGC `json:"podGC,omitempty"`
 
 	// PriorityClassName to apply to workflow pods.
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty"`
@@ -410,6 +407,11 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty"`
+}
+
+// PodGC describes how to delete completed pods as they complete
+type PodGC struct {
+	Strategy PodGCStrategy `json:"strategy,omitempty"`
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts

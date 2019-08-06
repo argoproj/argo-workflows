@@ -212,10 +212,7 @@ func (wfc *WorkflowController) podGarbageCollector(stopCh <-chan struct{}) {
 			podName := parts[1]
 			err := common.DeletePod(wfc.kubeclientset, podName, namespace)
 			if err != nil {
-				// because of multiple delete situation, we can ignore NotFound error safely
-				if !apierr.IsNotFound(err) {
-					log.Errorf("Failed to delete pod %s/%s for gc: %+v", namespace, podName, err)
-				}
+				log.Errorf("Failed to delete pod %s/%s for gc: %+v", namespace, podName, err)
 			} else {
 				log.Infof("Delete pod %s/%s for gc successfully", namespace, podName)
 			}
@@ -303,10 +300,15 @@ func (wfc *WorkflowController) processNextItem() bool {
 		wfc.throttler.Remove(key)
 		// Send all completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 		var doPodGC bool
-		if woc.wf.Spec.PodGCStrategy == wfv1.PodGCUponWorkflowCompleted {
-			doPodGC = true
-		} else if woc.wf.Spec.PodGCStrategy == wfv1.PodGCUponWorkflowSucceeded && woc.wf.Status.Successful() {
-			doPodGC = true
+		if woc.wf.Spec.PodGC != nil {
+			switch woc.wf.Spec.PodGC.Strategy {
+			case wfv1.PodGCOnWorkflowCompletion:
+				doPodGC = true
+			case wfv1.PodGCOnWorkflowSuccess:
+				if woc.wf.Status.Successful() {
+					doPodGC = true
+				}
+			}
 		}
 		if doPodGC {
 			for podName := range woc.completedPods {

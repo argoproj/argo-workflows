@@ -447,16 +447,15 @@ func addPodMetadata(c kubernetes.Interface, field, podName, namespace, key, valu
 
 const deleteRetries = 3
 
-// deletePod return error to indicate delete pod successfully or not.
+// DeletePod deletes a pod. Ignores NotFound error
 func DeletePod(c kubernetes.Interface, podName, namespace string) error {
 	var err error
 	for attempt := 0; attempt < deleteRetries; attempt++ {
 		err = c.CoreV1().Pods(namespace).Delete(podName, &metav1.DeleteOptions{})
-		if err != nil {
-			time.Sleep(100 * time.Millisecond)
-		} else {
+		if err == nil || apierr.IsNotFound(err) {
 			break
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	return err
 }
