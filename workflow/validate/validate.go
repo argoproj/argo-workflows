@@ -124,14 +124,14 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint %s", err.Error())
+		return err
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "spec.onExit %s", err.Error())
+			return err
 		}
 	}
 
@@ -452,7 +452,7 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 		case "get", "create", "apply", "delete", "replace", "patch":
 			// OK
 		default:
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 		}
 		// Try to unmarshal the given manifest.
 		obj := unstructured.Unstructured{}
