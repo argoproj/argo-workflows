@@ -24,12 +24,13 @@ import (
 )
 
 type listFlags struct {
-	allNamespaces bool   // --all-namespaces
-	status        string // --status
-	completed     bool   // --completed
-	running       bool   // --running
-	output        string // --output
-	since         string // --since
+	allNamespaces bool     // --all-namespaces
+	status        []string // --status
+	completed     bool     // --completed
+	running       bool     // --running
+	output        string   // --output
+	since         string   // --since
+	chunkSize     int64    // --chunk-size
 }
 
 func NewListCommand() *cobra.Command {
@@ -48,9 +49,11 @@ func NewListCommand() *cobra.Command {
 			}
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
-			if listArgs.status != "" {
-				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, strings.Split(listArgs.status, ","))
-				labelSelector = labelSelector.Add(*req)
+			if len(listArgs.status) != 0 {
+				req, _ := labels.NewRequirement(common.LabelKeyPhase, selection.In, listArgs.status)
+				if req != nil {
+					labelSelector = labelSelector.Add(*req)
+				}
 			}
 			if listArgs.completed {
 				req, _ := labels.NewRequirement(common.LabelKeyCompleted, selection.Equals, []string{"true"})
@@ -61,20 +64,34 @@ func NewListCommand() *cobra.Command {
 				labelSelector = labelSelector.Add(*req)
 			}
 			listOpts.LabelSelector = labelSelector.String()
+			if listArgs.chunkSize != 0 {
+				listOpts.Limit = listArgs.chunkSize
+			}
 			wfList, err := wfClient.List(listOpts)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			tmpWorkFlows := wfList.Items
+			for wfList.ListMeta.Continue != "" {
+				listOpts.Continue = wfList.ListMeta.Continue
+				wfList, err = wfClient.List(listOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
+			}
+
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = wfList.Items
+				workflows = tmpWorkFlows
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
 				}
-				for _, wf := range wfList.Items {
+				for _, wf := range tmpWorkFlows {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
@@ -95,11 +112,12 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
-	command.Flags().StringVar(&listArgs.status, "status", "", "Filter by status (comma separated)")
+	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
+	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	return command
 }
 
@@ -119,7 +137,11 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, workflowStatus(&wf), ageStr, durationStr, wf.Spec.Priority)
+		var priority int
+		if wf.Spec.Priority != nil {
+			priority = int(*wf.Spec.Priority)
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d", wf.ObjectMeta.Name, workflowStatus(&wf), ageStr, durationStr, priority)
 		if listArgs.output == "wide" {
 			pending, running, completed := countPendingRunningCompleted(&wf)
 			fmt.Fprintf(w, "\t%d/%d/%d", pending, running, completed)
@@ -134,8 +156,12 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
+	err := util.DecompressWorkflow(wf)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, node := range wf.Status.Nodes {
-		tmpl := wf.GetTemplate(node.TemplateName)
+		tmpl := wf.GetTemplateByName(node.TemplateName)
 		if tmpl == nil || !tmpl.IsPodType() {
 			continue
 		}

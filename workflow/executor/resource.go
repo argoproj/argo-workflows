@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"strings"
 	"time"
@@ -19,7 +20,8 @@ import (
 )
 
 // ExecResource will run kubectl action against a manifest
-func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isDelete bool) (string, string, error) {
+func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (string, string, error) {
+	isDelete := action == "delete"
 	args := []string{
 		action,
 	}
@@ -28,6 +30,26 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string, isD
 		args = append(args, "--ignore-not-found")
 		output = "name"
 	}
+
+	if action == "patch" {
+		mergeStrategy := "strategic"
+		if we.Template.Resource.MergeStrategy != "" {
+			mergeStrategy = we.Template.Resource.MergeStrategy
+		}
+
+		args = append(args, "--type")
+		args = append(args, mergeStrategy)
+
+		args = append(args, "-p")
+		buff, err := ioutil.ReadFile(manifestPath)
+
+		if err != nil {
+			return "", "", errors.New(errors.CodeBadRequest, err.Error())
+		}
+
+		args = append(args, string(buff))
+	}
+
 	args = append(args, "-f")
 	args = append(args, manifestPath)
 	args = append(args, "-o")
@@ -245,7 +267,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		}
 		var cmd *exec.Cmd
 		if param.ValueFrom.JSONPath != "" {
-			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath='%s'", param.ValueFrom.JSONPath)}
+			args := []string{"get", resourceName, "-o", fmt.Sprintf("jsonpath=%s", param.ValueFrom.JSONPath)}
 			if resourceNamespace != "" {
 				args = append(args, "-n", resourceNamespace)
 			}

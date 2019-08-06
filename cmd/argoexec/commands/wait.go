@@ -8,19 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	RootCmd.AddCommand(waitCmd)
-}
-
-var waitCmd = &cobra.Command{
-	Use:   "wait",
-	Short: "wait for main container to finish and save artifacts",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := waitContainer()
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
-	},
+func NewWaitCommand() *cobra.Command {
+	var command = cobra.Command{
+		Use:   "wait",
+		Short: "wait for main container to finish and save artifacts",
+		Run: func(cmd *cobra.Command, args []string) {
+			err := waitContainer()
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		},
+	}
+	return &command
 }
 
 func waitContainer() error {
@@ -29,11 +28,16 @@ func waitContainer() error {
 	defer stats.LogStats()
 	stats.StartStatsTicker(5 * time.Minute)
 
-	// Wait for main container to complete and kill sidecars
+	// Wait for main container to complete
 	err := wfExecutor.Wait()
 	if err != nil {
 		wfExecutor.AddError(err)
-		// do not return here so we can still try to save outputs
+		// do not return here so we can still try to kill sidecars & save outputs
+	}
+	err = wfExecutor.KillSidecars()
+	if err != nil {
+		wfExecutor.AddError(err)
+		// do not return here so we can still try save outputs
 	}
 	logArt, err := wfExecutor.SaveLogs()
 	if err != nil {

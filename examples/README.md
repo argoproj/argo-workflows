@@ -32,7 +32,8 @@ For a complete description of the Argo workflow spec, please refer to https://gi
 - [Sidecars](#sidecars)
 - [Hardwired Artifacts](#hardwired-artifacts)
 - [Kubernetes Resources](#kubernetes-resources)
-- [Docker-in-Docker Using Sidecars](#docker-in-docker-aka-dind-using-sidecars)
+- [Docker-in-Docker Using Sidecars](#docker-in-docker-using-sidecars)
+- [Custom Template Variable Reference](#custom-template-variable-reference)
 - [Continuous Integration Example](#continuous-integration-example)
 
 ## Argo CLI
@@ -68,7 +69,8 @@ Let's start by creating a very simple workflow template to echo "hello world" us
 <img src="whalesay.png" width="600">
 
 You can run this directly from your shell with a simple docker command:
-```
+
+```sh
 bash% docker run docker/whalesay cowsay "hello world"
  _____________
 < hello world >
@@ -148,6 +150,7 @@ spec:
 This time, the `whalesay` template takes an input parameter named `message` that is passed as the `args` to the `cowsay` command. In order to reference parameters (e.g., ``"{{inputs.parameters.message}}"``), the parameters must be enclosed in double quotes to escape the curly braces in YAML.
 
 The argo CLI provides a convenient way to override parameters used to invoke the entrypoint. For example, the following command would bind the `message` parameter to "goodbye world" instead of the default "hello world".
+
 ```sh
 argo submit arguments-parameters.yaml -p message="goodbye world"
 ```
@@ -159,6 +162,7 @@ message: goodbye world
 ```
 
 To run use following command:
+
 ```sh
 argo submit arguments-parameters.yaml --parameter-file params.yaml
 ```
@@ -254,7 +258,7 @@ spec:
 
 The above workflow spec prints three different flavors of "hello". The `hello-hello-hello` template consists of three `steps`. The first step named `hello1` will be run in sequence whereas the next two steps named `hello2a` and `hello2b` will be run in parallel with each other. Using the argo CLI command, we can graphically display the execution history of this workflow spec, which shows that the steps named `hello2a` and `hello2b` ran in parallel with each other.
 
-```
+```sh
 STEP                                     PODNAME
  ✔ arguments-parameters-rbm92
  ├---✔ hello1                   steps-rbm92-2023062412
@@ -309,6 +313,8 @@ spec:
 
 The dependency graph may have [multiple roots](./dag-multiroot.yaml). The templates called from a DAG or steps template can themselves be DAG or steps templates. This can allow for complex workflows to be split into manageable pieces.
 
+The DAG logic has a built-in `fail fast` feature to stop scheduling new steps, as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed before failing the DAG itself.
+The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `false`, it will allow a DAG to run all branches of the DAG to completion (either success or failure), regardless of the failed outcomes of branches in the DAG. More info and example about this feature at [here](https://github.com/argoproj/argo/issues/1442).
 ## Artifacts
 
 **Note:**
@@ -371,6 +377,7 @@ The `artifact-example` template passes the `hello-art` artifact generated as an 
 ## The Structure of Workflow Specs
 
 We now know enough about the basic components of a workflow spec to review its basic structure:
+
 - Kubernetes header including metadata
 - Spec body
   - Entrypoint invocation with optionally arguments
@@ -389,7 +396,7 @@ Note that the controller section of the workflow spec will accept the same optio
 
 ## Secrets
 
-Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the (Kubernetes documentation)[https://kubernetes.io/docs/concepts/configuration/secret/] for more information.
+Argo supports the same secrets syntax and mechanisms as Kubernetes Pod specs, which allows access to secrets as environment variables or volume mounts. See the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/secret/) for more information.
 
 ```yaml
 # To run this example, first create the secret by running:
@@ -429,6 +436,7 @@ spec:
 ```
 
 ## Scripts & Results
+
 Often, we just want a template that executes a script specified as a here-script (also known as a `here document`) in the workflow spec. This example shows how to do that:
 
 ```yaml
@@ -655,6 +663,7 @@ spec:
 ```
 
 We can even dynamically generate the list of items to iterate over!
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -787,7 +796,7 @@ spec:
 
 Here's the result of a couple of runs of coinflip for comparison.
 
-```
+```sh
 argo get coinflip-recursive-tzcb5
 
 STEP                         PODNAME                              MESSAGE
@@ -811,6 +820,7 @@ STEP                          PODNAME                              MESSAGE
              └-·-✔ heads      coinflip-recursive-tzcb5-4080323273
                └-○ tails
 ```
+
 In the first run, the coin immediately comes up heads and we stop. In the second run, the coin comes up tail three times before it finally comes up heads and we stop.
 
 ## Exit handlers
@@ -818,6 +828,7 @@ In the first run, the coin immediately comes up heads and we stop. In the second
 An exit handler is a template that *always* executes, irrespective of success or failure, at the end of the workflow.
 
 Some common use cases of exit handlers are:
+
 - cleaning up after a workflow runs
 - sending notifications of workflow status (e.g., e-mail/Slack)
 - posting the pass/fail status to a webhook result (e.g. GitHub build result)
@@ -871,6 +882,7 @@ spec:
 ```
 
 ## Timeouts
+
 To limit the elapsed time for a workflow, you can set the variable `activeDeadlineSeconds`.
 
 ```yaml
@@ -893,6 +905,7 @@ spec:
 ## Volumes
 
 The following example dynamically creates a volume and then uses the volume in a two step workflow.
+
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -998,7 +1011,7 @@ spec:
 
 ## Daemon Containers
 
-Argo workflows can start containers that run in the background (also known as `daemon containers`) while the workflow itself continues execution. Note that the daemons will be *automatically destroyed* when the workflow exits the template scope in which the daemon was invoked. Deamon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
+Argo workflows can start containers that run in the background (also known as `daemon containers`) while the workflow itself continues execution. Note that the daemons will be *automatically destroyed* when the workflow exits the template scope in which the daemon was invoked. Daemon containers are useful for starting up services to be tested or to be used in testing (e.g., fixtures). We also find it very useful when running large simulations to spin up a database as a daemon for collecting and organizing the results. The big advantage of daemons compared with sidecars is that their existence can persist across multiple steps or even the entire workflow.
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -1145,7 +1158,6 @@ spec:
       args: ["ls -l /src /bin/kubectl /s3"]
 ```
 
-
 ## Kubernetes Resources
 
 In many cases, you will want to manage Kubernetes resources from Argo workflows. The resource template allows you to create, delete or updated any type of Kubernetes resource.
@@ -1193,6 +1205,39 @@ spec:
 
 Resources created in this way are independent of the workflow. If you want the resource to be deleted when the workflow is deleted then you can use [Kubernetes garbage collection](https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/) with the workflow resource as an owner reference ([example](./k8s-owner-reference.yaml)).
 
+**Note:**
+When patching, the resource will accept another attribute, `mergeStrategy`, which can either be `strategic`, `merge`, or `json`. If this attribute is not supplied, it will default to `strategic`. Keep in mind that Custom Resources cannot be patched with `strategic`, so a different strategy must be chosen. For example, suppose you have the [CronTab CustomResourceDefinition](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/#create-a-customresourcedefinition) defined, and the following instance of a CronTab:
+
+```yaml
+apiVersion: "stable.example.com/v1"
+kind: CronTab
+spec:
+  cronSpec: "* * * * */5"
+  image: my-awesome-cron-image
+```
+
+This Crontab can be modified using the following Argo Workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-patch-
+spec:
+  entrypoint: cront-tmpl
+  templates:
+  - name: cront-tmpl
+    resource:
+      action: patch
+      mergeStrategy: merge                 # Must be one of [strategic merge json]
+      manifest: |
+        apiVersion: "stable.example.com/v1"
+        kind: CronTab
+        spec:
+          cronSpec: "* * * * */10"
+          image: my-awesome-cron-image
+```
+
 ## Docker-in-Docker Using Sidecars
 
 An application of sidecars is to implement Docker-in-Docker (DinD). DinD is useful when you want to run Docker commands from inside a container. For example, you may want to build and push a container image from inside your build container. In the following example, we use the docker:dind container to run a Docker daemon in a sidecar and give the main container access to the daemon.
@@ -1223,6 +1268,47 @@ spec:
       # dind daemon to (partially) see the same filesystem as the main container in
       # order to use features such as docker volume binding.
       mirrorVolumeMounts: true
+```
+
+## Custom Template Variable Reference
+
+In this example, we can see how we can use the other template language variable reference (E.g: Jinja) in Argo workflow template.
+Argo will validate and resolve only the variable that starts with Argo allowed prefix
+{***"item", "steps", "inputs", "outputs", "workflow", "tasks"***}
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: custom-template-variable-
+spec:
+  entrypoint: hello-hello-hello
+
+  templates:
+    - name: hello-hello-hello
+      steps:
+        - - name: hello1
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello1"}]
+        - - name: hello2a
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello2a"}]
+          - name: hello2b
+            template: whalesay
+            arguments:
+              parameters: [{name: message, value: "hello2b"}]
+
+    - name: whalesay
+      inputs:
+        parameters:
+          - name: message
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["{{user.username}}"]
+
 ```
 
 ## Continuous Integration Example

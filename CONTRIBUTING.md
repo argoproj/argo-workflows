@@ -25,7 +25,7 @@ Go to https://github.com/argoproj/
 * Docker
 * dep v0.5
    * Mac Install: `brew install dep`
-* gometalinter v2.0.12
+* golangci-lint v1.16.0
 
 ### Quickstart
 ```

@@ -1,5 +1,90 @@
 # Changelog
 
+## 2.3.0 (2019-05-20)
+
+### Notes about upgrading from v2.2
+
+* Artifact repository secrets are passed to the wait sidecar using volumeMounts instead of the
+  previous behavior of performing K8s API calls performed by the executor. This is much more secure
+  since it removes privileges of the workflow pod to no longer require secret access. However, as a
+  consequence, workflow pods which reference a secret that does not exist, will now indefinitely
+  stay in a Pending state, as opposed to the previous behavior of failing during runtime.
+
+### Deprecation Notice
+The workflow-controller-configmap introduces a new config field, `executor`, which is a container
+spec and provides controls over the executor sidecar container (i.e. `init`/`wait`). The fields
+`executorImage`, `executorResources`, and `executorImagePullPolicy` are deprecated and will be
+removed in a future release.
+
+### New Features:
++ Support for PNS (Process Namespace Sharing) executor (#1214)
++ Support for K8s API based Executor (#1010) (@dtaniwaki)
++ Adds limited support for Kubelet/K8s API artifact collection by mirroring volume mounts to wait sidecar
++ Support HDFS Artifact (#1159) (@dtaniwaki)
++ System level workflow parallelism limits & priorities (#1065)
++ Support larger workflows through node status compression (#1264)
++ Support nested steps workflow parallelism (#1046) (@WeiTang114)
++ Add feature to continue workflow on failed/error steps/tasks (#1205) (@schrodit)
++ Parameter and Argument names should support snake case (#1048) (@bbc88ks)
++ Add support for ppc64le and s390x (#1102) (@chenzhiwei)
++ Install mime-support in argoexec to set proper mime types for S3 artifacts
++ Allow owner reference to be set in submit util (#1120) (@nareshku)
++ add support for hostNetwork & dnsPolicy config (#1161) (@Dreamheart)
++ Add schedulerName to workflow and template spec (#1184) (@houz42)
++ Executor can access the k8s apiserver with a out-of-cluster config file (@houz42)
++ Proxy Priority and PriorityClassName to pods (#1179) (@dtaniwaki)
++ Add the `mergeStrategy` option to resource patching (#1269) (@ian-howell)
++ Add workflow labels and annotations global vars (#1280) (@discordianfish)
++ Support for optional input/output artifacts (#1277)
++ Add dns config support (#1301) (@xianlubird)
++ Added support for artifact path references (#1300) (@Ark-kun)
++ Add support for init containers (#1183) (@dtaniwaki)
++ Secrets should be passed to pods using volumes instead of API calls (#1302)
++ Azure AKS authentication issues #1079 (@gerardaus)
++ Support parameter substitution in the volumes attribute (#1238)
+
+### Refactoring & Improvements:
+* Update dependencies to K8s v1.12 and client-go 9.0
+* Add namespace explicitly to pod metadata (#1059) (@dvavili)
+* Raise not implemented error when artifact saving is unsupported (#1062) (@dtaniwaki)
+* Retry logic to s3 load and save function (#1082) (@kshamajain99)
+* Remove docker_lib mount volume which is not needed anymore (#1115) (@ywskycn)
+* Documentation improvements and fixes (@protochron, @jmcarp, @locona, @kivio, @fischerjulian, @annawinkler, @jdfalko, @groodt, @migggy, @nstott, @adrienjt)
+* Validate ArchiveLocation artifacts (#1167) (@dtaniwaki)
+* Git cloning via SSH was not verifying host public key (#1261)
+* Speed up podReconciliation using parallel goroutine (#1286) (@xianlubird)
+
+### Bug Fixes
+- Initialize child node before marking phase. Fixes panic on invalid `When` (#1075) (@jmcarp)
+- Submodules are dirty after checkout -- need to update (#1052) (@andreimc)
+- Fix output artifact and parameter conflict (#1125) (@Ark-kun)
+- Remove container wait timeout from 'argo logs --follow' (#1142)
+- Fix panic in ttl controller (#1143)
+- Kill daemoned step if workflow consist of single daemoned step (#1144)
+- Fix global artifact overwriting in nested workflow (#1086) (@WeiTang114)
+- Fix issue where steps with exhausted retires would not complete (#1148)
+- Fix metadata for DAG with loops (#1149)
+- Replace exponential retry with poll (#1166) (@kzadorozhny)
+- Dockerfile: argoexec base image correction (#1213) (@elikatsis)
+- Set executor image pull policy for resource template (#1174) (@dtaniwaki)
+- fix dag retries (#1221) (@houz42)
+- Remove extra quotes around output parameter value (#1232) (@elikatsis)
+- Include stderr when retrieving docker logs (#1225) (@shahin)
+- Fix the Prometheus address references (#1237) (@spacez320)
+- Kubernetes Resource action: patch is not supported (#1245)
+- Fake outputs don't notify and task completes successfully (#1247)
+- Reduce redundancy pod label action (#1271) (@xianlubird)
+- Fix bug with DockerExecutor's CopyFile (#1275)
+- Fix for Resource creation where template has same parameter templating (#1283)
+- Fixes an issue where daemon steps were not getting terminated properly
+- argo submit --wait and argo wait quits while workflow is running (#1347)
+- Fix input artifacts with multiple ssh keys (#1338) (@almariah)
+- Add when test for character that included `/` (@hideto0710)
+- Fix parameter substitution bug (#1345) (@elikatsis)
+- Fix missing template local volumes, Handle volumes only used in init containers (#1342)
+- Export the methods of `KubernetesClientInterface` (#1294)
+
+
 ## 2.2.1 (2018-10-18)
 
 ### Changelog since v2.2.0

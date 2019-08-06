@@ -11,20 +11,17 @@ the workflows. Here are the requirements and steps to run the workflows.
 
 ## 1. Download Argo
 
-On Mac:
+Download the latest Argo CD version from https://github.com/argoproj/argo/releases/latest.
+
+Also available in Mac Homebrew:
 ```
 brew install argoproj/tap/argo
-```
-On Linux:
-```
-curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.2.1/argo-linux-amd64
-chmod +x /usr/local/bin/argo
 ```
 
 ## 2. Install the Controller and UI
 ```
-kubectl create ns argo
-kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/v2.2.1/manifests/install.yaml
+kubectl create namespace argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
 ```
 NOTE: On GKE, you may need to grant your account the ability to create new clusterroles
 ```
@@ -75,18 +72,22 @@ Argo supports S3 (AWS, GCS, Minio) as well as Artifactory as artifact repositori
 uses Minio for the sake of portability. Instructions on how to configure other artifact repositories
 are [here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
 ```
-brew install kubernetes-helm # mac
-helm init
-helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer --set persistence.enabled=false
+helm install stable/minio \
+  --name argo-artifacts \
+  --set service.type=LoadBalancer \
+  --set defaultBucket.enabled=true \
+  --set defaultBucket.name=my-bucket \
+  --set persistence.enabled=false \
+  --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-kubectl get service argo-artifacts -o wide
+kubectl get service argo-artifacts-mini -o wide
 ```
 On Minikube:
 ```
-minikube service --url argo-artifacts
+minikube service --url argo-artifacts-mini
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,

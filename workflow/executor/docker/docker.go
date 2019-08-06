@@ -1,22 +1,22 @@
 package docker
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
-	"github.com/argoproj/argo/util"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/util"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/workflow/common"
-	log "github.com/sirupsen/logrus"
+	execcommon "github.com/argoproj/argo/workflow/executor/common"
 )
-
-// killGracePeriod is the time in seconds after sending SIGTERM before
-// forcefully killing the sidecar with SIGKILL (value matches k8s)
-const killGracePeriod = 10
 
 type DockerExecutor struct{}
 
@@ -51,38 +51,48 @@ func (d *DockerExecutor) CopyFile(containerID string, sourcePath string, destPat
 	if err != nil {
 		return err
 	}
+	copiedFile, err := os.Open(destPath)
+	if err != nil {
+		return err
+	}
+	defer util.Close(copiedFile)
+	gzipReader, err := gzip.NewReader(copiedFile)
+	if err != nil {
+		return err
+	}
+	if !file.ExistsInTar(sourcePath, tar.NewReader(gzipReader)) {
+		errMsg := fmt.Sprintf("path %s does not exist (or %s is empty) in archive %s", sourcePath, sourcePath, destPath)
+		log.Warn(errMsg)
+		return errors.Errorf(errors.CodeNotFound, errMsg)
+	}
 	log.Infof("Archiving completed")
 	return nil
 }
 
-// GetOutput returns the entirety of the container output as a string
-// Used to capturing script results as an output parameter
-func (d *DockerExecutor) GetOutput(containerID string) (string, error) {
+func (d *DockerExecutor) GetOutputStream(containerID string, combinedOutput bool) (io.ReadCloser, error) {
 	cmd := exec.Command("docker", "logs", containerID)
 	log.Info(cmd.Args)
-	outBytes, _ := cmd.Output()
-	return strings.TrimSpace(string(outBytes)), nil
+	if combinedOutput {
+		cmd.Stderr = cmd.Stdout
+	}
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	err = cmd.Start()
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return reader, nil
+}
+
+func (d *DockerExecutor) WaitInit() error {
+	return nil
 }
 
 // Wait for the container to complete
 func (d *DockerExecutor) Wait(containerID string) error {
 	return common.RunCommand("docker", "wait", containerID)
-}
-
-// Logs captures the logs of a container to a file
-func (d *DockerExecutor) Logs(containerID string, path string) error {
-	cmd := exec.Command("docker", "logs", containerID)
-	outfile, err := os.Create(path)
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	defer util.Close(outfile)
-	cmd.Stdout = outfile
-	err = cmd.Start()
-	if err != nil {
-		return errors.InternalWrapError(err)
-	}
-	return cmd.Wait()
 }
 
 // killContainers kills a list of containerIDs first with a SIGTERM then with a SIGKILL after a grace period
@@ -101,8 +111,8 @@ func (d *DockerExecutor) Kill(containerIDs []string) error {
 	// waitCmd.Wait() might return error "signal: killed" when we SIGKILL the process
 	// We ignore errors in this case
 	//ignoreWaitError := false
-	timer := time.AfterFunc(killGracePeriod*time.Second, func() {
-		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", killGracePeriod)
+	timer := time.AfterFunc(execcommon.KillGracePeriod*time.Second, func() {
+		log.Infof("Timed out (%ds) for containers to terminate gracefully. Killing forcefully", execcommon.KillGracePeriod)
 		forceKillArgs := append([]string{"kill", "--signal", "KILL"}, containerIDs...)
 		forceKillCmd := exec.Command("docker", forceKillArgs...)
 		log.Info(forceKillCmd.Args)

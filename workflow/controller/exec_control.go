@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -15,7 +16,10 @@ import (
 
 // applyExecutionControl will ensure a pod's execution control annotation is up-to-date
 // kills any pending pods when workflow has reached it's deadline
-func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
+func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod, wfNodesLock *sync.RWMutex) error {
+	if pod == nil {
+		return nil
+	}
 	switch pod.Status.Phase {
 	case apiv1.PodSucceeded, apiv1.PodFailed:
 		// Skip any pod which are already completed
@@ -27,6 +31,8 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 			woc.log.Infof("Deleting Pending pod %s/%s which has exceeded workflow deadline %s", pod.Namespace, pod.Name, woc.workflowDeadline)
 			err := woc.controller.kubeclientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
 			if err == nil {
+				wfNodesLock.Lock()
+				defer wfNodesLock.Unlock()
 				node := woc.wf.Status.Nodes[pod.Name]
 				var message string
 				if woc.workflowDeadline.IsZero() {
@@ -42,10 +48,6 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 		}
 	}
 
-	// Now ensure the pod's current annotation matches our desired deadline
-	desiredExecCtl := common.ExecutionControl{
-		Deadline: woc.workflowDeadline,
-	}
 	var podExecCtl common.ExecutionControl
 	if execCtlStr, ok := pod.Annotations[common.AnnotationKeyExecutionControl]; ok && execCtlStr != "" {
 		err := json.Unmarshal([]byte(execCtlStr), &podExecCtl)
@@ -53,15 +55,26 @@ func (woc *wfOperationCtx) applyExecutionControl(pod *apiv1.Pod) error {
 			woc.log.Warnf("Failed to unmarshal execution control from pod %s", pod.Name)
 		}
 	}
-	if podExecCtl.Deadline == nil && desiredExecCtl.Deadline == nil {
+	if podExecCtl.Deadline == nil && woc.workflowDeadline == nil {
 		return nil
-	} else if podExecCtl.Deadline != nil && desiredExecCtl.Deadline != nil {
-		if podExecCtl.Deadline.Equal(*desiredExecCtl.Deadline) {
+	} else if podExecCtl.Deadline != nil && woc.workflowDeadline != nil {
+		if podExecCtl.Deadline.Equal(*woc.workflowDeadline) {
 			return nil
 		}
 	}
-	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, desiredExecCtl.Deadline, podExecCtl.Deadline)
-	return woc.updateExecutionControl(pod.Name, desiredExecCtl)
+
+	if podExecCtl.Deadline != nil && podExecCtl.Deadline.IsZero() {
+		// If the pod has already been explicitly signaled to terminate, then do nothing.
+		// This can happen when daemon steps are terminated.
+		woc.log.Infof("Skipping sync of execution control of pod %s. pod has been signaled to terminate", pod.Name)
+		return nil
+	}
+
+	// Assign new deadline value to PodExeCtl
+	podExecCtl.Deadline = woc.workflowDeadline
+
+	woc.log.Infof("Execution control for pod %s out-of-sync desired: %v, actual: %v", pod.Name, woc.workflowDeadline, podExecCtl.Deadline)
+	return woc.updateExecutionControl(pod.Name, podExecCtl)
 }
 
 // killDaemonedChildren kill any daemoned pods of a steps or DAG template node.
@@ -116,7 +129,7 @@ func (woc *wfOperationCtx) updateExecutionControl(podName string, execCtl common
 	woc.log.Infof("Signalling %s of updates", podName)
 	exec, err := common.ExecPodContainer(
 		woc.controller.restConfig, woc.wf.ObjectMeta.Namespace, podName,
-		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 1",
+		common.WaitContainerName, true, true, "sh", "-c", "kill -s USR2 $(pidof argoexec)",
 	)
 	if err != nil {
 		return err

@@ -6,19 +6,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	RootCmd.AddCommand(initCmd)
-}
-
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Load artifacts",
-	Run: func(cmd *cobra.Command, args []string) {
-		err := loadArtifacts()
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
-	},
+func NewInitCommand() *cobra.Command {
+	var command = cobra.Command{
+		Use:   "init",
+		Short: "Load artifacts",
+		Run: func(cmd *cobra.Command, args []string) {
+			err := loadArtifacts()
+			if err != nil {
+				log.Fatalf("%+v", err)
+			}
+		},
+	}
+	return &command
 }
 
 func loadArtifacts() error {

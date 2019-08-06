@@ -3,7 +3,7 @@
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM golang:1.11.4 as builder
+FROM golang:1.11.5 as builder
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -28,7 +28,13 @@ ENV DEP_VERSION=0.5.0
 RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-linux-amd64 -O /usr/local/bin/dep && \
     chmod +x /usr/local/bin/dep
 
+# Install golangci-lint
+ENV GOLANGCI_LINT_VERSION=1.16.0
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v$GOLANGCI_LINT_VERSION/install.sh| sh -s -- -b $(go env GOPATH)/bin v$GOLANGCI_LINT_VERSION
+
 # Install gometalinter
+# Keep gometalinter to avoid CI failures during the linter migration.
+# We can remove it after enough time has passed.
 ENV GOMETALINTER_VERSION=2.0.12
 RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${GOMETALINTER_VERSION}/gometalinter-${GOMETALINTER_VERSION}-linux-amd64.tar.gz | \
     tar -xzC "$GOPATH/bin" --exclude COPYING --exclude README.md --strip-components 1 -f- && \
@@ -41,12 +47,13 @@ RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${G
 ####################################################################################################
 FROM debian:9.6-slim as argoexec-base
 # NOTE: keep the version synced with https://storage.googleapis.com/kubernetes-release/release/stable.txt
-ENV KUBECTL_VERSION=1.13.1
+ENV KUBECTL_VERSION=1.15.1
 RUN apt-get update && \
     apt-get install -y curl jq procps git tar mime-support && \
     rm -rf /var/lib/apt/lists/* && \
     curl -L -o /usr/local/bin/kubectl -LO https://storage.googleapis.com/kubernetes-release/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl && \
     chmod +x /usr/local/bin/kubectl
+COPY hack/ssh_known_hosts /etc/ssh/ssh_known_hosts
 COPY --from=builder /usr/local/bin/docker /usr/local/bin/
 
 

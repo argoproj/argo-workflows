@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/config"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/http"
 	ssh2 "gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
@@ -21,9 +22,10 @@ import (
 
 // GitArtifactDriver is the artifact driver for a git repo
 type GitArtifactDriver struct {
-	Username      string
-	Password      string
-	SSHPrivateKey string
+	Username              string
+	Password              string
+	SSHPrivateKey         string
+	InsecureIgnoreHostKey bool
 }
 
 // Load download artifacts from an git URL
@@ -34,7 +36,9 @@ func (g *GitArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) erro
 			return errors.InternalWrapError(err)
 		}
 		auth := &ssh2.PublicKeys{User: "git", Signer: signer}
-		auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+		if g.InsecureIgnoreHostKey {
+			auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+		}
 		return gitClone(path, inputArtifact, auth, g.SSHPrivateKey)
 	}
 	if g.Username != "" || g.Password != "" {
@@ -49,23 +53,25 @@ func (g *GitArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) err
 	return errors.Errorf(errors.CodeBadRequest, "Git output artifacts unsupported")
 }
 
-func writePrivateKey(key string) error {
+func writePrivateKey(key string, insecureIgnoreHostKey bool) error {
 	usr, err := user.Current()
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 	sshDir := fmt.Sprintf("%s/.ssh", usr.HomeDir)
-	err = os.Mkdir(sshDir, 0700)
+	err = os.MkdirAll(sshDir, 0700)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
 
-	sshConfig := `Host *
+	if insecureIgnoreHostKey {
+		sshConfig := `Host *
 	StrictHostKeyChecking no
 	UserKnownHostsFile /dev/null`
-	err = ioutil.WriteFile(fmt.Sprintf("%s/config", sshDir), []byte(sshConfig), 0644)
-	if err != nil {
-		return errors.InternalWrapError(err)
+		err = ioutil.WriteFile(fmt.Sprintf("%s/config", sshDir), []byte(sshConfig), 0644)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
 	}
 	err = ioutil.WriteFile(fmt.Sprintf("%s/id_rsa", sshDir), []byte(key), 0600)
 	if err != nil {
@@ -81,10 +87,39 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
 		Auth:              auth,
 	}
-	_, err := git.PlainClone(path, false, &cloneOptions)
+	if inputArtifact.Git.Depth != nil {
+		cloneOptions.Depth = int(*inputArtifact.Git.Depth)
+	}
+
+	repo, err := git.PlainClone(path, false, &cloneOptions)
 	if err != nil {
 		return errors.InternalWrapError(err)
 	}
+
+	if inputArtifact.Git.Fetch != nil {
+		refSpecs := make([]config.RefSpec, len(inputArtifact.Git.Fetch))
+		for i, spec := range inputArtifact.Git.Fetch {
+			refSpecs[i] = config.RefSpec(spec)
+		}
+
+		fetchOptions := git.FetchOptions{
+			RefSpecs: refSpecs,
+		}
+		if inputArtifact.Git.Depth != nil {
+			fetchOptions.Depth = int(*inputArtifact.Git.Depth)
+		}
+
+		err = fetchOptions.Validate()
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+
+		err = repo.Fetch(&fetchOptions)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+	}
+
 	if inputArtifact.Git.Revision != "" {
 		// We still rely on forking git for checkout, since go-git does not have a reliable
 		// way of resolving revisions (e.g. mybranch, HEAD^, v1.2.3)
@@ -101,7 +136,7 @@ func gitClone(path string, inputArtifact *wfv1.Artifact, auth transport.AuthMeth
 		}
 		log.Errorf("`%s` stdout:\n%s", cmd.Args, string(output))
 		if privateKey != "" {
-			err := writePrivateKey(privateKey)
+			err := writePrivateKey(privateKey, inputArtifact.Git.InsecureIgnoreHostKey)
 			if err != nil {
 				return errors.InternalWrapError(err)
 			}

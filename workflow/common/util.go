@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/ghodss/yaml"
+	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -24,11 +24,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+
+	"github.com/argoproj/argo/errors"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/util"
 )
 
 // FindOverlappingVolume looks an artifact path, checks if it overlaps with any
 // user specified volumeMounts in the template, and returns the deepest volumeMount
-// (if any).
+// (if any). A return value of nil indicates the path is not under any volumeMount.
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
 	if tmpl.Container == nil {
 		return nil
@@ -64,6 +68,126 @@ func KillPodContainer(restConfig *rest.Config, namespace string, pod string, con
 		}
 		log.Infof("Kill of %s (%s) successfully issued", pod, container)
 	}()
+	return nil
+}
+
+// ContainerLogStream returns an io.ReadCloser for a container's log stream using the websocket
+// interface. This was implemented in the hopes that we could selectively choose stdout from stderr,
+// but due to https://github.com/kubernetes/kubernetes/issues/28167, it is not possible to discern
+// stdout from stderr using the K8s API server, so this function is unused, instead preferring the
+// pod logs interface from client-go. It's left as a reference for when issue #28167 is eventually
+// resolved.
+func ContainerLogStream(config *rest.Config, namespace string, pod string, container string) (io.ReadCloser, error) {
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	logRequest := clientset.CoreV1().RESTClient().Get().
+		Resource("pods").
+		Name(pod).
+		Namespace(namespace).
+		SubResource("log").
+		Param("container", container)
+	u := logRequest.URL()
+	switch u.Scheme {
+	case "https":
+		u.Scheme = "wss"
+	case "http":
+		u.Scheme = "ws"
+	default:
+		return nil, errors.Errorf("Malformed URL %s", u.String())
+	}
+
+	log.Info(u.String())
+	wsrc := websocketReadCloser{
+		&bytes.Buffer{},
+	}
+
+	wrappedRoundTripper, err := roundTripperFromConfig(config, wsrc.WebsocketCallback)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+
+	// Send the request and let the callback do its work
+	req := &http.Request{
+		Method: http.MethodGet,
+		URL:    u,
+	}
+	_, err = wrappedRoundTripper.RoundTrip(req)
+	if err != nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &wsrc, nil
+}
+
+type RoundTripCallback func(conn *websocket.Conn, resp *http.Response, err error) error
+
+type WebsocketRoundTripper struct {
+	Dialer *websocket.Dialer
+	Do     RoundTripCallback
+}
+
+func (d *WebsocketRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	conn, resp, err := d.Dialer.Dial(r.URL.String(), r.Header)
+	if err == nil {
+		defer util.Close(conn)
+	}
+	return resp, d.Do(conn, resp, err)
+}
+
+func (w *websocketReadCloser) WebsocketCallback(ws *websocket.Conn, resp *http.Response, err error) error {
+	if err != nil {
+		if resp != nil && resp.StatusCode != http.StatusOK {
+			buf := new(bytes.Buffer)
+			_, _ = buf.ReadFrom(resp.Body)
+			return errors.InternalErrorf("Can't connect to log endpoint (%d): %s", resp.StatusCode, buf.String())
+		}
+		return errors.InternalErrorf("Can't connect to log endpoint: %s", err.Error())
+	}
+
+	for {
+		_, body, err := ws.ReadMessage()
+		if len(body) > 0 {
+			//log.Debugf("%d: %s", msgType, string(body))
+			_, writeErr := w.Write(body)
+			if writeErr != nil {
+				return writeErr
+			}
+		}
+		if err != nil {
+			if err == io.EOF {
+				log.Infof("websocket closed: %v", err)
+				return nil
+			}
+			log.Warnf("websocket error: %v", err)
+			return err
+		}
+	}
+}
+
+func roundTripperFromConfig(config *rest.Config, callback RoundTripCallback) (http.RoundTripper, error) {
+	tlsConfig, err := rest.TLSConfigFor(config)
+	if err != nil {
+		return nil, err
+	}
+	// Create a roundtripper which will pass in the final underlying websocket connection to a callback
+	wsrt := &WebsocketRoundTripper{
+		Do: callback,
+		Dialer: &websocket.Dialer{
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: tlsConfig,
+		},
+	}
+	// Make sure we inherit all relevant security headers
+	return rest.HTTPWrappersForConfig(config, wsrt)
+}
+
+type websocketReadCloser struct {
+	*bytes.Buffer
+}
+
+func (w *websocketReadCloser) Close() error {
+	//return w.conn.Close()
 	return nil
 }
 
@@ -116,13 +240,13 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
-	tmpl = tmpl.DeepCopy()
-	for i, inParam := range tmpl.Inputs.Parameters {
+	newTmpl := tmpl.DeepCopy()
+	for i, inParam := range newTmpl.Inputs.Parameters {
 		if inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
@@ -136,32 +260,38 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
-		tmpl.Inputs.Parameters[i] = inParam
+		newTmpl.Inputs.Parameters[i] = inParam
 	}
 
 	// Performs substitutions of input artifacts
-	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-	for i, inArt := range tmpl.Inputs.Artifacts {
+	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
+	for i, inArt := range newTmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
 		if inArt.HasLocation() {
 			newInputArtifacts[i] = inArt
 			continue
 		}
-		// artifact must be supplied
 		argArt := args.GetArtifactByName(inArt.Name)
-		if argArt == nil {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+		if !inArt.Optional {
+			// artifact must be supplied
+			if argArt == nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s was not supplied", inArt.Name)
+			}
+			if !argArt.HasLocation() && !validateOnly {
+				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+			}
 		}
-		if !argArt.HasLocation() && !validateOnly {
-			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s missing location information", inArt.Name)
+		if argArt != nil {
+			argArt.Path = inArt.Path
+			argArt.Mode = inArt.Mode
+			newInputArtifacts[i] = *argArt
+		} else {
+			newInputArtifacts[i] = inArt
 		}
-		argArt.Path = inArt.Path
-		argArt.Mode = inArt.Mode
-		newInputArtifacts[i] = *argArt
 	}
-	tmpl.Inputs.Artifacts = newInputArtifacts
+	newTmpl.Inputs.Artifacts = newInputArtifacts
 
-	return substituteParams(tmpl, globalParams, localParams)
+	return substituteParams(newTmpl, globalParams, localParams)
 }
 
 // substituteParams returns a new copy of the template with global, pod, and input parameters substituted
@@ -196,6 +326,28 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
+	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
+	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
+	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
+		if inArt.Path != "" {
+			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
+		}
+	}
+	for _, outArt := range globalReplacedTmpl.Outputs.Artifacts {
+		if outArt.Path != "" {
+			replaceMap["outputs.artifacts."+outArt.Name+".path"] = outArt.Path
+		}
+	}
+	for _, param := range globalReplacedTmpl.Outputs.Parameters {
+		if param.ValueFrom != nil && param.ValueFrom.Path != "" {
+			replaceMap["outputs.parameters."+param.Name+".path"] = param.ValueFrom.Path
+		}
+	}
+
 	fstTmpl = fasttemplate.New(globalReplacedTmplStr, "{{", "}}")
 	s, err := Replace(fstTmpl, replaceMap, true)
 	if err != nil {
@@ -211,8 +363,7 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template. prefixFilter will apply the replacements only
-// to variables with the specified prefix
+// remaining in the substituted template.
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -244,10 +395,12 @@ func RunCommand(name string, arg ...string) error {
 	log.Info(cmdStr)
 	_, err := cmd.Output()
 	if err != nil {
-		exErr := err.(*exec.ExitError)
-		errOutput := string(exErr.Stderr)
-		log.Errorf("`%s` failed: %s", cmdStr, errOutput)
-		return errors.InternalError(strings.TrimSpace(errOutput))
+		if exErr, ok := err.(*exec.ExitError); ok {
+			errOutput := string(exErr.Stderr)
+			log.Errorf("`%s` failed: %s", cmdStr, errOutput)
+			return errors.InternalError(strings.TrimSpace(errOutput))
+		}
+		return errors.InternalWrapError(err)
 	}
 	return nil
 }
@@ -316,37 +469,10 @@ func IsPodTemplate(tmpl *wfv1.Template) bool {
 	return false
 }
 
-// GetTaskAncestry returns a list of taskNames which are ancestors of this task
-func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
-	taskByName := make(map[string]wfv1.DAGTask)
-	for _, task := range tasks {
-		taskByName[task.Name] = task
-	}
+var yamlSeparator = regexp.MustCompile(`\n---`)
 
-	visited := make(map[string]bool)
-	var getAncestry func(s string)
-	getAncestry = func(currTask string) {
-		task := taskByName[currTask]
-		for _, depTask := range task.Dependencies {
-			getAncestry(depTask)
-		}
-		if currTask != taskName {
-			visited[currTask] = true
-		}
-	}
-
-	getAncestry(taskName)
-	ancestry := make([]string, 0)
-	for ancestor := range visited {
-		ancestry = append(ancestry, ancestor)
-	}
-	return ancestry
-}
-
-var yamlSeparator = regexp.MustCompile("\\n---")
-
-// SplitYAMLFile is a helper to split a body into multiple workflow objects
-func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
+// SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
+func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 	manifestsStrings := yamlSeparator.Split(string(body), -1)
 	manifests := make([]wfv1.Workflow, 0)
 	for _, manifestStr := range manifestsStrings {
@@ -359,7 +485,8 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 			opts = append(opts, yaml.DisallowUnknownFields) // nolint
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
-		if wf.Kind != "" && wf.Kind != workflow.Kind {
+		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
+			log.Warnf("%s is not a workflow", wf.Kind)
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
@@ -370,4 +497,130 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		manifests = append(manifests, wf)
 	}
 	return manifests, nil
+}
+
+// SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
+func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.WorkflowTemplate, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var wftmpl wfv1.WorkflowTemplate
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
+		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
+			log.Warnf("%s is not a workflow template", wftmpl.Kind)
+			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
+			// We ignore these since we only care about WorkflowTemplate manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, wftmpl)
+	}
+	return manifests, nil
+}
+
+// MergeReferredTemplate merges a referred template to the receiver template.
+func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
+	// Copy the referred template to deep copy template types.
+	newTmpl := referred.DeepCopy()
+
+	newTmpl.Name = tmpl.Name
+
+	emptymap := map[string]string{}
+	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
+	if err != nil {
+		return nil, err
+	}
+	newTmpl.Arguments = wfv1.Arguments{}
+
+	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
+	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(tmpl.NodeSelector) > 0 {
+		m := make(map[string]string, len(tmpl.NodeSelector))
+		for k, v := range tmpl.NodeSelector {
+			m[k] = v
+		}
+		newTmpl.NodeSelector = m
+	}
+	if tmpl.Affinity != nil {
+		newTmpl.Affinity = tmpl.Affinity.DeepCopy()
+	}
+	if len(newTmpl.Metadata.Annotations) > 0 || len(tmpl.Metadata.Labels) > 0 {
+		newTmpl.Metadata = *tmpl.Metadata.DeepCopy()
+	}
+	if tmpl.Daemon != nil {
+		v := *tmpl.Daemon
+		newTmpl.Daemon = &v
+	}
+	if len(tmpl.Volumes) > 0 {
+		volumes := make([]apiv1.Volume, len(tmpl.Volumes))
+		copy(volumes, tmpl.Volumes)
+		newTmpl.Volumes = volumes
+	}
+	if len(tmpl.InitContainers) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.InitContainers))
+		copy(containers, tmpl.InitContainers)
+		newTmpl.InitContainers = containers
+	}
+	if len(tmpl.Sidecars) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.Sidecars))
+		copy(containers, tmpl.Sidecars)
+		newTmpl.Sidecars = containers
+	}
+	if tmpl.ArchiveLocation != nil {
+		newTmpl.ArchiveLocation = tmpl.ArchiveLocation.DeepCopy()
+	}
+	if tmpl.ActiveDeadlineSeconds != nil {
+		v := *tmpl.ActiveDeadlineSeconds
+		newTmpl.ActiveDeadlineSeconds = &v
+	}
+	if tmpl.RetryStrategy != nil {
+		newTmpl.RetryStrategy = tmpl.RetryStrategy.DeepCopy()
+	}
+	if tmpl.Parallelism != nil {
+		v := *tmpl.Parallelism
+		newTmpl.Parallelism = &v
+	}
+	if len(tmpl.Tolerations) != 0 {
+		tolerations := make([]apiv1.Toleration, len(tmpl.Tolerations))
+		copy(tolerations, tmpl.Tolerations)
+		newTmpl.Tolerations = tolerations
+	}
+	if tmpl.SchedulerName != "" {
+		newTmpl.SchedulerName = tmpl.SchedulerName
+	}
+	if tmpl.PriorityClassName != "" {
+		newTmpl.PriorityClassName = tmpl.PriorityClassName
+	}
+	if tmpl.Priority != nil {
+		v := *tmpl.Priority
+		newTmpl.Priority = &v
+	}
+
+	return newTmpl, nil
+}
+
+// GetTemplateGetterString returns string of TemplateGetter.
+func GetTemplateGetterString(getter wfv1.TemplateGetter) string {
+	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
+}
+
+// GetTemplateHolderString returns string of TemplateHolder.
+func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
+	tmplName := tmplHolder.GetTemplateName()
+	tmplRef := tmplHolder.GetTemplateRef()
+	if tmplRef != nil {
+		return fmt.Sprintf("%T (%s/%s)", tmplHolder, tmplRef.Name, tmplRef.Template)
+	} else {
+		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
+	}
 }

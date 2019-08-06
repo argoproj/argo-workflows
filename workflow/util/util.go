@@ -26,12 +26,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/utils/pointer"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/util/file"
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
@@ -139,11 +142,14 @@ type SubmitOpts struct {
 	Parameters     []string               // --parameter
 	ParameterFile  string                 // --parameter-file
 	ServiceAccount string                 // --serviceaccount
+	DryRun         bool                   // --dry-run
+	ServerDryRun   bool                   // --server-dry-run
+	Labels         string                 // --labels
 	OwnerReference *metav1.OwnerReference // useful if your custom controller creates argo workflow resources
 }
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
-func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -153,14 +159,23 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 	if opts.ServiceAccount != "" {
 		wf.Spec.ServiceAccountName = opts.ServiceAccount
 	}
-	if opts.InstanceID != "" {
-		labels := wf.GetLabels()
-		if labels == nil {
-			labels = make(map[string]string)
-		}
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-		wf.SetLabels(labels)
+	labels := wf.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
 	}
+	if opts.Labels != "" {
+		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
+		if err != nil {
+			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+		}
+		for k, v := range passedLabels {
+			labels[k] = v
+		}
+	}
+	if opts.InstanceID != "" {
+		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
+	}
+	wf.SetLabels(labels)
 	if len(opts.Parameters) > 0 || opts.ParameterFile != "" {
 		newParams := make([]wfv1.Parameter, 0)
 		passedParams := make(map[string]bool)
@@ -198,14 +213,14 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 				}
 			}
 
-			yamlParams := map[string]interface{}{}
+			yamlParams := map[string]json.RawMessage{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
 
 			for k, v := range yamlParams {
-				value := fmt.Sprintf("%v", v)
+				value := fmt.Sprintf("%s", v)
 				param := wfv1.Parameter{
 					Name:  k,
 					Value: &value,
@@ -238,11 +253,37 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wf *wfv1.Workflow, opts *Su
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wf)
+	err := validate.ValidateWorkflow(wfClientset, namespace, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
-	return wfIf.Create(wf)
+
+	if opts.ServerDryRun {
+		wf, err := CreateServerDryRun(wf, wfClientset)
+		if err != nil {
+			return nil, err
+		}
+		return wf, err
+	} else if opts.DryRun {
+		return wf, nil
+	} else {
+		return wfIf.Create(wf)
+	}
+}
+
+// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
+func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+	// Keep the workflow metadata because it will be overwritten by the Post request
+	workflowTypeMeta := wf.TypeMeta
+	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+		Namespace(wf.Namespace).
+		Resource("workflows").
+		Body(wf).
+		Param("dryRun", "All").
+		Do().
+		Into(wf)
+	wf.TypeMeta = workflowTypeMeta
+	return wf, err
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
@@ -255,10 +296,9 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		if IsWorkflowCompleted(wf) {
 			return false, errSuspendedCompletedWorkflow
 		}
-		if wf.Spec.Suspend == nil || *wf.Spec.Suspend != true {
-			t := true
-			wf.Spec.Suspend = &t
-			wf, err = wfIf.Update(wf)
+		if wf.Spec.Suspend == nil || !*wf.Spec.Suspend {
+			wf.Spec.Suspend = pointer.BoolPtr(true)
+			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
@@ -297,7 +337,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 			}
 		}
 		if updated {
-			wf, err = wfIf.Update(wf)
+			_, err = wfIf.Update(wf)
 			if err != nil {
 				if apierr.IsConflict(err) {
 					return false, nil
@@ -361,7 +401,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// carry over user labels and annotations from previous workflow.
 	// skip any argoproj.io labels except for the controller instanceID label.
 	for key, val := range wf.ObjectMeta.Labels {
-		if strings.HasPrefix(key, workflow.FullName+"/") && key != common.LabelKeyControllerInstanceID {
+		if strings.HasPrefix(key, workflow.WorkflowFullName+"/") && key != common.LabelKeyControllerInstanceID {
 			continue
 		}
 		if newWF.ObjectMeta.Labels == nil {
@@ -462,6 +502,14 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 				continue
 			}
 		case wfv1.NodeError, wfv1.NodeFailed:
+			if !strings.HasPrefix(node.Name, onExitNodeName) && node.Type == wfv1.NodeTypeDAG {
+				newNode := node.DeepCopy()
+				newNode.Phase = wfv1.NodeRunning
+				newNode.Message = ""
+				newNode.FinishedAt = metav1.Time{}
+				newWF.Status.Nodes[newNode.ID] = *newNode
+				continue
+			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
@@ -524,4 +572,20 @@ func TerminateWorkflow(wfClient v1alpha1.WorkflowInterface, name string) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
+}
+
+// DecompressWorkflow decompresses the compressed status of a workflow (if compressed)
+func DecompressWorkflow(wf *wfv1.Workflow) error {
+	if wf.Status.CompressedNodes != "" {
+		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
+		if err != nil {
+			return errors.InternalWrapError(err)
+		}
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		if err != nil {
+			return err
+		}
+		wf.Status.CompressedNodes = ""
+	}
+	return nil
 }

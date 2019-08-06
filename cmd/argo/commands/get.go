@@ -8,19 +8,24 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 const onExitSuffix = "onExit"
 
+type getFlags struct {
+	output string
+	status string
+}
+
 func NewGetCommand() *cobra.Command {
 	var (
-		output string
+		getArgs getFlags
 	)
 
 	var command = &cobra.Command{
@@ -36,17 +41,26 @@ func NewGetCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			printWorkflow(wf, output)
+			err = util.DecompressWorkflow(wf)
+			if err != nil {
+				log.Fatal(err)
+			}
+			printWorkflow(wf, getArgs.output, getArgs.status)
 		},
 	}
 
-	command.Flags().StringVarP(&output, "output", "o", "", "Output format. One of: json|yaml|wide")
+	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
+	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	return command
 }
 
-func printWorkflow(wf *wfv1.Workflow, outFmt string) {
-	switch outFmt {
+func printWorkflow(wf *wfv1.Workflow, output, status string) {
+	getArgs := getFlags{
+		output: output,
+		status: status,
+	}
+	switch getArgs.output {
 	case "name":
 		fmt.Println(wf.ObjectMeta.Name)
 	case "json":
@@ -56,13 +70,13 @@ func printWorkflow(wf *wfv1.Workflow, outFmt string) {
 		outBytes, _ := yaml.Marshal(wf)
 		fmt.Print(string(outBytes))
 	case "wide", "":
-		printWorkflowHelper(wf, outFmt)
+		printWorkflowHelper(wf, getArgs)
 	default:
-		log.Fatalf("Unknown output format: %s", outFmt)
+		log.Fatalf("Unknown output format: %s", getArgs.output)
 	}
 }
 
-func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
+func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 	const fmtStr = "%-20s %v\n"
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
@@ -124,7 +138,7 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 		fmt.Println()
 		// apply a dummy FgDefault format to align tabwriter with the rest of the columns
-		if outFmt == "wide" {
+		if getArgs.output == "wide" {
 			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tARTIFACTS\tMESSAGE\n", ansiFormat("STEP", FgDefault))
 		} else {
 			fmt.Fprintf(w, "%s\tPODNAME\tDURATION\tMESSAGE\n", ansiFormat("STEP", FgDefault))
@@ -135,12 +149,12 @@ func printWorkflowHelper(wf *wfv1.Workflow, outFmt string) {
 
 		// Print main and onExit Trees
 		mainRoot := roots[wf.ObjectMeta.Name]
-		mainRoot.renderNodes(w, wf, 0, " ", " ", outFmt)
+		mainRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 
 		onExitID := wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)
 		if onExitRoot, ok := roots[onExitID]; ok {
 			fmt.Fprintf(w, "\t\t\t\t\t\n")
-			onExitRoot.renderNodes(w, wf, 0, " ", " ", outFmt)
+			onExitRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 		}
 		_ = w.Flush()
 	}
@@ -171,7 +185,7 @@ func (n *nodeInfo) getStartTime(wf *wfv1.Workflow) metav1.Time {
 // Interface to represent Nodes in render form types
 type renderNode interface {
 	// Render this renderNode and its children
-	renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string)
+	renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags)
 	nodeInfoInterface
 }
 
@@ -360,7 +374,7 @@ func filterNode(node wfv1.NodeStatus) (bool, bool) {
 // whether it was filtered and does this child need special indent
 func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth int,
 	nodePrefix string, childPrefix string, parentFiltered bool,
-	childIndex int, maxIndex int, childIndent bool, outFmt string) {
+	childIndex int, maxIndex int, childIndent bool, getArgs getFlags) {
 	var part, subp string
 	if parentFiltered && childIndent {
 		if maxIndex == 0 {
@@ -398,12 +412,20 @@ func renderChild(w *tabwriter.Writer, wf *wfv1.Workflow, nInfo renderNode, depth
 		}
 		childChldPrefix = childPrefix + subp
 	}
-	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix, outFmt)
+	nInfo.renderNodes(w, wf, depth, childNodePrefix, childChldPrefix, getArgs)
 }
 
 // Main method to print information of node in get
-func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string, outFmt string) {
+func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
+	if getArgs.status != "" && string(node.Phase) != getArgs.status {
+		return
+	}
 	nodeName := fmt.Sprintf("%s %s", jobStatusIconMap[node.Phase], node.DisplayName)
+	if node.TemplateRef != nil {
+		nodeName = fmt.Sprintf("%s (%s/%s)", nodeName, node.TemplateRef.Name, node.TemplateRef.Template)
+	} else if node.TemplateName != "" {
+		nodeName = fmt.Sprintf("%s (%s)", nodeName, node.TemplateName)
+	}
 	var args []interface{}
 	duration := humanize.RelativeDurationShort(node.StartedAt.Time, node.FinishedAt.Time)
 	if node.Type == wfv1.NodeTypePod {
@@ -411,7 +433,7 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 	} else {
 		args = []interface{}{nodePrefix, nodeName, "", "", node.Message}
 	}
-	if outFmt == "wide" {
+	if getArgs.output == "wide" {
 		msg := args[len(args)-1]
 		args[len(args)-1] = getArtifactsString(node)
 		args = append(args, msg)
@@ -423,36 +445,36 @@ func printNode(w *tabwriter.Writer, wf *wfv1.Workflow, node wfv1.NodeStatus, dep
 
 // renderNodes for each renderNode Type
 // boundaryNode
-func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
+func (nodeInfo *boundaryNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
 	}
 
 	for i, nInfo := range nodeInfo.boundaryContained {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.boundaryContained)-1, childIndent, outFmt)
+			len(nodeInfo.boundaryContained)-1, childIndent, getArgs)
 	}
 }
 
 // nonBoundaryParentNode
-func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
+func (nodeInfo *nonBoundaryParentNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, childIndent := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
 	}
 
 	for i, nInfo := range nodeInfo.children {
 		renderChild(w, wf, nInfo, depth, nodePrefix, childPrefix, filtered, i,
-			len(nodeInfo.children)-1, childIndent, outFmt)
+			len(nodeInfo.children)-1, childIndent, getArgs)
 	}
 }
 
 // executionNode
-func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, outFmt string) {
+func (nodeInfo *executionNode) renderNodes(w *tabwriter.Writer, wf *wfv1.Workflow, depth int, nodePrefix string, childPrefix string, getArgs getFlags) {
 	filtered, _ := filterNode(nodeInfo.getNodeStatus(wf))
 	if !filtered {
-		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, outFmt)
+		printNode(w, wf, nodeInfo.getNodeStatus(wf), depth, nodePrefix, childPrefix, getArgs)
 	}
 }
 

@@ -1,0 +1,30 @@
+# Workflow specifically designed for testing process namespace sharing with output artifacts
+# This fails because the main container exits before the wait sidecar is able to establish the file
+# handle of the main container's root filesystem.
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pns-quick-exit-output-art-
+spec:
+  entrypoint: pns-quick-exit-output-art
+  templates:
+  - name: pns-quick-exit-output-art
+    archiveLocation:
+      archiveLogs: true
+    container:
+      image: debian:9.2
+      command: [sh, -x, -c]
+      args: ["
+        touch /mnt/workdir/foo
+      "]
+      volumeMounts:
+      - name: workdir
+        mountPath: /mnt/workdir
+    outputs:
+      artifacts:
+      - name: mnt
+        path: /mnt
+
+  volumes:
+  - name: workdir
+    emptyDir: {}

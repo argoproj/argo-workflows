@@ -36,17 +36,25 @@ func NewWaitCommand() *cobra.Command {
 // WaitWorkflows waits for the given workflowNames.
 func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	var wg sync.WaitGroup
+	wfSuccessStatus := true
 	for _, workflowName := range workflowNames {
 		wg.Add(1)
 		go func(name string) {
-			waitOnOne(name, ignoreNotFound, quiet)
+			if !waitOnOne(name, ignoreNotFound, quiet) {
+				wfSuccessStatus = false
+			}
 			wg.Done()
 		}(workflowName)
+
 	}
 	wg.Wait()
+
+	if !wfSuccessStatus {
+		os.Exit(1)
+	}
 }
 
-func waitOnOne(workflowName string, ignoreNotFound, quiet bool) {
+func waitOnOne(workflowName string, ignoreNotFound, quiet bool) bool {
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
 	opts := metav1.ListOptions{
 		FieldSelector: fieldSelector.String(),
@@ -55,7 +63,7 @@ func waitOnOne(workflowName string, ignoreNotFound, quiet bool) {
 	_, err := wfClient.Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		if apierr.IsNotFound(err) && ignoreNotFound {
-			return
+			return true
 		}
 		errors.CheckError(err)
 	}
@@ -63,16 +71,23 @@ func waitOnOne(workflowName string, ignoreNotFound, quiet bool) {
 	watchIf, err := wfClient.Watch(opts)
 	errors.CheckError(err)
 	defer watchIf.Stop()
-	for next := range watchIf.ResultChan() {
-		wf, ok := next.Object.(*wfv1.Workflow)
-		if !ok {
+	for {
+		next := <-watchIf.ResultChan()
+		wf, _ := next.Object.(*wfv1.Workflow)
+		if wf == nil {
+			watchIf.Stop()
+			watchIf, err = wfClient.Watch(opts)
+			errors.CheckError(err)
 			continue
 		}
 		if !wf.Status.FinishedAt.IsZero() {
 			if !quiet {
-				fmt.Printf("%s completed at %v\n", workflowName, wf.Status.FinishedAt)
+				fmt.Printf("%s %s at %v\n", workflowName, wf.Status.Phase, wf.Status.FinishedAt)
 			}
-			return
+			if wf.Status.Phase == wfv1.NodeFailed || wf.Status.Phase == wfv1.NodeError {
+				return false
+			}
+			return true
 		}
 	}
 }
