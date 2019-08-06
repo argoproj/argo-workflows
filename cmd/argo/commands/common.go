@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -21,6 +21,7 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
+	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
@@ -94,8 +95,8 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 			log.Fatal(err)
 		}
 	}
-	wfcs := wfclientset.NewForConfigOrDie(restConfig)
-	wfClient = wfcs.ArgoprojV1alpha1().Workflows(namespace)
+	wfClientset = versioned.NewForConfigOrDie(restConfig)
+	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
 	return wfClient
 }
 

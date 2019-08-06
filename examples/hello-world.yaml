@@ -10,3 +10,5 @@ spec:
       image: docker/whalesay:latest
       command: [cowsay]
       args: ["hello world"]
+  automountServiceAccountToken: false
+  executorServiceAccountTokenName: argo-token-9rkvd

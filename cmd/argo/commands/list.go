@@ -72,8 +72,7 @@ func NewListCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			var tmpWorkFlows []wfv1.Workflow
-			tmpWorkFlows = wfList.Items
+			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
 				listOpts.Continue = wfList.ListMeta.Continue
 				wfList, err = wfClient.List(listOpts)
@@ -162,7 +161,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 		log.Fatal(err)
 	}
 	for _, node := range wf.Status.Nodes {
-		tmpl := wf.GetTemplate(node.TemplateName)
+		tmpl := wf.GetTemplateByName(node.TemplateName)
 		if tmpl == nil || !tmpl.IsPodType() {
 			continue
 		}

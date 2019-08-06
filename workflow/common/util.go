@@ -239,13 +239,13 @@ func GetExecutorOutput(exec remotecommand.Executor) (*bytes.Buffer, *bytes.Buffe
 // * parameters in the template from the arguments
 // * global parameters (e.g. {{workflow.parameters.XX}}, {{workflow.name}}, {{workflow.status}})
 // * local parameters (e.g. {{pod.name}})
-func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
+func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*wfv1.Template, error) {
 	// For each input parameter:
 	// 1) check if was supplied as argument. if so use the supplied value from arg
 	// 2) if not, use default value.
 	// 3) if no default value, it is an error
-	tmpl = tmpl.DeepCopy()
-	for i, inParam := range tmpl.Inputs.Parameters {
+	newTmpl := tmpl.DeepCopy()
+	for i, inParam := range newTmpl.Inputs.Parameters {
 		if inParam.Default != nil {
 			// first set to default value
 			inParam.Value = inParam.Default
@@ -259,12 +259,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 		if inParam.Value == nil {
 			return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 		}
-		tmpl.Inputs.Parameters[i] = inParam
+		newTmpl.Inputs.Parameters[i] = inParam
 	}
 
 	// Performs substitutions of input artifacts
-	newInputArtifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
-	for i, inArt := range tmpl.Inputs.Artifacts {
+	newInputArtifacts := make([]wfv1.Artifact, len(newTmpl.Inputs.Artifacts))
+	for i, inArt := range newTmpl.Inputs.Artifacts {
 		// if artifact has hard-wired location, we prefer that
 		if inArt.HasLocation() {
 			newInputArtifacts[i] = inArt
@@ -288,9 +288,9 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.Arguments, globalParams, localPa
 			newInputArtifacts[i] = inArt
 		}
 	}
-	tmpl.Inputs.Artifacts = newInputArtifacts
+	newTmpl.Inputs.Artifacts = newInputArtifacts
 
-	return substituteParams(tmpl, globalParams, localParams)
+	return substituteParams(newTmpl, globalParams, localParams)
 }
 
 // substituteParams returns a new copy of the template with global, pod, and input parameters substituted
@@ -325,6 +325,12 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 		}
 		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
+	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
+	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	replaceMap["inputs.parameters"] = string(jsonInputParametersBytes)
 	for _, inArt := range globalReplacedTmpl.Inputs.Artifacts {
 		if inArt.Path != "" {
 			replaceMap["inputs.artifacts."+inArt.Name+".path"] = inArt.Path
@@ -356,8 +362,7 @@ func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 
 // Replace executes basic string substitution of a template with replacement values.
 // allowUnresolved indicates whether or not it is acceptable to have unresolved variables
-// remaining in the substituted template. prefixFilter will apply the replacements only
-// to variables with the specified prefix
+// remaining in the substituted template.
 func Replace(fstTmpl *fasttemplate.Template, replaceMap map[string]string, allowUnresolved bool) (string, error) {
 	var unresolvedErr error
 	replacedTmpl := fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -447,37 +452,10 @@ func IsPodTemplate(tmpl *wfv1.Template) bool {
 	return false
 }
 
-// GetTaskAncestry returns a list of taskNames which are ancestors of this task
-func GetTaskAncestry(taskName string, tasks []wfv1.DAGTask) []string {
-	taskByName := make(map[string]wfv1.DAGTask)
-	for _, task := range tasks {
-		taskByName[task.Name] = task
-	}
-
-	visited := make(map[string]bool)
-	var getAncestry func(s string)
-	getAncestry = func(currTask string) {
-		task := taskByName[currTask]
-		for _, depTask := range task.Dependencies {
-			getAncestry(depTask)
-		}
-		if currTask != taskName {
-			visited[currTask] = true
-		}
-	}
-
-	getAncestry(taskName)
-	ancestry := make([]string, 0)
-	for ancestor := range visited {
-		ancestry = append(ancestry, ancestor)
-	}
-	return ancestry
-}
-
 var yamlSeparator = regexp.MustCompile(`\n---`)
 
-// SplitYAMLFile is a helper to split a body into multiple workflow objects
-func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
+// SplitWorkflowYAMLFile is a helper to split a body into multiple workflow objects
+func SplitWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 	manifestsStrings := yamlSeparator.Split(string(body), -1)
 	manifests := make([]wfv1.Workflow, 0)
 	for _, manifestStr := range manifestsStrings {
@@ -490,7 +468,8 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 			opts = append(opts, yaml.DisallowUnknownFields) // nolint
 		}
 		err := yaml.Unmarshal([]byte(manifestStr), &wf, opts...)
-		if wf.Kind != "" && wf.Kind != workflow.Kind {
+		if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
+			log.Warnf("%s is not a workflow", wf.Kind)
 			// If we get here, it was a k8s manifest which was not of type 'Workflow'
 			// We ignore these since we only care about Workflow manifests.
 			continue
@@ -501,4 +480,130 @@ func SplitYAMLFile(body []byte, strict bool) ([]wfv1.Workflow, error) {
 		manifests = append(manifests, wf)
 	}
 	return manifests, nil
+}
+
+// SplitWorkflowTemplateYAMLFile is a helper to split a body into multiple workflow template objects
+func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTemplate, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.WorkflowTemplate, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var wftmpl wfv1.WorkflowTemplate
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &wftmpl, opts...)
+		if wftmpl.Kind != "" && wftmpl.Kind != workflow.WorkflowTemplateKind {
+			log.Warnf("%s is not a workflow template", wftmpl.Kind)
+			// If we get here, it was a k8s manifest which was not of type 'WorkflowTemplate'
+			// We ignore these since we only care about WorkflowTemplate manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, wftmpl)
+	}
+	return manifests, nil
+}
+
+// MergeReferredTemplate merges a referred template to the receiver template.
+func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
+	// Copy the referred template to deep copy template types.
+	newTmpl := referred.DeepCopy()
+
+	newTmpl.Name = tmpl.Name
+
+	emptymap := map[string]string{}
+	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
+	if err != nil {
+		return nil, err
+	}
+	newTmpl.Arguments = wfv1.Arguments{}
+
+	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
+	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(tmpl.NodeSelector) > 0 {
+		m := make(map[string]string, len(tmpl.NodeSelector))
+		for k, v := range tmpl.NodeSelector {
+			m[k] = v
+		}
+		newTmpl.NodeSelector = m
+	}
+	if tmpl.Affinity != nil {
+		newTmpl.Affinity = tmpl.Affinity.DeepCopy()
+	}
+	if len(newTmpl.Metadata.Annotations) > 0 || len(tmpl.Metadata.Labels) > 0 {
+		newTmpl.Metadata = *tmpl.Metadata.DeepCopy()
+	}
+	if tmpl.Daemon != nil {
+		v := *tmpl.Daemon
+		newTmpl.Daemon = &v
+	}
+	if len(tmpl.Volumes) > 0 {
+		volumes := make([]apiv1.Volume, len(tmpl.Volumes))
+		copy(volumes, tmpl.Volumes)
+		newTmpl.Volumes = volumes
+	}
+	if len(tmpl.InitContainers) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.InitContainers))
+		copy(containers, tmpl.InitContainers)
+		newTmpl.InitContainers = containers
+	}
+	if len(tmpl.Sidecars) > 0 {
+		containers := make([]wfv1.UserContainer, len(tmpl.Sidecars))
+		copy(containers, tmpl.Sidecars)
+		newTmpl.Sidecars = containers
+	}
+	if tmpl.ArchiveLocation != nil {
+		newTmpl.ArchiveLocation = tmpl.ArchiveLocation.DeepCopy()
+	}
+	if tmpl.ActiveDeadlineSeconds != nil {
+		v := *tmpl.ActiveDeadlineSeconds
+		newTmpl.ActiveDeadlineSeconds = &v
+	}
+	if tmpl.RetryStrategy != nil {
+		newTmpl.RetryStrategy = tmpl.RetryStrategy.DeepCopy()
+	}
+	if tmpl.Parallelism != nil {
+		v := *tmpl.Parallelism
+		newTmpl.Parallelism = &v
+	}
+	if len(tmpl.Tolerations) != 0 {
+		tolerations := make([]apiv1.Toleration, len(tmpl.Tolerations))
+		copy(tolerations, tmpl.Tolerations)
+		newTmpl.Tolerations = tolerations
+	}
+	if tmpl.SchedulerName != "" {
+		newTmpl.SchedulerName = tmpl.SchedulerName
+	}
+	if tmpl.PriorityClassName != "" {
+		newTmpl.PriorityClassName = tmpl.PriorityClassName
+	}
+	if tmpl.Priority != nil {
+		v := *tmpl.Priority
+		newTmpl.Priority = &v
+	}
+
+	return newTmpl, nil
+}
+
+// GetTemplateGetterString returns string of TemplateGetter.
+func GetTemplateGetterString(getter wfv1.TemplateGetter) string {
+	return fmt.Sprintf("%T (namespace=%s,name=%s)", getter, getter.GetNamespace(), getter.GetName())
+}
+
+// GetTemplateHolderString returns string of TemplateHolder.
+func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
+	tmplName := tmplHolder.GetTemplateName()
+	tmplRef := tmplHolder.GetTemplateRef()
+	if tmplRef != nil {
+		return fmt.Sprintf("%T (%s/%s)", tmplHolder, tmplRef.Name, tmplRef.Template)
+	} else {
+		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
+	}
 }
