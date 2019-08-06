@@ -30,5 +30,5 @@ $ kubectl logs <failedpodname> -c wait
 ```
 - workflow-controller logs:
 ```
-$ kubectl logs -n kube-system $(kubectl get pods -l app=workflow-controller -n kube-system -o name)
+$ kubectl logs -n argo $(kubectl get pods -l app=workflow-controller -n argo -o name)
 ```
