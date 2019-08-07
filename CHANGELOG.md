@@ -1,5 +1,47 @@
 # Changelog
 
+## 2.4.0 (Unreleased)
+
+### New Features
++ WorkflowTemplate CRD (#1312) (@dtaniwaki)
++ Centralized Longterm workflow persistence storage (#1344) (@sarabala1979)
++ Support PodSecurityContext (#1463) (@dtaniwaki)
++ Conditionally annotate outputs of script template only when consumed #1359 (#1462) (@sarabala1979)
++ Support for WorkflowSpec.ArtifactRepositoryRef (#1350) (@Ark-kun)
++ Ability to configure hostPath mount for `/var/run/docker.sock` (#1419) (@sarabala1979)
++ Support hostAliases in WorkflowSpec #1265 (#1365) (@sarabala1979)
++ Template level service account (#1354) (@sarabala1979)
++ Provide failFast flag, allow a DAG to run all branches of the DAG (either success or failure) (#1443) (@xianlubird)
++ Add paging function for list command (#1420) (@xianlubird)
++ Allow overriding workflow labels in 'argo submit' (#1475) (@mark9white)
++ Support git shallow clones and additional ref fetches (#1521) (@marxarelli)
++ Add --dry-run option to `argo submit` (#1506) (@AnesBenmerzoug)
+
+### Refactoring & Improvements:
+* Allow output parameters with .value, not only .valueFrom (#1336) (@Ark-kun)
+* Exposed workflow priority as a variable (#1476) (@mark9white)
++ Expose all input parameters to template as JSON (#1488) (@mark9white)
+* Argo CLI should show warning if there is no workflow definition in file #1486 (@sarabala1979)
+* `argo wait` and `argo submit --wait` should exit 1 if workflow fails (#1467) (@sarabala1979)
+* Improve bash completion (#1437) (@edwinpjacques)
+* Add --no-color flag to logs (#1479) (@dtaniwaki)
+* mention sidecar in failure message for sidecar containers (#1430) (@tralexa)
+* changing temp directory for output artifacts from root to tmp (#1458) (@alexcapras)
+* Format sources and order imports with the help of goimports (#1504) (@muesli)
+* Documentation (@ofaz, @bvwells, @pbrit, @shimmerjs, @ianCambrio, @jqueguiner, @ntwrkguru, @thundergolfer, @delwaterman, @Ziyang2go, @Aisuko, @mark9white, @mostaphaRoudsari, @commodus-sebastien, @thundergolfer, @xianlubird)
+
+### Bug Fixes
+- Fix: Support the List within List type in withParam #1471 (#1473) (@sarabala1979)
+- Fix #1366 unpredictable global artifact behavior (#1461) (@schrodit)
+- Fix a compiler error (#1500) (@ian-howell)
+- Fixed: failed to save outputs: verify serviceaccount default:default has necessary privileges (#1362) (@sarabala1979)
+- Fixed: withParam parsing of JSON/YAML lists #1389 (#1397) (@ian-howell)
+- Fixed: persistentvolumeclaims already exists #1130 (#1363) (@sarabala1979)
+- PNS executor intermitently failed to capture entire log of script templates (#1406) (@jessesuen)
+- Fix argo logs empty content when workflow run in virtual kubelet env (#1201) (@xianlubird)
+- Terminate all containers within pod after main container completes (#1423) (@SeriousSem)
+
+
 ## 2.3.0 (2019-05-20)
 
 ### Notes about upgrading from v2.2

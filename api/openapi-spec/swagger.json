@@ -561,6 +561,14 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.PodGC": {
+      "description": "PodGC describes how to delete completed pods as they complete",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.RawArtifact": {
       "description": "RawArtifact allows raw string content to be placed as an artifact in a container",
       "type": "object",
@@ -1310,6 +1318,10 @@
           "description": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow",
           "type": "integer",
           "format": "int64"
+        },
+        "podGC": {
+          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
