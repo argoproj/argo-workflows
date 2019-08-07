@@ -1702,9 +1702,9 @@ spec:
     container:
       image: alpine:latest
     automountServiceAccountToken: true
-    executorServiceAccountTokenName: ""
+    executorServiceAccountName: ""
   automountServiceAccountToken: false
-  executorServiceAccountTokenName: foo
+  executorServiceAccountName: foo
 `
 
 var validAutomountServiceAccountTokenUseTmplLevel = `
@@ -1718,7 +1718,7 @@ spec:
   - name: whalesay
     container:
       image: alpine:latest
-    executorServiceAccountTokenName: foo
+    executorServiceAccountName: foo
   automountServiceAccountToken: false
 `
 
@@ -1766,11 +1766,11 @@ func TestAutomountServiceAccountTokenUse(t *testing.T) {
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
 		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
-		assert.EqualError(t, err, "spec.entrypoint templates.whalesay.executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
+		assert.EqualError(t, err, "spec.entrypoint templates.whalesay.executorServiceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
 		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
-		assert.EqualError(t, err, "spec.entrypoint templates.whalesay.executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
+		assert.EqualError(t, err, "spec.entrypoint templates.whalesay.executorServiceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 }

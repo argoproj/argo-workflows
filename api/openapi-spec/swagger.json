@@ -848,7 +848,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountTokenName must be specified if this value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
           "type": "boolean"
         },
         "container": {
@@ -863,8 +863,8 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
-        "executorServiceAccountTokenName": {
-          "description": "ExecutorServiceAccountTokenName specifies a service account token name for executor containers.",
+        "executorServiceAccountName": {
+          "description": "ExecutorServiceAccountName specifies a service account token name for executor containers.",
           "type": "string"
         },
         "hostAliases": {
@@ -1228,7 +1228,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountTokenName must be specified if this value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
           "type": "boolean"
         },
         "dnsConfig": {
@@ -1243,8 +1243,8 @@
           "description": "Entrypoint is a template reference to the starting point of the workflow",
           "type": "string"
         },
-        "executorServiceAccountTokenName": {
-          "description": "ExecutorServiceAccountTokenName specifies a service account token name for executor containers.",
+        "executorServiceAccountName": {
+          "description": "ExecutorServiceAccountName specifies a service account token name for executor containers.",
           "type": "string"
         },
         "hostAliases": {

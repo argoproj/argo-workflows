@@ -103,11 +103,11 @@ type WorkflowSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ExecutorServiceAccountTokenName must be specified if this value is false.
+	// ExecutorServiceAccountName must be specified if this value is false.
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
 
-	// ExecutorServiceAccountTokenName specifies a service account token name for executor containers.
-	ExecutorServiceAccountTokenName string `json:"executorServiceAccountTokenName,omitempty"`
+	// ExecutorServiceAccountName specifies a service account token name for executor containers.
+	ExecutorServiceAccountName string `json:"executorServiceAccountName,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	Volumes []apiv1.Volume `json:"volumes,omitempty"`
@@ -300,11 +300,11 @@ type Template struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
-	// ExecutorServiceAccountTokenName must be specified if this value is false.
+	// ExecutorServiceAccountName must be specified if this value is false.
 	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
 
-	// ExecutorServiceAccountTokenName specifies a service account token name for executor containers.
-	ExecutorServiceAccountTokenName string `json:"executorServiceAccountTokenName,omitempty"`
+	// ExecutorServiceAccountName specifies a service account token name for executor containers.
+	ExecutorServiceAccountName string `json:"executorServiceAccountName,omitempty"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`

@@ -30,12 +30,12 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo
+  name: argo-ui
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -82,6 +82,16 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  - serviceaccounts/finalizers
+  - secrets
+  - secrets/finalizers
+  verbs:
+  - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/config"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -103,9 +104,12 @@ func TestTmplServiceAccount(t *testing.T) {
 // TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
 func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
+	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
+	assert.NoError(t, err)
+
 	falseValue := false
 	woc.wf.Spec.AutomountServiceAccountToken = &falseValue
-	woc.wf.Spec.ExecutorServiceAccountTokenName = "foo"
+	woc.wf.Spec.ExecutorServiceAccountName = "foo"
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
@@ -116,10 +120,13 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 // TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
 func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	woc := newWoc()
+	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
+	assert.NoError(t, err)
+
 	trueValue := true
 	falseValue := false
 	woc.wf.Spec.AutomountServiceAccountToken = &trueValue
-	woc.wf.Spec.ExecutorServiceAccountTokenName = "foo"
+	woc.wf.Spec.ExecutorServiceAccountName = "foo"
 	woc.wf.Spec.Templates[0].AutomountServiceAccountToken = &falseValue
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
@@ -138,36 +145,42 @@ func verifyServiceAccountTokenVolumeMount(t *testing.T, ctr apiv1.Container, vol
 	t.Fatalf("%v does not have serviceAccountToken mounted properly (name: %s, mountPath: %s)", ctr, volName, mountPath)
 }
 
-// TestWFLevelAutomountServiceAccountToken verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
-func TestWFLevelExecutorServiceAccountTokenName(t *testing.T) {
+// TestWFLevelExecutorServiceAccountName verifies the ability to carry forward workflow level AutomountServiceAccountToken to Podspec.
+func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
-	woc.wf.Spec.ExecutorServiceAccountTokenName = "foo"
+	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
+	assert.NoError(t, err)
 
+	woc.wf.Spec.ExecutorServiceAccountName = "foo"
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "foo", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "foo-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")
 }
 
-// TestTmplLevelAutomountServiceAccountToken verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
-func TestTmplLevelExecutorServiceAccountTokenName(t *testing.T) {
+// TestTmplLevelExecutorServiceAccountName verifies the ability to carry forward template level AutomountServiceAccountToken to Podspec.
+func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	woc := newWoc()
-	woc.wf.Spec.ExecutorServiceAccountTokenName = "foo"
-	woc.wf.Spec.Templates[0].ExecutorServiceAccountTokenName = "tmpl"
+	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
+	assert.NoError(t, err)
+	_, err = util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
+	assert.NoError(t, err)
 
+	woc.wf.Spec.ExecutorServiceAccountName = "foo"
+	woc.wf.Spec.Templates[0].ExecutorServiceAccountName = "tmpl"
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, "exec-sa-token", pod.Spec.Volumes[2].Name)
-	assert.Equal(t, "tmpl", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
+	assert.Equal(t, "tmpl-token", pod.Spec.Volumes[2].VolumeSource.Secret.SecretName)
 
 	waitCtr := pod.Spec.Containers[0]
 	verifyServiceAccountTokenVolumeMount(t, waitCtr, "exec-sa-token", "/var/run/secrets/kubernetes.io/serviceaccount")

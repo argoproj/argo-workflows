@@ -1787,14 +1787,14 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountTokenName must be specified if this value is false.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
-					"executorServiceAccountTokenName": {
+					"executorServiceAccountName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExecutorServiceAccountTokenName specifies a service account token name for executor containers.",
+							Description: "ExecutorServiceAccountName specifies a service account token name for executor containers.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2265,14 +2265,14 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"automountServiceAccountToken": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountTokenName must be specified if this value is false.",
+							Description: "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
-					"executorServiceAccountTokenName": {
+					"executorServiceAccountName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ExecutorServiceAccountTokenName specifies a service account token name for executor containers.",
+							Description: "ExecutorServiceAccountName specifies a service account token name for executor containers.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

@@ -43,3 +43,13 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  - serviceaccounts/finalizers
+  - secrets
+  - secrets/finalizers
+  verbs:
+  - get
+  - list

@@ -437,13 +437,13 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
-	executorServiceAccountTokenName := ""
-	if tmpl.ExecutorServiceAccountTokenName != "" {
-		executorServiceAccountTokenName = tmpl.ExecutorServiceAccountTokenName
-	} else if woc.wf.Spec.ExecutorServiceAccountTokenName != "" {
-		executorServiceAccountTokenName = woc.wf.Spec.ExecutorServiceAccountTokenName
+	executorServiceAccountName := ""
+	if tmpl.ExecutorServiceAccountName != "" {
+		executorServiceAccountName = tmpl.ExecutorServiceAccountName
+	} else if woc.wf.Spec.ExecutorServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.ExecutorServiceAccountName
 	}
-	if executorServiceAccountTokenName != "" {
+	if executorServiceAccountName != "" {
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      common.ServiceAccountTokenVolumeName,
 			MountPath: common.ServiceAccountTokenMountPath,
@@ -853,23 +853,27 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
 	}
 
-	executorServiceAccountTokenName := ""
-	if tmpl.ExecutorServiceAccountTokenName != "" {
-		executorServiceAccountTokenName = tmpl.ExecutorServiceAccountTokenName
-	} else if woc.wf.Spec.ExecutorServiceAccountTokenName != "" {
-		executorServiceAccountTokenName = woc.wf.Spec.ExecutorServiceAccountTokenName
+	executorServiceAccountName := ""
+	if tmpl.ExecutorServiceAccountName != "" {
+		executorServiceAccountName = tmpl.ExecutorServiceAccountName
+	} else if woc.wf.Spec.ExecutorServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.ExecutorServiceAccountName
 	}
-	if executorServiceAccountTokenName != "" {
+	if executorServiceAccountName != "" {
+		token, err := common.GetServiceAccountTokenByAccountName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		if err != nil {
+			return err
+		}
 		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
 			Name: common.ServiceAccountTokenVolumeName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
-					SecretName: executorServiceAccountTokenName,
+					SecretName: token.Name,
 				},
 			},
 		})
 	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		return errors.Errorf(errors.CodeBadRequest, "executorServiceAccountTokenName must not be empty if automountServiceAccountToken is false")
+		return errors.Errorf(errors.CodeBadRequest, "executorServiceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
 }
