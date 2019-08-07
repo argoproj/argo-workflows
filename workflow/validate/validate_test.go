@@ -1651,6 +1651,7 @@ spec:
   templates:
   - name: whalesay
     resource:
+      action: apply
       manifest: |
         invalid-yaml-line
         kind: ConfigMap
@@ -1670,19 +1671,49 @@ spec:
     resource:
       action: foo
       manifest: |
-      apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        name: whalesay-cm
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: whalesay-cm
 `
 
 // TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
 	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
-	assert.Error(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
+	assert.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
 	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
-	assert.Error(t, err, "templates.whalesay.resource.action must be either get, create, apply, delete or replace")
+	assert.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
+}
+
+var invalidPodGC = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: pod-gc-strategy-unknown-
+spec:
+  podGC:
+    strategy: Foo
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+// TestUnknownPodGCStrategy verifies pod gc strategy is correct.
+func TestUnknownPodGCStrategy(t *testing.T) {
+	wf := unmarshalWf(invalidPodGC)
+	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
+
+	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
+		wf.Spec.PodGC.Strategy = strat
+		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
 }
