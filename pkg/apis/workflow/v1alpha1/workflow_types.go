@@ -52,6 +52,17 @@ const (
 	NodeTypeSuspend   NodeType = "Suspend"
 )
 
+// PodGCStrategy is the strategy when to delete completed pods for GC.
+type PodGCStrategy string
+
+// PodGCStrategy
+const (
+	PodGCOnPodCompletion      PodGCStrategy = "OnPodCompletion"
+	PodGCOnPodSuccess         PodGCStrategy = "OnPodSuccess"
+	PodGCOnWorkflowCompletion PodGCStrategy = "OnWorkflowCompletion"
+	PodGCOnWorkflowSuccess    PodGCStrategy = "OnWorkflowSuccess"
+)
+
 // TemplateGetter is an interface to get templates.
 type TemplateGetter interface {
 	GetNamespace() string
@@ -177,6 +188,9 @@ type WorkflowSpec struct {
 	// Default scheduler will be used if neither specified.
 	// +optional
 	SchedulerName string `json:"schedulerName,omitempty"`
+
+	// PodGC describes the strategy to use when to deleting completed pods
+	PodGC *PodGC `json:"podGC,omitempty"`
 
 	// PriorityClassName to apply to workflow pods.
 	PodPriorityClassName string `json:"podPriorityClassName,omitempty"`
@@ -393,6 +407,11 @@ type Artifact struct {
 
 	// Make Artifacts optional, if Artifacts doesn't generate or exist
 	Optional bool `json:"optional,omitempty"`
+}
+
+// PodGC describes how to delete completed pods as they complete
+type PodGC struct {
+	Strategy PodGCStrategy `json:"strategy,omitempty"`
 }
 
 // ArchiveStrategy describes how to archive files/directory when saving artifacts
@@ -714,6 +733,11 @@ func isCompletedPhase(phase NodePhase) bool {
 // Remove returns whether or not the workflow has completed execution
 func (ws *WorkflowStatus) Completed() bool {
 	return isCompletedPhase(ws.Phase)
+}
+
+// Successful return whether or not the workflow has succeeded
+func (ws *WorkflowStatus) Successful() bool {
+	return ws.Phase == NodeSucceeded
 }
 
 // Remove returns whether or not the node has completed execution
