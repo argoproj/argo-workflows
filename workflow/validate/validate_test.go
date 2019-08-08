@@ -294,7 +294,7 @@ func TestPassthrough(t *testing.T) {
 
 	err = validate(badArgsRegex)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "regexp ( could not be processed")
+		assert.Contains(t, err.Error(), "error parsing regexp: missing closing ): `(`")
 	}
 
 	err = validate(badInputRegex)

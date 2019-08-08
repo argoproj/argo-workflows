@@ -402,8 +402,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			}
 		}
 
+		args := t.Arguments.DeepCopy()
+		updatedParameters, err := dagCtx.tmpl.Inputs.GetPassthroughParameters(args.Parameters)
+		if err != nil {
+			woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+			return
+		}
+		args.Parameters = updatedParameters
+
 		// Finally execute the template
-		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, t.Arguments, dagCtx.boundaryID)
+		_, _ = woc.executeTemplate(taskNodeName, &t, dagCtx.tmplCtx, args, dagCtx.boundaryID)
 	}
 
 	if taskGroupNode != nil {

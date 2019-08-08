@@ -209,7 +209,7 @@ func (woc *wfOperationCtx) operate() {
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
-	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
+	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, woc.tmplCtx, &woc.wf.Spec.Arguments, "")
 	if err != nil {
 		// the error are handled in the callee so just log it.
 		woc.log.Errorf("%s error in entry template execution: %+v", woc.wf.Name, err)
@@ -237,7 +237,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
 		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, &woc.wf.Spec.Arguments, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
@@ -1103,7 +1103,7 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
-func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args *wfv1.Arguments, boundaryID string) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	node := woc.getNodeByName(nodeName)

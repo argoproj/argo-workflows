@@ -208,7 +208,15 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			}
 			continue
 		}
-		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, step.Arguments, stepsCtx.boundaryID)
+		args := step.Arguments.DeepCopy()
+		updatedParameters, err := stepsCtx.scope.tmpl.Inputs.GetPassthroughParameters(args.Parameters)
+		if err != nil {
+			return woc.markNodeError(sgNodeName, err)
+		}
+		args.Parameters = updatedParameters
+
+		childNode, err := woc.executeTemplate(childNodeName, &step, stepsCtx.tmplCtx, args, stepsCtx.boundaryID)
+
 		if err != nil {
 			switch err {
 			case ErrDeadlineExceeded:

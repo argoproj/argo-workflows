@@ -393,7 +393,8 @@ func TestResolveTemplate(t *testing.T) {
 	}
 	assert.Equal(t, "another-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay-with-passthrough-arguments", tmpl.Name)
-	assert.Equal(t, []string{"hello world"}, tmpl.Container.Args)
+	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
+	assert.Equal(t, "hello world", *tmpl.Inputs.Parameters[0].Value)
 
 	// Get the template of nested template reference with arguments.
 	tmplHolder = wfv1.Template{

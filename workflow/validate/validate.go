@@ -350,9 +350,7 @@ func validateInputs(tmpl *wfv1.Template, extraScope map[string]interface{}) (map
 		scope[name] = value
 	}
 	for _, param := range tmpl.Inputs.Parameters {
-		if param.Regexp != "" {
-			scope[fmt.Sprintf("inputs.parameters.regexp.%s", param.Regexp)] = true
-		} else {
+		if param.Name != "" {
 			scope[fmt.Sprintf("inputs.parameters.%s", param.Name)] = true
 		}
 	}
@@ -406,14 +404,6 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 	var unresolvedErr error
 	_, allowAllItemRefs := scope[anyItemMagicValue] // 'item.*' is a magic placeholder value set by addItemsToScope
 
-	//inputs.parameters.regexp. stores regexps for input parameters
-	inputRegexps := make([]string, 0)
-	for k := range scope {
-		if strings.HasPrefix(k, "inputs.parameters.regexp.") {
-			inputRegexps = append(inputRegexps, strings.Replace(k, ".regexp", "", -1))
-		}
-	}
-
 	fstTmpl := fasttemplate.New(tmplStr, "{{", "}}")
 
 	fstTmpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -429,20 +419,7 @@ func resolveAllVariables(scope map[string]interface{}, tmplStr string) error {
 				// NOTE: this is far from foolproof.
 			} else if strings.HasPrefix(tag, common.GlobalVarWorkflowCreationTimestamp) {
 			} else {
-				//check for regexp matches
-				foundRegexpMatch := false
-				for _, regexpToMatch := range inputRegexps {
-					match, err := regexp.MatchString(regexpToMatch, tag)
-					if err != nil {
-						return 0, err
-					}
-					if match {
-						foundRegexpMatch = true
-					}
-				}
-				if foundRegexpMatch == false {
-					unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
-				}
+				unresolvedErr = fmt.Errorf("failed to resolve {{%s}}", tag)
 			}
 		}
 		return 0, nil
@@ -613,6 +590,13 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
+			//args := step.Arguments.DeepCopy()
+			//updatedParameters, err := tmpl.Inputs.GetPassthroughParameters(args.Parameters)
+			//if err != nil {
+			//	return err
+			//}
+			//args.Parameters = updatedParameters
+
 			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
@@ -1095,8 +1079,16 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return err
 		}
+
+		args := task.Arguments.DeepCopy()
+		updatedParameters, err := tmpl.Inputs.GetPassthroughParameters(args.Parameters)
+		if err != nil {
+			return err
+		}
+		args.Parameters = updatedParameters
+
 		// Validate the template again with actual arguments.
-		_, err = ctx.validateTemplateHolder(&task, tmplCtx, &task.Arguments, scope)
+		_, err = ctx.validateTemplateHolder(&task, tmplCtx, args, scope)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}

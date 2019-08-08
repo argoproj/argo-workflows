@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/errors"
 	"hash/fnv"
 	"regexp"
 	"strings"
@@ -1208,6 +1209,29 @@ func (in *Inputs) GetParameterByName(name string) *Parameter {
 		}
 	}
 	return nil
+}
+
+// GetPassthroughParameters returns parameter argument list where items matching PassthroughRegexp are added from input parameters
+func (in *Inputs) GetPassthroughParameters(argumentParameters []Parameter) ([]Parameter, error) {
+	updatedArgumentParameters := make([]Parameter, 0)
+
+	for _, parameter := range argumentParameters {
+		if parameter.PassthroughRegexp != "" {
+
+			inputParams, err := in.GetParametersByRegexp(parameter.PassthroughRegexp)
+			if err != nil {
+				return nil, errors.Errorf(errors.CodeBadRequest, "regexp %s could not be processed", parameter.PassthroughRegexp)
+			}
+
+			for _, inputParam := range inputParams {
+				newParameter := Parameter{Name: inputParam.Name, Value: inputParam.Value}
+				updatedArgumentParameters = append(updatedArgumentParameters, newParameter)
+			}
+		} else {
+			updatedArgumentParameters = append(updatedArgumentParameters, parameter)
+		}
+	}
+	return updatedArgumentParameters, nil
 }
 
 // HasInputs returns whether or not there are any inputs
