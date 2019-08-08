@@ -40,7 +40,6 @@ func init() {
 
 func initConfig() {
 	cli.SetLogLevel(logLevel)
-	cli.SetGLogLevel(glogLevel)
 }
 
 func NewRootCommand() *cobra.Command {
