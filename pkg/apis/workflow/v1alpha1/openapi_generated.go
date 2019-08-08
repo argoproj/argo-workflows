@@ -1063,6 +1063,7 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PodGC describes how to delete completed pods as they complete",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"strategy": {
 						SchemaProps: spec.SchemaProps{
@@ -1073,7 +1074,6 @@ func schema_pkg_apis_workflow_v1alpha1_PodGC(ref common.ReferenceCallback) commo
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 

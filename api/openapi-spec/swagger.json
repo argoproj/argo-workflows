@@ -563,6 +563,7 @@
     },
     "io.argoproj.workflow.v1alpha1.PodGC": {
       "description": "PodGC describes how to delete completed pods as they complete",
+      "type": "object",
       "properties": {
         "strategy": {
           "type": "string"
