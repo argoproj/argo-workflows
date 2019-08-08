@@ -880,14 +880,18 @@ func validateWorkflowArgumentParameterField(parameters []wfv1.Parameter) error {
 }
 
 // validateInputParameterField takes a set of input parameters and verifies
-// * Either Name or PassthroughRegexp is provided
-// * PassthroughRegexp is a valid regex if provided
+// * Either Name or Regexp is provided
+// * Regexp is a valid regex if provided
 // * Name validations
 func validateInputParameterField(parameters []wfv1.Parameter) error {
 
 	for i, parameter := range parameters {
 		if parameter.Name == "" && (parameter.Regexp == "") {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name or .regexp is required", i)
+		}
+
+		if parameter.PassthroughRegexp != "" {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].passthroughRegexp is not permitted for arguments", i)
 		}
 
 		if parameter.Regexp != "" {
@@ -912,6 +916,9 @@ func validateArgumentParameterField(parameters []wfv1.Parameter) error {
 	for i, parameter := range parameters {
 		if parameter.Name == "" && (parameter.PassthroughRegexp == "") {
 			return errors.Errorf(errors.CodeBadRequest, "[%d].name or .passthroughRegexp is required", i)
+		}
+		if parameter.Regexp != "" {
+			return errors.Errorf(errors.CodeBadRequest, "[%d].regexp is not permitted for arguments", i)
 		}
 
 		if parameter.PassthroughRegexp != "" {

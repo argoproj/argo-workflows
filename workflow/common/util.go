@@ -263,12 +263,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			for _, argParam := range argParams {
 				newName := argParam.Name
 				newValue := argParam.Value
-				newRegexp := argParam.PassthroughRegexp //used for workflow templates where all arguments may not have been resolved already
-				newParameter := wfv1.Parameter{Name: newName, Value: newValue, Regexp: newRegexp}
+				newParameter := wfv1.Parameter{Name: newName, Value: newValue}
 
 				newInputParameters = append(newInputParameters, newParameter)
 			}
-		} else {
+		} else if inParam.Name != "" {
 			if inParam.Default != nil {
 				// first set to default value
 				inParam.Value = inParam.Default
@@ -280,9 +279,10 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 				inParam.Value = &newValue
 			}
 			//if one of the args is a regexp (this can be true during validation) then we add a placeholder
-			if args.HasPassthroughRegexpParameter() {
-				newValue := "placeholder"
-				inParam.Value = &newValue
+			if !args.HasPassthroughRegexpParameter() {
+				if inParam.Value == nil {
+					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
+				}
 			}
 			if inParam.Value == nil {
 				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
@@ -395,10 +395,12 @@ func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]
 	// Now replace the rest of substitutions (the ones that can be made) in the template
 	replaceMap = make(map[string]string)
 	for _, inParam := range globalReplacedTmpl.Inputs.Parameters {
-		if inParam.Value == nil {
-			return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+		if inParam.Regexp == "" && inParam.Name != "" { //this can still be set if we're handling a WorkflowTemplate
+			if inParam.Value == nil {
+				return nil, errors.InternalErrorf("inputs.parameters.%s had no value", inParam.Name)
+			}
+			replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 		}
-		replaceMap["inputs.parameters."+inParam.Name] = *inParam.Value
 	}
 	//allow {{inputs.parameters}} to fetch the entire input parameters list as JSON
 	jsonInputParametersBytes, err := json.Marshal(globalReplacedTmpl.Inputs.Parameters)

@@ -74,20 +74,20 @@ spec:
       args: ["{{inputs.parameters.message}}"]
   - name: whalesay-with-passthrough-arguments
     template: whalesay-with-passthrough-arguments-inner
-    inputs:
-      parameters:
-      - passthroughRegexp: ".*"
     arguments:
       parameters:
-      - passthroughRegexp: ".*"
+      - name: message
+        value: "hello world"
   - name: whalesay-with-passthrough-arguments-inner
     inputs:
       parameters:
-      - passthroughRegexp: ".*"
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["{{inputs.parameters.message}}-foobar"]
+        - regexp: .*
+    arguments:
+      parameters:
+        - passthroughRegexp: .*
+    templateRef:
+      name: another-workflow-template
+      template: whalesay-with-arguments
   - name: infinite-local-loop-whalesay
     template: infinite-local-loop-whalesay
   - name: infinite-loop-whalesay
@@ -106,6 +106,13 @@ spec:
   - name: whalesay
     container:
       image: docker/whalesay
+  - name: whalesay-with-arguments
+    inputs:
+      parameters:
+        - regexp: .*
+    container:
+      image: docker/whalesay
+      args: ["{{inputs.parameters.message}}"]
 `
 
 var baseWorkflowTemplateYaml = `
@@ -384,9 +391,9 @@ func TestResolveTemplate(t *testing.T) {
 	if !assert.True(t, ok) {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "another-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay-with-passthrough-arguments", tmpl.Name)
-	assert.Equal(t, []string{"{{inputs.parameters.message}}-foobar"}, tmpl.Container.Args)
+	assert.Equal(t, []string{"hello world"}, tmpl.Container.Args)
 
 	// Get the template of nested template reference with arguments.
 	tmplHolder = wfv1.Template{
