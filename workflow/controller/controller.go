@@ -7,6 +7,8 @@ import (
 	"time"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -54,20 +56,22 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer    cache.SharedIndexInformer
-	podInformer   cache.SharedIndexInformer
-	wfQueue       workqueue.RateLimitingInterface
-	podQueue      workqueue.RateLimitingInterface
-	completedPods chan string
-	gcPods        chan string // pods to be deleted depend on GC strategy
-	throttler     Throttler
-	wfDBctx       sqldb.DBRepository
+	wfInformer     cache.SharedIndexInformer
+	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer    cache.SharedIndexInformer
+	wfQueue        workqueue.RateLimitingInterface
+	podQueue       workqueue.RateLimitingInterface
+	completedPods  chan string
+	gcPods         chan string // pods to be deleted depend on GC strategy
+	throttler      Throttler
+	wfDBctx        sqldb.DBRepository
 }
 
 const (
-	workflowResyncPeriod        = 20 * time.Minute
-	workflowMetricsResyncPeriod = 1 * time.Minute
-	podResyncPeriod             = 30 * time.Minute
+	workflowResyncPeriod         = 20 * time.Minute
+	workflowTemplateResyncPeriod = 20 * time.Minute
+	workflowMetricsResyncPeriod  = 1 * time.Minute
+	podResyncPeriod              = 30 * time.Minute
 )
 
 // NewWorkflowController instantiates a new WorkflowController
@@ -145,16 +149,20 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
 
+	informerFactory := wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
+	wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
 
 	go wfc.wfInformer.Run(ctx.Done())
+	go wfc.wftmplInformer.Informer().Run(ctx.Done())
 	go wfc.podInformer.Run(ctx.Done())
 	go wfc.podLabeler(ctx.Done())
 	go wfc.podGarbageCollector(ctx.Done())
 
 	// Wait for all involved caches to be synced, before processing items from the queue is started
-	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.podInformer} {
+	for _, informer := range []cache.SharedIndexInformer{wfc.wfInformer, wfc.wftmplInformer.Informer(), wfc.podInformer} {
 		if !cache.WaitForCacheSync(ctx.Done(), informer.HasSynced) {
 			log.Error("Timed out waiting for caches to sync")
 			return

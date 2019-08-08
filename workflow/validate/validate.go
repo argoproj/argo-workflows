@@ -85,8 +85,9 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	if wf.Namespace != "" {
 		namespace = wf.Namespace
 	}
+
 	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wf)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -159,7 +160,7 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 		namespace = wftmpl.Namespace
 	}
 	ctx := newTemplateValidationCtx(wfClientset, namespace, wftmpl, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wftmpl)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {

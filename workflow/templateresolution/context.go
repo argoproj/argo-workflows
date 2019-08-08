@@ -3,7 +3,7 @@ package templateresolution
 import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -13,22 +13,43 @@ import (
 // maxResolveDepth is the limit of template reference resolution.
 const maxResolveDepth int = 10
 
+// workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
+type workflowTemplateInterfaceWrapper struct {
+	clientset typed.WorkflowTemplateInterface
+}
+
+// Get retrieves the WorkflowTemplate of a given name.
+func (wrapper *workflowTemplateInterfaceWrapper) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	return wrapper.clientset.Get(name, metav1.GetOptions{})
+}
+
+// WorkflowTemplateNamespaceLister helps get WorkflowTemplates.
+type WorkflowTemplateNamespacedGetter interface {
+	// Get retrieves the WorkflowTemplate from the indexer for a given name.
+	Get(name string) (*wfv1.WorkflowTemplate, error)
+}
+
 // Context is a context of template search.
 type Context struct {
-	// wfClientset is the clientset to get workflow templates.
-	wfClientset wfclientset.Interface
-	// namespace is the namespace of template search.
-	namespace string
+	// wftmplGetter is an interface to get WorkflowTemplates.
+	wftmplGetter WorkflowTemplateNamespacedGetter
 	// tmplBase is the base of local template search.
 	tmplBase wfv1.TemplateGetter
 }
 
 // NewContext returns new Context.
-func NewContext(wfClientset wfclientset.Interface, namespace string, tmplBase wfv1.TemplateGetter) *Context {
+func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.TemplateGetter) *Context {
 	return &Context{
-		wfClientset: wfClientset,
-		namespace:   namespace,
-		tmplBase:    tmplBase,
+		wftmplGetter: wftmplGetter,
+		tmplBase:     tmplBase,
+	}
+}
+
+// NewContext returns new Context.
+func NewContextFromClientset(clientset typed.WorkflowTemplateInterface, tmplBase wfv1.TemplateGetter) *Context {
+	return &Context{
+		wftmplGetter: &workflowTemplateInterfaceWrapper{clientset: clientset},
+		tmplBase:     tmplBase,
 	}
 }
 
@@ -43,7 +64,7 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 
 // GetTemplateFromRef returns a template found by a given template ref.
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
-	wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+	wftmpl, err := ctx.wftmplGetter.Get(tmplRef.Name)
 	if err != nil {
 		if apierr.IsNotFound(err) {
 			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
@@ -82,7 +103,7 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
 	if tmplRef != nil {
-		wftmpl, err := ctx.wfClientset.ArgoprojV1alpha1().WorkflowTemplates(ctx.namespace).Get(tmplRef.Name, metav1.GetOptions{})
+		wftmpl, err := ctx.wftmplGetter.Get(tmplRef.Name)
 		if err != nil && apierr.IsNotFound(err) {
 			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
 		}
@@ -140,5 +161,5 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
-	return NewContext(ctx.wfClientset, ctx.namespace, tmplBase)
+	return NewContext(ctx.wftmplGetter, tmplBase)
 }
