@@ -142,8 +142,6 @@ rules:
   resources:
   - workflows
   - workflows/finalizers
-  - workflowtemplates
-  - workflowtemplates/finalizers
   verbs:
   - get
   - list
@@ -151,6 +149,15 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -251,7 +258,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:latest
+        image: argoproj/argoui:v2.4.0-rc1
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -273,9 +280,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:latest
+        - argoproj/argoexec:v2.4.0-rc1
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:latest
+        image: argoproj/workflow-controller:v2.4.0-rc1
         name: workflow-controller
       serviceAccountName: argo

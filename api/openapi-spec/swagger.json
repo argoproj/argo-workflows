@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Argo",
-    "version": "v2.4.0"
+    "version": "v2.4.0-rc1"
   },
   "paths": {},
   "definitions": {
