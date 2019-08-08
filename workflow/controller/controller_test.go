@@ -2,10 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
@@ -13,9 +15,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/cache"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/workflow/config"
 )
 
@@ -42,13 +46,22 @@ spec:
 `
 
 func newController() *WorkflowController {
+	wfclientset := fakewfclientset.NewSimpleClientset()
+	informerFactory := wfextv.NewSharedInformerFactory(wfclientset, 10*time.Minute)
+	wftmplInformer := informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	ctx := context.Background()
+	go wftmplInformer.Informer().Run(ctx.Done())
+	if !cache.WaitForCacheSync(ctx.Done(), wftmplInformer.Informer().HasSynced) {
+		panic("Timed out waiting for caches to sync")
+	}
 	return &WorkflowController{
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset: fake.NewSimpleClientset(),
-		wfclientset:   fakewfclientset.NewSimpleClientset(),
-		completedPods: make(chan string, 512),
+		kubeclientset:  fake.NewSimpleClientset(),
+		wfclientset:    wfclientset,
+		completedPods:  make(chan string, 512),
+		wftmplInformer: wftmplInformer,
 	}
 }
 
