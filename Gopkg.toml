@@ -7,15 +7,15 @@ required = [
 
 [[constraint]]
   name = "k8s.io/api"
-  branch = "release-1.12"
+  branch = "release-1.14"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  branch = "release-1.12"
+  branch = "release-1.14"
 
 [[constraint]]
   name = "k8s.io/code-generator"
-  branch = "release-1.12"
+  branch = "release-1.14"
 
 [[constraint]]
   name = "k8s.io/kube-openapi"
@@ -23,7 +23,7 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  branch = "release-9.0"
+  branch = "release-11.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"
@@ -49,11 +49,16 @@ required = [
   name = "github.com/ghodss/yaml"
   branch = "master"
 
-# vendor/k8s.io/client-go/plugin/pkg/client/auth/azure/azure.go:300:25:
-# cannot call non-function spt.Token (type adal.Token)
+# azure.go:252:4: cannot use json.Number(expiresIn) (type json.Number) as type string in field value
 [[override]]
   name = "github.com/Azure/go-autorest"
-  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
+  version = "12.4.2"
+
+# contrib.go.opencensus.io/exporter/ocagent/transform_stats_to_metrics.go:67:11: undefined: 
+# "github.com/argoproj/argo/vendor/github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1".Metric_MetricDescriptor
+[[override]]
+  name = "contrib.go.opencensus.io/exporter/ocagent"
+  version = "0.5.0"
 
 [[constraint]]
   name = "github.com/colinmarc/hdfs"
