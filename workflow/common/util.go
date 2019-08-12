@@ -532,15 +532,6 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	newTmpl := referred.DeepCopy()
 
 	newTmpl.Name = tmpl.Name
-
-	emptymap := map[string]string{}
-	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
-	if err != nil {
-		return nil, err
-	}
-	newTmpl.Arguments = wfv1.Arguments{}
-
-	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
 	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
 
 	if len(tmpl.NodeSelector) > 0 {
