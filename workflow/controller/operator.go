@@ -62,6 +62,8 @@ type wfOperationCtx struct {
 	artifactRepository *config.ArtifactRepository
 	// map of pods which need to be labeled with completed=true
 	completedPods map[string]bool
+	// map of pods which is identified as succeeded=true
+	succeededPods map[string]bool
 	// deadline is the dealine time in which this operation should relinquish
 	// its hold on the workflow so that an operation does not run for too long
 	// and starve other workqueue items. It also enables workflow progress to
@@ -110,8 +112,9 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		volumes:            wf.Spec.DeepCopy().Volumes,
 		artifactRepository: &wfc.Config.ArtifactRepository,
 		completedPods:      make(map[string]bool),
+		succeededPods:      make(map[string]bool),
 		deadline:           time.Now().UTC().Add(maxOperationTime),
-		tmplCtx:            templateresolution.NewContext(wfc.wfclientset, wf.Namespace, wf),
+		tmplCtx:            templateresolution.NewContext(wfc.wftmplInformer.Lister().WorkflowTemplates(wf.Namespace), wf),
 	}
 
 	if woc.wf.Status.Nodes == nil {
@@ -395,8 +398,26 @@ func (woc *wfOperationCtx) persistUpdates() {
 
 	// It is important that we *never* label pods as completed until we successfully updated the workflow
 	// Failing to do so means we can have inconsistent state.
-	for podName := range woc.completedPods {
-		woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+	// TODO: The completedPods will be labeled multiple times. I think it would be improved in the future.
+	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
+	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
+	// errors if we label a pod that was deleted already.
+	if woc.wf.Spec.PodGC != nil {
+		switch woc.wf.Spec.PodGC.Strategy {
+		case wfv1.PodGCOnPodSuccess:
+			for podName := range woc.succeededPods {
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			}
+		case wfv1.PodGCOnPodCompletion:
+			for podName := range woc.completedPods {
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			}
+		}
+	} else {
+		// label pods which will not be deleted
+		for podName := range woc.completedPods {
+			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+		}
 	}
 }
 
@@ -551,6 +572,9 @@ func (woc *wfOperationCtx) podReconciliation() error {
 					}
 				}
 				woc.completedPods[pod.ObjectMeta.Name] = true
+			}
+			if node.Successful() {
+				woc.succeededPods[pod.ObjectMeta.Name] = true
 			}
 		}
 	}

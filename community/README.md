@@ -37,8 +37,6 @@ manner.
 
 Read and abide by the [Argo Code of Conduct](https://github.com/argoproj/argo/blob/master/CODE_OF_CONDUCT.md).
 
-Before submitting a pull request, please sign the [CLA](https://github.com/argoproj/argo/blob/master/community/Argo%20Individual%20CLA.pdf). This agreement gives us permission to use and redistribute your contributions as part of the project.
-
 Contributors will be asked to read and sign a [CLA](https://github.com/argoproj/argo/blob/master/community/Argo%20Individual%20CLA.pdf). This agreement gives us permission to use and redistribute your contributions as part of the Argo Project and protects the users and contributors of the project.
 
 ## Community Meetings

@@ -88,8 +88,9 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	if wf.Namespace != "" {
 		namespace = wf.Namespace
 	}
+
 	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wf)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -127,16 +128,25 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 	_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.Entrypoint}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "spec.entrypoint %s", err.Error())
+		return err
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
 		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "spec.onExit %s", err.Error())
+			return err
 		}
 	}
+
+	if wf.Spec.PodGC != nil {
+		switch wf.Spec.PodGC.Strategy {
+		case wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess:
+		default:
+			return errors.Errorf(errors.CodeBadRequest, "podGC.strategy unknown strategy '%s'", wf.Spec.PodGC.Strategy)
+		}
+	}
+
 	// Check if all templates can be resolved.
 	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
@@ -153,7 +163,7 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 		namespace = wftmpl.Namespace
 	}
 	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wfClientset, namespace, wftmpl)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
@@ -446,7 +456,7 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		case "get", "create", "apply", "delete", "replace", "patch":
 			// OK
 		default:
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be either get, create, apply, delete or replace", tmpl.Name)
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s.resource.action must be one of: get, create, apply, delete, replace, patch", tmpl.Name)
 		}
 		// Try to unmarshal the given manifest.
 		obj := unstructured.Unstructured{}

@@ -8,6 +8,7 @@
   "definitions": {
     "io.argoproj.workflow.v1alpha1.ArchiveStrategy": {
       "description": "ArchiveStrategy describes how to archive files/directory when saving artifacts",
+      "type": "object",
       "properties": {
         "none": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NoneStrategy"
@@ -19,6 +20,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Arguments": {
       "description": "Arguments to a template",
+      "type": "object",
       "properties": {
         "artifacts": {
           "description": "Artifacts is the list of artifacts to pass to the template or workflow",
@@ -38,6 +40,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Artifact": {
       "description": "Artifact indicates an artifact to place at a specified path",
+      "type": "object",
       "required": [
         "name"
       ],
@@ -103,6 +106,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactLocation": {
       "description": "ArtifactLocation describes a location for a single or multiple artifacts. It is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname). It is also used to describe the location of multiple artifacts such as the archive location of a single workflow step, which the executor will use as a default location to store its files.",
+      "type": "object",
       "properties": {
         "archiveLogs": {
           "description": "ArchiveLogs indicates if the container logs should be archived",
@@ -135,6 +139,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef": {
+      "type": "object",
       "properties": {
         "configMap": {
           "type": "string"
@@ -146,6 +151,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactoryArtifact": {
       "description": "ArtifactoryArtifact is the location of an artifactory artifact",
+      "type": "object",
       "required": [
         "url"
       ],
@@ -166,6 +172,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ArtifactoryAuth": {
       "description": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory",
+      "type": "object",
       "properties": {
         "passwordSecret": {
           "description": "PasswordSecret is the secret selector to the repository password",
@@ -179,6 +186,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ContinueOn": {
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors. It can be specified if the workflow should continue when the pod errors, fails or both.",
+      "type": "object",
       "properties": {
         "error": {
           "type": "boolean"
@@ -190,6 +198,7 @@
     },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
       "description": "DAGTask represents a node in the graph during DAG execution",
+      "type": "object",
       "required": [
         "name",
         "template"
@@ -245,6 +254,7 @@
     },
     "io.argoproj.workflow.v1alpha1.DAGTemplate": {
       "description": "DAGTemplate is a template subtype for directed acyclic graph templates",
+      "type": "object",
       "required": [
         "tasks"
       ],
@@ -268,6 +278,7 @@
     },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
+      "type": "object",
       "required": [
         "repo"
       ],
@@ -312,6 +323,7 @@
     },
     "io.argoproj.workflow.v1alpha1.HDFSArtifact": {
       "description": "HDFSArtifact is the location of an HDFS artifact",
+      "type": "object",
       "required": [
         "addresses",
         "path"
@@ -364,6 +376,7 @@
     },
     "io.argoproj.workflow.v1alpha1.HDFSConfig": {
       "description": "HDFSConfig is configurations for HDFS",
+      "type": "object",
       "required": [
         "addresses"
       ],
@@ -407,6 +420,7 @@
     },
     "io.argoproj.workflow.v1alpha1.HDFSKrbConfig": {
       "description": "HDFSKrbConfig is auth configurations for Kerberos",
+      "type": "object",
       "properties": {
         "krbCCacheSecret": {
           "description": "KrbCCacheSecret is the secret selector for Kerberos ccache Either ccache or keytab can be set to use Kerberos.",
@@ -436,6 +450,7 @@
     },
     "io.argoproj.workflow.v1alpha1.HTTPArtifact": {
       "description": "HTTPArtifact allows an file served on HTTP to be placed as an input artifact in a container",
+      "type": "object",
       "required": [
         "url"
       ],
@@ -448,6 +463,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Inputs": {
       "description": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another",
+      "type": "object",
       "properties": {
         "artifacts": {
           "description": "Artifact are a list of artifacts passed as inputs",
@@ -472,6 +488,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
+      "type": "object",
       "properties": {
         "annotations": {
           "type": "object",
@@ -488,10 +505,12 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
-      "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately."
+      "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
+      "type": "object",
       "properties": {
         "artifacts": {
           "description": "Artifacts holds the list of output artifacts produced by a step",
@@ -515,6 +534,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Parameter": {
       "description": "Parameter indicate a passed string parameter to a service template with an optional default value",
+      "type": "object",
       "required": [
         "name"
       ],
@@ -541,8 +561,18 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.PodGC": {
+      "description": "PodGC describes how to delete completed pods as they complete",
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.RawArtifact": {
       "description": "RawArtifact allows raw string content to be placed as an artifact in a container",
+      "type": "object",
       "required": [
         "data"
       ],
@@ -555,6 +585,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ResourceTemplate": {
       "description": "ResourceTemplate is a template subtype to manipulate kubernetes resources",
+      "type": "object",
       "required": [
         "action",
         "manifest"
@@ -588,6 +619,7 @@
     },
     "io.argoproj.workflow.v1alpha1.RetryStrategy": {
       "description": "RetryStrategy provides controls on how to retry a workflow step",
+      "type": "object",
       "properties": {
         "limit": {
           "description": "Limit is the maximum number of attempts when retrying a container",
@@ -598,6 +630,7 @@
     },
     "io.argoproj.workflow.v1alpha1.S3Artifact": {
       "description": "S3Artifact is the location of an S3 artifact",
+      "type": "object",
       "required": [
         "endpoint",
         "bucket",
@@ -638,6 +671,7 @@
     },
     "io.argoproj.workflow.v1alpha1.S3Bucket": {
       "description": "S3Bucket contains the access information required for interfacing with an S3 bucket",
+      "type": "object",
       "required": [
         "endpoint",
         "bucket",
@@ -673,6 +707,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ScriptTemplate": {
       "description": "ScriptTemplate is a template subtype to enable scripting through code steps",
+      "type": "object",
       "required": [
         "name",
         "source"
@@ -734,6 +769,11 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
           },
+          "x-kubernetes-list-map-keys": [
+            "containerPort",
+            "protocol"
+          ],
+          "x-kubernetes-list-type": "map",
           "x-kubernetes-patch-merge-key": "containerPort",
           "x-kubernetes-patch-strategy": "merge"
         },
@@ -774,7 +814,7 @@
           "type": "boolean"
         },
         "volumeDevices": {
-          "description": "volumeDevices is the list of block devices to be used by the container. This is an alpha feature and may change in the future.",
+          "description": "volumeDevices is the list of block devices to be used by the container. This is a beta feature.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
@@ -799,6 +839,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Sequence": {
       "description": "Sequence expands a workflow step into numeric range",
+      "type": "object",
       "properties": {
         "count": {
           "description": "Count is number of elements in the sequence (default: 0). Not to be used with end",
@@ -819,13 +860,16 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
-      "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
+      "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
-      "description": "TarStrategy will tar and gzip the file or directory when saving"
+      "description": "TarStrategy will tar and gzip the file or directory when saving",
+      "type": "object"
     },
     "io.argoproj.workflow.v1alpha1.Template": {
       "description": "Template is a reusable and composable unit of execution in a workflow",
+      "type": "object",
       "required": [
         "name"
       ],
@@ -989,6 +1033,7 @@
     },
     "io.argoproj.workflow.v1alpha1.TemplateRef": {
       "description": "TemplateRef is a reference of template resource.",
+      "type": "object",
       "properties": {
         "name": {
           "description": "Name is the resource name of the template.",
@@ -1006,6 +1051,7 @@
     },
     "io.argoproj.workflow.v1alpha1.UserContainer": {
       "description": "UserContainer is a container specified by a user.",
+      "type": "object",
       "required": [
         "name"
       ],
@@ -1070,6 +1116,11 @@
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
           },
+          "x-kubernetes-list-map-keys": [
+            "containerPort",
+            "protocol"
+          ],
+          "x-kubernetes-list-type": "map",
           "x-kubernetes-patch-merge-key": "containerPort",
           "x-kubernetes-patch-strategy": "merge"
         },
@@ -1106,7 +1157,7 @@
           "type": "boolean"
         },
         "volumeDevices": {
-          "description": "volumeDevices is the list of block devices to be used by the container. This is an alpha feature and may change in the future.",
+          "description": "volumeDevices is the list of block devices to be used by the container. This is a beta feature.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.VolumeDevice"
@@ -1131,6 +1182,7 @@
     },
     "io.argoproj.workflow.v1alpha1.ValueFrom": {
       "description": "ValueFrom describes a location in which to obtain the value to a parameter",
+      "type": "object",
       "properties": {
         "jqFilter": {
           "description": "JQFilter expression against the resource object in resource templates",
@@ -1152,6 +1204,7 @@
     },
     "io.argoproj.workflow.v1alpha1.Workflow": {
       "description": "Workflow is the definition of a workflow resource",
+      "type": "object",
       "required": [
         "metadata",
         "spec",
@@ -1179,6 +1232,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowList": {
       "description": "WorkflowList is list of Workflow resources",
+      "type": "object",
       "required": [
         "metadata",
         "items"
@@ -1205,6 +1259,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowSpec": {
       "description": "WorkflowSpec is the specification of a Workflow.",
+      "type": "object",
       "required": [
         "templates",
         "entrypoint"
@@ -1281,6 +1336,10 @@
           "type": "integer",
           "format": "int64"
         },
+        "podGC": {
+          "description": "PodGC describes the strategy to use when to deleting completed pods",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
+        },
         "podPriority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer",
@@ -1348,6 +1407,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowStep": {
       "description": "WorkflowStep is a reference to a template to execute in a series of step",
+      "type": "object",
       "properties": {
         "arguments": {
           "description": "Arguments hold arguments to the template",
@@ -1392,6 +1452,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplate": {
       "description": "WorkflowTemplate is the definition of a workflow template resource",
+      "type": "object",
       "required": [
         "spec"
       ],
@@ -1414,6 +1475,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateList": {
       "description": "WorkflowTemplateList is list of WorkflowTemplate resources",
+      "type": "object",
       "required": [
         "metadata",
         "items"
@@ -1440,6 +1502,7 @@
     },
     "io.argoproj.workflow.v1alpha1.WorkflowTemplateSpec": {
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate.",
+      "type": "object",
       "required": [
         "templates"
       ],
