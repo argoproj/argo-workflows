@@ -253,6 +253,33 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
+	// Read the content of the file given by manifestPath if manifest is empty
+	for _, template := range wf.Spec.Templates {
+		if template.Resource != nil {
+			if template.Resource.Manifest == "" && template.Resource.ManifestPath != "" {
+				var body []byte
+				var err error
+				if cmdutil.IsURL(template.Resource.ManifestPath) {
+					response, err := http.Get(template.Resource.ManifestPath)
+					if err != nil {
+						return nil, errors.InternalWrapError(err)
+					}
+					body, err = ioutil.ReadAll(response.Body)
+					_ = response.Body.Close()
+					if err != nil {
+						return nil, errors.InternalWrapError(err)
+					}
+				} else {
+					body, err = ioutil.ReadFile(template.Resource.ManifestPath)
+					if err != nil {
+						return nil, errors.InternalWrapError(err)
+					}
+				}
+				template.Resource.Manifest = string(body)
+			}
+		}
+	}
+
 	err := validate.ValidateWorkflow(wfClientset, namespace, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
