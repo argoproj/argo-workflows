@@ -6,9 +6,10 @@ import (
 
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeSuspend, orgTmpl, boundaryID, wfv1.NodeRunning)
+	if node != nil {
+		return node
 	}
+	node = woc.initializeNode(nodeName, wfv1.NodeTypeSuspend, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 	woc.log.Infof("node %s suspended", node)
 	return node
 }

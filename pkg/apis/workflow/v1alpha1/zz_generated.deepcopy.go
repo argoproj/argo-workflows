@@ -495,6 +495,11 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(TemplateRef)
 		**out = **in
 	}
+	if in.Template != nil {
+		in, out := &in.Template, &out.Template
+		*out = new(Template)
+		(*in).DeepCopyInto(*out)
+	}
 	in.StartedAt.DeepCopyInto(&out.StartedAt)
 	in.FinishedAt.DeepCopyInto(&out.FinishedAt)
 	if in.Daemoned != nil {

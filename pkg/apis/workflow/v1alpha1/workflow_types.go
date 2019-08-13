@@ -663,6 +663,11 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
+
+
+	// Template is the resolved template which is actually executed for the node.
+	Template *Template `json:"template,omitempty"`
+
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
 	Phase NodePhase `json:"phase,omitempty"`
