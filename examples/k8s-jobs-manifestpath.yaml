@@ -1,0 +1,24 @@
+# This example demonstrates the usage of the 'manifestPath' field of the 'resource' template type, 
+# which provides a convenient way to define a kubernetes resources from manifest file from a path or url
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: k8s-jobs-
+spec:
+  entrypoint: pi-tmpl
+  templates:
+  - name: pi-tmpl
+    resource:
+      action: create
+      successCondition: status.succeeded > 0
+      failureCondition: status.failed > 3
+      # manifestPath can be either a path (relative to the workflow manifest or absolute) or a url
+      manifestPath: k8s-manifest.yaml
+    outputs:
+      parameters:
+      - name: job-name
+        valueFrom:
+          jsonPath: '{.metadata.name}'
+      - name: job-obj
+        valueFrom:
+          jqFilter: '.'
