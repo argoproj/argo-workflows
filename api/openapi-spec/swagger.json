@@ -276,6 +276,16 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.ExecutorConfig": {
+      "description": "ExecutorConfig holds configurations of an executor container.",
+      "type": "object",
+      "properties": {
+        "serviceAccountName": {
+          "description": "ServiceAccountName specifies the service account name of the executor container.",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.GitArtifact": {
       "description": "GitArtifact is the location of an git artifact",
       "type": "object",
@@ -892,7 +902,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Arguments"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
         "container": {
@@ -907,9 +917,9 @@
           "description": "DAG template subtype which runs a DAG",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTemplate"
         },
-        "executorServiceAccountName": {
-          "description": "ExecutorServiceAccountName specifies a service account token name for executor containers.",
-          "type": "string"
+        "executor": {
+          "description": "Executor holds configurations of the executor container.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
         "hostAliases": {
           "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
@@ -1283,7 +1293,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactRepositoryRef"
         },
         "automountServiceAccountToken": {
-          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ExecutorServiceAccountName must be specified if this value is false.",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods. ServiceAccountName of ExecutorConfig must be specified if this value is false.",
           "type": "boolean"
         },
         "dnsConfig": {
@@ -1298,9 +1308,9 @@
           "description": "Entrypoint is a template reference to the starting point of the workflow",
           "type": "string"
         },
-        "executorServiceAccountName": {
-          "description": "ExecutorServiceAccountName specifies a service account token name for executor containers.",
-          "type": "string"
+        "executor": {
+          "description": "Executor holds configurations of executor containers of the workflow.",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
         "hostAliases": {
           "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",

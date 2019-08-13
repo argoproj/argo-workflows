@@ -438,10 +438,10 @@ func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *a
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
 	}
 	executorServiceAccountName := ""
-	if tmpl.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = tmpl.ExecutorServiceAccountName
-	} else if woc.wf.Spec.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = woc.wf.Spec.ExecutorServiceAccountName
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
 		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
@@ -854,10 +854,10 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 	}
 
 	executorServiceAccountName := ""
-	if tmpl.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = tmpl.ExecutorServiceAccountName
-	} else if woc.wf.Spec.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = woc.wf.Spec.ExecutorServiceAccountName
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
 		token, err := common.GetServiceAccountTokenByAccountName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
@@ -873,7 +873,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 			},
 		})
 	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
-		return errors.Errorf(errors.CodeBadRequest, "executorServiceAccountName must not be empty if automountServiceAccountToken is false")
+		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
 }

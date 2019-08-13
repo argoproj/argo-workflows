@@ -480,13 +480,13 @@ func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmp
 		automountServiceAccountToken = ctx.wf.Spec.AutomountServiceAccountToken
 	}
 	executorServiceAccountName := ""
-	if tmpl.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = tmpl.ExecutorServiceAccountName
-	} else if ctx.wf != nil && ctx.wf.Spec.ExecutorServiceAccountName != "" {
-		executorServiceAccountName = ctx.wf.Spec.ExecutorServiceAccountName
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if ctx.wf != nil && ctx.wf.Spec.Executor != nil && ctx.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = ctx.wf.Spec.Executor.ServiceAccountName
 	}
 	if automountServiceAccountToken != nil && !*automountServiceAccountToken && executorServiceAccountName == "" {
-		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executorServiceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
 	}
 	return nil
 }

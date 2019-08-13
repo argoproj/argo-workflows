@@ -109,7 +109,7 @@ func TestWFLevelAutomountServiceAccountToken(t *testing.T) {
 
 	falseValue := false
 	woc.wf.Spec.AutomountServiceAccountToken = &falseValue
-	woc.wf.Spec.ExecutorServiceAccountName = "foo"
+	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
@@ -126,7 +126,7 @@ func TestTmplLevelAutomountServiceAccountToken(t *testing.T) {
 	trueValue := true
 	falseValue := false
 	woc.wf.Spec.AutomountServiceAccountToken = &trueValue
-	woc.wf.Spec.ExecutorServiceAccountName = "foo"
+	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.wf.Spec.Templates[0].AutomountServiceAccountToken = &falseValue
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
@@ -151,7 +151,7 @@ func TestWFLevelExecutorServiceAccountName(t *testing.T) {
 	_, err := util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "foo", "foo-token")
 	assert.NoError(t, err)
 
-	woc.wf.Spec.ExecutorServiceAccountName = "foo"
+	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
@@ -172,8 +172,8 @@ func TestTmplLevelExecutorServiceAccountName(t *testing.T) {
 	_, err = util.CreateServiceAccountWithToken(woc.controller.kubeclientset, "", "tmpl", "tmpl-token")
 	assert.NoError(t, err)
 
-	woc.wf.Spec.ExecutorServiceAccountName = "foo"
-	woc.wf.Spec.Templates[0].ExecutorServiceAccountName = "tmpl"
+	woc.wf.Spec.Executor = &wfv1.ExecutorConfig{ServiceAccountName: "foo"}
+	woc.wf.Spec.Templates[0].Executor = &wfv1.ExecutorConfig{ServiceAccountName: "tmpl"}
 	woc.executeContainer(woc.wf.Spec.Entrypoint, &woc.wf.Spec.Templates[0], &wfv1.Template{}, "")
 	podName := getPodName(woc.wf)
 	pod, err := woc.controller.kubeclientset.CoreV1().Pods("").Get(podName, metav1.GetOptions{})
