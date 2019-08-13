@@ -1,6 +1,9 @@
 package util
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -32,4 +35,23 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
+}
+
+// TestReadFromPath ensures we can read the content of a file correctly using the readFromUrlOrPath
+func TestReadFromPath(t *testing.T) {
+	content := []byte("test file's content")
+	dir, err := ioutil.TempDir("", "testReadFromUrlOrPath")
+	if err != nil {
+		t.Error("Could not create temporary directory")
+	}
+
+	defer os.RemoveAll(dir)
+
+	tmpfn := filepath.Join(dir, "test_file.yaml")
+	if err := ioutil.WriteFile(tmpfn, content, 0666); err != nil {
+		t.Error("Could not write to temporary file")
+	}
+	body, err := readFromUrlOrPath(tmpfn)
+	assert.Nil(t, err)
+	assert.Equal(t, body, content)
 }
