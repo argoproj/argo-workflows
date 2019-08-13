@@ -194,23 +194,9 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 
 		// Add parameters from a parameter-file, if one was provided
 		if opts.ParameterFile != "" {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(opts.ParameterFile) {
-				response, err := http.Get(opts.ParameterFile)
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(opts.ParameterFile)
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
+			body, err := readFromUrlOrPath(opts.ParameterFile)
+			if err != nil {
+				return nil, err
 			}
 
 			yamlParams := map[string]json.RawMessage{}
@@ -257,23 +243,9 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	for _, template := range wf.Spec.Templates {
 		if template.Resource != nil {
 			if template.Resource.Manifest == "" && template.Resource.ManifestPath != "" {
-				var body []byte
-				var err error
-				if cmdutil.IsURL(template.Resource.ManifestPath) {
-					response, err := http.Get(template.Resource.ManifestPath)
-					if err != nil {
-						return nil, errors.InternalWrapError(err)
-					}
-					body, err = ioutil.ReadAll(response.Body)
-					_ = response.Body.Close()
-					if err != nil {
-						return nil, errors.InternalWrapError(err)
-					}
-				} else {
-					body, err = ioutil.ReadFile(template.Resource.ManifestPath)
-					if err != nil {
-						return nil, errors.InternalWrapError(err)
-					}
+				body, err := readFromUrlOrPath(template.Resource.ManifestPath)
+				if err != nil {
+					return nil, err
 				}
 				template.Resource.Manifest = string(body)
 			}
@@ -296,6 +268,29 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	} else {
 		return wfIf.Create(wf)
 	}
+}
+
+// Reads the content of a url or a file path
+func readFromUrlOrPath(urlOrFilePath string) ([]byte, error) {
+	var body []byte
+	var err error
+	if cmdutil.IsURL(urlOrFilePath) {
+		response, err := http.Get(urlOrFilePath)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		body, err = ioutil.ReadAll(response.Body)
+		response.Body.Close()
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+	} else {
+		body, err = ioutil.ReadFile(urlOrFilePath)
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+	}
+	return body, err
 }
 
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
