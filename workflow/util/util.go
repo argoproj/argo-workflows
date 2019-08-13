@@ -194,7 +194,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 
 		// Add parameters from a parameter-file, if one was provided
 		if opts.ParameterFile != "" {
-			body, err := readFromUrlOrPath(opts.ParameterFile)
+			body, err := ReadFromUrlOrPath(opts.ParameterFile)
 			if err != nil {
 				return nil, err
 			}
