@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -239,19 +240,6 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	// Read the content of the file given by manifestPath if manifest is empty
-	for _, template := range wf.Spec.Templates {
-		if template.Resource != nil {
-			if template.Resource.Manifest == "" && template.Resource.ManifestPath != "" {
-				body, err := ReadFromUrlOrPath(template.Resource.ManifestPath)
-				if err != nil {
-					return nil, err
-				}
-				template.Resource.Manifest = string(body)
-			}
-		}
-	}
-
 	err := validate.ValidateWorkflow(wfClientset, namespace, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
@@ -291,6 +279,30 @@ func ReadFromUrlOrPath(urlOrFilePath string) ([]byte, error) {
 		}
 	}
 	return body, err
+}
+
+// Reads the content of the file given by manifestPath if manifest is empty
+func MaybeWriteManifestFromManifestPath(wf *wfv1.Workflow, workflowManifestPath ...string) error {
+	for _, template := range wf.Spec.Templates {
+		if template.Resource != nil {
+			if template.Resource.Manifest == "" && template.Resource.ManifestPath != "" {
+				var manifestPath string = template.Resource.ManifestPath
+				if !cmdutil.IsURL(template.Resource.ManifestPath) {
+					if len(workflowManifestPath) == 1 {
+						manifestPath = filepath.Join(filepath.Dir(workflowManifestPath[0]), template.Resource.ManifestPath)
+					} else if len(workflowManifestPath) > 1 {
+						log.Fatal("Too many paths passed to this function")
+					}
+				}
+				body, err := ReadFromUrlOrPath(manifestPath)
+				if err != nil {
+					return err
+				}
+				template.Resource.Manifest = string(body)
+			}
+		}
+	}
+	return nil
 }
 
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any

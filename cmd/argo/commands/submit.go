@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -14,7 +13,6 @@ import (
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -89,27 +87,25 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 			log.Fatal(err)
 		}
 		workflows = unmarshalWorkflows(body, cliOpts.strict)
+		for _, wf := range workflows {
+			err = util.MaybeWriteManifestFromManifestPath(&wf)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	} else {
 		for _, filePath := range filePaths {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(filePath) {
-				response, err := http.Get(filePath)
-				if err != nil {
-					log.Fatal(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
-				if err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(filePath)
+			body, err := util.ReadFromUrlOrPath(filePath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			wfs := unmarshalWorkflows(body, cliOpts.strict)
+			for _, wf := range wfs {
+				err = util.MaybeWriteManifestFromManifestPath(&wf, filePath)
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
-			wfs := unmarshalWorkflows(body, cliOpts.strict)
 			workflows = append(workflows, wfs...)
 		}
 	}
