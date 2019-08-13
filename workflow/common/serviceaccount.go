@@ -64,7 +64,7 @@ func GetServiceAccountTokens(clientset kubernetes.Interface, serviceAccount *cor
 		}
 
 		if serviceaccount.IsServiceAccountToken(&secret, serviceAccount) {
-	        // The variable `secret` is overwritten during the loop, so need to deep copy it.
+			// The variable `secret` is overwritten during the loop, so need to deep copy it.
 			tokens = append(tokens, secret.DeepCopy())
 		}
 	}
