@@ -8,6 +8,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -67,6 +68,7 @@ const (
 type TemplateGetter interface {
 	GetNamespace() string
 	GetName() string
+	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 }
 
@@ -663,10 +665,11 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
+	// ResolvedWorkflowTemplateName is the template resource on which the resolved template of this node is retrieved.
+	ResolvedWorkflowTemplateName string `json:"resolvedWorkflowTemplateName,omitempty"`
 
-
-	// Template is the resolved template which is actually executed for the node.
-	Template *Template `json:"template,omitempty"`
+	// ResolvedTemplate is the resolved template which is actually executed for the node.
+	ResolvedTemplate *Template `json:"resolvedTemplate,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.

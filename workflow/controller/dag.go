@@ -203,7 +203,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		return node
 	}
 	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -360,7 +360,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -369,7 +369,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// expandedTasks will be a single element list of the same task
 	expandedTasks, err := woc.expandTask(*newTask)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -380,7 +380,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
 		if taskGroupNode == nil {
 			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, nil, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, nil, nil, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
 		}
 	}
 
@@ -395,12 +395,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// Check the task's when clause to decide if it should execute
 			proceed, err := shouldExecute(t.When)
 			if err != nil {
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				continue
 			}
 		}

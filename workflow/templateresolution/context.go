@@ -99,6 +99,11 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
 
+// GetCurrentTemplateBase returns the current template base of the context.
+func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateGetter {
+	return ctx.tmplBase
+}
+
 // GetTemplateBase returns a template base of a found template.
 func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
@@ -162,4 +167,13 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
 	return NewContext(ctx.wftmplGetter, tmplBase)
+}
+
+// OnWorkflowTemplate creates new context with the wfv1.WorkflowTemplate of the given name.
+func (ctx *Context) OnWorkflowTemplate(name string) (*Context, error) {
+	wftmpl, err := ctx.wftmplGetter.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return NewContext(ctx.wftmplGetter, wftmpl), nil
 }

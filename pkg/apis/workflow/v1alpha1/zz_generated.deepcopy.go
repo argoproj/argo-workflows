@@ -495,8 +495,8 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(TemplateRef)
 		**out = **in
 	}
-	if in.Template != nil {
-		in, out := &in.Template, &out.Template
+	if in.ResolvedTemplate != nil {
+		in, out := &in.ResolvedTemplate, &out.ResolvedTemplate
 		*out = new(Template)
 		(*in).DeepCopyInto(*out)
 	}
