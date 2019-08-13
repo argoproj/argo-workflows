@@ -603,6 +603,10 @@
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
         },
+        "manifestPath": {
+          "description": "ManifestPath contains the path to a kubernetes manifest",
+          "type": "string"
+        },
         "mergeStrategy": {
           "description": "MergeStrategy is the strategy used to merge a patch. It defaults to \"strategic\" Must be one of: strategic, merge, json",
           "type": "string"

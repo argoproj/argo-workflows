@@ -968,6 +968,9 @@ type ResourceTemplate struct {
 	// Manifest contains the kubernetes manifest
 	Manifest string `json:"manifest"`
 
+	// ManifestPath contains the path to a kubernetes manifest
+	ManifestPath string `json:"manifestPath,omitempty"`
+
 	// SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.
 	SetOwnerReference bool `json:"setOwnerReference,omitempty"`
 

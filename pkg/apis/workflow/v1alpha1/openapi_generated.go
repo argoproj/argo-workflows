@@ -1126,6 +1126,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"manifestPath": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ManifestPath contains the path to a kubernetes manifest",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"setOwnerReference": {
 						SchemaProps: spec.SchemaProps{
 							Description: "SetOwnerReference sets the reference to the workflow on the OwnerReference of generated resource.",
