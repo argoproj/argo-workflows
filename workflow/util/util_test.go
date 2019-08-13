@@ -37,7 +37,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	assert.False(t, ok)
 }
 
-// TestReadFromPath ensures we can read the content of a file correctly using the readFromUrlOrPath
+// TestReadFromPath ensures we can read the content of a file correctly using the ReadFromUrlOrPath function
 func TestReadFromPath(t *testing.T) {
 	content := []byte("test file's content")
 	dir, err := ioutil.TempDir("", "testReadFromUrlOrPath")
@@ -51,7 +51,7 @@ func TestReadFromPath(t *testing.T) {
 	if err := ioutil.WriteFile(tmpfn, content, 0666); err != nil {
 		t.Error("Could not write to temporary file")
 	}
-	body, err := readFromUrlOrPath(tmpfn)
+	body, err := ReadFromUrlOrPath(tmpfn)
 	assert.Nil(t, err)
 	assert.Equal(t, body, content)
 }

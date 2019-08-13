@@ -243,7 +243,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	for _, template := range wf.Spec.Templates {
 		if template.Resource != nil {
 			if template.Resource.Manifest == "" && template.Resource.ManifestPath != "" {
-				body, err := readFromUrlOrPath(template.Resource.ManifestPath)
+				body, err := ReadFromUrlOrPath(template.Resource.ManifestPath)
 				if err != nil {
 					return nil, err
 				}
@@ -271,7 +271,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 }
 
 // Reads the content of a url or a file path
-func readFromUrlOrPath(urlOrFilePath string) ([]byte, error) {
+func ReadFromUrlOrPath(urlOrFilePath string) ([]byte, error) {
 	var body []byte
 	var err error
 	if cmdutil.IsURL(urlOrFilePath) {
