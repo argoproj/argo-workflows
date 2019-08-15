@@ -8,3 +8,5 @@ cmd/**/debug
 hack/**/debug
 debug.test
 *.iml
+coverage.out
+.envrc
