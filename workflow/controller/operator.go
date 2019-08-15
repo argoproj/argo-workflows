@@ -1358,11 +1358,11 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 	default:
 		// if we are about to execute a pod, make our parent hasn't reached it's limit
 		if boundaryID != "" && (node == nil || (node.Phase != wfv1.NodePending && node.Phase != wfv1.NodeRunning)) {
-			boundaryNode := woc.wf.Status.Nodes[boundaryID]
-			boundaryTemplate, err := woc.tmplCtx.GetTemplate(&boundaryNode)
-			if err != nil {
-				return err
+			boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]
+			if !ok {
+				return errors.InternalError("boundaryNode not found")
 			}
+			boundaryTemplate := boundaryNode.ResolvedTemplate
 			if boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
@@ -1504,15 +1504,9 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresol
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
-		parentTemplate, err := woc.tmplCtx.GetTemplate(&boundaryNode)
-		if err != nil {
-			return woc.markNodeError(nodeName, err)
-		}
-
-		if parentTemplate != nil {
-			name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
-			includeScriptOutput = hasOutputResultRef(name, parentTemplate)
-		}
+		parentTemplate := boundaryNode.ResolvedTemplate
+		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
+		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}
 
 	mainCtr := tmpl.Script.Container

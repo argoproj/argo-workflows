@@ -186,11 +186,11 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 		return true
 	}
 	// pick the first child to determine it's template type
-	childNode := d.wf.Status.Nodes[node.Children[0]]
-	tmpl, err := d.tmplCtx.GetTemplate(&childNode)
-	if err != nil {
+	childNode, ok := d.wf.Status.Nodes[node.Children[0]]
+	if !ok {
 		return false
 	}
+	tmpl := childNode.ResolvedTemplate
 	if tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
@@ -448,11 +448,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			tmpl, err := dagCtx.tmplCtx.GetTemplate(ancestorNode)
-			if err != nil {
-				return nil, errors.InternalWrapError(err)
-			}
-			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
+			err := woc.processAggregateNodeOutputs(ancestorNode.ResolvedTemplate, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
