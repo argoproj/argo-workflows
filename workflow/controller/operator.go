@@ -1087,16 +1087,17 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil && node.ResolvedTemplate != nil {
 		tmpl = node.ResolvedTemplate
 		if node.ResolvedWorkflowTemplateName != "" {
-			woc.log.Infof("Found a resolved template of node %s on %s", nodeName, node.ResolvedWorkflowTemplateName)
+			woc.log.Debugf("Found a resolved template of node %s on %s", nodeName, node.ResolvedWorkflowTemplateName)
 			newTmplCtx, err := tmplCtx.OnWorkflowTemplate(node.ResolvedWorkflowTemplateName)
 			if err != nil {
 				return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 			}
 			tmplCtx = newTmplCtx
 		} else {
-			woc.log.Infof("Found a resolved template of node %s", nodeName)
+			woc.log.Debugf("Found a resolved template of node %s", nodeName)
 		}
 	} else {
+		woc.log.Debugf("Resolve the template for node %s", nodeName)
 		newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
 		if err != nil {
 			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
