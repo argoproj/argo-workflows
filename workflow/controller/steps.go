@@ -29,6 +29,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	node := woc.getNodeByName(nodeName)
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeSteps, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	} else if node.CanRerun() {
+		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	}
 
 	defer func() {
@@ -52,6 +54,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		sgNode := woc.getNodeByName(sgNodeName)
 		if sgNode == nil {
 			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, tmplCtx, tmpl, orgTmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+		} else if sgNode.CanRerun() {
+			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 		}
 		// The following will connect the step group node to its parents.
 		if i == 0 {

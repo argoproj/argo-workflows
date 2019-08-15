@@ -36,6 +36,7 @@ const (
 	NodeSkipped   NodePhase = "Skipped"
 	NodeFailed    NodePhase = "Failed"
 	NodeError     NodePhase = "Error"
+	NodeMemoized  NodePhase = "Memoized"
 )
 
 // NodeType is the type of a node
@@ -770,6 +771,11 @@ func (n NodeStatus) Successful() bool {
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
 	return n.Completed() && !n.Successful()
+}
+
+// CanRerun returns whether the node can be run again.
+func (n NodeStatus) CanRerun() bool {
+	return n.Phase == NodeMemoized
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket

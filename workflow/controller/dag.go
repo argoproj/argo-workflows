@@ -204,6 +204,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 	if node == nil {
 		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	} else if node.CanRerun() {
+		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	}
 
 	defer func() {

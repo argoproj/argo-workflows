@@ -1126,14 +1126,16 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	workNodeName := nodeName
 	retryNodeName := ""
 	if tmpl.IsLeaf() && tmpl.RetryStrategy != nil {
-		retryNodeName = nodeName
 		if node == nil {
 			node = woc.initializeNode(nodeName, wfv1.NodeTypeRetry, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+		} else if node.CanRerun() {
+			node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 		}
 		if err := woc.processNodeRetries(node, *tmpl.RetryStrategy); err != nil {
 			woc.markNodeError(nodeName, err)
 			return node, err
 		}
+		retryNodeName = nodeName
 		node = woc.getNodeByName(retryNodeName)
 		//woc.log.Infof("Node %s: Status: %s", retryNodeName, node.Phase)
 		// The retry node might have completed by now.
@@ -1369,17 +1371,19 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 				}
 			}
 		}
-
 	}
 	return nil
 }
 
 func (woc *wfOperationCtx) executeContainer(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
+	if node == nil {
+		node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
+	} else if node.CanRerun() {
+		node = woc.markNodePhase(nodeName, wfv1.NodePending)
+	} else {
 		return node
 	}
-	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
 
 	woc.log.Debugf("Executing node %s with container template: %v\n", nodeName, tmpl)
 	_, err := woc.createWorkflowPod(nodeName, *tmpl.Container, tmpl, false)
@@ -1489,10 +1493,13 @@ func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
 
 func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
+	if node == nil {
+		node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
+	} else if node.CanRerun() {
+		node = woc.markNodePhase(nodeName, wfv1.NodePending)
+	} else {
 		return node
 	}
-	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -1722,10 +1729,13 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
 	node := woc.getNodeByName(nodeName)
-	if node != nil {
+	if node == nil {
+		node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
+	} else if node.CanRerun() {
+		node = woc.markNodePhase(nodeName, wfv1.NodePending)
+	} else {
 		return node
 	}
-	node = woc.initializeNode(nodeName, wfv1.NodeTypePod, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodePending)
 
 	tmpl = tmpl.DeepCopy()
 
