@@ -149,6 +149,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 
 		// Print main and onExit Trees
 		mainRoot := roots[wf.ObjectMeta.Name]
+		if mainRoot == nil {
+			panic("failed to get the entrypoint node")
+		}
 		mainRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 
 		onExitID := wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)
