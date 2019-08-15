@@ -108,7 +108,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 						childNodes = append(childNodes, node)
 					}
 				}
-				err := woc.processAggregateNodeOutputs(childNode.ResolvedTemplate, stepsCtx.scope, prefix, childNodes)
+				tmpl, err := stepsCtx.tmplCtx.GetTemplate(&step)
+				if err != nil {
+					return woc.markNodeError(nodeName, err)
+				}
+				err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
 				if err != nil {
 					return woc.markNodeError(nodeName, err)
 				}

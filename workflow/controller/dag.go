@@ -440,6 +440,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.GetTaskNode(ancestor)
+		if ancestorNode == nil {
+			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
+		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
 			var ancestorNodes []wfv1.NodeStatus
