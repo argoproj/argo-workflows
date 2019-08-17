@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"bufio"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -78,9 +80,18 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	}
 	defaultWFClient := InitWorkflowClient()
 
-	fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
-	if err != nil {
-		log.Fatal(err)
+	if len(filePaths) == 1 && filePaths[0] == "-" {
+		reader := bufio.NewReader(os.Stdin)
+		body, err := ioutil.ReadAll(reader)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fileContents := [][]byte{body}
+	} else {
+		fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	var workflows []wfv1.Workflow
 	for _, body := range fileContents {

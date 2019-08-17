@@ -1,6 +1,8 @@
 package template
 
 import (
+	"bufio"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -45,9 +47,18 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 	defaultWFTmplClient := InitWorkflowTemplateClient()
 
-	fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
-	if err != nil {
-		log.Fatal(err)
+	if len(filePaths) == 1 && filePaths[0] == "-" {
+		reader := bufio.NewReader(os.Stdin)
+		body, err := ioutil.ReadAll(reader)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fileContents := [][]byte{body}
+	} else {
+		fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	var workflowTemplates []wfv1.WorkflowTemplate
