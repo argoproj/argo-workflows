@@ -47,15 +47,17 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 	defaultWFTmplClient := InitWorkflowTemplateClient()
 
+	var fileContents [][]byte
 	if len(filePaths) == 1 && filePaths[0] == "-" {
 		reader := bufio.NewReader(os.Stdin)
 		body, err := ioutil.ReadAll(reader)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fileContents := [][]byte{body}
+		fileContents = append(fileContents, body)
 	} else {
-		fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
+		var err error
+		fileContents, err = util.ReadFromFilePathsOrUrls(filePaths...)
 		if err != nil {
 			log.Fatal(err)
 		}
