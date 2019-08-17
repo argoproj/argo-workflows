@@ -6,10 +6,40 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ghodss/yaml"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// TestSubmitDryRun
+func TestSubmitDryRun(t *testing.T) {
+
+	workflowName := "test-dry-run"
+	workflowYaml := `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+    name: ` + workflowName + `
+spec:
+    entrypoint: whalesay
+    templates:
+    - name: whalesay
+      container: 
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
+`
+	wf := unmarshalWF(workflowYaml)
+	newWf := wf.DeepCopy()
+	wfClientSet := fakeClientset.NewSimpleClientset()
+	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &SubmitOpts{DryRun: true})
+	assert.Nil(t, err)
+	assert.Equal(t, wf.Spec, newWf.Spec)
+	assert.Equal(t, wf.Status, newWf.Status)
+}
 
 // TestResubmitWorkflowWithOnExit ensures we do not carry over the onExit node even if successful
 func TestResubmitWorkflowWithOnExit(t *testing.T) {
@@ -17,7 +47,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	onExitName := wfName + ".onExit"
 	wf := wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-wf",
+			Name: wfName,
 		},
 		Status: wfv1.WorkflowStatus{
 			Phase: wfv1.NodeFailed,
@@ -128,4 +158,13 @@ func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
 			assert.Equal(t, len(body), 0)
 		})
 	}
+}
+
+func unmarshalWF(yamlStr string) *wfv1.Workflow {
+	var wf wfv1.Workflow
+	err := yaml.Unmarshal([]byte(yamlStr), &wf)
+	if err != nil {
+		panic(err)
+	}
+	return &wf
 }
