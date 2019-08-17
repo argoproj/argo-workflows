@@ -253,14 +253,14 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 
-	if opts.ServerDryRun {
+	if opts.DryRun {
+		return wf, nil
+	} else if opts.ServerDryRun {
 		wf, err := CreateServerDryRun(wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
-	} else if opts.DryRun {
-		return wf, nil
 	} else {
 		return wfIf.Create(wf)
 	}
