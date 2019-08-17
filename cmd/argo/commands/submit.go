@@ -1,10 +1,7 @@
 package commands
 
 import (
-	"bufio"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -14,7 +11,6 @@ import (
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -81,37 +77,15 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		cliOpts = &cliSubmitOpts{}
 	}
 	defaultWFClient := InitWorkflowClient()
+
+	fileContents, err := util.ReadFromFilePathsOrUrls(filePaths)
+	if err != nil {
+		log.Fatal(err)
+	}
 	var workflows []wfv1.Workflow
-	if len(filePaths) == 1 && filePaths[0] == "-" {
-		reader := bufio.NewReader(os.Stdin)
-		body, err := ioutil.ReadAll(reader)
-		if err != nil {
-			log.Fatal(err)
-		}
-		workflows = unmarshalWorkflows(body, cliOpts.strict)
-	} else {
-		for _, filePath := range filePaths {
-			var body []byte
-			var err error
-			if cmdutil.IsURL(filePath) {
-				response, err := http.Get(filePath)
-				if err != nil {
-					log.Fatal(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
-				if err != nil {
-					log.Fatal(err)
-				}
-			} else {
-				body, err = ioutil.ReadFile(filePath)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-			wfs := unmarshalWorkflows(body, cliOpts.strict)
-			workflows = append(workflows, wfs...)
-		}
+	for _, body := range fileContents {
+		wfs := unmarshalWorkflows(body, cliOpts.strict)
+		workflows = append(workflows, wfs...)
 	}
 
 	if cliOpts.watch {

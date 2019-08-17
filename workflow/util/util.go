@@ -1,11 +1,13 @@
 package util
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -197,12 +199,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			var body []byte
 			var err error
 			if cmdutil.IsURL(opts.ParameterFile) {
-				response, err := http.Get(opts.ParameterFile)
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
+				body, err = ReadFromUrl(opts.ParameterFile)
 				if err != nil {
 					return nil, errors.InternalWrapError(err)
 				}
@@ -268,6 +265,52 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return wf, nil
 	} else {
 		return wfIf.Create(wf)
+	}
+}
+
+// Reads the content of a url
+func ReadFromUrl(url string) ([]byte, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return body, err
+}
+
+// ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
+func ReadFromFilePathsOrUrls(filePathsOrUrls []string) ([][]byte, error) {
+	var contents [][]byte
+	var body []byte
+	var err error
+	if len(filePathsOrUrls) == 1 && filePathsOrUrls[0] == "-" {
+		reader := bufio.NewReader(os.Stdin)
+		body, err = ioutil.ReadAll(reader)
+		if err != nil {
+			return [][]byte{}, err
+		}
+		contents = append(contents, body)
+		return contents, err
+	} else {
+		for _, filePathOrUrl := range filePathsOrUrls {
+			if cmdutil.IsURL(filePathOrUrl) {
+				body, err = ReadFromUrl(filePathOrUrl)
+				if err != nil {
+					return [][]byte{}, err
+				}
+			} else {
+				body, err = ioutil.ReadFile(filePathOrUrl)
+				if err != nil {
+					return [][]byte{}, err
+				}
+			}
+			contents = append(contents, body)
+		}
+		return contents, err
 	}
 }
 
