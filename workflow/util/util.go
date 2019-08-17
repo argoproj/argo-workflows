@@ -1,13 +1,11 @@
 package util
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -283,35 +281,25 @@ func ReadFromUrl(url string) ([]byte, error) {
 }
 
 // ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
-func ReadFromFilePathsOrUrls(filePathsOrUrls []string) ([][]byte, error) {
+func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 	var contents [][]byte
 	var body []byte
 	var err error
-	if len(filePathsOrUrls) == 1 && filePathsOrUrls[0] == "-" {
-		reader := bufio.NewReader(os.Stdin)
-		body, err = ioutil.ReadAll(reader)
-		if err != nil {
-			return [][]byte{}, err
+	for _, filePathOrUrl := range filePathsOrUrls {
+		if cmdutil.IsURL(filePathOrUrl) {
+			body, err = ReadFromUrl(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		} else {
+			body, err = ioutil.ReadFile(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
 		}
 		contents = append(contents, body)
-		return contents, err
-	} else {
-		for _, filePathOrUrl := range filePathsOrUrls {
-			if cmdutil.IsURL(filePathOrUrl) {
-				body, err = ReadFromUrl(filePathOrUrl)
-				if err != nil {
-					return [][]byte{}, err
-				}
-			} else {
-				body, err = ioutil.ReadFile(filePathOrUrl)
-				if err != nil {
-					return [][]byte{}, err
-				}
-			}
-			contents = append(contents, body)
-		}
-		return contents, err
 	}
+	return contents, err
 }
 
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any

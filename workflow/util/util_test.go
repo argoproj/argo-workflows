@@ -1,6 +1,9 @@
 package util
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -32,4 +35,97 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
 	assert.False(t, ok)
+}
+
+// TestReadFromSingleorMultiplePath ensures we can read the content of a single file or multiple files correctly using the ReadFromFilePathsOrUrls function
+func TestReadFromSingleorMultiplePath(t *testing.T) {
+	tests := map[string]struct {
+		fileNames []string
+		contents  []string
+	}{
+		"singleFile": {
+			fileNames: []string{"singleFile"},
+			contents:  []string{"test file's content"},
+		},
+		"multipleFiles": {
+			fileNames: []string{"file1", "file2"},
+			contents:  []string{"file1 content", "file2 content"},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			dir, err := ioutil.TempDir("", name)
+			if err != nil {
+				t.Error("Could not create temporary directory")
+			}
+			defer os.RemoveAll(dir)
+			var filePaths []string
+			for i := range tc.fileNames {
+				content := []byte(tc.contents[i])
+				tmpfn := filepath.Join(dir, tc.fileNames[i])
+				filePaths = append(filePaths, tmpfn)
+				err := ioutil.WriteFile(tmpfn, content, 0666)
+				if err != nil {
+					t.Error("Could not write to temporary file")
+				}
+			}
+			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			assert.Equal(t, len(body), len(filePaths))
+			assert.Nil(t, err)
+			for i := range body {
+				assert.Equal(t, body[i], []byte(tc.contents[i]))
+			}
+		})
+	}
+}
+
+// TestReadFromSingleorMultiplePathErrorHandling ensures that an error is returned if there is any error while reading files or urls
+func TestReadFromSingleorMultiplePathErrorHandling(t *testing.T) {
+	tests := map[string]struct {
+		fileNames []string
+		contents  []string
+		exists    []bool
+	}{
+		"nonExistingFile": {
+			fileNames: []string{"nonExistingFile"},
+			contents:  []string{"this content should not exist"},
+			exists:    []bool{false},
+		},
+		"multipleNonExistingFiles": {
+			fileNames: []string{"file1", "file2"},
+			contents:  []string{"this content should not exist", "this content should not exist"},
+			exists:    []bool{false, false},
+		},
+		"mixedExistingAndNonExistingFiles": {
+			fileNames: []string{"file1", "file2", "file3", "file4"},
+			contents:  []string{"actual file content", "", "", "actual file content 2"},
+			exists:    []bool{true, false, false, true},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			dir, err := ioutil.TempDir("", name)
+			if err != nil {
+				t.Error("Could not create temporary directory")
+			}
+			defer os.RemoveAll(dir)
+			var filePaths []string
+			for i := range tc.fileNames {
+				content := []byte(tc.contents[i])
+				tmpfn := filepath.Join(dir, tc.fileNames[i])
+				filePaths = append(filePaths, tmpfn)
+				if tc.exists[i] {
+					err := ioutil.WriteFile(tmpfn, content, 0666)
+					if err != nil {
+						t.Error("Could not write to temporary file")
+					}
+				}
+			}
+			body, err := ReadFromFilePathsOrUrls(filePaths...)
+			assert.NotNil(t, err)
+			assert.Equal(t, len(body), 0)
+		})
+	}
 }
