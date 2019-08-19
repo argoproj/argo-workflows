@@ -872,28 +872,26 @@ type AzureBlobArtifact struct {
 	// EndpointSuffix is the url suffix to the resources
 	EndpointSuffix string `json:"endpointSuffix"`
 
-    // Container is the place where reources are stored together
+	// Container is the place where reources are stored together
 	Container string `json:"container"`
 
-    // Key is the service url associated with an account
+	// Key is the service url associated with an account
 	Key string `json:"key"`
 
-    // AccountName is the secret selector to the Azure blob storage account name
+	// AccountName is the secret selector to the Azure blob storage account name
 	AccountNameSecret apiv1.SecretKeySelector `json:"accountNameSecret"`
 
-    // AccountKey is the secret selector to the Azurer blob storage account key
+	// AccountKey is the secret selector to the Azurer blob storage account key
 	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret"`
-
 }
 
 func (ab *AzureBlobArtifact) String() string {
-      return fmt.Sprintf("%s://%s/%s",ab.DefaultEndpointsProtocol,ab.Container,ab.EndpointSuffix)
+	return fmt.Sprintf("%s://%s/%s", ab.DefaultEndpointsProtocol, ab.Container, ab.EndpointSuffix)
 }
 
 func (azureblob *AzureBlobArtifact) HasLocation() bool {
-     return azureblob !=nil && azureblob.Container != ""
+	return azureblob != nil && azureblob.Container != ""
 }
-
 
 // HDFSArtifact is the location of an HDFS artifact
 type HDFSArtifact struct {

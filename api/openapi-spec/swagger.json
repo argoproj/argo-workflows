@@ -710,7 +710,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
-      "description": "AzureBlobArtifact is the location of an Azurer Blob Storage artifact",
+      "description": "AzureBlobArtifact is the location of an Azure Blob Storage artifact",
       "required": [
         "defaultEndpointsProtocol",
         "endpointSuffix",

@@ -274,8 +274,8 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 			artifactoryURL.Path = path.Join(artifactoryURL.Path, fileName)
 			art.Artifactory.URL = artifactoryURL.String()
 		} else if we.Template.ArchiveLocation.AzureBlob != nil {
-		    shallowCopy := *we.Template.ArchiveLocation.AzureBlob
-		    art.AzureBlob = &shallowCopy
+			shallowCopy := *we.Template.ArchiveLocation.AzureBlob
+			art.AzureBlob = &shallowCopy
 		} else if we.Template.ArchiveLocation.HDFS != nil {
 			shallowCopy := *we.Template.ArchiveLocation.HDFS
 			art.HDFS = &shallowCopy
@@ -600,29 +600,29 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	if art.HDFS != nil {
 		return hdfs.CreateDriver(we, art.HDFS)
 	}
-    if art.AzureBlob != nil {
-        azblobDriver := &azureblob.AzureBlobArtifactDriver{
-                       DefaultEndpointsProtocol: art.AzureBlob.DefaultEndpointsProtocol,
-                       EndpointSuffix:           art.AzureBlob.EndpointSuffix,
-                       Container:                art.AzureBlob.Container,
-                       Key:                      art.AzureBlob.Key,
-         }
-        if art.AzureBlob.AccountNameSecret.Name != "" {
-            accountName, err := we.GetSecrets(we.Namespace, art.AzureBlob.AccountNameSecret.Name, art.AzureBlob.AccountNameSecret.Key)
-            if err != nil {
-                return nil, err
-            }
-            azblobDriver.AccountName = string(accountName[:])
-        }
-        if art.AzureBlob.AccountKeySecret.Name != "" {
-            accountKey, err := we.GetSecrets(we.Namespace, art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
-            if err != nil {
-                return nil, err
-            }
-            azblobDriver.AccountKey = string(accountKey[:])
-        }
-     return azblobDriver, nil
-    }
+	if art.AzureBlob != nil {
+		azblobDriver := &azureblob.AzureBlobArtifactDriver{
+			DefaultEndpointsProtocol: art.AzureBlob.DefaultEndpointsProtocol,
+			EndpointSuffix:           art.AzureBlob.EndpointSuffix,
+			Container:                art.AzureBlob.Container,
+			Key:                      art.AzureBlob.Key,
+		}
+		if art.AzureBlob.AccountNameSecret.Name != "" {
+			accountName, err := we.GetSecrets(we.Namespace, art.AzureBlob.AccountNameSecret.Name, art.AzureBlob.AccountNameSecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			azblobDriver.AccountName = string(accountName[:])
+		}
+		if art.AzureBlob.AccountKeySecret.Name != "" {
+			accountKey, err := we.GetSecrets(we.Namespace, art.AzureBlob.AccountKeySecret.Name, art.AzureBlob.AccountKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			azblobDriver.AccountKey = string(accountKey[:])
+		}
+		return azblobDriver, nil
+	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
 	}
