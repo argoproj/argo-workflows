@@ -72,3 +72,6 @@ required = [
   name = "upper.io/db.v3"
   version ="3.5.7"
 
+[[constraint]]
+  version = "0.3.0"
+  name = "github.com/Azure/azure-storage-blob-go"

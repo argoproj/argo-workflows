@@ -872,10 +872,10 @@ type AzureBlobArtifact struct {
 	// EndpointSuffix is the url suffix to the resources
 	EndpointSuffix string `json:"endpointSuffix"`
 
-    // Container is the place where reources are stored together, as a S3 bucket
+    // Container is the place where reources are stored together
 	Container string `json:"container"`
 
-    // Key is the key in the bucket where the artifact resides
+    // Key is the service url associated with an account
 	Key string `json:"key"`
 
     // AccountName is the secret selector to the Azure blob storage account name
