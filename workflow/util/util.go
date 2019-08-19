@@ -1,11 +1,13 @@
 package util
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -264,6 +266,16 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	} else {
 		return wfIf.Create(wf)
 	}
+}
+
+// Reads from stdin
+func ReadFromStdin() ([]byte, error) {
+	reader := bufio.NewReader(os.Stdin)
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, err
 }
 
 // Reads the content of a url

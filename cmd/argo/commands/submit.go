@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"bufio"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -82,8 +80,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 
 	var fileContents [][]byte
 	if len(filePaths) == 1 && filePaths[0] == "-" {
-		reader := bufio.NewReader(os.Stdin)
-		body, err := ioutil.ReadAll(reader)
+		body, err := util.ReadFromStdin()
 		if err != nil {
 			log.Fatal(err)
 		}
