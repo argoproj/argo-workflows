@@ -18,6 +18,22 @@
   version = "v0.5.1"
 
 [[projects]]
+  digest = "1:46c496dd18d34d9ab4202ae48ba4f9587eb397f23480e3530c07a342b67ec24a"
+  name = "github.com/Azure/azure-pipeline-go"
+  packages = ["pipeline"]
+  pruneopts = ""
+  revision = "55fedc85a614dcd0e942a66f302ae3efb83d563c"
+  version = "v0.1.9"
+
+[[projects]]
+  digest = "1:f0dc2e8b5f53bd286e49ba57313df9d450ec1f273c59bc7b0011fd4e99eea7db"
+  name = "github.com/Azure/azure-storage-blob-go"
+  packages = ["azblob"]
+  pruneopts = ""
+  revision = "5152f14ace1c6db66bd9cb57840703a8358fa7bc"
+  version = "0.3.0"
+
+[[projects]]
   digest = "1:5cb9540799639936e705a6ac54cfb6744b598519485fb357acb6e3285f43fbfb"
   name = "github.com/Azure/go-autorest"
   packages = [
@@ -1364,6 +1380,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Azure/azure-storage-blob-go/azblob",
     "github.com/Knetic/govaluate",
     "github.com/argoproj/pkg/cli",
     "github.com/argoproj/pkg/errors",
