@@ -87,6 +87,8 @@ type ArtifactRepository struct {
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Artifactory stores artifacts to JFrog Artifactory
 	Artifactory *ArtifactoryArtifactRepository `json:"artifactory,omitempty"`
+	// Azureblob artifact
+	AzureBlob  *AzureBlobArtifactRepository   `json:"azureBlob,omitempty"`
 	// HDFS stores artifacts in HDFS
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 }
@@ -137,6 +139,10 @@ type ArtifactoryArtifactRepository struct {
 	wfv1.ArtifactoryAuth `json:",inline"`
 	// RepoURL is the url for artifactory repo.
 	RepoURL string `json:"repoURL,omitempty"`
+}
+// AzureBlobArtifactRepository defines the controller configuration for an azure artifact repository
+type AzureBlobArtifactRepository struct {
+       wfv1.AzureBlobArtifact `json:",inline"`
 }
 
 // HDFSArtifactRepository defines the controller configuration for an HDFS artifact repository

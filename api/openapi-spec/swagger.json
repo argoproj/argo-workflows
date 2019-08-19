@@ -101,6 +101,10 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
+        },
+        "azureblob": {
+          "description": "azureblob contains azureblob artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
         }
       }
     },
@@ -701,6 +705,43 @@
         },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
+      "description": "AzureBlobArtifact is the location of an Azurer Blob Storage artifact",
+      "required": [
+        "defaultEndpointsProtocol",
+        "endpointSuffix",
+        "container",
+        "key",
+        "accountNameSecret",
+        "accountKeySecret"
+      ],
+      "properties": {
+        "defaultEndpointsProtocol": {
+          "description": "DefaultEndpointsProtocol is the default hostname",
+          "$ref": "string"
+        },
+        "endpointSuffix": {
+          "description": "Endpoint Suffix is the location where you want to upload/download artifact",
+          "type": "string"
+        },
+        "container": {
+          "description": "Container is the Azure bucket",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key is the file name will be stored",
+          "type": "string"
+        },
+        "accountName": {
+          "description": "Account Name Secret is the secret selector to the Azure account's name",
+          "type": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "accountKey": {
+          "description": "Account Key Secret is the secret selector to the Azure account's key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }

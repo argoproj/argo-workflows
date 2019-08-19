@@ -764,7 +764,8 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil
+		|| tmpl.ArchiveLocation.AzureBlob != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}
@@ -809,6 +810,15 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		tmpl.ArchiveLocation.Artifactory = &wfv1.ArtifactoryArtifact{
 			ArtifactoryAuth: woc.artifactRepository.Artifactory.ArtifactoryAuth,
 			URL:             artURL,
+		}
+	} else if woc.controller.Config.ArtifactRepository.AzureBlob != nil {
+		tmpl.ArchiveLocation.AzureBlob = &wfv1.AzureBlobArtifact{
+			DefaultEndpointsProtocol: woc.controller.Config.ArtifactRepository.AzureBlob.DefaultEndpointsProtocol,
+			EndpointSuffix:           woc.controller.Config.ArtifactRepository.AzureBlob.EndpointSuffix,
+			Container:                woc.controller.Config.ArtifactRepository.AzureBlob.Container,
+			Key:                      woc.controller.Config.ArtifactRepository.AzureBlob.Key,
+			AccountNameSecret:        woc.controller.Config.ArtifactRepository.AzureBlob.AccountNameSecret,
+			AccountKeySecret:         woc.controller.Config.ArtifactRepository.AzureBlob.AccountKeySecret,
 		}
 	} else if hdfsLocation := woc.artifactRepository.HDFS; hdfsLocation != nil {
 		woc.log.Debugf("Setting HDFS artifact repository information")
