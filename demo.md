@@ -11,11 +11,18 @@ the workflows. Here are the requirements and steps to run the workflows.
 
 ## 1. Download Argo
 
-Download the latest Argo CD version from https://github.com/argoproj/argo/releases/latest.
+Download the latest Argo binary version from https://github.com/argoproj/argo/releases/latest.
 
 Also available in Mac Homebrew:
 ```
 brew install argoproj/tap/argo
+```
+
+Also you can use this command to install for Linux 
+
+```
+curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.3.0/argo-linux-amd64
+chmod +x /usr/local/bin/argo
 ```
 
 ## 2. Install the Controller and UI
