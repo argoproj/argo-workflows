@@ -268,52 +268,6 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	}
 }
 
-// Reads from stdin
-func ReadFromStdin() ([]byte, error) {
-	reader := bufio.NewReader(os.Stdin)
-	body, err := ioutil.ReadAll(reader)
-	if err != nil {
-		return []byte{}, err
-	}
-	return body, err
-}
-
-// Reads the content of a url
-func ReadFromUrl(url string) ([]byte, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	body, err := ioutil.ReadAll(response.Body)
-	_ = response.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	return body, err
-}
-
-// ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
-func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
-	var contents [][]byte
-	var body []byte
-	var err error
-	for _, filePathOrUrl := range filePathsOrUrls {
-		if cmdutil.IsURL(filePathOrUrl) {
-			body, err = ReadFromUrl(filePathOrUrl)
-			if err != nil {
-				return [][]byte{}, err
-			}
-		} else {
-			body, err = ioutil.ReadFile(filePathOrUrl)
-			if err != nil {
-				return [][]byte{}, err
-			}
-		}
-		contents = append(contents, body)
-	}
-	return contents, err
-}
-
 // CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
 func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
 	// Keep the workflow metadata because it will be overwritten by the Post request
@@ -584,6 +538,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
+// IsWorkflowTerminated returns whether or not a workflow is considered terminated
 func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
 	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
 		return true
@@ -631,4 +586,50 @@ func DecompressWorkflow(wf *wfv1.Workflow) error {
 		wf.Status.CompressedNodes = ""
 	}
 	return nil
+}
+
+// Reads from stdin
+func ReadFromStdin() ([]byte, error) {
+	reader := bufio.NewReader(os.Stdin)
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, err
+}
+
+// Reads the content of a url
+func ReadFromUrl(url string) ([]byte, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return body, err
+}
+
+// ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
+func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
+	var contents [][]byte
+	var body []byte
+	var err error
+	for _, filePathOrUrl := range filePathsOrUrls {
+		if cmdutil.IsURL(filePathOrUrl) {
+			body, err = ReadFromUrl(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		} else {
+			body, err = ioutil.ReadFile(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		}
+		contents = append(contents, body)
+	}
+	return contents, err
 }
