@@ -725,7 +725,7 @@
           "$ref": "string"
         },
         "endpointSuffix": {
-          "description": "Endpoint Suffix is the location where you want to upload/download artifact",
+          "description": "Endpoint Suffix is the blob location where you want to upload/download artifact",
           "type": "string"
         },
         "container": {
@@ -733,7 +733,7 @@
           "type": "string"
         },
         "key": {
-          "description": "Key is the file name will be stored",
+          "description": "Key is the service url for an account",
           "type": "string"
         },
         "accountName": {

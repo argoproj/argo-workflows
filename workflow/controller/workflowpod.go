@@ -764,8 +764,7 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 	var needLocation bool
 
 	if tmpl.ArchiveLocation != nil {
-		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil
-		|| tmpl.ArchiveLocation.AzureBlob != nil {
+		if tmpl.ArchiveLocation.S3 != nil || tmpl.ArchiveLocation.Artifactory != nil || tmpl.ArchiveLocation.HDFS != nil || tmpl.ArchiveLocation.AzureBlob != nil {
 			// User explicitly set the location. nothing else to do.
 			return nil
 		}

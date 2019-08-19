@@ -33,10 +33,11 @@ func (azblobDriver *AzureBlobArtifactDriver) newAzureBlobClient() (*azblob.Conta
 
     p := azblob.NewPipeline(credentials, azblob.PipelineOptions{})
 
-	u, err := url.Parse(fmt.Sprintf("https://%s.blob.core.windows.net/%s", azblobDriver.AccountName , azblobDriver.Container))
+	u, err := url.Parse(fmt.Sprintf("https://%s.%s/%s", azblobDriver.AccountName,azblobDriver.Key,azblobDriver.Container))
 
 	log.Info(azblobDriver.AccountName)
 	log.Info(azblobDriver.Container)
+	log.Info(azblobDriver.Key)
 
     if err != nil {
 		return nil,err
