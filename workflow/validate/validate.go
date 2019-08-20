@@ -588,7 +588,7 @@ func (ctx *wfValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error 
 
 				}
 				if tmpl.Script != nil {
-					for _, volMnt := range tmpl.Container.VolumeMounts {
+					for _, volMnt := range tmpl.Script.VolumeMounts {
 						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
 							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
 						}
