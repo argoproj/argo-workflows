@@ -614,7 +614,7 @@ func ReadFromUrl(url string) ([]byte, error) {
 
 // ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
 func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
-	var contents [][]byte
+	var fileContents [][]byte
 	var body []byte
 	var err error
 	for _, filePathOrUrl := range filePathsOrUrls {
@@ -629,7 +629,27 @@ func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
 				return [][]byte{}, err
 			}
 		}
-		contents = append(contents, body)
+		fileContents = append(fileContents, body)
 	}
-	return contents, err
+	return fileContents, err
+}
+
+// ReadManifest reads from stdin, a single file/url, or a list of files and/or urls
+func ReadManifest(manifestPaths ...string) ([][]byte, error) {
+	var manifestContents [][]byte
+	var err error
+	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
+		body, err := ReadFromStdin()
+		if err != nil {
+			return [][]byte{}, err
+		}
+		manifestContents = append(manifestContents, body)
+	} else {
+		var err error
+		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
+		if err != nil {
+			return [][]byte{}, err
+		}
+	}
+	return manifestContents, err
 }

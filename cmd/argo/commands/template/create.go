@@ -45,19 +45,9 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 	defaultWFTmplClient := InitWorkflowTemplateClient()
 
-	var fileContents [][]byte
-	if len(filePaths) == 1 && filePaths[0] == "-" {
-		body, err := util.ReadFromStdin()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fileContents = append(fileContents, body)
-	} else {
-		var err error
-		fileContents, err = util.ReadFromFilePathsOrUrls(filePaths...)
-		if err != nil {
-			log.Fatal(err)
-		}
+	fileContents, err := util.ReadManifest(filePaths...)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	var workflowTemplates []wfv1.WorkflowTemplate
