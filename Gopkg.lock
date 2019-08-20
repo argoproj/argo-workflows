@@ -57,7 +57,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:69825fad444fa2678b4ede69e55f84c0c611e13d3cf6731022b78a583547509f"
+  digest = "1:992caf139336e7efda99ca252fe6f26d3b588ab7e4cd041534f7a4501009748e"
   name = "github.com/argoproj/pkg"
   packages = [
     "cli",
@@ -75,7 +75,7 @@
     "time",
   ]
   pruneopts = ""
-  revision = "719976ae138a36de1f81e94a956e79a7e3a5309c"
+  revision = "1032539fc7f1d4c64630a4c66abcd565a65fcb64"
 
 [[projects]]
   digest = "1:ac2a05be7167c495fe8aaf8aaf62ecf81e78d2180ecb04e16778dc6c185c96a5"
