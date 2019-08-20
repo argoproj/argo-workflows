@@ -57,6 +57,10 @@
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
         },
+        "azureBlob": {
+          "description": "AzureBlob Storage contains Azure Blob Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
+        },
         "from": {
           "description": "From allows an artifact to reference an artifact from a previous step",
           "type": "string"
@@ -101,10 +105,6 @@
         "s3": {
           "description": "S3 contains S3 artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.S3Artifact"
-        },
-        "azureblob": {
-          "description": "azureblob contains azureblob artifact location details",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
         }
       }
     },
@@ -119,6 +119,10 @@
         "artifactory": {
           "description": "Artifactory contains artifactory artifact location details",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ArtifactoryArtifact"
+        },
+        "azureBlob": {
+          "description": "AzureBlob Storage contains Azure Blob Storage artifact location details",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.AzureBlobArtifact"
         },
         "git": {
           "description": "Git contains git artifact location details",
@@ -185,6 +189,44 @@
         "usernameSecret": {
           "description": "UsernameSecret is the secret selector to the repository username",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
+      "description": "AzureBlobArtifact is the location of a Azure Blob Storage artifact",
+      "type": "object",
+      "required": [
+        "defaultEndpointsProtocol",
+        "endpointSuffix",
+        "container",
+        "key",
+        "accountNameSecret",
+        "accountKeySecret"
+      ],
+      "properties": {
+        "accountKeySecret": {
+          "description": "AccountKeySecret is the secret selector to the Azurer blob storage account key",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "accountNameSecret": {
+          "description": "AccountNameSecret is the secret selector to the Azure blob storage account name",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
+        },
+        "container": {
+          "description": "Container is the place where reources are stored together",
+          "type": "string"
+        },
+        "defaultEndpointsProtocol": {
+          "description": "DefaultEndpointsProtocol is the default list of network protocols to use in the connection",
+          "type": "string"
+        },
+        "endpointSuffix": {
+          "description": "EndpointSuffix is the url suffix to the resources",
+          "type": "string"
+        },
+        "key": {
+          "description": "Key is the service url associated with an account",
+          "type": "string"
         }
       }
     },
@@ -705,43 +747,6 @@
         },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
-          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        }
-      }
-    },
-    "io.argoproj.workflow.v1alpha1.AzureBlobArtifact": {
-      "description": "AzureBlobArtifact is the location of an Azure Blob Storage artifact",
-      "required": [
-        "defaultEndpointsProtocol",
-        "endpointSuffix",
-        "container",
-        "key",
-        "accountNameSecret",
-        "accountKeySecret"
-      ],
-      "properties": {
-        "defaultEndpointsProtocol": {
-          "description": "DefaultEndpointsProtocol is the default hostname",
-          "$ref": "string"
-        },
-        "endpointSuffix": {
-          "description": "Endpoint Suffix is the blob location where you want to upload/download artifact",
-          "type": "string"
-        },
-        "container": {
-          "description": "Container is the Azure bucket",
-          "type": "string"
-        },
-        "key": {
-          "description": "Key is the service url for an account",
-          "type": "string"
-        },
-        "accountName": {
-          "description": "Account Name Secret is the secret selector to the Azure account's name",
-          "type": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
-        },
-        "accountKey": {
-          "description": "Account Key Secret is the secret selector to the Azure account's key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         }
       }

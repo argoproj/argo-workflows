@@ -878,10 +878,10 @@ type AzureBlobArtifact struct {
 	// Key is the service url associated with an account
 	Key string `json:"key"`
 
-	// AccountName is the secret selector to the Azure blob storage account name
+	// AccountNameSecret is the secret selector to the Azure blob storage account name
 	AccountNameSecret apiv1.SecretKeySelector `json:"accountNameSecret"`
 
-	// AccountKey is the secret selector to the Azurer blob storage account key
+	// AccountKeySecret is the secret selector to the Azurer blob storage account key
 	AccountKeySecret apiv1.SecretKeySelector `json:"accountKeySecret"`
 }
 
