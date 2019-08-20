@@ -103,7 +103,7 @@ func (c *FakeWorkflows) DeleteCollection(options *v1.DeleteOptions, listOptions 
 // Patch applies the patch and returns the patched workflow.
 func (c *FakeWorkflows) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Workflow, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(workflowsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Workflow{})
+		Invokes(testing.NewPatchSubresourceAction(workflowsResource, c.ns, name, data, subresources...), &v1alpha1.Workflow{})
 
 	if obj == nil {
 		return nil, err
