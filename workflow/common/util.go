@@ -34,13 +34,18 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any). A return value of nil indicates the path is not under any volumeMount.
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
-	if tmpl.Container == nil {
+	var volMounts []apiv1.VolumeMount
+	if tmpl.Container != nil {
+		volMounts = tmpl.Container.VolumeMounts
+	} else if tmpl.Script != nil {
+		volMounts = tmpl.Script.VolumeMounts
+	} else {
 		return nil
 	}
 	var volMnt *apiv1.VolumeMount
 	deepestLen := 0
-	for _, mnt := range tmpl.Container.VolumeMounts {
-		if !strings.HasPrefix(path, mnt.MountPath) {
+	for _, mnt := range volMounts {
+		if path != mnt.MountPath && !strings.HasPrefix(path, mnt.MountPath+"/") {
 			continue
 		}
 		if len(mnt.MountPath) > deepestLen {

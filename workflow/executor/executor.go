@@ -386,8 +386,23 @@ func (we *WorkflowExecutor) stageArchiveFile(mainCtrID string, art *wfv1.Artifac
 	return fileName, localArtPath, nil
 }
 
+// isBaseImagePath checks if the given artifact path resides in the base image layer of the container
+// versus a shared volume mount between the wait and main container
 func (we *WorkflowExecutor) isBaseImagePath(path string) bool {
-	return common.FindOverlappingVolume(&we.Template, path) == nil
+	// first check if path overlaps with a user-specified volumeMount
+	if common.FindOverlappingVolume(&we.Template, path) != nil {
+		return false
+	}
+	// next check if path overlaps with a shared input-artifact emptyDir mounted by argo
+	for _, inArt := range we.Template.Inputs.Artifacts {
+		if path == inArt.Path {
+			return false
+		}
+		if strings.HasPrefix(path, inArt.Path+"/") {
+			return false
+		}
+	}
+	return true
 }
 
 // SaveParameters will save the content in the specified file path as output parameter value

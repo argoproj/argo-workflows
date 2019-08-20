@@ -705,7 +705,7 @@ func validateOutputs(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	return nil
 }
 
-// validateBaseImageOutputs detects if the template contains an output from
+// validateBaseImageOutputs detects if the template contains an valid output from base image layer
 func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) error {
 	switch ctx.ContainerRuntimeExecutor {
 	case "", common.ContainerRuntimeExecutorDocker:
@@ -725,7 +725,7 @@ func (ctx *templateValidationCtx) validateBaseImageOutputs(tmpl *wfv1.Template) 
 
 				}
 				if tmpl.Script != nil {
-					for _, volMnt := range tmpl.Container.VolumeMounts {
+					for _, volMnt := range tmpl.Script.VolumeMounts {
 						if strings.HasPrefix(volMnt.MountPath, out.Path+"/") {
 							return errors.Errorf(errors.CodeBadRequest, "templates.%s.outputs.artifacts.%s: %s", tmpl.Name, out.Name, errMsg)
 						}
