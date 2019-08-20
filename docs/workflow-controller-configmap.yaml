@@ -79,6 +79,10 @@ data:
     # must be one of: docker, kubelet, k8sapi, pns
     containerRuntimeExecutor: docker
 
+    # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
+    # (available since Argo v2.4)
+    dockerSockPath: /var/someplace/else/docker.sock
+
     # kubelet port when using kubelet executor (default: 10250)
     kubeletPort: 10250
 
