@@ -645,7 +645,6 @@ func ReadManifest(manifestPaths ...string) ([][]byte, error) {
 		}
 		manifestContents = append(manifestContents, body)
 	} else {
-		var err error
 		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
 		if err != nil {
 			return [][]byte{}, err
