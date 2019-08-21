@@ -33,7 +33,6 @@ type ValidateOpts struct {
 	ContainerRuntimeExecutor string
 }
 
-// wfValidationCtx is the context for validating a workflow spec
 // templateValidationCtx is the context for validating a workflow spec
 type templateValidationCtx struct {
 	ValidateOpts
@@ -43,9 +42,12 @@ type templateValidationCtx struct {
 	globalParams map[string]string
 	// results tracks if validation has already been run on a template
 	results map[string]bool
+	// wf is the Workflow resource which is used to validate templates.
+	// It will be omitted in WorkflowTemplate validation.
+	wf *wfv1.Workflow
 }
 
-func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace string, getter wfv1.TemplateGetter, opts ValidateOpts) *templateValidationCtx {
+func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderValue
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
@@ -54,6 +56,7 @@ func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace strin
 		ValidateOpts: opts,
 		globalParams: globalParams,
 		results:      make(map[string]bool),
+		wf:           wf,
 	}
 }
 
@@ -159,7 +162,7 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 	if wftmpl.Namespace != "" {
 		namespace = wftmpl.Namespace
 	}
-	ctx := newTemplateValidationCtx(wfClientset, namespace, wftmpl, ValidateOpts{})
+	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
 	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
 
 	// Check if all templates can be resolved.
@@ -224,7 +227,7 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	case wfv1.TemplateTypeDAG:
 		err = ctx.validateDAG(scope, tmplCtx, newTmpl)
 	default:
-		err = validateLeaf(scope, newTmpl)
+		err = ctx.validateLeaf(scope, newTmpl)
 	}
 	if err != nil {
 		return err
@@ -423,7 +426,7 @@ func validateNonLeaf(tmpl *wfv1.Template) error {
 	return nil
 }
 
-func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
+func (ctx *templateValidationCtx) validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return errors.InternalWrapError(err)
@@ -469,6 +472,21 @@ func validateLeaf(scope map[string]interface{}, tmpl *wfv1.Template) error {
 	}
 	if tmpl.Parallelism != nil {
 		return errors.Errorf(errors.CodeBadRequest, "templates.%s.parallelism is only valid for steps and dag templates", tmpl.Name)
+	}
+	var automountServiceAccountToken *bool
+	if tmpl.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
+	} else if ctx.wf != nil && ctx.wf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = ctx.wf.Spec.AutomountServiceAccountToken
+	}
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if ctx.wf != nil && ctx.wf.Spec.Executor != nil && ctx.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = ctx.wf.Spec.Executor.ServiceAccountName
+	}
+	if automountServiceAccountToken != nil && !*automountServiceAccountToken && executorServiceAccountName == "" {
+		return errors.Errorf(errors.CodeBadRequest, "templates.%s.executor.serviceAccountName must not be empty if automountServiceAccountToken is false", tmpl.Name)
 	}
 	return nil
 }
