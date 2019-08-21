@@ -56,9 +56,6 @@ rules:
   - ""
   resources:
   - serviceaccounts
-  - serviceaccounts/finalizers
-  - secrets
-  - secrets/finalizers
   verbs:
   - get
   - list

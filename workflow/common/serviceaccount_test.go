@@ -8,35 +8,12 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-// TestGetServiceAccountTokenByAccountName verifies service account token retrieved by service account name.
-func TestGetServiceAccountTokenByAccountName(t *testing.T) {
+// TestGetServiceAccountTokenName verifies service account token retrieved by service account name.
+func TestGetServiceAccountTokenName(t *testing.T) {
 	clientset := fake.NewSimpleClientset()
 	_, err := util.CreateServiceAccountWithToken(clientset, "", "test", "test-token")
 	assert.NoError(t, err)
-	token, err := GetServiceAccountTokenByAccountName(clientset, "", "test")
+	tokenName, err := GetServiceAccountTokenName(clientset, "", "test")
 	assert.NoError(t, err)
-	assert.NotNil(t, token)
-	assert.Equal(t, "test-token", token.Name)
-}
-
-// TestGetReferencedServiceAccountToken verifies service account token retrieved by service account name.
-func TestGetReferencedServiceAccountToken(t *testing.T) {
-	clientset := fake.NewSimpleClientset()
-	sa, err := util.CreateServiceAccountWithToken(clientset, "", "test", "test-token")
-	assert.NoError(t, err)
-	token, err := GetReferencedServiceAccountToken(clientset, sa)
-	assert.NoError(t, err)
-	assert.NotNil(t, token)
-	assert.Equal(t, "test-token", token.Name)
-}
-
-// TestGetReferencedServiceAccountToken verifies service account token retrieved by service account name.
-func TestGetServiceAccountTokens(t *testing.T) {
-	clientset := fake.NewSimpleClientset()
-	sa, err := util.CreateServiceAccountWithToken(clientset, "", "test", "test-token")
-	assert.NoError(t, err)
-	tokens, err := GetServiceAccountTokens(clientset, sa)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(tokens))
-	assert.Equal(t, "test-token", tokens[0].Name)
+	assert.Equal(t, "test-token", tokenName)
 }

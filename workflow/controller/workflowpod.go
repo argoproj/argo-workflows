@@ -860,7 +860,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
 	}
 	if executorServiceAccountName != "" {
-		token, err := common.GetServiceAccountTokenByAccountName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
 		if err != nil {
 			return err
 		}
@@ -868,7 +868,7 @@ func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Templa
 			Name: common.ServiceAccountTokenVolumeName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
-					SecretName: token.Name,
+					SecretName: tokenName,
 				},
 			},
 		})
