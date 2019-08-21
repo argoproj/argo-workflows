@@ -17,7 +17,6 @@ import (
 	argokubeerr "github.com/argoproj/pkg/kube/errors"
 	"github.com/argoproj/pkg/strftime"
 	jsonpatch "github.com/evanphx/json-patch"
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
