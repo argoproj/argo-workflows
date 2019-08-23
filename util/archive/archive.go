@@ -49,7 +49,8 @@ func TarGzToWriter(sourcePath string, w io.Writer) error {
 
 func tarDir(sourcePath string, tw *tar.Writer) error {
 	baseName := filepath.Base(sourcePath)
-	return filepath.Walk(sourcePath, func(fpath string, info os.FileInfo, err error) error {
+	count := 0
+	err := filepath.Walk(sourcePath, func(fpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.InternalWrapError(err)
 		}
@@ -59,7 +60,8 @@ func tarDir(sourcePath string, tw *tar.Writer) error {
 			return errors.InternalWrapError(err)
 		}
 		nameInArchive = filepath.Join(baseName, nameInArchive)
-		log.Infof("writing %s", nameInArchive)
+		log.Debugf("writing %s", nameInArchive)
+		count++
 
 		var header *tar.Header
 		if (info.Mode() & os.ModeSymlink) != 0 {
@@ -102,6 +104,8 @@ func tarDir(sourcePath string, tw *tar.Writer) error {
 		}
 		return nil
 	})
+	log.Infof("archived %d files/dirs in %s", count, sourcePath)
+	return err
 }
 
 func tarFile(sourcePath string, tw *tar.Writer) error {

@@ -120,12 +120,12 @@ func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.Templa
 
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
-	return ctx.resolveTemplateImpl(tmplHolder, 0)
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*Context, *wfv1.Template, error) {
+	return ctx.resolveTemplateImpl(tmplHolder, args, globalParams, localParams, validateOnly, 0)
 }
 
 // resolveTemplateImpl digs into referenes and returns a merged template.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool, depth int) (*Context, *wfv1.Template, error) {
 	// Avoid infinite references
 	if depth > maxResolveDepth {
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
@@ -144,13 +144,21 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	}
 	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
 
+	tmpTmpl := &wfv1.Template{Inputs: *tmpl.Inputs.DeepCopy(), Arguments: *tmpl.Arguments.DeepCopy()}
+	processedTmpl, err := common.ProcessArgs(tmpTmpl, args, globalParams, localParams, validateOnly)
+	if err != nil {
+		return nil, nil, err
+	}
+	tmpl.Inputs = processedTmpl.Inputs
+	tmpl.Arguments = processedTmpl.Arguments
+
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
 		return newTmplCtx, tmpl, nil
 	}
 
 	// Dig into nested references with new template base.
-	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
+	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, &tmpl.Arguments, globalParams, localParams, validateOnly, depth+1)
 	if err != nil {
 		return nil, nil, err
 	}

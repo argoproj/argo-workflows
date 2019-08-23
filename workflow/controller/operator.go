@@ -1098,18 +1098,19 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 	} else {
 		woc.log.Debugf("Resolve the template for node %s", nodeName)
-		newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
+
+		localParams := make(map[string]string)
+		newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl, &args, woc.globalParams, localParams, false)
 		if err != nil {
 			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
 		// Perform parameter substitution of the template.
-		localParams := make(map[string]string)
 		if resolvedTmpl.IsPodType() {
 			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 		}
 		processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
 		if err != nil {
-			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, newTmplCtx, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
 		tmpl = processedTmpl
 		tmplCtx = newTmplCtx
@@ -1751,11 +1752,8 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmplCtx *templateres
 		tmpl.Resource.Manifest = string(bytes)
 	}
 
-	mainCtr := woc.newExecContainer(common.MainContainerName)
+	mainCtr := woc.newExecContainer(common.MainContainerName, tmpl)
 	mainCtr.Command = []string{"argoexec", "resource", tmpl.Resource.Action}
-	mainCtr.VolumeMounts = []apiv1.VolumeMount{
-		volumeMountPodMetadata,
-	}
 	_, err = woc.createWorkflowPod(nodeName, *mainCtr, tmpl, false)
 	if err != nil {
 		return woc.markNodeError(nodeName, err)

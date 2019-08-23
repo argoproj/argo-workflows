@@ -116,6 +116,13 @@ type WorkflowSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
+	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+
+	// Executor holds configurations of executor containers of the workflow.
+	Executor *ExecutorConfig `json:"executor,omitempty"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	Volumes []apiv1.Volume `json:"volumes,omitempty"`
 
@@ -308,6 +315,13 @@ type Template struct {
 
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
+	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+
+	// Executor holds configurations of the executor container.
+	Executor *ExecutorConfig `json:"executor,omitempty"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
@@ -959,6 +973,12 @@ type HTTPArtifact struct {
 
 func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
+}
+
+// ExecutorConfig holds configurations of an executor container.
+type ExecutorConfig struct {
+	// ServiceAccountName specifies the service account name of the executor container.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps

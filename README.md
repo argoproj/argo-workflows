@@ -89,6 +89,7 @@ Currently **officially** using Argo:
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
+1. [DataStax](https://www.datastax.com/)
 1. [Equinor](https://www.equinor.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [Gladly](https://gladly.com/)
