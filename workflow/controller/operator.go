@@ -1083,12 +1083,12 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
-	newTmplCtx, tmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
+	localParams := make(map[string]string)
+	newTmplCtx, tmpl, err := tmplCtx.ResolveTemplate(orgTmpl, &args, woc.globalParams, localParams, false)
 	if err != nil {
 		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 	}
 	// Perform parameter substitution of the template.
-	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
