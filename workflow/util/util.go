@@ -308,10 +308,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
@@ -347,10 +344,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
