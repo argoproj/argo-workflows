@@ -797,6 +797,12 @@ type S3Bucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
+
+	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
+	RoleARN string `json:"roleARN,omitempty"`
+
+	// RoleSessionName is an identifier for the assumed role session
+	RoleSessionName string `json:"roleSessionName,omitempty"`
 }
 
 // S3Artifact is the location of an S3 artifact
