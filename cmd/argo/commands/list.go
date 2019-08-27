@@ -31,6 +31,7 @@ type listFlags struct {
 	output        string   // --output
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
+	namePrefix    string   // --name-prefix
 }
 
 func NewListCommand() *cobra.Command {
@@ -84,7 +85,16 @@ func NewListCommand() *cobra.Command {
 
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = tmpWorkFlows
+				if listArgs.namePrefix == "" {
+					workflows = tmpWorkFlows
+				} else {
+					workflows = make([]wfv1.Workflow, 0)
+					for _, wf := range tmpWorkFlows {
+						if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.namePrefix) {
+							workflows = append(workflows, wf)
+						}
+					}
+				}
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
@@ -93,7 +103,9 @@ func NewListCommand() *cobra.Command {
 				}
 				for _, wf := range tmpWorkFlows {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
-						workflows = append(workflows, wf)
+						if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.namePrefix) {
+							workflows = append(workflows, wf)
+						}
 					}
 				}
 			}
@@ -113,6 +125,7 @@ func NewListCommand() *cobra.Command {
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
+	command.Flags().StringVar(&listArgs.namePrefix, "name-prefix", "", "Filter by name prefix")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
