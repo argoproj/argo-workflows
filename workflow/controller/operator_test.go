@@ -607,7 +607,7 @@ func TestExpandWithItems(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0][0])
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.Nil(t, err)
 	assert.Equal(t, 5, len(newSteps))
 	woc.operate()
@@ -655,7 +655,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
-	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0][0])
+	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(newSteps))
 }
@@ -892,8 +892,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "0", items[0].Value.(string))
-	assert.Equal(t, "9", items[9].Value.(string))
+	assert.Equal(t, "0", items[0].StrVal)
+	assert.Equal(t, "9", items[9].StrVal)
 
 	seq = wfv1.Sequence{
 		Start: "101",
@@ -902,8 +902,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "101", items[0].Value.(string))
-	assert.Equal(t, "110", items[9].Value.(string))
+	assert.Equal(t, "101", items[0].StrVal)
+	assert.Equal(t, "110", items[9].StrVal)
 
 	seq = wfv1.Sequence{
 		Start: "50",
@@ -912,8 +912,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "50", items[0].Value.(string))
-	assert.Equal(t, "60", items[10].Value.(string))
+	assert.Equal(t, "50", items[0].StrVal)
+	assert.Equal(t, "60", items[10].StrVal)
 
 	seq = wfv1.Sequence{
 		Start: "60",
@@ -922,8 +922,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 11, len(items))
-	assert.Equal(t, "60", items[0].Value.(string))
-	assert.Equal(t, "50", items[10].Value.(string))
+	assert.Equal(t, "60", items[0].StrVal)
+	assert.Equal(t, "50", items[10].StrVal)
 
 	seq = wfv1.Sequence{
 		Count: "0",
@@ -939,7 +939,7 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(items))
-	assert.Equal(t, "8", items[0].Value.(string))
+	assert.Equal(t, "8", items[0].StrVal)
 
 	seq = wfv1.Sequence{
 		Format: "testuser%02X",
@@ -949,8 +949,8 @@ func TestExpandWithSequence(t *testing.T) {
 	items, err = expandSequence(&seq)
 	assert.NoError(t, err)
 	assert.Equal(t, 10, len(items))
-	assert.Equal(t, "testuser01", items[0].Value.(string))
-	assert.Equal(t, "testuser0A", items[9].Value.(string))
+	assert.Equal(t, "testuser01", items[0].StrVal)
+	assert.Equal(t, "testuser0A", items[9].StrVal)
 }
 
 var metadataTemplate = `

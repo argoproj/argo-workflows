@@ -30,9 +30,11 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact":          schema_pkg_apis_workflow_v1alpha1_HTTPArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                  schema_pkg_apis_workflow_v1alpha1_Item(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ItemValue":             schema_pkg_apis_workflow_v1alpha1_ItemValue(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":              schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":          schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":               schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps":         schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":             schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC":                 schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":           schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
@@ -563,7 +565,7 @@ func schema_pkg_apis_workflow_v1alpha1_GitArtifact(ref common.ReferenceCallback)
 						SchemaProps: spec.SchemaProps{
 							Description: "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
 							Type:        []string{"integer"},
-							Format:      "int32",
+							Format:      "int64",
 						},
 					},
 					"fetch": {
@@ -908,6 +910,70 @@ func schema_pkg_apis_workflow_v1alpha1_Item(ref common.ReferenceCallback) common
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_ItemValue(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Type": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"NumVal": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"BoolVal": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"StrVal": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"MapVal": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"ListVal": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "byte",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"Type", "NumVal", "BoolVal", "StrVal", "MapVal", "ListVal"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1005,6 +1071,33 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Artifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"Steps": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"Steps"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep"},
 	}
 }
 
@@ -1680,14 +1773,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Type: []string{"array"},
-										Items: &spec.SchemaOrArray{
-											Schema: &spec.Schema{
-												SchemaProps: spec.SchemaProps{
-													Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep"),
-												},
-											},
-										},
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps"),
 									},
 								},
 							},
@@ -1853,7 +1939,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactLocation", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ScriptTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.SuspendTemplate", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.UserContainer", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -2177,20 +2263,6 @@ func schema_pkg_apis_workflow_v1alpha1_Workflow(ref common.ReferenceCallback) co
 				Description: "Workflow is the definition of a workflow resource",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"kind": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"apiVersion": {
-						SchemaProps: spec.SchemaProps{
-							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"metadata": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),

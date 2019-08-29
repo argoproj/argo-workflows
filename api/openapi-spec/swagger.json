@@ -286,7 +286,7 @@
         "depth": {
           "description": "Depth specifies clones/fetches should be shallow and include the given number of commits from the branch tip",
           "type": "integer",
-          "format": "int32"
+          "format": "int64"
         },
         "fetch": {
           "description": "Fetch specifies a number of refs that should be fetched before checkout",
@@ -486,6 +486,45 @@
       "type": "string",
       "format": "item"
     },
+    "io.argoproj.workflow.v1alpha1.ItemValue": {
+      "type": "object",
+      "required": [
+        "Type",
+        "NumVal",
+        "BoolVal",
+        "StrVal",
+        "MapVal",
+        "ListVal"
+      ],
+      "properties": {
+        "BoolVal": {
+          "type": "boolean"
+        },
+        "ListVal": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "MapVal": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "NumVal": {
+          "type": "string"
+        },
+        "StrVal": {
+          "type": "string"
+        },
+        "Type": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.Metadata": {
       "description": "Pod metdata",
       "type": "object",
@@ -529,6 +568,20 @@
         "result": {
           "description": "Result holds the result (stdout) of a script template",
           "type": "string"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.ParallelSteps": {
+      "type": "object",
+      "required": [
+        "Steps"
+      ],
+      "properties": {
+        "Steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
+          }
         }
       }
     },
@@ -989,10 +1042,7 @@
           "description": "Steps define a series of sequential/parallel workflow steps",
           "type": "array",
           "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowStep"
-            }
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ParallelSteps"
           }
         },
         "suspend": {
@@ -1203,14 +1253,6 @@
         "status"
       ],
       "properties": {
-        "apiVersion": {
-          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
-          "type": "string"
-        },
-        "kind": {
-          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
-          "type": "string"
-        },
         "metadata": {
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
         },
