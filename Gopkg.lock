@@ -956,19 +956,6 @@
   version = "v0.0.2"
 
 [[projects]]
-  digest = "1:40cf02345bfa29fb217cfe0767a9416d99569d4ff21dbb1fd3378ef10682549c"
-  name = "gopkg.in/square/go-jose.v2"
-  packages = [
-    ".",
-    "cipher",
-    "json",
-    "jwt",
-  ]
-  pruneopts = ""
-  revision = "730df5f748271903322feb182be83b43ebbbe27d"
-  version = "v2.3.1"
-
-[[projects]]
   digest = "1:ea3b8f261ec283b38091665c8b060216f03eb4af2f90e502b21505ae352b12bb"
   name = "gopkg.in/src-d/go-billy.v4"
   packages = [
@@ -1098,15 +1085,12 @@
   digest = "1:daf5cbf32f8ec58311ade32bbb966aabc40c99c02d7b21176c2ec35e4faf4ad9"
   name = "k8s.io/apimachinery"
   packages = [
-    "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
     "pkg/api/resource",
-    "pkg/api/validation",
     "pkg/apis/meta/internalversion",
     "pkg/apis/meta/v1",
     "pkg/apis/meta/v1/unstructured",
-    "pkg/apis/meta/v1/validation",
     "pkg/apis/meta/v1beta1",
     "pkg/conversion",
     "pkg/conversion/queryparams",
@@ -1150,18 +1134,6 @@
   ]
   pruneopts = ""
   revision = "8f6ac2502e5143406f4eaedc4ca4262854d877ce"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9a3428a40c31eb07e3ecbc1c2bf4c22afadf5a257911e621dc52cd5459a18bbf"
-  name = "k8s.io/apiserver"
-  packages = [
-    "pkg/authentication/authenticator",
-    "pkg/authentication/serviceaccount",
-    "pkg/authentication/user",
-  ]
-  pruneopts = ""
-  revision = "dd1076c6639a68efedf403f0fb366a29284d2678"
 
 [[projects]]
   branch = "release-11.0"
@@ -1348,17 +1320,6 @@
   revision = "5e22f3d471e6f24ca20becfdffdc6206c7cecac8"
 
 [[projects]]
-  digest = "1:63b20edbeadb800a49f7aceeb92dcb4815ef4ecfd825f468514ead1a92ae4822"
-  name = "k8s.io/kubernetes"
-  packages = [
-    "pkg/apis/core",
-    "pkg/serviceaccount",
-  ]
-  pruneopts = ""
-  revision = "f6278300bebbb750328ac16ee6dd3aa7d3549568"
-  version = "v1.15.2"
-
-[[projects]]
   branch = "master"
   digest = "1:3494fcaac9b9d4f419174631655d665dafa532ad9b5bd1108d586dd93112cb4d"
   name = "k8s.io/utils"
@@ -1482,7 +1443,6 @@
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/kube-openapi/pkg/common",
-    "k8s.io/kubernetes/pkg/serviceaccount",
     "k8s.io/utils/pointer",
     "upper.io/db.v3/lib/sqlbuilder",
     "upper.io/db.v3/mysql",

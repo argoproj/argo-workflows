@@ -800,9 +800,6 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty"`
-
-	// RoleSessionName is an identifier for the assumed role session
-	RoleSessionName string `json:"roleSessionName,omitempty"`
 }
 
 // S3Artifact is the location of an S3 artifact
