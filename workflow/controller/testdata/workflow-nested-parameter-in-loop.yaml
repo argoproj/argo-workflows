@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: nested-loop-parameter-test-
+spec:
+  entrypoint: loop-with-nested-parameter
+
+  arguments:
+    parameters:
+    - name: adj
+      value: "cruel"
+    - name: recipient
+      value: "world"
+    - name: target
+      value: "{{workflow.parameters.adj}} {{workflow.parameters.recipient}}"
+
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [/bin/sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+
+  - name: loop-with-nested-parameter
+    steps:
+    - - name: foreach-nest
+        template: echo
+        arguments:
+          parameters:
+            - name: message
+              value: "{{item}} {{workflow.parameters.target}}"
+        withItems: ["Hello", "Goodbye"]

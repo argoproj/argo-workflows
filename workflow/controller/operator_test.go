@@ -881,6 +881,27 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 	assert.Equal(t, len(pods.Items), 1)
 }
 
+func TestGlobalNestedParamSubstitution(t *testing.T) {
+	wf := test.LoadTestWorkflow("testdata/workflow-nested-parameter-in-loop.yaml")
+	woc := newWoc(*wf)
+	// Call setGlobalParameters to fill the globalParams map
+	woc.setGlobalParameters()
+	assert.Equal(t, "{{workflow.parameters.adj}} {{workflow.parameters.recipient}}", woc.globalParams["workflow.parameters.target"])
+	// Call substituteNestedGlobalParams to take care of nested global parameters
+	woc.substituteNestedGlobalParams()
+	// Make sure the nested parameters were substituted
+	assert.Equal(t, "cruel world", woc.globalParams["workflow.parameters.target"])
+	// Create a new workflow operation context and call its operate method
+	// to make sure the workflow runs correctly
+	woc = newWoc(*wf)
+	woc.operate()
+	wf, err := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows("").Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, wfv1.NodeRunning, wf.Status.Phase)
+	_, err = woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+}
+
 func TestExpandWithSequence(t *testing.T) {
 	var seq wfv1.Sequence
 	var items []wfv1.Item
