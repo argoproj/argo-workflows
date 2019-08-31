@@ -882,15 +882,17 @@ func TestGlobalParamSubstitutionWithArtifact(t *testing.T) {
 }
 
 func TestGlobalNestedParamSubstitution(t *testing.T) {
-	wf := test.LoadTestWorkflow("testdata/workflow-nested-parameter-in-loop.yaml")
+	wf := test.LoadTestWorkflow("testdata/workflow-global-nested-parameter.yaml")
 	woc := newWoc(*wf)
 	// Call setGlobalParameters to fill the globalParams map
 	woc.setGlobalParameters()
 	assert.Equal(t, "{{workflow.parameters.adj}} {{workflow.parameters.recipient}}", woc.globalParams["workflow.parameters.target"])
+	assert.Equal(t, "{{workflow.parameters.target}}", woc.globalParams["workflow.parameters.nested-target"])
 	// Call substituteNestedGlobalParams to take care of nested global parameters
 	woc.substituteNestedGlobalParams()
 	// Make sure the nested parameters were substituted
 	assert.Equal(t, "cruel world", woc.globalParams["workflow.parameters.target"])
+	assert.Equal(t, "cruel world", woc.globalParams["workflow.parameters.nested-target"])
 	// Create a new workflow operation context and call its operate method
 	// to make sure the workflow runs correctly
 	woc = newWoc(*wf)

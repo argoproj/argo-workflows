@@ -1,9 +1,9 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: nested-loop-parameter-test-
+  generateName: global-nested-parameter-test-
 spec:
-  entrypoint: loop-with-nested-parameter
+  entrypoint: step-with-nested-parameter
 
   arguments:
     parameters:
@@ -13,6 +13,8 @@ spec:
       value: "world"
     - name: target
       value: "{{workflow.parameters.adj}} {{workflow.parameters.recipient}}"
+    - name: nested-target
+      value: "{{workflow.parameters.target}}"
 
   templates:
   - name: echo
@@ -24,12 +26,10 @@ spec:
       command: [/bin/sh, -c]
       args: ["echo {{inputs.parameters.message}}"]
 
-  - name: loop-with-nested-parameter
-    steps:
-    - - name: foreach-nest
-        template: echo
-        arguments:
-          parameters:
-            - name: message
-              value: "{{item}} {{workflow.parameters.target}}"
-        withItems: ["Hello", "Goodbye"]
+  - name: step-with-nested-parameter
+    template: echo
+    arguments:
+      parameters:
+        - name: message
+          value: "{{item}} {{workflow.parameters.nested-target}}"
+      withItems: ["Hello", "Goodbye"]
