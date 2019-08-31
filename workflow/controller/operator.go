@@ -178,6 +178,9 @@ func (woc *wfOperationCtx) operate() {
 
 	woc.setGlobalParameters()
 
+	// Replace the nested global workflow parameters if there are any
+	woc.substituteNestedGlobalParams()
+
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
 		repo, err := getArtifactRepositoryRef(woc.controller, repoReference.ConfigMap, repoReference.Key)
@@ -1878,5 +1881,27 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 		return errors.InternalWrapError(err)
 	}
 	woc.volumes = newVolumes
+	return nil
+}
+
+// substituteNestedGlobalParams substitutes nested global parameters if there are any
+func (woc *wfOperationCtx) substituteNestedGlobalParams() error {
+	for name, value := range woc.globalParams {
+		// Only do this for workflow parameters
+		// i.e. the keys in globalParams that start with 'workflow.parameters.'
+		if strings.HasPrefix(name, "workflow.parameters.") {
+			// Check if the string value contains the start tag {{
+			// to avoid unnecessarily creating a template
+			startTagIndex := strings.Index(value, "{{")
+			if startTagIndex > -1 {
+				fstTmpl := fasttemplate.New(value, "{{", "}}")
+				newValue, err := common.Replace(fstTmpl, woc.globalParams, true)
+				if err != nil {
+					return err
+				}
+				woc.globalParams[name] = newValue
+			}
+		}
+	}
 	return nil
 }
