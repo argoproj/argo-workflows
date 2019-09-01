@@ -1886,22 +1886,27 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 
 // substituteNestedGlobalParams substitutes nested global parameters if there are any
 func (woc *wfOperationCtx) substituteNestedGlobalParams() error {
+	newGlobalParams := make(map[string]string)
 	for name, value := range woc.globalParams {
+		newGlobalParams[name] = value
 		// Only do this for workflow parameters
 		// i.e. the keys in globalParams that start with 'workflow.parameters.'
 		if strings.HasPrefix(name, "workflow.parameters.") {
 			// Check if the string value contains the start tag {{
 			// to avoid unnecessarily creating a template
-			startTagIndex := strings.Index(value, "{{")
-			if startTagIndex > -1 {
+			// the loop is needed to handle cases when there are multiple nesting levels
+			// i.e. when a nested parameter references another nested parameter
+			for startTagIndex := strings.Index(value, "{{"); startTagIndex > -1; startTagIndex = strings.Index(value, "{{") {
 				fstTmpl := fasttemplate.New(value, "{{", "}}")
 				newValue, err := common.Replace(fstTmpl, woc.globalParams, true)
 				if err != nil {
 					return err
 				}
-				woc.globalParams[name] = newValue
+				newGlobalParams[name] = newValue
+				value = newValue
 			}
 		}
 	}
+	woc.globalParams = newGlobalParams
 	return nil
 }
