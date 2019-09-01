@@ -179,7 +179,12 @@ func (woc *wfOperationCtx) operate() {
 	woc.setGlobalParameters()
 
 	// Replace the nested global workflow parameters if there are any
-	woc.substituteNestedGlobalParams()
+	err := woc.substituteNestedGlobalParams()
+	if err != nil {
+		woc.log.Errorf("%s global nested params substitution error: %+v", woc.wf.ObjectMeta.Name, err)
+		woc.markWorkflowError(err, true)
+		return
+	}
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
@@ -192,7 +197,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 	}
 
-	err := woc.substituteParamsInVolumes(woc.globalParams)
+	err = woc.substituteParamsInVolumes(woc.globalParams)
 	if err != nil {
 		woc.log.Errorf("%s volumes global param substitution error: %+v", woc.wf.ObjectMeta.Name, err)
 		woc.markWorkflowError(err, true)
