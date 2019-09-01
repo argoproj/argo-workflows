@@ -1896,11 +1896,18 @@ func (woc *wfOperationCtx) substituteNestedGlobalParams() error {
 			// to avoid unnecessarily creating a template
 			// the loop is needed to handle cases when there are multiple nesting levels
 			// i.e. when a nested parameter references another nested parameter
-			for startTagIndex := strings.Index(value, "{{"); startTagIndex > -1; startTagIndex = strings.Index(value, "{{") {
+			for {
+				startTagIndex := strings.Index(value, "{{")
+				if startTagIndex == -1 {
+					break
+				}
 				fstTmpl := fasttemplate.New(value, "{{", "}}")
 				newValue, err := common.Replace(fstTmpl, woc.globalParams, true)
 				if err != nil {
 					return err
+				}
+				if value == newValue {
+					break
 				}
 				newGlobalParams[name] = newValue
 				value = newValue
