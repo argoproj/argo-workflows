@@ -13,23 +13,23 @@ import (
 
 // S3ArtifactDriver is a driver for AWS S3
 type S3ArtifactDriver struct {
-	Endpoint        string
-	Region          string
-	Secure          bool
-	AccessKey       string
-	SecretKey       string
-	RoleARN         string
+	Endpoint  string
+	Region    string
+	Secure    bool
+	AccessKey string
+	SecretKey string
+	RoleARN   string
 }
 
 // newMinioClient instantiates a new minio client object.
 func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 	opts := argos3.S3ClientOpts{
-		Endpoint:        s3Driver.Endpoint,
-		Region:          s3Driver.Region,
-		Secure:          s3Driver.Secure,
-		AccessKey:       s3Driver.AccessKey,
-		SecretKey:       s3Driver.SecretKey,
-		RoleARN:         s3Driver.RoleARN,
+		Endpoint:  s3Driver.Endpoint,
+		Region:    s3Driver.Region,
+		Secure:    s3Driver.Secure,
+		AccessKey: s3Driver.AccessKey,
+		SecretKey: s3Driver.SecretKey,
+		RoleARN:   s3Driver.RoleARN,
 	}
 	return argos3.NewS3Client(opts)
 }
