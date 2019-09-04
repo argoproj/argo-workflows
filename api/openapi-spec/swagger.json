@@ -673,6 +673,10 @@
           "description": "Region contains the optional bucket region",
           "type": "string"
         },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+          "type": "string"
+        },
         "secretKeySecret": {
           "description": "SecretKeySecret is the secret selector to the bucket's secret key",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
@@ -707,6 +711,10 @@
         },
         "region": {
           "description": "Region contains the optional bucket region",
+          "type": "string"
+        },
+        "roleARN": {
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
           "type": "string"
         },
         "secretKeySecret": {
