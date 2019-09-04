@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	descWorkflowDefaultLabels = []string{"namespace", "name"}
+	descWorkflowDefaultLabels = []string{"namespace", "name", "entrypoint"}
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
 		"Information about workflow.",
-		append(descWorkflowDefaultLabels, "entrypoint", "service_account_name", "templates"),
+		append(descWorkflowDefaultLabels, "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
