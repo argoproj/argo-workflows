@@ -1035,7 +1035,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
 		return true
 	}
 	return false
