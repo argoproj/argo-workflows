@@ -148,9 +148,7 @@ func (wfc *WorkflowController) Run(ctx context.Context, wfWorkers, podWorkers in
 	}
 
 	wfc.wfInformer = util.NewWorkflowInformer(wfc.restConfig, wfc.Config.Namespace, workflowResyncPeriod, wfc.tweakWorkflowlist)
-
-	informerFactory := wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
-	wfc.wftmplInformer = informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	wfc.wftmplInformer = wfc.newWorkflowTemplateInformer()
 
 	wfc.addWorkflowInformerHandler()
 	wfc.podInformer = wfc.newPodInformer()
@@ -506,6 +504,16 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 		},
 	)
 	return informer
+}
+
+func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
+	var informerFactory wfextv.SharedInformerFactory
+	if wfc.Config.Namespace != "" {
+		informerFactory = wfextv.NewFilteredSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod, wfc.Config.Namespace, func(opts *metav1.ListOptions) {})
+	} else {
+		informerFactory = wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
+	}
+	return informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
 }
 
 func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
