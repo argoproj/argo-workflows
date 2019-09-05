@@ -6,7 +6,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
