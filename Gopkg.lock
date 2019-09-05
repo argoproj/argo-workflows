@@ -182,14 +182,6 @@
   version = "v4.5.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ec95c1c49fbec27ab5383b9c47fae5c2fe1d97ac5b41d36d78e17588a44e9f3f"
-  name = "github.com/ghodss/yaml"
-  packages = ["."]
-  pruneopts = ""
-  revision = "25d852aebe32c875e9c044af3eef9c7dc6bc777f"
-
-[[projects]]
   digest = "1:21911d0d3cecc86a42fd1920583c34a33b91035d77d4929772938961d7814ffc"
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
@@ -1418,7 +1410,6 @@
     "github.com/argoproj/pkg/time",
     "github.com/colinmarc/hdfs",
     "github.com/evanphx/json-patch",
-    "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/gorilla/websocket",
     "github.com/mitchellh/go-ps",
@@ -1484,6 +1475,7 @@
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/kubernetes/pkg/serviceaccount",
     "k8s.io/utils/pointer",
+    "sigs.k8s.io/yaml",
     "upper.io/db.v3/lib/sqlbuilder",
     "upper.io/db.v3/mysql",
     "upper.io/db.v3/postgresql",
