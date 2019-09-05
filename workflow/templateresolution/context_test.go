@@ -6,7 +6,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -256,6 +256,7 @@ func TestGetTemplateBase(t *testing.T) {
 }
 
 func TestResolveTemplate(t *testing.T) {
+	emptymap := map[string]string{}
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
@@ -270,7 +271,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
-	ctx, tmpl, err := ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err := ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -283,7 +284,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -297,7 +298,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of local nested template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "local-whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -311,7 +312,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of nested template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "another-whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -327,7 +328,8 @@ func TestResolveTemplate(t *testing.T) {
 	tmplHolder = wfv1.Template{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay-with-arguments"},
 	}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	msgValue := "from-args"
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "message", Value: &msgValue}}}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -337,13 +339,14 @@ func TestResolveTemplate(t *testing.T) {
 	}
 	assert.Equal(t, "some-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay-with-arguments", tmpl.Name)
-	assert.Equal(t, []string{"{{inputs.parameters.message}}-foo"}, tmpl.Container.Args)
+	assert.Equal(t, "from-args-foo", *tmpl.Inputs.Parameters[0].Value)
+	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of nested template reference with arguments.
 	tmplHolder = wfv1.Template{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "nested-whalesay-with-arguments"},
 	}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "message", Value: &msgValue}}}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -353,15 +356,16 @@ func TestResolveTemplate(t *testing.T) {
 	}
 	assert.Equal(t, "some-workflow-template", wftmpl.Name)
 	assert.Equal(t, "nested-whalesay-with-arguments", tmpl.Name)
-	assert.Equal(t, []string{"{{inputs.parameters.message}}-bar-foo"}, tmpl.Container.Args)
+	assert.Equal(t, "from-args-bar-foo", *tmpl.Inputs.Parameters[0].Value)
+	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of infinite loop template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-loop-whalesay"}}
-	_, _, err = ctx.ResolveTemplate(&tmplHolder)
+	_, _, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 
 	// Get the template of local infinite loop template.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-local-loop-whalesay"}}
-	_, _, err = ctx.ResolveTemplate(&tmplHolder)
+	_, _, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 }

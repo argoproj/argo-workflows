@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -308,10 +308,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
@@ -347,10 +344,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"

@@ -242,14 +242,6 @@
   version = "v4.5.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ec95c1c49fbec27ab5383b9c47fae5c2fe1d97ac5b41d36d78e17588a44e9f3f"
-  name = "github.com/ghodss/yaml"
-  packages = ["."]
-  pruneopts = ""
-  revision = "25d852aebe32c875e9c044af3eef9c7dc6bc777f"
-
-[[projects]]
   digest = "1:21911d0d3cecc86a42fd1920583c34a33b91035d77d4929772938961d7814ffc"
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
@@ -1212,7 +1204,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = ""
-  revision = "a9f1d8a9c10182d101acf19b5145c3d4e9299adb"
+  revision = "8f6ac2502e5143406f4eaedc4ca4262854d877ce"
 
 [[projects]]
   branch = "release-11.0"
@@ -1396,7 +1388,7 @@
     "pkg/util/proto",
   ]
   pruneopts = ""
-  revision = "743ec37842bffe49dd4221d9026f30fb1d5adbc4"
+  revision = "5e22f3d471e6f24ca20becfdffdc6206c7cecac8"
 
 [[projects]]
   branch = "master"
@@ -1458,7 +1450,6 @@
     "github.com/argoproj/pkg/time",
     "github.com/colinmarc/hdfs",
     "github.com/evanphx/json-patch",
-    "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/gorilla/websocket",
     "github.com/mitchellh/go-ps",
@@ -1526,6 +1517,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/utils/pointer",
+    "sigs.k8s.io/yaml",
     "upper.io/db.v3/lib/sqlbuilder",
     "upper.io/db.v3/mysql",
     "upper.io/db.v3/postgresql",

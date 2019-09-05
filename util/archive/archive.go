@@ -128,8 +128,5 @@ func tarFile(sourcePath string, tw *tar.Writer) error {
 		return errors.InternalWrapError(err)
 	}
 	_, err = io.Copy(tw, f)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

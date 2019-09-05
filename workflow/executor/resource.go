@@ -295,8 +295,5 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		log.Infof("Saved output parameter: %s, value: %s", param.Name, output)
 	}
 	err := we.AnnotateOutputs(nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
