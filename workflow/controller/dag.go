@@ -68,27 +68,28 @@ func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
 }
 
 // Assert all branch finished for failFast:disable function
-func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
+func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 	// We should ensure that from the bottom to the top,
 	// all the nodes of this branch have at least one failure.
 	// If successful, we should continue to run down until the leaf node
-	taskNode := d.GetTaskNode(targetTaskName)
-	if taskNode == nil {
-		taskObject := d.getTask(targetTaskName)
-		if taskObject != nil {
-			// Make sure all the dependency node have one failed
-			for _, tmpTaskName := range taskObject.Dependencies {
+	flag := false
+	for _, targetTaskName := range targetTaskNames {
+		taskNode := d.getTaskNode(targetTaskName)
+		if taskNode == nil {
+			taskObject := d.getTask(targetTaskName)
+			if taskObject != nil {
+				// Make sure all the dependency node have one failed
 				// Recursive check until top root node
-				return d.assertBranchFinished(tmpTaskName)
+				return d.assertBranchFinished(taskObject.Dependencies)
 			}
+		} else if !taskNode.Successful() {
+			flag = true
 		}
-	} else if !taskNode.Successful() {
-		return true
-	}
 
-	// In failFast situation, if node is successful, it will run to leaf node, above
-	// the function, we have already check the leaf node status
-	return false
+		// In failFast situation, if node is successful, it will run to leaf node, above
+		// the function, we have already check the leaf node status
+	}
+	return flag
 }
 
 // assessDAGPhase assesses the overall DAG status
@@ -128,7 +129,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 				tmpDepNode := d.GetTaskNode(tmpDepName)
 				if tmpDepNode == nil {
 					// If leaf node is nil, we should check it's parent node and recursive check
-					if !d.assertBranchFinished(tmpDepName) {
+					if !d.assertBranchFinished([]string{tmpDepName}) {
 						tmpOverAllFinished = false
 					}
 				} else if tmpDepNode.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(tmpDepNode) {
