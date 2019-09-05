@@ -74,7 +74,7 @@ func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 	// If successful, we should continue to run down until the leaf node
 	flag := false
 	for _, targetTaskName := range targetTaskNames {
-		taskNode := d.getTaskNode(targetTaskName)
+		taskNode := d.GetTaskNode(targetTaskName)
 		if taskNode == nil {
 			taskObject := d.getTask(targetTaskName)
 			if taskObject != nil {
