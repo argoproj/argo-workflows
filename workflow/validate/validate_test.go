@@ -299,7 +299,7 @@ func TestPassthrough(t *testing.T) {
 
 	err = validate(badInputRegex)
 	if assert.NotNil(t, err) {
-		assert.Contains(t, err.Error(), "regexp could not be parsed")
+		assert.Contains(t, err.Error(), "regexp ( could not be processed")
 	}
 
 	err = validate(nonMatchingPassthrough)
@@ -307,6 +307,113 @@ func TestPassthrough(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to resolve {{inputs.parameters.testing}}")
 	}
 
+}
+
+var stepPassthroughParameters = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: passthrough-parameters-
+spec:
+  entrypoint: passthrough-parameters-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+    - name: passthrough-parameters-steps
+      inputs:
+        parameters:
+          - regexp: ".*"
+      steps:
+        - - name: display-parameters
+            template: display-parameters
+            arguments:
+              parameters:
+                - passthroughRegexp: ".*"
+                - name: extra-parameter
+                  value: extra-value
+
+    - name: display-parameters
+      inputs:
+        parameters:
+          - regexp: ".*"
+      template: display-parameters-inner
+      arguments:
+        parameters:
+          - passthroughRegexp: ".*"
+
+    - name: display-parameters-inner
+      inputs:
+        parameters:
+          - name: message
+          - name: extra-parameter
+      script:
+        image: alpine:latest
+        command: [sh, -x]
+        source: |
+          #!/bin/sh
+          echo {{inputs.parameters.message}}
+          echo {{inputs.parameters.extra-parameter}}
+`
+
+func TestStepPassthroughParameters(t *testing.T) {
+	err := validate(stepPassthroughParameters)
+	assert.Nil(t, err)
+}
+
+var dagPassthroughParameters = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: passthrough-parameters-
+spec:
+  entrypoint: passthrough-parameters-steps
+  arguments:
+    parameters:
+      - name: message
+        value: test1
+  templates:
+    - name: passthrough-parameters-steps
+      inputs:
+        parameters:
+          - regexp: ".*"
+      dag:
+        tasks:
+        - name: display-parameters
+          template: display-parameters
+          arguments:
+            parameters:
+              - passthroughRegexp: ".*"
+              - name: extra-parameter
+                value: extra-value
+
+    - name: display-parameters
+      inputs:
+        parameters:
+          - regexp: ".*"
+      template: display-parameters-inner
+      arguments:
+        parameters:
+          - passthroughRegexp: ".*"
+
+    - name: display-parameters-inner
+      inputs:
+        parameters:
+          - name: message
+          - name: extra-parameter
+      script:
+        image: alpine:latest
+        command: [sh, -x]
+        source: |
+          #!/bin/sh
+          echo {{inputs.parameters.message}}
+          echo {{inputs.parameters.extra-parameter}}
+`
+
+func TestDAGPassthroughParameters(t *testing.T) {
+	err := validate(dagPassthroughParameters)
+	assert.Nil(t, err)
 }
 
 var unresolvedInput = `

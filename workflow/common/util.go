@@ -263,11 +263,12 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 			for _, argParam := range argParams {
 				newName := argParam.Name
 				newValue := argParam.Value
-				newParameter := wfv1.Parameter{Name: newName, Value: newValue}
+				newRegexp := argParam.PassthroughRegexp
+				newParameter := wfv1.Parameter{Name: newName, Value: newValue, Regexp: newRegexp}
 
 				newInputParameters = append(newInputParameters, newParameter)
 			}
-		} else if inParam.Name != "" {
+		} else {
 			if inParam.Default != nil {
 				// first set to default value
 				inParam.Value = inParam.Default
@@ -279,13 +280,13 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 				inParam.Value = &newValue
 			}
 			//if one of the args is a regexp (this can be true during validation) then we add a placeholder
-			if !args.HasPassthroughRegexpParameter() {
-				if inParam.Value == nil {
+			if inParam.Value == nil {
+				if args.HasPassthroughRegexpParameter() {
+					newValue := "placeholder"
+					inParam.Value = &newValue
+				} else {
 					return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 				}
-			}
-			if inParam.Value == nil {
-				return nil, errors.Errorf(errors.CodeBadRequest, "inputs.parameters.%s was not supplied", inParam.Name)
 			}
 			newInputParameters = append(newInputParameters, inParam)
 		}
@@ -564,6 +565,24 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 
 	newTmpl.Name = tmpl.Name
 	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(referred.Inputs.Parameters) > 0 {
+		mergedParams := make([]wfv1.Parameter, 0)
+		for _, ReferredTmplParameter := range referred.Inputs.Parameters {
+			if ReferredTmplParameter.Regexp != "" {
+				inputParams, err := tmpl.Inputs.GetParametersByRegexp(ReferredTmplParameter.Regexp)
+				if err != nil {
+					return nil, errors.Errorf(errors.CodeBadRequest, "regexp %s could not be processed", ReferredTmplParameter.PassthroughRegexp)
+				}
+				for _, parameter := range inputParams {
+					mergedParams = append(mergedParams, parameter)
+				}
+			} else {
+				mergedParams = append(mergedParams, ReferredTmplParameter)
+			}
+		}
+		newTmpl.Inputs.Parameters = mergedParams
+	}
 
 	if len(tmpl.NodeSelector) > 0 {
 		m := make(map[string]string, len(tmpl.NodeSelector))

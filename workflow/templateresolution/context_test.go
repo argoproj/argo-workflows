@@ -383,7 +383,7 @@ func TestResolveTemplate(t *testing.T) {
 	tmplHolder = wfv1.Template{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay-with-passthrough-arguments"},
 	}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "message", Value: &msgValue}}}, emptymap, emptymap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}

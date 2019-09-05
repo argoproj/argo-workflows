@@ -590,12 +590,6 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			if err != nil {
 				return err
 			}
-			//args := step.Arguments.DeepCopy()
-			//updatedParameters, err := tmpl.Inputs.GetPassthroughParameters(args.Parameters)
-			//if err != nil {
-			//	return err
-			//}
-			//args.Parameters = updatedParameters
 
 			resolvedTmpl, err := ctx.validateTemplateHolder(&step, tmplCtx, &FakeArguments{}, scope)
 			if err != nil {
@@ -608,8 +602,16 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			resolvedTmpl := resolvedTemplates[step.Name]
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
 
+			//include passthrough arguments in step arguments
+			stepArgs := step.Arguments.DeepCopy()
+			updatedParameters, err := tmpl.Inputs.GetPassthroughParameters(stepArgs.Parameters)
+			if err != nil {
+				return err
+			}
+			stepArgs.Parameters = updatedParameters
+
 			// Validate the template again with actual arguments.
-			_, err = ctx.validateTemplateHolder(&step, tmplCtx, &step.Arguments, scope)
+			_, err = ctx.validateTemplateHolder(&step, tmplCtx, stepArgs, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
 			}
