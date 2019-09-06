@@ -18,6 +18,7 @@ type S3ArtifactDriver struct {
 	Secure    bool
 	AccessKey string
 	SecretKey string
+	RoleARN   string
 }
 
 // newMinioClient instantiates a new minio client object.
@@ -28,6 +29,7 @@ func (s3Driver *S3ArtifactDriver) newS3Client() (argos3.S3Client, error) {
 		Secure:    s3Driver.Secure,
 		AccessKey: s3Driver.AccessKey,
 		SecretKey: s3Driver.SecretKey,
+		RoleARN:   s3Driver.RoleARN,
 	}
 	return argos3.NewS3Client(opts)
 }

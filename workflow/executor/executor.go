@@ -558,6 +558,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			SecretKey: secretKey,
 			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
 			Region:    art.S3.Region,
+			RoleARN:   art.S3.RoleARN,
 		}
 		return &driver, nil
 	}

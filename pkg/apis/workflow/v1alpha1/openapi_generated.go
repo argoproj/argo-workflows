@@ -1242,6 +1242,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
+					"roleARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"key": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Key is the key in the bucket where the artifact resides",
@@ -1303,6 +1310,13 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						SchemaProps: spec.SchemaProps{
 							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
 							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"roleARN": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RoleARN is the Amazon Resource Name (ARN) of the role to assume.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
