@@ -121,6 +121,10 @@ func newWorkflowOperationCtx(wf *wfv1.Workflow, wfc *WorkflowController) *wfOper
 		woc.wf.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	}
 
+	if woc.wf.Status.ResolvedCommonTemplates == nil {
+		woc.wf.Status.ResolvedCommonTemplates = make(map[string]wfv1.Template)
+	}
+
 	return &woc
 }
 
@@ -331,6 +335,17 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
 		return nil
 	}
 	return &node
+}
+
+func (woc *wfOperationCtx) getStoredResolvedTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	resolvedCommonTemplate, ok := woc.wf.Status.ResolvedCommonTemplates[node.ResolvedCommonTemplateID]
+	if ok {
+		if node.Inputs != nil {
+			resolvedCommonTemplate.Inputs = *node.Inputs
+		}
+		return &resolvedCommonTemplate
+	}
+	return nil
 }
 
 // persistUpdates will update a workflow with any updates made during workflow operation.
@@ -1084,19 +1099,26 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	var tmpl *wfv1.Template
-	if node != nil && node.ResolvedTemplate != nil {
-		tmpl = node.ResolvedTemplate
-		if node.ResolvedWorkflowTemplateName != "" {
-			woc.log.Debugf("Found a resolved template of node %s on %s", nodeName, node.ResolvedWorkflowTemplateName)
-			newTmplCtx, err := tmplCtx.OnWorkflowTemplate(node.ResolvedWorkflowTemplateName)
-			if err != nil {
-				return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+	if node != nil {
+		resolvedTemplate := woc.getStoredResolvedTemplate(node)
+		if resolvedTemplate != nil {
+			woc.log.Debugf("Found a resolved template for node %s", nodeName)
+			tmpl = resolvedTemplate
+			if node.ResolvedWorkflowTemplateName != "" {
+				woc.log.Debugf("Switch the template context to %s", node.ResolvedWorkflowTemplateName)
+				newTmplCtx, err := tmplCtx.OnWorkflowTemplate(node.ResolvedWorkflowTemplateName)
+				if err != nil {
+					return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+				}
+				tmplCtx = newTmplCtx
+			} else {
+				tmplCtx = tmplCtx.WithTemplateBase(woc.wf)
 			}
-			tmplCtx = newTmplCtx
 		} else {
-			woc.log.Debugf("Found a resolved template of node %s", nodeName)
+			woc.log.Infof("Cannot find a resolved template of node %s", nodeName)
 		}
-	} else {
+	}
+	if tmpl == nil {
 		woc.log.Debugf("Resolve the template for node %s", nodeName)
 
 		localParams := make(map[string]string)
@@ -1104,17 +1126,23 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if err != nil {
 			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
-		// Perform parameter substitution of the template.
-		if resolvedTmpl.IsPodType() {
-			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
-		}
-		processedTmpl, err := common.ProcessArgs(resolvedTmpl, &args, woc.globalParams, localParams, false)
-		if err != nil {
-			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, newTmplCtx, resolvedTmpl, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
-		}
-		tmpl = processedTmpl
+
+		tmpl = resolvedTmpl
 		tmplCtx = newTmplCtx
 	}
+
+	// TODO: Store resolved templates before the final processing.
+
+	localParams := make(map[string]string)
+	if tmpl.IsPodType() {
+		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+	}
+	// Inputs has been processed with arguments already, so pass empty arguments.
+	processedTmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+	if err != nil {
+		return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+	}
+	tmpl = processedTmpl
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	if err := woc.checkParallelism(tmpl, node, boundaryID); err != nil {
@@ -1182,12 +1210,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		node = woc.getNodeByName(retryNodeName)
 	}
 
-	// Set the input values to the node. This is presented in the UI
-	if tmpl.Inputs.HasInputs() && node.Inputs == nil {
-		node.Inputs = &tmpl.Inputs
-		woc.wf.Status.Nodes[node.ID] = *node
-		woc.updated = true
-	}
 	return node, nil
 }
 
@@ -1266,23 +1288,35 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		panic(fmt.Sprintf("node %s already initialized", nodeName))
 	}
 
-	resolvedWorkflowTemplateName := ""
-	if tmplCtx != nil && woc.wf.GroupVersionKind() != tmplCtx.GetCurrentTemplateBase().GroupVersionKind() {
-		resolvedWorkflowTemplateName = tmplCtx.GetCurrentTemplateBase().GetName()
+	node := wfv1.NodeStatus{
+		ID:           nodeID,
+		Name:         nodeName,
+		TemplateName: orgTmpl.GetTemplateName(),
+		TemplateRef:  orgTmpl.GetTemplateRef(),
+		Type:         nodeType,
+		BoundaryID:   boundaryID,
+		Phase:        phase,
+		StartedAt:    metav1.Time{Time: time.Now().UTC()},
 	}
 
-	node := wfv1.NodeStatus{
-		ID:                           nodeID,
-		Name:                         nodeName,
-		TemplateName:                 orgTmpl.GetTemplateName(),
-		TemplateRef:                  orgTmpl.GetTemplateRef(),
-		ResolvedWorkflowTemplateName: resolvedWorkflowTemplateName,
-		ResolvedTemplate:             tmpl.DeepCopy(),
-		Type:                         nodeType,
-		BoundaryID:                   boundaryID,
-		Phase:                        phase,
-		StartedAt:                    metav1.Time{Time: time.Now().UTC()},
+	if tmpl != nil {
+		// Set the input values to the node.
+		if tmpl.Inputs.HasInputs() {
+			node.Inputs = &tmpl.Inputs
+		}
+		// Set template resolution info.
+		if tmplCtx != nil && woc.wf.GroupVersionKind() != tmplCtx.GetCurrentTemplateBase().GroupVersionKind() {
+			resolvedWorkflowTemplateName := tmplCtx.GetCurrentTemplateBase().GetName()
+			if resolvedWorkflowTemplateName != "" {
+				node.ResolvedWorkflowTemplateName = resolvedWorkflowTemplateName
+			}
+			// Store common template for the later use.
+			commonTemplateID, commonTemplate := tmpl.GetCommonTemplate()
+			woc.wf.Status.ResolvedCommonTemplates[commonTemplateID] = *commonTemplate
+			node.ResolvedCommonTemplateID = commonTemplateID
+		}
 	}
+
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
 		node.DisplayName = strings.TrimPrefix(node.Name, boundaryNode.Name)
 		if stepsOrDagSeparator.MatchString(node.DisplayName) {
@@ -1363,8 +1397,8 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.Node
 			if !ok {
 				return errors.InternalError("boundaryNode not found")
 			}
-			boundaryTemplate := boundaryNode.ResolvedTemplate
-			if boundaryTemplate.Parallelism != nil {
+			boundaryTemplate := woc.getStoredResolvedTemplate(&boundaryNode)
+			if boundaryTemplate != nil && boundaryTemplate.Parallelism != nil {
 				activeSiblings := woc.countActiveChildren(boundaryID)
 				woc.log.Debugf("counted %d/%d active children in boundary %s", activeSiblings, *boundaryTemplate.Parallelism, boundaryID)
 				if activeSiblings >= *boundaryTemplate.Parallelism {
@@ -1505,7 +1539,10 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresol
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
-		parentTemplate := boundaryNode.ResolvedTemplate
+		parentTemplate := woc.getStoredResolvedTemplate(&boundaryNode)
+		if parentTemplate == nil {
+			return woc.markNodeError(nodeName, errors.InternalError("parent node template not found"))
+		}
 		name := getStepOrDAGTaskName(nodeName, tmpl.RetryStrategy != nil)
 		includeScriptOutput = hasOutputResultRef(name, parentTemplate)
 	}

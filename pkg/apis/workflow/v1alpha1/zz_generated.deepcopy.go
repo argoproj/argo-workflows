@@ -511,11 +511,6 @@ func (in *NodeStatus) DeepCopyInto(out *NodeStatus) {
 		*out = new(TemplateRef)
 		**out = **in
 	}
-	if in.ResolvedTemplate != nil {
-		in, out := &in.ResolvedTemplate, &out.ResolvedTemplate
-		*out = new(Template)
-		(*in).DeepCopyInto(*out)
-	}
 	in.StartedAt.DeepCopyInto(&out.StartedAt)
 	in.FinishedAt.DeepCopyInto(&out.FinishedAt)
 	if in.Daemoned != nil {
@@ -1229,6 +1224,13 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 	if in.Nodes != nil {
 		in, out := &in.Nodes, &out.Nodes
 		*out = make(map[string]NodeStatus, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
+	if in.ResolvedCommonTemplates != nil {
+		in, out := &in.ResolvedCommonTemplates, &out.ResolvedCommonTemplates
+		*out = make(map[string]Template, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}

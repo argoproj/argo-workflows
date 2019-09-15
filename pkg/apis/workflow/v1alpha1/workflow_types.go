@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
@@ -346,6 +347,13 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+func (tmpl *Template) GetCommonTemplate() (string, *Template) {
+	commonTemplate := tmpl.DeepCopy()
+	commonTemplate.Inputs = Inputs{}
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v", commonTemplate))))
+	return hash, commonTemplate
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -642,6 +650,9 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 
+	// ResolvedCommonTemplates is a mapping between a template ref and the node's status.
+	ResolvedCommonTemplates map[string]Template `json:"resolvedCommonTemplates,omitempty"`
+
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
@@ -680,11 +691,11 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
+	// ResolvedCommonTemplateID is an ID used in the resolved templates store.
+	ResolvedCommonTemplateID string `json:"resolvedCommonTemplateID,omitempty"`
+
 	// ResolvedWorkflowTemplateName is the template resource on which the resolved template of this node is retrieved.
 	ResolvedWorkflowTemplateName string `json:"resolvedWorkflowTemplateName,omitempty"`
-
-	// ResolvedTemplate is the resolved template which is actually executed for the node.
-	ResolvedTemplate *Template `json:"resolvedTemplate,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.

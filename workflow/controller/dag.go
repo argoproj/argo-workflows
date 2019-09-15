@@ -67,6 +67,17 @@ func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
+func (d *dagContext) getStoredResolvedTemplate(node *wfv1.NodeStatus) *wfv1.Template {
+	resolvedCommonTemplate, ok := d.wf.Status.ResolvedCommonTemplates[node.ResolvedCommonTemplateID]
+	if ok {
+		if node.Inputs != nil {
+			resolvedCommonTemplate.Inputs = *node.Inputs
+		}
+		return &resolvedCommonTemplate
+	}
+	return nil
+}
+
 // Assert all branch finished for failFast:disable function
 func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
 	// We should ensure that from the bottom to the top,
@@ -190,7 +201,10 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	tmpl := childNode.ResolvedTemplate
+	tmpl := d.getStoredResolvedTemplate(&childNode)
+	if tmpl != nil {
+		return false
+	}
 	if tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
@@ -451,7 +465,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			err := woc.processAggregateNodeOutputs(ancestorNode.ResolvedTemplate, &scope, prefix, ancestorNodes)
+			resolvedTemplate := woc.getStoredResolvedTemplate(ancestorNode)
+			if resolvedTemplate == nil {
+				return nil, errors.InternalError("ancestor node template not found")
+			}
+			err := woc.processAggregateNodeOutputs(resolvedTemplate, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}

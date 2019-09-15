@@ -125,6 +125,9 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, args wfv1.Ar
 }
 
 // resolveTemplateImpl digs into referenes and returns a merged template.
+// This method processes inputs and arguments so the inputs of the final
+//  resolved template include intermediate parameter passing.
+// The other fields are just merged and shallower templates overwrite deeper.
 func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool, depth int) (*Context, *wfv1.Template, error) {
 	// Avoid infinite references
 	if depth > maxResolveDepth {
@@ -144,18 +147,23 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, args wfv
 	}
 	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
 
+	// Process inputs and arguments
 	tmpTmpl := &wfv1.Template{Inputs: *tmpl.Inputs.DeepCopy(), Arguments: *tmpl.Arguments.DeepCopy()}
 	processedTmpl, err := common.ProcessArgs(tmpTmpl, args, globalParams, localParams, validateOnly)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// Set inputs processed with arguments of the parent.
 	tmpl.Inputs = processedTmpl.Inputs
-	tmpl.Arguments = processedTmpl.Arguments
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
 		return newTmplCtx, tmpl, nil
 	}
+
+	// Set arguments processed with params.
+	tmpl.Arguments = processedTmpl.Arguments
 
 	// Dig into nested references with new template base.
 	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, &tmpl.Arguments, globalParams, localParams, validateOnly, depth+1)

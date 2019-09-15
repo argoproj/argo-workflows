@@ -284,7 +284,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, tmpl, err := tmplCtx.ResolveTemplate(tmplHolder, args, ctx.globalParams, map[string]string{}, true)
+	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder, args, ctx.globalParams, map[string]string{}, true)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
@@ -295,7 +295,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 		return nil, err
 	}
-	return tmpl, ctx.validateTemplate(tmpl, tmplCtx, args, extraScope)
+	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, &wfv1.Arguments{}, extraScope)
 }
 
 // validateTemplateType validates that only one template type is defined
