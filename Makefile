@@ -17,6 +17,8 @@ STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
 
+DOCKERFILE            = $(shell if [ `arch` = "ppc64le" ]; then echo "Dockerfile.`arch`" ; else echo "Dockerfile"; fi)
+ARCH                  = $(shell arch)
 GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
 
 override LDFLAGS += \
@@ -40,6 +42,10 @@ $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argopro
 endif
 endif
 
+ifeq (${ARCH},ppc64le)
+IMAGE_TAG := ${IMAGE_TAG}-ppc64le
+endif
+
 ifdef IMAGE_NAMESPACE
 IMAGE_PREFIX = ${IMAGE_NAMESPACE}/
 endif
@@ -50,7 +56,7 @@ all: cli controller-image executor-image
 
 .PHONY: builder-image
 builder-image:
-	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
+	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder -f ${DOCKERFILE} .
 
 .PHONY: cli
 cli:
@@ -81,7 +87,7 @@ cli-windows:
 
 .PHONY: cli-image
 cli-image:
-	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) --target argocli .
+	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) --target argocli -f ${DOCKERFILE} .
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) ; fi
 
 .PHONY: controller
@@ -95,7 +101,7 @@ ifeq ($(DEV_IMAGE), true)
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) --target workflow-controller .
+	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) --target workflow-controller -f ${DOCKERFILE} .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
@@ -105,7 +111,7 @@ executor:
 
 .PHONY: executor-base-image
 executor-base-image:
-	docker build -t argoexec-base --target argoexec-base .
+	docker build -t argoexec-base --target argoexec-base -f ${DOCKERFILE} .
 
 # The DEV_IMAGE versions of controller-image and executor-image are speed optimized development
 # builds of workflow-controller and argoexec images respectively. It allows for faster image builds
@@ -123,7 +129,7 @@ executor-image: executor-base-image
 	rm -f argoexec
 else
 executor-image:
-	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec .
+	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec -f ${DOCKERFILE} .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
