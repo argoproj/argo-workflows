@@ -191,10 +191,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 		return false
 	}
 	tmpl := d.wf.GetStoredOrLocalTemplate(&childNode)
-	if tmpl != nil {
-		return false
-	}
-	if tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
+	if tmpl != nil && tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
 	return true
