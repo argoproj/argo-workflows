@@ -423,7 +423,6 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 	// Iterate the previous nodes.
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	newWF.Status.ResolvedCommonTemplates = make(map[string]wfv1.Template)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	for _, node := range wf.Status.Nodes {
 		newNode := node.DeepCopy()
@@ -459,6 +458,13 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.Nodes[newNode.ID] = *newNode
 	}
 
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
+	newWF.Status.Phase = wfv1.NodeMemoized
+
 	return &newWF, nil
 }
 
@@ -492,7 +498,6 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 
 	// Iterate the previous nodes. If it was successful Pod carry it forward
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
-	newWF.Status.ResolvedCommonTemplates = make(map[string]wfv1.Template)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	for _, node := range wf.Status.Nodes {
 		switch node.Phase {
@@ -523,6 +528,12 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 		}
 	}
+
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
 	return wfClient.Update(newWF)
 }
 

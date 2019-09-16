@@ -295,7 +295,8 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 		return nil, err
 	}
-	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, &wfv1.Arguments{}, extraScope)
+
+	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, extraScope)
 }
 
 // validateTemplateType validates that only one template type is defined

@@ -67,17 +67,6 @@ func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
 	return &node
 }
 
-func (d *dagContext) getStoredResolvedTemplate(node *wfv1.NodeStatus) *wfv1.Template {
-	resolvedCommonTemplate, ok := d.wf.Status.ResolvedCommonTemplates[node.ResolvedCommonTemplateID]
-	if ok {
-		if node.Inputs != nil {
-			resolvedCommonTemplate.Inputs = *node.Inputs
-		}
-		return &resolvedCommonTemplate
-	}
-	return nil
-}
-
 // Assert all branch finished for failFast:disable function
 func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
 	// We should ensure that from the bottom to the top,
@@ -201,7 +190,7 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	tmpl := d.getStoredResolvedTemplate(&childNode)
+	tmpl := d.wf.GetStoredOrLocalTemplate(&childNode)
 	if tmpl != nil {
 		return false
 	}
@@ -211,26 +200,18 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
-	node := woc.getNodeByName(nodeName)
-	if node != nil && node.Completed() {
-		return node
-	}
-	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, tmplCtx, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
-	} else if node.CanRerun() {
-		node = woc.markNodePhase(nodeName, wfv1.NodeRunning)
-	}
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
+	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
 
 	defer func() {
-		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Completed() {
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
 
 	dagCtx := &dagContext{
 		boundaryName: nodeName,
-		boundaryID:   woc.wf.NodeID(nodeName),
+		boundaryID:   node.ID,
 		tasks:        tmpl.DAG.Tasks,
 		visited:      make(map[string]bool),
 		tmpl:         tmpl,
@@ -255,9 +236,10 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
-		return woc.getNodeByName(nodeName)
+		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
-		return woc.markNodePhase(nodeName, dagPhase)
+		_ = woc.markNodePhase(nodeName, dagPhase)
+		return nil
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
@@ -275,7 +257,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
-		return woc.markNodeError(nodeName, err)
+		return err
 	}
 	if outputs != nil {
 		node = woc.getNodeByName(nodeName)
@@ -284,7 +266,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 
 	// set the outbound nodes from the target tasks
-	node = woc.getNodeByName(nodeName)
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
 		depNode := dagCtx.GetTaskNode(depName)
@@ -295,10 +276,12 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		outbound = append(outbound, outboundNodeIDs...)
 	}
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
+	node = woc.getNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return nil
 }
 
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
@@ -376,7 +359,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// First resolve/substitute params/artifacts from our dependencies
 	newTask, err := woc.resolveDependencyReferences(dagCtx, task)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -385,7 +368,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	// expandedTasks will be a single element list of the same task
 	expandedTasks, err := woc.expandTask(*newTask)
 	if err != nil {
-		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 		connectDependencies(nodeName)
 		return
 	}
@@ -396,7 +379,7 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if len(task.WithItems) > 0 || task.WithParam != "" || task.WithSequence != nil {
 		if taskGroupNode == nil {
 			connectDependencies(nodeName)
-			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, nil, nil, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
+			taskGroupNode = woc.initializeNode(nodeName, wfv1.NodeTypeTaskGroup, task, dagCtx.boundaryID, wfv1.NodeRunning, "")
 		}
 	}
 
@@ -411,12 +394,12 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			// Check the task's when clause to decide if it should execute
 			proceed, err := shouldExecute(t.When)
 			if err != nil {
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
 				continue
 			}
 			if !proceed {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", t.When)
-				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, nil, nil, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(taskNodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				continue
 			}
 		}
@@ -465,11 +448,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			resolvedTemplate := woc.getStoredResolvedTemplate(ancestorNode)
-			if resolvedTemplate == nil {
-				return nil, errors.InternalError("ancestor node template not found")
+			tmpl := dagCtx.wf.GetStoredOrLocalTemplate(ancestorNode)
+			if tmpl != nil {
+				return nil, errors.InternalErrorf("Template of ancestor node '%s' not found", ancestorNode.Name)
 			}
-			err := woc.processAggregateNodeOutputs(resolvedTemplate, &scope, prefix, ancestorNodes)
+			err := woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}

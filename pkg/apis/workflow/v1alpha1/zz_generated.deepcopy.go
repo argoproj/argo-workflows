@@ -1228,8 +1228,8 @@ func (in *WorkflowStatus) DeepCopyInto(out *WorkflowStatus) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	if in.ResolvedCommonTemplates != nil {
-		in, out := &in.ResolvedCommonTemplates, &out.ResolvedCommonTemplates
+	if in.StoredTemplates != nil {
+		in, out := &in.StoredTemplates, &out.StoredTemplates
 		*out = make(map[string]Template, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()

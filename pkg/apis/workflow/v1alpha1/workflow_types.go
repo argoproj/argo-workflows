@@ -347,11 +347,15 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
-func (tmpl *Template) GetCommonTemplate() (string, *Template) {
-	commonTemplate := tmpl.DeepCopy()
-	commonTemplate.Inputs = Inputs{}
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v", commonTemplate))))
-	return hash, commonTemplate
+func (tmpl *Template) GetBaseTemplate() (string, *Template) {
+	baseTemplate := tmpl.DeepCopy()
+	baseTemplate.Inputs = Inputs{}
+	yaml, err := json.Marshal(baseTemplate)
+	if err != nil {
+		panic(err)
+	}
+	hash := fmt.Sprintf("%x", sha256.Sum256(yaml))
+	return hash, baseTemplate
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -650,8 +654,8 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 
-	// ResolvedCommonTemplates is a mapping between a template ref and the node's status.
-	ResolvedCommonTemplates map[string]Template `json:"resolvedCommonTemplates,omitempty"`
+	// StoredTemplates is a mapping between a template ref and the node's status.
+	StoredTemplates map[string]Template `json:"storedTemplates,omitempty"`
 
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
@@ -691,11 +695,11 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
-	// ResolvedCommonTemplateID is an ID used in the resolved templates store.
-	ResolvedCommonTemplateID string `json:"resolvedCommonTemplateID,omitempty"`
+	// StoredTemplateID is an ID used to store resolved templates.
+	StoredTemplateID string `json:"storedTemplateID,omitempty"`
 
-	// ResolvedWorkflowTemplateName is the template resource on which the resolved template of this node is retrieved.
-	ResolvedWorkflowTemplateName string `json:"resolvedWorkflowTemplateName,omitempty"`
+	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
+	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -1225,6 +1229,32 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// GetStoredTemplate gets a resolved template from stored data.
+func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
+	tmpl, ok := wf.Status.StoredTemplates[node.StoredTemplateID]
+	if ok {
+		return &tmpl
+	}
+	return nil
+}
+
+// GetStoredOrLocalTemplate gets a resolved template from stored data or local template.
+func (wf *Workflow) GetStoredOrLocalTemplate(node *NodeStatus) *Template {
+	// Try to find a template from stored data.
+	tmpl := wf.GetStoredTemplate(node)
+	if tmpl != nil {
+		return tmpl
+	}
+	// Try to get template from Workflow.
+	if node.WorkflowTemplateName == "" && node.TemplateName != "" {
+		tmpl := wf.GetTemplateByName(node.TemplateName)
+		if tmpl != nil {
+			return tmpl
+		}
+	}
+	return nil
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
