@@ -100,7 +100,9 @@ var _ TemplateGetter = &Workflow{}
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
-	Templates []Template `json:"templates"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Entrypoint is a template reference to the starting point of the workflow
 	Entrypoint string `json:"entrypoint"`

@@ -1393,7 +1393,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "tolerations": {
           "description": "Tolerations to apply to workflow pods.",
