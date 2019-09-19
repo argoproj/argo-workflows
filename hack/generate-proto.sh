@@ -35,91 +35,91 @@ APIMACHINERY_PKGS=(
     k8s.io/apimachinery/pkg/apis/meta/v1
     k8s.io/api/core/v1
 )
-go-to-protobuf \
-    --go-header-file=${PROJECT_ROOT}/hack/custom-boilerplate.go.txt \
-    --packages=$(IFS=, ; echo "${PACKAGES[*]}") \
-    --apimachinery-packages=$(IFS=, ; echo "${APIMACHINERY_PKGS[*]}") \
-    --proto-import=./vendor
+#go-to-protobuf \
+#    --go-header-file=${PROJECT_ROOT}/hack/custom-boilerplate.go.txt \
+#    --packages=$(IFS=, ; echo "${PACKAGES[*]}") \
+#    --apimachinery-packages=$(IFS=, ; echo "${APIMACHINERY_PKGS[*]}") \
+#    --proto-import=./vendor
 
 # Either protoc-gen-go, protoc-gen-gofast, or protoc-gen-gogofast can be used to build
 # server/*/<service>.pb.go from .proto files. golang/protobuf and gogo/protobuf can be used
 # interchangeably. The difference in the options are:
 # 1. protoc-gen-go - official golang/protobuf
-#go build -i -o dist/protoc-gen-go ./vendor/github.com/golang/protobuf/protoc-gen-go
-#GOPROTOBINARY=go
+go build -i -o dist/protoc-gen-go ./vendor/github.com/golang/protobuf/protoc-gen-go
+GOPROTOBINARY=go
 # 2. protoc-gen-gofast - fork of golang golang/protobuf. Faster code generation
-#go build -i -o dist/protoc-gen-gofast ./vendor/github.com/gogo/protobuf/protoc-gen-gofast
-#GOPROTOBINARY=gofast
+go build -i -o dist/protoc-gen-gofast ./vendor/github.com/gogo/protobuf/protoc-gen-gofast
+GOPROTOBINARY=gofast
 # 3. protoc-gen-gogofas'export PS1="\[\033[36m\]\u\[\033[m\]@\[\033[32m\]\h:\[\033[33;1m\]\w\[\033[m\]\$ "t - faster code generation and gogo extensions and flexibility in controlling
 # the generated go code (e.g. customizing field names, nullable fields)
-#go build -i -o dist/protoc-gen-gogofast ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
-#GOPROTOBINARY=gogofast
-#
-## protoc-gen-grpc-gateway is used to build <service>.pb.gw.go files from from .proto files
-#go build -i -o dist/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-## protoc-gen-swagger is used to build swagger.json
-#go build -i -o dist/protoc-gen-swagger ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-#
-## Generate server/<service>/(<service>.pb.go|<service>.pb.gw.go)
-#PROTO_FILES=$(find $PROJECT_ROOT \( -name "*.proto" -and -path '*/server/*' -or -path '*/reposerver/*' -and -name "*.proto" \))
-#for i in ${PROTO_FILES}; do
-#    # Path to the google API gateway annotations.proto will be different depending if we are
-#    # building natively (e.g. from workspace) vs. part of a docker build.
-#    if [ -f /.dockerenv ]; then
-#        GOOGLE_PROTO_API_PATH=$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
-#        GOGO_PROTOBUF_PATH=$GOPATH/src/github.com/gogo/protobuf
-#    else
-#        GOOGLE_PROTO_API_PATH=${PROJECT_ROOT}/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
-#        GOGO_PROTOBUF_PATH=${PROJECT_ROOT}/vendor/github.com/gogo/protobuf
-#    fi
-#    protoc \
-#        -I${PROJECT_ROOT} \
-#        -I/usr/local/include \
-#        -I./vendor \
-#        -I$GOPATH/src \
-#        -I${GOOGLE_PROTO_API_PATH} \
-#        -I${GOGO_PROTOBUF_PATH} \
-#        --${GOPROTOBINARY}_out=plugins=grpc:$GOPATH/src \
-#        --grpc-gateway_out=logtostderr=true:$GOPATH/src \
-#        --swagger_out=logtostderr=true:. \
-#        $i
-#done
-#
-## collect_swagger gathers swagger files into a subdirectory
-#collect_swagger() {
-#    SWAGGER_ROOT="$1"
-#    EXPECTED_COLLISIONS="$2"
-#    SWAGGER_OUT="${PROJECT_ROOT}/assets/swagger.json"
-#    PRIMARY_SWAGGER=`mktemp`
-#    COMBINED_SWAGGER=`mktemp`
-#
-#    cat <<EOF > "${PRIMARY_SWAGGER}"
-#{
-#  "swagger": "2.0",
-#  "info": {
-#    "title": "Consolidate Services",
-#    "description": "Description of all APIs",
-#    "version": "version not set"
-#  },
-#  "paths": {}
-#}
-#EOF
-#
-#    /bin/rm -f "${SWAGGER_OUT}"
-#
-#    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -exec /usr/local/bin/swagger mixin -c "${EXPECTED_COLLISIONS}" "${PRIMARY_SWAGGER}" '{}' \+ > "${COMBINED_SWAGGER}"
-#    /usr/local/bin/jq -r 'del(.definitions[].properties[]? | select(."$ref"!=null and .description!=null).description) | del(.definitions[].properties[]? | select(."$ref"!=null and .title!=null).title)' "${COMBINED_SWAGGER}" > "${SWAGGER_OUT}"
-#
-#    /bin/rm "${PRIMARY_SWAGGER}" "${COMBINED_SWAGGER}"
-#}
-#
-## clean up generated swagger files (should come after collect_swagger)
-#clean_swagger() {
-#    SWAGGER_ROOT="$1"
-#    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -delete
-#}
-#
-#collect_swagger server 21
-#clean_swagger server
-#clean_swagger reposerver
-#clean_swagger controller
+go build -i -o dist/protoc-gen-gogofast ./vendor/github.com/gogo/protobuf/protoc-gen-gogofast
+GOPROTOBINARY=gogofast
+
+# protoc-gen-grpc-gateway is used to build <service>.pb.gw.go files from from .proto files
+go build -i -o dist/protoc-gen-grpc-gateway ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+# protoc-gen-swagger is used to build swagger.json
+go build -i -o dist/protoc-gen-swagger ./vendor/github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
+# Generate server/<service>/(<service>.pb.go|<service>.pb.gw.go)
+PROTO_FILES=$(find $PROJECT_ROOT \( -name "*.proto" -and -path '*/server/*' -or -path '*/reposerver/*' -and -name "*.proto" \))
+for i in ${PROTO_FILES}; do
+    # Path to the google API gateway annotations.proto will be different depending if we are
+    # building natively (e.g. from workspace) vs. part of a docker build.
+    if [ -f /.dockerenv ]; then
+        GOOGLE_PROTO_API_PATH=$GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+        GOGO_PROTOBUF_PATH=$GOPATH/src/github.com/gogo/protobuf
+    else
+        GOOGLE_PROTO_API_PATH=${PROJECT_ROOT}/vendor/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+        GOGO_PROTOBUF_PATH=${PROJECT_ROOT}/vendor/github.com/gogo/protobuf
+    fi
+    protoc \
+        -I${PROJECT_ROOT} \
+        -I/usr/local/include \
+        -I./vendor \
+        -I$GOPATH/src \
+        -I${GOOGLE_PROTO_API_PATH} \
+        -I${GOGO_PROTOBUF_PATH} \
+        --${GOPROTOBINARY}_out=plugins=grpc:$GOPATH/src \
+        --grpc-gateway_out=logtostderr=true:$GOPATH/src \
+        --swagger_out=logtostderr=true:. \
+        $i
+done
+
+# collect_swagger gathers swagger files into a subdirectory
+collect_swagger() {
+    SWAGGER_ROOT="$1"
+    EXPECTED_COLLISIONS="$2"
+    SWAGGER_OUT="${PROJECT_ROOT}/assets/swagger.json"
+    PRIMARY_SWAGGER=`mktemp`
+    COMBINED_SWAGGER=`mktemp`
+
+    cat <<EOF > "${PRIMARY_SWAGGER}"
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Consolidate Services",
+    "description": "Description of all APIs",
+    "version": "version not set"
+  },
+  "paths": {}
+}
+EOF
+
+    /bin/rm -f "${SWAGGER_OUT}"
+
+    /usr/bin/find "cmd/${SWAGGER_ROOT}" -name '*.swagger.json' -exec /usr/local/bin/swagger mixin -c "${EXPECTED_COLLISIONS}" "${PRIMARY_SWAGGER}" '{}' \+ > "${COMBINED_SWAGGER}"
+    /usr/local/bin/jq -r 'del(.definitions[].properties[]? | select(."$ref"!=null and .description!=null).description) | del(.definitions[].properties[]? | select(."$ref"!=null and .title!=null).title)' "${COMBINED_SWAGGER}" > "${SWAGGER_OUT}"
+
+    /bin/rm "${PRIMARY_SWAGGER}" "${COMBINED_SWAGGER}"
+}
+
+# clean up generated swagger files (should come after collect_swagger)
+clean_swagger() {
+    SWAGGER_ROOT="$1"
+    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -delete
+}
+
+collect_swagger server 21
+clean_swagger server
+clean_swagger reposerver
+clean_swagger controller

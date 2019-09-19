@@ -1,0 +1,47 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/cmd/server/workflow";
+
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
+
+// Workflow Service
+//
+// Workflow Service API performs CRUD actions against application resources
+package workflow;
+
+message WorkflowCreateResponse{
+    string response =1;
+
+}
+message WorkflowListResponse{
+    repeated github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflows =1;
+}
+
+
+message WorkflowResponse{
+   github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflows =1;
+}
+message WorkflowQuery{
+    string Name = 1;
+    string Namespace = 2;
+    int32 StartIdx = 3;
+    int32 PageSize = 4;
+}
+
+service WorkflowService {
+    rpc Create(github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) returns (WorkflowCreateResponse){
+        option (google.api.http) = {
+			post: "/api/v1/workflow"
+			body: "*"
+		};
+    }
+    rpc List(WorkflowQuery) returns (WorkflowListResponse){
+        option (google.api.http).get = "/api/v1/workflows";
+    }
+
+    rpc Get(WorkflowQuery) returns (WorkflowResponse){
+        option (google.api.http).get = "/api/v1/workflow";
+    }
+}
