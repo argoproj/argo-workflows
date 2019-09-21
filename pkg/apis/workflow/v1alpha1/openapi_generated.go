@@ -92,6 +92,12 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"parameters": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Parameters is the list of parameters to pass to the template or workflow",
 							Type:        []string{"array"},
@@ -105,6 +111,12 @@ func schema_pkg_apis_workflow_v1alpha1_Arguments(ref common.ReferenceCallback) c
 						},
 					},
 					"artifacts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifacts is the list of artifacts to pass to the template or workflow",
 							Type:        []string{"array"},
@@ -511,6 +523,12 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref common.ReferenceCallback)
 						},
 					},
 					"tasks": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Tasks are a list of DAG tasks",
 							Type:        []string{"array"},
@@ -884,6 +902,12 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"parameters": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Parameters are a list of parameters passed as inputs",
 							Type:        []string{"array"},
@@ -897,6 +921,12 @@ func schema_pkg_apis_workflow_v1alpha1_Inputs(ref common.ReferenceCallback) comm
 						},
 					},
 					"artifacts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifact are a list of artifacts passed as inputs",
 							Type:        []string{"array"},
@@ -989,6 +1019,12 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"parameters": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Parameters holds the list of output parameters produced by a step",
 							Type:        []string{"array"},
@@ -1002,6 +1038,12 @@ func schema_pkg_apis_workflow_v1alpha1_Outputs(ref common.ReferenceCallback) com
 						},
 					},
 					"artifacts": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Artifacts holds the list of output artifacts produced by a step",
 							Type:        []string{"array"},
@@ -1759,6 +1801,12 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 					"volumes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Volumes is a list of volumes that can be mounted by containers in a template.",
 							Type:        []string{"array"},
@@ -1772,6 +1820,12 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 					"initContainers": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "InitContainers is a list of containers which run before the main container.",
 							Type:        []string{"array"},
@@ -1785,6 +1839,12 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 					"sidecars": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Sidecars is a list of containers which run alongside the main container Sidecars are automatically killed when the main container completes",
 							Type:        []string{"array"},
@@ -1824,6 +1884,12 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 					"tolerations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "key",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Tolerations to apply to workflow pods.",
 							Type:        []string{"array"},
@@ -1878,6 +1944,12 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 						},
 					},
 					"hostAliases": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "ip",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
 							Type:        []string{"array"},
@@ -2318,6 +2390,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"templates": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Templates is a list of workflow templates used in a workflow",
 							Type:        []string{"array"},
@@ -2364,6 +2442,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"volumes": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Volumes is a list of volumes that can be mounted by containers in a workflow.",
 							Type:        []string{"array"},
@@ -2377,6 +2461,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"volumeClaimTemplates": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
 							Type:        []string{"array"},
@@ -2431,6 +2521,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"tolerations": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "key",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "Tolerations to apply to workflow pods.",
 							Type:        []string{"array"},
@@ -2444,6 +2540,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"imagePullSecrets": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet. More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod",
 							Type:        []string{"array"},
@@ -2532,6 +2634,12 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 						},
 					},
 					"hostAliases": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "ip",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
 						SchemaProps: spec.SchemaProps{
 							Description: "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
 							Type:        []string{"array"},
