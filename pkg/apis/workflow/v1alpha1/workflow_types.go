@@ -619,7 +619,6 @@ type UserContainer struct {
 }
 
 // WorkflowStatus contains overall status information about a workflow
-// +k8s:openapi-gen=false
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
 	Phase NodePhase `json:"phase,omitempty"`
@@ -654,7 +653,6 @@ type RetryStrategy struct {
 }
 
 // NodeStatus contains status information about an individual node in the workflow
-// +k8s:openapi-gen=false
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
 	// It is implemented as a hash of the node name, which makes the ID deterministic
