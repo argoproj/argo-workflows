@@ -57,26 +57,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a7f619ffc7b99687f9444bd0a07509fec8ae708a7175d234878129896c0918a8"
-  name = "github.com/alecthomas/template"
-  packages = [
-    ".",
-    "parse",
-  ]
-  pruneopts = ""
-  revision = "fb15b899a75114aa79cc930e33c46b577cc664b1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:86ea497979270399c5e544bbdc6f3a846078cd7c6d9be40fd0012ab54fee4052"
-  name = "github.com/alecthomas/units"
-  packages = ["."]
-  pruneopts = ""
-  revision = "c3de453c63f4bdb4dadffab9805ec00426c505f7"
-
-[[projects]]
-  branch = "master"
-  digest = "1:5aa7362af7bc2f5a550be1e6dc43348e08560b75e06a54402bb77555005ea4e3"
+  digest = "1:d04fdd419650d1bc6c84b0988a94a7438cc3143e95a61a63f5c2bf56542156e3"
   name = "github.com/argoproj/pkg"
   packages = [
     "cli",
@@ -94,7 +75,7 @@
     "time",
   ]
   pruneopts = ""
-  revision = "036726ef3c7809929246eda91ffa520269c94021"
+  revision = "5616f48963eebf7cca912632230032b263bb62bc"
 
 [[projects]]
   digest = "1:d54d0284d0851e6f9df56504d20dca52635a13787efadeaef281a3b6fe8b9b08"
@@ -558,7 +539,6 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
-    "log",
     "model",
   ]
   pruneopts = ""
@@ -795,8 +775,6 @@
     "cpu",
     "unix",
     "windows",
-    "windows/registry",
-    "windows/svc/eventlog",
   ]
   pruneopts = ""
   revision = "9109b7679e13aa34a54834cfb4949cac4b96e576"
@@ -937,14 +915,6 @@
   pruneopts = ""
   revision = "6eaf6f47437a6b4e2153a190160ef39a92c7eceb"
   version = "v1.23.0"
-
-[[projects]]
-  digest = "1:15d017551627c8bb091bde628215b2861bed128855343fdd570c62d08871f6e1"
-  name = "gopkg.in/alecthomas/kingpin.v2"
-  packages = ["."]
-  pruneopts = ""
-  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
-  version = "v2.2.6"
 
 [[projects]]
   digest = "1:75fb3fcfc73a8c723efde7777b40e8e8ff9babf30d8c56160d01beffea8a95a6"
@@ -1153,7 +1123,7 @@
 
 [[projects]]
   branch = "release-1.14"
-  digest = "1:e950967cea228c597ebaf1205bd4045f6d43db85fce18f7b8915e2e0c49bde21"
+  digest = "1:daf5cbf32f8ec58311ade32bbb966aabc40c99c02d7b21176c2ec35e4faf4ad9"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1381,7 +1351,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:71e59e355758d825c891c77bfe3ec2c0b2523b05076e96b2a2bfa804e6ac576a"
+  digest = "1:3176cac3365c8442ab92d465e69e05071b0dbc0d715e66b76059b04611811dff"
   name = "k8s.io/kube-openapi"
   packages = [
     "pkg/common",
@@ -1456,7 +1426,6 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
-    "github.com/prometheus/common/log",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/stretchr/testify/assert",
@@ -1465,8 +1434,6 @@
     "github.com/tidwall/gjson",
     "github.com/valyala/fasttemplate",
     "golang.org/x/crypto/ssh",
-    "golang.org/x/net/context",
-    "google.golang.org/grpc",
     "gopkg.in/jcmturner/gokrb5.v5/client",
     "gopkg.in/jcmturner/gokrb5.v5/config",
     "gopkg.in/jcmturner/gokrb5.v5/credentials",
