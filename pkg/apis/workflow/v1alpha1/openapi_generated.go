@@ -32,6 +32,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs":                schema_pkg_apis_workflow_v1alpha1_Inputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Item":                  schema_pkg_apis_workflow_v1alpha1_Item(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":              schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus":            schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":          schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":               schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":             schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
@@ -52,6 +53,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Workflow":              schema_pkg_apis_workflow_v1alpha1_Workflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowList":          schema_pkg_apis_workflow_v1alpha1_WorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec":          schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStatus":        schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowStep":          schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplate":      schema_pkg_apis_workflow_v1alpha1_WorkflowTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowTemplateList":  schema_pkg_apis_workflow_v1alpha1_WorkflowTemplateList(ref),
@@ -997,6 +999,150 @@ func schema_pkg_apis_workflow_v1alpha1_Metadata(ref common.ReferenceCallback) co
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "NodeStatus contains status information about an individual node in the workflow",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is unique name in the node tree used to generate the node ID",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"displayName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DisplayName is a human readable representation of the node. Unique within a template boundary",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type indicates type of node",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"templateName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"templateRef": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
+						},
+					},
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"boundaryID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "BoundaryID indicates the node ID of the associated template root node in which this node belongs to",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A human readable message indicating details about why the node is in this condition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"startedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Time at which this node started",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"finishedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Time at which this node completed",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"podIP": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PodIP captures the IP of the pod for daemoned steps",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"daemoned": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Daemoned tracks whether or not this node was daemoned and need to be terminated",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"inputs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Inputs captures input parameter values and artifact locations supplied to this template invocation",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs"),
+						},
+					},
+					"outputs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Outputs captures output parameter values and artifact locations produced by this template invocation",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
+						},
+					},
+					"children": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Children is a list of child node IDs",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"outboundNodes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"id", "name", "displayName", "type"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Inputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -2664,6 +2810,87 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 		},
 		Dependencies: []string{
 			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Arguments", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Template", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.HostAlias", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PersistentVolumeClaim", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "WorkflowStatus contains overall status information about a workflow",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"phase": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"startedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Time at which this workflow started",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"finishedAt": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Time at which this workflow completed",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "A human readable message indicating details about why the workflow is in this condition.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"compressedNodes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Compressed and base64 decoded Nodes map",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"nodes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Nodes is a mapping between a node ID and the node's status.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus"),
+									},
+								},
+							},
+						},
+					},
+					"persistentVolumeClaims": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow. The contents of this list are drained at the end of the workflow.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.Volume"),
+									},
+								},
+							},
+						},
+					},
+					"outputs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Outputs captures output values and artifact locations produced by the workflow via global outputs",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs", "k8s.io/api/core/v1.Volume", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
