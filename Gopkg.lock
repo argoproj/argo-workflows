@@ -223,6 +223,14 @@
   version = "v4.5.0"
 
 [[projects]]
+  digest = "1:b13707423743d41665fd23f0c36b2f37bb49c30e94adb813319c44188a51ba22"
+  name = "github.com/ghodss/yaml"
+  packages = ["."]
+  pruneopts = ""
+  revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:21911d0d3cecc86a42fd1920583c34a33b91035d77d4929772938961d7814ffc"
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
@@ -1420,6 +1428,7 @@
     "github.com/argoproj/pkg/time",
     "github.com/colinmarc/hdfs",
     "github.com/evanphx/json-patch",
+    "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/gorilla/websocket",
     "github.com/mitchellh/go-ps",
