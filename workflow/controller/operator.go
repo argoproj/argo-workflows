@@ -638,7 +638,7 @@ func (woc *wfOperationCtx) podReconciliation() error {
 	// It is now impossible to infer pod status. The only thing we can do at this point is to mark
 	// the node with Error.
 	for nodeID, node := range woc.wf.Status.Nodes {
-		if node.Type != wfv1.NodeTypePod || node.Completed() || node.CanRerun() {
+		if node.Type != wfv1.NodeTypePod || node.Completed() || node.StartedAt.IsZero() {
 			// node is not a pod, it is already complete, or it can be re-run.
 			continue
 		}
@@ -1105,10 +1105,19 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, boundaryID string) (*wfv1.NodeStatus, error) {
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
-	node := woc.getNodeOrRerunByName(nodeName, wfv1.NodePending)
-	if node != nil && node.Completed() {
-		woc.log.Debugf("Node %s already completed", nodeName)
-		return node, nil
+	node := woc.getNodeByName(nodeName)
+	if node != nil {
+		if node.Completed() {
+			woc.log.Debugf("Node %s already completed", nodeName)
+			return node, nil
+		}
+		woc.log.Debugf("Executing node %s is %s", nodeName, node.Phase)
+		// Memoized nodes don't have StartedAt.
+		if node.StartedAt.IsZero() {
+			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
+        	woc.wf.Status.Nodes[node.ID] = *node
+			woc.updated = true
+		}
 	}
 
 	// Check if we took too long operating on this workflow and immediately return if we did
@@ -1288,16 +1297,6 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 // stepsOrDagSeparator identifies if a node name starts with our naming convention separator from
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
-
-// getNodeOrRerunByName gets a node and activate the node if it's memoized.
-func (woc *wfOperationCtx) getNodeOrRerunByName(nodeName string, phase wfv1.NodePhase) *wfv1.NodeStatus {
-	node := woc.getNodeByName(nodeName)
-	// Update phase if it's a memoized node.
-	if node != nil && node.CanRerun() {
-		node = woc.markNodePhase(nodeName, phase)
-	}
-	return node
-}
 
 // initializeExecutableNode initializes a node and stores the base template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {

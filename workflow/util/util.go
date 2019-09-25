@@ -435,8 +435,13 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		if node.BoundaryID != "" {
 			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
 		}
-		newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
-		newNode.FinishedAt = newNode.StartedAt
+		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+			newNode.StartedAt = metav1.Time{}
+			newNode.FinishedAt = metav1.Time{}
+		} else {
+			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			newNode.FinishedAt = newNode.StartedAt
+		}
 		newChildren := make([]string, len(node.Children))
 		for i, childID := range node.Children {
 			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
@@ -452,7 +457,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 			newNode.Type = wfv1.NodeTypeSkipped
 			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
 		} else {
-			newNode.Phase = wfv1.NodeMemoized
+			newNode.Phase = wfv1.NodePending
 			newNode.Message = ""
 		}
 		newWF.Status.Nodes[newNode.ID] = *newNode
@@ -463,7 +468,7 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		newWF.Status.StoredTemplates[id] = tmpl
 	}
 
-	newWF.Status.Phase = wfv1.NodeMemoized
+	newWF.Status.Phase = wfv1.NodePending
 
 	return &newWF, nil
 }
