@@ -1307,15 +1307,15 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = &executeTmpl.Inputs
 	}
 
-	// Set template resolution info.
+	// Store resolved workflow template.
 	if woc.wf.GroupVersionKind() != tmplCtx.GetCurrentTemplateBase().GroupVersionKind() {
-		resolvedWorkflowTemplateName := tmplCtx.GetCurrentTemplateBase().GetName()
-		if resolvedWorkflowTemplateName != "" {
-			node.WorkflowTemplateName = resolvedWorkflowTemplateName
-		}
-		// Store base template for the later use.
-		baseTemplateID, baseTemplate := executeTmpl.GetBaseTemplate()
-		node.StoredTemplateID = baseTemplateID
+		node.WorkflowTemplateName = tmplCtx.GetCurrentTemplateBase().GetName()
+	}
+
+	// Store base template for the later use.
+	baseTemplateID := node.GetBaseTemplateID()
+	if baseTemplateID != "" {
+		baseTemplate := executeTmpl.GetBaseTemplate()
 		_, exists := woc.wf.Status.StoredTemplates[baseTemplateID]
 		if !exists {
 			woc.log.Infof("Create base template '%s'", baseTemplateID)
