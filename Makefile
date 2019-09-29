@@ -19,6 +19,7 @@ DEV_IMAGE             ?= false
 
 DOCKERFILE            = $(shell if [ `arch` = "ppc64le" ]; then echo "Dockerfile.`arch`" ; else echo "Dockerfile"; fi)
 ARCH                  = $(shell arch)
+
 GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
 
 override LDFLAGS += \
