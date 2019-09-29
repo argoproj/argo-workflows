@@ -1,11 +1,13 @@
 package util
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -197,12 +199,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			var body []byte
 			var err error
 			if cmdutil.IsURL(opts.ParameterFile) {
-				response, err := http.Get(opts.ParameterFile)
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
+				body, err = ReadFromUrl(opts.ParameterFile)
 				if err != nil {
 					return nil, errors.InternalWrapError(err)
 				}
@@ -258,14 +255,14 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 
-	if opts.ServerDryRun {
+	if opts.DryRun {
+		return wf, nil
+	} else if opts.ServerDryRun {
 		wf, err := CreateServerDryRun(wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
-	} else if opts.DryRun {
-		return wf, nil
 	} else {
 		return wfIf.Create(wf)
 	}
@@ -535,6 +532,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
+// IsWorkflowTerminated returns whether or not a workflow is considered terminated
 func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
 	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
 		return true
@@ -582,4 +580,69 @@ func DecompressWorkflow(wf *wfv1.Workflow) error {
 		wf.Status.CompressedNodes = ""
 	}
 	return nil
+}
+
+// Reads from stdin
+func ReadFromStdin() ([]byte, error) {
+	reader := bufio.NewReader(os.Stdin)
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, err
+}
+
+// Reads the content of a url
+func ReadFromUrl(url string) ([]byte, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return body, err
+}
+
+// ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
+func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
+	var fileContents [][]byte
+	var body []byte
+	var err error
+	for _, filePathOrUrl := range filePathsOrUrls {
+		if cmdutil.IsURL(filePathOrUrl) {
+			body, err = ReadFromUrl(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		} else {
+			body, err = ioutil.ReadFile(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		}
+		fileContents = append(fileContents, body)
+	}
+	return fileContents, err
+}
+
+// ReadManifest reads from stdin, a single file/url, or a list of files and/or urls
+func ReadManifest(manifestPaths ...string) ([][]byte, error) {
+	var manifestContents [][]byte
+	var err error
+	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
+		body, err := ReadFromStdin()
+		if err != nil {
+			return [][]byte{}, err
+		}
+		manifestContents = append(manifestContents, body)
+	} else {
+		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
+		if err != nil {
+			return [][]byte{}, err
+		}
+	}
+	return manifestContents, err
 }

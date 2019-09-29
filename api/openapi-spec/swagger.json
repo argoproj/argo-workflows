@@ -27,14 +27,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "parameters": {
           "description": "Parameters is the list of parameters to pass to the template or workflow",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -272,7 +276,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.DAGTask"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -480,14 +486,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "parameters": {
           "description": "Parameters are a list of parameters passed as inputs",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -514,6 +524,92 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.NodeStatus": {
+      "description": "NodeStatus contains status information about an individual node in the workflow",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "displayName",
+        "type"
+      ],
+      "properties": {
+        "boundaryID": {
+          "description": "BoundaryID indicates the node ID of the associated template root node in which this node belongs to",
+          "type": "string"
+        },
+        "children": {
+          "description": "Children is a list of child node IDs",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "daemoned": {
+          "description": "Daemoned tracks whether or not this node was daemoned and need to be terminated",
+          "type": "boolean"
+        },
+        "displayName": {
+          "description": "DisplayName is a human readable representation of the node. Unique within a template boundary",
+          "type": "string"
+        },
+        "finishedAt": {
+          "description": "Time at which this node completed",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "id": {
+          "description": "ID is a unique identifier of a node within the worklow It is implemented as a hash of the node name, which makes the ID deterministic",
+          "type": "string"
+        },
+        "inputs": {
+          "description": "Inputs captures input parameter values and artifact locations supplied to this template invocation",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Inputs"
+        },
+        "message": {
+          "description": "A human readable message indicating details about why the node is in this condition.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is unique name in the node tree used to generate the node ID",
+          "type": "string"
+        },
+        "outboundNodes": {
+          "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "description": "Outputs captures output parameter values and artifact locations produced by this template invocation",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "phase": {
+          "description": "Phase a simple, high-level summary of where the node is in its lifecycle. Can be used as a state machine.",
+          "type": "string"
+        },
+        "podIP": {
+          "description": "PodIP captures the IP of the pod for daemoned steps",
+          "type": "string"
+        },
+        "startedAt": {
+          "description": "Time at which this node started",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "templateName": {
+          "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
+          "type": "string"
+        },
+        "templateRef": {
+          "description": "TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
+        },
+        "type": {
+          "description": "Type indicates type of node",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
       "type": "object"
@@ -527,14 +623,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Artifact"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "parameters": {
           "description": "Parameters holds the list of output parameters produced by a step",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Parameter"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "result": {
           "description": "Result holds the result (stdout) of a script template",
@@ -934,14 +1034,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "ip",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "initContainers": {
           "description": "InitContainers is a list of containers which run before the main container.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.UserContainer"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "inputs": {
           "description": "Inputs describe what inputs parameters and artifacts are supplied to this template",
@@ -1009,7 +1113,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.UserContainer"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "steps": {
           "description": "Steps define a series of sequential/parallel workflow steps",
@@ -1038,14 +1144,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "key",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a template.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         }
       }
     },
@@ -1325,7 +1435,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "ip",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "hostNetwork": {
           "description": "Host networking requested for this workflow pod. Default to false.",
@@ -1336,7 +1448,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.LocalObjectReference"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "nodeSelector": {
           "description": "NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s). This is able to be overridden by a nodeSelector specified in the template.",
@@ -1393,14 +1507,18 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "tolerations": {
           "description": "Tolerations to apply to workflow pods.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "key",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
           "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.",
@@ -1412,14 +1530,62 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.PersistentVolumeClaim"
-          }
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
         },
         "volumes": {
           "description": "Volumes is a list of volumes that can be mounted by containers in a workflow.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          },
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.WorkflowStatus": {
+      "description": "WorkflowStatus contains overall status information about a workflow",
+      "type": "object",
+      "properties": {
+        "compressedNodes": {
+          "description": "Compressed and base64 decoded Nodes map",
+          "type": "string"
+        },
+        "finishedAt": {
+          "description": "Time at which this workflow completed",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "message": {
+          "description": "A human readable message indicating details about why the workflow is in this condition.",
+          "type": "string"
+        },
+        "nodes": {
+          "description": "Nodes is a mapping between a node ID and the node's status.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
           }
+        },
+        "outputs": {
+          "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
+        },
+        "persistentVolumeClaims": {
+          "description": "PersistentVolumeClaims tracks all PVCs that were created as part of the workflow. The contents of this list are drained at the end of the workflow.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.Volume"
+          }
+        },
+        "phase": {
+          "description": "Phase a simple, high-level summary of where the workflow is in its lifecycle.",
+          "type": "string"
+        },
+        "startedAt": {
+          "description": "Time at which this workflow started",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
     },
