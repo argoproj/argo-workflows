@@ -1115,7 +1115,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-        	woc.wf.Status.Nodes[node.ID] = *node
+			woc.wf.Status.Nodes[node.ID] = *node
 			woc.updated = true
 		}
 	}
