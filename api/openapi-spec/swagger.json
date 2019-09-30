@@ -607,6 +607,10 @@
         "type": {
           "description": "Type indicates type of node",
           "type": "string"
+        },
+        "workflowTemplateName": {
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.",
+          "type": "string"
         }
       }
     },
@@ -1586,6 +1590,13 @@
         "startedAt": {
           "description": "Time at which this workflow started",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        },
+        "storedTemplates": {
+          "description": "StoredTemplates is a mapping between a template ref and the node's status.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Template"
+          }
         }
       }
     },
