@@ -411,46 +411,56 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		return &newWF, nil
 	}
 
-	// Iterate the previous nodes. If it was successful Pod carry it forward
+	// Iterate the previous nodes.
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	for _, node := range wf.Status.Nodes {
-		switch node.Phase {
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasPrefix(node.Name, onExitNodeName) {
-				continue
-			}
-			originalID := node.ID
-			node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
-			node.ID = newWF.NodeID(node.Name)
-			node.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
-			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.FinishedAt = node.StartedAt
-			newChildren := make([]string, len(node.Children))
-			for i, childID := range node.Children {
-				newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
-			}
-			node.Children = newChildren
-			newOutboundNodes := make([]string, len(node.OutboundNodes))
-			for i, outboundID := range node.OutboundNodes {
-				newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
-			}
-			node.OutboundNodes = newOutboundNodes
-			if node.Type == wfv1.NodeTypePod {
-				node.Phase = wfv1.NodeSkipped
-				node.Type = wfv1.NodeTypeSkipped
-				node.Message = fmt.Sprintf("original pod: %s", originalID)
-			}
-			newWF.Status.Nodes[node.ID] = node
-		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning, wfv1.NodePending:
-			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
-		default:
-			return nil, errors.InternalErrorf("Workflow cannot be resubmitted with node %s in %s phase", node, node.Phase)
+		newNode := node.DeepCopy()
+		if strings.HasPrefix(node.Name, onExitNodeName) {
+			continue
 		}
+		originalID := node.ID
+		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
+		newNode.ID = newWF.NodeID(newNode.Name)
+		if node.BoundaryID != "" {
+			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
+		}
+		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+			newNode.StartedAt = metav1.Time{}
+			newNode.FinishedAt = metav1.Time{}
+		} else {
+			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			newNode.FinishedAt = newNode.StartedAt
+		}
+		newChildren := make([]string, len(node.Children))
+		for i, childID := range node.Children {
+			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
+		}
+		newNode.Children = newChildren
+		newOutboundNodes := make([]string, len(node.OutboundNodes))
+		for i, outboundID := range node.OutboundNodes {
+			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
+		}
+		newNode.OutboundNodes = newOutboundNodes
+		if newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+			newNode.Phase = wfv1.NodeSkipped
+			newNode.Type = wfv1.NodeTypeSkipped
+			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else {
+			newNode.Phase = wfv1.NodePending
+			newNode.Message = ""
+		}
+		newWF.Status.Nodes[newNode.ID] = *newNode
 	}
+
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
+	newWF.Status.Phase = wfv1.NodePending
+
 	return &newWF, nil
 }
 
@@ -514,6 +524,12 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 		}
 	}
+
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
 	return wfClient.Update(newWF)
 }
 
