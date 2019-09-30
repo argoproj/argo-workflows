@@ -8,6 +8,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -67,6 +68,7 @@ const (
 type TemplateGetter interface {
 	GetNamespace() string
 	GetName() string
+	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 }
 
@@ -363,6 +365,13 @@ func (tmpl *Template) GetTemplateName() string {
 
 func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
+}
+
+// GetBaseTemplate returns a base template content.
+func (tmpl *Template) GetBaseTemplate() *Template {
+	baseTemplate := tmpl.DeepCopy()
+	baseTemplate.Inputs = Inputs{}
+	return baseTemplate
 }
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
@@ -672,6 +681,9 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 
+	// StoredTemplates is a mapping between a template ref and the node's status.
+	StoredTemplates map[string]Template `json:"storedTemplates,omitempty"`
+
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
@@ -708,6 +720,9 @@ type NodeStatus struct {
 	// TemplateRef is the reference to the template resource which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
+
+	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
+	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -808,6 +823,16 @@ func (n NodeStatus) Successful() bool {
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
 	return n.Completed() && !n.Successful()
+}
+
+// GetBaseTemplateID returns a base template ID if available.
+func (n *NodeStatus) GetBaseTemplateID() string {
+	if n.TemplateRef != nil {
+		return fmt.Sprintf("%s/%s", n.TemplateRef.Name, n.TemplateRef.Template)
+	} else if n.WorkflowTemplateName != "" {
+		return fmt.Sprintf("%s/%s", n.WorkflowTemplateName, n.TemplateName)
+	}
+	return ""
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1237,6 +1262,33 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// GetStoredTemplate gets a resolved template from stored data.
+func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
+	id := node.GetBaseTemplateID()
+	tmpl, ok := wf.Status.StoredTemplates[id]
+	if ok {
+		return &tmpl
+	}
+	return nil
+}
+
+// GetStoredOrLocalTemplate gets a resolved template from stored data or local template.
+func (wf *Workflow) GetStoredOrLocalTemplate(node *NodeStatus) *Template {
+	// Try to find a template from stored data.
+	tmpl := wf.GetStoredTemplate(node)
+	if tmpl != nil {
+		return tmpl
+	}
+	// Try to get template from Workflow.
+	if node.WorkflowTemplateName == "" && node.TemplateName != "" {
+		tmpl := wf.GetTemplateByName(node.TemplateName)
+		if tmpl != nil {
+			return tmpl
+		}
+	}
+	return nil
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
