@@ -522,6 +522,13 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}
+		} else if node.Name == wf.ObjectMeta.Name {
+			newNode := node.DeepCopy()
+			newNode.Phase = wfv1.NodeRunning
+			newNode.Message = ""
+			newNode.FinishedAt = metav1.Time{}
+			newWF.Status.Nodes[newNode.ID] = *newNode
+			continue
 		}
 	}
 
