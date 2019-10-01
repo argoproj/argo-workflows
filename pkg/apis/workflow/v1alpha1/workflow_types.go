@@ -721,6 +721,9 @@ type NodeStatus struct {
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
 
+	// StoredTemplateID is the ID of stored template.
+	StoredTemplateID string `json:"storedTemplateID,omitempty"`
+
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
 
@@ -823,16 +826,6 @@ func (n NodeStatus) Successful() bool {
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
 	return n.Completed() && !n.Successful()
-}
-
-// GetBaseTemplateID returns a base template ID if available.
-func (n *NodeStatus) GetBaseTemplateID() string {
-	if n.TemplateRef != nil {
-		return fmt.Sprintf("%s/%s", n.TemplateRef.Name, n.TemplateRef.Template)
-	} else if n.WorkflowTemplateName != "" {
-		return fmt.Sprintf("%s/%s", n.WorkflowTemplateName, n.TemplateName)
-	}
-	return ""
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1266,7 +1259,10 @@ func (wf *Workflow) NodeID(name string) string {
 
 // GetStoredTemplate gets a resolved template from stored data.
 func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
-	id := node.GetBaseTemplateID()
+	id := node.StoredTemplateID
+	if id == "" {
+		return nil
+	}
 	tmpl, ok := wf.Status.StoredTemplates[id]
 	if ok {
 		return &tmpl

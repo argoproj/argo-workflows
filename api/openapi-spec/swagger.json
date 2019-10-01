@@ -596,6 +596,10 @@
           "description": "Time at which this node started",
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         },
+        "storedTemplateID": {
+          "description": "StoredTemplateID is the ID of stored template.",
+          "type": "string"
+        },
         "templateName": {
           "description": "TemplateName is the template name which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
           "type": "string"
