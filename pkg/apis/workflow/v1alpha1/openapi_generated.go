@@ -1050,6 +1050,13 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.TemplateRef"),
 						},
 					},
+					"storedTemplateID": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StoredTemplateID is the ID of stored template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"workflowTemplateName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.",
