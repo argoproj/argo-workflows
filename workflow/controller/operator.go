@@ -1298,7 +1298,7 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 // DAG or steps templates. Will match stings with prefix like: [0]. or .
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
-// initializeExecutableNode initializes a node and stores the base template.
+// initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
 
@@ -1312,16 +1312,20 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.WorkflowTemplateName = tmplCtx.GetCurrentTemplateBase().GetName()
 	}
 
-	// Store base template for the later use.
-	baseTemplateID := node.GetBaseTemplateID()
-	if baseTemplateID != "" {
+	// Store the template for the later use.
+	if node.TemplateRef != nil {
+		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
+	} else if node.WorkflowTemplateName != "" {
+		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
+	}
+	if node.StoredTemplateID != "" {
 		baseTemplate := executeTmpl.GetBaseTemplate()
-		_, exists := woc.wf.Status.StoredTemplates[baseTemplateID]
+		_, exists := woc.wf.Status.StoredTemplates[node.StoredTemplateID]
 		if !exists {
-			woc.log.Infof("Create base template '%s'", baseTemplateID)
-			woc.wf.Status.StoredTemplates[baseTemplateID] = *baseTemplate
+			woc.log.Infof("Create stored template '%s'", node.StoredTemplateID)
+			woc.wf.Status.StoredTemplates[node.StoredTemplateID] = *baseTemplate
 		} else {
-			woc.log.Infof("Base template '%s' already exists", baseTemplateID)
+			woc.log.Infof("Stored template '%s' already exists", node.StoredTemplateID)
 		}
 	}
 
