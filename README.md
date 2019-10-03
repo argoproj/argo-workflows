@@ -89,6 +89,7 @@ Currently **officially** using Argo:
 1. [Cratejoy](https://www.cratejoy.com/)
 1. [Cyrus Biotechnology](https://cyrusbio.com/)
 1. [Datadog](https://www.datadoghq.com/)
+1. [DataStax](https://www.datastax.com/)
 1. [Equinor](https://www.equinor.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [Gladly](https://gladly.com/)
@@ -126,4 +127,4 @@ Currently **officially** using Argo:
 ## Project Resources
 * Argo GitHub:  https://github.com/argoproj
 * Argo website: https://argoproj.github.io/
-* Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLTA5MTFjNjI0Nzg3NzNiMDZiNmRiODM4Y2M1NWQxOGYzMzZkNTc1YWVkYTZkNzdlNmYyZjMxNWI3NjY2MDc1MzI)
+* Argo Slack:   [click here to join](https://join.slack.com/t/argoproj/shared_invite/enQtMzExODU3MzIyNjYzLWUxZDYyODIyYzY3N2RjOWMyNDA4NmFjMTNkMTE1ODI2OGY3MzgyMWFmMmY3N2UzNWRmOWFmMGY4NTBhZGQxYWY)

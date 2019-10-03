@@ -1,7 +1,9 @@
 run:
+  deadline: 8m
   tests: false
   skip-files:
     - "pkg/client"
+  deadline: 10m
 output:
   format: colored-line-number
   print-issued-lines: true

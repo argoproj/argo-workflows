@@ -29,6 +29,7 @@ func NewLintCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
+			_ = InitWorkflowClient()
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
 				if len(args) > 1 {

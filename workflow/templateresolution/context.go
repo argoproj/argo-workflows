@@ -99,6 +99,11 @@ func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template,
 	return nil, errors.Errorf(errors.CodeInternal, "failed to get a template")
 }
 
+// GetCurrentTemplateBase returns the current template base of the context.
+func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateGetter {
+	return ctx.tmplBase
+}
+
 // GetTemplateBase returns a template base of a found template.
 func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
 	tmplRef := tmplHolder.GetTemplateRef()
@@ -115,12 +120,15 @@ func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.Templa
 
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
-func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
-	return ctx.resolveTemplateImpl(tmplHolder, 0)
+func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool) (*Context, *wfv1.Template, error) {
+	return ctx.resolveTemplateImpl(tmplHolder, args, globalParams, localParams, validateOnly, 0)
 }
 
 // resolveTemplateImpl digs into referenes and returns a merged template.
-func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
+// This method processes inputs and arguments so the inputs of the final
+//  resolved template include intermediate parameter passing.
+// The other fields are just merged and shallower templates overwrite deeper.
+func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, args wfv1.ArgumentsProvider, globalParams, localParams map[string]string, validateOnly bool, depth int) (*Context, *wfv1.Template, error) {
 	// Avoid infinite references
 	if depth > maxResolveDepth {
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
@@ -139,13 +147,26 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	}
 	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
 
+	// Process inputs and arguments
+	tmpTmpl := &wfv1.Template{Inputs: *tmpl.Inputs.DeepCopy(), Arguments: *tmpl.Arguments.DeepCopy()}
+	processedTmpl, err := common.ProcessArgs(tmpTmpl, args, globalParams, localParams, validateOnly)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Set inputs processed with arguments of the parent.
+	tmpl.Inputs = processedTmpl.Inputs
+
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
 		return newTmplCtx, tmpl, nil
 	}
 
+	// Set arguments processed with params.
+	tmpl.Arguments = processedTmpl.Arguments
+
 	// Dig into nested references with new template base.
-	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, depth+1)
+	finalTmplCtx, newTmpl, err := newTmplCtx.resolveTemplateImpl(tmpl, &tmpl.Arguments, globalParams, localParams, validateOnly, depth+1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,4 +183,13 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
 func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
 	return NewContext(ctx.wftmplGetter, tmplBase)
+}
+
+// OnWorkflowTemplate creates new context with the wfv1.WorkflowTemplate of the given name.
+func (ctx *Context) OnWorkflowTemplate(name string) (*Context, error) {
+	wftmpl, err := ctx.wftmplGetter.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return NewContext(ctx.wftmplGetter, wftmpl), nil
 }

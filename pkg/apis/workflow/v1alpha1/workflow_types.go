@@ -8,6 +8,7 @@ import (
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -67,6 +68,7 @@ const (
 type TemplateGetter interface {
 	GetNamespace() string
 	GetName() string
+	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
 }
 
@@ -100,7 +102,9 @@ var _ TemplateGetter = &Workflow{}
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
-	Templates []Template `json:"templates"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Entrypoint is a template reference to the starting point of the workflow
 	Entrypoint string `json:"entrypoint"`
@@ -113,13 +117,24 @@ type WorkflowSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
+	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+
+	// Executor holds configurations of executor containers of the workflow.
+	Executor *ExecutorConfig `json:"executor,omitempty"`
+
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
-	Volumes []apiv1.Volume `json:"volumes,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
 	// The Workflow controller will create the claims at the beginning of the workflow
 	// and delete the claims upon completion of the workflow
-	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty"`
@@ -140,13 +155,17 @@ type WorkflowSpec struct {
 	Affinity *apiv1.Affinity `json:"affinity,omitempty"`
 
 	// Tolerations to apply to workflow pods.
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=key
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key"`
 
 	// ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images
 	// in pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets
 	// can be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
-	ImagePullSecrets []apiv1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	ImagePullSecrets []apiv1.LocalObjectReference `json:"imagePullSecrets,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Host networking requested for this workflow pod. Default to false.
 	HostNetwork *bool `json:"hostNetwork,omitempty"`
@@ -199,7 +218,9 @@ type WorkflowSpec struct {
 	PodPriority *int32 `json:"podPriority,omitempty"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=ip
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
@@ -260,14 +281,20 @@ type Template struct {
 	Suspend *SuspendTemplate `json:"suspend,omitempty"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a template.
-	Volumes []apiv1.Volume `json:"volumes,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// InitContainers is a list of containers which run before the main container.
-	InitContainers []UserContainer `json:"initContainers,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	InitContainers []UserContainer `json:"initContainers,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Sidecars is a list of containers which run alongside the main container
 	// Sidecars are automatically killed when the main container completes
-	Sidecars []UserContainer `json:"sidecars,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Sidecars []UserContainer `json:"sidecars,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
@@ -289,7 +316,9 @@ type Template struct {
 	Parallelism *int64 `json:"parallelism,omitempty"`
 
 	// Tolerations to apply to workflow pods.
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=key
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"  patchStrategy:"merge" patchMergeKey:"key"`
 
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
@@ -306,8 +335,17 @@ type Template struct {
 	// ServiceAccountName to apply to workflow pods
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
+	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
+	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+
+	// Executor holds configurations of the executor container.
+	Executor *ExecutorConfig `json:"executor,omitempty"`
+
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=ip
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"  patchStrategy:"merge" patchMergeKey:"ip"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
@@ -329,13 +367,24 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+// GetBaseTemplate returns a base template content.
+func (tmpl *Template) GetBaseTemplate() *Template {
+	baseTemplate := tmpl.DeepCopy()
+	baseTemplate.Inputs = Inputs{}
+	return baseTemplate
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
-	Parameters []Parameter `json:"parameters,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Parameters []Parameter `json:"parameters,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Artifact are a list of artifacts passed as inputs
-	Artifacts []Artifact `json:"artifacts,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 // Pod metdata
@@ -463,10 +512,14 @@ type ArtifactRepositoryRef struct {
 // Outputs hold parameters, artifacts, and results from a step
 type Outputs struct {
 	// Parameters holds the list of output parameters produced by a step
-	Parameters []Parameter `json:"parameters,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Parameters []Parameter `json:"parameters,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Artifacts holds the list of output artifacts produced by a step
-	Artifacts []Artifact `json:"artifacts,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Artifacts []Artifact `json:"artifacts,omitempty"  patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty"`
@@ -585,10 +638,14 @@ type ArgumentsProvider interface {
 // Arguments to a template
 type Arguments struct {
 	// Parameters is the list of parameters to pass to the template or workflow
-	Parameters []Parameter `json:"parameters,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Parameters []Parameter `json:"parameters,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// Artifacts is the list of artifacts to pass to the template or workflow
-	Artifacts []Artifact `json:"artifacts,omitempty"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 }
 
 var _ ArgumentsProvider = &Arguments{}
@@ -605,7 +662,6 @@ type UserContainer struct {
 }
 
 // WorkflowStatus contains overall status information about a workflow
-// +k8s:openapi-gen=false
 type WorkflowStatus struct {
 	// Phase a simple, high-level summary of where the workflow is in its lifecycle.
 	Phase NodePhase `json:"phase,omitempty"`
@@ -625,6 +681,9 @@ type WorkflowStatus struct {
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes map[string]NodeStatus `json:"nodes,omitempty"`
 
+	// StoredTemplates is a mapping between a template ref and the node's status.
+	StoredTemplates map[string]Template `json:"storedTemplates,omitempty"`
+
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
 	PersistentVolumeClaims []apiv1.Volume `json:"persistentVolumeClaims,omitempty"`
@@ -640,7 +699,6 @@ type RetryStrategy struct {
 }
 
 // NodeStatus contains status information about an individual node in the workflow
-// +k8s:openapi-gen=false
 type NodeStatus struct {
 	// ID is a unique identifier of a node within the worklow
 	// It is implemented as a hash of the node name, which makes the ID deterministic
@@ -662,6 +720,12 @@ type NodeStatus struct {
 	// TemplateRef is the reference to the template resource which this node corresponds to.
 	// Not applicable to virtual nodes (e.g. Retry, StepGroup)
 	TemplateRef *TemplateRef `json:"templateRef,omitempty"`
+
+	// StoredTemplateID is the ID of stored template.
+	StoredTemplateID string `json:"storedTemplateID,omitempty"`
+
+	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
+	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -783,6 +847,9 @@ type S3Bucket struct {
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
+
+	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
+	RoleARN string `json:"roleARN,omitempty"`
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -947,6 +1014,12 @@ func (h *HTTPArtifact) HasLocation() bool {
 	return h != nil && h.URL != ""
 }
 
+// ExecutorConfig holds configurations of an executor container.
+type ExecutorConfig struct {
+	// ServiceAccountName specifies the service account name of the executor container.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
 // ScriptTemplate is a template subtype to enable scripting through code steps
 type ScriptTemplate struct {
 	apiv1.Container `json:",inline"`
@@ -1015,7 +1088,7 @@ func (tmpl *Template) IsPodType() bool {
 // IsLeaf returns whether or not the template is a leaf
 func (tmpl *Template) IsLeaf() bool {
 	switch tmpl.GetType() {
-	case TemplateTypeContainer, TemplateTypeScript:
+	case TemplateTypeContainer, TemplateTypeScript, TemplateTypeResource:
 		return true
 	}
 	return false
@@ -1027,7 +1100,9 @@ type DAGTemplate struct {
 	Target string `json:"target,omitempty"`
 
 	// Tasks are a list of DAG tasks
-	Tasks []DAGTask `json:"tasks"`
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Tasks []DAGTask `json:"tasks" patchStrategy:"merge" patchMergeKey:"name"`
 
 	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
 	// as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed
@@ -1180,6 +1255,36 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// GetStoredTemplate gets a resolved template from stored data.
+func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
+	id := node.StoredTemplateID
+	if id == "" {
+		return nil
+	}
+	tmpl, ok := wf.Status.StoredTemplates[id]
+	if ok {
+		return &tmpl
+	}
+	return nil
+}
+
+// GetStoredOrLocalTemplate gets a resolved template from stored data or local template.
+func (wf *Workflow) GetStoredOrLocalTemplate(node *NodeStatus) *Template {
+	// Try to find a template from stored data.
+	tmpl := wf.GetStoredTemplate(node)
+	if tmpl != nil {
+		return tmpl
+	}
+	// Try to get template from Workflow.
+	if node.WorkflowTemplateName == "" && node.TemplateName != "" {
+		tmpl := wf.GetTemplateByName(node.TemplateName)
+		if tmpl != nil {
+			return tmpl
+		}
+	}
+	return nil
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

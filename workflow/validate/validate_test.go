@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1715,5 +1715,96 @@ func TestUnknownPodGCStrategy(t *testing.T) {
 		wf.Spec.PodGC.Strategy = strat
 		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
 		assert.NoError(t, err)
+	}
+}
+
+var validAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  - name: per-tmpl-automount
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: true
+    executor:
+      ServiceAccountName: ""
+  automountServiceAccountToken: false
+  executor:
+    ServiceAccountName: foo
+`
+
+var validAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    executor:
+      ServiceAccountName: foo
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: false
+`
+
+// TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
+func TestAutomountServiceAccountTokenUse(t *testing.T) {
+	namespace := metav1.NamespaceDefault
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 }

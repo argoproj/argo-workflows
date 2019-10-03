@@ -138,7 +138,11 @@ endif
 
 .PHONY: test
 test:
-	go test ./...
+	go test -covermode=count -coverprofile=coverage.out ./...
+
+.PHONY: cover
+cover:
+	go tool cover -html=coverage.out
 
 .PHONY: codegen
 codegen:

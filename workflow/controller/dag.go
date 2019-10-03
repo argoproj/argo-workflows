@@ -68,27 +68,28 @@ func (d *dagContext) GetTaskNode(taskName string) *wfv1.NodeStatus {
 }
 
 // Assert all branch finished for failFast:disable function
-func (d *dagContext) assertBranchFinished(targetTaskName string) bool {
+func (d *dagContext) assertBranchFinished(targetTaskNames []string) bool {
 	// We should ensure that from the bottom to the top,
 	// all the nodes of this branch have at least one failure.
 	// If successful, we should continue to run down until the leaf node
-	taskNode := d.GetTaskNode(targetTaskName)
-	if taskNode == nil {
-		taskObject := d.getTask(targetTaskName)
-		if taskObject != nil {
-			// Make sure all the dependency node have one failed
-			for _, tmpTaskName := range taskObject.Dependencies {
+	flag := false
+	for _, targetTaskName := range targetTaskNames {
+		taskNode := d.GetTaskNode(targetTaskName)
+		if taskNode == nil {
+			taskObject := d.getTask(targetTaskName)
+			if taskObject != nil {
+				// Make sure all the dependency node have one failed
 				// Recursive check until top root node
-				return d.assertBranchFinished(tmpTaskName)
+				return d.assertBranchFinished(taskObject.Dependencies)
 			}
+		} else if !taskNode.Successful() {
+			flag = true
 		}
-	} else if !taskNode.Successful() {
-		return true
-	}
 
-	// In failFast situation, if node is successful, it will run to leaf node, above
-	// the function, we have already check the leaf node status
-	return false
+		// In failFast situation, if node is successful, it will run to leaf node, above
+		// the function, we have already check the leaf node status
+	}
+	return flag
 }
 
 // assessDAGPhase assesses the overall DAG status
@@ -128,7 +129,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 				tmpDepNode := d.GetTaskNode(tmpDepName)
 				if tmpDepNode == nil {
 					// If leaf node is nil, we should check it's parent node and recursive check
-					if !d.assertBranchFinished(tmpDepName) {
+					if !d.assertBranchFinished([]string{tmpDepName}) {
 						tmpOverAllFinished = false
 					}
 				} else if tmpDepNode.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(tmpDepNode) {
@@ -186,34 +187,29 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 		return true
 	}
 	// pick the first child to determine it's template type
-	childNode := d.wf.Status.Nodes[node.Children[0]]
-	tmpl, err := d.tmplCtx.GetTemplate(&childNode)
-	if err != nil {
+	childNode, ok := d.wf.Status.Nodes[node.Children[0]]
+	if !ok {
 		return false
 	}
-	if tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
+	tmpl := d.wf.GetStoredOrLocalTemplate(&childNode)
+	if tmpl != nil && tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) *wfv1.NodeStatus {
-	node := woc.getNodeByName(nodeName)
-	if node != nil && node.Completed() {
-		return node
-	}
-	if node == nil {
-		node = woc.initializeNode(nodeName, wfv1.NodeTypeDAG, orgTmpl, boundaryID, wfv1.NodeRunning)
-	}
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
+	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+
 	defer func() {
-		if node != nil && woc.wf.Status.Nodes[node.ID].Completed() {
+		if woc.wf.Status.Nodes[node.ID].Completed() {
 			_ = woc.killDaemonedChildren(node.ID)
 		}
 	}()
 
 	dagCtx := &dagContext{
 		boundaryName: nodeName,
-		boundaryID:   woc.wf.NodeID(nodeName),
+		boundaryID:   node.ID,
 		tasks:        tmpl.DAG.Tasks,
 		visited:      make(map[string]bool),
 		tmpl:         tmpl,
@@ -238,9 +234,10 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
-		return woc.getNodeByName(nodeName)
+		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
-		return woc.markNodePhase(nodeName, dagPhase)
+		_ = woc.markNodePhase(nodeName, dagPhase)
+		return nil
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
@@ -258,7 +255,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
-		return woc.markNodeError(nodeName, err)
+		return err
 	}
 	if outputs != nil {
 		node = woc.getNodeByName(nodeName)
@@ -267,7 +264,6 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 
 	// set the outbound nodes from the target tasks
-	node = woc.getNodeByName(nodeName)
 	outbound := make([]string, 0)
 	for _, depName := range targetTasks {
 		depNode := dagCtx.GetTaskNode(depName)
@@ -278,10 +274,12 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		outbound = append(outbound, outboundNodeIDs...)
 	}
 	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
+	node = woc.getNodeByName(nodeName)
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
-	return woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+	return nil
 }
 
 // executeDAGTask traverses and executes the upward chain of dependencies of a task
@@ -437,6 +435,9 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 	ancestors := common.GetTaskAncestry(dagCtx, task.Name, dagCtx.tasks)
 	for _, ancestor := range ancestors {
 		ancestorNode := dagCtx.GetTaskNode(ancestor)
+		if ancestorNode == nil {
+			return nil, errors.InternalErrorf("Ancestor task node %s not found", ancestor)
+		}
 		prefix := fmt.Sprintf("tasks.%s", ancestor)
 		if ancestorNode.Type == wfv1.NodeTypeTaskGroup {
 			var ancestorNodes []wfv1.NodeStatus
@@ -445,11 +446,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			tmpl, err := dagCtx.tmplCtx.GetTemplate(ancestorNode)
-			if err != nil {
-				return nil, errors.InternalWrapError(err)
+			tmpl := dagCtx.wf.GetStoredOrLocalTemplate(ancestorNode)
+			if tmpl != nil {
+				return nil, errors.InternalErrorf("Template of ancestor node '%s' not found", ancestorNode.Name)
 			}
-			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
+			err := woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
