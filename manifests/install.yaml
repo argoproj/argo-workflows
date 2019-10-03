@@ -30,12 +30,24 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo
+  name: argo-ui
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -158,6 +170,13 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -189,6 +208,18 @@ rules:
   - get
   - list
   - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-role
+subjects:
+- kind: ServiceAccount
+  name: argo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -258,7 +289,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.4.0-rc1
+        image: argoproj/argoui:latest
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -280,9 +311,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.4.0-rc1
+        - argoproj/argoexec:latest
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.4.0-rc1
+        image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo

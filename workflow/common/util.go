@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/ghodss/yaml"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -24,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -34,13 +34,18 @@ import (
 // user specified volumeMounts in the template, and returns the deepest volumeMount
 // (if any). A return value of nil indicates the path is not under any volumeMount.
 func FindOverlappingVolume(tmpl *wfv1.Template, path string) *apiv1.VolumeMount {
-	if tmpl.Container == nil {
+	var volMounts []apiv1.VolumeMount
+	if tmpl.Container != nil {
+		volMounts = tmpl.Container.VolumeMounts
+	} else if tmpl.Script != nil {
+		volMounts = tmpl.Script.VolumeMounts
+	} else {
 		return nil
 	}
 	var volMnt *apiv1.VolumeMount
 	deepestLen := 0
-	for _, mnt := range tmpl.Container.VolumeMounts {
-		if !strings.HasPrefix(path, mnt.MountPath) {
+	for _, mnt := range volMounts {
+		if path != mnt.MountPath && !strings.HasPrefix(path, mnt.MountPath+"/") {
 			continue
 		}
 		if len(mnt.MountPath) > deepestLen {
@@ -532,15 +537,6 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	newTmpl := referred.DeepCopy()
 
 	newTmpl.Name = tmpl.Name
-
-	emptymap := map[string]string{}
-	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
-	if err != nil {
-		return nil, err
-	}
-	newTmpl.Arguments = wfv1.Arguments{}
-
-	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
 	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
 
 	if len(tmpl.NodeSelector) > 0 {

@@ -79,6 +79,10 @@ data:
     # must be one of: docker, kubelet, k8sapi, pns
     containerRuntimeExecutor: docker
 
+    # Specifies the location of docker.sock on the host for docker executor (default: /var/run/docker.sock)
+    # (available since Argo v2.4)
+    dockerSockPath: /var/someplace/else/docker.sock
+
     # kubelet port when using kubelet executor (default: 10250)
     kubeletPort: 10250
 
@@ -118,3 +122,36 @@ data:
       enabled: true
       path: /telemetry
       port: 8080
+
+    # enable persistence using postgres
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      # save the entire workflow into etcd and DB
+      nodeStatusOffLoad: false
+      postgresql:
+        host: localhost
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        # the database secrets must be in the same namespace of the controller
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        passwordSecret:
+          name: argo-postgres-config
+          key: password
+
+      # Optional config for mysql:
+      # mysql:
+      #   host: localhost
+      #   port: 3306
+      #   database: argo
+      #   tableName: argo_workflows
+      #   userNameSecret:
+      #     name: argo-mysql-config
+      #     key: username
+      #   passwordSecret:
+      #     name: argo-mysql-config
+      #     key: password

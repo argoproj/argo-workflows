@@ -5,3 +5,5 @@ resources:
 - workflow-aggregate-roles.yaml
 - workflow-controller-clusterrole.yaml
 - workflow-controller-clusterrolebinding.yaml
+- workflow-controller-role.yaml
+- workflow-controller-rolebinding.yaml

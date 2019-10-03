@@ -30,12 +30,12 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo-ui
+  name: argo
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: argo
+  name: argo-ui
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -82,6 +82,28 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflowtemplates
+  - workflowtemplates/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -184,7 +206,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.4.0-rc1
+        image: argoproj/argoui:latest
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -206,9 +228,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.4.0-rc1
+        - argoproj/argoexec:latest
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.4.0-rc1
+        image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
