@@ -5,10 +5,10 @@ kind: Kustomization
 images:
 - name: argoproj/argoui
   newName: argoproj/argoui
-  newTag: latest
+  newTag: v2.4.0
 - name: argoproj/workflow-controller
   newName: argoproj/workflow-controller
-  newTag: latest
+  newTag: v2.4.0
 resources:
 - crds
 - workflow-controller
