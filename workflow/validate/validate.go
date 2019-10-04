@@ -879,6 +879,8 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
+		prefix := fmt.Sprintf("tasks.%s", task.Name)
+		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false)
 		resolvedTemplates[task.Name] = resolvedTmpl
 		dupDependencies := make(map[string]bool)
 		for j, depName := range task.Dependencies {
