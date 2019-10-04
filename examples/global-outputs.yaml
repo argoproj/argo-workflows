@@ -23,13 +23,13 @@ spec:
     outputs:
       parameters:
       # export a global parameter. The parameter will be programatically available in the completed
-      # workflow object under: workflow.status.outputs.parameters
+      # workflow object under: workflow.outputs.parameters
       - name: hello-param
         valueFrom:
           path: /tmp/hello_world.txt
         globalName: my-global-param
       # export a global artifact. The artifact will be programatically available in the completed
-      # workflow object under: workflow.status.outputs.artifacts
+      # workflow object under: workflow.outputs.artifacts
       artifacts:
       - name: hello-art
         path: /tmp/hello_world.txt
