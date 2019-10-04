@@ -142,7 +142,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:5cf8a8393124ac3d5632a8c51d08d8ff2aa29b6b328306cb8b7560a7e83cf760"
+  digest = "1:033dc1954ef1a33b1dba9fe5dc4296a4c8bcfbbd0e6f257b45585cc78ad7e3d5"
   name = "github.com/colinmarc/hdfs"
   packages = [
     ".",
@@ -151,7 +151,7 @@
     "rpc",
   ]
   pruneopts = ""
-  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+  revision = "9746310a4d311e21ce43b2a645c5a1e64c5e8efa"
 
 [[projects]]
   digest = "1:0deddd908b6b4b768cfc272c16ee61e7088a60f7fe2f06c547bd3d8e1f8b8e77"
