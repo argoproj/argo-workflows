@@ -58,7 +58,7 @@ required = [
 
 [[constraint]]
   name = "github.com/colinmarc/hdfs"
-  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+  revision = "9746310a4d311e21ce43b2a645c5a1e64c5e8efa"
 
 [[constraint]]
   name = "gopkg.in/jcmturner/gokrb5.v5"
