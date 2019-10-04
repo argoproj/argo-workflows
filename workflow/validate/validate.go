@@ -874,8 +874,6 @@ func (ctx *templateValidationCtx) validateDAG(scope map[string]interface{}, tmpl
 	// Verify dependencies for all tasks can be resolved as well as template names
 	for _, task := range tmpl.DAG.Tasks {
 		resolvedTmpl, err := ctx.validateTemplateHolder(&task, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		prefix := fmt.Sprintf("tasks.%s", task.Name)
-		ctx.addOutputsToScope(resolvedTmpl, prefix, scope, false)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s.tasks.%s %s", tmpl.Name, task.Name, err.Error())
 		}
