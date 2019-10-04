@@ -34,24 +34,26 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		// do not return here so we can still try to kill sidecars & save outputs
 	}
-	err = wfExecutor.KillSidecars()
-	if err != nil {
-		wfExecutor.AddError(err)
-		// do not return here so we can still try save outputs
-	}
+	// Saving logs
 	logArt, err := wfExecutor.SaveLogs()
 	if err != nil {
 		wfExecutor.AddError(err)
-		return err
+		// do not return here so we can still try to kill sidecars
 	}
 	// Saving output parameters
 	err = wfExecutor.SaveParameters()
 	if err != nil {
 		wfExecutor.AddError(err)
-		return err
+		// do not return here so we can still try to kill sidecars
 	}
 	// Saving output artifacts
 	err = wfExecutor.SaveArtifacts()
+	if err != nil {
+		wfExecutor.AddError(err)
+		// do not return here so we can still try to kill sidecars
+	}
+	// Killing sidecar containers
+	err = wfExecutor.KillSidecars()
 	if err != nil {
 		wfExecutor.AddError(err)
 		return err
