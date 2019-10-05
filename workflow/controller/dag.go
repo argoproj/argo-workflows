@@ -446,11 +446,7 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			tmpl := dagCtx.wf.GetStoredOrLocalTemplate(ancestorNode)
-			if tmpl != nil {
-				return nil, errors.InternalErrorf("Template of ancestor node '%s' not found", ancestorNode.Name)
-			}
-			err := woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
+			err := woc.processAggregateNodeOutputs(nil, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
