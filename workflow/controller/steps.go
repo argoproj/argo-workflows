@@ -102,13 +102,18 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 						childNodes = append(childNodes, node)
 					}
 				}
-				tmpl, err := stepsCtx.tmplCtx.GetTemplate(&step)
-				if err != nil {
-					return err
-				}
-				err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
-				if err != nil {
-					return err
+				if len(childNodes) > 0 {
+					// Expanded child nodes should be created from the same template.
+					tmpl := woc.wf.GetStoredTemplate(&childNodes[0])
+					if tmpl == nil {
+						return errors.InternalErrorf("Template of step node '%s' not found", childNode)
+					}
+					err := woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
+					if err != nil {
+						return err
+					}
+				} else {
+					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
 				}
 			} else {
 				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
