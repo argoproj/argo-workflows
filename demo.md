@@ -18,7 +18,7 @@ Also available in Mac Homebrew:
 brew install argoproj/tap/argo
 ```
 
-Also you can use this command to install for Linux 
+Also you can use this command to install for Linux
 
 ```
 curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.3.0/argo-linux-amd64
@@ -90,11 +90,11 @@ helm install stable/minio \
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-kubectl get service argo-artifacts-mini -o wide
+kubectl get service argo-artifacts -o wide
 ```
 On Minikube:
 ```
-minikube service --url argo-artifacts-mini
+minikube service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
