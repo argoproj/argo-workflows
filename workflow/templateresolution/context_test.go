@@ -6,10 +6,10 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func createWorkflowTemplate(wfClientset wfclientset.Interface, yamlStr string) error {
@@ -411,13 +411,10 @@ func TestOnWorkflowTemplate(t *testing.T) {
 	}
 
 	// Get the template base of existing template name.
-	newCtx, err := ctx.OnWorkflowTemplate("another-workflow-template")
+	newCtx, err := ctx.WithLazyWorkflowTemplate("namespace", "another-workflow-template")
 	if err != nil {
 		t.Fatal(err)
 	}
-	wftmpl, ok := newCtx.tmplBase.(*wfv1.WorkflowTemplate)
-	if !assert.True(t, ok) {
-		t.Fatal("tmplBase is not a WorkflowTemplate")
-	}
-	assert.Equal(t, "another-workflow-template", wftmpl.Name)
+	tmpl := newCtx.tmplBase.GetTemplateByName("whalesay")
+	assert.NotNil(t, tmpl)
 }
