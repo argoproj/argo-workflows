@@ -12,11 +12,11 @@ type lazyWorkflowTemplate struct {
 	// wftmplGetter is a proxied WorkflowTemplate getter.
 	wftmplGetter WorkflowTemplateNamespacedGetter
 	// wftmpl is a cache of retrieved WorkflowTemplate.
-	wftmpl       *wfv1.WorkflowTemplate
+	wftmpl *wfv1.WorkflowTemplate
 	// namespace is the namespace of the WorkflowTemplate.
-	namespace    string
+	namespace string
 	// name is the name of the WorkflowTemplate.
-	name         string
+	name string
 }
 
 var _ wfv1.TemplateGetter = &lazyWorkflowTemplate{}
