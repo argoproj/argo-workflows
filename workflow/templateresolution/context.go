@@ -185,7 +185,7 @@ func (ctx *Context) WithTemplateBase(tmplBase wfv1.TemplateGetter) *Context {
 	return NewContext(ctx.wftmplGetter, tmplBase)
 }
 
-// OnWorkflowTemplate creates new context with the wfv1.WorkflowTemplate of the given name.
+// WithLazyWorkflowTemplate creates new context with the wfv1.WorkflowTemplate of the given name with lazy loading.
 func (ctx *Context) WithLazyWorkflowTemplate(namespace, name string) (*Context, error) {
 	return NewContext(ctx.wftmplGetter, NewLazyWorkflowTemplate(ctx.wftmplGetter, namespace, name)), nil
 }
