@@ -89,7 +89,7 @@ script:
   image: alpine:latest
   command: [sh]
   source: |
-    exit 1
+    ls -al
 `
 
 var scriptTemplateWithOptionalInputArtifactNotProvided = `
@@ -103,7 +103,7 @@ script:
   image: alpine:latest
   command: [sh]
   source: |
-    exit 1
+    ls -al
 `
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
@@ -125,7 +125,7 @@ func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 
-	// Ensure that volume mount is not created when artifact is provided
+	// Ensure that volume mount is not created when artifact is not provided
 	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
 	woc = newWoc()
 	mainCtr = tmpl.Script.Container
