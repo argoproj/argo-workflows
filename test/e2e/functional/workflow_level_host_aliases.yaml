@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: workflow_level_host_aliases-
+  generateName: workflow-level-host-aliases-
 spec:
   entrypoint: nslookup
   hostAliases:

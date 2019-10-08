@@ -30,7 +30,7 @@ func ExistsInTar(sourcePath string, tarReader TarReader) bool {
 		if hdr.FileInfo().IsDir() && strings.Contains(sourcePath, strings.Trim(hdr.Name, "/")) {
 			return true
 		}
-		if strings.Contains(sourcePath, hdr.Name) && hdr.Size > 0 {
+		if strings.Contains(sourcePath, hdr.Name) {
 			return true
 		}
 	}
