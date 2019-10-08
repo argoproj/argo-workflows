@@ -76,8 +76,7 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	err := woc.executeScript(tmpl.Name, tmpl, "")
 	assert.NoError(t, err)
 }
-
-var scriptTemplateWithOptionalInputArtifactNotProvided = `
+var scriptTemplateWithOptionalInputArtifactProvided = `
 name: script-with-input-artifact
 inputs:
   artifacts:
@@ -92,15 +91,48 @@ script:
   source: |
     exit 1
 `
+
+var scriptTemplateWithOptionalInputArtifactNotProvided = `
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+script:
+  image: alpine:latest
+  command: [sh]
+  source: |
+    exit 1
+`
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
-	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
+	volumeMount := apiv1.VolumeMount{
+		Name: "input-artifacts",
+		ReadOnly: false,
+		MountPath: "/manifest",
+		SubPath: "manifest",
+		MountPropagation: nil,
+		SubPathExpr: "",
+	}
+
+	// Ensure that volume mount is added when artifact is provided
+	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
 	woc := newWoc()
 	mainCtr := tmpl.Script.Container
 	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
 	pod, err := woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
-	fmt.Println(pod.Spec.Volumes)
 	assert.NoError(t, err)
+	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
+
+	// Ensure that volume mount is not created when artifact is provided
+	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
+	woc = newWoc()
+	mainCtr = tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, err = woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
+	assert.NoError(t, err)
+	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 }
 
 // TestWFLevelServiceAccount verifies the ability to carry forward the service account name
