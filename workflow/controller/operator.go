@@ -349,7 +349,7 @@ func (woc *wfOperationCtx) getResolvedTemplate(node *wfv1.NodeStatus, tmpl wfv1.
 			woc.log.Debugf("Found a resolved template for node %s", node.Name)
 			if node.WorkflowTemplateName != "" {
 				woc.log.Debugf("Switch the template context to %s", node.WorkflowTemplateName)
-				newTmplCtx, err := tmplCtx.OnWorkflowTemplate(node.WorkflowTemplateName)
+				newTmplCtx, err := tmplCtx.WithLazyWorkflowTemplate(woc.wf.Namespace, node.WorkflowTemplateName)
 				if err != nil {
 					return nil, nil, err
 				}
