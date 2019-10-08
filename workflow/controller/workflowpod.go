@@ -142,7 +142,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		// we do not need the wait container for resource templates because
 		// argoexec runs as the main container and will perform the job of
 		// annotating the outputs or errors, making the wait container redundant.
-		fmt.Println("SIMON adding wait container")
 		waitCtr, err := woc.newWaitContainer(tmpl)
 		if err != nil {
 			return nil, err
