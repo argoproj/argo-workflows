@@ -98,7 +98,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				// We add the aggregate outputs of our children to the scope as a JSON list
 				var childNodes []wfv1.NodeStatus
 				for _, node := range woc.wf.Status.Nodes {
-					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") {
+					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") && node.Type != wfv1.NodeTypeSkipped {
 						childNodes = append(childNodes, node)
 					}
 				}
