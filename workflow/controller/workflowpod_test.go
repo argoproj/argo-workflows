@@ -77,6 +77,32 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+var scriptTemplateWithOptionalInputArtifactNotProvided = `
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+    http:
+        url: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+script:
+  image: alpine:latest
+  command: [sh]
+  source: |
+    exit 1
+`
+// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
+	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
+	woc := newWoc()
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, err := woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
+	fmt.Println(pod.Spec.Volumes)
+	assert.NoError(t, err)
+}
+
 // TestWFLevelServiceAccount verifies the ability to carry forward the service account name
 // for the pod from workflow.spec.serviceAccountName.
 func TestWFLevelServiceAccount(t *testing.T) {
