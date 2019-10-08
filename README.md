@@ -112,6 +112,7 @@ Currently **officially** using Argo:
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Commodus Tech](https://www.commodus.tech)
+1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
 
 
 ## Community Blogs and Presentations
