@@ -97,16 +97,14 @@ func TestExistsInTar(t *testing.T) {
 			},
 		},
 		{
-			sourcePath: "/empty.txt", expected: false,
+			sourcePath: "/empty.txt", expected: true,
 			files: []fakeFile{
-				// fails because empty.txt is empty
 				{name: "empty.txt", body: ""},
 			},
 		},
 		{
-			sourcePath: "/tmp/empty.txt", expected: false,
+			sourcePath: "/tmp/empty.txt", expected: true,
 			files: []fakeFile{
-				// fails because empty.txt is empty
 				{name: "empty.txt", body: ""},
 			},
 		},
