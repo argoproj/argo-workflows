@@ -76,6 +76,7 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	err := woc.executeScript(tmpl.Name, tmpl, "")
 	assert.NoError(t, err)
 }
+
 var scriptTemplateWithOptionalInputArtifactProvided = `
 name: script-with-input-artifact
 inputs:
