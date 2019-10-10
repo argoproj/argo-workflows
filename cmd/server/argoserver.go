@@ -15,26 +15,27 @@ import (
 
 	"fmt"
 	"k8s.io/client-go/kubernetes"
-	//"net"
 	"net/http"
 	"time"
 )
 
 type ArgoServer struct {
-	Namespace           string
-	KubeClientset       kubernetes.Clientset
-	wfClientSet			*versioned.Clientset
+	Namespace        string
+	KubeClientset    kubernetes.Clientset
+	wfClientSet      *versioned.Clientset
+	EnableClientAuth bool
 }
 
 type ArgoServerOpts struct {
-	Insecure            bool
-	Namespace           string
-	KubeClientset       *versioned.Clientset
+	Insecure         bool
+	Namespace        string
+	KubeClientset    *versioned.Clientset
+	EnableClientAuth bool
 }
 
-func NewArgoServer(ctx context.Context, opts ArgoServerOpts) *ArgoServer{
+func NewArgoServer(ctx context.Context, opts ArgoServerOpts) *ArgoServer {
 
-	return &ArgoServer{Namespace: opts.Namespace, wfClientSet: opts.KubeClientset }
+	return &ArgoServer{Namespace: opts.Namespace, wfClientSet: opts.KubeClientset, EnableClientAuth: opts.EnableClientAuth}
 }
 
 var backoff = wait.Backoff{
@@ -43,7 +44,8 @@ var backoff = wait.Backoff{
 	Factor:   1.0,
 	Jitter:   0.1,
 }
-func (as *ArgoServer)Run(ctx context.Context, port int){
+
+func (as *ArgoServer) Run(ctx context.Context, port int) {
 	grpcs := as.newGRPCServer()
 	//grpcWebS := grpcweb.WrapServer(grpcs)
 
@@ -52,18 +54,6 @@ func (as *ArgoServer)Run(ctx context.Context, port int){
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcs.Serve(lis)
-
-	//// Start listener
-	//var realErr error
-	//_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
-	//	http.ListenAndServe(":8082", grpcs)
-	//	if realErr != nil {
-	//		log.Warnf("failed listen: %v", realErr)
-	//		return false, nil
-	//	}
-	//	return true, nil
-	//})
-	//errors.CheckError(realErr)
 }
 
 func (as *ArgoServer) newGRPCServer() *grpc.Server {
@@ -77,7 +67,7 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 	}
 
 	grpcS := grpc.NewServer(sOpts...)
-	workflowService := workflow.NewServer(as.Namespace, *as.wfClientSet)
+	workflowService := workflow.NewServer(as.Namespace, *as.wfClientSet, as.EnableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcS, workflowService)
 	return grpcS
 }
@@ -184,5 +174,3 @@ func (a *ArgoServer) translateGrpcCookieHeader(ctx context.Context, w http.Respo
 
 	return nil
 }
-
-

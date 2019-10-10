@@ -1170,7 +1170,7 @@
 
 [[projects]]
   branch = "release-11.0"
-  digest = "1:1bdf01b0bd052a5285908f7eb1da2e8d19c980cb64037ec117619603b5cd31d8"
+  digest = "1:d77899845faaec7b101fdf7c30bcaede6f17dad11818c8ab336fbfb88192e662"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1288,7 +1288,7 @@
     "util/workqueue",
   ]
   pruneopts = ""
-  revision = "640d9f240853b749012f95f869868219deeb7433"
+  revision = "6d55c1b1f1ca8ad83d572bbc3ca55ba5526d9d71"
 
 [[projects]]
   branch = "release-1.14"
@@ -1439,6 +1439,7 @@
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/status",
     "gopkg.in/jcmturner/gokrb5.v5/client",
     "gopkg.in/jcmturner/gokrb5.v5/config",
@@ -1490,6 +1491,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/utils/pointer",
+    "sigs.k8s.io/yaml",
     "upper.io/db.v3/lib/sqlbuilder",
     "upper.io/db.v3/mysql",
     "upper.io/db.v3/postgresql",

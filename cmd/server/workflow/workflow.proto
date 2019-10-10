@@ -4,6 +4,7 @@ option go_package = "github.com/argoproj/argo/cmd/server/workflow";
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
 
 // Workflow Service
@@ -20,28 +21,88 @@ message WorkflowListResponse{
 }
 
 
+//message LogEntry {
+//    string content = 1 [(gogoproto.nullable) = false];
+//    k8s.io.apimachinery.pkg.apis.meta.v1.Time timeStamp = 2 [(gogoproto.nullable) = false];
+//}
+
+
 message WorkflowResponse{
-   github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflows =1;
-}
-message WorkflowQuery{
     string Name = 1;
+    string Status = 2;
+    string Message = 3;
+}
+
+message WorkflowQuery{
+    string name = 1;
     string Namespace = 2;
     int32 StartIdx = 3;
     int32 PageSize = 4;
 }
 
+message WorkflowUpdateQuery{
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 1;
+    bool memoized = 2;
+}
+
 service WorkflowService {
-    rpc Create(github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) returns (WorkflowCreateResponse){
+    rpc Create(github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
         option (google.api.http) = {
-			post: "/api/v1/workflow"
+			post: "/api/v1/workflows"
 			body: "*"
 		};
     }
+
+    rpc Get(WorkflowQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http).get = "/api/v1/workflows/{name}";
+    }
+
     rpc List(WorkflowQuery) returns (WorkflowListResponse){
         option (google.api.http).get = "/api/v1/workflows";
     }
 
-    rpc Get(WorkflowQuery) returns (WorkflowResponse){
-        option (google.api.http).get = "/api/v1/workflow";
+    rpc Delete(WorkflowQuery) returns (WorkflowResponse){
+        option (google.api.http).delete = "/api/v1/workflows/{name}";
     }
+
+    rpc Retry(WorkflowUpdateQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{workflow.metadata.name}"
+			body: "workflow"
+		};
+    }
+
+    rpc Resubmit(WorkflowUpdateQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{workflow.metadata.name}"
+			body: "workflow"
+		};
+    }
+
+    rpc Resume(WorkflowUpdateQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{workflow.metadata.name}"
+			body: "workflow"
+		};
+    }
+
+    rpc Suspend(WorkflowUpdateQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{workflow.metadata.name}"
+			body: "workflow"
+		};
+    }
+
+    rpc Terminate(WorkflowUpdateQuery) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow){
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{workflow.metadata.name}"
+			body: "workflow"
+		};
+    }
+
+//    // PodLogs returns stream of log entries for the specified pod. Pod
+//    rpc PodLogs(WorkflowQuery) returns (stream LogEntry) {
+//        option (google.api.http).get = "/api/v1/workflow/{name}/pods/{podName}/logs";
+//    }
+
 }

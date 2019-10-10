@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -8,7 +9,7 @@ import (
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -62,7 +63,7 @@ func initializeSession() {
 	}
 }
 
-func initKubeClient() *kubernetes.Clientset {
+func InitKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
 	}
@@ -71,7 +72,11 @@ func initKubeClient() *kubernetes.Clientset {
 	if err != nil {
 		log.Fatal(err)
 	}
+	b,err :=json.Marshal(restConfig)
 
+	fmt.Println(err)
+
+	fmt.Println(string(b))
 	// create the clientset
 	clientset, err = kubernetes.NewForConfig(restConfig)
 	if err != nil {
@@ -85,7 +90,7 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
 		return wfClient
 	}
-	initKubeClient()
+	InitKubeClient()
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]

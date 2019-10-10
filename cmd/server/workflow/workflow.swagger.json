@@ -16,20 +16,20 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow": {
+    "/api/v1/workflows": {
       "get": {
-        "operationId": "Get",
+        "operationId": "List",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowResponse"
+              "$ref": "#/definitions/workflowWorkflowListResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "Name",
+            "name": "name",
             "in": "query",
             "required": false,
             "type": "string"
@@ -65,7 +65,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateResponse"
+              "$ref": "#/definitions/v1alpha1Workflow"
             }
           }
         },
@@ -84,22 +84,22 @@
         ]
       }
     },
-    "/api/v1/workflows": {
+    "/api/v1/workflows/{name}": {
       "get": {
-        "operationId": "List",
+        "operationId": "Get",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowListResponse"
+              "$ref": "#/definitions/v1alpha1Workflow"
             }
           }
         },
         "parameters": [
           {
-            "name": "Name",
-            "in": "query",
-            "required": false,
+            "name": "name",
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
@@ -121,6 +121,81 @@
             "required": false,
             "type": "integer",
             "format": "int32"
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      },
+      "delete": {
+        "operationId": "Delete",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "StartIdx",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{workflow.metadata.name}": {
+      "put": {
+        "operationId": "Terminate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "workflow.metadata.name",
+            "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
           }
         ],
         "tags": [
@@ -3665,14 +3740,6 @@
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
     },
-    "workflowWorkflowCreateResponse": {
-      "type": "object",
-      "properties": {
-        "response": {
-          "type": "string"
-        }
-      }
-    },
     "workflowWorkflowListResponse": {
       "type": "object",
       "properties": {
@@ -3687,8 +3754,14 @@
     "workflowWorkflowResponse": {
       "type": "object",
       "properties": {
-        "workflows": {
-          "$ref": "#/definitions/v1alpha1Workflow"
+        "Name": {
+          "type": "string"
+        },
+        "Status": {
+          "type": "string"
+        },
+        "Message": {
+          "type": "string"
         }
       }
     },
