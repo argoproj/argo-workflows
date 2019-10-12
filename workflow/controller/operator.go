@@ -1315,8 +1315,14 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	// Store the template for the later use.
 	if node.TemplateRef != nil {
 		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
-	} else if node.WorkflowTemplateName != "" {
-		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
+	} else if node.TemplateName != "" {
+		if node.WorkflowTemplateName != "" {
+			// Locally resolvable in workflow template level.
+			node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
+		} else if orgTmpl.IsResolvable() {
+			// Locally resolvable in workflow level.
+			node.StoredTemplateID = fmt.Sprintf("/%s", node.TemplateName)
+		}
 	}
 	if node.StoredTemplateID != "" {
 		baseTemplate := executeTmpl.GetBaseTemplate()
