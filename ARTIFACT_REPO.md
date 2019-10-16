@@ -123,7 +123,7 @@ data:
           name: my-minio-cred
           key: secretkey
 ```
-The secrets are retrieve from the namespace you use to run your workflows. Note that you can specify a `keyPrefix`.
+The secrets are retrieved from the namespace you use to run your workflows. Note that you can specify a `keyPrefix`.
 
 # Accessing Non-Default Artifact Repositories
 
