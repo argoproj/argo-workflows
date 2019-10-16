@@ -311,6 +311,8 @@ spec:
       tasks:
       - name: A
         template: echo
+        continueOn:
+          failed: true
         arguments:
           parameters:
           - name: message
