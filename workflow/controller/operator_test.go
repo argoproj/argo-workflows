@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
@@ -1149,9 +1149,11 @@ func TestResolveStatuses(t *testing.T) {
 	wf := unmarshalWF(outputStatuses)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
-	assert.True(t, hasStatusRef("first", &wf.Spec.Templates[0]))
-	assert.False(t, hasStatusRef("print", &wf.Spec.Templates[0]))
-	fmt.Println( &wf.Spec.Templates[0])
+	jsonValue, err := json.Marshal(&wf.Spec.Templates[0])
+	assert.NoError(t, err)
+
+	assert.Contains(t, string(jsonValue), "{{steps.first.status}}")
+	assert.NotContains(t, string(jsonValue), "{{steps.print.status}}")
 }
 
 var resourceTemplate = `
