@@ -302,6 +302,89 @@ func TestStepOutputReference(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+
+var stepStatusReferences = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: step-output-ref-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: docker/whalesay:latest
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /etc/hosts
+  - name: stepref
+    steps:
+    - - name: one
+        template: whalesay
+    - - name: two
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+`
+
+func TestStepStatusReference(t *testing.T) {
+	err := validate(stepStatusReferences)
+	assert.Nil(t, err)
+}
+
+
+var stepStatusReferencesNoFutureReference = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: step-output-ref-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: docker/whalesay:latest
+    outputs:
+      parameters:
+      - name: outparam
+        valueFrom:
+          path: /etc/hosts
+  - name: stepref
+    steps:
+    - - name: one
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.two.status}}"
+    - - name: two
+        template: whalesay
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+`
+
+func TestStepStatusReferenceNoFutureReference(t *testing.T) {
+	err := validate(stepStatusReferencesNoFutureReference)
+	// Can't reference the status of steps that have not run yet
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{steps.two.status}}")
+	}
+}
+
 var stepArtReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

@@ -290,6 +290,45 @@ func TestDAGArtifactResolution(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+var dagStatusReference = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello!"
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+`
+
+func TestDAGStatusReference(t *testing.T) {
+	err := validate(dagStatusReference)
+	assert.Nil(t, err)
+}
+
 var dagNonexistantTarget = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
