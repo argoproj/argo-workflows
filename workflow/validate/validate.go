@@ -551,6 +551,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			}
 			stepNames[step.Name] = true
 			prefix := fmt.Sprintf("steps.%s", step.Name)
+			scope[fmt.Sprintf("%s.status", prefix)] = true
 			err := addItemsToScope(prefix, step.WithItems, step.WithParam, step.WithSequence, scope)
 			if err != nil {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].%s %s", tmpl.Name, i, step.Name, err.Error())
