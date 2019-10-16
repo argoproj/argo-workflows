@@ -307,32 +307,33 @@ var stepStatusReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: step-output-ref-
+  generateName: status-ref-
 spec:
-  entrypoint: whalesay
+  entrypoint: statusref
   templates:
-  - name: whalesay
+  - name: statusref
+    steps:
+    - - name: one
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello, world"
+    - - name: two
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+  - name: say
     inputs:
       parameters:
       - name: message
         value: "value"
     container:
-      image: docker/whalesay:latest
-    outputs:
-      parameters:
-      - name: outparam
-        valueFrom:
-          path: /etc/hosts
-  - name: stepref
-    steps:
-    - - name: one
-        template: whalesay
-    - - name: two
-        template: whalesay
-        arguments:
-          parameters:
-          - name: message
-            value: "{{steps.one.status}}"
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
 `
 
 func TestStepStatusReference(t *testing.T) {
