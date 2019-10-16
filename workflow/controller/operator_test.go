@@ -1102,6 +1102,58 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
 }
 
+var outputStatuses = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: first
+        template: flakey-container
+        continueOn:
+          failed: true
+    - - name: print
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.first.status}}"
+
+
+  - name: flakey-container
+    script:
+      image: busybox
+      command: [sh, -c]
+      args: ["exit 0"]
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+func TestResolveStatuses(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(outputStatuses)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	assert.True(t, hasStatusRef("first", &wf.Spec.Templates[0]))
+	assert.False(t, hasStatusRef("print", &wf.Spec.Templates[0]))
+	fmt.Println( &wf.Spec.Templates[0])
+}
+
 var resourceTemplate = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

@@ -1531,12 +1531,20 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 
 // hasOutputResultRef will check given template output has any reference
 func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
+	return hasRef(name, parentTmpl, "outputs.result")
+}
+
+func hasStatusRef(name string, parentTmpl *wfv1.Template) bool {
+	return hasRef(name, parentTmpl, "status")
+}
+
+func hasRef(name string, parentTmpl *wfv1.Template, refName string) bool {
 
 	var variableRefName string
 	if parentTmpl.DAG != nil {
-		variableRefName = "{{tasks." + name + ".outputs.result}}"
+		variableRefName = "{{tasks." + name + "." + refName + "}}"
 	} else if parentTmpl.Steps != nil {
-		variableRefName = "{{steps." + name + ".outputs.result}}"
+		variableRefName = "{{steps." + name + "." + refName + "}}"
 	}
 
 	jsonValue, err := json.Marshal(parentTmpl)
@@ -1544,6 +1552,7 @@ func hasOutputResultRef(name string, parentTmpl *wfv1.Template) bool {
 		log.Warnf("Unable to marshal the template. %v, %v", parentTmpl, err)
 	}
 
+	fmt.Println(string(jsonValue))
 	return strings.Contains(string(jsonValue), variableRefName)
 }
 
