@@ -326,9 +326,224 @@ spec:
             value: "{{tasks.A.status}}"
 `
 
+var dagStatusNoFutureReferenceSimple = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        continueOn:
+          failed: true
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+`
+
+var dagStatusNoFutureReferenceWhenFutureReferenceHasChild = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        continueOn:
+          failed: true
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+      - name: C
+        dependencies: [B]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+`
+
+var dagStatusPastReferenceChain = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        continueOn:
+          failed: true
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello"
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+      - name: C
+        dependencies: [B]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+      - name: D
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+      - name: E
+        dependencies: [D]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.D.status}}"
+`
+
+var dagStatusOnlyDirectAncestors = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dag-arg-passing-
+spec:
+  entrypoint: dag-arg-passing
+  templates:
+  - name: echo
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:3.7
+      command: [echo, "{{inputs.parameters.message}}"]
+
+  - name: dag-arg-passing
+    dag:
+      tasks:
+      - name: A
+        template: echo
+        continueOn:
+          failed: true
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello"
+      - name: B
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+      - name: C
+        dependencies: [B]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+      - name: D
+        dependencies: [A]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.A.status}}"
+      - name: E
+        dependencies: [D]
+        template: echo
+        arguments:
+          parameters:
+          - name: message
+            value: "{{tasks.B.status}}"
+`
+
 func TestDAGStatusReference(t *testing.T) {
 	err := validate(dagStatusReference)
 	assert.Nil(t, err)
+
+	err = validate(dagStatusNoFutureReferenceSimple)
+	// Can't reference the status of steps that have not run yet
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
+	}
+
+	err = validate(dagStatusNoFutureReferenceWhenFutureReferenceHasChild)
+	// Can't reference the status of steps that have not run yet, even if the referenced steps have children
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
+	}
+
+	err = validate(dagStatusPastReferenceChain)
+	assert.Nil(t, err)
+
+	err = validate(dagStatusOnlyDirectAncestors)
+	// Can't reference steps that are not direct ancestors of node
+	// Here Node E references the status of Node B, even though it is not its descendent
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{tasks.B.status}}")
+	}
 }
 
 var dagNonexistantTarget = `
