@@ -17,6 +17,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
 )
 
@@ -221,6 +222,38 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// Apply the patch string from template
+	if woc.wf.Spec.PodSpecPatch != "" || tmpl.PodSpecPatch != "" {
+
+		if tmpl.PodSpecPatch == "" {
+			tmpl.PodSpecPatch = woc.wf.Spec.PodSpecPatch
+			pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
+			if err != nil {
+				return nil, err
+			}
+		}
+		podSpecPatch := tmpl.PodSpecPatch
+		jsonstr, err := json.Marshal(pod.Spec)
+
+		var spec apiv1.PodSpec
+		fmt.Println(podSpecPatch)
+
+		err = json.Unmarshal([]byte(podSpecPatch), &spec)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Invalid PodSpecPatch String")
+		}
+
+		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(podSpecPatch), apiv1.PodSpec{})
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occured during strategicpatch")
+		}
+		err = json.Unmarshal(modJson, &pod.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+		}
+	}
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

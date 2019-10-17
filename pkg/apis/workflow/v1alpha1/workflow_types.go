@@ -226,6 +226,9 @@ type WorkflowSpec struct {
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
+
+	// PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.
+	PodSpecPatch string `json:"podSpecPatch,omitempty"`
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -351,6 +354,9 @@ type Template struct {
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
+
+	// PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.
+	PodSpecPatch string `json:"podSpecPatch,omitempty"`
 }
 
 var _ TemplateHolder = &Template{}

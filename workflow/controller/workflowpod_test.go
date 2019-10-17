@@ -10,10 +10,10 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
@@ -106,15 +106,16 @@ script:
   source: |
     ls -al
 `
+
 // TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
 func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
 	volumeMount := apiv1.VolumeMount{
-		Name: "input-artifacts",
-		ReadOnly: false,
-		MountPath: "/manifest",
-		SubPath: "manifest",
+		Name:             "input-artifacts",
+		ReadOnly:         false,
+		MountPath:        "/manifest",
+		SubPath:          "manifest",
 		MountPropagation: nil,
-		SubPathExpr: "",
+		SubPathExpr:      "",
 	}
 
 	// Ensure that volume mount is added when artifact is provided
@@ -879,4 +880,30 @@ func TestTmplLevelSecurityContext(t *testing.T) {
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.SecurityContext)
 	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
+}
+
+var helloWorldWfWithPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'	
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestPodSpecPatch(t *testing.T) {
+	wf := unmarshalWF(helloWorldWfWithPatch)
+	woc := newWoc(*wf)
+	mainCtr := woc.wf.Spec.Templates[0].Container
+	//mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
+	fmt.Println(pod.Spec.Containers[1].Resources.Limits.Cpu().AsInt64())
+	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 }
