@@ -289,7 +289,7 @@ spec:
           value: "false"
         - name: BASE_HREF
           value: /
-        image: argoproj/argoui:v2.4.1
+        image: argoproj/argoui:v2.4.2
         name: argo-ui
       serviceAccountName: argo-ui
 ---
@@ -311,9 +311,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:v2.4.1
+        - argoproj/argoexec:v2.4.2
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:v2.4.1
+        image: argoproj/workflow-controller:v2.4.2
         name: workflow-controller
       serviceAccountName: argo
