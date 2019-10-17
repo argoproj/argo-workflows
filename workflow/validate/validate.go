@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/valyala/fasttemplate"
@@ -121,6 +122,10 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 	for k := range wf.ObjectMeta.Labels {
 		ctx.globalParams["workflow.labels."+k] = placeholderValue
+	}
+
+	if wf.Spec.Priority != nil {
+		ctx.globalParams[common.GlobalVarWorkflowPriority] = strconv.Itoa(int(*wf.Spec.Priority))
 	}
 
 	if wf.Spec.Entrypoint == "" {

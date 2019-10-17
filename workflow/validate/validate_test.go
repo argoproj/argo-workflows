@@ -387,6 +387,7 @@ kind: Workflow
 metadata:
   generateName: global-parameters-complex-
 spec:
+  priority: 100
   entrypoint: test-workflow
   arguments:
     parameters:
@@ -871,6 +872,28 @@ func TestExitHandler(t *testing.T) {
 	err = validate(exitHandlerWorkflowStatusOnExit)
 	assert.Nil(t, err)
 }
+
+var workflowWithPriority = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: with-priority-
+spec:
+  entrypoint: whalesay
+  priority: 100
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.priority}}"]
+`
+
+func TestPriorityVariable(t *testing.T) {
+	err := validate(workflowWithPriority)
+	assert.Nil(t, err)
+}
+
 
 var volumeMountArtifactPathCollision = `
 apiVersion: argoproj.io/v1alpha1
