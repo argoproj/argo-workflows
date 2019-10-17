@@ -233,6 +233,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			}
 		}
 		jsonstr, err := json.Marshal(pod.Spec)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
 		var spec apiv1.PodSpec
 		err = json.Unmarshal([]byte(tmpl.PodSpecPatch), &spec)
 
