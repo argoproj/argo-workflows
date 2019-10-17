@@ -1084,6 +1084,7 @@
           "format": "int64"
         },
         "podSpecPatch": {
+          "description": "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
           "type": "string"
         },
         "priority": {
@@ -1493,6 +1494,7 @@
           "type": "string"
         },
         "podSpecPatch": {
+          "description": "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
           "type": "string"
         },
         "priority": {
