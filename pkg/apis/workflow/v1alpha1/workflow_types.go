@@ -76,6 +76,7 @@ type TemplateGetter interface {
 type TemplateHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
+	IsResolvable() bool
 }
 
 // Workflow is the definition of a workflow resource
@@ -367,6 +368,10 @@ func (tmpl *Template) GetTemplateRef() *TemplateRef {
 	return tmpl.TemplateRef
 }
 
+func (tmpl *Template) IsResolvable() bool {
+	return tmpl.Template != "" || tmpl.TemplateRef != nil
+}
+
 // GetBaseTemplate returns a base template content.
 func (tmpl *Template) GetBaseTemplate() *Template {
 	baseTemplate := tmpl.DeepCopy()
@@ -565,6 +570,10 @@ func (step *WorkflowStep) GetTemplateName() string {
 
 func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 	return step.TemplateRef
+}
+
+func (step *WorkflowStep) IsResolvable() bool {
+	return true
 }
 
 // Item expands a single workflow step into multiple parallel steps
@@ -771,16 +780,6 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty"`
-}
-
-var _ TemplateHolder = &NodeStatus{}
-
-func (n *NodeStatus) GetTemplateName() string {
-	return n.TemplateName
-}
-
-func (n *NodeStatus) GetTemplateRef() *TemplateRef {
-	return n.TemplateRef
 }
 
 func (n NodeStatus) String() string {
@@ -1156,6 +1155,10 @@ func (t *DAGTask) GetTemplateName() string {
 
 func (t *DAGTask) GetTemplateRef() *TemplateRef {
 	return t.TemplateRef
+}
+
+func (t *DAGTask) IsResolvable() bool {
+	return true
 }
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
