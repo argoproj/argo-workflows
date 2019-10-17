@@ -232,19 +232,15 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 				return nil, err
 			}
 		}
-		podSpecPatch := tmpl.PodSpecPatch
 		jsonstr, err := json.Marshal(pod.Spec)
-
 		var spec apiv1.PodSpec
-		fmt.Println(podSpecPatch)
-
-		err = json.Unmarshal([]byte(podSpecPatch), &spec)
+		err = json.Unmarshal([]byte(tmpl.PodSpecPatch), &spec)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Invalid PodSpecPatch String")
 		}
 
-		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(podSpecPatch), apiv1.PodSpec{})
+		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
 
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Error occured during strategicpatch")
