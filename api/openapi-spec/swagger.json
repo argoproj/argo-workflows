@@ -752,6 +752,7 @@
       "required": [
         "endpoint",
         "bucket",
+        "bucketSecret",
         "accessKeySecret",
         "secretKeySecret",
         "key"
@@ -764,6 +765,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "bucketSecret": {
+          "description": "BucketSecret is the secret selector to the bucket's name",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",
@@ -796,7 +801,6 @@
       "type": "object",
       "required": [
         "endpoint",
-        "bucket",
         "accessKeySecret",
         "secretKeySecret"
       ],
@@ -808,6 +812,10 @@
         "bucket": {
           "description": "Bucket is the name of the bucket",
           "type": "string"
+        },
+        "bucketSecret": {
+          "description": "bucketSecret is the secret selector to the bucket's name",
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "endpoint": {
           "description": "Endpoint is the hostname of the bucket endpoint",

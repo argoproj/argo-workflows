@@ -1053,6 +1053,7 @@ func createArchiveLocationSecret(tmpl *wfv1.Template, volMap map[string]apiv1.Vo
 	if s3ArtRepo := tmpl.ArchiveLocation.S3; s3ArtRepo != nil {
 		createSecretVal(volMap, &s3ArtRepo.AccessKeySecret, uniqueKeyMap)
 		createSecretVal(volMap, &s3ArtRepo.SecretKeySecret, uniqueKeyMap)
+		createSecretVal(volMap, &s3ArtRepo.BucketSecret, uniqueKeyMap)
 	} else if hdfsArtRepo := tmpl.ArchiveLocation.HDFS; hdfsArtRepo != nil {
 		createSecretVal(volMap, hdfsArtRepo.KrbKeytabSecret, uniqueKeyMap)
 		createSecretVal(volMap, hdfsArtRepo.KrbCCacheSecret, uniqueKeyMap)
@@ -1070,6 +1071,7 @@ func createSecretVolume(volMap map[string]apiv1.Volume, art wfv1.Artifact, keyMa
 	if art.S3 != nil {
 		createSecretVal(volMap, &art.S3.AccessKeySecret, keyMap)
 		createSecretVal(volMap, &art.S3.SecretKeySecret, keyMap)
+		createSecretVal(volMap, &art.S3.BucketSecret, keyMap)
 	} else if art.Git != nil {
 		createSecretVal(volMap, art.Git.UsernameSecret, keyMap)
 		createSecretVal(volMap, art.Git.PasswordSecret, keyMap)

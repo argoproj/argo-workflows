@@ -851,6 +851,9 @@ type S3Bucket struct {
 	// Bucket is the name of the bucket
 	Bucket string `json:"bucket"`
 
+	// Bucket secret reference
+	BucketSecret apiv1.SecretKeySelector `json:"bucketSecret"`
+
 	// Region contains the optional bucket region
 	Region string `json:"region,omitempty"`
 
@@ -884,7 +887,7 @@ func (s *S3Artifact) String() string {
 }
 
 func (s *S3Artifact) HasLocation() bool {
-	return s != nil && s.Bucket != ""
+	return s != nil && (s.Bucket != "" || s.BucketSecret.Key != "")
 }
 
 // GitArtifact is the location of an git artifact
