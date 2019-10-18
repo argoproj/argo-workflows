@@ -232,7 +232,6 @@ type WorkflowSpec struct {
 	PodSpecPatch string `json:"podSpecPatch,omitempty"`
 }
 
-
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
 	return wfs.PodSpecPatch != ""
 }
@@ -390,7 +389,6 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
 }
-
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
