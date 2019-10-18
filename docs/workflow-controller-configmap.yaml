@@ -48,6 +48,11 @@ data:
         #   Minio: my-minio-endpoint.default:9000
         endpoint: s3.amazonaws.com
         bucket: my-bucket
+        # Alternatively to bucket, bucketSecret can be used to pass bucket name via secret and make
+        # bucket name configurable per namespace
+        bucketSecret:  
+          name: my-s3-credentials
+          key: bucketName
         region: us-west-2
         # insecure will disable TLS. Primarily used for minio installs not configured with TLS
         insecure: false

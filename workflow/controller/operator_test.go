@@ -1407,6 +1407,65 @@ func TestArtifactRepositoryRef(t *testing.T) {
 	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
 }
 
+var artifactRepositoryRefBucketSecret = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-repo-config-ref-
+spec:
+  entrypoint: whalesay
+  artifactRepositoryRef:
+    configMap: artifact-repository-bucket-secret
+    key: config
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: message
+        path: /tmp/hello_world.txt
+`
+
+var artifactRepositoryBucketSecretConfigMapData = `
+s3:
+  bucketSecret:
+    name: my-minio-cred
+    key: bucketname
+  keyPrefix: prefix/in/bucket
+  endpoint: my-minio-endpoint.default:9000
+  insecure: true
+  accessKeySecret:
+    name: my-minio-cred
+    key: accesskey
+  secretKeySecret:
+    name: my-minio-cred
+    key: secretkey
+`
+func TestArtifactRepositoryRefBucketSecret(t *testing.T) {
+	wf := unmarshalWF(artifactRepositoryRefBucketSecret)
+	woc := newWoc(*wf)
+	woc.controller.kubeclientset.CoreV1().ConfigMaps(wf.ObjectMeta.Namespace).Create(
+		&apiv1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "artifact-repository-bucket-secret",
+			},
+			Data: map[string]string{
+				"config": artifactRepositoryBucketSecretConfigMapData,
+			},
+		},
+	)
+	woc.operate()
+	assert.Equal(t, woc.artifactRepository.S3.Endpoint, "my-minio-endpoint.default:9000")
+	assert.Equal(t, woc.artifactRepository.S3.BucketSecret.Key, "bucketname")
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+}
+
 var stepScriptTmpl = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
