@@ -1418,6 +1418,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
+					"bucketSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bucket secret reference",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
 					"region": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Region contains the optional bucket region",
@@ -1459,7 +1465,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
+				Required: []string{"endpoint", "bucket", "bucketSecret", "accessKeySecret", "secretKeySecret", "key"},
 			},
 		},
 		Dependencies: []string{
@@ -1486,6 +1492,12 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 							Description: "Bucket is the name of the bucket",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"bucketSecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bucket secret reference",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
 						},
 					},
 					"region": {
@@ -1522,7 +1534,7 @@ func schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref common.ReferenceCallback) co
 						},
 					},
 				},
-				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
+				Required: []string{"endpoint", "bucket", "bucketSecret", "accessKeySecret", "secretKeySecret"},
 			},
 		},
 		Dependencies: []string{
