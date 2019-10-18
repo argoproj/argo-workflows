@@ -1602,6 +1602,10 @@ func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, nod
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
 	}
+	if node.Phase != "" {
+		key := fmt.Sprintf("%s.status", prefix)
+		scope.addParamToScope(key, string(node.Phase))
+	}
 	woc.addOutputsToScope(prefix, node.Outputs, scope)
 }
 
