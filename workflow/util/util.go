@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
@@ -718,9 +718,5 @@ func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) error {
 
 func ValidateJsonStr(jsonStr string, schema interface{}) bool {
 	err := json.Unmarshal([]byte(jsonStr), &schema)
-	if err != nil {
-		return false
-	}
-	return true
-
+	return err == nil
 }
