@@ -37,15 +37,17 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			wfClient := InitWorkflowClient()
-			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-			if err != nil {
-				log.Fatal(err)
+			for _, arg := range args {
+				wf, err := wfClient.Get(arg, metav1.GetOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = util.DecompressWorkflow(wf)
+				if err != nil {
+					log.Fatal(err)
+				}
+				printWorkflow(wf, getArgs.output, getArgs.status)
 			}
-			err = util.DecompressWorkflow(wf)
-			if err != nil {
-				log.Fatal(err)
-			}
-			printWorkflow(wf, getArgs.output, getArgs.status)
 		},
 	}
 
