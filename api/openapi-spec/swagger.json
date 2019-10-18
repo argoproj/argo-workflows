@@ -767,7 +767,7 @@
           "type": "string"
         },
         "bucketSecret": {
-          "description": "BucketSecret is the secret selector to the bucket's name",
+          "description": "Bucket secret reference",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "endpoint": {
@@ -816,7 +816,7 @@
           "type": "string"
         },
         "bucketSecret": {
-          "description": "bucketSecret is the secret selector to the bucket's name",
+          "description": "Bucket secret reference",
           "$ref": "#/definitions/io.k8s.api.core.v1.SecretKeySelector"
         },
         "endpoint": {
