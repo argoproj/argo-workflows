@@ -1,8 +1,8 @@
 package s3
 
 import (
-	"path/filepath"
 	"io/ioutil"
+	"path/filepath"
 	"time"
 
 	log "github.com/sirupsen/logrus"

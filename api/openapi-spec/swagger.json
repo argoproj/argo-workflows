@@ -801,6 +801,8 @@
       "type": "object",
       "required": [
         "endpoint",
+        "bucket",
+        "bucketSecret",
         "accessKeySecret",
         "secretKeySecret"
       ],
