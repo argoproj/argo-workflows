@@ -1084,7 +1084,7 @@
           "format": "int64"
         },
         "podSpecPatch": {
-          "description": "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
         },
         "priority": {
@@ -1494,7 +1494,7 @@
           "type": "string"
         },
         "podSpecPatch": {
-          "description": "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
         },
         "priority": {

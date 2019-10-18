@@ -12,6 +12,7 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
@@ -78,6 +79,10 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 			},
 		},
 	}
+}
+
+func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
+	return woc.wf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
@@ -223,32 +228,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	// Apply the patch string from template
-	if woc.wf.Spec.PodSpecPatch != "" || tmpl.PodSpecPatch != "" {
-
-		if tmpl.PodSpecPatch == "" {
-			tmpl.PodSpecPatch = woc.wf.Spec.PodSpecPatch
-			pod, err = substitutePodParams(pod, woc.globalParams, tmpl)
-			if err != nil {
-				return nil, err
-			}
-		}
+	if woc.hasPodSpecPatch(tmpl) {
 		jsonstr, err := json.Marshal(pod.Spec)
-
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
 		}
 
 		var spec apiv1.PodSpec
-		err = json.Unmarshal([]byte(tmpl.PodSpecPatch), &spec)
 
-		if err != nil {
-			return nil, errors.Wrap(err, "", "Invalid PodSpecPatch String")
+		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
+			return nil, errors.New("", "Invalid PodSpecPatch String")
 		}
 
 		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
 
 		if err != nil {
-			return nil, errors.Wrap(err, "", "Error occured during strategicpatch")
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
 		}
 		err = json.Unmarshal(modJson, &pod.Spec)
 		if err != nil {

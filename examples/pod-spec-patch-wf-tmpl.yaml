@@ -8,6 +8,14 @@ spec:
     parameters:
       - name: cpu-limit
         value: 100m
+      - name: mem-limit
+        value: 100Mi
+  podSpecPatch: |
+    containers:
+      - name: main
+        resources:
+          limits:
+            memory: "{{workflow.parameters.mem-limit}}"
   templates:
   - name: whalesay
     podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "{{workflow.parameters.cpu-limit}}" }}}]}'

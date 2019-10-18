@@ -227,8 +227,14 @@ type WorkflowSpec struct {
 	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
 
-	// PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.
+	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
+	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty"`
+}
+
+
+func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
+	return wfs.PodSpecPatch != ""
 }
 
 // Template is a reusable and composable unit of execution in a workflow
@@ -355,7 +361,8 @@ type Template struct {
 	// +optional
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty"`
 
-	// PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.
+	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
+	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty"`
 }
 
@@ -379,6 +386,11 @@ func (tmpl *Template) GetBaseTemplate() *Template {
 	baseTemplate.Inputs = Inputs{}
 	return baseTemplate
 }
+
+func (tmpl *Template) HasPodSpecPatch() bool {
+	return tmpl.PodSpecPatch != ""
+}
+
 
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {

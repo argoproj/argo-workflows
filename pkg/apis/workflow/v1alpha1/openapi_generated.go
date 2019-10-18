@@ -2130,7 +2130,7 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"podSpecPatch": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
+							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -2827,7 +2827,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowSpec(ref common.ReferenceCallback
 					},
 					"podSpecPatch": {
 						SchemaProps: spec.SchemaProps{
-							Description: "PodSpecPatch holds json patch string to merge on Pod spec. Controller is using StrategicMergePatch to merge it.",
+							Description: "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
 							Type:        []string{"string"},
 							Format:      "",
 						},

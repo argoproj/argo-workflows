@@ -13,6 +13,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -668,4 +670,57 @@ func ReadManifest(manifestPaths ...string) ([][]byte, error) {
 		}
 	}
 	return manifestContents, err
+}
+
+func IsJsonStr(str string) bool {
+	str = strings.TrimSpace(str)
+	return len(str) > 0 && str[0] == '{'
+}
+
+func ConvertYAMLToJSON(str string) (string, error) {
+	if !IsJsonStr(str) {
+		jsonStr, err := yaml.YAMLToJSON([]byte(str))
+		if err != nil {
+			return str, err
+		}
+		return string(jsonStr), nil
+	}
+	return str, nil
+}
+
+// PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
+func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) error {
+	var wfPatch, tmplPatch, mergedPatch string
+	var err error
+
+	if wf.Spec.HasPodSpecPatch() {
+		wfPatch, err = ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
+		if err != nil {
+			return err
+		}
+	}
+	if tmpl.HasPodSpecPatch() {
+		tmplPatch, err = ConvertYAMLToJSON(tmpl.PodSpecPatch)
+		if err != nil {
+			return err
+		}
+		mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
+		if err != nil {
+			return err
+		}
+		mergedPatch = string(mergedByte)
+	} else {
+		mergedPatch = wfPatch
+	}
+	tmpl.PodSpecPatch = mergedPatch
+	return nil
+}
+
+func ValidateJsonStr(jsonStr string, schema interface{}) bool {
+	err := json.Unmarshal([]byte(jsonStr), &schema)
+	if err != nil {
+		return false
+	}
+	return true
+
 }
