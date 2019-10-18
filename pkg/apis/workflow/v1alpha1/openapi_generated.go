@@ -39,6 +39,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.PodGC":                 schema_pkg_apis_workflow_v1alpha1_PodGC(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact":           schema_pkg_apis_workflow_v1alpha1_RawArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ResourceTemplate":      schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryOn":               schema_pkg_apis_workflow_v1alpha1_RetryOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryStrategy":         schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact":            schema_pkg_apis_workflow_v1alpha1_S3Artifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Bucket":              schema_pkg_apis_workflow_v1alpha1_S3Bucket(ref),
@@ -1377,6 +1378,31 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 	}
 }
 
+func schema_pkg_apis_workflow_v1alpha1_RetryOn(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"error": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"failed": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1391,9 +1417,18 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Format:      "int32",
 						},
 					},
+					"RetryOn": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryOn is a list of NodePhase statuses that will be retried",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryOn"),
+						},
+					},
 				},
+				Required: []string{"RetryOn"},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryOn"},
 	}
 }
 

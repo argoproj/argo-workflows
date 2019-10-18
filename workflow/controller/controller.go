@@ -233,18 +233,22 @@ func (wfc *WorkflowController) runWorker() {
 
 // processNextItem is the worker logic for handling workflow updates
 func (wfc *WorkflowController) processNextItem() bool {
+	log.Info("SIMON Processing item")
 	key, quit := wfc.wfQueue.Get()
 	if quit {
+		log.Info("SIMON quit")
 		return false
 	}
 	defer wfc.wfQueue.Done(key)
 
 	obj, exists, err := wfc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
+		log.Info("SIMON get key")
 		log.Errorf("Failed to get workflow '%s' from informer index: %+v", key, err)
 		return true
 	}
 	if !exists {
+		log.Info("SIMON exists")
 		// This happens after a workflow was labeled with completed=true
 		// or was deleted, but the work queue still had an entry for it.
 		return true
@@ -253,17 +257,20 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// workflow manifests that are unable to unmarshal to workflow objects
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
+		log.Info("SIMON cast")
 		log.Warnf("Key '%s' in index is not an unstructured", key)
 		return true
 	}
 
 	if key, ok = wfc.throttler.Next(key); !ok {
+		log.Info("SIMON proc")
 		log.Warnf("Workflow %s processing has been postponed due to max parallelism limit", key)
 		return true
 	}
 
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
+		log.Info("SIMON marsh")
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		woc := newWorkflowOperationCtx(wf, wfc)
 		woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
@@ -273,6 +280,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	}
 
 	if wf.ObjectMeta.Labels[common.LabelKeyCompleted] == "true" {
+		log.Info("SIMON throt")
 		wfc.throttler.Remove(key)
 		// can get here if we already added the completed=true label,
 		// but we are still draining the controller's workflow workqueue
@@ -295,6 +303,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	// Decompress the node if it is compressed
 	err = util.DecompressWorkflow(woc.wf)
 	if err != nil {
+		log.Info("SIMON decomp")
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
 		woc.persistUpdates()

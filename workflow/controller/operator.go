@@ -211,14 +211,20 @@ func (woc *wfOperationCtx) operate() {
 	var workflowMessage string
 	node, err := woc.executeTemplate(woc.wf.ObjectMeta.Name, &wfv1.Template{Template: woc.wf.Spec.Entrypoint}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
 	if err != nil {
+		woc.log.Infof("SIMON error detected exiting")
+
 		// the error are handled in the callee so just log it.
 		woc.log.Errorf("%s error in entry template execution: %+v", woc.wf.Name, err)
 		return
 	}
 	if node == nil || !node.Completed() {
+		woc.log.Infof("SIMON error detected continuing")
+
 		// node can be nil if a workflow created immediately in a parallelism == 0 state
 		return
 	}
+	woc.log.Infof("SIMON error detected doneee")
+
 
 	workflowStatus = node.Phase
 	if !node.Successful() && util.IsWorkflowTerminated(woc.wf) {
@@ -531,30 +537,32 @@ func (woc *wfOperationCtx) requeue() {
 }
 
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, error) {
+	woc.log.Infof("SIMON process node retries")
 	if node.Completed() {
+		woc.log.Infof("SIMON completed")
 		return node, nil
 	}
 	lastChildNode, err := woc.getLastChildNode(node)
 	if err != nil {
+		woc.log.Infof("SIMON child node")
+
 		return nil, fmt.Errorf("Failed to find last child of node " + node.Name)
 	}
 
 	if lastChildNode == nil {
+		woc.log.Infof("SIMON pr second child node es")
 		return node, nil
 	}
 
 	if !lastChildNode.Completed() {
-		// last child node is still running.
-		return node, nil
-	}
-
-	if lastChildNode.Successful() {
+		woc.log.Infof("SIMON still running")
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes[node.ID] = *node
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), nil
 	}
 
 	if !lastChildNode.CanRetry() {
+		woc.log.Infof("SIMON can retry")
 		woc.log.Infof("Node cannot be retried. Marking it failed")
 		return woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message), nil
 	}
@@ -1085,12 +1093,14 @@ func (woc *wfOperationCtx) deletePVCs() error {
 }
 
 func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
+
 	if len(node.Children) <= 0 {
 		return nil, nil
 	}
 
 	lastChildNodeName := node.Children[len(node.Children)-1]
 	lastChildNode, ok := woc.wf.Status.Nodes[lastChildNodeName]
+	woc.log.Infof("SIMON last child node %+v \n\nname %s\n\n %+v", node, lastChildNodeName, lastChildNode)
 	if !ok {
 		return nil, fmt.Errorf("Failed to find node " + lastChildNodeName)
 	}
@@ -1128,6 +1138,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	newTmplCtx, basedTmpl, err := woc.getResolvedTemplate(node, orgTmpl, tmplCtx, args)
+	woc.log.Infof("SIMON based %+v", basedTmpl.RetryStrategy)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
@@ -1138,6 +1149,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	// Inputs has been processed with arguments already, so pass empty arguments.
 	processedTmpl, err := common.ProcessArgs(basedTmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+	woc.log.Infof("SIMON  proc %+v", processedTmpl.RetryStrategy)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
@@ -1151,32 +1163,46 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// This node acts as a parent of all retries that will be done for
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
+	woc.log.Infof("SIMON Considering retry. processedTmpl.IsLeaf(): %t && processedTmpl.RetryStrategy: %+v", processedTmpl.IsLeaf(), processedTmpl.RetryStrategy)
 	retryNodeName := ""
+	retryOnError := true
 	if processedTmpl.IsLeaf() && processedTmpl.RetryStrategy != nil {
+		woc.log.Infof("SIMON %+v", processedTmpl.RetryStrategy)
+		if processedTmpl.RetryStrategy.RetryOn != nil {
+            woc.log.Infof("SIMON setting to: %t", processedTmpl.RetryStrategy.RetryOn.Error )
+			retryOnError = processedTmpl.RetryStrategy.RetryOn.Error
+		}
+		woc.log.Infof("SIMON Starting retry")
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
+			woc.log.Infof("SIMON paretn node")
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
 		processedRetryParentNode, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
+			woc.log.Infof("SIMON error processed")
 			woc.log.Errorf("Error: %+v", err)
 			return woc.markNodeError(retryNodeName, err), err
 		}
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
 		if retryParentNode.Completed() {
+			woc.log.Infof("SIMON completed")
 			woc.log.Errorf("Error: %+v", err)
 			return retryParentNode, nil
 		}
 		lastChildNode, err := woc.getLastChildNode(retryParentNode)
 		if err != nil {
+			woc.log.Infof("SIMON error last child node")
 			woc.log.Errorf("Error: %+v", err)
 			return woc.markNodeError(retryNodeName, err), err
 		}
 		if lastChildNode != nil {
+			woc.log.Infof("SIMON first")
 			if !lastChildNode.Completed() {
+				woc.log.Infof("SIMON  error completed 2")
 				// Last child node is still running.
 				return retryParentNode, nil
 			}
@@ -1184,11 +1210,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			nodeName = lastChildNode.Name
 			node = lastChildNode
 		} else {
+			woc.log.Infof("SIMON second")
 			// This is the first try.
 			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 			node = nil
 		}
 	}
+	woc.log.Infof("SIMON continuing on")
 
 	// Initialize node based on the template type.
 	if node == nil {
@@ -1212,6 +1240,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
 		err = woc.executeContainer(node.Name, processedTmpl, boundaryID)
+		//err = errors.InternalError("This is an error")
 	case wfv1.TemplateTypeSteps:
 		err = woc.executeSteps(node.Name, newTmplCtx, processedTmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
@@ -1226,12 +1255,18 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 	}
 	if err != nil {
-		return woc.markNodeError(node.Name, err), err
+		woc.log.Infof("SIMON error detected")
+		node = woc.markNodeError(node.Name, err)
+		if !retryOnError {
+			woc.log.Infof("SIMON punitive error detected")
+			return node, err
+		}
 	}
 	node = woc.getNodeByName(node.Name)
 
 	// Swap the node back to retry node and add worker node as child.
 	if retryNodeName != "" {
+		woc.log.Infof("SIMON in retries")
 		woc.addChildNode(retryNodeName, node.Name)
 		node = woc.getNodeByName(retryNodeName)
 	}
