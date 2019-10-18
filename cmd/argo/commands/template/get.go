@@ -27,11 +27,13 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			wftmplClient := InitWorkflowTemplateClient()
-			wftmpl, err := wftmplClient.Get(args[0], metav1.GetOptions{})
-			if err != nil {
-				log.Fatal(err)
+			for _, arg := range args {
+				wftmpl, err := wftmplClient.Get(arg, metav1.GetOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				printWorkflowTemplate(wftmpl, output)
 			}
-			printWorkflowTemplate(wftmpl, output)
 		},
 	}
 
