@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test"
@@ -1100,6 +1100,60 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.NotNil(t, parameterValue)
 	assert.NotEmpty(t, *parameterValue)
 	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
+}
+
+var outputStatuses = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: first
+        template: flakey-container
+        continueOn:
+          failed: true
+    - - name: print
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.first.status}}"
+
+
+  - name: flakey-container
+    script:
+      image: busybox
+      command: [sh, -c]
+      args: ["exit 0"]
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]
+`
+
+func TestResolveStatuses(t *testing.T) {
+
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should create a pod.
+	wf := unmarshalWF(outputStatuses)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	jsonValue, err := json.Marshal(&wf.Spec.Templates[0])
+	assert.NoError(t, err)
+
+	assert.Contains(t, string(jsonValue), "{{steps.first.status}}")
+	assert.NotContains(t, string(jsonValue), "{{steps.print.status}}")
 }
 
 var resourceTemplate = `

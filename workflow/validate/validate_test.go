@@ -302,6 +302,87 @@ func TestStepOutputReference(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+
+var stepStatusReferences = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: status-ref-
+spec:
+  entrypoint: statusref
+  templates:
+  - name: statusref
+    steps:
+    - - name: one
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello, world"
+    - - name: two
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+  - name: say
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+func TestStepStatusReference(t *testing.T) {
+	err := validate(stepStatusReferences)
+	assert.Nil(t, err)
+}
+
+
+var stepStatusReferencesNoFutureReference = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: status-ref-
+spec:
+  entrypoint: statusref
+  templates:
+  - name: statusref
+    steps:
+    - - name: one
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.two.status}}"
+    - - name: two
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+  - name: say
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+func TestStepStatusReferenceNoFutureReference(t *testing.T) {
+	err := validate(stepStatusReferencesNoFutureReference)
+	// Can't reference the status of steps that have not run yet
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{steps.two.status}}")
+	}
+}
+
 var stepArtReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
