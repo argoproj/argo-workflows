@@ -1161,18 +1161,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		processedRetryParentNode, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
-			woc.log.Errorf("Error: %+v", err)
 			return woc.markNodeError(retryNodeName, err), err
 		}
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
 		if retryParentNode.Completed() {
-			woc.log.Errorf("Error: %+v", err)
 			return retryParentNode, nil
 		}
 		lastChildNode, err := woc.getLastChildNode(retryParentNode)
 		if err != nil {
-			woc.log.Errorf("Error: %+v", err)
 			return woc.markNodeError(retryNodeName, err), err
 		}
 		if lastChildNode != nil {
@@ -1429,6 +1426,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.Errorf("Mark error node %s: %+v", nodeName, err)
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
