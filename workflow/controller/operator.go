@@ -1132,15 +1132,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
-
-	if woc.wf.Spec.HasPodSpecPatch() {
-		err = util.PodSpecPatchMerge(woc.wf, basedTmpl)
-		fmt.Println(basedTmpl.PodSpecPatch)
-		if err != nil {
-			return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
-		}
-	}
-
 	localParams := make(map[string]string)
 	if basedTmpl.IsPodType() {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)

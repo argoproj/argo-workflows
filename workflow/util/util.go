@@ -672,13 +672,13 @@ func ReadManifest(manifestPaths ...string) ([][]byte, error) {
 	return manifestContents, err
 }
 
-func IsJsonStr(str string) bool {
+func IsJSONStr(str string) bool {
 	str = strings.TrimSpace(str)
 	return len(str) > 0 && str[0] == '{'
 }
 
 func ConvertYAMLToJSON(str string) (string, error) {
-	if !IsJsonStr(str) {
+	if !IsJSONStr(str) {
 		jsonStr, err := yaml.YAMLToJSON([]byte(str))
 		if err != nil {
 			return str, err
@@ -689,31 +689,35 @@ func ConvertYAMLToJSON(str string) (string, error) {
 }
 
 // PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
-func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) error {
+func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
 	var wfPatch, tmplPatch, mergedPatch string
 	var err error
 
 	if wf.Spec.HasPodSpecPatch() {
 		wfPatch, err = ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	if tmpl.HasPodSpecPatch() {
 		tmplPatch, err = ConvertYAMLToJSON(tmpl.PodSpecPatch)
 		if err != nil {
-			return err
+			return "", err
 		}
-		mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
-		if err != nil {
-			return err
+
+		if wfPatch != "" {
+			mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
+			if err != nil {
+				return "", err
+			}
+			mergedPatch = string(mergedByte)
+		} else {
+			mergedPatch = tmplPatch
 		}
-		mergedPatch = string(mergedByte)
 	} else {
 		mergedPatch = wfPatch
 	}
-	tmpl.PodSpecPatch = mergedPatch
-	return nil
+	return mergedPatch, nil
 }
 
 func ValidateJsonStr(jsonStr string, schema interface{}) bool {

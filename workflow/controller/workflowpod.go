@@ -234,6 +234,22 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
 		}
 
+		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
+		// Final substitution for workflow level PodSpecPatch
+		localParams := make(map[string]string)
+		if tmpl.IsPodType() {
+			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+		}
+		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
+		}
+
 		var spec apiv1.PodSpec
 
 		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
