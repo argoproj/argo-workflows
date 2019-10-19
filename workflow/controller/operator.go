@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -555,8 +556,33 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, nil
 	}
 
+	retryOnFailed := true
+	retryOnError := false
+	if retryStrategy.RetryOn != nil {
+		if retryStrategy.RetryOn.Failed != nil {
+			woc.log.Infof("SIMON overriding failed with %t", *retryStrategy.RetryOn.Failed)
+			retryOnFailed = *retryStrategy.RetryOn.Failed
+		}
+		if retryStrategy.RetryOn.Error != nil {
+			woc.log.Infof("SIMON overriding error with %t", *retryStrategy.RetryOn.Error)
+			retryOnError = *retryStrategy.RetryOn.Error
+		}
+	}
+	woc.log.Infof("SIMON retry on failed %t retry on error %t", retryOnFailed, retryOnError)
+
+	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
+		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
+	}
+
 	if !lastChildNode.Completed() {
+		// last child node is still running.
 		woc.log.Infof("SIMON still running")
+		return node, nil
+	}
+
+	if lastChildNode.Successful() {
+		woc.log.Infof("SIMON successful")
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes[node.ID] = *node
 		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), nil
@@ -565,12 +591,12 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	if !lastChildNode.CanRetry() {
 		woc.log.Infof("SIMON can retry")
 		woc.log.Infof("Node cannot be retried. Marking it failed")
-		return woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
 	}
 
 	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
 		woc.log.Infoln("No more retries left. Failing...")
-		return woc.markNodePhase(node.Name, wfv1.NodeFailed, "No more retries left"), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), nil
 	}
 
 	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
@@ -1166,12 +1192,12 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// of the retries succeed. Otherwise, it is "Failed".
 	woc.log.Infof("SIMON Considering retry. processedTmpl.IsLeaf(): %t && processedTmpl.RetryStrategy: %+v", processedTmpl.IsLeaf(), processedTmpl.RetryStrategy)
 	retryNodeName := ""
-	retryOnError := true
+	retryNodeOnError := false
 	if processedTmpl.IsLeaf() && processedTmpl.RetryStrategy != nil {
 		woc.log.Infof("SIMON %+v", processedTmpl.RetryStrategy)
-		if processedTmpl.RetryStrategy.RetryOn != nil {
+		if processedTmpl.RetryStrategy.RetryOn != nil && processedTmpl.RetryStrategy.RetryOn.Error != nil {
             woc.log.Infof("SIMON setting to: %t", processedTmpl.RetryStrategy.RetryOn.Error )
-			retryOnError = processedTmpl.RetryStrategy.RetryOn.Error
+			retryNodeOnError = *processedTmpl.RetryStrategy.RetryOn.Error
 		}
 		woc.log.Infof("SIMON Starting retry")
 		retryNodeName = nodeName
@@ -1204,9 +1230,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			// Last child node is still running.
 			return retryParentNode, nil
 		}
-		// This is the case the child node has been done,
-		//  but the retry node state is still running.
-		//  Create another child node.
+
+		// Create a new child node
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 		node = nil
 	}
@@ -1233,8 +1258,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	switch processedTmpl.GetType() {
 	case wfv1.TemplateTypeContainer:
-		err = woc.executeContainer(node.Name, processedTmpl, boundaryID)
-		//err = errors.InternalError("This is an error")
+		if rand1() {
+			err = woc.executeContainer(node.Name, processedTmpl, boundaryID)
+		} else {
+			err = errors.InternalError("This is an error")
+		}
 	case wfv1.TemplateTypeSteps:
 		err = woc.executeSteps(node.Name, newTmplCtx, processedTmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
@@ -1251,7 +1279,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if err != nil {
 		woc.log.Infof("SIMON error detected")
 		node = woc.markNodeError(node.Name, err)
-		if !retryOnError {
+		if !retryNodeOnError {
 			woc.log.Infof("SIMON punitive error detected")
 			return node, err
 		}
@@ -1267,7 +1295,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	return node, nil
 }
-
+func rand1() bool {
+	return rand.Float32() < 0.5
+}
 // markWorkflowPhase is a convenience method to set the phase of the workflow with optional message
 // optionally marks the workflow completed, which sets the finishedAt timestamp and completed label
 func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted bool, message ...string) {

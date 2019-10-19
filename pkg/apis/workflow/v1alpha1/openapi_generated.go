@@ -1382,7 +1382,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryOn(ref common.ReferenceCallback) com
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both.",
+				Description: "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both. Type is *bool instead of bool because we want to differentiate between not set (nil) vs set to false",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"error": {
@@ -1417,14 +1417,13 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Format:      "int32",
 						},
 					},
-					"RetryOn": {
+					"retryOn": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RetryOn is a list of NodePhase statuses that will be retried",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RetryOn"),
 						},
 					},
 				},
-				Required: []string{"RetryOn"},
 			},
 		},
 		Dependencies: []string{

@@ -736,7 +736,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.RetryOn": {
-      "description": "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both.",
+      "description": "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both. Type is *bool instead of bool because we want to differentiate between not set (nil) vs set to false",
       "type": "object",
       "properties": {
         "error": {
@@ -750,18 +750,15 @@
     "io.argoproj.workflow.v1alpha1.RetryStrategy": {
       "description": "RetryStrategy provides controls on how to retry a workflow step",
       "type": "object",
-      "required": [
-        "RetryOn"
-      ],
       "properties": {
-        "RetryOn": {
-          "description": "RetryOn is a list of NodePhase statuses that will be retried",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryOn"
-        },
         "limit": {
           "description": "Limit is the maximum number of attempts when retrying a container",
           "type": "integer",
           "format": "int32"
+        },
+        "retryOn": {
+          "description": "RetryOn is a list of NodePhase statuses that will be retried",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.RetryOn"
         }
       }
     },
