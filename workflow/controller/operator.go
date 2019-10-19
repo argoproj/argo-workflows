@@ -530,6 +530,7 @@ func (woc *wfOperationCtx) requeue() {
 	woc.controller.wfQueue.Add(key)
 }
 
+// processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, error) {
 	if node.Completed() {
 		return node, nil
@@ -1172,19 +1173,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
 		}
-		if lastChildNode != nil {
-			if !lastChildNode.Completed() {
-				// Last child node is still running.
-				return retryParentNode, nil
-			}
-			// All work is done in a child
-			nodeName = lastChildNode.Name
-			node = lastChildNode
-		} else {
-			// This is the first try.
-			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
-			node = nil
+		if lastChildNode != nil && !lastChildNode.Completed() {
+			// Last child node is still running.
+			return retryParentNode, nil
 		}
+		// This is the case the child node has been done,
+		//  but the retry node state is still running.
+		//  Create another child node.
+		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
+		node = nil
 	}
 
 	// Initialize node based on the template type.
