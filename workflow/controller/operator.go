@@ -536,6 +536,7 @@ func (woc *wfOperationCtx) requeue() {
 	woc.controller.wfQueue.Add(key)
 }
 
+// processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, error) {
 	woc.log.Infof("SIMON process node retries")
 	if node.Completed() {
@@ -1195,26 +1196,19 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		lastChildNode, err := woc.getLastChildNode(retryParentNode)
 		if err != nil {
-			woc.log.Infof("SIMON error last child node")
-			woc.log.Errorf("Error: %+v", err)
+			woc.log.Infof("SIMON last child node")
 			return woc.markNodeError(retryNodeName, err), err
 		}
-		if lastChildNode != nil {
-			woc.log.Infof("SIMON first")
-			if !lastChildNode.Completed() {
-				woc.log.Infof("SIMON  error completed 2")
-				// Last child node is still running.
-				return retryParentNode, nil
-			}
-			// All work is done in a child
-			nodeName = lastChildNode.Name
-			node = lastChildNode
-		} else {
-			woc.log.Infof("SIMON second")
-			// This is the first try.
-			nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
-			node = nil
+		if lastChildNode != nil && !lastChildNode.Completed() {
+			woc.log.Infof("SIMON still running")
+			// Last child node is still running.
+			return retryParentNode, nil
 		}
+		// This is the case the child node has been done,
+		//  but the retry node state is still running.
+		//  Create another child node.
+		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
+		node = nil
 	}
 	woc.log.Infof("SIMON continuing on")
 
@@ -1464,6 +1458,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.Errorf("Mark error node %s: %+v", nodeName, err)
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
