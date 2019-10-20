@@ -736,7 +736,7 @@
       }
     },
     "io.argoproj.workflow.v1alpha1.RetryOn": {
-      "description": "RetryOn defines if a workflow should retry even if a task or step fails/errors. It can be specified if the workflow should retry when the pod errors, fails or both. Type is *bool instead of bool because we want to differentiate between not set (nil) vs set to false",
+      "description": "RetryOn defines if a workflow should retry even if a task or step fails or errors. It can be specified if the workflow should retry when the pod errors, fails or both. By default a workflow will be retried only if failed.",
       "type": "object",
       "properties": {
         "error": {
