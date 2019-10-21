@@ -1102,6 +1102,46 @@ func TestResolvePlaceholdersInOutputValues(t *testing.T) {
 	assert.Equal(t, "output-value-placeholders-wf", *parameterValue)
 }
 
+var podNameInRetries = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: output-value-placeholders-wf
+spec:
+  entrypoint: tell-pod-name
+  templates:
+  - name: tell-pod-name
+    retryStrategy:
+      limit: 2
+    outputs:
+      parameters:
+      - name: pod-name
+        value: "{{pod.name}}"
+    container:
+      image: busybox
+`
+
+func TestResolvePodNameInRetries(t *testing.T) {
+	wf := unmarshalWF(podNameInRetries)
+	woc := newWoc(*wf)
+	woc.artifactRepository.S3 = new(config.S3ArtifactRepository)
+	woc.operate()
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.True(t, len(pods.Items) > 0, "pod was not created successfully")
+
+	templateString := pods.Items[0].ObjectMeta.Annotations["workflows.argoproj.io/template"]
+	var template wfv1.Template
+	err = json.Unmarshal([]byte(templateString), &template)
+	assert.Nil(t, err)
+	parameterValue := template.Outputs.Parameters[0].Value
+	fmt.Println(parameterValue)
+	assert.NotNil(t, parameterValue)
+	assert.NotEmpty(t, *parameterValue)
+	assert.Equal(t, "output-value-placeholders-wf-3033990984", *parameterValue)
+}
+
 var outputStatuses = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

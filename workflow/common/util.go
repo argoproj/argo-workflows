@@ -296,11 +296,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 	newTmpl.Inputs.Artifacts = newInputArtifacts
 
-	return substituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
+// SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
+func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
