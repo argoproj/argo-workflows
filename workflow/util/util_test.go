@@ -3,16 +3,15 @@ package util
 import (
 	"encoding/json"
 	"io/ioutil"
-	v1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/ghodss/yaml"
-
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakeClientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -171,7 +170,7 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
-var ymal = `
+var yamlStr = `
 containers:
   - name: main
 	resources:
@@ -188,7 +187,7 @@ func TestPodSpecPatchMerge(t *testing.T) {
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 
-	tmpl = wfv1.Template{PodSpecPatch: ymal}
+	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
 	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
 	merged, _ = PodSpecPatchMerge(&wf, &tmpl)
 	json.Unmarshal([]byte(merged), &spec)
