@@ -1182,13 +1182,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		}
 		processedRetryParentNode, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
-			woc.log.Errorf("Error: %+v", err)
 			return woc.markNodeError(retryNodeName, err), err
 		}
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
 		if retryParentNode.Completed() {
-			woc.log.Errorf("Error: %+v", err)
 			return retryParentNode, nil
 		}
 		lastChildNode, err := woc.getLastChildNode(retryParentNode)
