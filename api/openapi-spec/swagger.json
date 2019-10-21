@@ -1099,6 +1099,10 @@
           "type": "integer",
           "format": "int64"
         },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
+          "type": "string"
+        },
         "priority": {
           "description": "Priority to apply to workflow pods.",
           "type": "integer",
@@ -1503,6 +1507,10 @@
         },
         "podPriorityClassName": {
           "description": "PriorityClassName to apply to workflow pods.",
+          "type": "string"
+        },
+        "podSpecPatch": {
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of container fields which are not strings (e.g. resource limits).",
           "type": "string"
         },
         "priority": {
