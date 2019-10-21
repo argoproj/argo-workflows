@@ -914,7 +914,7 @@ spec:
       args: ["hello world"]
 `
 
-var helloWorldWfWithWFYMALPatch = `
+var helloWorldWfWithWFYAMLPatch = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -949,7 +949,7 @@ func TestPodSpecPatch(t *testing.T) {
 	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
 	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
 
-	wf = unmarshalWF(helloWorldWfWithWFYMALPatch)
+	wf = unmarshalWF(helloWorldWfWithWFYAMLPatch)
 	woc = newWoc(*wf)
 	mainCtr = woc.wf.Spec.Templates[0].Container
 	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
