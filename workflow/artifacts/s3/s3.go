@@ -42,14 +42,15 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			var err error
-			var bucket []byte
+			var bucket string
 			if inputArtifact.S3.BucketSecret.Key != "" {
-				bucket, err = ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, inputArtifact.S3.BucketSecret.Name, inputArtifact.S3.BucketSecret.Key))
+				b, err := ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, inputArtifact.S3.BucketSecret.Name, inputArtifact.S3.BucketSecret.Key))
+				bucket = string(b)
 				if err != nil {
 					return false, err
 				}
 			} else {
-				bucket = []byte(inputArtifact.S3.Bucket)
+				bucket = inputArtifact.S3.Bucket
 			}
 			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client()
@@ -57,7 +58,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 				log.Warnf("Failed to create new S3 client: %v", err)
 				return false, nil
 			}
-			origErr := s3cli.GetFile(string(bucket), inputArtifact.S3.Key, path)
+			origErr := s3cli.GetFile(bucket, inputArtifact.S3.Key, path)
 			if origErr == nil {
 				return true, nil
 			}
@@ -66,9 +67,9 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 				return false, nil
 			}
 			// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
-			isDir, err := s3cli.IsDirectory(string(bucket), inputArtifact.S3.Key)
+			isDir, err := s3cli.IsDirectory(bucket, inputArtifact.S3.Key)
 			if err != nil {
-				log.Warnf("Failed to test if %s is a directory: %v", string(bucket), err)
+				log.Warnf("Failed to test if %s is a directory: %v", bucket, err)
 				return false, nil
 			}
 			if !isDir {
@@ -76,7 +77,7 @@ func (s3Driver *S3ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string
 				return false, origErr
 			}
 
-			if err = s3cli.GetDirectory(string(bucket), inputArtifact.S3.Key, path); err != nil {
+			if err = s3cli.GetDirectory(bucket, inputArtifact.S3.Key, path); err != nil {
 				log.Warnf("Failed get directory: %v", err)
 				return false, nil
 			}
@@ -91,14 +92,15 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
 			var err error
-			var bucket []byte
+			var bucket string
 			if outputArtifact.S3.BucketSecret.Key != "" {
-				bucket, err = ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, outputArtifact.S3.BucketSecret.Name, outputArtifact.S3.BucketSecret.Key))
+				b, err := ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, outputArtifact.S3.BucketSecret.Name, outputArtifact.S3.BucketSecret.Key))
+				bucket = string(b)
 				if err != nil {
 					return false, err
 				}
 			} else {
-				bucket = []byte(outputArtifact.S3.Bucket)
+				bucket = outputArtifact.S3.Bucket
 			}
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client()
@@ -112,12 +114,12 @@ func (s3Driver *S3ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifac
 				return false, nil
 			}
 			if isDir {
-				if err = s3cli.PutDirectory(string(bucket), outputArtifact.S3.Key, path); err != nil {
+				if err = s3cli.PutDirectory(bucket, outputArtifact.S3.Key, path); err != nil {
 					log.Warnf("Failed to put directory: %v", err)
 					return false, nil
 				}
 			} else {
-				if err = s3cli.PutFile(string(bucket), outputArtifact.S3.Key, path); err != nil {
+				if err = s3cli.PutFile(bucket, outputArtifact.S3.Key, path); err != nil {
 					log.Warnf("Failed to put file: %v", err)
 					return false, nil
 				}
