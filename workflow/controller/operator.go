@@ -1183,12 +1183,15 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		//  but the retry node state is still running.
 		//  Create another child node.
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
-		// Change the `pod.name` variable to the new retry node name
-		processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
-		if err != nil {
-			return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
-		}
 		node = nil
+
+		// Change the `pod.name` variable to the new retry node name
+		if processedTmpl.IsPodType() {
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
+			if err != nil {
+				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+			}
+		}
 	}
 
 	// Initialize node based on the template type.
