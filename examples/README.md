@@ -1063,7 +1063,8 @@ spec:
     daemon: true                        # start influxdb as a daemon
     container:
       image: influxdb:1.2
-      restartPolicy: Always             # restart container if it fails
+      retryStrategy:
+        limit: 10                       # retry container if it fails
       readinessProbe:                   # wait for readinessProbe to succeed
         httpGet:
           path: /ping
