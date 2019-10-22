@@ -201,11 +201,7 @@ func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
 	var retryLimit int32
 	retryLimit = 2
 	retries.Limit = &retryLimit
-	retryOnError := true
-	retries.RetryOn = &wfv1.RetryOn{
-		Error:  &retryOnError,	// true
-		Failed: nil,			// default value is true
-	}
+	retries.RetryPolicy = wfv1.RetryPolicyAlways
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)
@@ -277,11 +273,7 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	var retryLimit int32
 	retryLimit = 2
 	retries.Limit = &retryLimit
-	retryOnError := false
-	retries.RetryOn = &wfv1.RetryOn{
-		Error:  &retryOnError,	// false
-		Failed: nil,			// default value is true
-	}
+	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
 	woc.wf.Status.Nodes[nodeID] = *node
 
 	assert.Equal(t, node.Phase, wfv1.NodeRunning)

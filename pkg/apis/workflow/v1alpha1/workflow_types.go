@@ -717,23 +717,22 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty"`
 }
 
+type RetryPolicy string
+
+const (
+	RetryPolicyAlways    RetryPolicy = "Always"
+	RetryPolicyOnFailure RetryPolicy = "OnFailure"
+	RetryPolicyOnError   RetryPolicy = "OnError"
+	RetryPolicyNever     RetryPolicy = "Never"
+)
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty"`
 
 	// RetryOn is a list of NodePhase statuses that will be retried
-	RetryOn *RetryOn `json:"retryOn,omitempty"`
-}
-
-// RetryOn defines if a workflow should retry even if a task or step fails or errors.
-// It can be specified if the workflow should retry when the pod errors, fails or both.
-// By default a workflow will be retried only if failed.
-type RetryOn struct {
-	// +optional
-	Error *bool `json:"error,omitempty"`
-	// +optional
-	Failed *bool `json:"failed,omitempty"`
+	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow

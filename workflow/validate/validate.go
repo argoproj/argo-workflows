@@ -301,6 +301,16 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		return nil, err
 	}
 
+	// Validate retryStrategy
+	if resolvedTmpl.RetryStrategy != nil {
+		switch resolvedTmpl.RetryStrategy.RetryPolicy {
+		case wfv1.RetryPolicyAlways, wfv1.RetryPolicyOnError, wfv1.RetryPolicyOnFailure, wfv1.RetryPolicyNever, "":
+			// Passes validation
+		default:
+			return nil, fmt.Errorf("%s is not a valid RetryPolicy", resolvedTmpl.RetryStrategy.RetryPolicy)
+		}
+	}
+
 	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, extraScope)
 }
 

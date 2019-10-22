@@ -544,15 +544,23 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, nil
 	}
 
-	retryOnFailed := true
-	retryOnError := false
-	if retryStrategy.RetryOn != nil {
-		if retryStrategy.RetryOn.Failed != nil {
-			retryOnFailed = *retryStrategy.RetryOn.Failed
-		}
-		if retryStrategy.RetryOn.Error != nil {
-			retryOnError = *retryStrategy.RetryOn.Error
-		}
+	var retryOnFailed bool
+	var retryOnError bool
+	switch retryStrategy.RetryPolicy {
+	case wfv1.RetryPolicyAlways:
+		retryOnFailed = true
+		retryOnError = true
+	case wfv1.RetryPolicyNever:
+		retryOnFailed = false
+		retryOnError = false
+	case wfv1.RetryPolicyOnError:
+		retryOnFailed = false
+		retryOnError = true
+	case wfv1.RetryPolicyOnFailure, "":
+		retryOnFailed = true
+		retryOnError = false
+	default:
+		return nil, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
 	}
 
 	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
@@ -1171,11 +1179,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
 	retryNodeName := ""
-	retryNodeOnError := false
 	if processedTmpl.IsLeaf() && processedTmpl.RetryStrategy != nil {
-		if processedTmpl.RetryStrategy.RetryOn != nil && processedTmpl.RetryStrategy.RetryOn.Error != nil {
-			retryNodeOnError = *processedTmpl.RetryStrategy.RetryOn.Error
-		}
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
@@ -1250,7 +1254,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
-		if !retryNodeOnError {
+		// If retry policy is not set to Always or OnError, we won't attempt to retry an errored container
+		if processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError {
 			return node, err
 		}
 	}
