@@ -165,6 +165,9 @@ func (woc *wfOperationCtx) operate() {
 	} else {
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
+		if err == nil {
+			err = woc.failSuspendedNodesAfterDeadline()
+		}
 		if err != nil {
 			woc.log.Errorf("%s error: %+v", woc.wf.ObjectMeta.Name, err)
 			// TODO: we need to re-add to the workqueue, but should happen in caller
@@ -649,6 +652,24 @@ func (woc *wfOperationCtx) podReconciliation() error {
 			woc.wf.Status.Nodes[nodeID] = node
 			woc.log.Warnf("pod %s deleted", nodeID)
 			woc.updated = true
+		}
+	}
+	return nil
+}
+
+//fails any suspended nodes if the workflow deadline has passed
+func (woc *wfOperationCtx) failSuspendedNodesAfterDeadline() error {
+	if woc.workflowDeadline != nil && time.Now().UTC().After(*woc.workflowDeadline) {
+		for _, node := range woc.wf.Status.Nodes {
+			if node.Type == wfv1.NodeTypeSuspend && node.Phase == wfv1.NodeRunning {
+				var message string
+				if woc.workflowDeadline.IsZero() {
+					message = "terminated"
+				} else {
+					message = fmt.Sprintf("step exceeded workflow deadline %s", *woc.workflowDeadline)
+				}
+				woc.markNodePhase(node.Name, wfv1.NodeFailed, message)
+			}
 		}
 	}
 	return nil
