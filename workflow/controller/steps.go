@@ -75,7 +75,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			}
 		}
 
-		sgNode = woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
+		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
 
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
@@ -100,17 +100,22 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				// We add the aggregate outputs of our children to the scope as a JSON list
 				var childNodes []wfv1.NodeStatus
 				for _, node := range woc.wf.Status.Nodes {
-					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") {
+					if node.BoundaryID == stepsCtx.boundaryID && strings.HasPrefix(node.Name, childNodeName+"(") && node.Type != wfv1.NodeTypeSkipped {
 						childNodes = append(childNodes, node)
 					}
 				}
-				tmpl, err := stepsCtx.tmplCtx.GetTemplate(&step)
-				if err != nil {
-					return err
-				}
-				err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
-				if err != nil {
-					return err
+				if len(childNodes) > 0 {
+					// Expanded child nodes should be created from the same template.
+					tmpl := woc.wf.GetStoredOrLocalTemplate(&childNodes[0])
+					if tmpl == nil {
+						return errors.InternalErrorf("Template of step node '%s' not found (inferred from %s)", childNodeName, childNodes[0].Name)
+					}
+					err := woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
+					if err != nil {
+						return err
+					}
+				} else {
+					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
 				}
 			} else {
 				woc.processNodeOutputs(stepsCtx.scope, prefix, childNode)
