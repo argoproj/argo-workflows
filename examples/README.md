@@ -1061,10 +1061,10 @@ spec:
 
   - name: influxdb
     daemon: true                        # start influxdb as a daemon
+    retryStrategy:
+      limit: 10                         # retry container if it fails
     container:
       image: influxdb:1.2
-      retryStrategy:
-        limit: 10                       # retry container if it fails
       readinessProbe:                   # wait for readinessProbe to succeed
         httpGet:
           path: /ping
