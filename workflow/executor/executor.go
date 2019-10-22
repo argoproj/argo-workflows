@@ -558,6 +558,7 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 			SecretKey: secretKey,
 			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
 			Region:    art.S3.Region,
+			RoleARN:   art.S3.RoleARN,
 		}
 		return &driver, nil
 	}
@@ -887,7 +888,14 @@ func (we *WorkflowExecutor) Wait() error {
 	annotationUpdatesCh := we.monitorAnnotations(ctx)
 	go we.monitorDeadline(ctx, annotationUpdatesCh)
 
-	err = we.RuntimeExecutor.Wait(mainContainerID)
+	_ = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err = we.RuntimeExecutor.Wait(mainContainerID)
+		if err != nil {
+			log.Warnf("Failed to wait for container id '%s': %v", mainContainerID, err)
+			return false, err
+		}
+		return true, nil
+	})
 	if err != nil {
 		return err
 	}

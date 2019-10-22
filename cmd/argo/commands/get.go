@@ -11,9 +11,9 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/humanize"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 const onExitSuffix = "onExit"
@@ -149,6 +149,9 @@ func printWorkflowHelper(wf *wfv1.Workflow, getArgs getFlags) {
 
 		// Print main and onExit Trees
 		mainRoot := roots[wf.ObjectMeta.Name]
+		if mainRoot == nil {
+			panic("failed to get the entrypoint node")
+		}
 		mainRoot.renderNodes(w, wf, 0, " ", " ", getArgs)
 
 		onExitID := wf.NodeID(wf.ObjectMeta.Name + "." + onExitSuffix)

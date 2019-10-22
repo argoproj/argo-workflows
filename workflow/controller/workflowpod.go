@@ -50,15 +50,9 @@ var (
 )
 
 func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
-	dockerSockPath := "/var/run/docker.sock"
-
-	if woc.controller.Config.DockerSockPath != "" {
-		dockerSockPath = woc.controller.Config.DockerSockPath
-	}
-
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
-		MountPath: dockerSockPath,
+		MountPath: "/var/run/docker.sock",
 		ReadOnly:  true,
 	}
 }
@@ -90,10 +84,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
-	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
-	if tmpl.ServiceAccountName != "" {
-		tmplServiceAccountName = tmpl.ServiceAccountName
-	}
 
 	mainCtr.Name = common.MainContainerName
 	pod := &apiv1.Pod{
@@ -115,7 +105,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -140,6 +129,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	err := woc.addArchiveLocation(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	err = woc.setupServiceAccount(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -271,13 +265,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *w
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName)
+	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "init"}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
-	ctr := woc.newExecContainer(common.WaitContainerName)
+	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorPNS:
@@ -402,7 +396,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
@@ -429,14 +423,26 @@ func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 		if name == "" {
 			name = common.KubeConfigDefaultVolumeName
 		}
-		exec.VolumeMounts = []apiv1.VolumeMount{{
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      name,
 			MountPath: path,
 			ReadOnly:  true,
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		},
-		}
+		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
+	}
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
+	}
+	if executorServiceAccountName != "" {
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
+			Name:      common.ServiceAccountTokenVolumeName,
+			MountPath: common.ServiceAccountTokenMountPath,
+			ReadOnly:  true,
+		})
 	}
 	return &exec
 }
@@ -819,6 +825,49 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+	}
+	return nil
+}
+
+// setupServiceAccount sets up service account and token.
+func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if tmpl.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
+	} else if woc.wf.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
+	}
+
+	var automountServiceAccountToken *bool
+	if tmpl.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
+	} else if woc.wf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = woc.wf.Spec.AutomountServiceAccountToken
+	}
+	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
+	}
+
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
+	}
+	if executorServiceAccountName != "" {
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		if err != nil {
+			return err
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
+			Name: common.ServiceAccountTokenVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: tokenName,
+				},
+			},
+		})
+	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
 }

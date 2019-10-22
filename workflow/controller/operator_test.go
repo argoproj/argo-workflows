@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -153,17 +153,15 @@ func TestProcessNodesWithRetries(t *testing.T) {
 
 	// Last child is still running. processNodesWithRetries() should return false since
 	// there should be no retries at this point.
-	err = woc.processNodeRetries(n, retries)
+	n, err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
-	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeRunning)
 
 	// Mark lastChild as successful.
 	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
-	err = woc.processNodeRetries(n, retries)
+	n, err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
 	// The parent node also gets marked as Succeeded.
-	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
 
 	// Mark the parent node as running again and the lastChild as failed.
@@ -178,9 +176,8 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeFailed)
 	woc.addChildNode(nodeName, childNode)
 	n = woc.getNodeByName(nodeName)
-	err = woc.processNodeRetries(n, retries)
+	n, err = woc.processNodeRetries(n, retries)
 	assert.Nil(t, err)
-	n = woc.getNodeByName(nodeName)
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
 

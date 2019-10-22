@@ -133,8 +133,5 @@ func CopyArchive(c KubernetesClientInterface, containerID, sourcePath, destPath 
 		return err
 	}
 	err = w.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

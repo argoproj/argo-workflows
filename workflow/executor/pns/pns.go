@@ -139,11 +139,7 @@ func (p *PNSExecutor) CopyFile(containerID string, sourcePath string, destPath s
 	}
 
 	err = archive.TarGzToWriter(sourcePath, w)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (p *PNSExecutor) WaitInit() error {
