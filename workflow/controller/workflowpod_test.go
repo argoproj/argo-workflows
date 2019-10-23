@@ -10,10 +10,10 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {
@@ -75,6 +75,66 @@ func TestScriptTemplateWithVolume(t *testing.T) {
 	woc := newWoc()
 	err := woc.executeScript(tmpl.Name, tmpl, "")
 	assert.NoError(t, err)
+}
+
+var scriptTemplateWithOptionalInputArtifactProvided = `
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+    http:
+        url: https://raw.githubusercontent.com/argoproj/argo/stable/manifests/install.yaml
+script:
+  image: alpine:latest
+  command: [sh]
+  source: |
+    ls -al
+`
+
+var scriptTemplateWithOptionalInputArtifactNotProvided = `
+name: script-with-input-artifact
+inputs:
+  artifacts:
+  - name: manifest
+    path: /manifest
+    optional: true
+script:
+  image: alpine:latest
+  command: [sh]
+  source: |
+    ls -al
+`
+
+// TestScriptTemplateWithVolume ensure we can a script pod with input artifacts
+func TestScriptTemplateWithoutVolumeOptionalArtifact(t *testing.T) {
+	volumeMount := apiv1.VolumeMount{
+		Name:             "input-artifacts",
+		ReadOnly:         false,
+		MountPath:        "/manifest",
+		SubPath:          "manifest",
+		MountPropagation: nil,
+		SubPathExpr:      "",
+	}
+
+	// Ensure that volume mount is added when artifact is provided
+	tmpl := unmarshalTemplate(scriptTemplateWithOptionalInputArtifactProvided)
+	woc := newWoc()
+	mainCtr := tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, err := woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
+	assert.NoError(t, err)
+	assert.Contains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
+
+	// Ensure that volume mount is not created when artifact is not provided
+	tmpl = unmarshalTemplate(scriptTemplateWithOptionalInputArtifactNotProvided)
+	woc = newWoc()
+	mainCtr = tmpl.Script.Container
+	mainCtr.Args = append(mainCtr.Args, common.ExecutorScriptSourcePath)
+	pod, err = woc.createWorkflowPod(tmpl.Name, mainCtr, tmpl, true)
+	assert.NoError(t, err)
+	assert.NotContains(t, pod.Spec.Containers[1].VolumeMounts, volumeMount)
 }
 
 // TestWFLevelServiceAccount verifies the ability to carry forward the service account name
@@ -820,4 +880,81 @@ func TestTmplLevelSecurityContext(t *testing.T) {
 	pod := pods.Items[0]
 	assert.NotNil(t, pod.Spec.SecurityContext)
 	assert.Equal(t, runAsUser, *pod.Spec.SecurityContext.RunAsUser)
+}
+
+var helloWorldWfWithPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'	
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithWFPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+var helloWorldWfWithWFYAMLPatch = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: hello-world
+spec:
+  entrypoint: whalesay
+  podSpecPatch: |
+    containers:
+      - name: main
+        resources:
+          limits:
+            cpu: "800m"
+  templates:
+  - name: whalesay
+    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"memory": "100Mi"}}}]}'
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestPodSpecPatch(t *testing.T) {
+	wf := unmarshalWF(helloWorldWfWithPatch)
+	woc := newWoc(*wf)
+	mainCtr := woc.wf.Spec.Templates[0].Container
+	pod, _ := woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
+	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+
+	wf = unmarshalWF(helloWorldWfWithWFPatch)
+	woc = newWoc(*wf)
+	mainCtr = woc.wf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
+	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+
+	wf = unmarshalWF(helloWorldWfWithWFYAMLPatch)
+	woc = newWoc(*wf)
+	mainCtr = woc.wf.Spec.Templates[0].Container
+	pod, _ = woc.createWorkflowPod(wf.Name, *mainCtr, &wf.Spec.Templates[0], false)
+
+	assert.Equal(t, "0.800", pod.Spec.Containers[1].Resources.Limits.Cpu().AsDec().String())
+	assert.Equal(t, "104857600", pod.Spec.Containers[1].Resources.Limits.Memory().AsDec().String())
+
 }

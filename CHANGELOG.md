@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.4.0 (Unreleased)
+## 2.4.0 (2019-10-02)
 
 ### New Features
 + WorkflowTemplate CRD (#1312) (@dtaniwaki)
@@ -16,6 +16,8 @@
 + Allow overriding workflow labels in 'argo submit' (#1475) (@mark9white)
 + Support git shallow clones and additional ref fetches (#1521) (@marxarelli)
 + Add --dry-run option to `argo submit` (#1506) (@AnesBenmerzoug)
++ Support AutomountServiceAccountToken and executor specific service account(#1480)
++ Support ability to assume IAM roles in S3 Artifacts  (#1587)
 
 ### Refactoring & Improvements:
 * Allow output parameters with .value, not only .valueFrom (#1336) (@Ark-kun)
@@ -28,7 +30,7 @@
 * mention sidecar in failure message for sidecar containers (#1430) (@tralexa)
 * changing temp directory for output artifacts from root to tmp (#1458) (@alexcapras)
 * Format sources and order imports with the help of goimports (#1504) (@muesli)
-* Documentation (@ofaz, @bvwells, @pbrit, @shimmerjs, @ianCambrio, @jqueguiner, @ntwrkguru, @thundergolfer, @delwaterman, @Ziyang2go, @Aisuko, @mark9white, @mostaphaRoudsari, @commodus-sebastien, @thundergolfer, @xianlubird)
+* Documentation (@ofaz, @bvwells, @pbrit, @shimmerjs, @ianCambrio, @jqueguiner, @ntwrkguru, @thundergolfer, @delwaterman, @Ziyang2go, @Aisuko, @mark9white, @mostaphaRoudsari, @commodus-sebastien, @thundergolfer, @xianlubird, @mostaphaRoudsari, @bpmericle)
 
 ### Bug Fixes
 - Fix: Support the List within List type in withParam #1471 (#1473) (@sarabala1979)
@@ -40,6 +42,8 @@
 - PNS executor intermitently failed to capture entire log of script templates (#1406) (@jessesuen)
 - Fix argo logs empty content when workflow run in virtual kubelet env (#1201) (@xianlubird)
 - Terminate all containers within pod after main container completes (#1423) (@SeriousSem)
+- Initialize the wfClientset before using it (#1548)
+- Fix issue saving outputs which overlap paths with inputs (#1567)
 
 
 ## 2.3.0 (2019-05-20)

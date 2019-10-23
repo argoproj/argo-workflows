@@ -349,7 +349,7 @@ func (woc *wfOperationCtx) getResolvedTemplate(node *wfv1.NodeStatus, tmpl wfv1.
 			woc.log.Debugf("Found a resolved template for node %s", node.Name)
 			if node.WorkflowTemplateName != "" {
 				woc.log.Debugf("Switch the template context to %s", node.WorkflowTemplateName)
-				newTmplCtx, err := tmplCtx.OnWorkflowTemplate(node.WorkflowTemplateName)
+				newTmplCtx, err := tmplCtx.WithLazyWorkflowTemplate(woc.wf.Namespace, node.WorkflowTemplateName)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -530,6 +530,7 @@ func (woc *wfOperationCtx) requeue() {
 	woc.controller.wfQueue.Add(key)
 }
 
+// processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
 func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, error) {
 	if node.Completed() {
 		return node, nil
@@ -1111,7 +1112,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.log.Debugf("Node %s already completed", nodeName)
 			return node, nil
 		}
-		woc.log.Debugf("Executing node %s is %s", nodeName, node.Phase)
+		woc.log.Debugf("Executing node %s of %s is %s", nodeName, node.Type, node.Phase)
 		// Memoized nodes don't have StartedAt.
 		if node.StartedAt.IsZero() {
 			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
@@ -1128,12 +1129,14 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	newTmplCtx, basedTmpl, err := woc.getResolvedTemplate(node, orgTmpl, tmplCtx, args)
+
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
-
 	localParams := make(map[string]string)
-	if basedTmpl.IsPodType() {
+	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
+	// is determined
+	if basedTmpl.IsPodType() && basedTmpl.RetryStrategy == nil {
 		localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
 	}
 	// Inputs has been processed with arguments already, so pass empty arguments.
@@ -1144,21 +1147,20 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
 	if err := woc.checkParallelism(processedTmpl, node, boundaryID); err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+		return node, err
 	}
 
 	// If the user has specified retries, node becomes a special retry node.
 	// This node acts as a parent of all retries that will be done for
 	// the container. The status of this node should be "Success" if any
 	// of the retries succeed. Otherwise, it is "Failed".
-	workNodeName := nodeName
 	retryNodeName := ""
 	if processedTmpl.IsLeaf() && processedTmpl.RetryStrategy != nil {
 		retryNodeName = nodeName
 		retryParentNode := node
 		if retryParentNode == nil {
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
-			retryParentNode = woc.initializeNode(retryNodeName, wfv1.NodeTypeRetry, orgTmpl, boundaryID, wfv1.NodeRunning)
+			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
 		processedRetryParentNode, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
@@ -1177,16 +1179,25 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			// Last child node is still running.
 			return retryParentNode, nil
 		}
-		// All work is done in a child
-		childNodeName := fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
-		workNodeName = childNodeName
+		// This is the case the child node has been done,
+		//  but the retry node state is still running.
+		//  Create another child node.
+		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 		node = nil
+
+		// Change the `pod.name` variable to the new retry node name
+		if processedTmpl.IsPodType() {
+			processedTmpl, err = common.SubstituteParams(processedTmpl, map[string]string{}, map[string]string{common.LocalVarPodName: woc.wf.NodeID(nodeName)})
+			if err != nil {
+				return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+			}
+		}
 	}
 
 	// Initialize node based on the template type.
 	if node == nil {
 		var nodeType wfv1.NodeType
-		switch basedTmpl.GetType() {
+		switch processedTmpl.GetType() {
 		case wfv1.TemplateTypeContainer, wfv1.TemplateTypeScript, wfv1.TemplateTypeResource:
 			nodeType = wfv1.NodeTypePod
 		case wfv1.TemplateTypeSteps:
@@ -1196,10 +1207,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		case wfv1.TemplateTypeSuspend:
 			nodeType = wfv1.NodeTypeSuspend
 		default:
-			err := errors.InternalErrorf("Template '%s' has unknown node type", basedTmpl.Name)
-			return woc.initializeNode(workNodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
+			err := errors.InternalErrorf("Template '%s' has unknown node type", processedTmpl.Name)
+			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
-		node = woc.initializeExecutableNode(workNodeName, nodeType, newTmplCtx, basedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
+		node = woc.initializeExecutableNode(nodeName, nodeType, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
 	}
 
 	switch processedTmpl.GetType() {
@@ -1315,8 +1326,14 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	// Store the template for the later use.
 	if node.TemplateRef != nil {
 		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
-	} else if node.WorkflowTemplateName != "" {
-		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
+	} else if node.TemplateName != "" {
+		if node.WorkflowTemplateName != "" {
+			// Locally resolvable in workflow template level.
+			node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
+		} else if orgTmpl.IsResolvable() {
+			// Locally resolvable in workflow level.
+			node.StoredTemplateID = fmt.Sprintf("/%s", node.TemplateName)
+		}
 	}
 	if node.StoredTemplateID != "" {
 		baseTemplate := executeTmpl.GetBaseTemplate()
@@ -1416,6 +1433,7 @@ func (woc *wfOperationCtx) markNodePhase(nodeName string, phase wfv1.NodePhase, 
 
 // markNodeError is a convenience method to mark a node with an error and set the message from the error
 func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeStatus {
+	woc.log.Errorf("Mark error node %s: %+v", nodeName, err)
 	return woc.markNodePhase(nodeName, wfv1.NodeError, err.Error())
 }
 
@@ -1588,6 +1606,10 @@ func (woc *wfOperationCtx) processNodeOutputs(scope *wfScope, prefix string, nod
 	if node.PodIP != "" {
 		key := fmt.Sprintf("%s.ip", prefix)
 		scope.addParamToScope(key, node.PodIP)
+	}
+	if node.Phase != "" {
+		key := fmt.Sprintf("%s.status", prefix)
+		scope.addParamToScope(key, string(node.Phase))
 	}
 	woc.addOutputsToScope(prefix, node.Outputs, scope)
 }

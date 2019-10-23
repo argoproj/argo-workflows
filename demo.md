@@ -41,7 +41,7 @@ To run all of the examples in this guide, the 'default' service account is too l
 features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
 command to grant admin privileges to the 'default' service account in the namespace 'default':
 ```
-kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default
 ```
 For the bare minimum set of privileges which a workflow needs to function, see
 [Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
@@ -90,11 +90,11 @@ helm install stable/minio \
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-kubectl get service argo-artifacts-mini -o wide
+kubectl get service argo-artifacts -o wide
 ```
 On Minikube:
 ```
-minikube service --url argo-artifacts-mini
+minikube -n argo service --url argo-artifacts
 ```
 
 NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
@@ -116,7 +116,7 @@ data:
     artifactRepository:
       s3:
         bucket: my-bucket
-        endpoint: argo-artifacts.default:9000
+        endpoint: argo-artifacts:9000
         insecure: true
         # accessKeySecret and secretKeySecret are secret selectors.
         # It references the k8s secret named 'argo-artifacts'

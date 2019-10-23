@@ -12,11 +12,13 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
 )
 
@@ -77,6 +79,10 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 			},
 		},
 	}
+}
+
+func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
+	return woc.wf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
 }
 
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
@@ -221,6 +227,45 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// Apply the patch string from template
+	if woc.hasPodSpecPatch(tmpl) {
+		jsonstr, err := json.Marshal(pod.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
+		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
+		// Final substitution for workflow level PodSpecPatch
+		localParams := make(map[string]string)
+		if tmpl.IsPodType() {
+			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+		}
+		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
+		}
+
+		var spec apiv1.PodSpec
+
+		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
+			return nil, errors.New("", "Invalid PodSpecPatch String")
+		}
+
+		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
+		err = json.Unmarshal(modJson, &pod.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+		}
+	}
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
@@ -701,6 +746,11 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 	for _, art := range tmpl.Inputs.Artifacts {
 		if art.Path == "" {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
+		}
+		if !art.HasLocation() && art.Optional {
+			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
+				art.Name, art.Path)
+			continue
 		}
 		overlap := common.FindOverlappingVolume(tmpl, art.Path)
 		if overlap != nil {
