@@ -60,6 +60,7 @@
   digest = "1:d04fdd419650d1bc6c84b0988a94a7438cc3143e95a61a63f5c2bf56542156e3"
   name = "github.com/argoproj/pkg"
   packages = [
+    "auth",
     "cli",
     "errors",
     "exec",
@@ -1414,6 +1415,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Knetic/govaluate",
+    "github.com/argoproj/pkg/auth",
     "github.com/argoproj/pkg/cli",
     "github.com/argoproj/pkg/errors",
     "github.com/argoproj/pkg/exec",
