@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/ghodss/yaml"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
@@ -24,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -296,11 +296,11 @@ func ProcessArgs(tmpl *wfv1.Template, args wfv1.ArgumentsProvider, globalParams,
 	}
 	newTmpl.Inputs.Artifacts = newInputArtifacts
 
-	return substituteParams(newTmpl, globalParams, localParams)
+	return SubstituteParams(newTmpl, globalParams, localParams)
 }
 
-// substituteParams returns a new copy of the template with global, pod, and input parameters substituted
-func substituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
+// SubstituteParams returns a new copy of the template with global, pod, and input parameters substituted
+func SubstituteParams(tmpl *wfv1.Template, globalParams, localParams map[string]string) (*wfv1.Template, error) {
 	tmplBytes, err := json.Marshal(tmpl)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
@@ -537,15 +537,6 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	newTmpl := referred.DeepCopy()
 
 	newTmpl.Name = tmpl.Name
-
-	emptymap := map[string]string{}
-	newTmpl, err := ProcessArgs(newTmpl, &tmpl.Arguments, emptymap, emptymap, false)
-	if err != nil {
-		return nil, err
-	}
-	newTmpl.Arguments = wfv1.Arguments{}
-
-	newTmpl.Inputs = *tmpl.Inputs.DeepCopy()
 	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
 
 	if len(tmpl.NodeSelector) > 0 {

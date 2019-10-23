@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	descWorkflowDefaultLabels = []string{"namespace", "name"}
+	descWorkflowDefaultLabels = []string{"namespace", "name", "entrypoint"}
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
 		"Information about workflow.",
-		append(descWorkflowDefaultLabels, "entrypoint", "service_account_name", "templates"),
+		append(descWorkflowDefaultLabels, "service_account_name", "templates"),
 		nil,
 	)
 	descWorkflowStartedAt = prometheus.NewDesc(
@@ -96,7 +96,7 @@ func (wc *workflowCollector) Collect(ch chan<- prometheus.Metric) {
 
 func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv1.Workflow) {
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
-		lv = append([]string{wf.Namespace, wf.Name}, lv...)
+		lv = append([]string{wf.Namespace, wf.Name, wf.Spec.Entrypoint}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
 	}
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
@@ -110,7 +110,7 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 		return strings.Join(templates, ",")
 	}
 
-	addGauge(descWorkflowInfo, 1, wf.Spec.Entrypoint, wf.Spec.ServiceAccountName, joinTemplates(wf.Spec.Templates))
+	addGauge(descWorkflowInfo, 1, wf.Spec.ServiceAccountName, joinTemplates(wf.Spec.Templates))
 
 	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodePending || wf.Status.Phase == ""), string(wfv1.NodePending))
 	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeRunning), string(wfv1.NodeRunning))

@@ -12,11 +12,13 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasttemplate"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/utils/pointer"
 )
 
@@ -50,15 +52,9 @@ var (
 )
 
 func (woc *wfOperationCtx) getVolumeMountDockerSock() apiv1.VolumeMount {
-	dockerSockPath := "/var/run/docker.sock"
-
-	if woc.controller.Config.DockerSockPath != "" {
-		dockerSockPath = woc.controller.Config.DockerSockPath
-	}
-
 	return apiv1.VolumeMount{
 		Name:      common.DockerSockVolumeName,
-		MountPath: dockerSockPath,
+		MountPath: "/var/run/docker.sock",
 		ReadOnly:  true,
 	}
 }
@@ -85,15 +81,15 @@ func (woc *wfOperationCtx) getVolumeDockerSock() apiv1.Volume {
 	}
 }
 
+func (woc *wfOperationCtx) hasPodSpecPatch(tmpl *wfv1.Template) bool {
+	return woc.wf.Spec.HasPodSpecPatch() || tmpl.HasPodSpecPatch()
+}
+
 func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Container, tmpl *wfv1.Template, includeScriptOutput bool) (*apiv1.Pod, error) {
 	nodeID := woc.wf.NodeID(nodeName)
 	woc.log.Debugf("Creating Pod: %s (%s)", nodeName, nodeID)
 	tmpl = tmpl.DeepCopy()
 	wfSpec := woc.wf.Spec.DeepCopy()
-	tmplServiceAccountName := woc.wf.Spec.ServiceAccountName
-	if tmpl.ServiceAccountName != "" {
-		tmplServiceAccountName = tmpl.ServiceAccountName
-	}
 
 	mainCtr.Name = common.MainContainerName
 	pod := &apiv1.Pod{
@@ -115,7 +111,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			RestartPolicy:         apiv1.RestartPolicyNever,
 			Volumes:               woc.createVolumes(),
 			ActiveDeadlineSeconds: tmpl.ActiveDeadlineSeconds,
-			ServiceAccountName:    tmplServiceAccountName,
 			ImagePullSecrets:      woc.wf.Spec.ImagePullSecrets,
 		},
 	}
@@ -140,6 +135,11 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	}
 
 	err := woc.addArchiveLocation(pod, tmpl)
+	if err != nil {
+		return nil, err
+	}
+
+	err = woc.setupServiceAccount(pod, tmpl)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +227,45 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		}
 	}
 
+	// Apply the patch string from template
+	if woc.hasPodSpecPatch(tmpl) {
+		jsonstr, err := json.Marshal(pod.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
+		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
+		}
+
+		// Final substitution for workflow level PodSpecPatch
+		localParams := make(map[string]string)
+		if tmpl.IsPodType() {
+			localParams[common.LocalVarPodName] = woc.wf.NodeID(nodeName)
+		}
+		tmpl, err := common.ProcessArgs(tmpl, &wfv1.Arguments{}, woc.globalParams, localParams, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Fail to substitute the PodSpecPatch variables")
+		}
+
+		var spec apiv1.PodSpec
+
+		if !util.ValidateJsonStr(tmpl.PodSpecPatch, spec) {
+			return nil, errors.New("", "Invalid PodSpecPatch String")
+		}
+
+		modJson, err := strategicpatch.StrategicMergePatch(jsonstr, []byte(tmpl.PodSpecPatch), apiv1.PodSpec{})
+
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error occurred during strategic merge patch")
+		}
+		err = json.Unmarshal(modJson, &pod.Spec)
+		if err != nil {
+			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
+		}
+	}
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
@@ -271,13 +310,13 @@ func substitutePodParams(pod *apiv1.Pod, globalParams map[string]string, tmpl *w
 }
 
 func (woc *wfOperationCtx) newInitContainer(tmpl *wfv1.Template) apiv1.Container {
-	ctr := woc.newExecContainer(common.InitContainerName)
+	ctr := woc.newExecContainer(common.InitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "init"}
 	return *ctr
 }
 
 func (woc *wfOperationCtx) newWaitContainer(tmpl *wfv1.Template) (*apiv1.Container, error) {
-	ctr := woc.newExecContainer(common.WaitContainerName)
+	ctr := woc.newExecContainer(common.WaitContainerName, tmpl)
 	ctr.Command = []string{"argoexec", "wait"}
 	switch woc.controller.Config.ContainerRuntimeExecutor {
 	case common.ContainerRuntimeExecutorPNS:
@@ -402,7 +441,7 @@ func (woc *wfOperationCtx) createVolumes() []apiv1.Volume {
 	}
 }
 
-func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
+func (woc *wfOperationCtx) newExecContainer(name string, tmpl *wfv1.Template) *apiv1.Container {
 	exec := apiv1.Container{
 		Name:            name,
 		Image:           woc.controller.executorImage(),
@@ -429,14 +468,26 @@ func (woc *wfOperationCtx) newExecContainer(name string) *apiv1.Container {
 		if name == "" {
 			name = common.KubeConfigDefaultVolumeName
 		}
-		exec.VolumeMounts = []apiv1.VolumeMount{{
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
 			Name:      name,
 			MountPath: path,
 			ReadOnly:  true,
 			SubPath:   woc.controller.Config.KubeConfig.SecretKey,
-		},
-		}
+		})
 		exec.Args = append(exec.Args, "--kubeconfig="+path)
+	}
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
+	}
+	if executorServiceAccountName != "" {
+		exec.VolumeMounts = append(exec.VolumeMounts, apiv1.VolumeMount{
+			Name:      common.ServiceAccountTokenVolumeName,
+			MountPath: common.ServiceAccountTokenMountPath,
+			ReadOnly:  true,
+		})
 	}
 	return &exec
 }
@@ -696,6 +747,11 @@ func (woc *wfOperationCtx) addInputArtifactsVolumes(pod *apiv1.Pod, tmpl *wfv1.T
 		if art.Path == "" {
 			return errors.Errorf(errors.CodeBadRequest, "inputs.artifacts.%s did not specify a path", art.Name)
 		}
+		if !art.HasLocation() && art.Optional {
+			woc.log.Infof("skip volume mount of %s (%s): optional artifact was not provided",
+				art.Name, art.Path)
+			continue
+		}
 		overlap := common.FindOverlappingVolume(tmpl, art.Path)
 		if overlap != nil {
 			// artifact path overlaps with a mounted volume. do not mount the
@@ -819,6 +875,49 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 		}
 	} else {
 		return errors.Errorf(errors.CodeBadRequest, "controller is not configured with a default archive location")
+	}
+	return nil
+}
+
+// setupServiceAccount sets up service account and token.
+func (woc *wfOperationCtx) setupServiceAccount(pod *apiv1.Pod, tmpl *wfv1.Template) error {
+	if tmpl.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = tmpl.ServiceAccountName
+	} else if woc.wf.Spec.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = woc.wf.Spec.ServiceAccountName
+	}
+
+	var automountServiceAccountToken *bool
+	if tmpl.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = tmpl.AutomountServiceAccountToken
+	} else if woc.wf.Spec.AutomountServiceAccountToken != nil {
+		automountServiceAccountToken = woc.wf.Spec.AutomountServiceAccountToken
+	}
+	if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		pod.Spec.AutomountServiceAccountToken = automountServiceAccountToken
+	}
+
+	executorServiceAccountName := ""
+	if tmpl.Executor != nil && tmpl.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = tmpl.Executor.ServiceAccountName
+	} else if woc.wf.Spec.Executor != nil && woc.wf.Spec.Executor.ServiceAccountName != "" {
+		executorServiceAccountName = woc.wf.Spec.Executor.ServiceAccountName
+	}
+	if executorServiceAccountName != "" {
+		tokenName, err := common.GetServiceAccountTokenName(woc.controller.kubeclientset, pod.Namespace, executorServiceAccountName)
+		if err != nil {
+			return err
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, apiv1.Volume{
+			Name: common.ServiceAccountTokenVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: tokenName,
+				},
+			},
+		})
+	} else if automountServiceAccountToken != nil && !*automountServiceAccountToken {
+		return errors.Errorf(errors.CodeBadRequest, "executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	return nil
 }

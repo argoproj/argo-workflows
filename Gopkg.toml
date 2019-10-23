@@ -45,10 +45,6 @@ required = [
   name = "github.com/prometheus/client_golang"
   version = "0.8.0"
 
-[[constraint]]
-  name = "github.com/ghodss/yaml"
-  branch = "master"
-
 # azure.go:252:4: cannot use json.Number(expiresIn) (type json.Number) as type string in field value
 [[override]]
   name = "github.com/Azure/go-autorest"
@@ -62,7 +58,7 @@ required = [
 
 [[constraint]]
   name = "github.com/colinmarc/hdfs"
-  revision = "48eb8d6c34a97ffc73b406356f0f2e1c569b42a5"
+  revision = "9746310a4d311e21ce43b2a645c5a1e64c5e8efa"
 
 [[constraint]]
   name = "gopkg.in/jcmturner/gokrb5.v5"

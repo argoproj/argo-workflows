@@ -3,7 +3,7 @@ package validate
 import (
 	"testing"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -302,6 +302,87 @@ func TestStepOutputReference(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+
+var stepStatusReferences = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: status-ref-
+spec:
+  entrypoint: statusref
+  templates:
+  - name: statusref
+    steps:
+    - - name: one
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "Hello, world"
+    - - name: two
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+  - name: say
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+func TestStepStatusReference(t *testing.T) {
+	err := validate(stepStatusReferences)
+	assert.Nil(t, err)
+}
+
+
+var stepStatusReferencesNoFutureReference = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: status-ref-
+spec:
+  entrypoint: statusref
+  templates:
+  - name: statusref
+    steps:
+    - - name: one
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.two.status}}"
+    - - name: two
+        template: say
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.one.status}}"
+  - name: say
+    inputs:
+      parameters:
+      - name: message
+        value: "value"
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo {{inputs.parameters.message}}"]
+`
+
+func TestStepStatusReferenceNoFutureReference(t *testing.T) {
+	err := validate(stepStatusReferencesNoFutureReference)
+	// Can't reference the status of steps that have not run yet
+	if assert.NotNil(t, err) {
+		assert.Contains(t, err.Error(), "failed to resolve {{steps.two.status}}")
+	}
+}
+
 var stepArtReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -387,6 +468,7 @@ kind: Workflow
 metadata:
   generateName: global-parameters-complex-
 spec:
+  priority: 100
   entrypoint: test-workflow
   arguments:
     parameters:
@@ -871,6 +953,28 @@ func TestExitHandler(t *testing.T) {
 	err = validate(exitHandlerWorkflowStatusOnExit)
 	assert.Nil(t, err)
 }
+
+var workflowWithPriority = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: with-priority-
+spec:
+  entrypoint: whalesay
+  priority: 100
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["{{workflow.priority}}"]
+`
+
+func TestPriorityVariable(t *testing.T) {
+	err := validate(workflowWithPriority)
+	assert.Nil(t, err)
+}
+
 
 var volumeMountArtifactPathCollision = `
 apiVersion: argoproj.io/v1alpha1
@@ -1715,5 +1819,96 @@ func TestUnknownPodGCStrategy(t *testing.T) {
 		wf.Spec.PodGC.Strategy = strat
 		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
 		assert.NoError(t, err)
+	}
+}
+
+var validAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  - name: per-tmpl-automount
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: true
+    executor:
+      ServiceAccountName: ""
+  automountServiceAccountToken: false
+  executor:
+    ServiceAccountName: foo
+`
+
+var validAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: valid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    executor:
+      ServiceAccountName: foo
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseWfLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-wf-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+  automountServiceAccountToken: false
+`
+
+var invalidAutomountServiceAccountTokenUseTmplLevel = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: invalid-automount-service-account-token-use-tmpl-level-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: alpine:latest
+    automountServiceAccountToken: false
+`
+
+// TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
+func TestAutomountServiceAccountTokenUse(t *testing.T) {
+	namespace := metav1.NamespaceDefault
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.NoError(t, err)
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
+	}
+	{
+		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
+		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 }

@@ -122,3 +122,36 @@ data:
       enabled: true
       path: /telemetry
       port: 8080
+
+    # enable persistence using postgres
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      # save the entire workflow into etcd and DB
+      nodeStatusOffLoad: false
+      postgresql:
+        host: localhost
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        # the database secrets must be in the same namespace of the controller
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        passwordSecret:
+          name: argo-postgres-config
+          key: password
+
+      # Optional config for mysql:
+      # mysql:
+      #   host: localhost
+      #   port: 3306
+      #   database: argo
+      #   tableName: argo_workflows
+      #   userNameSecret:
+      #     name: argo-mysql-config
+      #     key: username
+      #   passwordSecret:
+      #     name: argo-mysql-config
+      #     key: password

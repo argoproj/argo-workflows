@@ -1,17 +1,19 @@
 package util
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/ghodss/yaml"
 	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers/internalinterfaces"
@@ -27,6 +30,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -197,12 +201,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			var body []byte
 			var err error
 			if cmdutil.IsURL(opts.ParameterFile) {
-				response, err := http.Get(opts.ParameterFile)
-				if err != nil {
-					return nil, errors.InternalWrapError(err)
-				}
-				body, err = ioutil.ReadAll(response.Body)
-				_ = response.Body.Close()
+				body, err = ReadFromUrl(opts.ParameterFile)
 				if err != nil {
 					return nil, errors.InternalWrapError(err)
 				}
@@ -258,14 +257,14 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		return nil, err
 	}
 
-	if opts.ServerDryRun {
+	if opts.DryRun {
+		return wf, nil
+	} else if opts.ServerDryRun {
 		wf, err := CreateServerDryRun(wf, wfClientset)
 		if err != nil {
 			return nil, err
 		}
 		return wf, err
-	} else if opts.DryRun {
-		return wf, nil
 	} else {
 		return wfIf.Create(wf)
 	}
@@ -308,10 +307,7 @@ func SuspendWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // ResumeWorkflow resumes a workflow by setting spec.suspend to nil and any suspended nodes to Successful.
@@ -347,10 +343,7 @@ func ResumeWorkflow(wfIf v1alpha1.WorkflowInterface, workflowName string) error 
 		}
 		return true, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
@@ -420,46 +413,56 @@ func FormulateResubmitWorkflow(wf *wfv1.Workflow, memoized bool) (*wfv1.Workflow
 		return &newWF, nil
 	}
 
-	// Iterate the previous nodes. If it was successful Pod carry it forward
+	// Iterate the previous nodes.
 	replaceRegexp := regexp.MustCompile("^" + wf.ObjectMeta.Name)
 	newWF.Status.Nodes = make(map[string]wfv1.NodeStatus)
 	onExitNodeName := wf.ObjectMeta.Name + ".onExit"
 	for _, node := range wf.Status.Nodes {
-		switch node.Phase {
-		case wfv1.NodeSucceeded, wfv1.NodeSkipped:
-			if strings.HasPrefix(node.Name, onExitNodeName) {
-				continue
-			}
-			originalID := node.ID
-			node.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
-			node.ID = newWF.NodeID(node.Name)
-			node.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
-			node.StartedAt = metav1.Time{Time: time.Now().UTC()}
-			node.FinishedAt = node.StartedAt
-			newChildren := make([]string, len(node.Children))
-			for i, childID := range node.Children {
-				newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
-			}
-			node.Children = newChildren
-			newOutboundNodes := make([]string, len(node.OutboundNodes))
-			for i, outboundID := range node.OutboundNodes {
-				newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
-			}
-			node.OutboundNodes = newOutboundNodes
-			if node.Type == wfv1.NodeTypePod {
-				node.Phase = wfv1.NodeSkipped
-				node.Type = wfv1.NodeTypeSkipped
-				node.Message = fmt.Sprintf("original pod: %s", originalID)
-			}
-			newWF.Status.Nodes[node.ID] = node
-		case wfv1.NodeError, wfv1.NodeFailed, wfv1.NodeRunning, wfv1.NodePending:
-			// do not add this status to the node. pretend as if this node never existed.
-			// NOTE: NodeRunning shouldn't really happen except in weird scenarios where controller
-			// mismanages state (e.g. panic when operating on a workflow)
-		default:
-			return nil, errors.InternalErrorf("Workflow cannot be resubmitted with node %v in %s phase", node, node.Phase)
+		newNode := node.DeepCopy()
+		if strings.HasPrefix(node.Name, onExitNodeName) {
+			continue
 		}
+		originalID := node.ID
+		newNode.Name = replaceRegexp.ReplaceAllString(node.Name, newWF.ObjectMeta.Name)
+		newNode.ID = newWF.NodeID(newNode.Name)
+		if node.BoundaryID != "" {
+			newNode.BoundaryID = convertNodeID(&newWF, replaceRegexp, node.BoundaryID, wf.Status.Nodes)
+		}
+		if !newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+			newNode.StartedAt = metav1.Time{}
+			newNode.FinishedAt = metav1.Time{}
+		} else {
+			newNode.StartedAt = metav1.Time{Time: time.Now().UTC()}
+			newNode.FinishedAt = newNode.StartedAt
+		}
+		newChildren := make([]string, len(node.Children))
+		for i, childID := range node.Children {
+			newChildren[i] = convertNodeID(&newWF, replaceRegexp, childID, wf.Status.Nodes)
+		}
+		newNode.Children = newChildren
+		newOutboundNodes := make([]string, len(node.OutboundNodes))
+		for i, outboundID := range node.OutboundNodes {
+			newOutboundNodes[i] = convertNodeID(&newWF, replaceRegexp, outboundID, wf.Status.Nodes)
+		}
+		newNode.OutboundNodes = newOutboundNodes
+		if newNode.Successful() && newNode.Type == wfv1.NodeTypePod {
+			newNode.Phase = wfv1.NodeSkipped
+			newNode.Type = wfv1.NodeTypeSkipped
+			newNode.Message = fmt.Sprintf("original pod: %s", originalID)
+		} else {
+			newNode.Phase = wfv1.NodePending
+			newNode.Message = ""
+		}
+		newWF.Status.Nodes[newNode.ID] = *newNode
 	}
+
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
+	newWF.Status.Phase = wfv1.NodePending
+
 	return &newWF, nil
 }
 
@@ -512,9 +515,8 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			}
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
-
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, errors.InternalErrorf("Workflow cannot be retried with node %v in %s phase", node, node.Phase)
+			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)
@@ -522,8 +524,21 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			if err != nil && !apierr.IsNotFound(err) {
 				return nil, errors.InternalWrapError(err)
 			}
+		} else if node.Name == wf.ObjectMeta.Name {
+			newNode := node.DeepCopy()
+			newNode.Phase = wfv1.NodeRunning
+			newNode.Message = ""
+			newNode.FinishedAt = metav1.Time{}
+			newWF.Status.Nodes[newNode.ID] = *newNode
+			continue
 		}
 	}
+
+	newWF.Status.StoredTemplates = make(map[string]wfv1.Template)
+	for id, tmpl := range wf.Status.StoredTemplates {
+		newWF.Status.StoredTemplates[id] = tmpl
+	}
+
 	return wfClient.Update(newWF)
 }
 
@@ -542,6 +557,7 @@ func IsWorkflowSuspended(wf *wfv1.Workflow) bool {
 	return false
 }
 
+// IsWorkflowTerminated returns whether or not a workflow is considered terminated
 func IsWorkflowTerminated(wf *wfv1.Workflow) bool {
 	if wf.Spec.ActiveDeadlineSeconds != nil && *wf.Spec.ActiveDeadlineSeconds == 0 {
 		return true
@@ -589,4 +605,122 @@ func DecompressWorkflow(wf *wfv1.Workflow) error {
 		wf.Status.CompressedNodes = ""
 	}
 	return nil
+}
+
+// Reads from stdin
+func ReadFromStdin() ([]byte, error) {
+	reader := bufio.NewReader(os.Stdin)
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, err
+}
+
+// Reads the content of a url
+func ReadFromUrl(url string) ([]byte, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	_ = response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+	return body, err
+}
+
+// ReadFromFilePathsOrUrls reads the content of a single or a list of file paths and/or urls
+func ReadFromFilePathsOrUrls(filePathsOrUrls ...string) ([][]byte, error) {
+	var fileContents [][]byte
+	var body []byte
+	var err error
+	for _, filePathOrUrl := range filePathsOrUrls {
+		if cmdutil.IsURL(filePathOrUrl) {
+			body, err = ReadFromUrl(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		} else {
+			body, err = ioutil.ReadFile(filePathOrUrl)
+			if err != nil {
+				return [][]byte{}, err
+			}
+		}
+		fileContents = append(fileContents, body)
+	}
+	return fileContents, err
+}
+
+// ReadManifest reads from stdin, a single file/url, or a list of files and/or urls
+func ReadManifest(manifestPaths ...string) ([][]byte, error) {
+	var manifestContents [][]byte
+	var err error
+	if len(manifestPaths) == 1 && manifestPaths[0] == "-" {
+		body, err := ReadFromStdin()
+		if err != nil {
+			return [][]byte{}, err
+		}
+		manifestContents = append(manifestContents, body)
+	} else {
+		manifestContents, err = ReadFromFilePathsOrUrls(manifestPaths...)
+		if err != nil {
+			return [][]byte{}, err
+		}
+	}
+	return manifestContents, err
+}
+
+func IsJSONStr(str string) bool {
+	str = strings.TrimSpace(str)
+	return len(str) > 0 && str[0] == '{'
+}
+
+func ConvertYAMLToJSON(str string) (string, error) {
+	if !IsJSONStr(str) {
+		jsonStr, err := yaml.YAMLToJSON([]byte(str))
+		if err != nil {
+			return str, err
+		}
+		return string(jsonStr), nil
+	}
+	return str, nil
+}
+
+// PodSpecPatchMerge will do strategic merge the workflow level PodSpecPatch and template level PodSpecPatch
+func PodSpecPatchMerge(wf *wfv1.Workflow, tmpl *wfv1.Template) (string, error) {
+	var wfPatch, tmplPatch, mergedPatch string
+	var err error
+
+	if wf.Spec.HasPodSpecPatch() {
+		wfPatch, err = ConvertYAMLToJSON(wf.Spec.PodSpecPatch)
+		if err != nil {
+			return "", err
+		}
+	}
+	if tmpl.HasPodSpecPatch() {
+		tmplPatch, err = ConvertYAMLToJSON(tmpl.PodSpecPatch)
+		if err != nil {
+			return "", err
+		}
+
+		if wfPatch != "" {
+			mergedByte, err := strategicpatch.StrategicMergePatch([]byte(wfPatch), []byte(tmplPatch), apiv1.PodSpec{})
+			if err != nil {
+				return "", err
+			}
+			mergedPatch = string(mergedByte)
+		} else {
+			mergedPatch = tmplPatch
+		}
+	} else {
+		mergedPatch = wfPatch
+	}
+	return mergedPatch, nil
+}
+
+func ValidateJsonStr(jsonStr string, schema interface{}) bool {
+	err := json.Unmarshal([]byte(jsonStr), &schema)
+	return err == nil
 }

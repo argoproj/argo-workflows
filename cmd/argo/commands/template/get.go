@@ -8,9 +8,9 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/humanize"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -27,11 +27,13 @@ func NewGetCommand() *cobra.Command {
 				os.Exit(1)
 			}
 			wftmplClient := InitWorkflowTemplateClient()
-			wftmpl, err := wftmplClient.Get(args[0], metav1.GetOptions{})
-			if err != nil {
-				log.Fatal(err)
+			for _, arg := range args {
+				wftmpl, err := wftmplClient.Get(arg, metav1.GetOptions{})
+				if err != nil {
+					log.Fatal(err)
+				}
+				printWorkflowTemplate(wftmpl, output)
 			}
-			printWorkflowTemplate(wftmpl, output)
 		},
 	}
 
