@@ -41,7 +41,7 @@ To run all of the examples in this guide, the 'default' service account is too l
 features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
 command to grant admin privileges to the 'default' service account in the namespace 'default':
 ```
-kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
 For the bare minimum set of privileges which a workflow needs to function, see
 [Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
