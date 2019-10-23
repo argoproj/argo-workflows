@@ -39,9 +39,9 @@ kubectl create clusterrolebinding YOURNAME-cluster-admin-binding --clusterrole=c
 
 To run all of the examples in this guide, the 'default' service account is too limited to support
 features such as artifacts, outputs, access to secrets, etc... For demo purposes, run the following
-command to grant admin privileges to the 'default' service account in the namespace 'default':
+command to grant admin privileges to the 'default' service account in the namespace 'default'. Make sure you are on the 'default' namespace before running them.
 ```
-kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
 ```
 For the bare minimum set of privileges which a workflow needs to function, see
 [Workflow RBAC](docs/workflow-rbac.md). You can also submit workflows which run with a different
@@ -59,6 +59,8 @@ argo list
 argo get xxx-workflow-name-xxx
 argo logs xxx-pod-name-xxx #from get command above
 ```
+
+Make sure you run these examples while on the `default` namespace (since we granted admin privileges only within `default` on the previous step).
 
 You can also create workflows directly with kubectl. However, the Argo CLI offers extra features
 that kubectl does not, such as YAML validation, workflow visualization, parameter passing, retries
@@ -90,7 +92,7 @@ helm install stable/minio \
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
 ```
-kubectl get service argo-artifacts -o wide
+kubectl -n argo get service argo-artifacts -o wide
 ```
 On Minikube:
 ```
