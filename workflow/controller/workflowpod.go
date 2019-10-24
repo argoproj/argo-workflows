@@ -234,7 +234,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")
 		}
 
-		tmpl.PodSpecPatch, err = util.PodSpecPatchMerge(woc.wf, tmpl)
+		tmpl.PodSpecPatch, err = util. PodSpecPatchMerge(woc.wf, tmpl)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "", "Fail to marshal the Pod spec")

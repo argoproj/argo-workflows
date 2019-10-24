@@ -16,49 +16,50 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflows": {
+    "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs/{Container}": {
       "get": {
-        "operationId": "List",
+        "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
+        "operationId": "PodLogs",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowListResponse"
+              "$ref": "#/x-stream-definitions/workflowLogEntry"
             }
           }
         },
         "parameters": [
           {
-            "name": "name",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
             "name": "Namespace",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
-            "name": "StartIdx",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
           },
           {
-            "name": "PageSize",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
+            "name": "PodName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Container",
+            "in": "path",
+            "required": true,
+            "type": "string"
           }
         ],
         "tags": [
           "WorkflowService"
         ]
-      },
+      }
+    },
+    "/api/v1/workflows": {
       "post": {
         "operationId": "Create",
         "responses": {
@@ -75,7 +76,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
+              "$ref": "#/definitions/workflowWorkflowCreateRequest"
             }
           }
         ],
@@ -84,7 +85,83 @@
         ]
       }
     },
-    "/api/v1/workflows/{name}": {
+    "/api/v1/workflows/{Namespace}": {
+      "get": {
+        "operationId": "List",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1WorkflowList"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ListOptions.labelSelector",
+            "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "ListOptions.fieldSelector",
+            "description": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "ListOptions.watch",
+            "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "ListOptions.resourceVersion",
+            "description": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "ListOptions.timeoutSeconds",
+            "description": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "ListOptions.limit",
+            "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "ListOptions.continue",
+            "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}": {
       "get": {
         "operationId": "Get",
         "responses": {
@@ -97,30 +174,23 @@
         },
         "parameters": [
           {
-            "name": "name",
+            "name": "Namespace",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "Namespace",
-            "in": "query",
-            "required": false,
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
             "type": "string"
           },
           {
-            "name": "StartIdx",
+            "name": "GetOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           }
         ],
         "tags": [
@@ -133,44 +203,76 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowResponse"
+              "$ref": "#/definitions/workflowWorkflowDeleteResponse"
             }
           }
         },
         "parameters": [
           {
-            "name": "name",
+            "name": "Namespace",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "Namespace",
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "DeleteOptions.gracePeriodSeconds",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "DeleteOptions.preconditions.uid",
+            "description": "Specifies the target UID.\n+optional.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "StartIdx",
+            "name": "DeleteOptions.preconditions.resourceVersion",
+            "description": "Specifies the target ResourceVersion\n+optional.",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           },
           {
-            "name": "PageSize",
+            "name": "DeleteOptions.orphanDependents",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "DeleteOptions.propagationPolicy",
+            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "DeleteOptions.dryRun",
+            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
           }
         ],
         "tags": [
           "WorkflowService"
         ]
-      }
-    },
-    "/api/v1/workflows/{workflow.metadata.name}": {
+      },
       "put": {
         "operationId": "Terminate",
         "responses": {
@@ -183,8 +285,13 @@
         },
         "parameters": [
           {
-            "name": "workflow.metadata.name",
-            "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
             "in": "path",
             "required": true,
             "type": "string"
@@ -194,7 +301,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
+              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
             }
           }
         ],
@@ -205,6 +312,20 @@
     }
   },
   "definitions": {
+    "apismetav1Preconditions": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "title": "Specifies the target UID.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "Specifies the target ResourceVersion\n+optional"
+        }
+      },
+      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
+    },
     "intstrIntOrString": {
       "type": "object",
       "properties": {
@@ -223,6 +344,18 @@
       "description": "+protobuf=true\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:openapi-gen=true",
       "title": "IntOrString is a type that can hold an int32 or a string.  When used in\nJSON or YAML marshalling and unmarshalling, it produces or consumes the\ninner type.  This allows you to have, for example, a JSON field that can\naccept a name or number.\nTODO: Rename to Int32OrString"
     },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
     "resourceQuantity": {
       "type": "object",
       "properties": {
@@ -231,6 +364,31 @@
         }
       },
       "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and Int64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true"
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
     },
     "v1AWSElasticBlockStoreVolumeSource": {
       "type": "object",
@@ -654,6 +812,54 @@
       },
       "description": "ContainerPort represents a network port in a single container."
     },
+    "v1CreateOptions": {
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
+        },
+        "fieldManager": {
+          "type": "string",
+          "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
+        }
+      },
+      "description": "CreateOptions may be provided when creating an API object."
+    },
+    "v1DeleteOptions": {
+      "type": "object",
+      "properties": {
+        "gracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
+        },
+        "preconditions": {
+          "$ref": "#/definitions/apismetav1Preconditions",
+          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional"
+        },
+        "orphanDependents": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
+        },
+        "propagationPolicy": {
+          "type": "string",
+          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
+        },
+        "dryRun": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
+        }
+      },
+      "description": "DeleteOptions may be provided when deleting an API object."
+    },
     "v1DownwardAPIProjection": {
       "type": "object",
       "properties": {
@@ -907,6 +1113,16 @@
         }
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
+    },
+    "v1GetOptions": {
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv."
+        }
+      },
+      "description": "GetOptions is the standard query options to the standard REST get call."
     },
     "v1GitRepoVolumeSource": {
       "type": "object",
@@ -1212,6 +1428,43 @@
         }
       },
       "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}."
+    },
+    "v1ListOptions": {
+      "type": "object",
+      "properties": {
+        "labelSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional"
+        },
+        "fieldSelector": {
+          "type": "string",
+          "title": "A selector to restrict the list of returned objects by their fields.\nDefaults to everything.\n+optional"
+        },
+        "watch": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "When specified with a watch call, shows changes that occur after that particular version of a resource.\nDefaults to changes from the beginning of history.\nWhen specified for list:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.\n+optional"
+        },
+        "timeoutSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Timeout for the list/watch call.\nThis limits the duration of the call, regardless of any activity or inactivity.\n+optional"
+        },
+        "limit": {
+          "type": "string",
+          "format": "int64",
+          "description": "limit is a maximum number of responses to return for a list call. If more items exist, the\nserver will set the `continue` field on the list metadata to a value that can be used with the\nsame initial query to retrieve the next set of results. Setting a limit may return fewer than\nthe requested amount of items (up to zero items) in the event all requested objects are\nfiltered out and clients should only use the presence of the continue field to determine whether\nmore results are available. Servers may choose not to support the limit argument and will return\nall of the available results. If limit is specified and the continue field is empty, clients may\nassume that no more results are available. This field is not supported if watch is true.\n\nThe server guarantees that the objects returned when using continue will be identical to issuing\na single list call without a limit - that is, no objects created, modified, or deleted after the\nfirst request is issued will be included in any subsequent continued requests. This is sometimes\nreferred to as a consistent snapshot, and ensures that a client that is using limit to receive\nsmaller chunks of a very large result can ensure they see all possible objects. If objects are\nupdated during a chunked list the version of the object that was present at the time the first list\nresult was calculated is returned."
+        },
+        "continue": {
+          "type": "string",
+          "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications."
+        }
+      },
+      "description": "ListOptions is the query options to a standard REST list call."
     },
     "v1LocalObjectReference": {
       "type": "object",
@@ -3513,6 +3766,21 @@
       },
       "title": "Workflow is the definition of a workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
     },
+    "v1alpha1WorkflowList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1Workflow"
+          }
+        }
+      },
+      "title": "WorkflowList is list of Workflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
     "v1alpha1WorkflowSpec": {
       "type": "object",
       "properties": {
@@ -3740,27 +4008,38 @@
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
     },
-    "workflowWorkflowListResponse": {
+    "workflowLogEntry": {
       "type": "object",
       "properties": {
-        "workflows": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1alpha1Workflow"
-          }
+        "content": {
+          "type": "string"
+        },
+        "timeStamp": {
+          "$ref": "#/definitions/v1Time"
         }
       }
     },
-    "workflowWorkflowResponse": {
+    "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
-        "Name": {
+        "Workflows": {
+          "$ref": "#/definitions/v1alpha1Workflow"
+        },
+        "CreateOptions": {
+          "$ref": "#/definitions/v1CreateOptions"
+        }
+      }
+    },
+    "workflowWorkflowDeleteResponse": {
+      "type": "object"
+    },
+    "workflowWorkflowUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "WorkflowName": {
           "type": "string"
         },
-        "Status": {
-          "type": "string"
-        },
-        "Message": {
+        "Namespace": {
           "type": "string"
         }
       }
@@ -3845,6 +4124,20 @@
         }
       },
       "title": "NodeStatus contains status information about an individual node in the workflow\n+k8s:openapi-gen=false"
+    }
+  },
+  "x-stream-definitions": {
+    "workflowLogEntry": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/workflowLogEntry"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of workflowLogEntry"
     }
   }
 }

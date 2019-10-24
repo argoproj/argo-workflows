@@ -1,8 +1,8 @@
-package main
+package server
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/cmd/server"
+	"github.com/argoproj/argo/cmd/server/apiserver"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/pkg/cli"
@@ -62,8 +62,8 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			var clientAuth bool
 			clientAuth, err =strconv.ParseBool( enableClientAuth)
-			var opts = server.ArgoServerOpts{Namespace: namespace, KubeClientset: wflientset, EnableClientAuth: clientAuth}
-			argoSvr := server.NewArgoServer(ctx, opts )
+			var opts = apiserver.ArgoServerOpts{Namespace: namespace, KubeClientset: wflientset, EnableClientAuth: clientAuth}
+			argoSvr := apiserver.NewArgoServer(ctx, opts )
 			defer cancel()
 			go argoSvr.Run(ctx,8082)
 

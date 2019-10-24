@@ -15,9 +15,12 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	io "io"
-	_ "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	math "math"
+	math_bits "math/bits"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -29,343 +32,528 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type WorkflowCreateResponse struct {
-	Response             string   `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+type WorkflowCreateRequest struct {
+	Workflows            *v1alpha1.Workflow `protobuf:"bytes,1,opt,name=Workflows,proto3" json:"Workflows,omitempty"`
+	CreateOptions        *v1.CreateOptions  `protobuf:"bytes,2,opt,name=CreateOptions,proto3" json:"CreateOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
 }
 
-func (m *WorkflowCreateResponse) Reset()         { *m = WorkflowCreateResponse{} }
-func (m *WorkflowCreateResponse) String() string { return proto.CompactTextString(m) }
-func (*WorkflowCreateResponse) ProtoMessage()    {}
-func (*WorkflowCreateResponse) Descriptor() ([]byte, []int) {
+func (m *WorkflowCreateRequest) Reset()         { *m = WorkflowCreateRequest{} }
+func (m *WorkflowCreateRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowCreateRequest) ProtoMessage()    {}
+func (*WorkflowCreateRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_192bc67c39cca05a, []int{0}
 }
-func (m *WorkflowCreateResponse) XXX_Unmarshal(b []byte) error {
+func (m *WorkflowCreateRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WorkflowCreateResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *WorkflowCreateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WorkflowCreateResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_WorkflowCreateRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *WorkflowCreateResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowCreateResponse.Merge(m, src)
+func (m *WorkflowCreateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowCreateRequest.Merge(m, src)
 }
-func (m *WorkflowCreateResponse) XXX_Size() int {
+func (m *WorkflowCreateRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WorkflowCreateResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowCreateResponse.DiscardUnknown(m)
+func (m *WorkflowCreateRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowCreateRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WorkflowCreateResponse proto.InternalMessageInfo
+var xxx_messageInfo_WorkflowCreateRequest proto.InternalMessageInfo
 
-func (m *WorkflowCreateResponse) GetResponse() string {
-	if m != nil {
-		return m.Response
-	}
-	return ""
-}
-
-type WorkflowListResponse struct {
-	Workflows            []*v1alpha1.Workflow `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
-}
-
-func (m *WorkflowListResponse) Reset()         { *m = WorkflowListResponse{} }
-func (m *WorkflowListResponse) String() string { return proto.CompactTextString(m) }
-func (*WorkflowListResponse) ProtoMessage()    {}
-func (*WorkflowListResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_192bc67c39cca05a, []int{1}
-}
-func (m *WorkflowListResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *WorkflowListResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowListResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *WorkflowListResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowListResponse.Merge(m, src)
-}
-func (m *WorkflowListResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *WorkflowListResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowListResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WorkflowListResponse proto.InternalMessageInfo
-
-func (m *WorkflowListResponse) GetWorkflows() []*v1alpha1.Workflow {
+func (m *WorkflowCreateRequest) GetWorkflows() *v1alpha1.Workflow {
 	if m != nil {
 		return m.Workflows
 	}
 	return nil
 }
 
-type WorkflowResponse struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=Name,proto3" json:"Name,omitempty"`
-	Status               string   `protobuf:"bytes,2,opt,name=Status,proto3" json:"Status,omitempty"`
-	Message              string   `protobuf:"bytes,3,opt,name=Message,proto3" json:"Message,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+func (m *WorkflowCreateRequest) GetCreateOptions() *v1.CreateOptions {
+	if m != nil {
+		return m.CreateOptions
+	}
+	return nil
 }
 
-func (m *WorkflowResponse) Reset()         { *m = WorkflowResponse{} }
-func (m *WorkflowResponse) String() string { return proto.CompactTextString(m) }
-func (*WorkflowResponse) ProtoMessage()    {}
-func (*WorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_192bc67c39cca05a, []int{2}
+type WorkflowGetRequest struct {
+	WorkflowName         string         `protobuf:"bytes,1,opt,name=WorkflowName,proto3" json:"WorkflowName,omitempty"`
+	Namespace            string         `protobuf:"bytes,2,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	GetOptions           *v1.GetOptions `protobuf:"bytes,3,opt,name=GetOptions,proto3" json:"GetOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
-func (m *WorkflowResponse) XXX_Unmarshal(b []byte) error {
+
+func (m *WorkflowGetRequest) Reset()         { *m = WorkflowGetRequest{} }
+func (m *WorkflowGetRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowGetRequest) ProtoMessage()    {}
+func (*WorkflowGetRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{1}
+}
+func (m *WorkflowGetRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *WorkflowGetRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WorkflowResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_WorkflowGetRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *WorkflowResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowResponse.Merge(m, src)
+func (m *WorkflowGetRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowGetRequest.Merge(m, src)
 }
-func (m *WorkflowResponse) XXX_Size() int {
+func (m *WorkflowGetRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WorkflowResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowResponse.DiscardUnknown(m)
+func (m *WorkflowGetRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowGetRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WorkflowResponse proto.InternalMessageInfo
+var xxx_messageInfo_WorkflowGetRequest proto.InternalMessageInfo
 
-func (m *WorkflowResponse) GetName() string {
+func (m *WorkflowGetRequest) GetWorkflowName() string {
 	if m != nil {
-		return m.Name
+		return m.WorkflowName
 	}
 	return ""
 }
 
-func (m *WorkflowResponse) GetStatus() string {
-	if m != nil {
-		return m.Status
-	}
-	return ""
-}
-
-func (m *WorkflowResponse) GetMessage() string {
-	if m != nil {
-		return m.Message
-	}
-	return ""
-}
-
-type WorkflowQuery struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Namespace            string   `protobuf:"bytes,2,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
-	StartIdx             int32    `protobuf:"varint,3,opt,name=StartIdx,proto3" json:"StartIdx,omitempty"`
-	PageSize             int32    `protobuf:"varint,4,opt,name=PageSize,proto3" json:"PageSize,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *WorkflowQuery) Reset()         { *m = WorkflowQuery{} }
-func (m *WorkflowQuery) String() string { return proto.CompactTextString(m) }
-func (*WorkflowQuery) ProtoMessage()    {}
-func (*WorkflowQuery) Descriptor() ([]byte, []int) {
-	return fileDescriptor_192bc67c39cca05a, []int{3}
-}
-func (m *WorkflowQuery) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *WorkflowQuery) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_WorkflowQuery.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *WorkflowQuery) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowQuery.Merge(m, src)
-}
-func (m *WorkflowQuery) XXX_Size() int {
-	return m.Size()
-}
-func (m *WorkflowQuery) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowQuery.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WorkflowQuery proto.InternalMessageInfo
-
-func (m *WorkflowQuery) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *WorkflowQuery) GetNamespace() string {
+func (m *WorkflowGetRequest) GetNamespace() string {
 	if m != nil {
 		return m.Namespace
 	}
 	return ""
 }
 
-func (m *WorkflowQuery) GetStartIdx() int32 {
+func (m *WorkflowGetRequest) GetGetOptions() *v1.GetOptions {
 	if m != nil {
-		return m.StartIdx
+		return m.GetOptions
 	}
-	return 0
+	return nil
 }
 
-func (m *WorkflowQuery) GetPageSize() int32 {
-	if m != nil {
-		return m.PageSize
-	}
-	return 0
+type WorkflowListRequest struct {
+	Namespace            string          `protobuf:"bytes,1,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	ListOptions          *v1.ListOptions `protobuf:"bytes,2,opt,name=ListOptions,proto3" json:"ListOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-type WorkflowUpdateQuery struct {
-	Workflow             *v1alpha1.Workflow `protobuf:"bytes,1,opt,name=workflow,proto3" json:"workflow,omitempty"`
-	Memoized             bool               `protobuf:"varint,2,opt,name=memoized,proto3" json:"memoized,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
-	XXX_unrecognized     []byte             `json:"-"`
-	XXX_sizecache        int32              `json:"-"`
+func (m *WorkflowListRequest) Reset()         { *m = WorkflowListRequest{} }
+func (m *WorkflowListRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowListRequest) ProtoMessage()    {}
+func (*WorkflowListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{2}
 }
-
-func (m *WorkflowUpdateQuery) Reset()         { *m = WorkflowUpdateQuery{} }
-func (m *WorkflowUpdateQuery) String() string { return proto.CompactTextString(m) }
-func (*WorkflowUpdateQuery) ProtoMessage()    {}
-func (*WorkflowUpdateQuery) Descriptor() ([]byte, []int) {
-	return fileDescriptor_192bc67c39cca05a, []int{4}
-}
-func (m *WorkflowUpdateQuery) XXX_Unmarshal(b []byte) error {
+func (m *WorkflowListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *WorkflowUpdateQuery) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *WorkflowListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_WorkflowUpdateQuery.Marshal(b, m, deterministic)
+		return xxx_messageInfo_WorkflowListRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (m *WorkflowUpdateQuery) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowUpdateQuery.Merge(m, src)
+func (m *WorkflowListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowListRequest.Merge(m, src)
 }
-func (m *WorkflowUpdateQuery) XXX_Size() int {
+func (m *WorkflowListRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *WorkflowUpdateQuery) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowUpdateQuery.DiscardUnknown(m)
+func (m *WorkflowListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowListRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_WorkflowUpdateQuery proto.InternalMessageInfo
+var xxx_messageInfo_WorkflowListRequest proto.InternalMessageInfo
 
-func (m *WorkflowUpdateQuery) GetWorkflow() *v1alpha1.Workflow {
+func (m *WorkflowListRequest) GetNamespace() string {
 	if m != nil {
-		return m.Workflow
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *WorkflowListRequest) GetListOptions() *v1.ListOptions {
+	if m != nil {
+		return m.ListOptions
 	}
 	return nil
 }
 
-func (m *WorkflowUpdateQuery) GetMemoized() bool {
-	if m != nil {
-		return m.Memoized
+type WorkflowUpdateRequest struct {
+	WorkflowName         string   `protobuf:"bytes,1,opt,name=WorkflowName,proto3" json:"WorkflowName,omitempty"`
+	Namespace            string   `protobuf:"bytes,2,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowUpdateRequest) Reset()         { *m = WorkflowUpdateRequest{} }
+func (m *WorkflowUpdateRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowUpdateRequest) ProtoMessage()    {}
+func (*WorkflowUpdateRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{3}
+}
+func (m *WorkflowUpdateRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowUpdateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowUpdateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
 	}
-	return false
+}
+func (m *WorkflowUpdateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowUpdateRequest.Merge(m, src)
+}
+func (m *WorkflowUpdateRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowUpdateRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowUpdateRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowUpdateRequest proto.InternalMessageInfo
+
+func (m *WorkflowUpdateRequest) GetWorkflowName() string {
+	if m != nil {
+		return m.WorkflowName
+	}
+	return ""
+}
+
+func (m *WorkflowUpdateRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+type WorkflowLogRequest struct {
+	WorkflowName         string   `protobuf:"bytes,1,opt,name=WorkflowName,proto3" json:"WorkflowName,omitempty"`
+	Namespace            string   `protobuf:"bytes,2,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	PodName              string   `protobuf:"bytes,3,opt,name=PodName,proto3" json:"PodName,omitempty"`
+	Container            string   `protobuf:"bytes,4,opt,name=Container,proto3" json:"Container,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowLogRequest) Reset()         { *m = WorkflowLogRequest{} }
+func (m *WorkflowLogRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowLogRequest) ProtoMessage()    {}
+func (*WorkflowLogRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{4}
+}
+func (m *WorkflowLogRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowLogRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowLogRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowLogRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowLogRequest.Merge(m, src)
+}
+func (m *WorkflowLogRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowLogRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowLogRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowLogRequest proto.InternalMessageInfo
+
+func (m *WorkflowLogRequest) GetWorkflowName() string {
+	if m != nil {
+		return m.WorkflowName
+	}
+	return ""
+}
+
+func (m *WorkflowLogRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *WorkflowLogRequest) GetPodName() string {
+	if m != nil {
+		return m.PodName
+	}
+	return ""
+}
+
+func (m *WorkflowLogRequest) GetContainer() string {
+	if m != nil {
+		return m.Container
+	}
+	return ""
+}
+
+type WorkflowDeleteRequest struct {
+	WorkflowName         string            `protobuf:"bytes,1,opt,name=WorkflowName,proto3" json:"WorkflowName,omitempty"`
+	Namespace            string            `protobuf:"bytes,2,opt,name=Namespace,proto3" json:"Namespace,omitempty"`
+	DeleteOptions        *v1.DeleteOptions `protobuf:"bytes,3,opt,name=DeleteOptions,proto3" json:"DeleteOptions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *WorkflowDeleteRequest) Reset()         { *m = WorkflowDeleteRequest{} }
+func (m *WorkflowDeleteRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowDeleteRequest) ProtoMessage()    {}
+func (*WorkflowDeleteRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{5}
+}
+func (m *WorkflowDeleteRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowDeleteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowDeleteRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowDeleteRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowDeleteRequest.Merge(m, src)
+}
+func (m *WorkflowDeleteRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowDeleteRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowDeleteRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowDeleteRequest proto.InternalMessageInfo
+
+func (m *WorkflowDeleteRequest) GetWorkflowName() string {
+	if m != nil {
+		return m.WorkflowName
+	}
+	return ""
+}
+
+func (m *WorkflowDeleteRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *WorkflowDeleteRequest) GetDeleteOptions() *v1.DeleteOptions {
+	if m != nil {
+		return m.DeleteOptions
+	}
+	return nil
+}
+
+type WorkflowDeleteResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowDeleteResponse) Reset()         { *m = WorkflowDeleteResponse{} }
+func (m *WorkflowDeleteResponse) String() string { return proto.CompactTextString(m) }
+func (*WorkflowDeleteResponse) ProtoMessage()    {}
+func (*WorkflowDeleteResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{6}
+}
+func (m *WorkflowDeleteResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowDeleteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowDeleteResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowDeleteResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowDeleteResponse.Merge(m, src)
+}
+func (m *WorkflowDeleteResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowDeleteResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowDeleteResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowDeleteResponse proto.InternalMessageInfo
+
+type LogEntry struct {
+	Content              string   `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
+	TimeStamp            *v1.Time `protobuf:"bytes,2,opt,name=timeStamp,proto3" json:"timeStamp,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *LogEntry) Reset()         { *m = LogEntry{} }
+func (m *LogEntry) String() string { return proto.CompactTextString(m) }
+func (*LogEntry) ProtoMessage()    {}
+func (*LogEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_192bc67c39cca05a, []int{7}
+}
+func (m *LogEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LogEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LogEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LogEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LogEntry.Merge(m, src)
+}
+func (m *LogEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *LogEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_LogEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LogEntry proto.InternalMessageInfo
+
+func (m *LogEntry) GetContent() string {
+	if m != nil {
+		return m.Content
+	}
+	return ""
+}
+
+func (m *LogEntry) GetTimeStamp() *v1.Time {
+	if m != nil {
+		return m.TimeStamp
+	}
+	return nil
 }
 
 func init() {
-	proto.RegisterType((*WorkflowCreateResponse)(nil), "workflow.WorkflowCreateResponse")
-	proto.RegisterType((*WorkflowListResponse)(nil), "workflow.WorkflowListResponse")
-	proto.RegisterType((*WorkflowResponse)(nil), "workflow.WorkflowResponse")
-	proto.RegisterType((*WorkflowQuery)(nil), "workflow.WorkflowQuery")
-	proto.RegisterType((*WorkflowUpdateQuery)(nil), "workflow.WorkflowUpdateQuery")
+	proto.RegisterType((*WorkflowCreateRequest)(nil), "workflow.WorkflowCreateRequest")
+	proto.RegisterType((*WorkflowGetRequest)(nil), "workflow.WorkflowGetRequest")
+	proto.RegisterType((*WorkflowListRequest)(nil), "workflow.WorkflowListRequest")
+	proto.RegisterType((*WorkflowUpdateRequest)(nil), "workflow.WorkflowUpdateRequest")
+	proto.RegisterType((*WorkflowLogRequest)(nil), "workflow.WorkflowLogRequest")
+	proto.RegisterType((*WorkflowDeleteRequest)(nil), "workflow.WorkflowDeleteRequest")
+	proto.RegisterType((*WorkflowDeleteResponse)(nil), "workflow.WorkflowDeleteResponse")
+	proto.RegisterType((*LogEntry)(nil), "workflow.LogEntry")
 }
 
 func init() { proto.RegisterFile("cmd/server/workflow/workflow.proto", fileDescriptor_192bc67c39cca05a) }
 
 var fileDescriptor_192bc67c39cca05a = []byte{
-	// 628 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x96, 0x4d, 0x6b, 0x13, 0x41,
-	0x18, 0xc7, 0x99, 0xbe, 0xa4, 0xc9, 0x88, 0xa8, 0xd3, 0x52, 0xd7, 0xa5, 0x86, 0xb2, 0xa7, 0x52,
-	0x64, 0x97, 0xd6, 0x22, 0x52, 0xf4, 0x62, 0x05, 0x11, 0x54, 0x74, 0xa3, 0xa8, 0xf5, 0x20, 0xd3,
-	0xec, 0xe3, 0x66, 0x4d, 0x76, 0x67, 0x99, 0x99, 0xa4, 0xa6, 0x22, 0x82, 0x67, 0x6f, 0x7e, 0x04,
-	0xdf, 0xbe, 0x85, 0x67, 0x8f, 0x82, 0x5f, 0x40, 0x82, 0x1f, 0x44, 0x66, 0xb2, 0x33, 0x1b, 0xd9,
-	0xe6, 0x94, 0x4b, 0x6e, 0xcf, 0x4b, 0x9e, 0xff, 0xf3, 0xdb, 0xc9, 0xf3, 0xec, 0x2c, 0xf6, 0xda,
-	0x69, 0x14, 0x08, 0xe0, 0x03, 0xe0, 0xc1, 0x31, 0xe3, 0xdd, 0x57, 0x3d, 0x76, 0x6c, 0x0d, 0x3f,
-	0xe7, 0x4c, 0x32, 0x52, 0x37, 0xbe, 0xbb, 0x16, 0xb3, 0x98, 0xe9, 0x60, 0xa0, 0xac, 0x71, 0xde,
-	0xdd, 0x88, 0x19, 0x8b, 0x7b, 0x10, 0xd0, 0x3c, 0x09, 0x68, 0x96, 0x31, 0x49, 0x65, 0xc2, 0x32,
-	0x51, 0x64, 0xf7, 0xba, 0xd7, 0x85, 0x9f, 0x30, 0x95, 0x4d, 0x69, 0xbb, 0x93, 0x64, 0xc0, 0x87,
-	0x41, 0xde, 0x8d, 0x55, 0x40, 0x04, 0x29, 0x48, 0x1a, 0x0c, 0x76, 0x82, 0x18, 0x32, 0xe0, 0x54,
-	0x42, 0x54, 0x54, 0x1d, 0xc4, 0x89, 0xec, 0xf4, 0x8f, 0xfc, 0x36, 0x4b, 0x03, 0xca, 0x75, 0xd3,
-	0xd7, 0xda, 0x28, 0x4b, 0x2d, 0xee, 0x60, 0x87, 0xf6, 0xf2, 0x0e, 0xad, 0x88, 0x78, 0x7b, 0x78,
-	0xfd, 0x69, 0xf1, 0xa3, 0x03, 0x0e, 0x54, 0x42, 0x08, 0x22, 0x67, 0x99, 0x00, 0xe2, 0xe2, 0x3a,
-	0x2f, 0x6c, 0x07, 0x6d, 0xa2, 0xad, 0x46, 0x68, 0x7d, 0x4f, 0xe0, 0x35, 0x53, 0x75, 0x2f, 0x11,
-	0xd2, 0xd6, 0xbc, 0xc0, 0x0d, 0xd3, 0x52, 0x38, 0x68, 0x73, 0x71, 0xeb, 0xcc, 0xee, 0x4d, 0xbf,
-	0xc4, 0xf4, 0x0d, 0xa6, 0x36, 0xfc, 0xbc, 0x1b, 0xfb, 0x0a, 0xd3, 0xb7, 0x87, 0x69, 0x30, 0x7d,
-	0xa3, 0x1e, 0x96, 0x7a, 0xde, 0x33, 0x7c, 0xde, 0x86, 0x4d, 0x43, 0x82, 0x97, 0x1e, 0xd0, 0xd4,
-	0x00, 0x6a, 0x9b, 0xac, 0xe3, 0x5a, 0x4b, 0x52, 0xd9, 0x17, 0xce, 0x82, 0x8e, 0x16, 0x1e, 0x71,
-	0xf0, 0xca, 0x7d, 0x10, 0x82, 0xc6, 0xe0, 0x2c, 0xea, 0x84, 0x71, 0xbd, 0x21, 0x3e, 0x6b, 0x94,
-	0x1f, 0xf5, 0x81, 0x0f, 0x95, 0x6c, 0x36, 0x21, 0xab, 0x6c, 0xb2, 0x81, 0x1b, 0x4a, 0x5e, 0xe4,
-	0xb4, 0x0d, 0x85, 0x72, 0x19, 0x50, 0xa7, 0xd5, 0x92, 0x94, 0xcb, 0xbb, 0xd1, 0x1b, 0xad, 0xbe,
-	0x1c, 0x5a, 0x5f, 0xe5, 0x1e, 0xd2, 0x18, 0x5a, 0xc9, 0x09, 0x38, 0x4b, 0xe3, 0x9c, 0xf1, 0xbd,
-	0x8f, 0x08, 0xaf, 0x9a, 0xde, 0x4f, 0xf2, 0x88, 0x4a, 0x18, 0x13, 0x3c, 0xc7, 0x76, 0xa4, 0x34,
-	0xc5, 0xcc, 0x07, 0x69, 0xe5, 0x14, 0x4e, 0x0a, 0x29, 0x4b, 0x4e, 0x20, 0xd2, 0xcf, 0x51, 0x0f,
-	0xad, 0xbf, 0xfb, 0x03, 0xe3, 0x73, 0xa6, 0xa4, 0x05, 0x7c, 0x90, 0xb4, 0x81, 0x7c, 0x41, 0xb8,
-	0x36, 0x9e, 0x0d, 0x32, 0x1b, 0x83, 0x3b, 0x5b, 0xb9, 0xb7, 0xf1, 0xe1, 0xf7, 0xdf, 0x4f, 0x0b,
-	0xeb, 0xde, 0x05, 0xbd, 0x46, 0x83, 0x1d, 0x3b, 0xde, 0x62, 0x1f, 0x6d, 0x93, 0xf7, 0x78, 0xf1,
-	0x0e, 0x48, 0x72, 0xb1, 0x54, 0xf8, 0xef, 0x3f, 0x9d, 0xb5, 0xf9, 0xa6, 0x6e, 0xee, 0x12, 0xa7,
-	0xd2, 0x3c, 0x78, 0xab, 0xe6, 0xe3, 0x1d, 0x39, 0xc4, 0x4b, 0x6a, 0x19, 0xa6, 0x13, 0x34, 0xab,
-	0x89, 0xc9, 0xed, 0xf1, 0x2e, 0xe9, 0x16, 0xab, 0xa4, 0xfa, 0x7c, 0xe4, 0x25, 0xae, 0xdd, 0x86,
-	0x1e, 0x48, 0x98, 0xae, 0xee, 0x56, 0x13, 0x56, 0xb9, 0x80, 0xdf, 0x9e, 0x0e, 0xff, 0x19, 0xe1,
-	0xe5, 0x10, 0x24, 0x1f, 0x92, 0xcb, 0x55, 0x9d, 0x89, 0xc1, 0x9c, 0xf5, 0x18, 0x6f, 0x68, 0x92,
-	0x6b, 0xee, 0xf6, 0x29, 0x24, 0xb6, 0x4c, 0xbd, 0xf1, 0x22, 0x2a, 0xa9, 0xaf, 0xd9, 0xf6, 0xcb,
-	0xd1, 0xfd, 0x86, 0x70, 0x3d, 0x04, 0xd1, 0x3f, 0x4a, 0x13, 0x39, 0xd7, 0xa0, 0x6a, 0x67, 0x14,
-	0x68, 0x0a, 0x73, 0x8d, 0xf9, 0x15, 0xe1, 0x95, 0x56, 0x5f, 0xe4, 0x90, 0x45, 0x73, 0xcd, 0xf9,
-	0x1d, 0xe1, 0xc6, 0x63, 0xe0, 0x69, 0x92, 0xa9, 0xb7, 0xd0, 0x1c, 0x93, 0xde, 0xda, 0xff, 0x39,
-	0x6a, 0xa2, 0x5f, 0xa3, 0x26, 0xfa, 0x33, 0x6a, 0xa2, 0xc3, 0x2b, 0x53, 0xaf, 0xe8, 0x53, 0xbe,
-	0x29, 0x8e, 0x6a, 0xfa, 0x4a, 0xbe, 0xfa, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xe8, 0xf5, 0x0b, 0x8f,
-	0x71, 0x08, 0x00, 0x00,
+	// 783 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x96, 0xcf, 0x6b, 0x13, 0x41,
+	0x14, 0xc7, 0x99, 0xb6, 0xa6, 0xcd, 0xb4, 0x22, 0x8e, 0x5a, 0x42, 0x48, 0x7f, 0xb0, 0x20, 0x48,
+	0x29, 0x3b, 0x4d, 0x5b, 0x50, 0x0a, 0x1e, 0xb4, 0x4a, 0x05, 0xa3, 0x96, 0x4d, 0x45, 0xaa, 0xa7,
+	0x6d, 0xf2, 0xdc, 0xae, 0xc9, 0xee, 0xac, 0x3b, 0x93, 0x94, 0x12, 0x72, 0xd0, 0x83, 0x78, 0x52,
+	0xd0, 0x8b, 0xde, 0xfc, 0x75, 0xf0, 0x0f, 0xf0, 0x8f, 0xf0, 0xa6, 0xe0, 0x3f, 0x20, 0xc5, 0x3f,
+	0x44, 0x66, 0xb2, 0x3f, 0x9b, 0xb4, 0xa4, 0xa4, 0x87, 0x9c, 0x76, 0x76, 0xde, 0xbe, 0xf7, 0x3e,
+	0xfb, 0xe6, 0x3b, 0x6f, 0x06, 0x6b, 0x15, 0xa7, 0x4a, 0x39, 0xf8, 0x4d, 0xf0, 0xe9, 0x1e, 0xf3,
+	0x6b, 0x4f, 0xeb, 0x6c, 0x2f, 0x1a, 0xe8, 0x9e, 0xcf, 0x04, 0x23, 0x13, 0xe1, 0x7b, 0xfe, 0xa2,
+	0xc5, 0x2c, 0xa6, 0x26, 0xa9, 0x1c, 0x75, 0xec, 0xf9, 0x82, 0xc5, 0x98, 0x55, 0x07, 0x6a, 0x7a,
+	0x36, 0x35, 0x5d, 0x97, 0x09, 0x53, 0xd8, 0xcc, 0xe5, 0x81, 0x75, 0xb5, 0x76, 0x8d, 0xeb, 0x36,
+	0x93, 0x56, 0xc7, 0xac, 0xec, 0xda, 0x2e, 0xf8, 0xfb, 0xd4, 0xab, 0x59, 0x72, 0x82, 0x53, 0x07,
+	0x84, 0x49, 0x9b, 0x45, 0x6a, 0x81, 0x0b, 0xbe, 0x29, 0xa0, 0x1a, 0x78, 0xad, 0x5b, 0xb6, 0xd8,
+	0x6d, 0xec, 0xe8, 0x15, 0xe6, 0x50, 0xd3, 0x57, 0x49, 0x9f, 0xa9, 0x41, 0xec, 0x1a, 0xe1, 0x36,
+	0x8b, 0x66, 0xdd, 0xdb, 0x35, 0xbb, 0x82, 0x68, 0xbf, 0x10, 0xbe, 0xf4, 0x28, 0xf8, 0x6a, 0xdd,
+	0x07, 0x53, 0x80, 0x01, 0xcf, 0x1b, 0xc0, 0x05, 0x79, 0x82, 0xb3, 0xa1, 0x81, 0xe7, 0xd0, 0x3c,
+	0xba, 0x32, 0xb9, 0x7c, 0x5d, 0x8f, 0x53, 0xea, 0x61, 0x4a, 0x35, 0xd0, 0xbd, 0x9a, 0xa5, 0xcb,
+	0x94, 0x7a, 0x54, 0x98, 0x30, 0xa5, 0x1e, 0x46, 0x31, 0xe2, 0x78, 0x64, 0x1b, 0x9f, 0xed, 0x64,
+	0x7b, 0xe0, 0xa9, 0x42, 0xe4, 0x46, 0x54, 0x82, 0x15, 0xbd, 0x53, 0x09, 0x3d, 0x59, 0x89, 0x38,
+	0xb6, 0xac, 0x84, 0xde, 0x2c, 0xea, 0x29, 0x57, 0x23, 0x1d, 0x49, 0xfb, 0x8e, 0x30, 0x09, 0x13,
+	0x6d, 0x80, 0x08, 0x7f, 0x47, 0xc3, 0x53, 0xe1, 0xec, 0x7d, 0xd3, 0x01, 0xf5, 0x47, 0x59, 0x23,
+	0x35, 0x47, 0x0a, 0x38, 0x2b, 0x9f, 0xdc, 0x33, 0x2b, 0xa0, 0x88, 0xb2, 0x46, 0x3c, 0x41, 0x36,
+	0x31, 0xde, 0x00, 0x11, 0x02, 0x8f, 0x2a, 0xe0, 0xa5, 0xfe, 0x80, 0x63, 0x3f, 0x23, 0x11, 0x43,
+	0x7b, 0x8d, 0xf0, 0x85, 0x10, 0xa0, 0x64, 0xf3, 0x88, 0x35, 0xc5, 0x81, 0x0e, 0x73, 0x94, 0xf1,
+	0xa4, 0xfc, 0x38, 0x5d, 0xb9, 0x62, 0x7f, 0x20, 0x09, 0x47, 0x23, 0x19, 0x45, 0xdb, 0x8e, 0x65,
+	0xf0, 0xd0, 0xab, 0x26, 0x64, 0x30, 0x70, 0xdd, 0xb4, 0x37, 0x89, 0x05, 0x29, 0x31, 0xeb, 0xf4,
+	0x16, 0x24, 0x87, 0xc7, 0x37, 0x59, 0x55, 0x39, 0x8f, 0x2a, 0x5b, 0xf8, 0x2a, 0xfd, 0xd6, 0x99,
+	0x2b, 0x4c, 0x59, 0x85, 0xdc, 0x58, 0xc7, 0x2f, 0x9a, 0xd0, 0x7e, 0x24, 0x34, 0x7f, 0x0b, 0xea,
+	0x70, 0x8a, 0x3f, 0x2b, 0x85, 0xdd, 0x09, 0x99, 0xd6, 0x49, 0x9f, 0xc2, 0x4e, 0xb9, 0x1a, 0xe9,
+	0x48, 0x5a, 0x0e, 0x4f, 0x1f, 0xa6, 0xe6, 0x1e, 0x73, 0x39, 0x68, 0x2e, 0x9e, 0x28, 0x31, 0xeb,
+	0xb6, 0x2b, 0xfc, 0x7d, 0x59, 0x94, 0x0a, 0x73, 0x05, 0xb8, 0x22, 0xa0, 0x0f, 0x5f, 0xc9, 0x1d,
+	0x9c, 0x15, 0xb6, 0x03, 0x65, 0x61, 0x3a, 0x5e, 0xa0, 0x9a, 0x85, 0xfe, 0xb0, 0xb6, 0x6c, 0x07,
+	0x8c, 0xd8, 0x79, 0xf9, 0xe3, 0x14, 0x3e, 0x17, 0xa2, 0x94, 0xc1, 0x6f, 0xda, 0x15, 0x20, 0xaf,
+	0x10, 0xce, 0x74, 0x36, 0x22, 0x99, 0x8b, 0x9b, 0x40, 0xcf, 0xd6, 0x92, 0x1f, 0xac, 0x8f, 0x68,
+	0x85, 0x97, 0x7f, 0xfe, 0xbd, 0x1f, 0x99, 0xd6, 0xce, 0xab, 0x76, 0xda, 0x2c, 0x46, 0x6d, 0x8e,
+	0xaf, 0xa1, 0x05, 0xf2, 0x01, 0xe1, 0xd1, 0x0d, 0x10, 0xa4, 0xd0, 0x4d, 0x11, 0xb7, 0x83, 0x41,
+	0x11, 0x56, 0x15, 0x82, 0x4e, 0x16, 0xbb, 0x10, 0x68, 0x2b, 0x12, 0x43, 0x9b, 0xb6, 0x92, 0xca,
+	0x69, 0x93, 0xb7, 0x08, 0x8f, 0xc9, 0x4d, 0x47, 0x66, 0xba, 0xd9, 0x12, 0xfb, 0x3f, 0x7f, 0x63,
+	0x20, 0x38, 0x19, 0x49, 0xbb, 0xac, 0x00, 0xe7, 0xc8, 0xcc, 0xb1, 0x80, 0xe4, 0x05, 0xc2, 0x99,
+	0x8e, 0x98, 0x7a, 0xad, 0x5a, 0x6a, 0x73, 0xe4, 0xe7, 0x8f, 0xfe, 0x20, 0xd0, 0x61, 0x50, 0x95,
+	0x85, 0x93, 0x55, 0xe5, 0x13, 0xc2, 0x67, 0x0c, 0x90, 0xda, 0xed, 0x81, 0x90, 0x6a, 0x46, 0x83,
+	0xae, 0xda, 0x55, 0xc5, 0x57, 0xcc, 0x9f, 0x88, 0x4f, 0x6a, 0xea, 0x2b, 0xc2, 0x13, 0x06, 0xf0,
+	0xc6, 0x8e, 0x63, 0x8b, 0xe1, 0xa5, 0xfc, 0x8c, 0x70, 0x46, 0x52, 0x3a, 0x30, 0xbc, 0x8c, 0x5f,
+	0x10, 0x1e, 0x2f, 0x37, 0xb8, 0x07, 0x6e, 0x75, 0x78, 0x21, 0xbf, 0x21, 0x9c, 0xdd, 0x02, 0xdf,
+	0xb1, 0xdd, 0x23, 0xda, 0xd9, 0x70, 0x60, 0xbe, 0x43, 0xea, 0x00, 0x2c, 0x31, 0x8b, 0xf7, 0xea,
+	0x76, 0xf1, 0x59, 0x9b, 0x27, 0xb1, 0x35, 0x3c, 0x28, 0xb4, 0xb2, 0x4a, 0x7b, 0x8f, 0xdc, 0x3d,
+	0x9c, 0xf6, 0x98, 0xac, 0xd4, 0x63, 0x55, 0x4e, 0x5b, 0xc1, 0x31, 0xdb, 0xa6, 0x75, 0x66, 0x71,
+	0xda, 0x8a, 0x4e, 0xd6, 0xf6, 0x12, 0xba, 0xb9, 0xf6, 0xf3, 0x60, 0x16, 0xfd, 0x3e, 0x98, 0x45,
+	0x7f, 0x0f, 0x66, 0xd1, 0xe3, 0xc5, 0x23, 0xef, 0xa8, 0x3d, 0x2e, 0xd5, 0x3b, 0x19, 0x75, 0x27,
+	0x5d, 0xf9, 0x1f, 0x00, 0x00, 0xff, 0xff, 0xa4, 0x30, 0x03, 0x3e, 0x72, 0x0b, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -380,15 +568,17 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type WorkflowServiceClient interface {
-	Create(ctx context.Context, in *v1alpha1.Workflow, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Get(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	List(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*WorkflowListResponse, error)
-	Delete(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*WorkflowResponse, error)
-	Retry(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Resubmit(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Resume(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Suspend(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Terminate(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Create(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Get(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	List(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error)
+	Delete(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error)
+	Retry(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Resubmit(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Resume(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Suspend(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	Terminate(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	// PodLogs returns stream of log entries for the specified pod. Pod
+	PodLogs(ctx context.Context, in *WorkflowLogRequest, opts ...grpc.CallOption) (WorkflowService_PodLogsClient, error)
 }
 
 type workflowServiceClient struct {
@@ -399,7 +589,7 @@ func NewWorkflowServiceClient(cc *grpc.ClientConn) WorkflowServiceClient {
 	return &workflowServiceClient{cc}
 }
 
-func (c *workflowServiceClient) Create(ctx context.Context, in *v1alpha1.Workflow, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Create(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Create", in, out, opts...)
 	if err != nil {
@@ -408,7 +598,7 @@ func (c *workflowServiceClient) Create(ctx context.Context, in *v1alpha1.Workflo
 	return out, nil
 }
 
-func (c *workflowServiceClient) Get(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Get(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Get", in, out, opts...)
 	if err != nil {
@@ -417,8 +607,8 @@ func (c *workflowServiceClient) Get(ctx context.Context, in *WorkflowQuery, opts
 	return out, nil
 }
 
-func (c *workflowServiceClient) List(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*WorkflowListResponse, error) {
-	out := new(WorkflowListResponse)
+func (c *workflowServiceClient) List(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
+	out := new(v1alpha1.WorkflowList)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/List", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -426,8 +616,8 @@ func (c *workflowServiceClient) List(ctx context.Context, in *WorkflowQuery, opt
 	return out, nil
 }
 
-func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowQuery, opts ...grpc.CallOption) (*WorkflowResponse, error) {
-	out := new(WorkflowResponse)
+func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error) {
+	out := new(WorkflowDeleteResponse)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -435,7 +625,7 @@ func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowQuery, o
 	return out, nil
 }
 
-func (c *workflowServiceClient) Retry(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Retry(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Retry", in, out, opts...)
 	if err != nil {
@@ -444,7 +634,7 @@ func (c *workflowServiceClient) Retry(ctx context.Context, in *WorkflowUpdateQue
 	return out, nil
 }
 
-func (c *workflowServiceClient) Resubmit(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Resubmit(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Resubmit", in, out, opts...)
 	if err != nil {
@@ -453,7 +643,7 @@ func (c *workflowServiceClient) Resubmit(ctx context.Context, in *WorkflowUpdate
 	return out, nil
 }
 
-func (c *workflowServiceClient) Resume(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Resume(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Resume", in, out, opts...)
 	if err != nil {
@@ -462,7 +652,7 @@ func (c *workflowServiceClient) Resume(ctx context.Context, in *WorkflowUpdateQu
 	return out, nil
 }
 
-func (c *workflowServiceClient) Suspend(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Suspend(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Suspend", in, out, opts...)
 	if err != nil {
@@ -471,7 +661,7 @@ func (c *workflowServiceClient) Suspend(ctx context.Context, in *WorkflowUpdateQ
 	return out, nil
 }
 
-func (c *workflowServiceClient) Terminate(ctx context.Context, in *WorkflowUpdateQuery, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) Terminate(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
 	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Terminate", in, out, opts...)
 	if err != nil {
@@ -480,17 +670,86 @@ func (c *workflowServiceClient) Terminate(ctx context.Context, in *WorkflowUpdat
 	return out, nil
 }
 
+func (c *workflowServiceClient) PodLogs(ctx context.Context, in *WorkflowLogRequest, opts ...grpc.CallOption) (WorkflowService_PodLogsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_WorkflowService_serviceDesc.Streams[0], "/workflow.WorkflowService/PodLogs", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &workflowServicePodLogsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type WorkflowService_PodLogsClient interface {
+	Recv() (*LogEntry, error)
+	grpc.ClientStream
+}
+
+type workflowServicePodLogsClient struct {
+	grpc.ClientStream
+}
+
+func (x *workflowServicePodLogsClient) Recv() (*LogEntry, error) {
+	m := new(LogEntry)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // WorkflowServiceServer is the server API for WorkflowService service.
 type WorkflowServiceServer interface {
-	Create(context.Context, *v1alpha1.Workflow) (*v1alpha1.Workflow, error)
-	Get(context.Context, *WorkflowQuery) (*v1alpha1.Workflow, error)
-	List(context.Context, *WorkflowQuery) (*WorkflowListResponse, error)
-	Delete(context.Context, *WorkflowQuery) (*WorkflowResponse, error)
-	Retry(context.Context, *WorkflowUpdateQuery) (*v1alpha1.Workflow, error)
-	Resubmit(context.Context, *WorkflowUpdateQuery) (*v1alpha1.Workflow, error)
-	Resume(context.Context, *WorkflowUpdateQuery) (*v1alpha1.Workflow, error)
-	Suspend(context.Context, *WorkflowUpdateQuery) (*v1alpha1.Workflow, error)
-	Terminate(context.Context, *WorkflowUpdateQuery) (*v1alpha1.Workflow, error)
+	Create(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
+	Get(context.Context, *WorkflowGetRequest) (*v1alpha1.Workflow, error)
+	List(context.Context, *WorkflowListRequest) (*v1alpha1.WorkflowList, error)
+	Delete(context.Context, *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error)
+	Retry(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	Resubmit(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	Resume(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	Suspend(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	Terminate(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	// PodLogs returns stream of log entries for the specified pod. Pod
+	PodLogs(*WorkflowLogRequest, WorkflowService_PodLogsServer) error
+}
+
+// UnimplementedWorkflowServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedWorkflowServiceServer struct {
+}
+
+func (*UnimplementedWorkflowServiceServer) Create(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Get(ctx context.Context, req *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) List(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Delete(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Retry(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Retry not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Resubmit(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Resubmit not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Resume(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Resume not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Suspend(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Suspend not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) Terminate(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Terminate not implemented")
+}
+func (*UnimplementedWorkflowServiceServer) PodLogs(req *WorkflowLogRequest, srv WorkflowService_PodLogsServer) error {
+	return status.Errorf(codes.Unimplemented, "method PodLogs not implemented")
 }
 
 func RegisterWorkflowServiceServer(s *grpc.Server, srv WorkflowServiceServer) {
@@ -498,7 +757,7 @@ func RegisterWorkflowServiceServer(s *grpc.Server, srv WorkflowServiceServer) {
 }
 
 func _WorkflowService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(v1alpha1.Workflow)
+	in := new(WorkflowCreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -510,13 +769,13 @@ func _WorkflowService_Create_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/workflow.WorkflowService/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Create(ctx, req.(*v1alpha1.Workflow))
+		return srv.(WorkflowServiceServer).Create(ctx, req.(*WorkflowCreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowQuery)
+	in := new(WorkflowGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -528,13 +787,13 @@ func _WorkflowService_Get_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/workflow.WorkflowService/Get",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Get(ctx, req.(*WorkflowQuery))
+		return srv.(WorkflowServiceServer).Get(ctx, req.(*WorkflowGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowQuery)
+	in := new(WorkflowListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -546,13 +805,13 @@ func _WorkflowService_List_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: "/workflow.WorkflowService/List",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).List(ctx, req.(*WorkflowQuery))
+		return srv.(WorkflowServiceServer).List(ctx, req.(*WorkflowListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowQuery)
+	in := new(WorkflowDeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -564,13 +823,13 @@ func _WorkflowService_Delete_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/workflow.WorkflowService/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Delete(ctx, req.(*WorkflowQuery))
+		return srv.(WorkflowServiceServer).Delete(ctx, req.(*WorkflowDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Retry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowUpdateQuery)
+	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -582,13 +841,13 @@ func _WorkflowService_Retry_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: "/workflow.WorkflowService/Retry",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Retry(ctx, req.(*WorkflowUpdateQuery))
+		return srv.(WorkflowServiceServer).Retry(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Resubmit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowUpdateQuery)
+	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -600,13 +859,13 @@ func _WorkflowService_Resubmit_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/workflow.WorkflowService/Resubmit",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Resubmit(ctx, req.(*WorkflowUpdateQuery))
+		return srv.(WorkflowServiceServer).Resubmit(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Resume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowUpdateQuery)
+	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -618,13 +877,13 @@ func _WorkflowService_Resume_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: "/workflow.WorkflowService/Resume",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Resume(ctx, req.(*WorkflowUpdateQuery))
+		return srv.(WorkflowServiceServer).Resume(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Suspend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowUpdateQuery)
+	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -636,13 +895,13 @@ func _WorkflowService_Suspend_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: "/workflow.WorkflowService/Suspend",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Suspend(ctx, req.(*WorkflowUpdateQuery))
+		return srv.(WorkflowServiceServer).Suspend(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _WorkflowService_Terminate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WorkflowUpdateQuery)
+	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -654,9 +913,30 @@ func _WorkflowService_Terminate_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: "/workflow.WorkflowService/Terminate",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Terminate(ctx, req.(*WorkflowUpdateQuery))
+		return srv.(WorkflowServiceServer).Terminate(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowService_PodLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WorkflowLogRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(WorkflowServiceServer).PodLogs(m, &workflowServicePodLogsServer{stream})
+}
+
+type WorkflowService_PodLogsServer interface {
+	Send(*LogEntry) error
+	grpc.ServerStream
+}
+
+type workflowServicePodLogsServer struct {
+	grpc.ServerStream
+}
+
+func (x *workflowServicePodLogsServer) Send(m *LogEntry) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 var _WorkflowService_serviceDesc = grpc.ServiceDesc{
@@ -700,210 +980,411 @@ var _WorkflowService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _WorkflowService_Terminate_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "PodLogs",
+			Handler:       _WorkflowService_PodLogs_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "cmd/server/workflow/workflow.proto",
 }
 
-func (m *WorkflowCreateResponse) Marshal() (dAtA []byte, err error) {
+func (m *WorkflowCreateRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *WorkflowCreateResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+func (m *WorkflowCreateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowCreateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Response) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Response)))
-		i += copy(dAtA[i:], m.Response)
-	}
 	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return i, nil
-}
-
-func (m *WorkflowListResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *WorkflowListResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Workflows) > 0 {
-		for _, msg := range m.Workflows {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintWorkflow(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
+	if m.CreateOptions != nil {
+		{
+			size, err := m.CreateOptions.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
-			i += n
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *WorkflowResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *WorkflowResponse) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.Status) > 0 {
+		i--
 		dAtA[i] = 0x12
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Status)))
-		i += copy(dAtA[i:], m.Status)
 	}
-	if len(m.Message) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Message)))
-		i += copy(dAtA[i:], m.Message)
+	if m.Workflows != nil {
+		{
+			size, err := m.Workflows.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
-func (m *WorkflowQuery) Marshal() (dAtA []byte, err error) {
+func (m *WorkflowGetRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *WorkflowQuery) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+func (m *WorkflowGetRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowGetRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.GetOptions != nil {
+		{
+			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	if len(m.Namespace) > 0 {
-		dAtA[i] = 0x12
-		i++
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
 		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
-		i += copy(dAtA[i:], m.Namespace)
+		i--
+		dAtA[i] = 0x12
 	}
-	if m.StartIdx != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(m.StartIdx))
+	if len(m.WorkflowName) > 0 {
+		i -= len(m.WorkflowName)
+		copy(dAtA[i:], m.WorkflowName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.WorkflowName)))
+		i--
+		dAtA[i] = 0xa
 	}
-	if m.PageSize != 0 {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(m.PageSize))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
+	return len(dAtA) - i, nil
 }
 
-func (m *WorkflowUpdateQuery) Marshal() (dAtA []byte, err error) {
+func (m *WorkflowListRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
 	return dAtA[:n], nil
 }
 
-func (m *WorkflowUpdateQuery) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+func (m *WorkflowListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Workflow != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintWorkflow(dAtA, i, uint64(m.Workflow.Size()))
-		n1, err := m.Workflow.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.Memoized {
-		dAtA[i] = 0x10
-		i++
-		if m.Memoized {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
 	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return i, nil
+	if m.ListOptions != nil {
+		{
+			size, err := m.ListOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowUpdateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowUpdateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowUpdateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.WorkflowName) > 0 {
+		i -= len(m.WorkflowName)
+		copy(dAtA[i:], m.WorkflowName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.WorkflowName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowLogRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowLogRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowLogRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Container) > 0 {
+		i -= len(m.Container)
+		copy(dAtA[i:], m.Container)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Container)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.PodName) > 0 {
+		i -= len(m.PodName)
+		copy(dAtA[i:], m.PodName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.PodName)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.WorkflowName) > 0 {
+		i -= len(m.WorkflowName)
+		copy(dAtA[i:], m.WorkflowName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.WorkflowName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowDeleteRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowDeleteRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowDeleteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.DeleteOptions != nil {
+		{
+			size, err := m.DeleteOptions.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.WorkflowName) > 0 {
+		i -= len(m.WorkflowName)
+		copy(dAtA[i:], m.WorkflowName)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.WorkflowName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowDeleteResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowDeleteResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowDeleteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *LogEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LogEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LogEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.TimeStamp != nil {
+		{
+			size, err := m.TimeStamp.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintWorkflow(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Content) > 0 {
+		i -= len(m.Content)
+		copy(dAtA[i:], m.Content)
+		i = encodeVarintWorkflow(dAtA, i, uint64(len(m.Content)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintWorkflow(dAtA []byte, offset int, v uint64) int {
+	offset -= sovWorkflow(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
-func (m *WorkflowCreateResponse) Size() (n int) {
+func (m *WorkflowCreateRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Response)
-	if l > 0 {
+	if m.Workflows != nil {
+		l = m.Workflows.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.CreateOptions != nil {
+		l = m.CreateOptions.Size()
 		n += 1 + l + sovWorkflow(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -912,55 +1393,13 @@ func (m *WorkflowCreateResponse) Size() (n int) {
 	return n
 }
 
-func (m *WorkflowListResponse) Size() (n int) {
+func (m *WorkflowGetRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.Workflows) > 0 {
-		for _, e := range m.Workflows {
-			l = e.Size()
-			n += 1 + l + sovWorkflow(uint64(l))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *WorkflowResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovWorkflow(uint64(l))
-	}
-	l = len(m.Status)
-	if l > 0 {
-		n += 1 + l + sovWorkflow(uint64(l))
-	}
-	l = len(m.Message)
-	if l > 0 {
-		n += 1 + l + sovWorkflow(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *WorkflowQuery) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
+	l = len(m.WorkflowName)
 	if l > 0 {
 		n += 1 + l + sovWorkflow(uint64(l))
 	}
@@ -968,11 +1407,9 @@ func (m *WorkflowQuery) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWorkflow(uint64(l))
 	}
-	if m.StartIdx != 0 {
-		n += 1 + sovWorkflow(uint64(m.StartIdx))
-	}
-	if m.PageSize != 0 {
-		n += 1 + sovWorkflow(uint64(m.PageSize))
+	if m.GetOptions != nil {
+		l = m.GetOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -980,18 +1417,123 @@ func (m *WorkflowQuery) Size() (n int) {
 	return n
 }
 
-func (m *WorkflowUpdateQuery) Size() (n int) {
+func (m *WorkflowListRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Workflow != nil {
-		l = m.Workflow.Size()
+	l = len(m.Namespace)
+	if l > 0 {
 		n += 1 + l + sovWorkflow(uint64(l))
 	}
-	if m.Memoized {
-		n += 2
+	if m.ListOptions != nil {
+		l = m.ListOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowUpdateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.WorkflowName)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowLogRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.WorkflowName)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.PodName)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Container)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowDeleteRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.WorkflowName)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.DeleteOptions != nil {
+		l = m.DeleteOptions.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowDeleteResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *LogEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Content)
+	if l > 0 {
+		n += 1 + l + sovWorkflow(uint64(l))
+	}
+	if m.TimeStamp != nil {
+		l = m.TimeStamp.Size()
+		n += 1 + l + sovWorkflow(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1000,19 +1542,12 @@ func (m *WorkflowUpdateQuery) Size() (n int) {
 }
 
 func sovWorkflow(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozWorkflow(x uint64) (n int) {
 	return sovWorkflow(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *WorkflowCreateResponse) Unmarshal(dAtA []byte) error {
+func (m *WorkflowCreateRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1035,96 +1570,10 @@ func (m *WorkflowCreateResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WorkflowCreateResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: WorkflowCreateRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WorkflowCreateResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Response", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Response = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipWorkflow(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WorkflowListResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowWorkflow
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WorkflowListResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WorkflowListResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WorkflowCreateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1156,102 +1605,18 @@ func (m *WorkflowListResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Workflows = append(m.Workflows, &v1alpha1.Workflow{})
-			if err := m.Workflows[len(m.Workflows)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.Workflows == nil {
+				m.Workflows = &v1alpha1.Workflow{}
+			}
+			if err := m.Workflows.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipWorkflow(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WorkflowResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowWorkflow
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WorkflowResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WorkflowResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CreateOptions", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowWorkflow
@@ -1261,55 +1626,27 @@ func (m *WorkflowResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthWorkflow
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthWorkflow
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Status = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			if m.CreateOptions == nil {
+				m.CreateOptions = &v1.CreateOptions{}
 			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			if err := m.CreateOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Message = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1336,7 +1673,7 @@ func (m *WorkflowResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *WorkflowQuery) Unmarshal(dAtA []byte) error {
+func (m *WorkflowGetRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1359,15 +1696,15 @@ func (m *WorkflowQuery) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: WorkflowQuery: wiretype end group for non-group")
+			return fmt.Errorf("proto: WorkflowGetRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WorkflowQuery: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: WorkflowGetRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1395,7 +1732,7 @@ func (m *WorkflowQuery) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Name = string(dAtA[iNdEx:postIndex])
+			m.WorkflowName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -1430,100 +1767,8 @@ func (m *WorkflowQuery) Unmarshal(dAtA []byte) error {
 			m.Namespace = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StartIdx", wireType)
-			}
-			m.StartIdx = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.StartIdx |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PageSize", wireType)
-			}
-			m.PageSize = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflow
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.PageSize |= int32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipWorkflow(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthWorkflow
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *WorkflowUpdateQuery) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowWorkflow
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WorkflowUpdateQuery: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WorkflowUpdateQuery: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Workflow", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1550,18 +1795,72 @@ func (m *WorkflowUpdateQuery) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Workflow == nil {
-				m.Workflow = &v1alpha1.Workflow{}
+			if m.GetOptions == nil {
+				m.GetOptions = &v1.GetOptions{}
 			}
-			if err := m.Workflow.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Memoized", wireType)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
 			}
-			var v int
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowWorkflow
@@ -1571,12 +1870,690 @@ func (m *WorkflowUpdateQuery) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Memoized = bool(v != 0)
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ListOptions == nil {
+				m.ListOptions = &v1.ListOptions{}
+			}
+			if err := m.ListOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowUpdateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowUpdateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowUpdateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.WorkflowName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowLogRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowLogRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowLogRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.WorkflowName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PodName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Container", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Container = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowDeleteRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowDeleteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowDeleteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WorkflowName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.WorkflowName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DeleteOptions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DeleteOptions == nil {
+				m.DeleteOptions = &v1.DeleteOptions{}
+			}
+			if err := m.DeleteOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowDeleteResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowDeleteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowDeleteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflow(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LogEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflow
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LogEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LogEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Content", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Content = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeStamp", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflow
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflow
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.TimeStamp == nil {
+				m.TimeStamp = &v1.Time{}
+			}
+			if err := m.TimeStamp.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWorkflow(dAtA[iNdEx:])

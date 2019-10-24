@@ -1166,7 +1166,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "securityContext": {
-          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
@@ -1485,7 +1484,6 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ExecutorConfig"
         },
         "hostAliases": {
-          "description": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec",
           "type": "array",
           "items": {
             "$ref": "#/definitions/io.k8s.api.core.v1.HostAlias"
