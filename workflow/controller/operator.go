@@ -1840,11 +1840,11 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	woc.log.Infof("node %s suspended", nodeName)
 
-	if tmpl.Suspend.AutoResume != nil {
-		woc.log.Infof("node %s has auto resume enabled", nodeName)
+	if tmpl.Suspend.AutoResumeSeconds > 0 {
+		// We need to requeue this node to ensure that it gets looked at again
+		woc.requeue()
 		node := woc.getNodeByName(nodeName)
-		woc.log.Infof("current time is %s expiring at %s", time.Now().UTC(), node.StartedAt.Add(time.Duration(tmpl.Suspend.AutoResume.AutoResumeAfterSeconds)*time.Second))
-		if time.Now().UTC().After(node.StartedAt.Add(time.Duration(tmpl.Suspend.AutoResume.AutoResumeAfterSeconds) * time.Second)) {
+		if time.Now().UTC().After(node.StartedAt.Add(time.Duration(tmpl.Suspend.AutoResumeSeconds) * time.Second)) {
 			// Node is expired
 			woc.log.Infof("auto resuming node %s", nodeName)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)

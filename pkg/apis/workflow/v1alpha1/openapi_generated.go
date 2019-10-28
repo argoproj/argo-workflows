@@ -20,7 +20,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef": schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":   schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":       schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
-		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AutoResume":            schema_pkg_apis_workflow_v1alpha1_AutoResume(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":            schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
@@ -388,26 +387,6 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref common.ReferenceCallb
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.SecretKeySelector"},
-	}
-}
-
-func schema_pkg_apis_workflow_v1alpha1_AutoResume(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "AutoResume automatically resumes a template after the time specified",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"autoResumeAfterSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AutoResumeAfterSeconds is the seconds to wait before resuming a template",
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-				},
-			},
-		},
 	}
 }
 
@@ -1837,17 +1816,16 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 				Description: "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"autoResume": {
+					"autoResumeSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "AutoResume specifies how and when a suspended template resumes automatically",
-							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AutoResume"),
+							Description: "AutoResumeAfterSeconds is the seconds to wait before resuming a template",
+							Type:        []string{"integer"},
+							Format:      "int32",
 						},
 					},
 				},
 			},
 		},
-		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.AutoResume"},
 	}
 }
 
