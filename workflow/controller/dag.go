@@ -278,6 +278,16 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
+	if tmpl.OnExit != "" {
+		onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, dagCtx.boundaryID)
+		if err != nil {
+			return err
+		}
+		if onExitNode == nil || !onExitNode.Completed() {
+			return nil
+		}
+	}
+
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
 }

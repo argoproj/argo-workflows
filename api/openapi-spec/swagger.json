@@ -1074,6 +1074,10 @@
             "type": "string"
           }
         },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "type": "string"
+        },
         "outputs": {
           "description": "Outputs describe the parameters and artifacts that this template produces",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"

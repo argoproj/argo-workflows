@@ -2135,6 +2135,13 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 							Format:      "",
 						},
 					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},

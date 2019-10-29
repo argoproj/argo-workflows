@@ -132,6 +132,16 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 
+	if tmpl.OnExit != "" {
+		onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, stepsCtx.boundaryID)
+		if err != nil {
+			return err
+		}
+		if onExitNode == nil || !onExitNode.Completed() {
+			return nil
+		}
+	}
+
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
 }

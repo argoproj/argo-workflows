@@ -235,9 +235,7 @@ func (woc *wfOperationCtx) operate() {
 		} else {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
-		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
-		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
-		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
+		onExitNode, err = woc.runOnExitNode(woc.wf.ObjectMeta.Name, woc.wf.Spec.OnExit, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
@@ -1994,4 +1992,10 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	}
 	woc.volumes = newVolumes
 	return nil
+}
+
+func (woc *wfOperationCtx) runOnExitNode(parentNodeName, onExitTmplRef, boundaryID string) (*wfv1.NodeStatus, error) {
+	woc.log.Infof("Running OnExit handler: %s", onExitTmplRef)
+	onExitNodeName := parentNodeName + ".onExit"
+	return woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: onExitTmplRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
 }

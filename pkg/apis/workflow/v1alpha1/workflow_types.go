@@ -364,6 +364,11 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty"`
 }
 
 var _ TemplateHolder = &Template{}
