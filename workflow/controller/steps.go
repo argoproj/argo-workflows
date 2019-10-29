@@ -84,6 +84,17 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
+
+			if tmpl.OnExit != "" {
+				onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, stepsCtx.boundaryID)
+				if err != nil {
+					return err
+				}
+				if onExitNode == nil || !onExitNode.Completed() {
+					return nil
+				}
+			}
+
 			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 			return nil
 		}
