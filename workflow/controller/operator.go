@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -37,6 +38,8 @@ import (
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+
+	"github.com/google/uuid"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -1332,17 +1335,25 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 			node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
 		} else if orgTmpl.IsResolvable() {
 			// Locally resolvable in workflow level.
-			node.StoredTemplateID = fmt.Sprintf("/%s", node.TemplateName)
+			node.StoredTemplateID = fmt.Sprintf("/%s-%s", node.TemplateName, )
 		}
 	}
 	if node.StoredTemplateID != "" {
 		baseTemplate := executeTmpl.GetBaseTemplate()
-		_, exists := woc.wf.Status.StoredTemplates[node.StoredTemplateID]
+		existingStoredTemplate, exists := woc.wf.Status.StoredTemplates[node.StoredTemplateID]
 		if !exists {
 			woc.log.Infof("Create stored template '%s'", node.StoredTemplateID)
 			woc.wf.Status.StoredTemplates[node.StoredTemplateID] = *baseTemplate
 		} else {
 			woc.log.Infof("Stored template '%s' already exists", node.StoredTemplateID)
+			sYaml, _ := yaml.Marshal(existingStoredTemplate)
+			cYaml, _ := yaml.Marshal(*baseTemplate)
+			woc.log.Infof("Comparing: {{{ %s }}} WITH {{{ %s }}}", sYaml, cYaml)
+			woc.log.Infof("Comparing result", reflect.DeepEqual(existingStoredTemplate, *baseTemplate))
+			if !reflect.DeepEqual(existingStoredTemplate, *baseTemplate) {
+				woc.log.Infof("Stored template '%s' overwritten", node.StoredTemplateID)
+				woc.wf.Status.StoredTemplates[node.StoredTemplateID] = *baseTemplate
+			}
 		}
 	}
 
@@ -1351,6 +1362,12 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	woc.updated = true
 
 	return node
+}
+
+func hash(name string) string {
+	h := fnv.New32a()
+	_, _ = h.Write([]byte(name))
+	return fmt.Sprintf("%v", h.Sum32())
 }
 
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
