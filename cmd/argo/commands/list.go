@@ -38,7 +38,7 @@ func NewListCommand() *cobra.Command {
 		listArgs listFlags
 	)
 	var command = &cobra.Command{
-		Use:   "list",
+		Use:   "list [WORKFLOW]",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var wfClient v1alpha1.WorkflowInterface
@@ -101,7 +101,7 @@ func NewListCommand() *cobra.Command {
 
 			switch listArgs.output {
 			case "", "wide":
-				printTable(workflows, &listArgs)
+				printTable(args, workflows, &listArgs)
 			case "name":
 				for _, wf := range workflows {
 					fmt.Println(wf.ObjectMeta.Name)
@@ -121,7 +121,7 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
+func printTable(args []string, wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")
@@ -132,6 +132,9 @@ func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
+		if len(args) !=0  && ! strings.HasPrefix(wf.ObjectMeta.Name, args[0]) {
+			continue
+		}
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
 		if listArgs.allNamespaces {
