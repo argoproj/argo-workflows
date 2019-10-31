@@ -132,7 +132,7 @@ func printTable(args []string, wfList []wfv1.Workflow, listArgs *listFlags) {
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
-		if len(args) !=0  && ! strings.HasPrefix(wf.ObjectMeta.Name, args[0]) {
+		if len(args) != 0 && !strings.HasPrefix(wf.ObjectMeta.Name, args[0]) {
 			continue
 		}
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
