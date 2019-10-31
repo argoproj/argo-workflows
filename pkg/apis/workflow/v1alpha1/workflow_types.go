@@ -83,7 +83,7 @@ type TemplateHolder interface {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
-	metav1.TypeMeta   `json:",inline "`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -119,10 +119,10 @@ type WorkflowSpec struct {
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,28,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of executor containers of the workflow.
-	Executor *ExecutorConfig `json:"executor,omitempty"`
+	Executor *ExecutorConfig `json:"executor,omitempty" protobuf:"bytes,29,opt,name=executor"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	// +patchStrategy=merge
@@ -219,7 +219,7 @@ type WorkflowSpec struct {
 
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip"  protobuf:"bytes,25,opt,name=hostAliases"`
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
@@ -342,7 +342,7 @@ type Template struct {
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
 	// +patchMergeKey=key
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"  patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
 
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
@@ -361,15 +361,15 @@ type Template struct {
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,32,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of the executor container.
-	Executor *ExecutorConfig `json:"executor,omitempty"`
+	Executor *ExecutorConfig `json:"executor,omitempty" protobuf:"bytes,33,opt,name=executor"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"  patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,29,opt,name=hostAliases"`
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,29,opt,name=hostAliases"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
@@ -556,7 +556,7 @@ type Outputs struct {
 	// Artifacts holds the list of output artifacts produced by a step
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty"  patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
@@ -713,7 +713,7 @@ type WorkflowStatus struct {
 	Nodes map[string]NodeStatus `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
-	StoredTemplates map[string]Template `json:"storedTemplates,omitempty"`
+	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
 
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
@@ -753,10 +753,10 @@ type NodeStatus struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
 	// StoredTemplateID is the ID of stored template.
-	StoredTemplateID string `json:"storedTemplateID,omitempty"`
+	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
 
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
+	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -1026,7 +1026,7 @@ func (h *HTTPArtifact) HasLocation() bool {
 // ExecutorConfig holds configurations of an executor container.
 type ExecutorConfig struct {
 	// ServiceAccountName specifies the service account name of the executor container.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,1,opt,name=serviceAccountName"`
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
