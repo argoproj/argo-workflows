@@ -304,7 +304,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 	// Validate retryStrategy
 	if resolvedTmpl.RetryStrategy != nil {
 		switch resolvedTmpl.RetryStrategy.RetryPolicy {
-		case wfv1.RetryPolicyAlways, wfv1.RetryPolicyOnError, wfv1.RetryPolicyOnFailure, wfv1.RetryPolicyNever, "":
+		case wfv1.RetryPolicyAlways, wfv1.RetryPolicyOnError, wfv1.RetryPolicyOnFailure, "":
 			// Passes validation
 		default:
 			return nil, fmt.Errorf("%s is not a valid RetryPolicy", resolvedTmpl.RetryStrategy.RetryPolicy)

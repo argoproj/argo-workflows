@@ -550,9 +550,6 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 	case wfv1.RetryPolicyAlways:
 		retryOnFailed = true
 		retryOnError = true
-	case wfv1.RetryPolicyNever:
-		retryOnFailed = false
-		retryOnError = false
 	case wfv1.RetryPolicyOnError:
 		retryOnFailed = false
 		retryOnError = true
