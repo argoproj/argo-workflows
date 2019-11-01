@@ -735,7 +735,7 @@ spec:
 
   - name: approve
     suspend:
-      resumeAfterSeconds: 3
+      duration: 3
 
   - name: whalesay
     container:

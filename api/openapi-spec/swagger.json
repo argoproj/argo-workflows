@@ -1046,8 +1046,8 @@
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
       "type": "object",
       "properties": {
-        "resumeAfterSeconds": {
-          "description": "ResumeAfterSeconds is the seconds to wait before resuming a template",
+        "duration": {
+          "description": "Duration is the seconds to wait before resuming a template",
           "type": "integer",
           "format": "int32"
         }
