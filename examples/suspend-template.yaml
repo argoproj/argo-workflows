@@ -5,6 +5,9 @@
 # submit the workflow and wait until the workflow reaches the second, "approve" step, at which point
 # the workflow will be suspended. To resume the workflow, run:
 # argo resume <workflowname>
+# A suspended template can also be specified with `resumeAfterSeconds` which will automatically resume the
+# suspended template after the specified amount of time. In this example it is used to delay a release after
+# an approval.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -18,11 +21,17 @@ spec:
         template: whalesay
     - - name: approve
         template: approve
+    - - name: delay
+        template: delay
     - - name: release
         template: whalesay
 
   - name: approve
     suspend: {}
+
+  - name: delay
+    suspend:
+      resumeAfterSeconds: 20
 
   - name: whalesay
     container:

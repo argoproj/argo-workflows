@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -715,6 +716,95 @@ func TestSuspendTemplate(t *testing.T) {
 	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(pods.Items))
+}
+
+var suspendResumeAfterTemplate = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: suspend-template
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: approve
+        template: approve
+    - - name: release
+        template: whalesay
+
+  - name: approve
+    suspend:
+      resumeAfterSeconds: 3
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+`
+
+func TestSuspendResumeAfterTemplate(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	wf := unmarshalWF(suspendResumeAfterTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// wait 4 seconds
+	time.Sleep(4 * time.Second)
+
+	// operate the workflow. it should reach the second step
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+}
+
+func TestSuspendResumeAfterTemplateNoWait(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+
+	// operate the workflow. it should become in a suspended state after
+	wf := unmarshalWF(suspendResumeAfterTemplate)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.True(t, util.IsWorkflowSuspended(wf))
+
+	// operate again and verify no pods were scheduled
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(pods.Items))
+
+	// don't wait
+
+	// operate the workflow. it should have not reached the second step since not enough time passed
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(pods.Items))
 }
 
 var volumeWithParam = `
