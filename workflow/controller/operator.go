@@ -3,7 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -38,8 +37,6 @@ import (
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
-
-	"github.com/google/uuid"
 )
 
 // wfOperationCtx is the context for evaluation and operation of a single workflow
@@ -163,6 +160,11 @@ func (woc *wfOperationCtx) operate() {
 		if err != nil {
 			woc.markWorkflowFailed(fmt.Sprintf("invalid spec: %s", err.Error()))
 			return
+		}
+		// Store templates
+		for _, template := range woc.wf.Spec.Templates {
+			storedTemplateName := woc.getStoredTemplateName(template.TemplateRef, template.Name, woc.tmplCtx, &wfv1.Template{Template: template.Name})
+			woc.storeTemplate(storedTemplateName, &template)
 		}
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 	} else {
@@ -344,22 +346,9 @@ func (woc *wfOperationCtx) getNodeByName(nodeName string) *wfv1.NodeStatus {
 func (woc *wfOperationCtx) getResolvedTemplate(node *wfv1.NodeStatus, tmpl wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments) (*templateresolution.Context, *wfv1.Template, error) {
 	// Try to get a stored resolved template first.
 	if node != nil {
-		resolvedTemplate := woc.wf.GetStoredOrLocalTemplate(node)
-		if resolvedTemplate != nil {
-			if node.Inputs != nil {
-				resolvedTemplate.Inputs = *node.Inputs
-			}
-			woc.log.Debugf("Found a resolved template for node %s", node.Name)
-			if node.WorkflowTemplateName != "" {
-				woc.log.Debugf("Switch the template context to %s", node.WorkflowTemplateName)
-				newTmplCtx, err := tmplCtx.WithLazyWorkflowTemplate(woc.wf.Namespace, node.WorkflowTemplateName)
-				if err != nil {
-					return nil, nil, err
-				}
-				return newTmplCtx, resolvedTemplate, nil
-			} else {
-				return tmplCtx.WithTemplateBase(woc.wf), resolvedTemplate, nil
-			}
+		unresolvedTemplate := woc.wf.GetStoredOrLocalTemplate(node)
+		if unresolvedTemplate != nil {
+			tmpl = unresolvedTemplate
 		} else {
 			woc.log.Infof("Cannot find a resolved template of node %s", node.Name)
 		}
@@ -1321,41 +1310,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = &executeTmpl.Inputs
 	}
 
-	// Store resolved workflow template.
-	if woc.wf.GroupVersionKind() != tmplCtx.GetCurrentTemplateBase().GroupVersionKind() {
-		node.WorkflowTemplateName = tmplCtx.GetCurrentTemplateBase().GetName()
-	}
-
-	// Store the template for the later use.
-	if node.TemplateRef != nil {
-		node.StoredTemplateID = fmt.Sprintf("%s/%s", node.TemplateRef.Name, node.TemplateRef.Template)
-	} else if node.TemplateName != "" {
-		if node.WorkflowTemplateName != "" {
-			// Locally resolvable in workflow template level.
-			node.StoredTemplateID = fmt.Sprintf("%s/%s", node.WorkflowTemplateName, node.TemplateName)
-		} else if orgTmpl.IsResolvable() {
-			// Locally resolvable in workflow level.
-			node.StoredTemplateID = fmt.Sprintf("/%s-%s", node.TemplateName, )
-		}
-	}
-	if node.StoredTemplateID != "" {
-		baseTemplate := executeTmpl.GetBaseTemplate()
-		existingStoredTemplate, exists := woc.wf.Status.StoredTemplates[node.StoredTemplateID]
-		if !exists {
-			woc.log.Infof("Create stored template '%s'", node.StoredTemplateID)
-			woc.wf.Status.StoredTemplates[node.StoredTemplateID] = *baseTemplate
-		} else {
-			woc.log.Infof("Stored template '%s' already exists", node.StoredTemplateID)
-			sYaml, _ := yaml.Marshal(existingStoredTemplate)
-			cYaml, _ := yaml.Marshal(*baseTemplate)
-			woc.log.Infof("Comparing: {{{ %s }}} WITH {{{ %s }}}", sYaml, cYaml)
-			woc.log.Infof("Comparing result", reflect.DeepEqual(existingStoredTemplate, *baseTemplate))
-			if !reflect.DeepEqual(existingStoredTemplate, *baseTemplate) {
-				woc.log.Infof("Stored template '%s' overwritten", node.StoredTemplateID)
-				woc.wf.Status.StoredTemplates[node.StoredTemplateID] = *baseTemplate
-			}
-		}
-	}
+	node.StoredTemplateID = woc.getStoredTemplateName(node.TemplateRef, node.TemplateName, tmplCtx, orgTmpl)
 
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node
@@ -1364,10 +1319,43 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 	return node
 }
 
-func hash(name string) string {
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(name))
-	return fmt.Sprintf("%v", h.Sum32())
+func (woc *wfOperationCtx) getStoredTemplateName(templateRef *wfv1.TemplateRef, templateName string, tmplCtx *templateresolution.Context, orgTmpl wfv1.TemplateHolder) string {
+
+	// Store resolved workflow template.
+	var workflowTemplateName string
+	var storedTemplateID string
+	if woc.wf.GroupVersionKind() != tmplCtx.GetCurrentTemplateBase().GroupVersionKind() {
+		workflowTemplateName = tmplCtx.GetCurrentTemplateBase().GetName()
+	}
+
+	// Store the template for the later use.
+	if templateRef != nil {
+		storedTemplateID = fmt.Sprintf("%s/%s", templateRef.Name, templateRef.Template)
+	} else if templateName != "" {
+		if workflowTemplateName != "" {
+			// Locally resolvable in workflow template level.
+			storedTemplateID = fmt.Sprintf("%s/%s", workflowTemplateName, templateName)
+		} else if orgTmpl.IsResolvable() {
+			// Locally resolvable in workflow level.
+			storedTemplateID = fmt.Sprintf("/%s", templateName)
+		}
+	}
+	return storedTemplateID
+}
+
+func (woc *wfOperationCtx) storeTemplate(storedTemplateID string, unresolvedTemplate *wfv1.Template) {
+	if storedTemplateID != "" {
+		baseTemplate := unresolvedTemplate.GetBaseTemplate()
+		_, exists := woc.wf.Status.StoredTemplates[storedTemplateID]
+		if !exists {
+			woc.log.Infof("Create stored template '%s'", storedTemplateID)
+			woc.wf.Status.StoredTemplates[storedTemplateID] = *baseTemplate
+		}
+	}
+}
+
+func (woc *wfOperationCtx) setStoredTemplate(storedTemplateID string) {
+
 }
 
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
