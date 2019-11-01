@@ -74,7 +74,9 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 			}
 		}
-		sgNode := woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
+
+		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
+
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
 			return nil
@@ -100,7 +102,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		}
 
 		// Add all outputs of each step in the group to the scope
-		for _, step := range stepGroup {
+		for _, step := range stepGroup.Steps {
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			childNode := woc.getNodeByName(childNodeName)
 			prefix := fmt.Sprintf("steps.%s", step.Name)

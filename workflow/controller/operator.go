@@ -1407,7 +1407,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		node.Message = messages[0]
 	}
 	woc.wf.Status.Nodes[nodeID] = node
-	woc.log.Infof("%s node %s initialized %s%s", node.Type, node, node.Phase, message)
+	woc.log.Infof("%s node %v initialized %s%s", node.Type, node, node.Phase, message)
 	woc.updated = true
 	return &node
 }
@@ -1696,12 +1696,12 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 		}
 		if node.Outputs.Result != nil {
 			// Support the case where item may be a map
-			var itemMap map[string]interface{}
+			var itemMap map[string]wfv1.ItemValue
 			err := json.Unmarshal([]byte(*node.Outputs.Result), &itemMap)
 			if err == nil {
-				resultsList = append(resultsList, wfv1.Item{Value: itemMap})
+				resultsList = append(resultsList, wfv1.Item{Type: wfv1.Map, MapVal: itemMap})
 			} else {
-				resultsList = append(resultsList, wfv1.Item{Value: *node.Outputs.Result})
+				resultsList = append(resultsList, wfv1.Item{Type: wfv1.String, StrVal: *node.Outputs.Result})
 			}
 		}
 	}
@@ -1854,38 +1854,34 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
-	switch val := item.Value.(type) {
-	case string, int, int32, int64, float32, float64, bool:
+	val := item.Type
+	switch val {
+	case wfv1.String, wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", val)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
-	case map[string]interface{}:
+	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.
 		// vals holds stringified versions of the map items which are incorporated as part of the step name.
 		// For example if the item is: {"name": "jesse","group":"developer"}
 		// the vals would be: ["name:jesse", "group:developer"]
 		// This would eventually be part of the step name (group:developer,name:jesse)
 		vals := make([]string, 0)
-		for itemKey, itemValIf := range val {
-			switch itemVal := itemValIf.(type) {
-			case string, int, int32, int64, float32, float64, bool:
-				replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-				vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
-			default:
-				return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d][%s] expected string or number. received: %v", index, itemKey, itemVal)
-			}
+		for itemKey, itemVal := range item.MapVal {
+			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
+
 		}
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, strings.Join(vals, ","))
-	case []interface{}:
-		byteVal, err := json.Marshal(val)
+	case wfv1.List:
+		byteVal, err := json.Marshal(item.ListVal)
 		if err != nil {
 			return "", errors.InternalWrapError(err)
 		}
 		replaceMap["item"] = string(byteVal)
-		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, item.ListVal)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %s", index, val)
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, val)
 	}
 	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 	if err != nil {
@@ -1931,11 +1927,11 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-			items = append(items, wfv1.Item{Value: fmt.Sprintf(format, i)})
+			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
 		}
 	} else {
 		for i := start; i >= end; i-- {
-			items = append(items, wfv1.Item{Value: fmt.Sprintf(format, i)})
+			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
 		}
 	}
 	return items, nil
