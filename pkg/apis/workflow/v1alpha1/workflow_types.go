@@ -1173,8 +1173,8 @@ func (t *DAGTask) IsResolvable() bool {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
-	// AutoResumeAfterSeconds is the seconds to wait before resuming a template
-	AutoResumeSeconds int32 `json:"autoResumeSeconds,omitempty"`
+	// ResumeAfterSeconds is the seconds to wait before resuming a template
+	ResumeAfterSeconds *int32 `json:"resumeAfterSeconds,omitempty" protobuf:"bytes,1,opt,name=resumeAfterSeconds"`
 }
 
 // GetArtifactByName returns an input artifact by its name
