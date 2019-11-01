@@ -83,7 +83,8 @@ type TemplateHolder interface {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
-	metav1.TypeMeta   `json:",inline "`
+
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
@@ -106,7 +107,6 @@ type WorkflowSpec struct {
 	// +patchMergeKey=name
 	Templates []Template `json:"templates" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,opt,name=templates"`
 
-
 	// Entrypoint is a template reference to the starting point of the workflow
 	Entrypoint string `json:"entrypoint" protobuf:"bytes,2,opt,name=entrypoint"`
 
@@ -120,16 +120,15 @@ type WorkflowSpec struct {
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,28,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of executor containers of the workflow.
-	Executor *ExecutorConfig `json:"executor,omitempty"`
+	Executor *ExecutorConfig `json:"executor,omitempty" protobuf:"bytes,29,opt,name=executor"`
 
 	// Volumes is a list of volumes that can be mounted by containers in a workflow.
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Volumes []apiv1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,5,opt,name=volumes"`
-
 
 	// VolumeClaimTemplates is a list of claims that containers are allowed to reference.
 	// The Workflow controller will create the claims at the beginning of the workflow
@@ -212,6 +211,7 @@ type WorkflowSpec struct {
 	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,21,opt,name=schedulerName"`
 
 	// PodGC describes the strategy to use when to deleting completed pods
+
 	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,26,opt,name=podGC"`
 
 	// PriorityClassName to apply to workflow pods.
@@ -224,14 +224,45 @@ type WorkflowSpec struct {
 	// +patchMergeKey=ip
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip"  protobuf:"bytes,24,opt,name=hostAliases"`
 
+	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,22,opt,name=podGC"`
+
+	// PriorityClassName to apply to workflow pods.
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
+
+	// Priority to apply to workflow pods.
+	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
+
+	// +patchStrategy=merge
+	// +patchMergeKey=ip
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optiona
-	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,25,opt,name=securityContext"`
+
+	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,26,opt,name=securityContext"`
+
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch string `json:"podSpecPatch,omitempty"`
+	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
+}
+
+type ParallelSteps struct {
+	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
+}
+
+func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
+	err := json.Unmarshal(value, &p.Steps)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
+	fmt.Println(p.Steps)
+	return json.Marshal(p.Steps)
+
 }
 
 type ParallelSteps struct {
@@ -324,7 +355,6 @@ type Template struct {
 	// +patchMergeKey=name
 	Sidecars []UserContainer `json:"sidecars,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,19,opt,name=sidecars"`
 
-
 	// Location in which all files related to the step will be stored (logs, artifacts, etc...).
 	// Can be overridden by individual items in Outputs. If omitted, will use the default
 	// artifact repository location configured in the controller, appended with the
@@ -347,7 +377,8 @@ type Template struct {
 	// Tolerations to apply to workflow pods.
 	// +patchStrategy=merge
 	// +patchMergeKey=key
-	Tolerations []apiv1.Toleration `json:"tolerations,omitempty"  patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
+	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
+
 
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
@@ -366,26 +397,25 @@ type Template struct {
 
 	// AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.
 	// ServiceAccountName of ExecutorConfig must be specified if this value is false.
-	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty"`
+	AutomountServiceAccountToken *bool `json:"automountServiceAccountToken,omitempty" protobuf:"varint,32,opt,name=automountServiceAccountToken"`
 
 	// Executor holds configurations of the executor container.
-	Executor *ExecutorConfig `json:"executor,omitempty"`
+	Executor *ExecutorConfig `json:"executor,omitempty" protobuf:"bytes,33,opt,name=executor"`
 
 	// HostAliases is an optional list of hosts and IPs that will be injected into the pod spec
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty"  patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,29,opt,name=hostAliases"`
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,29,opt,name=hostAliases"`
 
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
-
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,30,opt,name=securityContext"`
 
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=securityContext"`
+	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
 
 }
 
@@ -564,8 +594,7 @@ type Outputs struct {
 	// Artifacts holds the list of output artifacts produced by a step
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty"  patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
-
+	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
@@ -722,7 +751,7 @@ type WorkflowStatus struct {
 	Nodes map[string]NodeStatus `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
-	StoredTemplates map[string]Template `json:"storedTemplates,omitempty"`
+	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
 
 	// PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
 	// The contents of this list are drained at the end of the workflow.
@@ -762,10 +791,10 @@ type NodeStatus struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
 	// StoredTemplateID is the ID of stored template.
-	StoredTemplateID string `json:"storedTemplateID,omitempty"`
+	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
 
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
-	WorkflowTemplateName string `json:"workflowTemplateName,omitempty"`
+	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -880,7 +909,6 @@ type S3Bucket struct {
 
 	// RoleARN is the Amazon Resource Name (ARN) of the role to assume.
 	RoleARN string `json:"roleARN,omitempty" protobuf:"bytes,7,opt,name=roleARN"`
-
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -1013,7 +1041,6 @@ type HDFSKrbConfig struct {
 	KrbServicePrincipalName string `json:"krbServicePrincipalName,omitempty" protobuf:"bytes,6,opt,name=krbServicePrincipalName"`
 }
 
-
 // RawArtifact allows raw string content to be placed as an artifact in a container
 type RawArtifact struct {
 	// Data is the string contents of the artifact
@@ -1037,7 +1064,7 @@ func (h *HTTPArtifact) HasLocation() bool {
 // ExecutorConfig holds configurations of an executor container.
 type ExecutorConfig struct {
 	// ServiceAccountName specifies the service account name of the executor container.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty" protobuf:"bytes,1,opt,name=serviceAccountName"`
 }
 
 // ScriptTemplate is a template subtype to enable scripting through code steps
@@ -1123,7 +1150,6 @@ type DAGTemplate struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Tasks []DAGTask `json:"tasks" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=tasks"`
-
 
 	// This flag is for DAG logic. The DAG logic has a built-in "fail fast" feature to stop scheduling new steps,
 	// as soon as it detects that one of the DAG nodes is failed. Then it waits until all DAG nodes are completed

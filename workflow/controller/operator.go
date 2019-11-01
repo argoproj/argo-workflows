@@ -1691,9 +1691,9 @@ func (woc *wfOperationCtx) processAggregateNodeOutputs(tmpl *wfv1.Template, scop
 			var itemMap map[string]wfv1.ItemValue
 			err := json.Unmarshal([]byte(*node.Outputs.Result), &itemMap)
 			if err == nil {
-				resultsList = append(resultsList, wfv1.Item{Type:wfv1.Map,MapVal: itemMap})
+				resultsList = append(resultsList, wfv1.Item{Type: wfv1.Map, MapVal: itemMap})
 			} else {
-				resultsList = append(resultsList, wfv1.Item{Type:wfv1.String, StrVal: *node.Outputs.Result})
+				resultsList = append(resultsList, wfv1.Item{Type: wfv1.String, StrVal: *node.Outputs.Result})
 			}
 		}
 	}
@@ -1847,7 +1847,8 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 	replaceMap := make(map[string]string)
 	var newName string
 	val := item.Type
-	switch val{
+
+	switch val {
 	case wfv1.String, wfv1.Number, wfv1.Bool:
 		replaceMap["item"] = fmt.Sprintf("%v", val)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
@@ -1919,11 +1920,13 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-			items = append(items, wfv1.Item{Type:wfv1.Number, StrVal: fmt.Sprintf(format, i)})
+
+			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
 		}
 	} else {
 		for i := start; i >= end; i-- {
-			items = append(items, wfv1.Item{Type:wfv1.Number, StrVal: fmt.Sprintf(format, i)})
+			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
+
 		}
 	}
 	return items, nil
