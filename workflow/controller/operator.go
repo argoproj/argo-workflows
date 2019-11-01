@@ -1354,10 +1354,6 @@ func (woc *wfOperationCtx) storeTemplate(storedTemplateID string, unresolvedTemp
 	}
 }
 
-func (woc *wfOperationCtx) setStoredTemplate(storedTemplateID string) {
-
-}
-
 // initializeNodeOrMarkError initializes an error node or mark a node if it already exists.
 func (woc *wfOperationCtx) initializeNodeOrMarkError(node *wfv1.NodeStatus, nodeName string, nodeType wfv1.NodeType, orgTmpl wfv1.TemplateHolder, boundaryID string, err error) *wfv1.NodeStatus {
 	if node != nil {
