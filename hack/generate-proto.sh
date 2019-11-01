@@ -119,7 +119,3 @@ go-to-protobuf \
 #    /usr/bin/find "${SWAGGER_ROOT}" -name '*.swagger.json' -delete
 #}
 #
-#collect_swagger server 21
-#clean_swagger server
-#clean_swagger reposerver
-#clean_swagger controller
