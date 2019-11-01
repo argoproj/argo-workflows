@@ -729,7 +729,6 @@ const (
 	RetryPolicyAlways    RetryPolicy = "Always"
 	RetryPolicyOnFailure RetryPolicy = "OnFailure"
 	RetryPolicyOnError   RetryPolicy = "OnError"
-	RetryPolicyNever     RetryPolicy = "Never"
 )
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -738,7 +737,7 @@ type RetryStrategy struct {
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryOn is a list of NodePhase statuses that will be retried
-	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty"`
+	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=type,casttype=RetryPolicy"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
