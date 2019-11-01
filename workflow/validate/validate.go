@@ -543,7 +543,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 	stepNames := make(map[string]bool)
 	resolvedTemplates := make(map[string]*wfv1.Template)
 	for i, stepGroup := range tmpl.Steps {
-		for _, step := range stepGroup {
+		for _, step := range stepGroup.Steps {
 			if step.Name == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name is required", tmpl.Name, i)
 			}
@@ -579,7 +579,8 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 		}
-		for i, step := range stepGroup {
+
+		for _, step := range stepGroup.Steps {
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
 			resolvedTmpl := resolvedTemplates[step.Name]
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
@@ -610,11 +611,12 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	}
 	if len(withItems) > 0 {
 		for i := range withItems {
-			switch val := withItems[i].Value.(type) {
-			case string, int, int32, int64, float32, float64, bool:
+			val := withItems[i]
+			switch val.Type {
+			case wfv1.String, wfv1.Number, wfv1.Bool:
 				scope["item"] = true
-			case map[string]interface{}:
-				for itemKey := range val {
+			case wfv1.Map:
+				for itemKey := range val.MapVal {
 					scope[fmt.Sprintf("item.%s", itemKey)] = true
 				}
 			default:
