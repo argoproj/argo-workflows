@@ -703,7 +703,7 @@ type WorkflowStatus struct {
 	// Time at which this workflow completed
 	FinishedAt metav1.Time `json:"finishedAt,omitempty" protobuf:"bytes,3,opt,name=finishedAt"`
 
-	// A human readable message indicating details about why the workflow is in this condition.
+	// A human readable message indicating details about why the workflow isf in this condition.
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
 	// Compressed and base64 decoded Nodes map
@@ -737,7 +737,7 @@ type RetryStrategy struct {
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
 	// RetryOn is a list of NodePhase statuses that will be retried
-	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=type,casttype=RetryPolicy"`
+	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
