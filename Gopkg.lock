@@ -857,6 +857,14 @@
   revision = "be0da057c5e3c2df569a2c25cd280149b7d7e7d0"
 
 [[projects]]
+  digest = "1:bae851a20eb57221f90022471327e79a72e1167398946835032f160ca311e73f"
+  name = "gonum.org/v1/gonum"
+  packages = ["graph"]
+  pruneopts = ""
+  revision = "b72f7aa23a47a7d95df7d3d5248af26c33327925"
+  version = "v0.6.0"
+
+[[projects]]
   digest = "1:ea4822af073aae8c1f0868534aa49e2e97c1cd4fcad76f0ef91427ce26428923"
   name = "google.golang.org/api"
   packages = ["support/bundler"]
@@ -1459,8 +1467,7 @@
     "github.com/tidwall/gjson",
     "github.com/valyala/fasttemplate",
     "golang.org/x/crypto/ssh",
-    "golang.org/x/net/context",
-    "google.golang.org/grpc/metadata",
+    "gonum.org/v1/gonum/graph",
     "gopkg.in/jcmturner/gokrb5.v5/client",
     "gopkg.in/jcmturner/gokrb5.v5/config",
     "gopkg.in/jcmturner/gokrb5.v5/credentials",
@@ -1513,7 +1520,6 @@
     "k8s.io/kube-openapi/pkg/common",
     "k8s.io/utils/pointer",
     "sigs.k8s.io/yaml",
-    "upper.io/db.v3",
     "upper.io/db.v3/lib/sqlbuilder",
     "upper.io/db.v3/mysql",
     "upper.io/db.v3/postgresql",
