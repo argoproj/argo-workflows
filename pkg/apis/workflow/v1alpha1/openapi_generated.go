@@ -1917,7 +1917,7 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 				Properties: map[string]spec.Schema{
 					"duration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Duration is the seconds to wait before resuming a template",
+							Description: "Duration is the seconds to wait before automatically resuming a template",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

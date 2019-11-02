@@ -543,7 +543,7 @@ message Sequence {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
-  // Duration is the seconds to wait before resuming a template
+  // Duration is the seconds to wait before automatically resuming a template
   optional int32 duration = 1;
 }
 
