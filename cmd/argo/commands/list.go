@@ -84,28 +84,28 @@ func NewListCommand() *cobra.Command {
 				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
 			}
 
-			var tmpWorkFlowsSelcted []wfv1.Workflow
+			var tmpWorkFlowsSelected []wfv1.Workflow
 			if listArgs.prefix == "" {
-				tmpWorkFlowsSelcted = tmpWorkFlows
+				tmpWorkFlowsSelected = tmpWorkFlows
 			} else {
-				tmpWorkFlowsSelcted = make([]wfv1.Workflow, 0)
+				tmpWorkFlowsSelected = make([]wfv1.Workflow, 0)
 				for _, wf := range tmpWorkFlows {
 					if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.prefix) {
-						tmpWorkFlowsSelcted = append(tmpWorkFlowsSelcted, wf)
+						tmpWorkFlowsSelected = append(tmpWorkFlowsSelected, wf)
 					}
 				}
 			}
 
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = tmpWorkFlowsSelcted
+				workflows = tmpWorkFlowsSelected
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
 				}
-				for _, wf := range tmpWorkFlowsSelcted {
+				for _, wf := range tmpWorkFlowsSelected {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
