@@ -25,10 +25,10 @@ import (
 
 type listFlags struct {
 	allNamespaces bool     // --all-namespaces
-	prefix        string   // --prefix
 	status        []string // --status
 	completed     bool     // --completed
 	running       bool     // --running
+	prefix        string   // --prefix
 	output        string   // --output
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
