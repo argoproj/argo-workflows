@@ -25,6 +25,7 @@ import (
 
 type listFlags struct {
 	allNamespaces bool     // --all-namespaces
+	prefix        string   // --prefix
 	status        []string // --status
 	completed     bool     // --completed
 	running       bool     // --running
@@ -38,10 +39,11 @@ func NewListCommand() *cobra.Command {
 		listArgs listFlags
 	)
 	var command = &cobra.Command{
-		Use:   "list [WORKFLOW]",
+		Use:   "list",
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var wfClient v1alpha1.WorkflowInterface
+
 			if listArgs.allNamespaces {
 				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 			} else {
@@ -82,16 +84,28 @@ func NewListCommand() *cobra.Command {
 				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
 			}
 
+			var tmpWorkFlowsSelcted []wfv1.Workflow
+			if listArgs.prefix == "" {
+				tmpWorkFlowsSelcted = tmpWorkFlows
+			} else {
+				tmpWorkFlowsSelcted = make([]wfv1.Workflow, 0)
+				for _, wf := range tmpWorkFlows {
+					if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.prefix) {
+						tmpWorkFlowsSelcted = append(tmpWorkFlowsSelcted, wf)
+					}
+				}
+			}
+
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = tmpWorkFlows
+				workflows = tmpWorkFlowsSelcted
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
 				}
-				for _, wf := range tmpWorkFlows {
+				for _, wf := range tmpWorkFlowsSelcted {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
@@ -101,7 +115,7 @@ func NewListCommand() *cobra.Command {
 
 			switch listArgs.output {
 			case "", "wide":
-				printTable(args, workflows, &listArgs)
+				printTable(workflows, &listArgs)
 			case "name":
 				for _, wf := range workflows {
 					fmt.Println(wf.ObjectMeta.Name)
@@ -112,6 +126,7 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Show only workflows with names has prefix")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
@@ -121,7 +136,7 @@ func NewListCommand() *cobra.Command {
 	return command
 }
 
-func printTable(args []string, wfList []wfv1.Workflow, listArgs *listFlags) {
+func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 	if listArgs.allNamespaces {
 		fmt.Fprint(w, "NAMESPACE\t")
@@ -132,9 +147,6 @@ func printTable(args []string, wfList []wfv1.Workflow, listArgs *listFlags) {
 	}
 	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
-		if len(args) != 0 && !strings.HasPrefix(wf.ObjectMeta.Name, args[0]) {
-			continue
-		}
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)
 		if listArgs.allNamespaces {
