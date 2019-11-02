@@ -126,7 +126,7 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
-	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Show only workflows with names has prefix")
+	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
