@@ -416,7 +416,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if woc.controller.wfDBctx != nil {
 		err = woc.controller.wfDBctx.Save(wfDB)
 		if err != nil {
-			woc.log.Warnf("Error in  persisting workflow : %v %s", err, apierr.ReasonForError(err))
+			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
 			if woc.controller.wfDBctx.IsNodeStatusOffload() {
 				woc.markWorkflowFailed(err.Error())
 				return
@@ -1839,6 +1839,18 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	woc.log.Infof("node %s suspended", nodeName)
+
+	if tmpl.Suspend.Duration != nil && *tmpl.Suspend.Duration > 0 {
+		// We need to requeue this node to ensure that it gets looked at again
+		woc.requeue()
+		node := woc.getNodeByName(nodeName)
+		if time.Now().UTC().After(node.StartedAt.Add(time.Duration(*tmpl.Suspend.Duration) * time.Second)) {
+			// Node is expired
+			woc.log.Infof("auto resuming node %s", nodeName)
+			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
+			return nil
+		}
+	}
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return nil
 }
