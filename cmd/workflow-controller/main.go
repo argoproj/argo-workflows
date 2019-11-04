@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/argoproj/argo/workflow/cron"
 	"os"
 	"time"
 
@@ -61,14 +62,16 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			kubeclientset := kubernetes.NewForConfigOrDie(config)
-			wflientset := wfclientset.NewForConfigOrDie(config)
+			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wflientset, namespace, executorImage, executorImagePullPolicy, configMap)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, executorImage, executorImagePullPolicy, configMap)
 			err = wfController.ResyncConfig()
 			if err != nil {
 				return err
 			}
+
+			cronController := cron.NewCronController(kubeclientset, wfclientset, namespace)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -76,6 +79,7 @@ func NewRootCommand() *cobra.Command {
 			go wfController.MetricsServer(ctx)
 			go wfController.TelemetryServer(ctx)
 			go wfController.RunTTLController(ctx)
+			go cronController.Run(ctx)
 
 			// Wait forever
 			select {}

@@ -12,6 +12,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - get
   - list
@@ -32,6 +34,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete
@@ -57,6 +61,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete

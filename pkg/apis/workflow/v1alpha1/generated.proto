@@ -122,6 +122,32 @@ message ContinueOn {
   optional bool failed = 2;
 }
 
+// CronWorkflow is the definition of a scheduled workflow resource
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflow {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional WorkflowSpec spec = 2;
+
+  optional CronWorkflowOptions options = 3;
+}
+
+// CronWorkflowList is list of CronWorkflow resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflowList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated CronWorkflow items = 2;
+}
+
+// CronWorkflowOptions is the schedule of when to run CronWorkflows
+message CronWorkflowOptions {
+  // CronSchedule is a schedule to run the Workflow in Cron format
+  optional string cronSchedule = 1;
+}
+
 // DAGTask represents a node in the graph during DAG execution
 message DAGTask {
   // Name is the name of the target

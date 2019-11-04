@@ -24,6 +24,7 @@ rules:
   resources:
   - workflows
   - workflowtemplates
+  - cronworkflows
   verbs:
   - get
   - list

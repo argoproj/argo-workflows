@@ -200,6 +200,73 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CronWorkflow": {
+      "description": "CronWorkflow is the definition of a scheduled workflow resource",
+      "type": "object",
+      "required": [
+        "spec",
+        "options"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "options": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowOptions"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowList": {
+      "description": "CronWorkflowList is list of CronWorkflow resources",
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowOptions": {
+      "description": "CronWorkflowOptions is the schedule of when to run CronWorkflows",
+      "type": "object",
+      "required": [
+        "cronSchedule"
+      ],
+      "properties": {
+        "cronSchedule": {
+          "description": "CronSchedule is a schedule to run the Workflow in Cron format",
+          "type": "string"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
       "description": "DAGTask represents a node in the graph during DAG execution",
       "type": "object",
