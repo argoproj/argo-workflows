@@ -224,7 +224,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 				value, err := strconv.Unquote(string(v))
 				if err != nil {
 					// the string is already clean.
-					value = fmt.Sprintf("%s", v)
+					value = string(v)
 				}
 				param := wfv1.Parameter{
 					Name:  k,
