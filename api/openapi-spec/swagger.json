@@ -258,11 +258,11 @@
       "description": "CronWorkflowOptions is the schedule of when to run CronWorkflows",
       "type": "object",
       "required": [
-        "cronSchedule"
+        "schedule"
       ],
       "properties": {
-        "cronSchedule": {
-          "description": "CronSchedule is a schedule to run the Workflow in Cron format",
+        "schedule": {
+          "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
         }
       }

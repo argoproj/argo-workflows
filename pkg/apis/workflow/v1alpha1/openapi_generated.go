@@ -519,15 +519,15 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 				Description: "CronWorkflowOptions is the schedule of when to run CronWorkflows",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"cronSchedule": {
+					"schedule": {
 						SchemaProps: spec.SchemaProps{
-							Description: "CronSchedule is a schedule to run the Workflow in Cron format",
+							Description: "Schedule is a schedule to run the Workflow in Cron format",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 				},
-				Required: []string{"cronSchedule"},
+				Required: []string{"schedule"},
 			},
 		},
 	}

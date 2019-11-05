@@ -25,6 +25,6 @@ type CronWorkflowList struct {
 
 // CronWorkflowOptions is the schedule of when to run CronWorkflows
 type CronWorkflowOptions struct {
-	// CronSchedule is a schedule to run the Workflow in Cron format
-	CronSchedule string `json:"cronSchedule" protobuf:"bytes,1,opt,name=cronSchedule"`
+	// Schedule is a schedule to run the Workflow in Cron format
+	Schedule string `json:"schedule" protobuf:"bytes,1,opt,name=schedule"`
 }

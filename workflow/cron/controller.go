@@ -5,6 +5,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -13,6 +14,7 @@ import (
 
 // CronController is a controller for cron workflows
 type CronController struct {
+	cron           *cron.Cron
 	namespace      string
 	kubeclientset  kubernetes.Interface
 	wfclientset    versioned.Interface
@@ -32,10 +34,15 @@ func NewCronController(
 		kubeclientset: kubeclientset,
 		wfclientset:   wfclientset,
 		namespace:     namespace,
+		cron:          cron.New(),
 	}
 }
 
 func (cc *CronController) Run(ctx context.Context) {
+	
+	// Get outstanding CronWorkflows
+	cc.wfcronInformer.Lister().CronWorkflows(cc.namespace).List(nil)
+
 	cc.wfcronInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
