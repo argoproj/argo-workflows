@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
 
@@ -62,6 +63,7 @@ func newController() *WorkflowController {
 		wfclientset:    wfclientset,
 		completedPods:  make(chan string, 512),
 		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
