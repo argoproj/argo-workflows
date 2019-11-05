@@ -236,8 +236,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
-		if tmpl.OnExit != "" {
-			onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, dagCtx.boundaryID)
+		if node.OnExitNode != "" {
+			onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, dagCtx.boundaryID)
 			if err != nil {
 				return err
 			}
@@ -287,8 +287,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
-	if tmpl.OnExit != "" {
-		onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, dagCtx.boundaryID)
+	if node.OnExitNode != "" {
+		onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, dagCtx.boundaryID)
 		if err != nil {
 			return err
 		}

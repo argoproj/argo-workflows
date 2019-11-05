@@ -87,8 +87,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 
-			if tmpl.OnExit != "" {
-				onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, stepsCtx.boundaryID)
+			if node.OnExitNode != "" {
+				onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, stepsCtx.boundaryID)
 				if err != nil {
 					return err
 				}
@@ -145,8 +145,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 
-	if tmpl.OnExit != "" {
-		onExitNode, err := woc.runOnExitNode(nodeName, tmpl.OnExit, stepsCtx.boundaryID)
+	if node.OnExitNode != "" {
+		onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, stepsCtx.boundaryID)
 		if err != nil {
 			return err
 		}
@@ -253,7 +253,14 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
 	for _, childNodeID := range node.Children {
-		if !woc.wf.Status.Nodes[childNodeID].Completed() {
+		woc.log.Infof("SIMON Checking if node %s is done", childNodeID)
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		if !childNode.Completed() {
+			woc.log.Infof("SIMON %s is not done", childNodeID)
+			return node
+		}
+		if childNode.OnExitNode != "" && !woc.wf.Status.Nodes[childNode.OnExitNode].Completed() {
+			woc.log.Infof("SIMON %s on exit is not done", childNodeID)
 			return node
 		}
 	}

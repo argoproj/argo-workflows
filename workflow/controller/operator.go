@@ -1111,10 +1111,18 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
 
+	if basedTmpl.OnExit != "" {
+		woc.addOnExitNode(node.Name)
+	}
+
 	if node != nil {
+		woc.log.Infof("SIMON node is not nil")
 		if node.Completed() {
-			if basedTmpl.IsLeaf() && basedTmpl.OnExit != "" {
-				onExitNode, err := woc.runOnExitNode(nodeName, basedTmpl.OnExit, boundaryID)
+			woc.log.Infof("SIMON node is done")
+			if basedTmpl.IsLeaf() && node.OnExitNode != "" {
+				woc.log.Infof("SIMON node has on exit")
+				woc.addChildNode(node.Name, node.OnExitNode)
+				onExitNode, err := woc.runOnExitNode(node.OnExitNode, basedTmpl.OnExit, boundaryID)
 				if err != nil {
 					return nil, err
 				}
@@ -1387,6 +1395,7 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:   boundaryID,
 		Phase:        phase,
 		StartedAt:    metav1.Time{Time: time.Now().UTC()},
+		OnExitNode:   "",
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -1815,6 +1824,24 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
+// addOnExitNode adds the onExit node to a parent
+// parent and onExit are both node names
+func (woc *wfOperationCtx) addOnExitNode(parent string) {
+	parentID := woc.wf.NodeID(parent)
+	onExitNodeName := parent + ".onExit"
+	onExitID := woc.wf.NodeID(onExitNodeName)
+	node, ok := woc.wf.Status.Nodes[parentID]
+	if !ok {
+		panic(fmt.Sprintf("parent node %s not initialized", parent))
+	}
+	if node.OnExitNode != "" {
+		return
+	}
+	node.OnExitNode = onExitID
+	woc.wf.Status.Nodes[parentID] = node
+	woc.updated = true
+}
+
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	tmpl = tmpl.DeepCopy()
@@ -2012,8 +2039,7 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	return nil
 }
 
-func (woc *wfOperationCtx) runOnExitNode(parentNodeName, onExitTmplRef, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) runOnExitNode(onExitNodeName, onExitTmplRef, boundaryID string) (*wfv1.NodeStatus, error) {
 	woc.log.Infof("Running OnExit handler: %s", onExitTmplRef)
-	onExitNodeName := parentNodeName + ".onExit"
 	return woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: onExitTmplRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
 }
