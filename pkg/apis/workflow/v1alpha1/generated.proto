@@ -396,12 +396,24 @@ message NodeStatus {
   // a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
   // a template, will be a superset of the outbound nodes of its last children.
   repeated string outboundNodes = 17;
+
+  // OnExitNode tracks the onExit node of this node, if any
+  optional OnExitNodeStatus onExitNode = 20;
 }
 
 // NoneStrategy indicates to skip tar process and upload the files or directory tree as independent
 // files. Note that if the artifact is a directory, the artifact driver must support the ability to
 // save/load the directory appropriately.
 message NoneStrategy {
+}
+
+// OnExitNodeStatus contains information about the OnExit node of a parent node
+message OnExitNodeStatus {
+  // Name is the name of the OnExit node
+  optional string name = 1;
+
+  // TemplateRef is a reference to the OnExit template that will run
+  optional string templateRef = 2;
 }
 
 // Outputs hold parameters, artifacts, and results from a step
@@ -670,11 +682,19 @@ message Template {
   // +patchMergeKey=ip
   repeated k8s.io.api.core.v1.HostAlias hostAliases = 29;
 
+  // SecurityContext holds pod-level security attributes and common container settings.
+  // Optional: Defaults to empty.  See type description for default values of each field.
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 30;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
   // container fields which are not strings (e.g. resource limits).
   optional string podSpecPatch = 31;
+
+  // OnExit is a template reference which is invoked at the end of the
+  // template, irrespective of the success, failure, or error of the
+  // primary template.
+  optional string onExit = 34;
 }
 
 // TemplateRef is a reference of template resource.

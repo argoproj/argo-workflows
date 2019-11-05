@@ -236,8 +236,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
-		if node.OnExitNode != "" {
-			onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, dagCtx.boundaryID)
+		if node.OnExitNode != nil {
+			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
 			if err != nil {
 				return err
 			}
@@ -287,8 +287,8 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
-	if node.OnExitNode != "" {
-		onExitNode, err := woc.runOnExitNode(node.OnExitNode, tmpl.OnExit, dagCtx.boundaryID)
+	if node.OnExitNode != nil {
+		onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
 		if err != nil {
 			return err
 		}
@@ -310,6 +310,16 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	node := dagCtx.GetTaskNode(taskName)
 	if node != nil && node.Completed() {
+		// Run the node's onExit node (if any)
+		if node.OnExitNode != nil {
+			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
+			if err != nil {
+				return
+			}
+			if onExitNode == nil || !onExitNode.Completed() {
+				return
+			}
+		}
 		return
 	}
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
@@ -321,6 +331,18 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
+
+				// Run the dependency's onExit node (if any)
+				if depNode.OnExitNode != nil {
+					onExitNode, err := woc.runOnExitNode(depNode.OnExitNode.Name, depNode.OnExitNode.TemplateRef, dagCtx.boundaryID)
+					if err != nil {
+						return
+					}
+					if onExitNode == nil || !onExitNode.Completed() {
+						return
+					}
+				}
+
 				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
 					dependenciesSuccessful = false
 				}
@@ -430,9 +452,11 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.GetTaskNode(t.Name)
+
 			if node == nil || !node.Completed() {
 				return
 			}
+
 			if !node.Successful() {
 				groupPhase = node.Phase
 			}

@@ -383,7 +383,7 @@ type Template struct {
 	// OnExit is a template reference which is invoked at the end of the
 	// template, irrespective of the success, failure, or error of the
 	// primary template.
-	OnExit string `json:"onExit,omitempty" protobuf:"bytes,32,opt,name=onExit"`
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,34,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -808,7 +808,16 @@ type NodeStatus struct {
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 
 	// OnExitNode tracks the onExit node of this node, if any
-	OnExitNode string `json:"onExitNode,omitempty" protobuf:"bytes,18,rep,name=onExitNode"`
+	OnExitNode *OnExitNodeStatus `json:"onExitNode,omitempty" protobuf:"bytes,20,rep,name=onExitNode"`
+}
+
+// OnExitNodeStatus contains information about the OnExit node of a parent node
+type OnExitNodeStatus struct {
+	// Name is the name of the OnExit node
+	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+
+	// TemplateRef is a reference to the OnExit template that will run
+	TemplateRef string `json:"templateRef,omitempty" protobuf:"bytes,2,opt,name=templateRef"`
 }
 
 //func (n NodeStatus) String() string {

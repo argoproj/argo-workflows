@@ -1111,18 +1111,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
 	}
 
-	if basedTmpl.OnExit != "" {
-		woc.addOnExitNode(node.Name)
-	}
-
 	if node != nil {
-		woc.log.Infof("SIMON node is not nil")
 		if node.Completed() {
-			woc.log.Infof("SIMON node is done")
-			if basedTmpl.IsLeaf() && node.OnExitNode != "" {
-				woc.log.Infof("SIMON node has on exit")
-				woc.addChildNode(node.Name, node.OnExitNode)
-				onExitNode, err := woc.runOnExitNode(node.OnExitNode, basedTmpl.OnExit, boundaryID)
+			if basedTmpl.IsLeaf() && node.OnExitNode != nil {
+				woc.addChildNode(node.Name, node.OnExitNode.Name)
+				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, boundaryID)
 				if err != nil {
 					return nil, err
 				}
@@ -1329,6 +1322,11 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
 
+	// Set onExit node information
+	if executeTmpl.OnExit != "" {
+		woc.addOnExitNode(node, executeTmpl.OnExit)
+	}
+
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
 		node.Inputs = &executeTmpl.Inputs
@@ -1395,7 +1393,6 @@ func (woc *wfOperationCtx) initializeNode(nodeName string, nodeType wfv1.NodeTyp
 		BoundaryID:   boundaryID,
 		Phase:        phase,
 		StartedAt:    metav1.Time{Time: time.Now().UTC()},
-		OnExitNode:   "",
 	}
 
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
@@ -1826,19 +1823,20 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // addOnExitNode adds the onExit node to a parent
 // parent and onExit are both node names
-func (woc *wfOperationCtx) addOnExitNode(parent string) {
-	parentID := woc.wf.NodeID(parent)
-	onExitNodeName := parent + ".onExit"
-	onExitID := woc.wf.NodeID(onExitNodeName)
-	node, ok := woc.wf.Status.Nodes[parentID]
-	if !ok {
-		panic(fmt.Sprintf("parent node %s not initialized", parent))
+func (woc *wfOperationCtx) addOnExitNode(parentNode *wfv1.NodeStatus, onExitTemplateRef string) {
+	onExitNodeName := parentNode.Name + ".onExit"
+	if parentNode.OnExitNode != nil {
+		if parentNode.OnExitNode.Name != "" && parentNode.OnExitNode.TemplateRef != "" {
+			return
+		}
 	}
-	if node.OnExitNode != "" {
-		return
+
+	parentNode.OnExitNode = &wfv1.OnExitNodeStatus{
+		Name:        onExitNodeName,
+		TemplateRef: onExitTemplateRef,
 	}
-	node.OnExitNode = onExitID
-	woc.wf.Status.Nodes[parentID] = node
+
+	woc.wf.Status.Nodes[parentNode.ID] = *parentNode
 	woc.updated = true
 }
 
