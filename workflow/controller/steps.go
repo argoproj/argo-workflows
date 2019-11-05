@@ -260,7 +260,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			return node
 		}
 		// Check that the child node's onExit handler is completed
+		woc.log.Infof("SIMON checking if child %s exit node is completed", childNodeID)
 		if childNode.OnExitNode != nil && !woc.wf.Status.Nodes[childNode.OnExitNode.Name].Completed() {
+			woc.log.Infof("SIMON it is not, looked at %s and got: %s", childNode.OnExitNode.Name, woc.wf.Status.Nodes[childNode.OnExitNode.Name].Phase)
 			return node
 		}
 	}
