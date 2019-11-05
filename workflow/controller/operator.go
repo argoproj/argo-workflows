@@ -1102,7 +1102,7 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
 // boundary this node belongs to.
 func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.TemplateHolder, tmplCtx *templateresolution.Context, args wfv1.Arguments, boundaryID string) (*wfv1.NodeStatus, error) {
-	woc.log.Infof("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
+	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	node := woc.getNodeByName(nodeName)
 
@@ -1821,8 +1821,7 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
-// addOnExitNode adds the onExit node to a parent
-// parent and onExit are both node names
+// addOnExitNode adds the onExit node information to a parent node
 func (woc *wfOperationCtx) addOnExitNode(parentNode *wfv1.NodeStatus, onExitTemplateRef string) {
 	onExitNodeName := parentNode.Name + ".onExit"
 	if parentNode.OnExitNode != nil {

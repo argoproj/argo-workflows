@@ -87,6 +87,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 
+			// Run the Step node's onExit node, if any, when it fails
 			if node.OnExitNode != nil {
 				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, stepsCtx.boundaryID)
 				if err != nil {
@@ -145,6 +146,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 
+	// Run the Step node's onExit node, if any, when it succeeds
 	if node.OnExitNode != nil {
 		onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, stepsCtx.boundaryID)
 		if err != nil {
@@ -257,6 +259,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		if !childNode.Completed() {
 			return node
 		}
+		// Check that the child node's onExit handler is completed
 		if childNode.OnExitNode != nil && !woc.wf.Status.Nodes[childNode.OnExitNode.Name].Completed() {
 			return node
 		}

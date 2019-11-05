@@ -236,6 +236,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
+		// Run the DAG template's onExit node, if any, when it fails
 		if node.OnExitNode != nil {
 			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
 			if err != nil {
@@ -287,6 +288,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	node.OutboundNodes = outbound
 	woc.wf.Status.Nodes[node.ID] = *node
 
+	// Run the DAG template's onExit node, if any, when it succeeds
 	if node.OnExitNode != nil {
 		onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
 		if err != nil {
@@ -310,7 +312,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 
 	node := dagCtx.GetTaskNode(taskName)
 	if node != nil && node.Completed() {
-		// Run the node's onExit node (if any)
+		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
+		// have dependencies will have their onExit nodes executed below
 		if node.OnExitNode != nil {
 			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
 			if err != nil {
@@ -331,8 +334,8 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		depNode := dagCtx.GetTaskNode(depName)
 		if depNode != nil {
 			if depNode.Completed() {
-
-				// Run the dependency's onExit node (if any)
+				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
+				// executed here. Leaf nodes will have their onExit nodes executed above
 				if depNode.OnExitNode != nil {
 					onExitNode, err := woc.runOnExitNode(depNode.OnExitNode.Name, depNode.OnExitNode.TemplateRef, dagCtx.boundaryID)
 					if err != nil {
@@ -452,11 +455,9 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 		for _, t := range expandedTasks {
 			// Add the child relationship from our dependency's outbound nodes to this node.
 			node := dagCtx.GetTaskNode(t.Name)
-
 			if node == nil || !node.Completed() {
 				return
 			}
-
 			if !node.Successful() {
 				groupPhase = node.Phase
 			}
