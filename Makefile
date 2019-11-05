@@ -130,7 +130,7 @@ endif
 .PHONY: lint
 lint:
 ifdef GOLANGCI_EXISTS
-	golangci-lint run --config golangci.yml
+	golangci-lint run --fix --verbose 
 else
 	# Remove gometalinter after a migration time.
 	gometalinter --config gometalinter.json ./...
