@@ -13,8 +13,9 @@ import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
 package workflow;
 
 message WorkflowCreateRequest{
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow Workflows =1;
-    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions CreateOptions =2;
+    string Namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow Workflows = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions CreateOptions = 3;
 }
 
 message WorkflowGetRequest{
@@ -31,6 +32,7 @@ message WorkflowListRequest{
 message WorkflowUpdateRequest{
     string WorkflowName =1;
     string Namespace = 2;
+    bool Memoized = 3;
 }
 
 message WorkflowLogRequest{
@@ -111,7 +113,7 @@ service WorkflowService {
 
     // PodLogs returns stream of log entries for the specified pod. Pod
     rpc PodLogs(WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs/{Container}";
+        option (google.api.http).get = "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs";
     }
 
 }

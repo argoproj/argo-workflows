@@ -31,6 +31,7 @@ func NewRootCommand() *cobra.Command {
 		clientConfig            clientcmd.ClientConfig
 		logLevel                string // --loglevel
 		enableClientAuth		string
+		configMap				string
 	)
 
 	var command = cobra.Command{
@@ -76,6 +77,7 @@ func NewRootCommand() *cobra.Command {
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().StringVar(&enableClientAuth, "enableClientAuth", "false", "")
+	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "debug", "Set the logging level. One of: debug|info|warn|error")
 	return &command
 }

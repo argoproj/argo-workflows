@@ -25,11 +25,11 @@ type ClientConfig struct {
 	// sent to the server.
 	rest.ContentConfig
 
-	// Server requires Basic authentication
+	// KubeService requires Basic authentication
 	Username string
 	Password string
 
-	// Server requires Bearer authentication. This client will not attempt to use
+	// KubeService requires Bearer authentication. This client will not attempt to use
 	// refresh tokens for an OAuth2 flow.
 	// TODO: demonstrate an OAuth2 compatible client.
 	BearerToken string

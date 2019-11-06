@@ -83,7 +83,6 @@ type TemplateHolder interface {
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Workflow struct {
-
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              WorkflowSpec   `json:"spec" protobuf:"bytes,2,opt,name=spec "`
@@ -136,7 +135,6 @@ type WorkflowSpec struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	VolumeClaimTemplates []apiv1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,6,opt,name=volumeClaimTemplates"`
-
 
 	// Parallelism limits the max total parallel pods that can execute at the same time in a workflow
 	Parallelism *int64 `json:"parallelism,omitempty" protobuf:"bytes,7,opt,name=parallelism"`
@@ -212,18 +210,6 @@ type WorkflowSpec struct {
 
 	// PodGC describes the strategy to use when to deleting completed pods
 
-	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,26,opt,name=podGC"`
-
-	// PriorityClassName to apply to workflow pods.
-	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,22,opt,name=podPriorityClassName"`
-
-	// Priority to apply to workflow pods.
-	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,23,opt,name=podPriority"`
-
-	// +patchStrategy=merge
-	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip"  protobuf:"bytes,24,opt,name=hostAliases"`
-
 	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,22,opt,name=podGC"`
 
 	// PriorityClassName to apply to workflow pods.
@@ -262,25 +248,6 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
 	fmt.Println(p.Steps)
 	return json.Marshal(p.Steps)
-
-}
-
-type ParallelSteps struct {
-	Steps []WorkflowStep `protobuf:"bytes,1,rep,name=steps"`
-}
-
-func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
-	err := json.Unmarshal(value, &p.Steps)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
-	fmt.Println(p.Steps)
-	return json.Marshal(p.Steps)
-
 }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
@@ -379,7 +346,6 @@ type Template struct {
 	// +patchMergeKey=key
 	Tolerations []apiv1.Toleration `json:"tolerations,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,24,opt,name=tolerations"`
 
-
 	// If specified, the pod will be dispatched by specified scheduler.
 	// Or it will be dispatched by workflow scope scheduler if specified.
 	// If neither specified, the pod will be dispatched by default scheduler.
@@ -407,7 +373,6 @@ type Template struct {
 	// +patchMergeKey=ip
 	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,29,opt,name=hostAliases"`
 
-
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
@@ -416,7 +381,6 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
-
 }
 
 var _ TemplateHolder = &Template{}
@@ -459,7 +423,6 @@ type Inputs struct {
 	// +patchStrategy=merge
 	// +patchMergeKey=name
 	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
-
 }
 
 // Pod metdata

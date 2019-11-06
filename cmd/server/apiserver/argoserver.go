@@ -2,16 +2,22 @@ package apiserver
 
 import (
 	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 	golang_proto "github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/common/log"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
 	"regexp"
+	"sigs.k8s.io/yaml"
 
 	"fmt"
 	"k8s.io/client-go/kubernetes"
@@ -22,8 +28,10 @@ import (
 type ArgoServer struct {
 	Namespace        string
 	KubeClientset    kubernetes.Clientset
-	wfClientSet      *versioned.Clientset
+	WfClientSet      *versioned.Clientset
 	EnableClientAuth bool
+	Config    *config.WorkflowControllerConfig
+	ConfigName		 string
 }
 
 type ArgoServerOpts struct {
@@ -31,11 +39,13 @@ type ArgoServerOpts struct {
 	Namespace        string
 	KubeClientset    *versioned.Clientset
 	EnableClientAuth bool
+	ConfigName		 string
 }
 
 func NewArgoServer(ctx context.Context, opts ArgoServerOpts) *ArgoServer {
 
-	return &ArgoServer{Namespace: opts.Namespace, wfClientSet: opts.KubeClientset, EnableClientAuth: opts.EnableClientAuth}
+	return &ArgoServer{Namespace: opts.Namespace, WfClientSet: opts.KubeClientset,
+		EnableClientAuth: opts.EnableClientAuth, ConfigName:opts.ConfigName}
 }
 
 var backoff = wait.Backoff{
@@ -67,17 +77,21 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 	}
 
 	grpcS := grpc.NewServer(sOpts...)
-	workflowService := workflow.NewServer(as.Namespace, *as.wfClientSet, as.EnableClientAuth)
-	workflow.RegisterWorkflowServiceServer(grpcS, workflowService)
+	configMap, err := as.RsyncConfig(as.Namespace, as.WfClientSet, &as.KubeClientset)
+	if err != nil {
+		panic("Error marshalling config map")
+	}
+	workflowServer := workflow.NewWorkflowServer(as.Namespace, as.WfClientSet, &as.KubeClientset, configMap, as.EnableClientAuth)
+	workflow.RegisterWorkflowServiceServer(grpcS, workflowServer)
 	return grpcS
 }
 
 //// newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 //// using grpc-gateway as a proxy to the gRPC server.
-//func (a *ArgoServer) newHTTPServer(ctx context.Context, port int, grpcWebHandler http.Handler) *http.Server {
+//func (a *ArgoServer) newHTTPServer(ctx context.Context, port int, grpcWebHandler http.Handler) *http.KubeService {
 //	endpoint := fmt.Sprintf("localhost:%d", port)
 //	mux := http.NewServeMux()
-//	httpS := http.Server{
+//	httpS := http.KubeService{
 //		Addr: endpoint,
 //		Handler: &handlerSwitcher{
 //			handler: &bug21955Workaround{handler: mux},
@@ -174,3 +188,27 @@ func (a *ArgoServer) translateGrpcCookieHeader(ctx context.Context, w http.Respo
 
 	return nil
 }
+
+// ResyncConfig reloads the controller config from the configmap
+func (a *ArgoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset)(*config.WorkflowControllerConfig, error){
+		cmClient := kubeClientSet.CoreV1().ConfigMaps(namespace)
+		cm, err := cmClient.Get(a.ConfigName, metav1.GetOptions{})
+		if err != nil {
+			return nil, errors.InternalWrapError(err)
+		}
+		return a.UpdateConfig(cm)
+}
+
+func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap)(*config.WorkflowControllerConfig, error){
+	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
+	if !ok {
+		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", a.ConfigName, common.WorkflowControllerConfigMapKey)
+	}
+	var config config.WorkflowControllerConfig
+	err := yaml.Unmarshal([]byte(configStr), &config)
+	if err != nil {
+		return nil, errors.InternalWrapError(err)
+	}
+	return &config, nil
+}
+

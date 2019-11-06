@@ -3,6 +3,7 @@ package sqldb
 import (
 	"context"
 	"encoding/json"
+	"upper.io/db.v3"
 
 	"strings"
 	"time"
@@ -24,10 +25,12 @@ type (
 	DBRepository interface {
 		Save(wf *wfv1.Workflow) error
 		Get(uid string) (*wfv1.Workflow, error)
-		List() ([]wfv1.Workflow, error)
-		Query(condition interface{}) ([]wfv1.Workflow, error)
+		List(orderBy interface{}) (*wfv1.WorkflowList, error)
+		Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
 		Close() error
 		IsNodeStatusOffload() bool
+		QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{})(*wfv1.WorkflowList, error)
+
 	}
 )
 
@@ -149,58 +152,48 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 }
 
 func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
-	var wfDB WorkflowDB
-	var wf wfv1.Workflow
+
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initiallized")
 	}
+	cond := db.Cond{"id":uid}
 
-	err := wdc.Session.Collection(wdc.TableName).Find("id", uid).One(&wfDB)
+	wfs, err := wdc.Query(cond)
+
 	if err != nil {
 		return nil, DBOperationError(err, "DB GET operation failed")
 	}
-	if wfDB.Id != "" {
-		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
-		if err != nil {
-			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
-		}
-	} else {
+
+	if len(wfs) >0 {
+		return &wfs[0], nil
+	}
 		return nil, DBOperationError(nil, "Row is not found")
-	}
-	return &wf, nil
-
 }
 
-func (wdc *WorkflowDBContext) List() ([]wfv1.Workflow, error) {
-	var wfDBs []WorkflowDB
-
+func (wdc *WorkflowDBContext) List(orderBy interface{}) (*wfv1.WorkflowList, error) {
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
 
-	if err := wdc.Session.Collection(wdc.TableName).Find().OrderBy(" startedAt DESC").All(&wfDBs); err != nil {
-		return nil, DBOperationError(err, "DB List operation failed")
+	wfs, err := wdc.Query(nil, orderBy)
+
+	if err != nil {
+		return nil, err
 	}
-	var wfs []wfv1.Workflow
-	for _, wfDB := range wfDBs {
-		var wf wfv1.Workflow
-		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
-		if err != nil {
-			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
-		} else {
-			wfs = append(wfs, wf)
-		}
-	}
-	return wfs, nil
+	var wfList wfv1.WorkflowList
+	wfList.Items = wfs
+
+	return &wfList, nil
 }
 
-func (wdc *WorkflowDBContext) Query(condition interface{}) ([]wfv1.Workflow, error) {
+
+func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{} ) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
 
-	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(" startedAt DESC").All(&wfDBs); err != nil {
+	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs); err != nil {
 		return nil, DBOperationError(err, "DB Query opeartion failed")
 	}
 	var wfs []wfv1.Workflow
@@ -221,4 +214,32 @@ func (wdc *WorkflowDBContext) Close() error {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
 	return wdc.Session.Close()
+}
+
+
+func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit uint, lastId string, orderBy ...interface{} ) (*wfv1.WorkflowList, error) {
+	var wfDBs []WorkflowDB
+	if wdc.Session == nil {
+		return nil, DBInvalidSession(nil, "DB session is not initialized")
+	}
+
+	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).Paginate(pageLimit).NextPage(lastId).All(&wfDBs); err != nil {
+		return nil, DBOperationError(err, "DB Query opeartion failed")
+	}
+
+	var wfs []wfv1.Workflow
+	for _, wfDB := range wfDBs {
+		var wf wfv1.Workflow
+		err := json.Unmarshal([]byte(wfDB.Workflow), &wf)
+		if err != nil {
+			log.Warnf(" Workflow unmarshalling failed for row=%v", wfDB)
+		} else {
+			wfs = append(wfs, wf)
+		}
+	}
+
+	var wfList wfv1.WorkflowList
+	wfList.Items = wfs
+
+	return &wfList, nil
 }

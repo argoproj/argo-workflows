@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs/{Container}": {
+    "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs": {
       "get": {
         "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
         "operationId": "PodLogs",
@@ -49,8 +49,8 @@
           },
           {
             "name": "Container",
-            "in": "path",
-            "required": true,
+            "in": "query",
+            "required": false,
             "type": "string"
           }
         ],
@@ -4022,6 +4022,9 @@
     "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
+        "Namespace": {
+          "type": "string"
+        },
         "Workflows": {
           "$ref": "#/definitions/v1alpha1Workflow"
         },
@@ -4041,6 +4044,10 @@
         },
         "Namespace": {
           "type": "string"
+        },
+        "Memoized": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },

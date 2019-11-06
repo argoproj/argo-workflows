@@ -26,11 +26,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/persist/sqldb"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )

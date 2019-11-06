@@ -773,6 +773,10 @@ func local_request_WorkflowService_Terminate_0(ctx context.Context, marshaler ru
 
 }
 
+var (
+	filter_WorkflowService_PodLogs_0 = &utilities.DoubleArray{Encoding: map[string]int{"Namespace": 0, "WorkflowName": 1, "PodName": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
+)
+
 func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowServiceClient, req *http.Request, pathParams map[string]string) (WorkflowService_PodLogsClient, runtime.ServerMetadata, error) {
 	var protoReq WorkflowLogRequest
 	var metadata runtime.ServerMetadata
@@ -817,15 +821,11 @@ func request_WorkflowService_PodLogs_0(ctx context.Context, marshaler runtime.Ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "PodName", err)
 	}
 
-	val, ok = pathParams["Container"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "Container")
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
-	protoReq.Container, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "Container", err)
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_WorkflowService_PodLogs_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	stream, err := client.PodLogs(ctx, &protoReq)
@@ -1296,7 +1296,7 @@ var (
 
 	pattern_WorkflowService_Terminate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflows", "Namespace", "WorkflowName"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7, 1, 0, 4, 1, 5, 8}, []string{"api", "v1", "workflow", "Namespace", "WorkflowName", "pods", "PodName", "logs", "Container"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowService_PodLogs_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6, 2, 7}, []string{"api", "v1", "workflow", "Namespace", "WorkflowName", "pods", "PodName", "logs"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

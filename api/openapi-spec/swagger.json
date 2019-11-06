@@ -1170,6 +1170,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
@@ -1537,7 +1538,6 @@
           "format": "int64"
         },
         "podGC": {
-          "description": "PodGC describes the strategy to use when to deleting completed pods",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.PodGC"
         },
         "podPriority": {
@@ -1563,7 +1563,6 @@
           "type": "string"
         },
         "securityContext": {
-          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
