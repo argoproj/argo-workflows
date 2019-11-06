@@ -1111,8 +1111,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Completed() {
 			// Run the node's onExit node, if any
-			waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
-			if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				// "err" here could be "nil".
 				return nil, err
@@ -1881,8 +1881,8 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 			// Node is expired
 			woc.log.Infof("auto resuming node %s", nodeName)
 			// Run the node's onExit node, if any
-			waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
-			if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				// "err" here could be "nil".
 				return err

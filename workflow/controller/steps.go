@@ -87,8 +87,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 			// Run the Step node's onExit node, if any, when it fails
-			waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
-			if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 				// The onExit node is either not complete or has errored out, return.
 				// "err" here could be "nil".
 				return err
@@ -141,8 +141,8 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 	// Run the Step node's onExit node, if any, when it succeeds
-	waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
-	if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+	hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
+	if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
 		// The onExit node is either not complete or has errored out, return.
 		// "err" here could be "nil".
 		return err
