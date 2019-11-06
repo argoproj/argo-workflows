@@ -243,9 +243,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 }
 
 func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
-	fmt.Println(p.Steps)
 	return json.Marshal(p.Steps)
-
 }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
