@@ -2,23 +2,28 @@ package cron
 
 import (
 	"context"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"sync"
 	"time"
 )
 
 // CronController is a controller for cron workflows
 type CronController struct {
-	cron           *cron.Cron
 	namespace      string
+	cron           *cron.Cron
+	nameEntryIDMap map[string]cron.EntryID
 	kubeclientset  kubernetes.Interface
 	wfclientset    versioned.Interface
-	wfcronInformer v1alpha1.CronWorkflowInformer
+	wfcronInformer extv1alpha1.CronWorkflowInformer
+	lock           sync.Mutex
 }
 
 const (
@@ -31,24 +36,71 @@ func NewCronController(
 	namespace string,
 ) *CronController {
 	return &CronController{
-		kubeclientset: kubeclientset,
-		wfclientset:   wfclientset,
-		namespace:     namespace,
-		cron:          cron.New(),
+		kubeclientset:  kubeclientset,
+		wfclientset:    wfclientset,
+		namespace:      namespace,
+		cron:           cron.New(),
+		nameEntryIDMap: make(map[string]cron.EntryID),
 	}
 }
 
 func (cc *CronController) Run(ctx context.Context) {
-	
-	// Get outstanding CronWorkflows
-	cc.wfcronInformer.Lister().CronWorkflows(cc.namespace).List(nil)
+	log.Infof("Starting CronWorkflow controller")
 
 	cc.wfcronInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
+	// Get outstanding CronWorkflows
+	err := cc.parseOutstandingCronWorkflows()
+	if err != nil {
+		log.Fatalf("Error: %s", err)
+	}
+
+	cc.cron.Start()
+	defer cc.cron.Stop()
+
 	go cc.wfcronInformer.Informer().Run(ctx.Done())
 
 	<-ctx.Done()
+}
+
+func (cc *CronController) parseOutstandingCronWorkflows() error {
+	log.Infof("Parsing outstanding CronWorkflows")
+
+	cronWorkflows, err := cc.wfcronInformer.Lister().CronWorkflows(cc.namespace).List(nil)
+	if err != nil {
+		return errors.Wrap(err, "Error parsing existing CronWorkflow")
+	}
+
+	for _, cronWorkflow := range cronWorkflows {
+		err := cc.parseCronWorkflow(cronWorkflow)
+		if err != nil {
+			return errors.Wrap(err, "Error parsing existing CronWorkflow")
+		}
+	}
+	return nil
+}
+
+func (cc *CronController) parseCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
+	cc.lock.Lock()
+	defer cc.lock.Unlock()
+
+	log.Infof("Parsing CronWorkflow %s", cronWorkflow.Name)
+
+	if entryId, ok := cc.nameEntryIDMap[cronWorkflow.Name]; ok {
+		// The job is currently scheduled, remove it and re add it.
+		cc.cron.Remove(entryId)
+		delete(cc.nameEntryIDMap, cronWorkflow.Name)
+	}
+	// TODO: this is mostly a place holder. This is most likely not how/where we will be running the workflows
+	entryId, err := cc.cron.AddFunc(cronWorkflow.Options.Schedule, func() { log.Infof("Would have run %s", cronWorkflow.Name) })
+	if err != nil {
+		return errors.Wrap(err, "Unable to add CronWorkflow")
+	}
+	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
+
+	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
+	return nil
 }
 
 func (cc *CronController) addCronWorkflowInformerHandler() {
@@ -65,7 +117,7 @@ func (cc *CronController) addCronWorkflowInformerHandler() {
 	})
 }
 
-func (cc *CronController) newCronWorkflowInformer() v1alpha1.CronWorkflowInformer {
+func (cc *CronController) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
 	var informerFactory externalversions.SharedInformerFactory
 	informerFactory = externalversions.NewSharedInformerFactory(cc.wfclientset, cronWorkflowResyncPeriod)
 	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
