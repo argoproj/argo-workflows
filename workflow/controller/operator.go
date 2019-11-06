@@ -1882,6 +1882,16 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 		if time.Now().UTC().After(node.StartedAt.Add(time.Duration(*tmpl.Suspend.Duration) * time.Second)) {
 			// Node is expired
 			woc.log.Infof("auto resuming node %s", nodeName)
+			// Run the node's onExit node, if any
+			if node.OnExitNode != nil {
+				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, boundaryID)
+				if err != nil {
+					return err
+				}
+				if onExitNode == nil || !onExitNode.Completed() {
+					return nil
+				}
+			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
 		}
