@@ -1,0 +1,38 @@
+# Example showing a template (in this case a container) with an onExit template. The onExit template ("exitContainer")
+# will run after the parent ("whalesay"), regardless of if it fails or succeeds.
+# 
+#   STEP                                        PODNAME                             DURATION  MESSAGE
+#   ✔ container-on-exit-m6wq5 (step-template)
+#   ├---✔ stepA (whalesay)                     container-on-exit-m6wq5-3072376347  4s
+#   ├-✔ stepA.onExit (exitContainer)           container-on-exit-m6wq5-2711812994  4s
+#   ├---✔ stepB (whalesay)                     container-on-exit-m6wq5-2803967195  5s
+#   └-✔ stepB.onExit (exitContainer)           container-on-exit-m6wq5-22494146    4s
+#
+# Template onExit containers work for all templates: DAG, Steps, Container, Script, Suspend, and Resource.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: container-on-exit-
+spec:
+  entrypoint: step-template
+  templates:
+    - name: step-template
+      steps:
+        - - name: stepA
+            template: whalesay
+        - - name: stepB
+            template: whalesay
+
+    - name: whalesay
+      onExit: exitContainer
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["hello world"]
+
+    - name: exitContainer
+      container:
+        image: docker/whalesay
+        command: [cowsay]
+        args: ["goodbye world"]
