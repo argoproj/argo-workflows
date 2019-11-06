@@ -1806,7 +1806,7 @@ func TestStepsOnExit(t *testing.T) {
 	woc.operate()
 	woc.operate()
 
-	wf, err = wfcset.Get(wf.ObjectMeta.Name, v1.GetOptions{})
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.Nil(t, err)
 	onExitNodeIsPresent := false
 	for _, node := range wf.Status.Nodes {
