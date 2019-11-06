@@ -1106,14 +1106,10 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	node := woc.getNodeByName(nodeName)
 
-	newTmplCtx, basedTmpl, err := woc.getResolvedTemplate(node, orgTmpl, tmplCtx, args)
-	if err != nil {
-		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
-	}
-
 	if node != nil {
 		if node.Completed() {
-			if basedTmpl.IsLeaf() && node.OnExitNode != nil {
+			// Run the node's onExit node, if any
+			if node.OnExitNode != nil {
 				woc.addChildNode(node.Name, node.OnExitNode.Name)
 				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, boundaryID)
 				if err != nil {
@@ -1142,6 +1138,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
+	newTmplCtx, basedTmpl, err := woc.getResolvedTemplate(node, orgTmpl, tmplCtx, args)
+
+	if err != nil {
+		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
+	}
 	localParams := make(map[string]string)
 	// Inject the pod name. If the pod has a retry strategy, the pod name will be changed and will be injected when it
 	// is determined
@@ -1823,15 +1824,17 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 
 // addOnExitNode adds the onExit node information to a parent node
 func (woc *wfOperationCtx) addOnExitNode(parentNode *wfv1.NodeStatus, onExitTemplateRef string) {
-	onExitNodeName := parentNode.Name + ".onExit"
 	if parentNode.OnExitNode != nil {
 		if parentNode.OnExitNode.Name != "" && parentNode.OnExitNode.TemplateRef != "" {
 			return
 		}
 	}
 
+	onExitNodeName := parentNode.Name + ".onExit"
+	onExitNodeID := woc.wf.NodeID(onExitNodeName)
 	parentNode.OnExitNode = &wfv1.OnExitNodeStatus{
 		Name:        onExitNodeName,
+		ID:          onExitNodeID,
 		TemplateRef: onExitTemplateRef,
 	}
 

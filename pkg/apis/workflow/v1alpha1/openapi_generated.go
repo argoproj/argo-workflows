@@ -1258,6 +1258,13 @@ func schema_pkg_apis_workflow_v1alpha1_OnExitNodeStatus(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"id": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ID is the ID of the OnExit node",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"templateRef": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TemplateRef is a reference to the OnExit template that will run",

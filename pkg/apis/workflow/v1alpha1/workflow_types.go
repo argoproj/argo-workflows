@@ -816,8 +816,11 @@ type OnExitNodeStatus struct {
 	// Name is the name of the OnExit node
 	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
 
+	// ID is the ID of the OnExit node
+	ID string `json:"id,omitempty" protobuf:"bytes,2,opt,name=id"`
+
 	// TemplateRef is a reference to the OnExit template that will run
-	TemplateRef string `json:"templateRef,omitempty" protobuf:"bytes,2,opt,name=templateRef"`
+	TemplateRef string `json:"templateRef,omitempty" protobuf:"bytes,3,opt,name=templateRef"`
 }
 
 //func (n NodeStatus) String() string {

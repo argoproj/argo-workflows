@@ -669,6 +669,10 @@
       "description": "OnExitNodeStatus contains information about the OnExit node of a parent node",
       "type": "object",
       "properties": {
+        "id": {
+          "description": "ID is the ID of the OnExit node",
+          "type": "string"
+        },
         "name": {
           "description": "Name is the name of the OnExit node",
           "type": "string"

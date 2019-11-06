@@ -412,8 +412,11 @@ message OnExitNodeStatus {
   // Name is the name of the OnExit node
   optional string name = 1;
 
+  // ID is the ID of the OnExit node
+  optional string id = 2;
+
   // TemplateRef is a reference to the OnExit template that will run
-  optional string templateRef = 2;
+  optional string templateRef = 3;
 }
 
 // Outputs hold parameters, artifacts, and results from a step

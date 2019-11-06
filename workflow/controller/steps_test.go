@@ -2,6 +2,7 @@ package controller
 
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,18 +23,16 @@ var stepsOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: suspend-template-
+  name: steps-on-exit
 spec:
   entrypoint: suspend
   templates:
   - name: suspend
     steps:
     - - name: steps1
-        template: stepsTempalte
-    - - name: steps2
-        template: stepsTempalte
+        template: stepsTemplate
 
-  - name: stepsTempalte
+  - name: stepsTemplate
     onExit: exitContainer
     steps:
     - - name: leafA
@@ -59,24 +58,22 @@ func TestStepsOnExit(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 
 	// Test list expansion
-	wf := unmarshalWF(scriptOnExit)
+	wf := unmarshalWF(stepsOnExit)
 	wf, err := wfcset.Create(wf)
 	assert.Nil(t, err)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
-
-	// start template is run
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(v1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
-
-
-	woc.operate()
 	woc.operate()
 
-	// exitContainer template is run
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(v1.ListOptions{})
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, v1.GetOptions{})
 	assert.Nil(t, err)
-	assert.Equal(t, 3, len(pods.Items))
+	onExitNodeIsPresent := false
+	for _, node := range wf.Status.Nodes {
+		if strings.Contains(node.Name, "onExit") {
+			onExitNodeIsPresent = true
+			break
+		}
+	}
+	assert.True(t, onExitNodeIsPresent)
 }
