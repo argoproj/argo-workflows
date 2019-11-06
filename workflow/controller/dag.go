@@ -237,14 +237,11 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
 		// Run the DAG template's onExit node, if any, when it fails
-		if node.OnExitNode != nil {
-			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
-			if err != nil {
-				return err
-			}
-			if onExitNode == nil || !onExitNode.Completed() {
-				return nil
-			}
+		waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, dagCtx.boundaryID)
+		if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			// The onExit node is either not complete or has errored out, return.
+			// "err" here could be "nil".
+			return err
 		}
 		_ = woc.markNodePhase(nodeName, dagPhase)
 		return nil
@@ -289,14 +286,11 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	woc.wf.Status.Nodes[node.ID] = *node
 
 	// Run the DAG template's onExit node, if any, when it succeeds
-	if node.OnExitNode != nil {
-		onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
-		if err != nil {
-			return err
-		}
-		if onExitNode == nil || !onExitNode.Completed() {
-			return nil
-		}
+	waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, dagCtx.boundaryID)
+	if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+		// The onExit node is either not complete or has errored out, return.
+		// "err" here could be "nil".
+		return err
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
@@ -314,14 +308,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	if node != nil && node.Completed() {
 		// Run the node's onExit node, if any. Only leaf nodes will have their onExit nodes executed here. Nodes that
 		// have dependencies will have their onExit nodes executed below
-		if node.OnExitNode != nil {
-			onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, dagCtx.boundaryID)
-			if err != nil {
-				return
-			}
-			if onExitNode == nil || !onExitNode.Completed() {
-				return
-			}
+		waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, dagCtx.boundaryID)
+		if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+			// The onExit node is either not complete or has errored out, return.
+			return
 		}
 		return
 	}
@@ -336,14 +326,10 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 			if depNode.Completed() {
 				// Run the node's onExit node, if any. Only nodes that have dependencies will have their onExit nodes
 				// executed here. Leaf nodes will have their onExit nodes executed above
-				if depNode.OnExitNode != nil {
-					onExitNode, err := woc.runOnExitNode(depNode.OnExitNode.Name, depNode.OnExitNode.TemplateRef, dagCtx.boundaryID)
-					if err != nil {
-						return
-					}
-					if onExitNode == nil || !onExitNode.Completed() {
-						return
-					}
+				waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(depNode.OnExitNode, dagCtx.boundaryID)
+				if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+					// The onExit node is either not complete or has errored out, return.
+					return
 				}
 
 				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {

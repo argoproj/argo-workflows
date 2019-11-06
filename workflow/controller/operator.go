@@ -235,7 +235,9 @@ func (woc *wfOperationCtx) operate() {
 		} else {
 			woc.globalParams[common.GlobalVarWorkflowStatus] = string(workflowStatus)
 		}
-		onExitNode, err = woc.runOnExitNode(woc.wf.ObjectMeta.Name, woc.wf.Spec.OnExit, "")
+		woc.log.Infof("Running OnExit handler: %s", woc.wf.Spec.OnExit)
+		onExitNodeName := woc.wf.ObjectMeta.Name + ".onExit"
+		onExitNode, err = woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: woc.wf.Spec.OnExit}, woc.tmplCtx, woc.wf.Spec.Arguments, "")
 		if err != nil {
 			// the error are handled in the callee so just log it.
 			woc.log.Errorf("%s error in exit template execution: %+v", woc.wf.Name, err)
@@ -1109,15 +1111,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	if node != nil {
 		if node.Completed() {
 			// Run the node's onExit node, if any
-			if node.OnExitNode != nil {
-				woc.addChildNode(node.Name, node.OnExitNode.Name)
-				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, boundaryID)
-				if err != nil {
-					return nil, err
-				}
-				if onExitNode == nil || !onExitNode.Completed() {
-					return nil, nil
-				}
+			waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
+			if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				// "err" here could be "nil".
+				return nil, err
 			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			return node, nil
@@ -1883,14 +1881,11 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 			// Node is expired
 			woc.log.Infof("auto resuming node %s", nodeName)
 			// Run the node's onExit node, if any
-			if node.OnExitNode != nil {
-				onExitNode, err := woc.runOnExitNode(node.OnExitNode.Name, node.OnExitNode.TemplateRef, boundaryID)
-				if err != nil {
-					return err
-				}
-				if onExitNode == nil || !onExitNode.Completed() {
-					return nil
-				}
+			waitOnOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
+			if waitOnOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				// "err" here could be "nil".
+				return err
 			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
@@ -2049,7 +2044,11 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	return nil
 }
 
-func (woc *wfOperationCtx) runOnExitNode(onExitNodeName, onExitTmplRef, boundaryID string) (*wfv1.NodeStatus, error) {
-	woc.log.Infof("Running OnExit handler: %s", onExitTmplRef)
-	return woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: onExitTmplRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+func (woc *wfOperationCtx) runOnExitNode(onExitNodeStatus *wfv1.OnExitNodeStatus, boundaryID string) (bool, *wfv1.NodeStatus, error) {
+	if onExitNodeStatus != nil {
+		woc.log.Infof("Running OnExit handler: %s", onExitNodeStatus.TemplateRef)
+		onExitNode, err := woc.executeTemplate(onExitNodeStatus.Name, &wfv1.Template{Template: onExitNodeStatus.TemplateRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+		return true, onExitNode, err
+	}
+	return false, nil, nil
 }
