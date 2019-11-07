@@ -1879,7 +1879,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 	}
 
 	if deadline != nil {
-		woc.requeue(deadline.Sub(time.Now()))
+		woc.requeue(time.Until(*deadline))
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
