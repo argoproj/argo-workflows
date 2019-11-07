@@ -2,7 +2,7 @@
 
 Argo is implemented as a kubernetes controller and Workflow [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
 Argo itself does not run an API server, and with all CRDs, it extends the Kubernetes API server by
-introducing a new API Group/Version (argorproj.io/v1alpha1) and Kind (Workflow). When CRDs are
+introducing a new API Group/Version (argoproj.io/v1alpha1) and Kind (Workflow). When CRDs are
 registered in a cluster, access to those resources are made available by exposing new endpoints in
 the kubernetes API server. For example, to list workflows in the default namespace, a client would
 make an HTTP GET request to: `https://<k8s-api-server>/apis/argoproj.io/v1alpha1/namespaces/default/workflows`
