@@ -1846,11 +1846,10 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {
 	replaceMap := make(map[string]string)
 	var newName string
-	val := item.Type
-	switch val {
+	switch item.Type {
 	case wfv1.String, wfv1.Number, wfv1.Bool:
-		replaceMap["item"] = fmt.Sprintf("%v", val)
-		newName = fmt.Sprintf("%s(%d:%v)", name, index, val)
+		replaceMap["item"] = fmt.Sprintf("%v", item)
+		newName = fmt.Sprintf("%s(%d:%v)", name, index, item)
 	case wfv1.Map:
 		// Handle the case when withItems is a list of maps.
 		// vals holds stringified versions of the map items which are incorporated as part of the step name.
@@ -1873,7 +1872,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		replaceMap["item"] = string(byteVal)
 		newName = fmt.Sprintf("%s(%d:%v)", name, index, item.ListVal)
 	default:
-		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, val)
+		return "", errors.Errorf(errors.CodeBadRequest, "withItems[%d] expected string, number, list, or map. received: %v", index, item)
 	}
 	newStepStr, err := common.Replace(fstTmpl, replaceMap, false)
 	if err != nil {
