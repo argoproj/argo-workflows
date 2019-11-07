@@ -524,13 +524,13 @@ func (woc *wfOperationCtx) reapplyUpdate(wfClient v1alpha1.WorkflowInterface) er
 }
 
 // requeue this workflow onto the workqueue for later processing
-func (woc *wfOperationCtx) requeue() {
+func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
 	key, err := cache.MetaNamespaceKeyFunc(woc.wf)
 	if err != nil {
 		woc.log.Errorf("Failed to requeue workflow %s: %v", woc.wf.ObjectMeta.Name, err)
 		return
 	}
-	woc.controller.wfQueue.Add(key)
+	woc.controller.wfQueue.AddAfter(key, afterDuration)
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
@@ -1145,7 +1145,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	// Check if we took too long operating on this workflow and immediately return if we did
 	if time.Now().UTC().After(woc.deadline) {
 		woc.log.Warnf("Deadline exceeded")
-		woc.requeue()
+		woc.requeue(0)
 		return node, ErrDeadlineExceeded
 	}
 
@@ -1861,17 +1861,27 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	woc.log.Infof("node %s suspended", nodeName)
 
+	deadline := woc.getWorkflowDeadline()
+
 	if tmpl.Suspend.Duration != nil && *tmpl.Suspend.Duration > 0 {
-		// We need to requeue this node to ensure that it gets looked at again
-		woc.requeue()
 		node := woc.getNodeByName(nodeName)
-		if time.Now().UTC().After(node.StartedAt.Add(time.Duration(*tmpl.Suspend.Duration) * time.Second)) {
+		suspendDuration := time.Duration(*tmpl.Suspend.Duration) * time.Second
+		suspendDeadline := node.StartedAt.Add(suspendDuration)
+		if deadline == nil || deadline.After(suspendDeadline) {
+			deadline = &suspendDeadline
+		}
+		if time.Now().UTC().After(suspendDeadline) {
 			// Node is expired
 			woc.log.Infof("auto resuming node %s", nodeName)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
 		}
 	}
+
+	if deadline != nil {
+		woc.requeue(deadline.Sub(time.Now()))
+	}
+
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return nil
 }
