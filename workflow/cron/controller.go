@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"sync"
@@ -67,7 +68,7 @@ func (cc *CronController) Run(ctx context.Context) {
 func (cc *CronController) parseOutstandingCronWorkflows() error {
 	log.Infof("Parsing outstanding CronWorkflows")
 
-	cronWorkflows, err := cc.wfcronInformer.Lister().CronWorkflows(cc.namespace).List(nil)
+	cronWorkflows, err := cc.wfcronInformer.Lister().CronWorkflows(cc.namespace).List(labels.Everything())
 	if err != nil {
 		return errors.Wrap(err, "Error parsing existing CronWorkflow")
 	}
@@ -100,6 +101,10 @@ func (cc *CronController) parseCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow)
 	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
 
 	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
+
+	log.Infof("SIMON Entries %v", cc.cron.Entries())
+	log.Infof("SIMON Entry next %s", cc.cron.Entry(entryId).Next)
+
 	return nil
 }
 
@@ -107,9 +112,29 @@ func (cc *CronController) addCronWorkflowInformerHandler() {
 	cc.wfcronInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			log.Infof("SIMON Adding object: %v", obj)
+			cronWf, ok := obj.(*v1alpha1.CronWorkflow)
+			if !ok {
+				log.Errorf("Error casting object")
+				return
+			}
+			err := cc.parseCronWorkflow(cronWf)
+			if err != nil {
+				log.Errorf("Error parsing CronWorkflow %s", cronWf.Name)
+				return
+			}
 		},
 		UpdateFunc: func(old, new interface{}) {
 			log.Infof("SIMON Updating object: %v", new)
+			cronWf, ok := new.(*v1alpha1.CronWorkflow)
+			if !ok {
+				log.Errorf("Error casting object")
+				return
+			}
+			err := cc.parseCronWorkflow(cronWf)
+			if err != nil {
+				log.Errorf("Error parsing CronWorkflow %s", cronWf.Name)
+				return
+			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			log.Infof("SIMON Deleting object: %v", obj)
