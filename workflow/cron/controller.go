@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
@@ -24,7 +25,7 @@ type CronController struct {
 	kubeclientset  kubernetes.Interface
 	wfclientset    versioned.Interface
 	wfcronInformer extv1alpha1.CronWorkflowInformer
-	lock           sync.Mutex
+	cronLock       sync.Mutex
 }
 
 const (
@@ -74,7 +75,7 @@ func (cc *CronController) parseOutstandingCronWorkflows() error {
 	}
 
 	for _, cronWorkflow := range cronWorkflows {
-		err := cc.parseCronWorkflow(cronWorkflow)
+		err := cc.startCronWorkflow(cronWorkflow)
 		if err != nil {
 			return errors.Wrap(err, "Error parsing existing CronWorkflow")
 		}
@@ -82,9 +83,9 @@ func (cc *CronController) parseOutstandingCronWorkflows() error {
 	return nil
 }
 
-func (cc *CronController) parseCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
-	cc.lock.Lock()
-	defer cc.lock.Unlock()
+func (cc *CronController) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
+	cc.cronLock.Lock()
+	defer cc.cronLock.Unlock()
 
 	log.Infof("Parsing CronWorkflow %s", cronWorkflow.Name)
 
@@ -108,36 +109,61 @@ func (cc *CronController) parseCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow)
 	return nil
 }
 
+func (cc *CronController) stopCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
+	cc.cronLock.Lock()
+	defer cc.cronLock.Unlock()
+
+	entryId, ok := cc.nameEntryIDMap[cronWorkflow.Name]
+	if !ok {
+		return fmt.Errorf("unable to remove workflow: workflow %s does not exist", cronWorkflow.Name)
+	}
+
+	cc.cron.Remove(entryId)
+	delete(cc.nameEntryIDMap, cronWorkflow.Name)
+
+	log.Infof("CronWorkflow %s removed", cronWorkflow.Name)
+	return nil
+
+
+}
+
 func (cc *CronController) addCronWorkflowInformerHandler() {
 	cc.wfcronInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			log.Infof("SIMON Adding object: %v", obj)
-			cronWf, ok := obj.(*v1alpha1.CronWorkflow)
-			if !ok {
-				log.Errorf("Error casting object")
-				return
-			}
-			err := cc.parseCronWorkflow(cronWf)
+			cronWf, err := convertToWorkflow(obj)
 			if err != nil {
-				log.Errorf("Error parsing CronWorkflow %s", cronWf.Name)
+				log.Error(err)
+			}
+			err = cc.startCronWorkflow(cronWf)
+			if err != nil {
+				log.Errorf("Error starting CronWorkflow %s: %s", cronWf.Name, err)
 				return
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
 			log.Infof("SIMON Updating object: %v", new)
-			cronWf, ok := new.(*v1alpha1.CronWorkflow)
-			if !ok {
-				log.Errorf("Error casting object")
-				return
-			}
-			err := cc.parseCronWorkflow(cronWf)
+			cronWf, err := convertToWorkflow(new)
 			if err != nil {
-				log.Errorf("Error parsing CronWorkflow %s", cronWf.Name)
+				log.Error(err)
+			}
+			err = cc.startCronWorkflow(cronWf)
+			if err != nil {
+				log.Errorf("Error starting CronWorkflow %s: %s", cronWf.Name, err)
 				return
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			log.Infof("SIMON Deleting object: %v", obj)
+			cronWf, err := convertToWorkflow(obj)
+			if err != nil {
+				log.Error(err)
+			}
+			err = cc.stopCronWorkflow(cronWf)
+			if err != nil {
+				log.Errorf("Error stopping CronWorkflow %s: %s", cronWf.Name, err)
+				return
+			}
 		},
 	})
 }
@@ -146,4 +172,12 @@ func (cc *CronController) newCronWorkflowInformer() extv1alpha1.CronWorkflowInfo
 	var informerFactory externalversions.SharedInformerFactory
 	informerFactory = externalversions.NewSharedInformerFactory(cc.wfclientset, cronWorkflowResyncPeriod)
 	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
+}
+
+func convertToWorkflow(obj interface{}) (*v1alpha1.CronWorkflow, error) {
+	cronWf, ok := obj.(*v1alpha1.CronWorkflow)
+	if !ok {
+		return nil, fmt.Errorf("error casting object")
+	}
+	return cronWf, nil
 }
