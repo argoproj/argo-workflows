@@ -69,6 +69,7 @@ type TemplateGetter interface {
 	GetName() string
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
+	GetTemplateScope() string
 }
 
 // TemplateHolder is an interface for holders of templates.
@@ -752,10 +753,15 @@ type NodeStatus struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
 	// StoredTemplateID is the ID of stored template.
+	// DEPRECATED: This value is not used anymore.
 	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
 
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
+	// DEPRECATED: This value is not used anymore.
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
+
+	// TemplateScope is the template scope in which the template of this node was retrieved.
+	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -846,6 +852,20 @@ func (n NodeStatus) Successful() bool {
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
 	return n.Completed() && !n.Successful()
+}
+
+var _ TemplateHolder = &NodeStatus{}
+
+func (n *NodeStatus) GetTemplateName() string {
+	return n.TemplateName
+}
+
+func (n *NodeStatus) GetTemplateRef() *TemplateRef {
+	return n.TemplateRef
+}
+
+func (n *NodeStatus) IsResolvable() bool {
+	return true
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1259,6 +1279,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
+// GetTemplateScope returns the template scope of workflow.
+func (wf *Workflow) GetTemplateScope() string {
+	return ""
+}
+
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
 	if name == wf.ObjectMeta.Name {
@@ -1267,36 +1292,6 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
-}
-
-// GetStoredTemplate gets a resolved template from stored data.
-func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
-	id := node.StoredTemplateID
-	if id == "" {
-		return nil
-	}
-	tmpl, ok := wf.Status.StoredTemplates[id]
-	if ok {
-		return &tmpl
-	}
-	return nil
-}
-
-// GetStoredOrLocalTemplate gets a resolved template from stored data or local template.
-func (wf *Workflow) GetStoredOrLocalTemplate(node *NodeStatus) *Template {
-	// Try to find a template from stored data.
-	tmpl := wf.GetStoredTemplate(node)
-	if tmpl != nil {
-		return tmpl
-	}
-	// Try to get template from Workflow.
-	if node.WorkflowTemplateName == "" && node.TemplateName != "" {
-		tmpl := wf.GetTemplateByName(node.TemplateName)
-		if tmpl != nil {
-			return tmpl
-		}
-	}
-	return nil
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

@@ -48,22 +48,8 @@ spec:
       image: docker/whalesay
   - name: nested-whalesay-with-arguments
     template: whalesay-with-arguments
-    inputs:
-      parameters:
-      - name: message
-    arguments:
-      parameters:
-      - name: message
-        value: "{{inputs.parameters.message}}-bar"
   - name: whalesay-with-arguments
     template: whalesay-with-arguments-inner
-    inputs:
-      parameters:
-      - name: message
-    arguments:
-      parameters:
-      - name: message
-        value: "{{inputs.parameters.message}}-foo"
   - name: whalesay-with-arguments-inner
     inputs:
       parameters:
@@ -107,7 +93,7 @@ spec:
 func TestGetTemplateByName(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	tmpl, err := ctx.GetTemplateByName("whalesay")
 	if !assert.NoError(t, err) {
@@ -131,7 +117,7 @@ func TestGetTemplateFromRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template of existing template reference.
 	tmplRef := wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}
@@ -164,7 +150,7 @@ func TestGetTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
@@ -203,7 +189,7 @@ func TestGetTemplate(t *testing.T) {
 func TestGetCurrentTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template base of existing template name.
 	tmplBase := ctx.GetCurrentTemplateBase()
@@ -225,7 +211,7 @@ func TestGetTemplateBase(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
@@ -270,7 +256,6 @@ func TestGetTemplateBase(t *testing.T) {
 }
 
 func TestResolveTemplate(t *testing.T) {
-	emptymap := map[string]string{}
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
@@ -281,11 +266,11 @@ func TestResolveTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	// Get the template of template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
-	ctx, tmpl, err := ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	ctx, tmpl, err := ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -298,7 +283,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -312,7 +297,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of local nested template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "local-whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -326,7 +311,7 @@ func TestResolveTemplate(t *testing.T) {
 
 	// Get the template of nested template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "another-whalesay"}}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -342,8 +327,7 @@ func TestResolveTemplate(t *testing.T) {
 	tmplHolder = wfv1.Template{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay-with-arguments"},
 	}
-	msgValue := "from-args"
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "message", Value: &msgValue}}}, emptymap, emptymap, false)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -353,14 +337,14 @@ func TestResolveTemplate(t *testing.T) {
 	}
 	assert.Equal(t, "some-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay-with-arguments", tmpl.Name)
-	assert.Equal(t, "from-args-foo", *tmpl.Inputs.Parameters[0].Value)
+	assert.Equal(t, "message", tmpl.Inputs.Parameters[0].Name)
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of nested template reference with arguments.
 	tmplHolder = wfv1.Template{
 		TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "nested-whalesay-with-arguments"},
 	}
-	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{Parameters: []wfv1.Parameter{{Name: "message", Value: &msgValue}}}, emptymap, emptymap, false)
+	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
@@ -370,24 +354,24 @@ func TestResolveTemplate(t *testing.T) {
 	}
 	assert.Equal(t, "some-workflow-template", wftmpl.Name)
 	assert.Equal(t, "nested-whalesay-with-arguments", tmpl.Name)
-	assert.Equal(t, "from-args-bar-foo", *tmpl.Inputs.Parameters[0].Value)
+	assert.Equal(t, "message", tmpl.Inputs.Parameters[0].Name)
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
 
 	// Get the template of infinite loop template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-loop-whalesay"}}
-	_, _, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	_, _, err = ctx.ResolveTemplate(&tmplHolder)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 
 	// Get the template of local infinite loop template.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "infinite-local-loop-whalesay"}}
-	_, _, err = ctx.ResolveTemplate(&tmplHolder, &wfv1.Arguments{}, emptymap, emptymap, false)
+	_, _, err = ctx.ResolveTemplate(&tmplHolder)
 	assert.EqualError(t, err, "template reference exceeded max depth (10)")
 }
 
 func TestWithTemplateBase(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	anotherWftmpl := unmarshalWftmpl(anotherWorkflowTemplateYaml)
 
@@ -403,7 +387,7 @@ func TestWithTemplateBase(t *testing.T) {
 func TestOnWorkflowTemplate(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
-	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl)
+	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {

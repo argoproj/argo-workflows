@@ -636,7 +636,7 @@
           "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         },
         "storedTemplateID": {
-          "description": "StoredTemplateID is the ID of stored template.",
+          "description": "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
           "type": "string"
         },
         "templateName": {
@@ -647,12 +647,16 @@
           "description": "TemplateRef is the reference to the template resource which this node corresponds to. Not applicable to virtual nodes (e.g. Retry, StepGroup)",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TemplateRef"
         },
+        "templateScope": {
+          "description": "TemplateScope is the template scope in which the template of this node was retrieved.",
+          "type": "string"
+        },
         "type": {
           "description": "Type indicates type of node",
           "type": "string"
         },
         "workflowTemplateName": {
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.",
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
           "type": "string"
         }
       }

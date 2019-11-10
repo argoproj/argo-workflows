@@ -91,7 +91,7 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 
 	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf, nil)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -168,7 +168,7 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 		namespace = wftmpl.Namespace
 	}
 	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl, nil)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
@@ -289,7 +289,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder, args, ctx.globalParams, map[string]string{}, true)
+	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
