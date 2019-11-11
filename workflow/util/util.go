@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -219,7 +220,12 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			}
 
 			for k, v := range yamlParams {
-				value := fmt.Sprintf("%s", v)
+				// We get quoted strings from the yaml file.
+				value, err := strconv.Unquote(string(v))
+				if err != nil {
+					// the string is already clean.
+					value = string(v)
+				}
 				param := wfv1.Parameter{
 					Name:  k,
 					Value: &value,

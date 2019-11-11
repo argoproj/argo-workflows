@@ -252,7 +252,6 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 
 func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
 	return json.Marshal(p.Steps)
-
 }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
@@ -1199,6 +1198,8 @@ func (t *DAGTask) IsResolvable() bool {
 
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
+	// Duration is the seconds to wait before automatically resuming a template
+	Duration *int32 `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 
 // GetArtifactByName returns an input artifact by its name

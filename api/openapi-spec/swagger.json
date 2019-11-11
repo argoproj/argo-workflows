@@ -1048,7 +1048,14 @@
     },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "duration": {
+          "description": "Duration is the seconds to wait before automatically resuming a template",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "description": "TarStrategy will tar and gzip the file or directory when saving",
