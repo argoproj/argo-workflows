@@ -79,6 +79,12 @@ type TemplateHolder interface {
 	IsResolvable() bool
 }
 
+// TemplateStorage is an interface of template storage getter and setter.
+type TemplateStorage interface {
+	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
+	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
+}
+
 // Workflow is the definition of a workflow resource
 // +genclient
 // +genclient:noStatus
@@ -99,6 +105,7 @@ type WorkflowList struct {
 }
 
 var _ TemplateGetter = &Workflow{}
+var _ TemplateStorage = &Workflow{}
 
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
@@ -1292,6 +1299,49 @@ func (wf *Workflow) NodeID(name string) string {
 	h := fnv.New32a()
 	_, _ = h.Write([]byte(name))
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
+}
+
+// GetStoredTemplate retrieves a template from stored templates of the workflow.
+func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
+	tmplID := ""
+	tmplRef := holder.GetTemplateRef()
+	if tmplRef != nil {
+		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+	} else if templateScope != "" {
+		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
+	} else {
+		// Workflow-local templates are not stored.
+		return nil
+	}
+	tmpl, ok := wf.Status.StoredTemplates[tmplID]
+	if !ok {
+		return nil
+	}
+	return &tmpl
+}
+
+// SetStoredTemplate stores a new template in stored templates of the workflow.
+func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error) {
+	tmplID := ""
+	tmplRef := holder.GetTemplateRef()
+	if tmplRef != nil {
+		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+	} else if templateScope != "" {
+		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
+	} else {
+		// Do not store workflow-local templates.
+		return false, nil
+	}
+	stored := false
+	_, ok := wf.Status.StoredTemplates[tmplID]
+	if !ok {
+		if wf.Status.StoredTemplates == nil {
+			wf.Status.StoredTemplates = map[string]Template{}
+		}
+		wf.Status.StoredTemplates[tmplID] = *tmpl
+		stored = true
+	}
+	return stored, nil
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

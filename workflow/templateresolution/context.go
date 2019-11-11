@@ -5,6 +5,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,12 +30,6 @@ type WorkflowTemplateNamespacedGetter interface {
 	Get(name string) (*wfv1.WorkflowTemplate, error)
 }
 
-// TemplateStorage is an interface of template storage getter and setter.
-type TemplateStorage interface {
-	GetStoredTemplate(templateScope string, holder wfv1.TemplateHolder) *wfv1.Template
-	SetStoredTemplate(templateScope string, holder wfv1.TemplateHolder, tmpl *wfv1.Template) error
-}
-
 // Context is a context of template search.
 type Context struct {
 	// wftmplGetter is an interface to get WorkflowTemplates.
@@ -42,13 +37,13 @@ type Context struct {
 	// tmplBase is the base of local template search.
 	tmplBase wfv1.TemplateGetter
 	// storage is an implementation of TemplateStorage.
-	storage TemplateStorage
+	storage wfv1.TemplateStorage
 	// logger is a logrus entry.
 	logger *logrus.Entry
 }
 
 // NewContext returns new Context.
-func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.TemplateGetter, storage TemplateStorage) *Context {
+func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.TemplateGetter, storage wfv1.TemplateStorage) *Context {
 	return &Context{
 		wftmplGetter: wftmplGetter,
 		tmplBase:     tmplBase,
@@ -58,7 +53,7 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.Tem
 }
 
 // NewContext returns new Context.
-func NewContextFromClientset(clientset typed.WorkflowTemplateInterface, tmplBase wfv1.TemplateGetter, storage TemplateStorage) *Context {
+func NewContextFromClientset(clientset typed.WorkflowTemplateInterface, tmplBase wfv1.TemplateGetter, storage wfv1.TemplateStorage) *Context {
 	return &Context{
 		wftmplGetter: &workflowTemplateInterfaceWrapper{clientset: clientset},
 		tmplBase:     tmplBase,
@@ -172,20 +167,24 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 		if err != nil {
 			return nil, nil, err
 		}
+		// Stored the found template.
+		if ctx.storage != nil {
+			stored, err := ctx.storage.SetStoredTemplate(ctx.tmplBase.GetTemplateScope(), tmplHolder, newTmpl)
+			if err != nil {
+				return nil, nil, err
+			}
+			if stored {
+				ctx.logger.Debug("Stored the template")
+			}
+		}
 		tmpl = newTmpl
 	}
+
 	newTmplBase, err := ctx.GetTemplateBase(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
 	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
-
-	if ctx.storage != nil {
-		err = ctx.storage.SetStoredTemplate(ctx.tmplBase.GetTemplateScope(), tmplHolder, tmpl)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {

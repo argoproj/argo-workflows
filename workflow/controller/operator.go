@@ -80,7 +80,7 @@ type wfOperationCtx struct {
 	tmplCtx *templateresolution.Context
 }
 
-var _ templateresolution.TemplateStorage = &wfOperationCtx{}
+var _ wfv1.TemplateStorage = &wfOperationCtx{}
 
 var (
 	// ErrDeadlineExceeded indicates the operation exceeded its deadline for execution
@@ -1892,37 +1892,18 @@ func (woc *wfOperationCtx) getSize() int {
 	return len(nodeContent)
 }
 
-// GetStoredTemplate retrieves a template from stored templates of the worflow.
+// GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (woc *wfOperationCtx) GetStoredTemplate(templateScope string, holder wfv1.TemplateHolder) *wfv1.Template {
-	tmplID := ""
-	tmplRef := holder.GetTemplateRef()
-	if tmplRef != nil {
-		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-	} else {
-		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
-	}
-	tmpl, ok := woc.wf.Status.StoredTemplates[tmplID]
-	if !ok {
-		return nil
-	}
-	return &tmpl
+	return woc.wf.GetStoredTemplate(templateScope, holder)
 }
 
-// SetStoredTemplate stores a new template in stored templates of the worflow.
-func (woc *wfOperationCtx) SetStoredTemplate(templateScope string, holder wfv1.TemplateHolder, tmpl *wfv1.Template) error {
-	tmplID := ""
-	tmplRef := holder.GetTemplateRef()
-	if tmplRef != nil {
-		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-	} else {
-		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
-	}
-	_, ok := woc.wf.Status.StoredTemplates[tmplID]
-	if !ok {
-		woc.wf.Status.StoredTemplates[tmplID] = *tmpl
+// SetStoredTemplate stores a new template in stored templates of the workflow.
+func (woc *wfOperationCtx) SetStoredTemplate(templateScope string, holder wfv1.TemplateHolder, tmpl *wfv1.Template) (bool, error) {
+	stored, err := woc.wf.SetStoredTemplate(templateScope, holder, tmpl)
+	if stored {
 		woc.updated = true
 	}
-	return nil
+	return stored, err
 }
 
 // checkAndCompress will check the workflow size and compress node status if total workflow size is more than maxWorkflowSize.

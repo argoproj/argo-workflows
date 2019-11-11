@@ -91,7 +91,7 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 
 	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf, nil)
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf, wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
