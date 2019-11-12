@@ -28,6 +28,7 @@ type listFlags struct {
 	status        []string // --status
 	completed     bool     // --completed
 	running       bool     // --running
+	prefix        string   // --prefix
 	output        string   // --output
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
@@ -42,6 +43,7 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var wfClient v1alpha1.WorkflowInterface
+
 			if listArgs.allNamespaces {
 				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 			} else {
@@ -82,16 +84,28 @@ func NewListCommand() *cobra.Command {
 				tmpWorkFlows = append(tmpWorkFlows, wfList.Items...)
 			}
 
+			var tmpWorkFlowsSelected []wfv1.Workflow
+			if listArgs.prefix == "" {
+				tmpWorkFlowsSelected = tmpWorkFlows
+			} else {
+				tmpWorkFlowsSelected = make([]wfv1.Workflow, 0)
+				for _, wf := range tmpWorkFlows {
+					if strings.HasPrefix(wf.ObjectMeta.Name, listArgs.prefix) {
+						tmpWorkFlowsSelected = append(tmpWorkFlowsSelected, wf)
+					}
+				}
+			}
+
 			var workflows []wfv1.Workflow
 			if listArgs.since == "" {
-				workflows = tmpWorkFlows
+				workflows = tmpWorkFlowsSelected
 			} else {
 				workflows = make([]wfv1.Workflow, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
 				}
-				for _, wf := range tmpWorkFlows {
+				for _, wf := range tmpWorkFlowsSelected {
 					if wf.Status.FinishedAt.IsZero() || wf.ObjectMeta.CreationTimestamp.After(*minTime) {
 						workflows = append(workflows, wf)
 					}
@@ -112,6 +126,7 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().BoolVar(&listArgs.allNamespaces, "all-namespaces", false, "Show workflows from all namespaces")
+	command.Flags().StringVar(&listArgs.prefix, "prefix", "", "Filter workflows by prefix")
 	command.Flags().StringSliceVar(&listArgs.status, "status", []string{}, "Filter by status (comma separated)")
 	command.Flags().BoolVar(&listArgs.completed, "completed", false, "Show only completed workflows")
 	command.Flags().BoolVar(&listArgs.running, "running", false, "Show only running workflows")
