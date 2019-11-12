@@ -27,4 +27,6 @@ type CronWorkflowList struct {
 type CronWorkflowOptions struct {
 	// Schedule is a schedule to run the Workflow in Cron format
 	Schedule string `json:"schedule" protobuf:"bytes,1,opt,name=schedule"`
+	// RuntimeNamespace is the namespace where the CronWorkflow will run
+	RuntimeNamespace string `json:"runtimeNamespace" protobuf:"bytes,2,opt,name=runtimeNamespace"`
 }

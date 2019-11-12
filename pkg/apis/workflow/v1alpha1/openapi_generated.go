@@ -526,8 +526,15 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 							Format:      "",
 						},
 					},
+					"runtimeNamespace": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RuntimeNamespace is the namespace where the CronWorkflow will run",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"schedule"},
+				Required: []string{"schedule", "runtimeNamespace"},
 			},
 		},
 	}

@@ -57,6 +57,25 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:a7f619ffc7b99687f9444bd0a07509fec8ae708a7175d234878129896c0918a8"
+  name = "github.com/alecthomas/template"
+  packages = [
+    ".",
+    "parse",
+  ]
+  pruneopts = ""
+  revision = "fb15b899a75114aa79cc930e33c46b577cc664b1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9d943843b71c5d44f184893fcdbe419bf639fee8647ceeca4c7d4fd95923721c"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f65c72e2690dc4b403c8bd637baf4611cd4c069b"
+
+[[projects]]
+  branch = "master"
   digest = "1:52905b00a73cda93a2ce8c5fa35185daed673d59e39576e81ad6ab6fb7076b3c"
   name = "github.com/argoproj/pkg"
   packages = [
@@ -561,6 +580,7 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
+    "log",
     "model",
   ]
   pruneopts = ""
@@ -805,6 +825,8 @@
     "cpu",
     "unix",
     "windows",
+    "windows/registry",
+    "windows/svc/eventlog",
   ]
   pruneopts = ""
   revision = "9109b7679e13aa34a54834cfb4949cac4b96e576"
@@ -953,6 +975,14 @@
   pruneopts = ""
   revision = "6eaf6f47437a6b4e2153a190160ef39a92c7eceb"
   version = "v1.23.0"
+
+[[projects]]
+  digest = "1:15d017551627c8bb091bde628215b2861bed128855343fdd570c62d08871f6e1"
+  name = "gopkg.in/alecthomas/kingpin.v2"
+  packages = ["."]
+  pruneopts = ""
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
 
 [[projects]]
   digest = "1:75fb3fcfc73a8c723efde7777b40e8e8ff9babf30d8c56160d01beffea8a95a6"
@@ -1467,6 +1497,7 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/prometheus/common/log",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",

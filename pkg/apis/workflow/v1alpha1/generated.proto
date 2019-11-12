@@ -146,6 +146,9 @@ message CronWorkflowList {
 message CronWorkflowOptions {
   // Schedule is a schedule to run the Workflow in Cron format
   optional string schedule = 1;
+
+  // RuntimeNamespace is the namespace where the CronWorkflow will run
+  optional string runtimeNamespace = 2;
 }
 
 // DAGTask represents a node in the graph during DAG execution

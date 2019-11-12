@@ -258,9 +258,14 @@
       "description": "CronWorkflowOptions is the schedule of when to run CronWorkflows",
       "type": "object",
       "required": [
-        "schedule"
+        "schedule",
+        "runtimeNamespace"
       ],
       "properties": {
+        "runtimeNamespace": {
+          "description": "RuntimeNamespace is the namespace where the CronWorkflow will run",
+          "type": "string"
+        },
         "schedule": {
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
