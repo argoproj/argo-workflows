@@ -29,4 +29,6 @@ type CronWorkflowOptions struct {
 	Schedule string `json:"schedule" protobuf:"bytes,1,opt,name=schedule"`
 	// RuntimeNamespace is the namespace where the CronWorkflow will run
 	RuntimeNamespace string `json:"runtimeNamespace" protobuf:"bytes,2,opt,name=runtimeNamespace"`
+	// RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
+	RuntimeGenerateName string `json:"runtimeGenerateName" protobuf:"bytes,3,opt,name=runtimeGenerateName"`
 }

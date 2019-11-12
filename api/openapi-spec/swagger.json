@@ -259,9 +259,14 @@
       "type": "object",
       "required": [
         "schedule",
-        "runtimeNamespace"
+        "runtimeNamespace",
+        "runtimeGenerateName"
       ],
       "properties": {
+        "runtimeGenerateName": {
+          "description": "RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
+          "type": "string"
+        },
         "runtimeNamespace": {
           "description": "RuntimeNamespace is the namespace where the CronWorkflow will run",
           "type": "string"

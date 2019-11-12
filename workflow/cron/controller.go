@@ -96,7 +96,10 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 	}
 	// TODO: Should we make a deep copy of the cronWorkflow?
 	// TODO: Almost sure the wfClientset should be passed as reference and not value
-	cronWorkflowJob := NewCronWorkflowJob(cronWorkflow.Name, cronWorkflow, cc.wfClientset)
+	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow.Name, cronWorkflow, cc.wfClientset)
+	if err != nil {
+		return err
+	}
 	entryId, err := cc.cron.AddJob(cronWorkflow.Options.Schedule, cronWorkflowJob)
 	if err != nil {
 		return errors.Wrap(err, "Unable to add CronWorkflow")
@@ -107,19 +110,19 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 	return nil
 }
 
-func (cc *Controller) stopCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
+func (cc *Controller) stopCronWorkflow(cronWorkflowName string) error {
 	cc.cronLock.Lock()
 	defer cc.cronLock.Unlock()
 
-	entryId, ok := cc.nameEntryIDMap[cronWorkflow.Name]
+	entryId, ok := cc.nameEntryIDMap[cronWorkflowName]
 	if !ok {
-		return fmt.Errorf("unable to remove workflow: workflow %s does not exist", cronWorkflow.Name)
+		return fmt.Errorf("unable to remove workflow: workflow %s does not exist", cronWorkflowName)
 	}
 
 	cc.cron.Remove(entryId)
-	delete(cc.nameEntryIDMap, cronWorkflow.Name)
+	delete(cc.nameEntryIDMap, cronWorkflowName)
 
-	log.Infof("CronWorkflow %s removed", cronWorkflow.Name)
+	log.Infof("CronWorkflow %s removed", cronWorkflowName)
 	return nil
 }
 
@@ -156,7 +159,7 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 				log.Error(err)
 				return
 			}
-			err = cc.stopCronWorkflow(cronWf)
+			err = cc.stopCronWorkflow(cronWf.Name)
 			if err != nil {
 				log.Errorf("Error stopping CronWorkflow %s: %s", cronWf.Name, err)
 			}

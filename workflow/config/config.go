@@ -38,7 +38,7 @@ type WorkflowControllerConfig struct {
 	// ArtifactRepository contains the default location of an artifact repository for container artifacts
 	ArtifactRepository ArtifactRepository `json:"artifactRepository,omitempty"`
 
-	// Namespace is a label selector filter to limit the controller's watch to a specific namespace
+	// RuntimeNamespace is a label selector filter to limit the controller's watch to a specific namespace
 	Namespace string `json:"namespace,omitempty"`
 
 	// InstanceID is a label selector to limit the controller's watch to a specific instance. It

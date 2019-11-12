@@ -149,6 +149,9 @@ message CronWorkflowOptions {
 
   // RuntimeNamespace is the namespace where the CronWorkflow will run
   optional string runtimeNamespace = 2;
+
+  // RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
+  optional string runtimeGenerateName = 3;
 }
 
 // DAGTask represents a node in the graph during DAG execution
