@@ -142,6 +142,7 @@ message CronWorkflowList {
   repeated CronWorkflow items = 2;
 }
 
+// TODO: Consider replacing this with the K8s API CronJobSpec. This spec is only available starting on v2alpha1.
 // CronWorkflowOptions is the schedule of when to run CronWorkflows
 message CronWorkflowOptions {
   // Schedule is a schedule to run the Workflow in Cron format
@@ -152,6 +153,9 @@ message CronWorkflowOptions {
 
   // RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
   optional string runtimeGenerateName = 3;
+
+  // ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
+  optional string concurrencyPolicy = 4;
 }
 
 // DAGTask represents a node in the graph during DAG execution

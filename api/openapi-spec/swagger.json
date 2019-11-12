@@ -263,6 +263,10 @@
         "runtimeGenerateName"
       ],
       "properties": {
+        "concurrencyPolicy": {
+          "description": "ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
+          "type": "string"
+        },
         "runtimeGenerateName": {
           "description": "RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
           "type": "string"

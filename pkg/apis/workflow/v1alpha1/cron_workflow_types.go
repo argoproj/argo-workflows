@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"k8s.io/api/batch/v2alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,6 +24,7 @@ type CronWorkflowList struct {
 	Items           []CronWorkflow `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// TODO: Consider replacing this with the K8s API CronJobSpec. This spec is only available starting on v2alpha1.
 // CronWorkflowOptions is the schedule of when to run CronWorkflows
 type CronWorkflowOptions struct {
 	// Schedule is a schedule to run the Workflow in Cron format
@@ -31,4 +33,6 @@ type CronWorkflowOptions struct {
 	RuntimeNamespace string `json:"runtimeNamespace" protobuf:"bytes,2,opt,name=runtimeNamespace"`
 	// RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
 	RuntimeGenerateName string `json:"runtimeGenerateName" protobuf:"bytes,3,opt,name=runtimeGenerateName"`
+	// ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
+	ConcurrencyPolicy v2alpha1.ConcurrencyPolicy `json:"concurrencyPolicy,omitempty" protobuf:"bytes,4,opt,name=concurrencyPolicy,casttype=ConcurrencyPolicy"`
 }

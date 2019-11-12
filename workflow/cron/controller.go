@@ -96,7 +96,7 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 	}
 	// TODO: Should we make a deep copy of the cronWorkflow?
 	// TODO: Almost sure the wfClientset should be passed as reference and not value
-	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow.Name, cronWorkflow, cc.wfClientset)
+	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow, cc.wfClientset)
 	if err != nil {
 		return err
 	}
