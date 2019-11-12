@@ -131,7 +131,9 @@ message CronWorkflow {
 
   optional WorkflowSpec spec = 2;
 
-  optional CronWorkflowOptions options = 3;
+  optional CronWorkflowStatus status = 3;
+
+  optional CronWorkflowOptions options = 4;
 }
 
 // CronWorkflowList is list of CronWorkflow resources
@@ -154,8 +156,20 @@ message CronWorkflowOptions {
   // RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
   optional string runtimeGenerateName = 3;
 
-  // ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
+  // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
   optional string concurrencyPolicy = 4;
+
+  // Suspend is a flag that will stop new CronWorkflows from running if set to true
+  optional bool suspend = 5;
+
+  // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
+  // original scheduled time if it is missed.
+  optional int64 startingDeadlineSeconds = 6;
+}
+
+message CronWorkflowStatus {
+  // LastScheduleTime is the last time the CronWorkflow was scheduled
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 1;
 }
 
 // DAGTask represents a node in the graph during DAG execution

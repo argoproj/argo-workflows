@@ -24,6 +24,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow":          schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowList":      schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowOptions":   schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":    schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig":        schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
@@ -451,17 +452,22 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref common.ReferenceCallback
 							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
 						},
 					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
+						},
+					},
 					"options": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowOptions"),
 						},
 					},
 				},
-				Required: []string{"spec", "options"},
+				Required: []string{"spec", "status", "options"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowOptions", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowOptions", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -542,15 +548,49 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 					},
 					"concurrencyPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
+							Description: "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"suspend": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspend is a flag that will stop new CronWorkflows from running if set to true",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"startingDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 				},
 				Required: []string{"schedule", "runtimeNamespace", "runtimeGenerateName"},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"lastScheduledTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastScheduleTime is the last time the CronWorkflow was scheduled",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

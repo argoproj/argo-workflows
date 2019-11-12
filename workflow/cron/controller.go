@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"sync"
@@ -52,35 +51,12 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.wfCronInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
-	// Get outstanding CronWorkflows
-	err := cc.parseOutstandingCronWorkflows()
-	if err != nil {
-		log.Fatalf("Error: %s", err)
-	}
-
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
 	go cc.wfCronInformer.Informer().Run(ctx.Done())
 
 	<-ctx.Done()
-}
-
-func (cc *Controller) parseOutstandingCronWorkflows() error {
-	log.Infof("Parsing outstanding CronWorkflows")
-
-	cronWorkflows, err := cc.wfCronInformer.Lister().CronWorkflows(cc.namespace).List(labels.Everything())
-	if err != nil {
-		return errors.Wrap(err, "Error parsing existing CronWorkflow")
-	}
-
-	for _, cronWorkflow := range cronWorkflows {
-		err := cc.startCronWorkflow(cronWorkflow)
-		if err != nil {
-			return errors.Wrap(err, "Error parsing existing CronWorkflow")
-		}
-	}
-	return nil
 }
 
 func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
@@ -94,12 +70,14 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 		cc.cron.Remove(entryId)
 		delete(cc.nameEntryIDMap, cronWorkflow.Name)
 	}
-	// TODO: Should we make a deep copy of the cronWorkflow?
 	// TODO: Almost sure the wfClientset should be passed as reference and not value
-	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow, cc.wfClientset)
+
+	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cc.namespace)
+	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow, cc.wfClientset, cronWfIf)
 	if err != nil {
 		return err
 	}
+
 	entryId, err := cc.cron.AddJob(cronWorkflow.Options.Schedule, cronWorkflowJob)
 	if err != nil {
 		return errors.Wrap(err, "Unable to add CronWorkflow")

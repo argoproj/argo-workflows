@@ -205,6 +205,7 @@
       "type": "object",
       "required": [
         "spec",
+        "status",
         "options"
       ],
       "properties": {
@@ -224,6 +225,9 @@
         },
         "spec": {
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowStatus"
         }
       }
     },
@@ -264,7 +268,7 @@
       ],
       "properties": {
         "concurrencyPolicy": {
-          "description": "ConcurrencyPolicy is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
+          "description": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
           "type": "string"
         },
         "runtimeGenerateName": {
@@ -278,6 +282,24 @@
         "schedule": {
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
+        },
+        "startingDeadlineSeconds": {
+          "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "suspend": {
+          "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
+          "type": "boolean"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowStatus": {
+      "type": "object",
+      "properties": {
+        "lastScheduledTime": {
+          "description": "LastScheduleTime is the last time the CronWorkflow was scheduled",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
         }
       }
     },
