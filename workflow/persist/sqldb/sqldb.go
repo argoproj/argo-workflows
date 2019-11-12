@@ -85,6 +85,14 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		Host:     postgresConfig.Host + ":" + postgresConfig.Port,
 		Database: postgresConfig.Database,
 	}
+
+	if postgresConfig.SSL {
+		var options := map[string]string{
+			"sslmode": "true"
+		}
+		settings.Options = options
+	}
+
 	session, err := postgresql.Open(settings)
 
 	if err != nil {
