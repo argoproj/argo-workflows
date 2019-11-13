@@ -58,7 +58,6 @@ func (db *DBService) List(namespace string, pageSize uint, lastId string) (*v1al
 	if db.wfDBctx == nil {
 		return nil, errors.New(errors.CodeInternal, "DB Context is not initialized")
 	}
-
 	var wfList *v1alpha1.WorkflowList
 
 	var err error
@@ -78,4 +77,13 @@ func (db *DBService) List(namespace string, pageSize uint, lastId string) (*v1al
 	}
 
 	return wfList, err
+}
+
+func (db *DBService) Delete(wfName string, namespace string) (error) {
+	if db.wfDBctx == nil {
+		return errors.New(errors.CodeInternal, "DB Context is not initialized")
+	}
+	cond := dblib.Cond{"name": wfName, "namespace": namespace}
+
+	return db.wfDBctx.Delete(cond)
 }

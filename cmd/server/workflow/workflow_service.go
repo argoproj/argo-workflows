@@ -180,7 +180,3 @@ func (s *KubeService) Terminate(wfClient *versioned.Clientset, namespace string,
 	}
 	return wf, nil
 }
-
-func (s *WorkflowServer) PodLogs(*WorkflowLogRequest, WorkflowService_PodLogsServer) error {
-	panic("implement me")
-}

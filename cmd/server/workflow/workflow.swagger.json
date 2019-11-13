@@ -16,6 +16,44 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/stream/workflows/{Namespace}/{WorkflowName}": {
+      "get": {
+        "summary": "Watch returns stream of application change events.",
+        "operationId": "Watch",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "GetOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs": {
       "get": {
         "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
@@ -52,6 +90,77 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "logOptions.container",
+            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "logOptions.follow",
+            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.previous",
+            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.sinceSeconds",
+            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.sinceTime.seconds",
+            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.sinceTime.nanos",
+            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "logOptions.timestamps",
+            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.tailLines",
+            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.limitBytes",
+            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -62,6 +171,32 @@
     "/api/v1/workflows": {
       "post": {
         "operationId": "Create",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowCreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/lint": {
+      "post": {
+        "operationId": "Lint",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -120,6 +255,14 @@
           {
             "name": "ListOptions.watch",
             "description": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "ListOptions.allowWatchBookmarks",
+            "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -272,7 +415,161 @@
         "tags": [
           "WorkflowService"
         ]
-      },
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}/resubmit": {
+      "put": {
+        "operationId": "Resubmit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}/resume": {
+      "put": {
+        "operationId": "Resume",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}/retry": {
+      "put": {
+        "operationId": "Retry",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}/suspend": {
+      "put": {
+        "operationId": "Suspend",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "WorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{Namespace}/{WorkflowName}/terminate": {
       "put": {
         "operationId": "Terminate",
         "responses": {
@@ -363,7 +660,7 @@
           "type": "string"
         }
       },
-      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and Int64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true"
+      "description": "Quantity is a fixed-point representation of a number.\nIt provides convenient marshaling/unmarshaling in JSON and YAML,\nin addition to String() and AsInt64() accessors.\n\nThe serialization format is:\n\n\u003cquantity\u003e        ::= \u003csignedNumber\u003e\u003csuffix\u003e\n  (Note that \u003csuffix\u003e may be empty, from the \"\" case in \u003cdecimalSI\u003e.)\n\u003cdigit\u003e           ::= 0 | 1 | ... | 9\n\u003cdigits\u003e          ::= \u003cdigit\u003e | \u003cdigit\u003e\u003cdigits\u003e\n\u003cnumber\u003e          ::= \u003cdigits\u003e | \u003cdigits\u003e.\u003cdigits\u003e | \u003cdigits\u003e. | .\u003cdigits\u003e\n\u003csign\u003e            ::= \"+\" | \"-\"\n\u003csignedNumber\u003e    ::= \u003cnumber\u003e | \u003csign\u003e\u003cnumber\u003e\n\u003csuffix\u003e          ::= \u003cbinarySI\u003e | \u003cdecimalExponent\u003e | \u003cdecimalSI\u003e\n\u003cbinarySI\u003e        ::= Ki | Mi | Gi | Ti | Pi | Ei\n  (International System of units; See: http://physics.nist.gov/cuu/Units/binary.html)\n\u003cdecimalSI\u003e       ::= m | \"\" | k | M | G | T | P | E\n  (Note that 1024 = 1Ki but 1000 = 1k; I didn't choose the capitalization.)\n\u003cdecimalExponent\u003e ::= \"e\" \u003csignedNumber\u003e | \"E\" \u003csignedNumber\u003e\n\nNo matter which of the three exponent forms is used, no quantity may represent\na number greater than 2^63-1 in magnitude, nor may it have more than 3 decimal\nplaces. Numbers larger or more precise will be capped or rounded up.\n(E.g.: 0.1m will rounded up to 1m.)\nThis may be extended in the future if we require larger or smaller quantities.\n\nWhen a Quantity is parsed from a string, it will remember the type of suffix\nit had, and will use the same type again when it is serialized.\n\nBefore serializing, Quantity will be put in \"canonical form\".\nThis means that Exponent/suffix will be adjusted up or down (with a\ncorresponding increase or decrease in Mantissa) such that:\n  a. No precision is lost\n  b. No fractional digits will be emitted\n  c. The exponent (or suffix) is as large as possible.\nThe sign will be omitted unless the number is negative.\n\nExamples:\n  1.5 will be serialized as \"1500m\"\n  1.5Gi will be serialized as \"1536Mi\"\n\nNote that the quantity will NEVER be internally represented by a\nfloating point number. That is the whole point of this exercise.\n\nNon-canonical values will still parse as long as they are well formed,\nbut will be re-emitted in their canonical form. (So always use canonical\nform, or don't diff.)\n\nThis format is intended to make it difficult to use these numbers without\nwriting some sort of special handling code in the hopes that that will\ncause implementors to also use a fixed point implementation.\n\n+protobuf=true\n+protobuf.embed=string\n+protobuf.options.marshal=false\n+protobuf.options.(gogoproto.goproto_stringer)=false\n+k8s:deepcopy-gen=true\n+k8s:openapi-gen=true"
     },
     "runtimeStreamError": {
       "type": "object",
@@ -540,7 +837,7 @@
           "items": {
             "type": "string"
           },
-          "title": "Required: Monitors is a collection of Ceph monitors\nMore info: https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it"
+          "title": "Required: Monitors is a collection of Ceph monitors\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it"
         },
         "path": {
           "type": "string",
@@ -548,20 +845,20 @@
         },
         "user": {
           "type": "string",
-          "title": "Optional: User is the rados user name, default is admin\nMore info: https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: User is the rados user name, default is admin\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "secretFile": {
           "type": "string",
-          "title": "Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret\nMore info: https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "secretRef": {
           "$ref": "#/definitions/v1LocalObjectReference",
-          "title": "Optional: SecretRef is reference to the authentication secret for User, default is empty.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: SecretRef is reference to the authentication secret for User, default is empty.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/cephfs/README.md#how-to-use-it\n+optional"
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it\n+optional"
         }
       },
       "description": "Represents a Ceph Filesystem mount that lasts the lifetime of a pod\nCephfs volumes do not support ownership management or SELinux relabeling."
@@ -571,16 +868,16 @@
       "properties": {
         "volumeID": {
           "type": "string",
-          "title": "volume id used to identify the volume in cinder\nMore info: https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md"
+          "title": "volume id used to identify the volume in cinder.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md"
         },
         "fsType": {
           "type": "string",
-          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md\n+optional"
+          "title": "Filesystem type to mount.\nMust be a filesystem type supported by the host operating system.\nExamples: \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md\n+optional"
+          "title": "Optional: Defaults to false (read/write). ReadOnly here will force\nthe ReadOnly setting in VolumeMounts.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
         },
         "secretRef": {
           "$ref": "#/definitions/v1LocalObjectReference",
@@ -618,7 +915,7 @@
         "optional": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Specify whether the ConfigMap or it's key must be defined\n+optional"
+          "title": "Specify whether the ConfigMap or its key must be defined\n+optional"
         }
       },
       "description": "Selects a key from a ConfigMap."
@@ -639,7 +936,7 @@
         "optional": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Specify whether the ConfigMap or it's keys must be defined\n+optional"
+          "title": "Specify whether the ConfigMap or its keys must be defined\n+optional"
         }
       },
       "description": "Adapts a ConfigMap into a projected volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nprojected volume as files using the keys in the Data field as the file names,\nunless the items element is populated with specific mappings of keys to paths.\nNote that this is identical to a configmap volume source without the default\nmode."
@@ -665,7 +962,7 @@
         "optional": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Specify whether the ConfigMap or it's keys must be defined\n+optional"
+          "title": "Specify whether the ConfigMap or its keys must be defined\n+optional"
         }
       },
       "description": "Adapts a ConfigMap into a volume.\n\nThe contents of the target ConfigMap's Data field will be presented in a\nvolume as files using the keys in the Data field as the file names, unless\nthe items element is populated with specific mappings of keys to paths.\nConfigMap volumes support ownership management and SELinux relabeling."
@@ -745,6 +1042,10 @@
         "readinessProbe": {
           "$ref": "#/definitions/v1Probe",
           "title": "Periodic probe of container service readiness.\nContainer will be removed from service endpoints if the probe fails.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional"
+        },
+        "startupProbe": {
+          "$ref": "#/definitions/v1Probe",
+          "title": "StartupProbe indicates that the Pod has successfully initialized.\nIf specified, no other probes are executed until this completes successfully.\nIf this probe fails, the Pod will be restarted, just as if the livenessProbe failed.\nThis can be used to provide different probe parameters at the beginning of a Pod's lifecycle,\nwhen it might take a long time to load data or warm a cache, than during steady-state operation.\nThis cannot be updated.\nThis is an alpha feature enabled by the StartupProbe feature flag.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional"
         },
         "lifecycle": {
           "$ref": "#/definitions/v1Lifecycle",
@@ -1033,18 +1334,16 @@
       },
       "description": "Represents a Fibre Channel volume.\nFibre Channel volumes can only be mounted as read/write once.\nFibre Channel volumes support ownership management and SELinux relabeling."
     },
-    "v1Fields": {
+    "v1FieldsV1": {
       "type": "object",
       "properties": {
-        "map": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/v1Fields"
-          },
-          "description": "Map stores a set of fields in a data structure like a Trie.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in k8s.io/apiserver/pkg/endpoints/handlers/fieldmanager/internal"
+        "Raw": {
+          "type": "string",
+          "format": "byte",
+          "description": "Raw is the underlying serialization of this object."
         }
       },
-      "title": "Fields stores a set of fields in a data structure like a Trie.\nTo understand how this is used, see: https://github.com/kubernetes-sigs/structured-merge-diff"
+      "description": "FieldsV1 stores a set of fields in a data structure like a Trie, in JSON format.\n\nEach key is either a '.' representing the field itself, and will always map to an empty set,\nor a string representing a sub-field or item. The string will follow one of these four formats:\n'f:\u003cname\u003e', where \u003cname\u003e is the name of a field in a struct, or key in a map\n'v:\u003cvalue\u003e', where \u003cvalue\u003e is the exact json formatted value of a list item\n'i:\u003cindex\u003e', where \u003cindex\u003e is position of a item in a list\n'k:\u003ckeys\u003e', where \u003ckeys\u003e is a map of  a list item's key fields to their unique values\nIf a key maps to an empty Fields value, the field that key represents is part of the set.\n\nThe exact format is defined in sigs.k8s.io/structured-merge-diff"
     },
     "v1FlexVolumeSource": {
       "type": "object",
@@ -1147,16 +1446,16 @@
       "properties": {
         "endpoints": {
           "type": "string",
-          "title": "EndpointsName is the endpoint name that details Glusterfs topology.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod"
+          "title": "EndpointsName is the endpoint name that details Glusterfs topology.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
         },
         "path": {
           "type": "string",
-          "title": "Path is the Glusterfs volume path.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod"
+          "title": "Path is the Glusterfs volume path.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md#create-a-pod\n+optional"
+          "title": "ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod\n+optional"
         }
       },
       "description": "Represents a Glusterfs mount that lasts the lifetime of a pod.\nGlusterfs volumes do not support ownership management or SELinux relabeling."
@@ -1310,33 +1609,6 @@
       },
       "description": "Represents an ISCSI disk.\nISCSI volumes can only be mounted as read/write once.\nISCSI volumes support ownership management and SELinux relabeling."
     },
-    "v1Initializer": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "name of the process that is responsible for initializing this object."
-        }
-      },
-      "description": "Initializer is information about an initializer that has not yet completed."
-    },
-    "v1Initializers": {
-      "type": "object",
-      "properties": {
-        "pending": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1Initializer"
-          },
-          "title": "Pending is a list of initializers that must execute in order before this object is visible.\nWhen the last pending initializer is removed, and no failing result is set, the initializers\nstruct will be set to nil and the object is considered as initialized and visible to all\nclients.\n+patchMergeKey=name\n+patchStrategy=merge"
-        },
-        "result": {
-          "$ref": "#/definitions/v1Status",
-          "description": "If result is set with the Failure field, the object will be persisted to storage and then deleted,\nensuring that other clients can observe the deletion."
-        }
-      },
-      "description": "Initializers tracks the progress of initialization."
-    },
     "v1KeyToPath": {
       "type": "object",
       "properties": {
@@ -1406,7 +1678,7 @@
         },
         "preStop": {
           "$ref": "#/definitions/v1Handler",
-          "title": "PreStop is called immediately before a container is terminated due to an\nAPI request or management event such as liveness probe failure,\npreemption, resource contention, etc. The handler is not called if the\ncontainer crashes or exits. The reason for termination is passed to the\nhandler. The Pod's termination grace period countdown begins before the\nPreStop hooked is executed. Regardless of the outcome of the handler, the\ncontainer will eventually terminate within the Pod's termination grace\nperiod. Other management of the container blocks until the hook completes\nor until the termination grace period is reached.\nMore info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks\n+optional"
+          "title": "PreStop is called immediately before a container is terminated due to an\nAPI request or management event such as liveness/startup probe failure,\npreemption, resource contention, etc. The handler is not called if the\ncontainer crashes or exits. The reason for termination is passed to the\nhandler. The Pod's termination grace period countdown begins before the\nPreStop hooked is executed. Regardless of the outcome of the handler, the\ncontainer will eventually terminate within the Pod's termination grace\nperiod. Other management of the container blocks until the hook completes\nor until the termination grace period is reached.\nMore info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks\n+optional"
         }
       },
       "description": "Lifecycle describes actions that the management system should take in response to container lifecycle\nevents. For the PostStart and PreStop lifecycle handlers, management of the container blocks\nuntil the action is complete, unless the container process fails, in which case the handler is aborted."
@@ -1416,15 +1688,20 @@
       "properties": {
         "selfLink": {
           "type": "string",
-          "title": "selfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n+optional"
+          "description": "selfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional"
         },
         "resourceVersion": {
           "type": "string",
-          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency\n+optional"
+          "title": "String that identifies the server's internal version of this object that\ncan be used by clients to determine when objects have changed.\nValue must be treated as opaque by clients and passed unmodified back to the server.\nPopulated by the system.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
         },
         "continue": {
           "type": "string",
           "description": "continue may be set if the user set a limit on the number of items returned, and indicates that\nthe server has more data available. The value is opaque and may be used to issue another request\nto the endpoint that served this list to retrieve the next set of available objects. Continuing a\nconsistent list may not be possible if the server configuration has changed or more than a few\nminutes have passed. The resourceVersion field returned when using this continue value will be\nidentical to the value in the first response, unless you have received this token from an error\nmessage."
+        },
+        "remainingItemCount": {
+          "type": "string",
+          "format": "int64",
+          "title": "remainingItemCount is the number of subsequent items in the list which are not included in this\nlist response. If the list request contained label or field selectors, then the number of\nremaining items is unknown and the field will be left unset and omitted during serialization.\nIf the list is complete (either because it is not chunking or because this is the last chunk),\nthen there are no more remaining items and this field will be left unset and omitted during\nserialization.\nServers older than v1.15 do not set this field.\nThe intended use of the remainingItemCount is *estimating* the size of a collection. Clients\nshould not rely on the remainingItemCount to be set or to be exact.\n+optional"
         }
       },
       "description": "ListMeta describes metadata that synthetic resources must have, including lists and\nvarious status objects. A resource may have only one of {ObjectMeta, ListMeta}."
@@ -1444,6 +1721,11 @@
           "type": "boolean",
           "format": "boolean",
           "title": "Watch for changes to the described resources and return them as a stream of\nadd, update, and remove notifications. Specify resourceVersion.\n+optional"
+        },
+        "allowWatchBookmarks": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "allowWatchBookmarks requests watch events with type \"BOOKMARK\".\nServers that do not implement bookmarks may ignore this flag and\nbookmarks are sent at the server's discretion. Clients should not\nassume bookmarks are returned at any specific interval, nor may they\nassume the server will send any BOOKMARK event during a session.\nIf this is not a watch, this field is ignored.\nIf the feature gate WatchBookmarks is not enabled in apiserver,\nthis field is ignored.\n\nThis field is beta.\n\n+optional"
         },
         "resourceVersion": {
           "type": "string",
@@ -1495,9 +1777,13 @@
           "$ref": "#/definitions/v1Time",
           "title": "Time is timestamp of when these fields were set. It should always be empty if Operation is 'Apply'\n+optional"
         },
-        "fields": {
-          "$ref": "#/definitions/v1Fields",
-          "title": "Fields identifies a set of fields.\n+optional"
+        "fieldsType": {
+          "type": "string",
+          "title": "FieldsType is the discriminator for the different fields format and version.\nThere is currently only one possible value: \"FieldsV1\""
+        },
+        "fieldsV1": {
+          "$ref": "#/definitions/v1FieldsV1",
+          "title": "FieldsV1 holds the first JSON version format as described in the \"FieldsV1\" type.\n+optional"
         }
       },
       "description": "ManagedFieldsEntry is a workflow-id, a FieldSet and the group version of the resource\nthat the fieldset applies to."
@@ -1615,7 +1901,7 @@
         },
         "generateName": {
           "type": "string",
-          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#idempotency\n+optional"
+          "description": "GenerateName is an optional prefix, used by the server, to generate a unique\nname ONLY IF the Name field has not been provided.\nIf this field is used, the name returned to the client will be different\nthan the name passed. This value will also be combined with a unique suffix.\nThe provided value has the same validation rules as the Name field,\nand may be truncated by the length of the suffix required to make the value\nunique on the server.\n\nIf this field is specified and the generated name exists, the server will\nNOT return a 409 - instead, it will either return 201 Created or 500 with Reason\nServerTimeout indicating a unique name could not be found in the time allotted, and the client\nshould retry (optionally after the time indicated in the Retry-After header).\n\nApplied only if Name is not specified.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#idempotency\n+optional"
         },
         "namespace": {
           "type": "string",
@@ -1623,7 +1909,7 @@
         },
         "selfLink": {
           "type": "string",
-          "title": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n+optional"
+          "description": "SelfLink is a URL representing this object.\nPopulated by the system.\nRead-only.\n\nDEPRECATED\nKubernetes will stop propagating this field in 1.20 release and the field is planned\nto be removed in 1.21 release.\n+optional"
         },
         "uid": {
           "type": "string",
@@ -1631,7 +1917,7 @@
         },
         "resourceVersion": {
           "type": "string",
-          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#concurrency-control-and-consistency\n+optional"
+          "description": "An opaque value that represents the internal version of this object that can\nbe used by clients to determine when objects have changed. May be used for optimistic\nconcurrency, change detection, and the watch operation on a resource or set of resources.\nClients must treat these values as opaque and passed unmodified back to the server.\nThey may only be valid for a particular resource or set of resources.\n\nPopulated by the system.\nRead-only.\nValue must be treated as opaque by clients and .\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
         },
         "generation": {
           "type": "string",
@@ -1640,11 +1926,11 @@
         },
         "creationTimestamp": {
           "$ref": "#/definitions/v1Time",
-          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata\n+optional"
+          "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "deletionTimestamp": {
           "$ref": "#/definitions/v1Time",
-          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata\n+optional"
+          "description": "DeletionTimestamp is RFC 3339 date and time at which this resource will be deleted. This\nfield is set by the server when a graceful deletion is requested by the user, and is not\ndirectly settable by a client. The resource is expected to be deleted (no longer visible\nfrom resource lists, and not reachable by name) after the time in this field, once the\nfinalizers list is empty. As long as the finalizers list contains items, deletion is blocked.\nOnce the deletionTimestamp is set, this value may not be unset or be set further into the\nfuture, although it may be shortened or the resource may be deleted prior to this time.\nFor example, a user may request that a pod is deleted in 30 seconds. The Kubelet will react\nby sending a graceful termination signal to the containers in the pod. After that 30 seconds,\nthe Kubelet will send a hard termination signal (SIGKILL) to the container and after cleanup,\nremove the pod from the API. In the presence of network partitions, this object may still\nexist after this timestamp, until an administrator or automated process can determine the\nresource is fully terminated.\nIf not set, graceful deletion of the object has not been requested.\n\nPopulated by the system when a graceful deletion is requested.\nRead-only.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "deletionGracePeriodSeconds": {
           "type": "string",
@@ -1672,10 +1958,6 @@
           },
           "title": "List of objects depended by this object. If ALL objects in the list have\nbeen deleted, this object will be garbage collected. If this object is managed by a controller,\nthen an entry in this list will point to this controller, with the controller field set to true.\nThere cannot be more than one managing controller.\n+optional\n+patchMergeKey=uid\n+patchStrategy=merge"
         },
-        "initializers": {
-          "$ref": "#/definitions/v1Initializers",
-          "description": "An initializer is a controller which enforces some system invariant at object creation time.\nThis field is a list of initializers that have not yet acted on this object. If nil or empty,\nthis object has been completely initialized. Otherwise, the object is considered uninitialized\nand is hidden (in list/watch and get calls) from clients that haven't explicitly asked to\nobserve uninitialized objects.\n\nWhen an object is created, the system will populate this list with the current set of initializers.\nOnly privileged users may set or modify this list. Once it is empty, it may not be modified further\nby any user.\n\nDEPRECATED - initializers are an alpha field and will be removed in v1.15."
-        },
         "finalizers": {
           "type": "array",
           "items": {
@@ -1692,7 +1974,7 @@
           "items": {
             "$ref": "#/definitions/v1ManagedFieldsEntry"
           },
-          "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that workflow. This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\nThis field is alpha and can be changed or removed without notice.\n\n+optional"
+          "description": "ManagedFields maps workflow-id and version to the set of fields\nthat are managed by that workflow. This is mostly for internal\nhousekeeping, and users typically shouldn't need to set or\nunderstand this field. A workflow can be the user's name, a\ncontroller's name, or the name of a specific apply path like\n\"ci-cd\". The set of fields is always in the version that the\nworkflow used when modifying the object.\n\n+optional"
         }
       },
       "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create."
@@ -1706,7 +1988,7 @@
         },
         "kind": {
           "type": "string",
-          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds"
+          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds"
         },
         "name": {
           "type": "string",
@@ -1734,7 +2016,7 @@
       "properties": {
         "metadata": {
           "$ref": "#/definitions/v1ObjectMeta",
-          "title": "Standard object's metadata.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata\n+optional"
+          "title": "Standard object's metadata.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
         },
         "spec": {
           "$ref": "#/definitions/v1PersistentVolumeClaimSpec",
@@ -1974,12 +2256,60 @@
       },
       "description": "PodDNSConfigOption defines DNS resolver options of a pod."
     },
+    "v1PodLogOptions": {
+      "type": "object",
+      "properties": {
+        "container": {
+          "type": "string",
+          "title": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional"
+        },
+        "follow": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Follow the log stream of the pod. Defaults to false.\n+optional"
+        },
+        "previous": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Return previous terminated container logs. Defaults to false.\n+optional"
+        },
+        "sinceSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
+        },
+        "sinceTime": {
+          "$ref": "#/definitions/v1Time",
+          "title": "An RFC3339 timestamp from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional"
+        },
+        "timestamps": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional"
+        },
+        "tailLines": {
+          "type": "string",
+          "format": "int64",
+          "title": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional"
+        },
+        "limitBytes": {
+          "type": "string",
+          "format": "int64",
+          "title": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional"
+        }
+      },
+      "description": "PodLogOptions is the query options for a Pod's logs REST call."
+    },
     "v1PodSecurityContext": {
       "type": "object",
       "properties": {
         "seLinuxOptions": {
           "$ref": "#/definitions/v1SELinuxOptions",
           "title": "The SELinux context to be applied to all containers.\nIf unspecified, the container runtime will allocate a random SELinux context for each\ncontainer.  May also be set in SecurityContext.  If set in\nboth SecurityContext and PodSecurityContext, the value specified in SecurityContext\ntakes precedence for that container.\n+optional"
+        },
+        "windowsOptions": {
+          "$ref": "#/definitions/v1WindowsSecurityContextOptions",
+          "title": "The Windows specific settings applied to all containers.\nIf unspecified, the options within a container's SecurityContext will be used.\nIf set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
         },
         "runAsUser": {
           "type": "string",
@@ -2079,7 +2409,7 @@
         "successThreshold": {
           "type": "integer",
           "format": "int32",
-          "title": "Minimum consecutive successes for the probe to be considered successful after having failed.\nDefaults to 1. Must be 1 for liveness. Minimum value is 1.\n+optional"
+          "title": "Minimum consecutive successes for the probe to be considered successful after having failed.\nDefaults to 1. Must be 1 for liveness and startup. Minimum value is 1.\n+optional"
         },
         "failureThreshold": {
           "type": "integer",
@@ -2146,11 +2476,11 @@
           "items": {
             "type": "string"
           },
-          "title": "A collection of Ceph monitors.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it"
+          "title": "A collection of Ceph monitors.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
         },
         "image": {
           "type": "string",
-          "title": "The rados image name.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it"
+          "title": "The rados image name.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it"
         },
         "fsType": {
           "type": "string",
@@ -2158,24 +2488,24 @@
         },
         "pool": {
           "type": "string",
-          "title": "The rados pool name.\nDefault is rbd.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "The rados pool name.\nDefault is rbd.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "user": {
           "type": "string",
-          "title": "The rados user name.\nDefault is admin.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "The rados user name.\nDefault is admin.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "keyring": {
           "type": "string",
-          "title": "Keyring is the path to key ring for RBDUser.\nDefault is /etc/ceph/keyring.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "Keyring is the path to key ring for RBDUser.\nDefault is /etc/ceph/keyring.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "secretRef": {
           "$ref": "#/definitions/v1LocalObjectReference",
-          "title": "SecretRef is name of the authentication secret for RBDUser. If provided\noverrides keyring.\nDefault is nil.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "SecretRef is name of the authentication secret for RBDUser. If provided\noverrides keyring.\nDefault is nil.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
         },
         "readOnly": {
           "type": "boolean",
           "format": "boolean",
-          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it\n+optional"
+          "title": "ReadOnly here will force the ReadOnly setting in VolumeMounts.\nDefaults to false.\nMore info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it\n+optional"
         }
       },
       "description": "Represents a Rados Block Device mount that lasts the lifetime of a pod.\nRBD volumes support ownership management and SELinux relabeling."
@@ -2317,7 +2647,7 @@
         "optional": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Specify whether the Secret or it's key must be defined\n+optional"
+          "title": "Specify whether the Secret or its key must be defined\n+optional"
         }
       },
       "description": "SecretKeySelector selects a key of a Secret."
@@ -2365,7 +2695,7 @@
         "optional": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Specify whether the Secret or it's keys must be defined\n+optional"
+          "title": "Specify whether the Secret or its keys must be defined\n+optional"
         }
       },
       "description": "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume\nas files using the keys in the Data field as the file names.\nSecret volumes support ownership management and SELinux relabeling."
@@ -2385,6 +2715,10 @@
         "seLinuxOptions": {
           "$ref": "#/definitions/v1SELinuxOptions",
           "title": "The SELinux context to be applied to the container.\nIf unspecified, the container runtime will allocate a random SELinux context for each\ncontainer.  May also be set in PodSecurityContext.  If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
+        },
+        "windowsOptions": {
+          "$ref": "#/definitions/v1WindowsSecurityContextOptions",
+          "title": "The Windows specific settings applied to all containers.\nIf unspecified, the options from the PodSecurityContext will be used.\nIf set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.\n+optional"
         },
         "runAsUser": {
           "type": "string",
@@ -2436,89 +2770,6 @@
         }
       },
       "description": "ServiceAccountTokenProjection represents a projected service account token\nvolume. This projection can be used to insert a service account token into\nthe pods runtime filesystem for use against APIs (Kubernetes API Server or\notherwise)."
-    },
-    "v1Status": {
-      "type": "object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/v1ListMeta",
-          "title": "Standard list metadata.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds\n+optional"
-        },
-        "status": {
-          "type": "string",
-          "title": "Status of the operation.\nOne of: \"Success\" or \"Failure\".\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status\n+optional"
-        },
-        "message": {
-          "type": "string",
-          "title": "A human-readable description of the status of this operation.\n+optional"
-        },
-        "reason": {
-          "type": "string",
-          "title": "A machine-readable description of why this operation is in the\n\"Failure\" status. If this value is empty there\nis no information available. A Reason clarifies an HTTP status\ncode but does not override it.\n+optional"
-        },
-        "details": {
-          "$ref": "#/definitions/v1StatusDetails",
-          "title": "Extended data associated with the reason.  Each reason may define its\nown extended details. This field is optional and the data returned\nis not guaranteed to conform to any schema except that defined by\nthe reason type.\n+optional"
-        },
-        "code": {
-          "type": "integer",
-          "format": "int32",
-          "title": "Suggested HTTP return code for this status, 0 if not set.\n+optional"
-        }
-      },
-      "description": "Status is a return value for calls that don't return other objects."
-    },
-    "v1StatusCause": {
-      "type": "object",
-      "properties": {
-        "reason": {
-          "type": "string",
-          "title": "A machine-readable description of the cause of the error. If this value is\nempty there is no information available.\n+optional"
-        },
-        "message": {
-          "type": "string",
-          "title": "A human-readable description of the cause of the error.  This field may be\npresented as-is to a reader.\n+optional"
-        },
-        "field": {
-          "type": "string",
-          "description": "The field of the resource that has caused this error, as named by its JSON\nserialization. May include dot and postfix notation for nested attributes.\nArrays are zero-indexed.  Fields may appear more than once in an array of\ncauses due to fields having multiple errors.\nOptional.\n\nExamples:\n  \"name\" - the field \"name\" on the current resource\n  \"items[0].name\" - the field \"name\" on the first array entry in \"items\"\n+optional"
-        }
-      },
-      "description": "StatusCause provides more information about an api.Status failure, including\ncases when multiple errors are encountered."
-    },
-    "v1StatusDetails": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "title": "The name attribute of the resource associated with the status StatusReason\n(when there is a single name which can be described).\n+optional"
-        },
-        "group": {
-          "type": "string",
-          "title": "The group attribute of the resource associated with the status StatusReason.\n+optional"
-        },
-        "kind": {
-          "type": "string",
-          "title": "The kind attribute of the resource associated with the status StatusReason.\nOn some operations may differ from the requested resource Kind.\nMore info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds\n+optional"
-        },
-        "uid": {
-          "type": "string",
-          "title": "UID of the resource.\n(when there is a single resource which can be described).\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional"
-        },
-        "causes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1StatusCause"
-          },
-          "title": "The Causes array includes more details associated with the StatusReason\nfailure. Not all StatusReasons may provide detailed causes.\n+optional"
-        },
-        "retryAfterSeconds": {
-          "type": "integer",
-          "format": "int32",
-          "title": "If specified, the time in seconds before the operation should be retried. Some errors may indicate\nthe client must take an alternate action - for those errors this field may indicate how long to wait\nbefore taking the alternate action.\n+optional"
-        }
-      },
-      "description": "StatusDetails is a set of additional properties that MAY be set by the\nserver to provide additional information about a response. The Reason\nfield of a Status object defines what attributes will be set. Clients\nmust ignore fields that do not match the defined type of each attribute,\nand should assume that any attribute may be empty, invalid, or under\ndefined."
     },
     "v1StorageOSVolumeSource": {
       "type": "object",
@@ -2690,7 +2941,7 @@
         },
         "subPathExpr": {
           "type": "string",
-          "title": "Expanded path within the volume from which the container's volume should be mounted.\nBehaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.\nDefaults to \"\" (volume's root).\nSubPathExpr and SubPath are mutually exclusive.\nThis field is alpha in 1.14.\n+optional"
+          "title": "Expanded path within the volume from which the container's volume should be mounted.\nBehaves similarly to SubPath but environment variable references $(VAR_NAME) are expanded using the container's environment.\nDefaults to \"\" (volume's root).\nSubPathExpr and SubPath are mutually exclusive.\nThis field is beta in 1.15.\n+optional"
         }
       },
       "description": "VolumeMount describes a mounting of a Volume within a container."
@@ -2750,11 +3001,11 @@
         },
         "iscsi": {
           "$ref": "#/definitions/v1ISCSIVolumeSource",
-          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/iscsi/README.md\n+optional"
+          "title": "ISCSI represents an ISCSI Disk resource that is attached to a\nkubelet's host machine and then exposed to the pod.\nMore info: https://examples.k8s.io/volumes/iscsi/README.md\n+optional"
         },
         "glusterfs": {
           "$ref": "#/definitions/v1GlusterfsVolumeSource",
-          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/glusterfs/README.md\n+optional"
+          "title": "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/glusterfs/README.md\n+optional"
         },
         "persistentVolumeClaim": {
           "$ref": "#/definitions/v1PersistentVolumeClaimVolumeSource",
@@ -2762,7 +3013,7 @@
         },
         "rbd": {
           "$ref": "#/definitions/v1RBDVolumeSource",
-          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md\n+optional"
+          "title": "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.\nMore info: https://examples.k8s.io/volumes/rbd/README.md\n+optional"
         },
         "flexVolume": {
           "$ref": "#/definitions/v1FlexVolumeSource",
@@ -2770,7 +3021,7 @@
         },
         "cinder": {
           "$ref": "#/definitions/v1CinderVolumeSource",
-          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine\nMore info: https://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md\n+optional"
+          "title": "Cinder represents a cinder volume attached and mounted on kubelets host machine.\nMore info: https://examples.k8s.io/mysql-cinder-pd/README.md\n+optional"
         },
         "cephfs": {
           "$ref": "#/definitions/v1CephFSVolumeSource",
@@ -2872,6 +3123,24 @@
       },
       "title": "The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)"
     },
+    "v1WindowsSecurityContextOptions": {
+      "type": "object",
+      "properties": {
+        "gmsaCredentialSpecName": {
+          "type": "string",
+          "title": "GMSACredentialSpecName is the name of the GMSA credential spec to use.\nThis field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.\n+optional"
+        },
+        "gmsaCredentialSpec": {
+          "type": "string",
+          "title": "GMSACredentialSpec is where the GMSA admission webhook\n(https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the\nGMSA credential spec named by the GMSACredentialSpecName field.\nThis field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.\n+optional"
+        },
+        "runAsUserName": {
+          "type": "string",
+          "title": "The UserName in Windows to run the entrypoint of the container process.\nDefaults to the user specified in image metadata if unspecified.\nMay also be set in PodSecurityContext. If set in both SecurityContext and\nPodSecurityContext, the value specified in SecurityContext takes precedence.\nThis field is alpha-level and it is only honored by servers that enable the WindowsRunAsUserName feature flag.\n+optional"
+        }
+      },
+      "description": "WindowsSecurityContextOptions contain Windows-specific options and credentials."
+    },
     "v1alpha1ArchiveStrategy": {
       "type": "object",
       "properties": {
@@ -2892,14 +3161,14 @@
           "items": {
             "$ref": "#/definitions/v1alpha1Parameter"
           },
-          "title": "Parameters is the list of parameters to pass to the template or workflow"
+          "title": "Parameters is the list of parameters to pass to the template or workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1alpha1Artifact"
           },
-          "title": "Artifacts is the list of artifacts to pass to the template or workflow"
+          "title": "Artifacts is the list of artifacts to pass to the template or workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         }
       },
       "title": "Arguments to a template"
@@ -3097,7 +3366,7 @@
           "items": {
             "$ref": "#/definitions/v1alpha1DAGTask"
           },
-          "title": "Tasks are a list of DAG tasks"
+          "title": "Tasks are a list of DAG tasks\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "failFast": {
           "type": "boolean",
@@ -3106,6 +3375,16 @@
         }
       },
       "title": "DAGTemplate is a template subtype for directed acyclic graph templates"
+    },
+    "v1alpha1ExecutorConfig": {
+      "type": "object",
+      "properties": {
+        "serviceAccountName": {
+          "type": "string",
+          "description": "ServiceAccountName specifies the service account name of the executor container."
+        }
+      },
+      "description": "ExecutorConfig holds configurations of an executor container."
     },
     "v1alpha1GitArtifact": {
       "type": "object",
@@ -3236,14 +3515,14 @@
           "items": {
             "$ref": "#/definitions/v1alpha1Parameter"
           },
-          "title": "Parameters are a list of parameters passed as inputs"
+          "title": "Parameters are a list of parameters passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1alpha1Artifact"
           },
-          "title": "Artifact are a list of artifacts passed as inputs"
+          "title": "Artifact are a list of artifacts passed as inputs\n+patchStrategy=merge\n+patchMergeKey=name"
         }
       },
       "title": "Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another"
@@ -3344,14 +3623,14 @@
           "items": {
             "$ref": "#/definitions/v1alpha1Parameter"
           },
-          "title": "Parameters holds the list of output parameters produced by a step"
+          "title": "Parameters holds the list of output parameters produced by a step\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "artifacts": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1alpha1Artifact"
           },
-          "title": "Artifacts holds the list of output artifacts produced by a step"
+          "title": "Artifacts holds the list of output artifacts produced by a step\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "result": {
           "type": "string",
@@ -3498,6 +3777,10 @@
         "secretKeySecret": {
           "$ref": "#/definitions/v1SecretKeySelector",
           "title": "SecretKeySecret is the secret selector to the bucket's secret key"
+        },
+        "roleARN": {
+          "type": "string",
+          "description": "RoleARN is the Amazon Resource Name (ARN) of the role to assume."
         }
       },
       "title": "S3Bucket contains the access information required for interfacing with an S3 bucket"
@@ -3624,21 +3907,21 @@
           "items": {
             "$ref": "#/definitions/v1Volume"
           },
-          "description": "Volumes is a list of volumes that can be mounted by containers in a template."
+          "title": "Volumes is a list of volumes that can be mounted by containers in a template.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "initContainers": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1alpha1UserContainer"
           },
-          "description": "InitContainers is a list of containers which run before the main container."
+          "title": "InitContainers is a list of containers which run before the main container.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "sidecars": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1alpha1UserContainer"
           },
-          "title": "Sidecars is a list of containers which run alongside the main container\nSidecars are automatically killed when the main container completes"
+          "title": "Sidecars is a list of containers which run alongside the main container\nSidecars are automatically killed when the main container completes\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "archiveLocation": {
           "$ref": "#/definitions/v1alpha1ArtifactLocation",
@@ -3663,7 +3946,7 @@
           "items": {
             "$ref": "#/definitions/v1Toleration"
           },
-          "description": "Tolerations to apply to workflow pods."
+          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key"
         },
         "schedulerName": {
           "type": "string",
@@ -3682,16 +3965,29 @@
           "type": "string",
           "title": "ServiceAccountName to apply to workflow pods"
         },
+        "automountServiceAccountToken": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
+        },
+        "executor": {
+          "$ref": "#/definitions/v1alpha1ExecutorConfig",
+          "description": "Executor holds configurations of the executor container."
+        },
         "hostAliases": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1HostAlias"
           },
-          "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec"
+          "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec\n+patchStrategy=merge\n+patchMergeKey=ip"
         },
         "securityContext": {
           "$ref": "#/definitions/v1PodSecurityContext",
           "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
+        },
+        "podSpecPatch": {
+          "type": "string",
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
         }
       },
       "title": "Template is a reusable and composable unit of execution in a workflow"
@@ -3789,7 +4085,7 @@
           "items": {
             "$ref": "#/definitions/v1alpha1Template"
           },
-          "title": "Templates is a list of workflow templates used in a workflow"
+          "title": "Templates is a list of workflow templates used in a workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "entrypoint": {
           "type": "string",
@@ -3803,19 +4099,28 @@
           "type": "string",
           "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as."
         },
+        "automountServiceAccountToken": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
+        },
+        "executor": {
+          "$ref": "#/definitions/v1alpha1ExecutorConfig",
+          "description": "Executor holds configurations of executor containers of the workflow."
+        },
         "volumes": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1Volume"
           },
-          "description": "Volumes is a list of volumes that can be mounted by containers in a workflow."
+          "title": "Volumes is a list of volumes that can be mounted by containers in a workflow.\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "volumeClaimTemplates": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1PersistentVolumeClaim"
           },
-          "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow"
+          "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "parallelism": {
           "type": "string",
@@ -3847,14 +4152,14 @@
           "items": {
             "$ref": "#/definitions/v1Toleration"
           },
-          "description": "Tolerations to apply to workflow pods."
+          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key"
         },
         "imagePullSecrets": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/v1LocalObjectReference"
           },
-          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod"
+          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name"
         },
         "hostNetwork": {
           "type": "boolean",
@@ -3893,8 +4198,7 @@
           "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
         },
         "podGC": {
-          "$ref": "#/definitions/v1alpha1PodGC",
-          "title": "PodGC describes the strategy to use when to deleting completed pods"
+          "$ref": "#/definitions/v1alpha1PodGC"
         },
         "podPriorityClassName": {
           "type": "string",
@@ -3910,11 +4214,14 @@
           "items": {
             "$ref": "#/definitions/v1HostAlias"
           },
-          "title": "HostAliases is an optional list of hosts and IPs that will be injected into the pod spec"
+          "title": "+patchStrategy=merge\n+patchMergeKey=ip"
         },
         "securityContext": {
-          "$ref": "#/definitions/v1PodSecurityContext",
-          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
+          "$ref": "#/definitions/v1PodSecurityContext"
+        },
+        "podSpecPatch": {
+          "type": "string",
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
         }
       },
       "description": "WorkflowSpec is the specification of a Workflow."
@@ -3949,6 +4256,13 @@
           },
           "description": "Nodes is a mapping between a node ID and the node's status."
         },
+        "storedTemplates": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1alpha1Template"
+          },
+          "description": "StoredTemplates is a mapping between a template ref and the node's status."
+        },
         "persistentVolumeClaims": {
           "type": "array",
           "items": {
@@ -3961,7 +4275,7 @@
           "title": "Outputs captures output values and artifact locations produced by the workflow via global outputs"
         }
       },
-      "title": "WorkflowStatus contains overall status information about a workflow\n+k8s:openapi-gen=false"
+      "title": "WorkflowStatus contains overall status information about a workflow"
     },
     "v1alpha1WorkflowStep": {
       "type": "object",
@@ -4019,22 +4333,69 @@
         }
       }
     },
+    "workflowSubmitOptions": {
+      "type": "object",
+      "properties": {
+        "Name": {
+          "type": "string"
+        },
+        "GenerateName": {
+          "type": "string"
+        },
+        "InstanceID": {
+          "type": "string"
+        },
+        "Entrypoint": {
+          "type": "string"
+        },
+        "Parameters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ServiceAccount": {
+          "type": "string"
+        },
+        "ServerDryRun": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "Labels": {
+          "type": "string"
+        },
+        "OwnerReference": {
+          "$ref": "#/definitions/v1OwnerReference"
+        }
+      }
+    },
     "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
         "Namespace": {
           "type": "string"
         },
-        "Workflows": {
+        "Workflow": {
           "$ref": "#/definitions/v1alpha1Workflow"
         },
         "CreateOptions": {
           "$ref": "#/definitions/v1CreateOptions"
+        },
+        "SubmitOptions": {
+          "$ref": "#/definitions/workflowSubmitOptions"
         }
       }
     },
     "workflowWorkflowDeleteResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "WorkflowName": {
+          "type": "string"
+        },
+        "Status": {
+          "type": "string"
+        }
+      }
     },
     "workflowWorkflowUpdateRequest": {
       "type": "object",
@@ -4077,6 +4438,14 @@
         "templateRef": {
           "$ref": "#/definitions/v1alpha1TemplateRef",
           "title": "TemplateRef is the reference to the template resource which this node corresponds to.\nNot applicable to virtual nodes (e.g. Retry, StepGroup)"
+        },
+        "storedTemplateID": {
+          "type": "string",
+          "description": "StoredTemplateID is the ID of stored template."
+        },
+        "workflowTemplateName": {
+          "type": "string",
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved."
         },
         "phase": {
           "type": "string",
@@ -4130,10 +4499,22 @@
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation.\nFor every invocation of a template, there are nodes which we considered as \"outbound\". Essentially,\nthese are last nodes in the execution sequence to run, before the template is considered completed.\nThese nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil\nsince the pod itself is already considered the \"outbound\" node.\nIn the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children).\nIn the case of steps, outbound nodes are all the containers involved in the last step group.\nNOTE: since templates are composable, the list of outbound nodes are carried upwards when\na DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of\na template, will be a superset of the outbound nodes of its last children."
         }
       },
-      "title": "NodeStatus contains status information about an individual node in the workflow\n+k8s:openapi-gen=false"
+      "title": "NodeStatus contains status information about an individual node in the workflow"
     }
   },
   "x-stream-definitions": {
+    "v1alpha1Workflow": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/v1alpha1Workflow"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of v1alpha1Workflow"
+    },
     "workflowLogEntry": {
       "type": "object",
       "properties": {

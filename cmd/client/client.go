@@ -60,7 +60,7 @@ func homeDir() string {
 //}
 func main(){
 	//generate()
-	conn, err := grpc.Dial("localhost:8082", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -85,7 +85,7 @@ func main(){
 	by,err := json.Marshal(clientConfig)
 	fmt.Println(err)
 	//
-	md := metadata.Pairs(workflow.CLIENT_REST_CONFIG, string(by), workflow.AUTH_TOKEN, clientConfig.AuthProvider.Config["access-token"])
+	md := metadata.Pairs(workflow.CLIENT_REST_CONFIG, string(by))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	//wq := workflow.WorkflowQuery{}
 	//created, err :=client.Get(ctx,&wq)
@@ -93,8 +93,8 @@ func main(){
 	//fmt.Println("errr",err)
 	//
 	fmt.Println(string(by))
-	wq := workflow.WorkflowQuery{Name:"retry-to-completion-d5j29", Namespace:"workflows"}
-	queried, err := client.Get(ctx, &wq)
+	wq := workflow.WorkflowListRequest { Namespace:"default"}
+	queried, err := client.List(ctx, &wq)
 	if err !=nil {
 		fmt.Println("errr",err)
 	}

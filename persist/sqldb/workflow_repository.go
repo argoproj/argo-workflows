@@ -27,6 +27,7 @@ type (
 		Get(uid string) (*wfv1.Workflow, error)
 		List(orderBy interface{}) (*wfv1.WorkflowList, error)
 		Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
+		Delete(condition db.Cond)(error)
 		Close() error
 		IsNodeStatusOffload() bool
 		QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{})(*wfv1.WorkflowList, error)
@@ -242,4 +243,11 @@ func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit u
 	wfList.Items = wfs
 
 	return &wfList, nil
+}
+
+func (wdc *WorkflowDBContext) Delete(condition db.Cond)(error){
+	if wdc.Session == nil {
+		return DBInvalidSession(nil, "DB session is not initialized")
+	}
+	return wdc.Session.Collection(wdc.TableName).Find(condition).Delete()
 }
