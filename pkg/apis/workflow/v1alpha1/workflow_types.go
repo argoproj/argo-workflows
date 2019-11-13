@@ -1304,14 +1304,8 @@ func (wf *Workflow) NodeID(name string) string {
 
 // GetStoredTemplate retrieves a template from stored templates of the workflow.
 func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
-	tmplID := ""
-	tmplRef := holder.GetTemplateRef()
-	if tmplRef != nil {
-		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-	} else if templateScope != "" {
-		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
-	} else {
-		// Workflow-local templates are not stored.
+	tmplID := wf.getStoredTemplateName(templateScope, holder)
+	if tmplID == "" {
 		return nil
 	}
 	tmpl, ok := wf.Status.StoredTemplates[tmplID]
@@ -1323,14 +1317,8 @@ func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolde
 
 // SetStoredTemplate stores a new template in stored templates of the workflow.
 func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error) {
-	tmplID := ""
-	tmplRef := holder.GetTemplateRef()
-	if tmplRef != nil {
-		tmplID = fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
-	} else if templateScope != "" {
-		tmplID = fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
-	} else {
-		// Do not store workflow-local templates.
+	tmplID := wf.getStoredTemplateName(templateScope, holder)
+	if tmplID == "" {
 		return false, nil
 	}
 	stored := false
@@ -1343,6 +1331,19 @@ func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolde
 		stored = true
 	}
 	return stored, nil
+}
+
+// getStoredTemplateName returns the stored template name of a given template holder on the template scope.
+func (wf *Workflow) getStoredTemplateName(templateScope string, holder TemplateHolder) string {
+	tmplRef := holder.GetTemplateRef()
+	if tmplRef != nil {
+		return fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+	} else if templateScope != "" {
+		return fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
+	} else {
+		// Do not store workflow-local templates.
+		return ""
+	}
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
