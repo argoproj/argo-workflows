@@ -7,7 +7,6 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
 	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/pkg/errors"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -77,11 +76,33 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 	if err != nil {
 		return err
 	}
-
-	entryId, err := cc.cron.AddJob(cronWorkflow.Options.Schedule, cronWorkflowJob)
+	cronSchedule, err := cron.ParseStandard(cronWorkflow.Options.Schedule)
 	if err != nil {
-		return errors.Wrap(err, "Unable to add CronWorkflow")
+		return fmt.Errorf("could not parse schedule '%s': %w", cronWorkflow.Options.Schedule, err)
 	}
+
+	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
+	if cronWorkflow.Status.LastScheduledTime != nil {
+		now := time.Now()
+		var missedExecutionTime time.Time
+		nextScheduledRunTime := cronSchedule.Next(cronWorkflow.Status.LastScheduledTime.Time)
+		// Workflow should have ran
+		for nextScheduledRunTime.Before(now) {
+			missedExecutionTime = nextScheduledRunTime
+			nextScheduledRunTime = cronSchedule.Next(cronWorkflow.Status.LastScheduledTime.Time)
+		}
+		// We missed the latest execution time
+		if !missedExecutionTime.IsZero() {
+			log.Infof("%s missed an execution at %s", cronWorkflow.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
+			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
+			if cronWorkflow.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*cronWorkflow.Options.StartingDeadlineSeconds) * time.Second)) {
+				cronWorkflowJob.Run()
+			}
+		}
+	}
+
+
+	entryId := cc.cron.Schedule(cronSchedule, cronWorkflowJob)
 	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
 
 	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
