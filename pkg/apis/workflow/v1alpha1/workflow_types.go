@@ -1321,16 +1321,15 @@ func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolde
 	if tmplID == "" {
 		return false, nil
 	}
-	stored := false
 	_, ok := wf.Status.StoredTemplates[tmplID]
 	if !ok {
 		if wf.Status.StoredTemplates == nil {
 			wf.Status.StoredTemplates = map[string]Template{}
 		}
 		wf.Status.StoredTemplates[tmplID] = *tmpl
-		stored = true
+		return true, nil
 	}
-	return stored, nil
+	return false, nil
 }
 
 // getStoredTemplateName returns the stored template name of a given template holder on the template scope.
