@@ -113,6 +113,7 @@ Currently **officially** using Argo:
 1. [Threekit](https://www.threekit.com/)
 1. [Commodus Tech](https://www.commodus.tech)
 1. [Maersk](https://www.maersk.com/solutions/digital-solutions)
+1. [Tiger Analytics](https://www.tigeranalytics.com/)
 
 
 ## Community Blogs and Presentations
