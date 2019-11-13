@@ -1865,7 +1865,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 	// will need to be requeued after a certain amount of time
 	var requeueTime *time.Time
 
-	if tmpl.Suspend.Duration != ""  {
+	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
 		var suspendDuration time.Duration
 		// If no units are attached, treat as seconds
@@ -1887,7 +1887,7 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 	}
 
 	// workflowDeadline is the time when the workflow will be timed out, if any
-	if workflowDeadline := woc.getWorkflowDeadline(); workflowDeadline != nil  {
+	if workflowDeadline := woc.getWorkflowDeadline(); workflowDeadline != nil {
 		// There is an active workflow deadline. If this node is suspended with a duration, choose the earlier time
 		// between the two, otherwise choose the deadline time.
 		if requeueTime == nil || workflowDeadline.Before(*requeueTime) {
