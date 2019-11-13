@@ -193,6 +193,7 @@ func (woc *wfOperationCtx) operate() {
 		} else {
 			woc.log.Errorf("Failed to load artifact repository configMap: %+v", err)
 			woc.markWorkflowError(err, true)
+			return
 		}
 	}
 
@@ -1284,6 +1285,16 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 		woc.log.Infof("Updated message %s -> %s", woc.wf.Status.Message, message[0])
 		woc.updated = true
 		woc.wf.Status.Message = message[0]
+	}
+
+	if phase == wfv1.NodeError {
+		entryNode, ok := woc.wf.Status.Nodes[woc.wf.ObjectMeta.Name]
+		if ok && entryNode.Phase == wfv1.NodeRunning {
+			entryNode.Phase = wfv1.NodeError
+			entryNode.Message = "Workflow operation error"
+			woc.wf.Status.Nodes[woc.wf.ObjectMeta.Name] = entryNode
+			woc.updated = true
+		}
 	}
 
 	switch phase {
