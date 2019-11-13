@@ -1076,6 +1076,11 @@ func (woc *wfOperationCtx) createPVCs() error {
 }
 
 func (woc *wfOperationCtx) deletePVCs() error {
+	if woc.wf.Status.Phase != wfv1.NodeSucceeded {
+		// Skip deleting PVCs to reuse them for retried failed/error workflows.
+		// PVCs are automatically deleted when corresponded owner workflows get deleted.
+		return nil
+	}
 	totalPVCs := len(woc.wf.Status.PersistentVolumeClaims)
 	if totalPVCs == 0 {
 		// PVC list already empty. nothing to do
