@@ -137,9 +137,11 @@ func (woc *wfOperationCtx) operate() {
 		if woc.wf.Status.Completed() {
 			_ = woc.killDaemonedChildren("")
 		}
+		
 		woc.persistUpdates()
 	}()
 	defer func() {
+		
 		if r := recover(); r != nil {
 			if rerr, ok := r.(error); ok {
 				woc.markWorkflowError(rerr, true)
@@ -163,6 +165,7 @@ func (woc *wfOperationCtx) operate() {
 		}
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 	} else {
+		woc.setGlobalParameters()
 		woc.workflowDeadline = woc.getWorkflowDeadline()
 		err := woc.podReconciliation()
 		if err == nil {
@@ -183,7 +186,7 @@ func (woc *wfOperationCtx) operate() {
 		woc.activePods = woc.countActivePods()
 	}
 
-	woc.setGlobalParameters()
+	
 
 	if woc.wf.Spec.ArtifactRepositoryRef != nil {
 		repoReference := woc.wf.Spec.ArtifactRepositoryRef
