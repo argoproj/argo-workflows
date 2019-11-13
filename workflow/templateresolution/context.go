@@ -38,8 +38,8 @@ type Context struct {
 	tmplBase wfv1.TemplateGetter
 	// storage is an implementation of TemplateStorage.
 	storage wfv1.TemplateStorage
-	// logger is a logrus entry.
-	logger *logrus.Entry
+	// log is a logrus entry.
+	log *logrus.Entry
 }
 
 // NewContext returns new Context.
@@ -48,7 +48,7 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.Tem
 		wftmplGetter: wftmplGetter,
 		tmplBase:     tmplBase,
 		storage:      storage,
-		logger:       log.WithFields(logrus.Fields{}),
+		log:          log.WithFields(logrus.Fields{}),
 	}
 }
 
@@ -58,13 +58,13 @@ func NewContextFromClientset(clientset typed.WorkflowTemplateInterface, tmplBase
 		wftmplGetter: &workflowTemplateInterfaceWrapper{clientset: clientset},
 		tmplBase:     tmplBase,
 		storage:      storage,
-		logger:       log.WithFields(logrus.Fields{}),
+		log:          log.WithFields(logrus.Fields{}),
 	}
 }
 
 // GetTemplateByName returns a template by name in the context.
 func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
-	ctx.logger.Debug("Getting the template by name")
+	ctx.log.Debug("Getting the template by name")
 
 	tmpl := ctx.tmplBase.GetTemplateByName(name)
 	if tmpl == nil {
@@ -75,7 +75,7 @@ func (ctx *Context) GetTemplateByName(name string) (*wfv1.Template, error) {
 
 // GetTemplateFromRef returns a template found by a given template ref.
 func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Template, error) {
-	ctx.logger.Debug("Getting the template from ref")
+	ctx.log.Debug("Getting the template from ref")
 
 	wftmpl, err := ctx.wftmplGetter.Get(tmplRef.Name)
 	if err != nil {
@@ -93,7 +93,7 @@ func (ctx *Context) GetTemplateFromRef(tmplRef *wfv1.TemplateRef) (*wfv1.Templat
 
 // GetTemplate returns a template found by template name or template ref.
 func (ctx *Context) GetTemplate(tmplHolder wfv1.TemplateHolder) (*wfv1.Template, error) {
-	ctx.logger.Debug("Getting the template")
+	ctx.log.Debug("Getting the template")
 
 	tmplName := tmplHolder.GetTemplateName()
 	tmplRef := tmplHolder.GetTemplateRef()
@@ -142,7 +142,7 @@ func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *
 //  resolved template include intermediate parameter passing.
 // The other fields are just merged and shallower templates overwrite deeper.
 func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth int) (*Context, *wfv1.Template, error) {
-	ctx.logger = ctx.logger.WithFields(logrus.Fields{
+	ctx.log = ctx.log.WithFields(logrus.Fields{
 		"depth": depth,
 		"base":  common.GetTemplateGetterString(ctx.tmplBase),
 		"tmpl":  common.GetTemplateHolderString(tmplHolder),
@@ -152,7 +152,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 		return nil, nil, errors.Errorf(errors.CodeBadRequest, "template reference exceeded max depth (%d)", maxResolveDepth)
 	}
 
-	ctx.logger.Debug("Resolving the template")
+	ctx.log.Debug("Resolving the template")
 
 	var tmpl *wfv1.Template
 	if ctx.storage != nil {
@@ -160,7 +160,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 		tmpl = ctx.storage.GetStoredTemplate(ctx.tmplBase.GetTemplateScope(), tmplHolder)
 	}
 	if tmpl != nil {
-		ctx.logger.Debug("Found stored template")
+		ctx.log.Debug("Found stored template")
 	} else {
 		// Find newly appeared template.
 		newTmpl, err := ctx.GetTemplate(tmplHolder)
@@ -174,7 +174,7 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 				return nil, nil, err
 			}
 			if stored {
-				ctx.logger.Debug("Stored the template")
+				ctx.log.Debug("Stored the template")
 			}
 		}
 		tmpl = newTmpl
