@@ -21,7 +21,7 @@ type CronWorkflowWrapper struct {
 	name        string
 	cronWf      *v1alpha1.CronWorkflow
 	wfClientset versioned.Interface
-	wfClient	typed.WorkflowInterface
+	wfClient    typed.WorkflowInterface
 	cronWfIf    typed.CronWorkflowInterface
 }
 
@@ -31,7 +31,7 @@ func NewCronWorkflowWrapper(cronWorkflow *v1alpha1.CronWorkflow, wfClientset ver
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
-		wfClient: wfClientset.ArgoprojV1alpha1().Workflows(runtimeNamespace),
+		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(runtimeNamespace),
 		cronWfIf:    cronWfIf,
 	}, nil
 }

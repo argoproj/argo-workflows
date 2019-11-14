@@ -7,9 +7,15 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
 	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"sync"
 	"time"
@@ -20,9 +26,10 @@ type Controller struct {
 	namespace      string
 	cron           *cron.Cron
 	nameEntryIDMap map[string]cron.EntryID
-	kubeClientset  kubernetes.Interface
 	wfClientset    versioned.Interface
+	wfInformer     cache.SharedIndexInformer
 	wfCronInformer extv1alpha1.CronWorkflowInformer
+	restConfig     *rest.Config
 	cronLock       sync.Mutex
 }
 
@@ -31,15 +38,15 @@ const (
 )
 
 func NewCronController(
-	kubeclientset kubernetes.Interface,
 	wfclientset versioned.Interface,
+	restConfig *rest.Config,
 	namespace string,
 ) *Controller {
 	return &Controller{
-		kubeClientset:  kubeclientset,
 		wfClientset:    wfclientset,
 		namespace:      namespace,
 		cron:           cron.New(),
+		restConfig:     restConfig,
 		nameEntryIDMap: make(map[string]cron.EntryID),
 	}
 }
@@ -49,6 +56,9 @@ func (cc *Controller) Run(ctx context.Context) {
 
 	cc.wfCronInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
+
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
@@ -166,6 +176,24 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 	})
 }
 
+func (cc *Controller) addWorkflowInformerHandler() {
+	log.Infof("SIMON adding informer")
+	cc.wfInformer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				log.Infof("SIMON FOUND A WF: %s", obj.(v1alpha1.Workflow).Name)
+			},
+			UpdateFunc: func(old, new interface{}) {
+				log.Infof("SIMON FOUND U WF: %s", new.(v1alpha1.Workflow).Name)
+
+			},
+			DeleteFunc: func(obj interface{}) {
+				log.Infof("SIMON FOUND D WF: %s", obj.(v1alpha1.Workflow).Name)
+			},
+		},
+	)
+}
+
 func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
 	var informerFactory externalversions.SharedInformerFactory
 	informerFactory = externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
@@ -178,4 +206,14 @@ func convertToWorkflow(obj interface{}) (*v1alpha1.CronWorkflow, error) {
 		return nil, fmt.Errorf("error casting object")
 	}
 	return cronWf, nil
+}
+
+func wfInformerListOptionsFunc(options *v1.ListOptions) {
+	options.FieldSelector = fields.Everything().String()
+	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector().Add(*incompleteReq)
+	options.LabelSelector = labelSelector.String()
 }

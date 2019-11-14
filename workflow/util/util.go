@@ -56,6 +56,8 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 	if err != nil {
 		panic(err)
 	}
+
+	log.Infof("SIMON creating informer")
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",

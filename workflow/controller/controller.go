@@ -418,6 +418,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 	wfc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
+				log.Infof("SIMON GOOD FOUND A WF")
 				key, err := cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
 					wfc.wfQueue.Add(key)
@@ -426,6 +427,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				}
 			},
 			UpdateFunc: func(old, new interface{}) {
+				log.Infof("SIMON GOOD FOUND A WF")
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					wfc.wfQueue.Add(key)
@@ -434,6 +436,7 @@ func (wfc *WorkflowController) addWorkflowInformerHandler() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
+				log.Infof("SIMON GOOD FOUND A WF")
 				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 				// key function.
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)

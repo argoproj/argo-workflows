@@ -71,7 +71,7 @@ func NewRootCommand() *cobra.Command {
 				return err
 			}
 
-			cronController := cron.NewCronController(kubeclientset, wfclientset, namespace)
+			cronController := cron.NewCronController(wfclientset, config, namespace)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
