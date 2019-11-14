@@ -89,13 +89,13 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 		// Workflow should have ran
 		for nextScheduledRunTime.Before(now) {
 			missedExecutionTime = nextScheduledRunTime
-			nextScheduledRunTime = cronSchedule.Next(cronWorkflow.Status.LastScheduledTime.Time)
+			nextScheduledRunTime = cronSchedule.Next(missedExecutionTime)
 		}
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
-			log.Infof("%s missed an execution at %s", cronWorkflow.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
 			if cronWorkflow.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*cronWorkflow.Options.StartingDeadlineSeconds) * time.Second)) {
+				log.Infof("%s missed an execution at %s and is within StartingDeadline", cronWorkflow.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				cronWorkflowJob.Run()
 			}
 		}

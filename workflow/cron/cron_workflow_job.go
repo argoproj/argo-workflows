@@ -54,7 +54,6 @@ func (cronWfWrp *CronWorkflowWrapper) Run() {
 				log.Errorf("Error in running CronWorkflow %s: %s", cronWfWrp.name, err)
 				return
 			}
-			log.Infof("%v", runningWorkflows)
 			if len(runningWorkflows) > 0 {
 				log.Infof("%s has ConcurrencyPolicy: Forbid and has an active Workflow so it was not run", cronWfWrp.name)
 				return
