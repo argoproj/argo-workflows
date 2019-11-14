@@ -11,17 +11,13 @@ import (
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -36,7 +32,6 @@ type Controller struct {
 	cronWfInformer extv1alpha1.CronWorkflowInformer
 	cronWfQueue    workqueue.RateLimitingInterface
 	restConfig     *rest.Config
-	cronLock       sync.Mutex
 }
 
 const (
@@ -127,7 +122,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
-		log.Errorf("could not run outstanding Workflow: %w", err)
+		log.Errorf("could not run outstanding Workflow: %s", err)
 		return false
 	}
 
@@ -139,7 +134,7 @@ func (cc *Controller) processNextCronItem() bool {
 
 	entryId, err := cc.cron.AddJob(cronWf.Options.Schedule, cronWorkflowOperationCtx)
 	if err != nil {
-		log.Errorf("could not schedule CronWorkflow: %w", err)
+		log.Errorf("could not schedule CronWorkflow: %s", err)
 		return false
 	}
 	cc.nameEntryIDMap[key.(string)] = entryId
@@ -150,8 +145,7 @@ func (cc *Controller) processNextCronItem() bool {
 }
 
 func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
-	var informerFactory externalversions.SharedInformerFactory
-	informerFactory = externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
+	informerFactory := externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
 	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
 }
 
@@ -189,23 +183,6 @@ func (cc *Controller) addWorkflowInformerHandler() {
 			},
 		},
 	)
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func RandStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
-// The equivalent function for Workflows lives in util.go. If necessary, this could be moved there
-func fromUnstructured(obj *unstructured.Unstructured) (*v1alpha1.CronWorkflow, error) {
-	var cronWf v1alpha1.CronWorkflow
-	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &cronWf)
-	return &cronWf, err
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions) {
