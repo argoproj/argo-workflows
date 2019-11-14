@@ -12,6 +12,7 @@ import (
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -58,12 +59,14 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	log.Infof("SIMON CRON WFINF: %v", cc.wfInformer)
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
 	go cc.wfCronInformer.Informer().Run(ctx.Done())
+	go cc.wfInformer.Run(ctx.Done())
 
 	<-ctx.Done()
 }
@@ -181,14 +184,13 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	cc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
-				log.Infof("SIMON FOUND A WF: %s", obj.(v1alpha1.Workflow).Name)
+				log.Infof("SIMON FOUND A WF: %v", obj.(*unstructured.Unstructured))
 			},
 			UpdateFunc: func(old, new interface{}) {
-				log.Infof("SIMON FOUND U WF: %s", new.(v1alpha1.Workflow).Name)
-
+				log.Infof("SIMON FOUND U WF: %v", new.(*unstructured.Unstructured))
 			},
 			DeleteFunc: func(obj interface{}) {
-				log.Infof("SIMON FOUND D WF: %s", obj.(v1alpha1.Workflow).Name)
+				log.Infof("SIMON FOUND D WF: %v", obj.(*unstructured.Unstructured))
 			},
 		},
 	)
@@ -214,6 +216,10 @@ func wfInformerListOptionsFunc(options *v1.ListOptions) {
 	if err != nil {
 		panic(err)
 	}
-	labelSelector := labels.NewSelector().Add(*incompleteReq)
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflowParent, selection.Exists, []string{})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector().Add(*incompleteReq, *isCronWorkflowChildReq)
 	options.LabelSelector = labelSelector.String()
 }
