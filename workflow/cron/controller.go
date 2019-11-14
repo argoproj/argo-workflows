@@ -69,10 +69,9 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 		cc.cron.Remove(entryId)
 		delete(cc.nameEntryIDMap, cronWorkflow.Name)
 	}
-	// TODO: Almost sure the wfClientset should be passed as reference and not value
 
 	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cc.namespace)
-	cronWorkflowJob, err := NewCronWorkflowJob(cronWorkflow, cc.wfClientset, cronWfIf)
+	cronWorkflowJob, err := NewCronWorkflowWrapper(cronWorkflow, cc.wfClientset, cronWfIf)
 	if err != nil {
 		return err
 	}
@@ -81,6 +80,16 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 		return fmt.Errorf("could not parse schedule '%s': %w", cronWorkflow.Options.Schedule, err)
 	}
 
+	runWorkflowIfMissed(cronWorkflow, cronSchedule, cronWorkflowJob)
+
+	entryId := cc.cron.Schedule(cronSchedule, cronWorkflowJob)
+	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
+
+	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
+	return nil
+}
+
+func runWorkflowIfMissed(cronWorkflow *v1alpha1.CronWorkflow, cronSchedule cron.Schedule, cronWorkflowJob *CronWorkflowWrapper) {
 	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
 	if cronWorkflow.Status.LastScheduledTime != nil {
 		now := time.Now()
@@ -94,19 +103,12 @@ func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) err
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if cronWorkflow.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*cronWorkflow.Options.StartingDeadlineSeconds) * time.Second)) {
+			if cronWorkflow.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*cronWorkflow.Options.StartingDeadlineSeconds)*time.Second)) {
 				log.Infof("%s missed an execution at %s and is within StartingDeadline", cronWorkflow.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				cronWorkflowJob.Run()
 			}
 		}
 	}
-
-
-	entryId := cc.cron.Schedule(cronSchedule, cronWorkflowJob)
-	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
-
-	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
-	return nil
 }
 
 func (cc *Controller) stopCronWorkflow(cronWorkflowName string) error {
@@ -128,7 +130,6 @@ func (cc *Controller) stopCronWorkflow(cronWorkflowName string) error {
 func (cc *Controller) addCronWorkflowInformerHandler() {
 	cc.wfCronInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			log.Infof("SIMON Adding object: %v", obj)
 			cronWf, err := convertToWorkflow(obj)
 			if err != nil {
 				log.Error(err)
@@ -140,7 +141,6 @@ func (cc *Controller) addCronWorkflowInformerHandler() {
 			}
 		},
 		UpdateFunc: func(old, new interface{}) {
-			log.Infof("SIMON Updating object: %v", new)
 			cronWf, err := convertToWorkflow(new)
 			if err != nil {
 				log.Error(err)

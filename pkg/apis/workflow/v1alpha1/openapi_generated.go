@@ -567,6 +567,20 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 							Format:      "int64",
 						},
 					},
+					"successfulJobsHistoryLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuccessfulJobsHistoryLimit is the K8s-style number of successful jobs that will be persisted",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"failedJobsHistoryLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailedJobsHistoryLimit is the K8s-style number of failed jobs that will be persisted",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
 				},
 				Required: []string{"schedule", "runtimeNamespace", "runtimeGenerateName"},
 			},

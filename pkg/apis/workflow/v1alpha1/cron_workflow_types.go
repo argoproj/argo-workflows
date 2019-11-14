@@ -30,7 +30,6 @@ type CronWorkflowStatus struct {
 	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,1,opt,name=lastScheduledTime"`
 }
 
-// TODO: Consider replacing this with the K8s API CronJobSpec. This spec is only available starting on v2alpha1.
 // CronWorkflowOptions is the schedule of when to run CronWorkflows
 type CronWorkflowOptions struct {
 	// Schedule is a schedule to run the Workflow in Cron format
@@ -46,4 +45,8 @@ type CronWorkflowOptions struct {
 	// StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
 	// original scheduled time if it is missed.
 	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,6,opt,name=startingDeadlineSeconds"`
+	// SuccessfulJobsHistoryLimit is the K8s-style number of successful jobs that will be persisted
+	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty" protobuf:"varint,7,opt,name=successfulJobsHistoryLimit"`
+	// FailedJobsHistoryLimit is the K8s-style number of failed jobs that will be persisted
+	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty" protobuf:"varint,8,opt,name=failedJobsHistoryLimit"`
 }
