@@ -2,7 +2,6 @@ package cron
 
 import (
 	"context"
-	"fmt"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/informers/externalversions"
@@ -15,9 +14,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -29,7 +32,9 @@ type Controller struct {
 	nameEntryIDMap map[string]cron.EntryID
 	wfClientset    versioned.Interface
 	wfInformer     cache.SharedIndexInformer
-	wfCronInformer extv1alpha1.CronWorkflowInformer
+	wfQueue        workqueue.RateLimitingInterface
+	cronWfInformer extv1alpha1.CronWorkflowInformer
+	cronWfQueue    workqueue.RateLimitingInterface
 	restConfig     *rest.Config
 	cronLock       sync.Mutex
 }
@@ -49,13 +54,16 @@ func NewCronController(
 		cron:           cron.New(),
 		restConfig:     restConfig,
 		nameEntryIDMap: make(map[string]cron.EntryID),
+		wfQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
 func (cc *Controller) Run(ctx context.Context) {
+	defer cc.cronWfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 
-	cc.wfCronInformer = cc.newCronWorkflowInformer()
+	cc.cronWfInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
@@ -65,135 +73,80 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cron.Start()
 	defer cc.cron.Stop()
 
-	go cc.wfCronInformer.Informer().Run(ctx.Done())
+	go cc.cronWfInformer.Informer().Run(ctx.Done())
 	go cc.wfInformer.Run(ctx.Done())
+
+	for i := 0; i < 8; i++ {
+		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
+	}
 
 	<-ctx.Done()
 }
 
-func (cc *Controller) startCronWorkflow(cronWorkflow *v1alpha1.CronWorkflow) error {
-	cc.cronLock.Lock()
-	defer cc.cronLock.Unlock()
+func (cc *Controller) runCronWorker() {
+	for cc.processNextCronItem() {
+	}
+}
 
-	log.Infof("Parsing CronWorkflow %s", cronWorkflow.Name)
+func (cc *Controller) processNextCronItem() bool {
+	key, quit := cc.cronWfQueue.Get()
+	if quit {
+		return false
+	}
+	defer cc.cronWfQueue.Done(key)
+	log.Infof("Processing %s", key)
 
-	if entryId, ok := cc.nameEntryIDMap[cronWorkflow.Name]; ok {
-		// The job is currently scheduled, remove it and re add it.
-		cc.cron.Remove(entryId)
-		delete(cc.nameEntryIDMap, cronWorkflow.Name)
+	obj, exists, err := cc.cronWfInformer.Informer().GetIndexer().GetByKey(key.(string))
+	if err != nil {
+		log.Errorf("Failed to get CronWorkflow '%s' from informer index: %+v", key, err)
+		return true
+	}
+	if !exists {
+		if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
+			log.Infof("Deleting '%s'", key)
+			cc.cron.Remove(entryId)
+			delete(cc.nameEntryIDMap, key.(string))
+		}
+		return true
+	}
+
+	// The workflow informer receives unstructured objects to deal with the possibility of invalid
+	// workflow manifests that are unable to unmarshal to workflow objects
+	cronWf, ok := obj.(*v1alpha1.CronWorkflow)
+	if !ok {
+		log.Warnf("Key '%s' in index is not a CronWorkflow", key)
+		return true
 	}
 
 	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cc.namespace)
-	cronWorkflowJob, err := NewCronWorkflowWrapper(cronWorkflow, cc.wfClientset, cronWfIf)
+	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cronWfIf)
 	if err != nil {
-		return err
+		log.Error(err)
+		return false
 	}
-	cronSchedule, err := cron.ParseStandard(cronWorkflow.Options.Schedule)
+
+	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
-		return fmt.Errorf("could not parse schedule '%s': %w", cronWorkflow.Options.Schedule, err)
+		log.Errorf("could not run outstanding Workflow: %w", err)
+		return false
 	}
 
-	runWorkflowIfMissed(cronWorkflow, cronSchedule, cronWorkflowJob)
-
-	entryId := cc.cron.Schedule(cronSchedule, cronWorkflowJob)
-	cc.nameEntryIDMap[cronWorkflow.Name] = entryId
-
-	log.Infof("CronWorkflow %s added", cronWorkflow.Name)
-	return nil
-}
-
-func runWorkflowIfMissed(cronWorkflow *v1alpha1.CronWorkflow, cronSchedule cron.Schedule, cronWorkflowJob *CronWorkflowWrapper) {
-	// If this CronWorkflow has been run before, check if we have missed any scheduled executions
-	if cronWorkflow.Status.LastScheduledTime != nil {
-		now := time.Now()
-		var missedExecutionTime time.Time
-		nextScheduledRunTime := cronSchedule.Next(cronWorkflow.Status.LastScheduledTime.Time)
-		// Workflow should have ran
-		for nextScheduledRunTime.Before(now) {
-			missedExecutionTime = nextScheduledRunTime
-			nextScheduledRunTime = cronSchedule.Next(missedExecutionTime)
-		}
-		// We missed the latest execution time
-		if !missedExecutionTime.IsZero() {
-			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if cronWorkflow.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*cronWorkflow.Options.StartingDeadlineSeconds)*time.Second)) {
-				log.Infof("%s missed an execution at %s and is within StartingDeadline", cronWorkflow.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
-				cronWorkflowJob.Run()
-			}
-		}
-	}
-}
-
-func (cc *Controller) stopCronWorkflow(cronWorkflowName string) error {
-	cc.cronLock.Lock()
-	defer cc.cronLock.Unlock()
-
-	entryId, ok := cc.nameEntryIDMap[cronWorkflowName]
-	if !ok {
-		return fmt.Errorf("unable to remove workflow: workflow %s does not exist", cronWorkflowName)
+	// The job is currently scheduled, remove it and re add it.
+	if entryId, ok := cc.nameEntryIDMap[key.(string)]; ok {
+		cc.cron.Remove(entryId)
+		delete(cc.nameEntryIDMap, key.(string))
 	}
 
-	cc.cron.Remove(entryId)
-	delete(cc.nameEntryIDMap, cronWorkflowName)
+	entryId, err := cc.cron.AddJob(cronWf.Options.Schedule, cronWorkflowOperationCtx)
+	if err != nil {
+		log.Errorf("could not schedule CronWorkflow: %w", err)
+		return false
+	}
+	cc.nameEntryIDMap[key.(string)] = entryId
 
-	log.Infof("CronWorkflow %s removed", cronWorkflowName)
-	return nil
-}
+	log.Infof("CronWorkflow %s added", key.(string))
 
-func (cc *Controller) addCronWorkflowInformerHandler() {
-	cc.wfCronInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			cronWf, err := convertToWorkflow(obj)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			err = cc.startCronWorkflow(cronWf)
-			if err != nil {
-				log.Errorf("Error starting CronWorkflow %s: %s", cronWf.Name, err)
-			}
-		},
-		UpdateFunc: func(old, new interface{}) {
-			cronWf, err := convertToWorkflow(new)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			err = cc.startCronWorkflow(cronWf)
-			if err != nil {
-				log.Errorf("Error starting CronWorkflow %s: %s", cronWf.Name, err)
-			}
-		},
-		DeleteFunc: func(obj interface{}) {
-			log.Infof("SIMON Deleting object: %v", obj)
-			cronWf, err := convertToWorkflow(obj)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			err = cc.stopCronWorkflow(cronWf.Name)
-			if err != nil {
-				log.Errorf("Error stopping CronWorkflow %s: %s", cronWf.Name, err)
-			}
-		},
-	})
-}
-
-func (cc *Controller) addWorkflowInformerHandler() {
-	log.Infof("SIMON adding informer")
-	cc.wfInformer.AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				log.Infof("SIMON FOUND A WF: %v", obj.(*unstructured.Unstructured))
-			},
-			UpdateFunc: func(old, new interface{}) {
-				log.Infof("SIMON FOUND U WF: %v", new.(*unstructured.Unstructured))
-			},
-			DeleteFunc: func(obj interface{}) {
-				log.Infof("SIMON FOUND D WF: %v", obj.(*unstructured.Unstructured))
-			},
-		},
-	)
+	return false
 }
 
 func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
@@ -202,12 +155,57 @@ func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer
 	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
 }
 
-func convertToWorkflow(obj interface{}) (*v1alpha1.CronWorkflow, error) {
-	cronWf, ok := obj.(*v1alpha1.CronWorkflow)
-	if !ok {
-		return nil, fmt.Errorf("error casting object")
+func (cc *Controller) addCronWorkflowInformerHandler() {
+	cc.cronWfInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				cc.cronWfQueue.Add(key)
+			}
+		},
+		UpdateFunc: func(old, new interface{}) {
+			key, err := cache.MetaNamespaceKeyFunc(new)
+			if err == nil {
+				cc.cronWfQueue.Add(key)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err == nil {
+				cc.cronWfQueue.Add(key)
+			}
+		},
+	})
+}
+
+func (cc *Controller) addWorkflowInformerHandler() {
+	cc.wfInformer.AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+			},
+			UpdateFunc: func(old, new interface{}) {
+			},
+			DeleteFunc: func(obj interface{}) {
+			},
+		},
+	)
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-	return cronWf, nil
+	return string(b)
+}
+
+// The equivalent function for Workflows lives in util.go. If necessary, this could be moved there
+func fromUnstructured(obj *unstructured.Unstructured) (*v1alpha1.CronWorkflow, error) {
+	var cronWf v1alpha1.CronWorkflow
+	err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, &cronWf)
+	return &cronWf, err
 }
 
 func wfInformerListOptionsFunc(options *v1.ListOptions) {
