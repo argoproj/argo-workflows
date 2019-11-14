@@ -41,12 +41,12 @@ func TestExistsInTar(t *testing.T) {
 			}
 			hdr := tar.Header{Name: f.name, Mode: int64(mode), Size: int64(len(f.body))}
 			err := writer.WriteHeader(&hdr)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			_, err = writer.Write([]byte(f.body))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		err := writer.Close()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		return tar.NewReader(&buf)
 	}
 
