@@ -10,12 +10,7 @@ spec:
     type: string
   - JSONPath: .status.startedAt
     description: When the workflow was started
-    name: Started
-    format: date-time
-    type: date
-  - JSONPath: .status.finishedAt
-    description: When the workflow was finished
-    name: Finished
+    name: Age
     format: date-time
     type: date
   group: argoproj.io
