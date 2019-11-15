@@ -62,7 +62,6 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
-	log.Infof("SIMON CRON WFINF: %v", cc.wfInformer)
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
@@ -187,14 +186,10 @@ func (cc *Controller) addWorkflowInformerHandler() {
 
 func wfInformerListOptionsFunc(options *v1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	incompleteReq, err := labels.NewRequirement(common.LabelKeyCompleted, selection.NotIn, []string{"true"})
-	if err != nil {
-		panic(err)
-	}
 	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflowParent, selection.Exists, []string{})
 	if err != nil {
 		panic(err)
 	}
-	labelSelector := labels.NewSelector().Add(*incompleteReq, *isCronWorkflowChildReq)
+	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
 	options.LabelSelector = labelSelector.String()
 }
