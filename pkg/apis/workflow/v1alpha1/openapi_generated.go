@@ -1918,8 +1918,8 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 					"duration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Duration is the seconds to wait before automatically resuming a template",
-							Type:        []string{"integer"},
-							Format:      "int32",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
