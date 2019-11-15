@@ -9,7 +9,7 @@ spec:
   - name: error-container
     retryStrategy:
       limit: 2
-      retryPolicy: "Always"   # Retry on errors AND on failures
+      retryPolicy: "Always"   # Retry on errors AND failures. Also available: "OnFailure" (default), "OnError"
     container:
       image: docker/whalesay:latest
       command: [cowsay]
