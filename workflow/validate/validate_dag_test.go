@@ -224,7 +224,7 @@ func TestDAGVariableResolution(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to resolve {{tasks.A.outputs.parameters.unresolvable}}")
 	}
 	err = validate(dagResolvedVar)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = validate(dagResolvedVarNotAncestor)
 	if assert.NotNil(t, err) {
@@ -287,7 +287,7 @@ spec:
 
 func TestDAGArtifactResolution(t *testing.T) {
 	err := validate(dagResolvedArt)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var dagStatusReference = `
@@ -521,7 +521,7 @@ spec:
 
 func TestDAGStatusReference(t *testing.T) {
 	err := validate(dagStatusReference)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = validate(dagStatusNoFutureReferenceSimple)
 	// Can't reference the status of steps that have not run yet
@@ -536,7 +536,7 @@ func TestDAGStatusReference(t *testing.T) {
 	}
 
 	err = validate(dagStatusPastReferenceChain)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = validate(dagStatusOnlyDirectAncestors)
 	// Can't reference steps that are not direct ancestors of node
@@ -619,7 +619,7 @@ spec:
 
 func TestDAGTargetSubstitution(t *testing.T) {
 	err := validate(dagTargetSubstitution)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var dagTargetMissingInputParam = `

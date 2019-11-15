@@ -1,21 +1,18 @@
 package controller
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
-	"io/ioutil"
+	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -62,15 +59,8 @@ func newController() *WorkflowController {
 		wfclientset:    wfclientset,
 		completedPods:  make(chan string, 512),
 		wftmplInformer: wftmplInformer,
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
-}
-
-func marshallBody(b interface{}) io.ReadCloser {
-	result, err := json.Marshal(b)
-	if err != nil {
-		panic(err)
-	}
-	return ioutil.NopCloser(bytes.NewReader(result))
 }
 
 func unmarshalWF(yamlStr string) *wfv1.Workflow {
@@ -86,7 +76,7 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace string) {
 	podcs := kubeclientset.CoreV1().Pods(namespace)
 	pods, err := podcs.List(metav1.ListOptions{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	for _, pod := range pods.Items {
 		pod.Status.Phase = apiv1.PodRunning
 		_, _ = podcs.Update(&pod)
