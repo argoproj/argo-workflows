@@ -28,7 +28,7 @@ func NewListCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "list",
-		Short: "list CronWorkflows",
+		Short: "list cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var cronWfClient v1alpha1.CronWorkflowInterface
 			if listArgs.allNamespaces {

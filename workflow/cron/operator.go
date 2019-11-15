@@ -48,7 +48,7 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	wf, err := castToWorkflow(woc.cronWf)
+	wf, err := common.CastToWorkflow(woc.cronWf)
 	if err != nil {
 		log.Errorf("Unable to create Workflow for CronWorkflow %s", woc.name)
 		return
@@ -163,27 +163,4 @@ func (woc *cronWfOperationCtx) getRunningWorkflows() ([]v1alpha1.Workflow, error
 		return nil, err
 	}
 	return wfList.Items, nil
-}
-
-func castToWorkflow(cronWf *v1alpha1.CronWorkflow) (*v1alpha1.Workflow, error) {
-	newTypeMeta := v1.TypeMeta{
-		Kind:       workflow.WorkflowKind,
-		APIVersion: cronWf.TypeMeta.APIVersion,
-	}
-
-	newObjectMeta := v1.ObjectMeta{}
-	if cronWf.Options.RuntimeGenerateName != "" {
-		newObjectMeta.GenerateName = cronWf.Options.RuntimeGenerateName
-	} else {
-		return nil, fmt.Errorf("CronWorkflow should have runtimeGenerateName defined")
-	}
-
-	newObjectMeta.Labels = make(map[string]string)
-	newObjectMeta.Labels[common.LabelCronWorkflowParent] = cronWf.Name
-
-	return &v1alpha1.Workflow{
-		TypeMeta:   newTypeMeta,
-		ObjectMeta: newObjectMeta,
-		Spec:       cronWf.Spec,
-	}, nil
 }

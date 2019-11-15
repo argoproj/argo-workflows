@@ -3,7 +3,9 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/robfig/cron"
 	"io"
+	"k8s.io/api/batch/v2alpha1"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -172,6 +174,48 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
+		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
+		}
+	}
+	return nil
+}
+
+// ValidateCronWorkflow validates a CronWorkflow
+func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, cronWf *wfv1.CronWorkflow) error {
+	if cronWf.Namespace != "" {
+		namespace = cronWf.Namespace
+	}
+
+	if _, err := cron.ParseStandard(cronWf.Options.Schedule); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+	}
+
+	if cronWf.Options.RuntimeGenerateName == "" {
+		return errors.Errorf(errors.CodeBadRequest, "runtimeGenerateName is empty")
+	}
+
+	switch cronWf.Options.ConcurrencyPolicy {
+	case v2alpha1.AllowConcurrent, v2alpha1.ForbidConcurrent, v2alpha1.ReplaceConcurrent, "":
+		// Do nothing
+	default:
+		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Options.ConcurrencyPolicy)
+	}
+
+	if cronWf.Options.StartingDeadlineSeconds != nil && *cronWf.Options.StartingDeadlineSeconds < 0 {
+		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
+	}
+
+	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
+	wf, err := common.CastToWorkflow(cronWf)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
+	}
+	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
+
+	// Check if all templates can be resolved.
+	for _, template := range cronWf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())

@@ -10,7 +10,7 @@ import (
 func NewCronWorkflowCommand() *cobra.Command {
 	var command = &cobra.Command{
 		Use:   "cron",
-		Short: "manage CronWorkflows",
+		Short: "manage cron workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},
@@ -18,8 +18,8 @@ func NewCronWorkflowCommand() *cobra.Command {
 
 	command.AddCommand(NewGetCommand())
 	command.AddCommand(NewListCommand())
-	//command.AddCommand(NewCreateCommand())
-	//command.AddCommand(NewDeleteCommand())
+	command.AddCommand(NewCreateCommand())
+	command.AddCommand(NewDeleteCommand())
 	//command.AddCommand(NewLintCommand())
 
 	addKubectlFlagsToCmd(command)

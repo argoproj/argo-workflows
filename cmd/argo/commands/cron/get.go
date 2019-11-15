@@ -20,7 +20,7 @@ func NewGetCommand() *cobra.Command {
 
 	var command = &cobra.Command{
 		Use:   "get CRON_WORKFLOW",
-		Short: "display details about a CronWorkflow",
+		Short: "display details about a cron workflow",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
@@ -63,7 +63,6 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
-	fmt.Printf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	fmt.Printf(fmtStr, "Schedule:", wf.Options.Schedule)
 	fmt.Printf(fmtStr, "Suspended:", wf.Options.Suspend)
 	fmt.Printf(fmtStr, "RuntimeGenerateName:", wf.Options.RuntimeGenerateName)

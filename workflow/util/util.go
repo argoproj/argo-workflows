@@ -60,7 +60,7 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
-		Resource: "workflows",
+		Resource: workflow.WorkflowPlural,
 	}
 	informer := unstructutil.NewFilteredUnstructuredInformer(
 		resource,
