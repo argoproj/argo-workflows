@@ -75,7 +75,10 @@ spec:
 	assert.Equal(t, false, wf.Status.FinishedAt.IsZero())
 
 	deleteOptions := metav1.DeleteOptions{}
-	wfClient.Delete(workflowName, &deleteOptions)
+	err = wfClient.Delete(workflowName, &deleteOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestWaitCmd(t *testing.T) {
