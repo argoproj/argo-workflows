@@ -1861,25 +1861,42 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	woc.log.Infof("node %s suspended", nodeName)
 
-	deadline := woc.getWorkflowDeadline()
+	// If there is either an active workflow deadline, or if this node is suspended with a duration, then the workflow
+	// will need to be requeued after a certain amount of time
+	var requeueTime *time.Time
 
-	if tmpl.Suspend.Duration != nil && *tmpl.Suspend.Duration > 0 {
+	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
-		suspendDuration := time.Duration(*tmpl.Suspend.Duration) * time.Second
-		suspendDeadline := node.StartedAt.Add(suspendDuration)
-		if deadline == nil || deadline.After(suspendDeadline) {
-			deadline = &suspendDeadline
+		var suspendDuration time.Duration
+		// If no units are attached, treat as seconds
+		if val, err := strconv.Atoi(tmpl.Suspend.Duration); err == nil {
+			suspendDuration = time.Duration(val) * time.Second
+		} else if duration, err := time.ParseDuration(tmpl.Suspend.Duration); err == nil {
+			suspendDuration = duration
+		} else {
+			return fmt.Errorf("unable to parse %s as a duration", tmpl.Suspend.Duration)
 		}
+		suspendDeadline := node.StartedAt.Add(suspendDuration)
+		requeueTime = &suspendDeadline
 		if time.Now().UTC().After(suspendDeadline) {
-			// Node is expired
+			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
 		}
 	}
 
-	if deadline != nil {
-		woc.requeue(time.Until(*deadline))
+	// workflowDeadline is the time when the workflow will be timed out, if any
+	if workflowDeadline := woc.getWorkflowDeadline(); workflowDeadline != nil {
+		// There is an active workflow deadline. If this node is suspended with a duration, choose the earlier time
+		// between the two, otherwise choose the deadline time.
+		if requeueTime == nil || workflowDeadline.Before(*requeueTime) {
+			requeueTime = workflowDeadline
+		}
+	}
+
+	if requeueTime != nil {
+		woc.requeue(time.Until(*requeueTime))
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)

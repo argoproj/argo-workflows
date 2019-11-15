@@ -1048,8 +1048,7 @@
       "properties": {
         "duration": {
           "description": "Duration is the seconds to wait before automatically resuming a template",
-          "type": "integer",
-          "format": "int32"
+          "type": "string"
         }
       }
     },
