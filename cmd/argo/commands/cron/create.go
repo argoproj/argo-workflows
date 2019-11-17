@@ -64,7 +64,7 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 	for _, cronWf := range cronWorkflows {
 		err := validate.ValidateCronWorkflow(wfClientset, namespace, &cronWf)
 		if err != nil {
-			log.Fatalf("Failed to create cron workflow: %v", err)
+			log.Fatalf("Failed to validate cron workflow: %v", err)
 		}
 		cronWfClient := defaultCronWfClient
 		if cronWf.Namespace != "" {

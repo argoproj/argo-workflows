@@ -167,8 +167,11 @@ message CronWorkflowOptions {
 }
 
 message CronWorkflowStatus {
+  // Active is a list of active workflows stemming from this CronWorkflow
+  repeated k8s.io.api.core.v1.ObjectReference active = 1;
+
   // LastScheduleTime is the last time the CronWorkflow was scheduled
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 1;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
 }
 
 // DAGTask represents a node in the graph during DAG execution

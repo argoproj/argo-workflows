@@ -36,6 +36,8 @@ type Controller struct {
 
 const (
 	cronWorkflowResyncPeriod = 20 * time.Minute
+	cronWorkflowWorkers = 2
+	cronWorkflowWorkflowWorkers = 2
 )
 
 func NewCronController(
@@ -56,6 +58,7 @@ func NewCronController(
 
 func (cc *Controller) Run(ctx context.Context) {
 	defer cc.cronWfQueue.ShutDown()
+	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 
 	cc.cronWfInformer = cc.newCronWorkflowInformer()
@@ -70,8 +73,12 @@ func (cc *Controller) Run(ctx context.Context) {
 	go cc.cronWfInformer.Informer().Run(ctx.Done())
 	go cc.wfInformer.Run(ctx.Done())
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < cronWorkflowWorkers; i++ {
 		go wait.Until(cc.runCronWorker, time.Second, ctx.Done())
+	}
+
+	for i := 0; i < cronWorkflowWorkflowWorkers; i++ {
+		go wait.Until(cc.runWorkflowWorker, time.Second, ctx.Done())
 	}
 
 	<-ctx.Done()
@@ -143,6 +150,80 @@ func (cc *Controller) processNextCronItem() bool {
 	return false
 }
 
+func (cc *Controller) runWorkflowWorker() {
+	//for cc.processNextWorkflowItem() {
+	//}
+}
+
+func (cc *Controller) processNextWorkflowItem() bool {
+	//key, quit := cc.wfQueue.Get()
+	//if quit {
+	//	return false
+	//}
+	//defer cc.wfQueue.Done(key)
+	//
+	//rawWf, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
+	//if err != nil {
+	//	log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+	//	return true
+	//}
+	//
+	//wf, ok := rawWf.(*v1alpha1.Workflow)
+	//if !ok {
+	//	log.Warnf("Key '%s' in index is not a Workflow", key)
+	//	return true
+	//}
+	//
+	//parentCronWfName := wf.Labels[common.LabelCronWorkflow]
+	//var woc *cronWfOperationCtx
+	//if entryId, ok := cc.nameEntryIDMap[parentCronWfName]; ok {
+	//	woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
+	//	if !ok {
+	//		log.Errorf("Parent CronWorkflow '%s' is malformed", parentCronWfName)
+	//		return true
+	//	}
+	//} else {
+	//	log.Errorf("Parent CronWorkflow '%s' no longer exists", parentCronWfName)
+	//	return true
+	//}
+	//
+	//if wf.Status.Completed() || !wfExists {
+	//	for i, objectRef := range woc.cronWf.Status.Active {
+	//		if objectRef.UID == wf.ObjectMeta.UID {
+	//			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i + 1:]...)
+	//			err = woc.persistUpdate()
+	//			if err != nil {
+	//				log.Errorf("Unable to update CronWorkflow '%s': %s", parentCronWfName, wf.Name, err)
+	//				return true
+	//			}
+	//			return true
+	//		}
+	//	}
+	//} else {
+	//	for _, objectRef := range woc.cronWf.Status.Active {
+	//		if objectRef.UID == wf.ObjectMeta.UID {
+	//			// Workflow is already reflected on Active
+	//			return true
+	//		}
+	//	}
+	//	// ObjectReference does not exist, add it
+	//	newObjectRef, err := reference.GetReference(runtime.NewScheme(), wf)
+	//	if err != nil {
+	//		log.Errorf("Parent CronWorkflow '%s' cannot create ObjectReference for '%s': %s", parentCronWfName, wf.Name, err)
+	//		return true
+	//	}
+	//	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, *newObjectRef)
+	//	err = woc.persistUpdate()
+	//	if err != nil {
+	//		log.Errorf("Unable to update CronWorkflow '%s': %s", parentCronWfName, wf.Name, err)
+	//		return true
+	//	}
+	//	return true
+	//}
+
+	return false
+}
+
 func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
 	informerFactory := externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
 	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
@@ -175,10 +256,22 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	cc.wfInformer.AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					cc.wfQueue.Add(key)
+				}
 			},
 			UpdateFunc: func(old, new interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(new)
+				if err == nil {
+					cc.wfQueue.Add(key)
+				}
 			},
 			DeleteFunc: func(obj interface{}) {
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err == nil {
+					cc.wfQueue.Add(key)
+				}
 			},
 		},
 	)
@@ -186,7 +279,7 @@ func (cc *Controller) addWorkflowInformerHandler() {
 
 func wfInformerListOptionsFunc(options *v1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflowParent, selection.Exists, []string{})
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Equals, []string{"true"})
 	if err != nil {
 		panic(err)
 	}

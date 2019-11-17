@@ -10,9 +10,8 @@ import (
 	"github.com/prometheus/common/log"
 	"github.com/robfig/cron"
 	"k8s.io/api/batch/v2alpha1"
+	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"time"
 )
 
@@ -53,11 +52,13 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	_, err = util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Options.RuntimeNamespace, wf, &util.SubmitOpts{})
+	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Options.RuntimeNamespace, wf, &util.SubmitOpts{})
 	if err != nil {
 		log.Errorf("Failed to run CronWorkflow: %v", err)
+		return
 	}
 
+	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, *getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().UTC()}
 	err = woc.persistUpdate()
 	if err != nil {
@@ -65,6 +66,19 @@ func (woc *cronWfOperationCtx) Run() {
 	}
 
 	log.Infof("Created %s", woc.cronWf.ObjectMeta.Name)
+}
+
+func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) *v12.ObjectReference {
+	// This is a bit of a hack. Ideally we'd use ref.GetReference, but for some reason the `runWf` object is coming back
+	// without `Kind` and `APIVersion` set (even though it it set on `wf`). To fix this, we hard code those values.
+	return &v12.ObjectReference{
+		Kind:            wf.Kind,
+		APIVersion:      wf.APIVersion,
+		Name:            runWf.GetName(),
+		Namespace:       runWf.GetNamespace(),
+		UID:             runWf.GetUID(),
+		ResourceVersion: runWf.GetResourceVersion(),
+	}
 }
 
 func (woc *cronWfOperationCtx) persistUpdate() error {
@@ -86,24 +100,16 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
 		case v2alpha1.AllowConcurrent, "":
 			// Do nothing
 		case v2alpha1.ForbidConcurrent:
-			runningWorkflows, err := woc.getRunningWorkflows()
-			if err != nil {
-				return false, fmt.Errorf("error in running CronWorkflow %s: %w", woc.name, err)
-			}
-			if len(runningWorkflows) > 0 {
+			if len(woc.cronWf.Status.Active) > 0 {
 				log.Infof("%s has 'ConcurrencyPolicy: Forbid' and has an active Workflow so it was not run", woc.name)
 				return false, nil
 			}
 		case v2alpha1.ReplaceConcurrent:
-			runningWorkflows, err := woc.getRunningWorkflows()
-			if err != nil {
-				return false, fmt.Errorf("error in running CronWorkflow %s: %w", woc.name, err)
-			}
-			for _, wf := range runningWorkflows {
-				log.Infof("%s has 'ConcurrencyPolicy: Replace' and has active Workflows. Stopping %s...", woc.name, wf.Name)
-				err := util.TerminateWorkflow(woc.wfClient, wf.Name)
+			if len(woc.cronWf.Status.Active) > 0 {
+				log.Infof("%s has 'ConcurrencyPolicy: Replace' and has active Workflows", woc.name)
+				err := woc.terminateOutstandingWorkflows()
 				if err != nil {
-					return false, fmt.Errorf("error stopping workflow %s: %w", wf.Name, err)
+					return false, err
 				}
 			}
 		default:
@@ -111,6 +117,17 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func (woc *cronWfOperationCtx) terminateOutstandingWorkflows() error {
+	for _, wfObjectRef := range woc.cronWf.Status.Active {
+		log.Infof("stopping '%s'", wfObjectRef.Name)
+		err := util.TerminateWorkflow(woc.wfClient, wfObjectRef.Name)
+		if err != nil {
+			return fmt.Errorf("error stopping workflow %s: %e", wfObjectRef.Name, err)
+		}
+	}
+	return nil
 }
 
 func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
@@ -141,25 +158,4 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 		}
 	}
 	return nil
-}
-
-func (woc *cronWfOperationCtx) getRunningWorkflows() ([]v1alpha1.Workflow, error) {
-	labelSelector := labels.NewSelector()
-	req, err := labels.NewRequirement(common.LabelCronWorkflowParent, selection.Equals, []string{woc.cronWf.Name})
-	if err != nil {
-		return nil, err
-	}
-	labelSelector = labelSelector.Add(*req)
-	req, err = labels.NewRequirement(common.LabelKeyPhase, selection.Equals, []string{string(v1alpha1.NodeRunning)})
-	if err != nil {
-		return nil, err
-	}
-	labelSelector = labelSelector.Add(*req)
-	wfList, err := woc.wfClientset.ArgoprojV1alpha1().Workflows(woc.cronWf.Options.RuntimeNamespace).List(v1.ListOptions{
-		LabelSelector: labelSelector.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return wfList.Items, nil
 }

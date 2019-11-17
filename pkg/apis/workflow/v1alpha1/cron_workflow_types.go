@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"k8s.io/api/batch/v2alpha1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,8 +27,10 @@ type CronWorkflowList struct {
 }
 
 type CronWorkflowStatus struct {
+	// Active is a list of active workflows stemming from this CronWorkflow
+	Active []v1.ObjectReference `json:"active,omitempty" protobuf:"bytes,1,rep,name=active"`
 	// LastScheduleTime is the last time the CronWorkflow was scheduled
-	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,1,opt,name=lastScheduledTime"`
+	LastScheduledTime *metav1.Time `json:"lastScheduledTime,omitempty" protobuf:"bytes,2,opt,name=lastScheduledTime"`
 }
 
 // CronWorkflowOptions is the schedule of when to run CronWorkflows

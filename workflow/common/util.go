@@ -662,11 +662,13 @@ func CastToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 	}
 
 	newObjectMeta.Labels = make(map[string]string)
-	newObjectMeta.Labels[LabelCronWorkflowParent] = cronWf.Name
+	newObjectMeta.Labels[LabelCronWorkflow] = "true"
 
-	return &wfv1.Workflow{
+	wf := &wfv1.Workflow{
 		TypeMeta:   newTypeMeta,
 		ObjectMeta: newObjectMeta,
 		Spec:       cronWf.Spec,
-	}, nil
+	}
+	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
+	return wf, nil
 }
