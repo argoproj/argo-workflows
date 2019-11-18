@@ -655,11 +655,7 @@ func CastToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 	}
 
 	newObjectMeta := metav1.ObjectMeta{}
-	if cronWf.Options.RuntimeGenerateName != "" {
-		newObjectMeta.GenerateName = cronWf.Options.RuntimeGenerateName
-	} else {
-		return nil, fmt.Errorf("CronWorkflow should have runtimeGenerateName defined")
-	}
+	newObjectMeta.GenerateName = cronWf.Name + "-"
 
 	newObjectMeta.Labels = make(map[string]string)
 	newObjectMeta.Labels[LabelCronWorkflow] = "true"

@@ -36,15 +36,13 @@ type CronWorkflowStatus struct {
 type CronWorkflowOptions struct {
 	// Schedule is a schedule to run the Workflow in Cron format
 	Schedule string `json:"schedule" protobuf:"bytes,1,opt,name=schedule"`
-	// RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
-	RuntimeGenerateName string `json:"runtimeGenerateName" protobuf:"bytes,2,opt,name=runtimeGenerateName"`
 	// ConcurrencyPolicy is the K8s-style concurrency policy that will be used
-	ConcurrencyPolicy ConcurrencyPolicy `json:"concurrencyPolicy,omitempty" protobuf:"bytes,3,opt,name=concurrencyPolicy,casttype=ConcurrencyPolicy"`
+	ConcurrencyPolicy ConcurrencyPolicy `json:"concurrencyPolicy,omitempty" protobuf:"bytes,2,opt,name=concurrencyPolicy,casttype=ConcurrencyPolicy"`
 	// Suspend is a flag that will stop new CronWorkflows from running if set to true
-	Suspend bool `json:"suspend,omitempty" protobuf:"varint,4,opt,name=suspend"`
+	Suspend bool `json:"suspend,omitempty" protobuf:"varint,3,opt,name=suspend"`
 	// StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
 	// original scheduled time if it is missed.
-	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,5,opt,name=startingDeadlineSeconds"`
+	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,4,opt,name=startingDeadlineSeconds"`
 }
 
 type ConcurrencyPolicy string

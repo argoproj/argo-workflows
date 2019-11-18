@@ -532,13 +532,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 							Format:      "",
 						},
 					},
-					"runtimeGenerateName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"concurrencyPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
@@ -561,7 +554,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 						},
 					},
 				},
-				Required: []string{"schedule", "runtimeGenerateName"},
+				Required: []string{"schedule"},
 			},
 		},
 	}

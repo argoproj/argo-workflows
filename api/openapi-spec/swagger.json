@@ -262,16 +262,11 @@
       "description": "CronWorkflowOptions is the schedule of when to run CronWorkflows",
       "type": "object",
       "required": [
-        "schedule",
-        "runtimeGenerateName"
+        "schedule"
       ],
       "properties": {
         "concurrencyPolicy": {
           "description": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
-          "type": "string"
-        },
-        "runtimeGenerateName": {
-          "description": "RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
           "type": "string"
         },
         "schedule": {

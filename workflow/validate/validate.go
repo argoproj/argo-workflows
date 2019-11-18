@@ -191,10 +191,6 @@ func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, c
 		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
 	}
 
-	if cronWf.Options.RuntimeGenerateName == "" {
-		return errors.Errorf(errors.CodeBadRequest, "runtimeGenerateName is empty")
-	}
-
 	switch cronWf.Options.ConcurrencyPolicy {
 	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing

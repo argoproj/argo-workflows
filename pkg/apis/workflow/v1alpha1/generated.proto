@@ -149,18 +149,15 @@ message CronWorkflowOptions {
   // Schedule is a schedule to run the Workflow in Cron format
   optional string schedule = 1;
 
-  // RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName
-  optional string runtimeGenerateName = 2;
-
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
-  optional string concurrencyPolicy = 3;
+  optional string concurrencyPolicy = 2;
 
   // Suspend is a flag that will stop new CronWorkflows from running if set to true
-  optional bool suspend = 4;
+  optional bool suspend = 3;
 
   // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
   // original scheduled time if it is missed.
-  optional int64 startingDeadlineSeconds = 5;
+  optional int64 startingDeadlineSeconds = 4;
 }
 
 message CronWorkflowStatus {
