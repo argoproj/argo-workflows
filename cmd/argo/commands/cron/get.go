@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/pkg/humanize"
@@ -70,5 +71,15 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	}
 	if wf.Options.ConcurrencyPolicy != "" {
 		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Options.ConcurrencyPolicy)
+	}
+	if wf.Status.LastScheduledTime != nil{
+		fmt.Printf(fmtStr, "LastScheduledTime:",  humanize.Timestamp(wf.Status.LastScheduledTime.Time))
+	}
+	if len(wf.Status.Active) > 0 {
+		var activeWfNames []string
+		for _, activeWf := range wf.Status.Active {
+			activeWfNames = append(activeWfNames, activeWf.Name)
+		}
+		fmt.Printf(fmtStr, "Active Workflows:", strings.Join(activeWfNames, ", "))
 	}
 }

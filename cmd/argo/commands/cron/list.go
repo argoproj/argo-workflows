@@ -72,7 +72,13 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 		if listArgs.allNamespaces {
 			fmt.Fprintf(w, "%s\t", wf.ObjectMeta.Namespace)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), humanize.RelativeDurationShort(wf.Status.LastScheduledTime.Time, time.Now()), wf.Options.Schedule, wf.Options.Suspend)
+		var cleanLastScheduledTime string
+		if wf.Status.LastScheduledTime != nil {
+			cleanLastScheduledTime = humanize.RelativeDurationShort(wf.Status.LastScheduledTime.Time, time.Now())
+		} else {
+			cleanLastScheduledTime = "N/A"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, wf.Options.Schedule, wf.Options.Suspend)
 		fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()
