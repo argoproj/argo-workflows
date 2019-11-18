@@ -596,7 +596,7 @@ message Sequence {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
-  optional int32 duration = 1;
+  optional string duration = 1;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving
