@@ -721,10 +721,21 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 }
 
+type RetryPolicy string
+
+const (
+	RetryPolicyAlways    RetryPolicy = "Always"
+	RetryPolicyOnFailure RetryPolicy = "OnFailure"
+	RetryPolicyOnError   RetryPolicy = "OnError"
+)
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+
+	// RetryOn is a list of NodePhase statuses that will be retried
+	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
