@@ -532,13 +532,6 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 							Format:      "",
 						},
 					},
-					"runtimeNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RuntimeNamespace is the namespace where the CronWorkflow will run",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"runtimeGenerateName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "RuntimeGenerateName is the name generator the Workflow will be run with. Mutually exclusive with RuntimeName",
@@ -568,7 +561,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowOptions(ref common.ReferenceC
 						},
 					},
 				},
-				Required: []string{"schedule", "runtimeNamespace", "runtimeGenerateName"},
+				Required: []string{"schedule", "runtimeGenerateName"},
 			},
 		},
 	}

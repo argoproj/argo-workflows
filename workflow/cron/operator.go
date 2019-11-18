@@ -9,7 +9,6 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/prometheus/common/log"
 	"github.com/robfig/cron"
-	"k8s.io/api/batch/v2alpha1"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
@@ -25,12 +24,11 @@ type cronWfOperationCtx struct {
 }
 
 func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset versioned.Interface, cronWfIf typed.CronWorkflowInterface) (*cronWfOperationCtx, error) {
-	runtimeNamespace := cronWorkflow.Options.RuntimeNamespace
 	return &cronWfOperationCtx{
 		name:        cronWorkflow.ObjectMeta.Name,
 		cronWf:      cronWorkflow,
 		wfClientset: wfClientset,
-		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(runtimeNamespace),
+		wfClient:    wfClientset.ArgoprojV1alpha1().Workflows(cronWorkflow.Namespace),
 		cronWfIf:    cronWfIf,
 	}, nil
 }
@@ -52,13 +50,13 @@ func (woc *cronWfOperationCtx) Run() {
 		return
 	}
 
-	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Options.RuntimeNamespace, wf, &util.SubmitOpts{})
+	runWf, err := util.SubmitWorkflow(woc.wfClient, woc.wfClientset, woc.cronWf.Namespace, wf, &util.SubmitOpts{})
 	if err != nil {
 		log.Errorf("Failed to run CronWorkflow: %v", err)
 		return
 	}
 
-	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, *getWorkflowObjectReference(wf, runWf))
+	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, getWorkflowObjectReference(wf, runWf))
 	woc.cronWf.Status.LastScheduledTime = &v1.Time{Time: time.Now().UTC()}
 	err = woc.persistUpdate()
 	if err != nil {
@@ -68,10 +66,10 @@ func (woc *cronWfOperationCtx) Run() {
 	log.Infof("Created %s", woc.cronWf.ObjectMeta.Name)
 }
 
-func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) *v12.ObjectReference {
+func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) v12.ObjectReference {
 	// This is a bit of a hack. Ideally we'd use ref.GetReference, but for some reason the `runWf` object is coming back
 	// without `Kind` and `APIVersion` set (even though it it set on `wf`). To fix this, we hard code those values.
-	return &v12.ObjectReference{
+	return v12.ObjectReference{
 		Kind:            wf.Kind,
 		APIVersion:      wf.APIVersion,
 		Name:            runWf.GetName(),
@@ -97,14 +95,14 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
 
 	if woc.cronWf.Options.ConcurrencyPolicy != "" {
 		switch woc.cronWf.Options.ConcurrencyPolicy {
-		case v2alpha1.AllowConcurrent, "":
+		case v1alpha1.AllowConcurrent, "":
 			// Do nothing
-		case v2alpha1.ForbidConcurrent:
+		case v1alpha1.ForbidConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
 				log.Infof("%s has 'ConcurrencyPolicy: Forbid' and has an active Workflow so it was not run", woc.name)
 				return false, nil
 			}
-		case v2alpha1.ReplaceConcurrent:
+		case v1alpha1.ReplaceConcurrent:
 			if len(woc.cronWf.Status.Active) > 0 {
 				log.Infof("%s has 'ConcurrencyPolicy: Replace' and has active Workflows", woc.name)
 				err := woc.terminateOutstandingWorkflows()

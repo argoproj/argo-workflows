@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/robfig/cron"
 	"io"
-	"k8s.io/api/batch/v2alpha1"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -197,7 +196,7 @@ func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, c
 	}
 
 	switch cronWf.Options.ConcurrencyPolicy {
-	case v2alpha1.AllowConcurrent, v2alpha1.ForbidConcurrent, v2alpha1.ReplaceConcurrent, "":
+	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing
 	default:
 		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Options.ConcurrencyPolicy)

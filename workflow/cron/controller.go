@@ -119,17 +119,17 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cc.namespace)
+	cronWfIf := cc.wfClientset.ArgoprojV1alpha1().CronWorkflows(cronWf.Namespace)
 	cronWorkflowOperationCtx, err := newCronWfOperationCtx(cronWf, cc.wfClientset, cronWfIf)
 	if err != nil {
 		log.Error(err)
-		return false
+		return true
 	}
 
 	err = cronWorkflowOperationCtx.runOutstandingWorkflows()
 	if err != nil {
 		log.Errorf("could not run outstanding Workflow: %s", err)
-		return false
+		return true
 	}
 
 	// The job is currently scheduled, remove it and re add it.
@@ -141,87 +141,73 @@ func (cc *Controller) processNextCronItem() bool {
 	entryId, err := cc.cron.AddJob(cronWf.Options.Schedule, cronWorkflowOperationCtx)
 	if err != nil {
 		log.Errorf("could not schedule CronWorkflow: %s", err)
-		return false
+		return true
 	}
 	cc.nameEntryIDMap[key.(string)] = entryId
 
 	log.Infof("CronWorkflow %s added", key.(string))
 
-	return false
+	return true
 }
 
 func (cc *Controller) runWorkflowWorker() {
-	//for cc.processNextWorkflowItem() {
-	//}
+	for cc.processNextWorkflowItem() {
+	}
 }
 
 func (cc *Controller) processNextWorkflowItem() bool {
-	//key, quit := cc.wfQueue.Get()
-	//if quit {
-	//	return false
-	//}
-	//defer cc.wfQueue.Done(key)
-	//
-	//rawWf, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
-	//if err != nil {
-	//	log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
-	//	return true
-	//}
-	//
-	//wf, ok := rawWf.(*v1alpha1.Workflow)
-	//if !ok {
-	//	log.Warnf("Key '%s' in index is not a Workflow", key)
-	//	return true
-	//}
-	//
-	//parentCronWfName := wf.Labels[common.LabelCronWorkflow]
-	//var woc *cronWfOperationCtx
-	//if entryId, ok := cc.nameEntryIDMap[parentCronWfName]; ok {
-	//	woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
-	//	if !ok {
-	//		log.Errorf("Parent CronWorkflow '%s' is malformed", parentCronWfName)
-	//		return true
-	//	}
-	//} else {
-	//	log.Errorf("Parent CronWorkflow '%s' no longer exists", parentCronWfName)
-	//	return true
-	//}
-	//
-	//if wf.Status.Completed() || !wfExists {
-	//	for i, objectRef := range woc.cronWf.Status.Active {
-	//		if objectRef.UID == wf.ObjectMeta.UID {
-	//			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i + 1:]...)
-	//			err = woc.persistUpdate()
-	//			if err != nil {
-	//				log.Errorf("Unable to update CronWorkflow '%s': %s", parentCronWfName, wf.Name, err)
-	//				return true
-	//			}
-	//			return true
-	//		}
-	//	}
-	//} else {
-	//	for _, objectRef := range woc.cronWf.Status.Active {
-	//		if objectRef.UID == wf.ObjectMeta.UID {
-	//			// Workflow is already reflected on Active
-	//			return true
-	//		}
-	//	}
-	//	// ObjectReference does not exist, add it
-	//	newObjectRef, err := reference.GetReference(runtime.NewScheme(), wf)
-	//	if err != nil {
-	//		log.Errorf("Parent CronWorkflow '%s' cannot create ObjectReference for '%s': %s", parentCronWfName, wf.Name, err)
-	//		return true
-	//	}
-	//	woc.cronWf.Status.Active = append(woc.cronWf.Status.Active, *newObjectRef)
-	//	err = woc.persistUpdate()
-	//	if err != nil {
-	//		log.Errorf("Unable to update CronWorkflow '%s': %s", parentCronWfName, wf.Name, err)
-	//		return true
-	//	}
-	//	return true
-	//}
+	key, quit := cc.wfQueue.Get()
+	if quit {
+		return false
+	}
+	defer cc.wfQueue.Done(key)
 
-	return false
+	rawWf, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
+	if err != nil {
+		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
+		return true
+	}
+
+	wf, ok := rawWf.(*v1alpha1.Workflow)
+	if !ok {
+		log.Warnf("Key '%s' in index is not a Workflow", key)
+		return true
+	}
+
+	if wf.OwnerReferences == nil || len(wf.OwnerReferences) != 1 {
+		log.Warnf("Workflow '%s' stemming from CronWorkflow is malformed", wf.Name)
+		return true
+	}
+
+	// Workflows are run in the same namespace as CronWorkflow
+	nameEntryIdMapKey := wf.Namespace + "/" + wf.OwnerReferences[0].Name
+	var woc *cronWfOperationCtx
+	if entryId, ok := cc.nameEntryIDMap[nameEntryIdMapKey]; ok {
+		woc, ok = cc.cron.Entry(entryId).Job.(*cronWfOperationCtx)
+		if !ok {
+			log.Errorf("Parent CronWorkflow '%s' is malformed", nameEntryIdMapKey)
+			return true
+		}
+	} else {
+		log.Errorf("Parent CronWorkflow '%s' no longer exists", nameEntryIdMapKey)
+		return true
+	}
+
+	// If the workflow is completed or was deleted, remove it from Active Workflows
+	if wf.Status.Completed() || !wfExists {
+		for i, objectRef := range woc.cronWf.Status.Active {
+			if objectRef.UID == wf.ObjectMeta.UID {
+				woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i + 1:]...)
+				err = woc.persistUpdate()
+				if err != nil {
+					log.Errorf("Unable to update CronWorkflow '%s': %s", nameEntryIdMapKey, wf.Name, err)
+					return true
+				}
+				return true
+			}
+		}
+	}
+	return true
 }
 
 func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
