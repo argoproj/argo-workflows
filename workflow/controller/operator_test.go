@@ -182,6 +182,142 @@ func TestProcessNodesWithRetries(t *testing.T) {
 	assert.Equal(t, n.Phase, wfv1.NodeFailed)
 }
 
+// TestProcessNodesWithRetries tests retrying when RetryOn.Error is enabled
+func TestProcessNodesWithRetriesOnErrors(t *testing.T) {
+	controller := newController()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
+	retries := wfv1.RetryStrategy{}
+	var retryLimit int32
+	retryLimit = 2
+	retries.Limit = &retryLimit
+	retries.RetryPolicy = wfv1.RetryPolicyAlways
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild, err := woc.getLastChildNode(node)
+	assert.Nil(t, err)
+	assert.Nil(t, lastChild)
+
+	// Add child nodes.
+	for i := 0; i < 2; i++ {
+		childNode := fmt.Sprintf("child-node-%d", i)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.addChildNode(nodeName, childNode)
+	}
+
+	n := woc.getNodeByName(nodeName)
+	lastChild, err = woc.getLastChildNode(n)
+	assert.Nil(t, err)
+	assert.NotNil(t, lastChild)
+
+	// Last child is still running. processNodesWithRetries() should return false since
+	// there should be no retries at this point.
+	n, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Mark lastChild as successful.
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	// The parent node also gets marked as Succeeded.
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+
+	// Mark the parent node as running again and the lastChild as errored.
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	woc.processNodeRetries(n, retries)
+	n = woc.getNodeByName(nodeName)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Add a third node that has errored.
+	childNode := "child-node-3"
+	woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeError)
+	woc.addChildNode(nodeName, childNode)
+	n = woc.getNodeByName(nodeName)
+	n, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeError)
+}
+
+// TestProcessNodesWithRetries tests retrying when RetryOn.Error is disabled
+func TestProcessNodesNoRetryWithError(t *testing.T) {
+	controller := newController()
+	assert.NotNil(t, controller)
+	wf := unmarshalWF(helloWorldWf)
+	assert.NotNil(t, wf)
+	woc := newWorkflowOperationCtx(wf, controller)
+	assert.NotNil(t, woc)
+
+	// Verify that there are no nodes in the wf status.
+	assert.Zero(t, len(woc.wf.Status.Nodes))
+
+	// Add the parent node for retries.
+	nodeName := "test-node"
+	nodeID := woc.wf.NodeID(nodeName)
+	node := woc.initializeNode(nodeName, wfv1.NodeTypeRetry, &wfv1.Template{}, "", wfv1.NodeRunning)
+	retries := wfv1.RetryStrategy{}
+	var retryLimit int32
+	retryLimit = 2
+	retries.Limit = &retryLimit
+	retries.RetryPolicy = wfv1.RetryPolicyOnFailure
+	woc.wf.Status.Nodes[nodeID] = *node
+
+	assert.Equal(t, node.Phase, wfv1.NodeRunning)
+
+	// Ensure there are no child nodes yet.
+	lastChild, err := woc.getLastChildNode(node)
+	assert.Nil(t, err)
+	assert.Nil(t, lastChild)
+
+	// Add child nodes.
+	for i := 0; i < 2; i++ {
+		childNode := fmt.Sprintf("child-node-%d", i)
+		woc.initializeNode(childNode, wfv1.NodeTypePod, &wfv1.Template{}, "", wfv1.NodeRunning)
+		woc.addChildNode(nodeName, childNode)
+	}
+
+	n := woc.getNodeByName(nodeName)
+	lastChild, err = woc.getLastChildNode(n)
+	assert.Nil(t, err)
+	assert.NotNil(t, lastChild)
+
+	// Last child is still running. processNodesWithRetries() should return false since
+	// there should be no retries at this point.
+	n, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	assert.Equal(t, n.Phase, wfv1.NodeRunning)
+
+	// Mark lastChild as successful.
+	woc.markNodePhase(lastChild.Name, wfv1.NodeSucceeded)
+	n, err = woc.processNodeRetries(n, retries)
+	assert.Nil(t, err)
+	// The parent node also gets marked as Succeeded.
+	assert.Equal(t, n.Phase, wfv1.NodeSucceeded)
+
+	// Mark the parent node as running again and the lastChild as errored.
+	// Parent node should also be errored because retry on error is disabled
+	n = woc.markNodePhase(n.Name, wfv1.NodeRunning)
+	woc.markNodePhase(lastChild.Name, wfv1.NodeError)
+	woc.processNodeRetries(n, retries)
+	n = woc.getNodeByName(nodeName)
+	assert.Equal(t, wfv1.NodeError, n.Phase)
+}
+
 var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
