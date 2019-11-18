@@ -11,6 +11,7 @@ import (
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -162,15 +163,23 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	}
 	defer cc.wfQueue.Done(key)
 
-	rawWf, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
+	obj, wfExists, err := cc.wfInformer.GetIndexer().GetByKey(key.(string))
 	if err != nil {
 		log.Errorf("Failed to get Workflow '%s' from informer index: %+v", key, err)
 		return true
 	}
 
-	wf, ok := rawWf.(*v1alpha1.Workflow)
+	// The workflow informer receives unstructured objects to deal with the possibility of invalid
+	// workflow manifests that are unable to unmarshal to workflow objects
+	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		log.Warnf("Key '%s' in index is not a Workflow", key)
+		log.Warnf("Key '%s' in index is not an unstructured", key)
+		return true
+	}
+
+	wf, err := util.FromUnstructured(un)
+	if err != nil {
+		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		return true
 	}
 
@@ -195,17 +204,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	// If the workflow is completed or was deleted, remove it from Active Workflows
 	if wf.Status.Completed() || !wfExists {
-		for i, objectRef := range woc.cronWf.Status.Active {
-			if objectRef.UID == wf.ObjectMeta.UID {
-				woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i+1:]...)
-				err = woc.persistUpdate()
-				if err != nil {
-					log.Errorf("Unable to update CronWorkflow '%s': %s", nameEntryIdMapKey, err)
-					return true
-				}
-				return true
-			}
-		}
+		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
+		woc.removeActiveWf(wf)
 	}
 	return true
 }

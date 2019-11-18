@@ -157,3 +157,18 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 	}
 	return nil
 }
+
+func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
+	if wf == nil || wf.ObjectMeta.UID == "" {
+		return
+	}
+	for i, objectRef := range woc.cronWf.Status.Active {
+		if objectRef.UID == wf.ObjectMeta.UID {
+			woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i+1:]...)
+			err := woc.persistUpdate()
+			if err != nil {
+				log.Errorf("Unable to update CronWorkflow '%s': %s", woc.cronWf.Name, err)
+			}
+		}
+	}
+}
