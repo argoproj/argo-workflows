@@ -72,8 +72,8 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	if wf.Options.ConcurrencyPolicy != "" {
 		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Options.ConcurrencyPolicy)
 	}
-	if wf.Status.LastScheduledTime != nil{
-		fmt.Printf(fmtStr, "LastScheduledTime:",  humanize.Timestamp(wf.Status.LastScheduledTime.Time))
+	if wf.Status.LastScheduledTime != nil {
+		fmt.Printf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
 	}
 	if len(wf.Status.Active) > 0 {
 		var activeWfNames []string
