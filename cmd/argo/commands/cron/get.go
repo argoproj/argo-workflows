@@ -66,7 +66,6 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	fmt.Printf(fmtStr, "Schedule:", wf.Options.Schedule)
 	fmt.Printf(fmtStr, "Suspended:", wf.Options.Suspend)
 	fmt.Printf(fmtStr, "RuntimeGenerateName:", wf.Options.RuntimeGenerateName)
-	fmt.Printf(fmtStr, "RuntimeNamespace:", wf.Options.RuntimeNamespace)
 	if wf.Options.StartingDeadlineSeconds != nil {
 		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Options.StartingDeadlineSeconds)
 	}

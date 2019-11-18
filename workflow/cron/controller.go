@@ -35,8 +35,8 @@ type Controller struct {
 }
 
 const (
-	cronWorkflowResyncPeriod = 20 * time.Minute
-	cronWorkflowWorkers = 2
+	cronWorkflowResyncPeriod    = 20 * time.Minute
+	cronWorkflowWorkers         = 2
 	cronWorkflowWorkflowWorkers = 2
 )
 
@@ -51,8 +51,8 @@ func NewCronController(
 		cron:           cron.New(),
 		restConfig:     restConfig,
 		nameEntryIDMap: make(map[string]cron.EntryID),
-		wfQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue: workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
@@ -197,10 +197,10 @@ func (cc *Controller) processNextWorkflowItem() bool {
 	if wf.Status.Completed() || !wfExists {
 		for i, objectRef := range woc.cronWf.Status.Active {
 			if objectRef.UID == wf.ObjectMeta.UID {
-				woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i + 1:]...)
+				woc.cronWf.Status.Active = append(woc.cronWf.Status.Active[:i], woc.cronWf.Status.Active[i+1:]...)
 				err = woc.persistUpdate()
 				if err != nil {
-					log.Errorf("Unable to update CronWorkflow '%s': %s", nameEntryIdMapKey, wf.Name, err)
+					log.Errorf("Unable to update CronWorkflow '%s': %s", nameEntryIdMapKey, err)
 					return true
 				}
 				return true
