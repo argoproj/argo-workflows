@@ -499,6 +499,9 @@ message ResourceTemplate {
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
   optional int32 limit = 1;
+
+  // RetryOn is a list of NodePhase statuses that will be retried
+  optional string retryPolicy = 2;
 }
 
 // S3Artifact is the location of an S3 artifact
@@ -559,7 +562,7 @@ message Sequence {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 message SuspendTemplate {
   // Duration is the seconds to wait before automatically resuming a template
-  optional int32 duration = 1;
+  optional string duration = 1;
 }
 
 // TarStrategy will tar and gzip the file or directory when saving

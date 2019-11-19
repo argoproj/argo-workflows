@@ -243,9 +243,7 @@ func (p *ParallelSteps) UnmarshalJSON(value []byte) error {
 }
 
 func (p *ParallelSteps) MarshalJSON() ([]byte, error) {
-	fmt.Println(p.Steps)
 	return json.Marshal(p.Steps)
-
 }
 
 func (wfs *WorkflowSpec) HasPodSpecPatch() bool {
@@ -727,10 +725,21 @@ type WorkflowStatus struct {
 	Outputs *Outputs `json:"outputs,omitempty" protobuf:"bytes,8,opt,name=outputs"`
 }
 
+type RetryPolicy string
+
+const (
+	RetryPolicyAlways    RetryPolicy = "Always"
+	RetryPolicyOnFailure RetryPolicy = "OnFailure"
+	RetryPolicyOnError   RetryPolicy = "OnError"
+)
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
+
+	// RetryOn is a list of NodePhase statuses that will be retried
+	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
@@ -1193,7 +1202,7 @@ func (t *DAGTask) IsResolvable() bool {
 // SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time
 type SuspendTemplate struct {
 	// Duration is the seconds to wait before automatically resuming a template
-	Duration *int32 `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
+	Duration string `json:"duration,omitempty" protobuf:"bytes,1,opt,name=duration"`
 }
 
 // GetArtifactByName returns an input artifact by its name
