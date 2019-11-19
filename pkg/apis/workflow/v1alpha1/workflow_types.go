@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"time"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -729,6 +730,12 @@ const (
 	RetryPolicyOnError   RetryPolicy = "OnError"
 )
 
+type Backoff struct {
+	Duration    time.Duration
+	Factor      float64
+	MaxDuration time.Duration
+}
+
 // RetryStrategy provides controls on how to retry a workflow step
 type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
@@ -736,6 +743,9 @@ type RetryStrategy struct {
 
 	// RetryOn is a list of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
+
+	// Backoff is a backoff strategy
+	Backoff Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow
