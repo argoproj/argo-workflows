@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"time"
-
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // TemplateType is the type of a template
@@ -731,9 +729,9 @@ const (
 )
 
 type Backoff struct {
-	Duration    time.Duration
-	Factor      float64
-	MaxDuration time.Duration
+	Duration    string `json:"duration,omitempty" protobuf:"varint,1,opt,name=duration"`
+	Factor      int32  `json:"factor,omitempty" protobuf:"varint,2,opt,name=factor"`
+	MaxDuration string `json:"maxDuration,omitempty" protobuf:"varint,3,opt,name=maxDuration"`
 }
 
 // RetryStrategy provides controls on how to retry a workflow step
@@ -745,7 +743,7 @@ type RetryStrategy struct {
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 
 	// Backoff is a backoff strategy
-	Backoff Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
+	Backoff *Backoff `json:"backoff,omitempty" protobuf:"bytes,3,opt,name=backoff,casttype=Backoff"`
 }
 
 // NodeStatus contains status information about an individual node in the workflow

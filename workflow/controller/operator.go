@@ -3,6 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/pkg/humanize"
+	"math"
 	"reflect"
 	"regexp"
 	"runtime/debug"
@@ -534,17 +536,55 @@ func (woc *wfOperationCtx) requeue(afterDuration time.Duration) {
 }
 
 // processNodeRetries updates the retry node state based on the child node state and the retry strategy and returns the node.
-func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrategy wfv1.RetryStrategy) (*wfv1.NodeStatus, bool, error) {
 	if node.Completed() {
-		return node, nil
+		return node, true, nil
 	}
 	lastChildNode, err := woc.getLastChildNode(node)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to find last child of node " + node.Name)
+		return nil, false, fmt.Errorf("Failed to find last child of node " + node.Name)
 	}
 
 	if lastChildNode == nil {
-		return node, nil
+		return node, true, nil
+	}
+
+	if retryStrategy.Backoff != nil {
+		// Process max duration limit
+		if retryStrategy.Backoff.MaxDuration != "" && len(node.Children) > 0 {
+			maxDuration, err := parseStringToDuration(retryStrategy.Backoff.MaxDuration)
+			if err != nil {
+				return nil, false, err
+			}
+			firstChildNode, err := woc.getFirstChildNode(node)
+			if err != nil {
+				return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
+			}
+			if time.Now().After(firstChildNode.FinishedAt.Add(maxDuration)) {
+				woc.log.Infoln("Max duration limit exceeded. Failing...")
+				return woc.markNodePhase(node.Name, lastChildNode.Phase, "Max duration limit exceeded"), true, nil
+			}
+		}
+
+		// Max duration limit hasn't been exceeded, process back off
+		if retryStrategy.Backoff.Duration == "" {
+			return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
+		}
+		baseDuration, err := parseStringToDuration(retryStrategy.Backoff.Duration)
+		if err != nil {
+			return nil, false, err
+		}
+		// Formula: timeToWait = duration * factor^retry_number
+		timeToWait := baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
+		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
+
+		// See if we have waited past the deadline
+		if time.Now().Before(waitingDeadline) {
+			retryMessage := fmt.Sprintf("Retrying in %s", humanize.Duration(time.Until(waitingDeadline)))
+			return woc.markNodePhase(node.Name, node.Phase, retryMessage), false, nil
+		} else {
+			node = woc.markNodePhase(node.Name, node.Phase, "")
+		}
 	}
 
 	var retryOnFailed bool
@@ -560,37 +600,37 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		retryOnFailed = true
 		retryOnError = false
 	default:
-		return nil, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
-	}
-
-	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
-		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
+		return nil, false, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
 	}
 
 	if !lastChildNode.Completed() {
 		// last child node is still running.
-		return node, nil
+		return node, true, nil
 	}
 
 	if lastChildNode.Successful() {
 		node.Outputs = lastChildNode.Outputs.DeepCopy()
 		woc.wf.Status.Nodes[node.ID] = *node
-		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), nil
+		return woc.markNodePhase(node.Name, wfv1.NodeSucceeded), true, nil
+	}
+
+	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
+		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if !lastChildNode.CanRetry() {
 		woc.log.Infof("Node cannot be retried. Marking it failed")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), true, nil
 	}
 
 	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
 		woc.log.Infoln("No more retries left. Failing...")
-		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), true, nil
 	}
 
 	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
-	return node, nil
+	return node, true, nil
 }
 
 // podReconciliation is the process by which a workflow will examine all its related
@@ -1141,6 +1181,20 @@ func (woc *wfOperationCtx) getLastChildNode(node *wfv1.NodeStatus) (*wfv1.NodeSt
 	return &lastChildNode, nil
 }
 
+func (woc *wfOperationCtx) getFirstChildNode(node *wfv1.NodeStatus) (*wfv1.NodeStatus, error) {
+	if len(node.Children) <= 0 {
+		return nil, nil
+	}
+
+	firstChildNodeName := node.Children[0]
+	firstChildNode, ok := woc.wf.Status.Nodes[firstChildNodeName]
+	if !ok {
+		return nil, fmt.Errorf("Failed to find node " + firstChildNodeName)
+	}
+
+	return &firstChildNode, nil
+}
+
 // executeTemplate executes the template with the given arguments and returns the created NodeStatus
 // for the created node (if created). Nodes may not be created if parallelism or deadline exceeded.
 // nodeName is the name to be used as the name of the node, and boundaryID indicates which template
@@ -1204,9 +1258,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
+		processedRetryParentNode, ok, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
+		} else if !ok {
+			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
 		// The retry node might have completed by now.
@@ -1891,14 +1947,9 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 
 	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
-		var suspendDuration time.Duration
-		// If no units are attached, treat as seconds
-		if val, err := strconv.Atoi(tmpl.Suspend.Duration); err == nil {
-			suspendDuration = time.Duration(val) * time.Second
-		} else if duration, err := time.ParseDuration(tmpl.Suspend.Duration); err == nil {
-			suspendDuration = duration
-		} else {
-			return fmt.Errorf("unable to parse %s as a duration", tmpl.Suspend.Duration)
+		suspendDuration, err := parseStringToDuration(tmpl.Suspend.Duration)
+		if err != nil {
+			return err
 		}
 		suspendDeadline := node.StartedAt.Add(suspendDuration)
 		requeueTime = &suspendDeadline
@@ -1925,6 +1976,19 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)
 	return nil
+}
+
+func parseStringToDuration(durationString string) (time.Duration, error) {
+	var suspendDuration time.Duration
+	// If no units are attached, treat as seconds
+	if val, err := strconv.Atoi(durationString); err == nil {
+		suspendDuration = time.Duration(val) * time.Second
+	} else if duration, err := time.ParseDuration(durationString); err == nil {
+		suspendDuration = duration
+	} else {
+		return 0, fmt.Errorf("unable to parse %s as a duration", durationString)
+	}
+	return suspendDuration, nil
 }
 
 func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wfv1.Item, obj interface{}) (string, error) {

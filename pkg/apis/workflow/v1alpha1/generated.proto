@@ -112,6 +112,14 @@ message ArtifactoryAuth {
   optional k8s.io.api.core.v1.SecretKeySelector passwordSecret = 2;
 }
 
+message Backoff {
+  optional string duration = 1;
+
+  optional int32 factor = 2;
+
+  optional string maxDuration = 3;
+}
+
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.
 // It can be specified if the workflow should continue when the pod errors, fails or both.
 message ContinueOn {
@@ -484,6 +492,12 @@ message ResourceTemplate {
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
   optional int32 limit = 1;
+
+  // RetryOn is a list of NodePhase statuses that will be retried
+  optional string retryPolicy = 2;
+
+  // Backoff is a backoff strategy
+  optional Backoff backoff = 3;
 }
 
 // S3Artifact is the location of an S3 artifact
