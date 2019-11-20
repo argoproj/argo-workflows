@@ -129,6 +129,7 @@ endif
 
 .PHONY: lint
 lint:
+	go fmt ./...
 ifdef GOLANGCI_EXISTS
 	golangci-lint run --fix --verbose --config golangci.yml
 else
