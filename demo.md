@@ -21,7 +21,7 @@ brew install argoproj/tap/argo
 Also you can use this command to install for Linux 
 
 ```
-curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.3.0/argo-linux-amd64
+curl -sSL -o /usr/local/bin/argo https://github.com/argoproj/argo/releases/download/v2.4.2/argo-linux-amd64
 chmod +x /usr/local/bin/argo
 ```
 

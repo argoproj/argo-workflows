@@ -3,10 +3,10 @@ package validate
 import (
 	"testing"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -134,8 +134,7 @@ spec:
 `
 
 func TestDuplicateOrEmptyNames(t *testing.T) {
-	var err error
-	err = validate(dupTemplateNames)
+	err := validate(dupTemplateNames)
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "not unique")
 	}
@@ -238,7 +237,7 @@ spec:
 
 func TestResolveIOArtifactPathPlaceholders(t *testing.T) {
 	err := validate(ioArtifactPaths)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var outputParameterPath = `
@@ -262,7 +261,7 @@ spec:
 
 func TestResolveOutputParameterPathPlaceholder(t *testing.T) {
 	err := validate(outputParameterPath)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var stepOutputReferences = `
@@ -299,9 +298,8 @@ spec:
 
 func TestStepOutputReference(t *testing.T) {
 	err := validate(stepOutputReferences)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
-
 
 var stepStatusReferences = `
 apiVersion: argoproj.io/v1alpha1
@@ -338,9 +336,8 @@ spec:
 
 func TestStepStatusReference(t *testing.T) {
 	err := validate(stepStatusReferences)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
-
 
 var stepStatusReferencesNoFutureReference = `
 apiVersion: argoproj.io/v1alpha1
@@ -436,7 +433,7 @@ spec:
 
 func TestStepArtReference(t *testing.T) {
 	err := validate(stepArtReferences)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var unsatisfiedParam = `
@@ -514,7 +511,7 @@ spec:
 
 func TestGlobalParam(t *testing.T) {
 	err := validate(globalParam)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var invalidTemplateNames = `
@@ -951,7 +948,7 @@ func TestExitHandler(t *testing.T) {
 
 	// ensure {{workflow.status}} is available in exit handler
 	err = validate(exitHandlerWorkflowStatusOnExit)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var workflowWithPriority = `
@@ -972,9 +969,8 @@ spec:
 
 func TestPriorityVariable(t *testing.T) {
 	err := validate(workflowWithPriority)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
-
 
 var volumeMountArtifactPathCollision = `
 apiVersion: argoproj.io/v1alpha1
@@ -1019,7 +1015,7 @@ func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
 	err = ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var activeDeadlineSeconds = `
@@ -1261,7 +1257,7 @@ spec:
 
 func TestValidWithItems(t *testing.T) {
 	err := validate(validWithItems)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = validate(invalidWithItems)
 	if assert.NotNil(t, err) {
@@ -1300,12 +1296,12 @@ spec:
 
 func TestPodNameVariable(t *testing.T) {
 	err := validate(podNameVariable)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
 	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var specArgumentNoValue = `
@@ -1330,7 +1326,7 @@ spec:
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
 	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
 	assert.NotNil(t, err)
 }
@@ -1367,7 +1363,7 @@ spec:
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
 	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var specBadSequenceCountAndEnd = `
@@ -1566,7 +1562,7 @@ spec:
 
 func TestLocalTemplateRef(t *testing.T) {
 	err := validate(localTemplateRef)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var undefinedLocalTemplateRef = `
@@ -1617,14 +1613,14 @@ spec:
 
 func TestWorkflowTemplate(t *testing.T) {
 	err := validateWorkflowTemplate(templateRefTarget)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestTemplateRef(t *testing.T) {
 	err := createWorkflowTemplate(templateRefTarget)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = validate(templateRef)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var templateRefNestedTarget = `
@@ -1656,11 +1652,11 @@ spec:
 
 func TestNestedTemplateRef(t *testing.T) {
 	err := createWorkflowTemplate(templateRefTarget)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = createWorkflowTemplate(templateRefNestedTarget)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = validate(nestedTemplateRef)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var templateRefNestedLocalTarget = `
@@ -1694,9 +1690,9 @@ spec:
 
 func TestNestedLocalTemplateRef(t *testing.T) {
 	err := createWorkflowTemplate(templateRefNestedLocalTarget)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = validate(nestedLocalTemplateRef)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 var undefinedTemplateRef = `

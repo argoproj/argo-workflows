@@ -32,6 +32,7 @@ type listFlags struct {
 	output        string   // --output
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
+	noHeaders     bool     // --no-headers
 }
 
 func NewListCommand() *cobra.Command {
@@ -133,19 +134,22 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVarP(&listArgs.output, "output", "o", "", "Output format. One of: wide|name")
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
+	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
 	return command
 }
 
 func printTable(wfList []wfv1.Workflow, listArgs *listFlags) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if listArgs.allNamespaces {
-		fmt.Fprint(w, "NAMESPACE\t")
+	if !listArgs.noHeaders {
+		if listArgs.allNamespaces {
+			fmt.Fprint(w, "NAMESPACE\t")
+		}
+		fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
+		if listArgs.output == "wide" {
+			fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
+		}
+		fmt.Fprint(w, "\n")
 	}
-	fmt.Fprint(w, "NAME\tSTATUS\tAGE\tDURATION\tPRIORITY")
-	if listArgs.output == "wide" {
-		fmt.Fprint(w, "\tP/R/C\tPARAMETERS")
-	}
-	fmt.Fprint(w, "\n")
 	for _, wf := range wfList {
 		ageStr := humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now())
 		durationStr := humanize.RelativeDurationShort(wf.Status.StartedAt.Time, wf.Status.FinishedAt.Time)

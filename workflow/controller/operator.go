@@ -515,6 +515,27 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		return node, nil
 	}
 
+	var retryOnFailed bool
+	var retryOnError bool
+	switch retryStrategy.RetryPolicy {
+	case wfv1.RetryPolicyAlways:
+		retryOnFailed = true
+		retryOnError = true
+	case wfv1.RetryPolicyOnError:
+		retryOnFailed = false
+		retryOnError = true
+	case wfv1.RetryPolicyOnFailure, "":
+		retryOnFailed = true
+		retryOnError = false
+	default:
+		return nil, fmt.Errorf("%s is not a valid RetryPolicy", retryStrategy.RetryPolicy)
+	}
+
+	if (lastChildNode.Phase == wfv1.NodeFailed && !retryOnFailed) || (lastChildNode.Phase == wfv1.NodeError && !retryOnError) {
+		woc.log.Infof("Node not set to be retried after status: %s", lastChildNode.Phase)
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
+	}
+
 	if !lastChildNode.Completed() {
 		// last child node is still running.
 		return node, nil
@@ -528,12 +549,12 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 	if !lastChildNode.CanRetry() {
 		woc.log.Infof("Node cannot be retried. Marking it failed")
-		return woc.markNodePhase(node.Name, wfv1.NodeFailed, lastChildNode.Message), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, lastChildNode.Message), nil
 	}
 
 	if retryStrategy.Limit != nil && int32(len(node.Children)) > *retryStrategy.Limit {
 		woc.log.Infoln("No more retries left. Failing...")
-		return woc.markNodePhase(node.Name, wfv1.NodeFailed, "No more retries left"), nil
+		return woc.markNodePhase(node.Name, lastChildNode.Phase, "No more retries left"), nil
 	}
 
 	woc.log.Infof("%d child nodes of %s failed. Trying again...", len(node.Children), node.Name)
@@ -1168,9 +1189,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			// Last child node is still running.
 			return retryParentNode, nil
 		}
-		// This is the case the child node has been done,
-		//  but the retry node state is still running.
-		//  Create another child node.
+
+		// Create a new child node
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 		node = nil
 
@@ -1219,7 +1239,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		err = errors.Errorf(errors.CodeBadRequest, "Template '%s' missing specification", processedTmpl.Name)
 	}
 	if err != nil {
-		return woc.markNodeError(node.Name, err), err
+		node = woc.markNodeError(node.Name, err)
+		// If retry policy is not set to Always or OnError, we won't attempt to retry an errored container
+		if processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError {
+			return node, err
+		}
 	}
 	node = woc.getNodeByName(node.Name)
 
@@ -1806,25 +1830,42 @@ func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template,
 func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	woc.log.Infof("node %s suspended", nodeName)
 
-	deadline := woc.getWorkflowDeadline()
+	// If there is either an active workflow deadline, or if this node is suspended with a duration, then the workflow
+	// will need to be requeued after a certain amount of time
+	var requeueTime *time.Time
 
-	if tmpl.Suspend.Duration != nil && *tmpl.Suspend.Duration > 0 {
+	if tmpl.Suspend.Duration != "" {
 		node := woc.getNodeByName(nodeName)
-		suspendDuration := time.Duration(*tmpl.Suspend.Duration) * time.Second
-		suspendDeadline := node.StartedAt.Add(suspendDuration)
-		if deadline == nil || deadline.After(suspendDeadline) {
-			deadline = &suspendDeadline
+		var suspendDuration time.Duration
+		// If no units are attached, treat as seconds
+		if val, err := strconv.Atoi(tmpl.Suspend.Duration); err == nil {
+			suspendDuration = time.Duration(val) * time.Second
+		} else if duration, err := time.ParseDuration(tmpl.Suspend.Duration); err == nil {
+			suspendDuration = duration
+		} else {
+			return fmt.Errorf("unable to parse %s as a duration", tmpl.Suspend.Duration)
 		}
+		suspendDeadline := node.StartedAt.Add(suspendDuration)
+		requeueTime = &suspendDeadline
 		if time.Now().UTC().After(suspendDeadline) {
-			// Node is expired
+			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
 		}
 	}
 
-	if deadline != nil {
-		woc.requeue(time.Until(*deadline))
+	// workflowDeadline is the time when the workflow will be timed out, if any
+	if workflowDeadline := woc.getWorkflowDeadline(); workflowDeadline != nil {
+		// There is an active workflow deadline. If this node is suspended with a duration, choose the earlier time
+		// between the two, otherwise choose the deadline time.
+		if requeueTime == nil || workflowDeadline.Before(*requeueTime) {
+			requeueTime = workflowDeadline
+		}
+	}
+
+	if requeueTime != nil {
+		woc.requeue(time.Until(*requeueTime))
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeRunning)

@@ -37,7 +37,7 @@ spec:
 	newWf := wf.DeepCopy()
 	wfClientSet := fakeClientset.NewSimpleClientset()
 	newWf, err := SubmitWorkflow(nil, wfClientSet, "test-namespace", newWf, &SubmitOpts{DryRun: true})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, wf.Spec, newWf.Spec)
 	assert.Equal(t, wf.Status, newWf.Status)
 }
@@ -61,7 +61,7 @@ func TestResubmitWorkflowWithOnExit(t *testing.T) {
 		Phase: wfv1.NodeSucceeded,
 	}
 	newWF, err := FormulateResubmitWorkflow(&wf, true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	newWFOnExitName := newWF.ObjectMeta.Name + ".onExit"
 	newWFOneExitID := newWF.NodeID(newWFOnExitName)
 	_, ok := newWF.Status.Nodes[newWFOneExitID]
@@ -103,7 +103,7 @@ func TestReadFromSingleorMultiplePath(t *testing.T) {
 			}
 			body, err := ReadFromFilePathsOrUrls(filePaths...)
 			assert.Equal(t, len(body), len(filePaths))
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			for i := range body {
 				assert.Equal(t, body[i], []byte(tc.contents[i]))
 			}
@@ -173,25 +173,28 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 var yamlStr = `
 containers:
   - name: main
-	resources:
-	  limits:
-		cpu: 1000m
+    resources:
+      limits:
+        cpu: 1000m
 `
 
 func TestPodSpecPatchMerge(t *testing.T) {
 	tmpl := wfv1.Template{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"cpu\": \"1000m\"}}}]}"}
 	wf := wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, _ := PodSpecPatchMerge(&wf, &tmpl)
+	merged, err := PodSpecPatchMerge(&wf, &tmpl)
+	assert.NoError(t, err)
 	var spec v1.PodSpec
-	json.Unmarshal([]byte(merged), &spec)
+	err = json.Unmarshal([]byte(merged), &spec)
+	assert.NoError(t, err)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
 
 	tmpl = wfv1.Template{PodSpecPatch: yamlStr}
 	wf = wfv1.Workflow{Spec: wfv1.WorkflowSpec{PodSpecPatch: "{\"containers\":[{\"name\":\"main\", \"resources\":{\"limits\":{\"memory\": \"100Mi\"}}}]}"}}
-	merged, _ = PodSpecPatchMerge(&wf, &tmpl)
-	json.Unmarshal([]byte(merged), &spec)
+	merged, err = PodSpecPatchMerge(&wf, &tmpl)
+	assert.NoError(t, err)
+	err = json.Unmarshal([]byte(merged), &spec)
+	assert.NoError(t, err)
 	assert.Equal(t, "1.000", spec.Containers[0].Resources.Limits.Cpu().AsDec().String())
 	assert.Equal(t, "104857600", spec.Containers[0].Resources.Limits.Memory().AsDec().String())
-
 }
