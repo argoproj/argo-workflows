@@ -796,6 +796,10 @@
           "description": "Limit is the maximum number of attempts when retrying a container",
           "type": "integer",
           "format": "int32"
+        },
+        "retryPolicy": {
+          "description": "RetryOn is a list of NodePhase statuses that will be retried",
+          "type": "string"
         }
       }
     },
@@ -1044,7 +1048,13 @@
     },
     "io.argoproj.workflow.v1alpha1.SuspendTemplate": {
       "description": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "duration": {
+          "description": "Duration is the seconds to wait before automatically resuming a template",
+          "type": "string"
+        }
+      }
     },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "description": "TarStrategy will tar and gzip the file or directory when saving",

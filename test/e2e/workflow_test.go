@@ -71,8 +71,7 @@ spec:
 		if err != nil {
 			log.Fatal(err)
 		}
-		var allCompleted bool
-		allCompleted = true
+		allCompleted := true
 		for k, v := range wf.Status.Nodes {
 			if !v.Completed() {
 				fmt.Printf("Status of %s: %v\n", k, v.Phase)
@@ -89,7 +88,10 @@ spec:
 	}
 
 	deleteOptions := metav1.DeleteOptions{}
-	wfClient.Delete(workflowName, &deleteOptions)
+	err = wfClient.Delete(workflowName, &deleteOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestArgoWorkflows(t *testing.T) {

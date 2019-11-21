@@ -1484,6 +1484,13 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Format:      "int32",
 						},
 					},
+					"retryPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryOn is a list of NodePhase statuses that will be retried",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
@@ -1914,6 +1921,15 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 			SchemaProps: spec.SchemaProps{
 				Description: "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
 				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"duration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Duration is the seconds to wait before automatically resuming a template",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
