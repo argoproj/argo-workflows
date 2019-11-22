@@ -58,28 +58,30 @@ func (db *DBService) List(namespace string, pageSize uint, lastId string) (*v1al
 	if db.wfDBctx == nil {
 		return nil, errors.New(errors.CodeInternal, "DB Context is not initialized")
 	}
-	var wfList *v1alpha1.WorkflowList
-
-	var err error
 
 	var cond dblib.Cond
 	if namespace != "" {
 		cond = dblib.Cond{"namespace": namespace}
 	}
-	if pageSize == 0 {
-		wfList.Items, err = db.wfDBctx.Query(cond)
 
-	} else {
-		wfList, err = db.wfDBctx.QueryWithPagination(cond, pageSize, lastId)
+	if pageSize == 0 {
+		items, err := db.wfDBctx.Query(cond)
+		if err != nil {
+			return nil, err
+		}
+		return &v1alpha1.WorkflowList{
+			Items: items,
+		}, nil
 	}
+
+	wfList, err := db.wfDBctx.QueryWithPagination(cond, pageSize, lastId)
 	if err != nil {
 		return nil, err
 	}
-
-	return wfList, err
+	return wfList, nil
 }
 
-func (db *DBService) Delete(wfName string, namespace string) (error) {
+func (db *DBService) Delete(wfName string, namespace string) error {
 	if db.wfDBctx == nil {
 		return errors.New(errors.CodeInternal, "DB Context is not initialized")
 	}

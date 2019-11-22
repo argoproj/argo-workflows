@@ -1861,7 +1861,6 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		vals := make([]string, 0)
 		for itemKey, itemVal := range item.MapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-
 		}
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
@@ -1920,13 +1919,11 @@ func expandSequence(seq *wfv1.Sequence) ([]wfv1.Item, error) {
 	}
 	if start <= end {
 		for i := start; i <= end; i++ {
-
 			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
 		}
 	} else {
 		for i := start; i >= end; i-- {
 			items = append(items, wfv1.Item{Type: wfv1.Number, StrVal: fmt.Sprintf(format, i)})
-
 		}
 	}
 	return items, nil

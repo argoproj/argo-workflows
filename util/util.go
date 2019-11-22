@@ -69,15 +69,10 @@ func GetClientConfig() clientcmd.ClientConfig {
 }
 
 func InitKubeClient() *rest.Config {
-
-	var err error
-	var clientConfig clientcmd.ClientConfig
-
-	clientConfig = GetClientConfig()
+	clientConfig := GetClientConfig()
 	config, err := clientConfig.ClientConfig()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
-
 	return config
 }

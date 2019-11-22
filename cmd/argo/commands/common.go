@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -72,11 +71,7 @@ func InitKubeClient() *kubernetes.Clientset {
 	if err != nil {
 		log.Fatal(err)
 	}
-	b,err :=json.Marshal(restConfig)
 
-	fmt.Println(err)
-
-	fmt.Println(string(b))
 	// create the clientset
 	clientset, err = kubernetes.NewForConfig(restConfig)
 	if err != nil {

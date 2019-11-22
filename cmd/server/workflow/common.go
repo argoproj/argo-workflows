@@ -7,9 +7,8 @@ import (
 	"time"
 )
 
-const CLIENT_REST_CONFIG  = "rest.config"
+const CLIENT_REST_CONFIG = "rest.config"
 const AUTH_TOKEN = "auth.token"
-
 
 type ClientConfig struct {
 
@@ -63,6 +62,4 @@ type ClientConfig struct {
 
 	// The maximum length of time to wait before giving up on a server request. A value of zero means no timeout.
 	Timeout time.Duration
-
-
 }

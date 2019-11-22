@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"net"
-	"regexp"
 	"sigs.k8s.io/yaml"
 
 	"fmt"
@@ -47,10 +46,14 @@ type ArgoServerOpts struct {
 	ConfigName       string
 }
 
-func NewArgoServer(ctx context.Context, opts ArgoServerOpts) *ArgoServer {
-
-	return &ArgoServer{Namespace: opts.Namespace, WfClientSet: opts.WfClientSet, KubeClientset: opts.KubeClientset,
-		EnableClientAuth: opts.EnableClientAuth, ConfigName: opts.ConfigName}
+func NewArgoServer(opts ArgoServerOpts) *ArgoServer {
+	return &ArgoServer{
+		Namespace:        opts.Namespace,
+		WfClientSet:      opts.WfClientSet,
+		KubeClientset:    opts.KubeClientset,
+		EnableClientAuth: opts.EnableClientAuth,
+		ConfigName:       opts.ConfigName,
+	}
 }
 
 var backoff = wait.Backoff{
@@ -61,32 +64,35 @@ var backoff = wait.Backoff{
 }
 
 func (as *ArgoServer) useTLS() bool {
-
 	return false
 }
 
 func (as *ArgoServer) Run(ctx context.Context, port int) {
-	grpcs := as.newGRPCServer()
-	var httpS *http.Server
-	var httpsS *http.Server
+	grpcServer := as.newGRPCServer()
+	var httpServer *http.Server
+	var httpsServer *http.Server
 	if as.useTLS() {
-		httpS = newRedirectServer(port)
-		httpsS = as.newHTTPServer(ctx, port)
+		httpServer = newRedirectServer(port)
+		httpsServer = as.newHTTPServer(ctx, port)
 	} else {
-		httpS = as.newHTTPServer(ctx, port)
+		httpServer = as.newHTTPServer(ctx, port)
 	}
 
 	// Start listener
 	var conn net.Listener
-	var realErr error
-	_ = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		conn, realErr = net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
-		if realErr != nil {
-			log.Warnf("failed listen: %v", realErr)
+	var listerErr error
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		conn, listerErr = net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+		if listerErr != nil {
+			log.Warnf("failed to listen: %v", listerErr)
 			return false, nil
 		}
 		return true, nil
 	})
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
 	tcpm := cmux.New(conn)
@@ -113,7 +119,7 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 		tlsl = tls.NewListener(tlsl, &tlsConfig)
 
 		// Now, we build another mux recursively to match HTTPS and gRPC.
-		tlsm = cmux.New(tlsl)
+		tlsm := cmux.New(tlsl)
 		httpsL = tlsm.Match(cmux.HTTP1Fast())
 		grpcL = tlsm.Match(cmux.Any())
 	}
@@ -125,22 +131,22 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 	//if err != nil {
 	//	log.Fatalf("failed to listen: %v", err)
 	//}
-	go func() { as.checkServeErr("grpcS", grpcs.Serve(grpcL)) }()
-	go func() { as.checkServeErr("httpS", httpS.Serve(httpL)) }()
+
+	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
+	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
+	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 	if as.useTLS() {
-		go func() { as.checkServeErr("httpsS", httpsS.Serve(httpsL)) }()
+		go func() { as.checkServeErr("httpsServer", httpsServer.Serve(httpsL)) }()
 		go func() { as.checkServeErr("tlsm", tlsm.Serve()) }()
 	}
-	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
 
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
-
 }
 
 func (as *ArgoServer) newGRPCServer() *grpc.Server {
 	sOpts := []grpc.ServerOption{
-		// Set the both send and receive the bytes limit to be 100MB
+		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
 		// while we work toward that, we can have high limit first
 		grpc.MaxRecvMsgSize(apiclient.MaxGRPCMessageSize),
@@ -148,15 +154,16 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 		grpc.ConnectionTimeout(300 * time.Second),
 	}
 
-	grpcS := grpc.NewServer(sOpts...)
+	grpcServer := grpc.NewServer(sOpts...)
 	configMap, err := as.RsyncConfig(as.Namespace, as.WfClientSet, as.KubeClientset)
 	if err != nil {
-		//panic("Error marshalling config map")
+		// TODO: this currently returns an error every time
+		log.Errorf("Error marshalling config map: %s", err)
 	}
 	workflowServer := workflow.NewWorkflowServer(as.Namespace, as.WfClientSet, as.KubeClientset, configMap, as.EnableClientAuth)
-	workflow.RegisterWorkflowServiceServer(grpcS, workflowServer)
+	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 
-	return grpcS
+	return grpcServer
 }
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
@@ -165,29 +172,29 @@ func (a *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
-	httpS := http.Server{
+	httpServer := http.Server{
 		Addr:    endpoint,
 		Handler: mux,
 	}
-	var dOpts []grpc.DialOption
-	dOpts = append(dOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(apiclient.MaxGRPCMessageSize)))
-	//dOpts = append(dOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
+	var dialOpts []grpc.DialOption
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(apiclient.MaxGRPCMessageSize)))
+	//dialOpts = append(dialOpts, grpc.WithUserAgent(fmt.Sprintf("%s/%s", common.ArgoCDUserAgentName, argocd.GetVersion().Version)))
 
-	dOpts = append(dOpts, grpc.WithInsecure())
+	dialOpts = append(dialOpts, grpc.WithInsecure())
 
 	// HTTP 1.1+JSON Server
 	// grpc-ecosystem/grpc-gateway is used to proxy HTTP requests to the corresponding gRPC call
 	// NOTE: if a marshaller option is not supplied, grpc-gateway will default to the jsonpb from
 	// golang/protobuf. Which does not support types such as time.Time. gogo/protobuf does support
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
-	//// we use our own Marshaler
+	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwCookieOpts := runtime.WithForwardResponseOption(a.translateGrpcCookieHeader)
 	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
-	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dOpts)
+	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 
 	mux.Handle("/api/", gwmux)
-	return &httpS
+	return &httpServer
 }
 
 type registerFunc func(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error
@@ -200,41 +207,41 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
-type handlerSwitcher struct {
-	handler              http.Handler
-	contentTypeToHandler map[string]http.Handler
-}
-
-func (s *handlerSwitcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if contentHandler, ok := s.contentTypeToHandler[r.Header.Get("content-type")]; ok {
-		contentHandler.ServeHTTP(w, r)
-	} else {
-		s.handler.ServeHTTP(w, r)
-	}
-}
+//type handlerSwitcher struct {
+//	handler              http.Handler
+//	contentTypeToHandler map[string]http.Handler
+//}
+//
+//func (s *handlerSwitcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	if contentHandler, ok := s.contentTypeToHandler[r.Header.Get("content-type")]; ok {
+//		contentHandler.ServeHTTP(w, r)
+//	} else {
+//		s.handler.ServeHTTP(w, r)
+//	}
+//}
 
 // Workaround for https://github.com/golang/go/issues/21955 to support escaped URLs in URL path.
-type bug21955Workaround struct {
-	handler http.Handler
-}
+//type bug21955Workaround struct {
+//	handler http.Handler
+//}
+//
+//var pathPatters = []*regexp.Regexp{
+//	regexp.MustCompile(`/api/v1/workflows/[^/]+`),
+//}
+//
+//func (bf *bug21955Workaround) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	for _, pattern := range pathPatters {
+//		if pattern.MatchString(r.URL.RawPath) {
+//			r.URL.Path = r.URL.RawPath
+//			break
+//		}
+//	}
+//	bf.handler.ServeHTTP(w, r)
+//}
 
-var pathPatters = []*regexp.Regexp{
-	regexp.MustCompile(`/api/v1/workflows/[^/]+`),
-}
-
-func (bf *bug21955Workaround) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, pattern := range pathPatters {
-		if pattern.MatchString(r.URL.RawPath) {
-			r.URL.Path = r.URL.RawPath
-			break
-		}
-	}
-	bf.handler.ServeHTTP(w, r)
-}
-
-func bug21955WorkaroundInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	return handler(ctx, req)
-}
+//func bug21955WorkaroundInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+//	return handler(ctx, req)
+//}
 
 // newRedirectServer returns an HTTP server which does a 307 redirect to the HTTPS server
 func newRedirectServer(port int) *http.Server {

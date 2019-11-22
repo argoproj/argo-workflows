@@ -15,25 +15,22 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-type (
-	WorkflowDBContext struct {
-		TableName         string
-		NodeStatusOffload bool
-		Session           sqlbuilder.Database
-	}
+type WorkflowDBContext struct {
+	TableName         string
+	NodeStatusOffload bool
+	Session           sqlbuilder.Database
+}
 
-	DBRepository interface {
-		Save(wf *wfv1.Workflow) error
-		Get(uid string) (*wfv1.Workflow, error)
-		List(orderBy interface{}) (*wfv1.WorkflowList, error)
-		Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
-		Delete(condition db.Cond)(error)
-		Close() error
-		IsNodeStatusOffload() bool
-		QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{})(*wfv1.WorkflowList, error)
-
-	}
-)
+type DBRepository interface {
+	Save(wf *wfv1.Workflow) error
+	Get(uid string) (*wfv1.Workflow, error)
+	List(orderBy interface{}) (*wfv1.WorkflowList, error)
+	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
+	Delete(condition db.Cond) error
+	Close() error
+	IsNodeStatusOffload() bool
+	QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{}) (*wfv1.WorkflowList, error)
+}
 
 type WorkflowDB struct {
 	Id         string         `db:"id"`
@@ -45,10 +42,20 @@ type WorkflowDB struct {
 	FinishedAt time.Time      `db:"finishedat"`
 }
 
-func convert(wf *wfv1.Workflow) *WorkflowDB {
-	jsonWf, _ := json.Marshal(wf)
-	startT, _ := time.Parse(time.RFC3339, wf.Status.StartedAt.Format(time.RFC3339))
-	endT, _ := time.Parse(time.RFC3339, wf.Status.FinishedAt.Format(time.RFC3339))
+func convert(wf *wfv1.Workflow) (*WorkflowDB, error) {
+	jsonWf, err := json.Marshal(wf)
+	if err != nil {
+		return nil, err
+	}
+	startT, err := time.Parse(time.RFC3339, wf.Status.StartedAt.Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+	endT, err := time.Parse(time.RFC3339, wf.Status.FinishedAt.Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+
 	return &WorkflowDB{
 		Id:         string(wf.UID),
 		Name:       wf.Name,
@@ -57,8 +64,7 @@ func convert(wf *wfv1.Workflow) *WorkflowDB {
 		Phase:      wf.Status.Phase,
 		StartedAt:  startT,
 		FinishedAt: endT,
-	}
-
+	}, nil
 }
 
 func (wdc *WorkflowDBContext) IsNodeStatusOffload() bool {
@@ -71,14 +77,11 @@ func (wdc *WorkflowDBContext) Init(sess sqlbuilder.Database) {
 
 // Save will upset the workflow
 func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
-
 	if wdc != nil && wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
-	wfdb := convert(wf)
 
-	err := wdc.update(wfdb)
-
+	wfdb, err := convert(wf)
 	if err != nil {
 		if errors.IsCode(CodeDBUpdateRowNotFound, err) {
 			return wdc.insert(wfdb)
@@ -88,8 +91,12 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 		}
 	}
 
-	log.Info("Workflow update successfully into persistence")
+	err = wdc.update(wfdb)
+	if err != nil {
+		return err
+	}
 
+	log.Info("Workflow update successfully into persistence")
 	return nil
 }
 
@@ -97,10 +104,12 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
+
 	tx, err := wdc.Session.NewTx(context.TODO())
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
 	}
+
 	defer func() {
 		if tx != nil {
 			err := tx.Close()
@@ -109,14 +118,17 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 			}
 		}
 	}()
+
 	_, err = tx.Collection(wdc.TableName).Insert(wfDB)
 	if err != nil {
 		return errors.InternalErrorf("Error in inserting workflow in persistence. %v", err)
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return errors.InternalErrorf("Error in Committing workflow insert in persistence. %v", err)
 	}
+
 	return nil
 }
 
@@ -124,11 +136,12 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}
-	tx, err := wdc.Session.NewTx(context.TODO())
 
+	tx, err := wdc.Session.NewTx(context.TODO())
 	if err != nil {
 		return errors.InternalErrorf("Error in creating transaction. %v", err)
 	}
+
 	defer func() {
 		if tx != nil {
 			err := tx.Close()
@@ -137,6 +150,7 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 			}
 		}
 	}()
+
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
@@ -149,26 +163,26 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	if err != nil {
 		return errors.InternalErrorf("Error in Committing workflow update in persistence %v", err)
 	}
+
 	return nil
 }
 
 func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
-
 	if wdc.Session == nil {
-		return nil, DBInvalidSession(nil, "DB session is not initiallized")
+		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
-	cond := db.Cond{"id":uid}
 
+	cond := db.Cond{"id": uid}
 	wfs, err := wdc.Query(cond)
-
 	if err != nil {
 		return nil, DBOperationError(err, "DB GET operation failed")
 	}
 
-	if len(wfs) >0 {
+	if len(wfs) > 0 {
 		return &wfs[0], nil
 	}
-		return nil, DBOperationError(nil, "Row is not found")
+
+	return nil, DBOperationError(nil, "Row is not found")
 }
 
 func (wdc *WorkflowDBContext) List(orderBy interface{}) (*wfv1.WorkflowList, error) {
@@ -177,26 +191,26 @@ func (wdc *WorkflowDBContext) List(orderBy interface{}) (*wfv1.WorkflowList, err
 	}
 
 	wfs, err := wdc.Query(nil, orderBy)
-
 	if err != nil {
 		return nil, err
 	}
-	var wfList wfv1.WorkflowList
-	wfList.Items = wfs
 
-	return &wfList, nil
+	return &wfv1.WorkflowList{
+		Items: wfs,
+	}, nil
 }
 
-
-func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{} ) ([]wfv1.Workflow, error) {
+func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
 
-	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs); err != nil {
-		return nil, DBOperationError(err, "DB Query opeartion failed")
+	err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs)
+	if err != nil {
+		return nil, DBOperationError(err, "DB Query operation failed")
 	}
+
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
@@ -217,15 +231,15 @@ func (wdc *WorkflowDBContext) Close() error {
 	return wdc.Session.Close()
 }
 
-
-func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit uint, lastId string, orderBy ...interface{} ) (*wfv1.WorkflowList, error) {
+func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit uint, lastId string, orderBy ...interface{}) (*wfv1.WorkflowList, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
 
-	if err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).Paginate(pageLimit).NextPage(lastId).All(&wfDBs); err != nil {
-		return nil, DBOperationError(err, "DB Query opeartion failed")
+	err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).Paginate(pageLimit).NextPage(lastId).All(&wfDBs)
+	if err != nil {
+		return nil, DBOperationError(err, "DB Query operation failed")
 	}
 
 	var wfs []wfv1.Workflow
@@ -239,13 +253,12 @@ func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit u
 		}
 	}
 
-	var wfList wfv1.WorkflowList
-	wfList.Items = wfs
-
-	return &wfList, nil
+	return &wfv1.WorkflowList{
+		Items: wfs,
+	}, nil
 }
 
-func (wdc *WorkflowDBContext) Delete(condition db.Cond)(error){
+func (wdc *WorkflowDBContext) Delete(condition db.Cond) error {
 	if wdc.Session == nil {
 		return DBInvalidSession(nil, "DB session is not initialized")
 	}

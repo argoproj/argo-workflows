@@ -29,23 +29,22 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig            clientcmd.ClientConfig
-		logLevel                string // --loglevel
-		enableClientAuth		string
-		configMap				string
-		port					int
+		clientConfig     clientcmd.ClientConfig
+		logLevel         string // --loglevel
+		enableClientAuth string
+		configMap        string
+		port             int
 	)
 
 	var command = cobra.Command{
 		Use:   CLIName,
-		Short: "Argo api server",
+		Short: "argo-api-server is Argo's API server",
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
 			stats.RegisterStackDumper()
 			stats.StartStatsTicker(5 * time.Minute)
 
 			config, err := clientConfig.ClientConfig()
-
 			if err != nil {
 				return err
 			}
@@ -58,19 +57,25 @@ func NewRootCommand() *cobra.Command {
 			}
 
 			kubeConfig := kubernetes.NewForConfigOrDie(config)
-
 			wflientset := wfclientset.NewForConfigOrDie(config)
 
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			clientAuth, err := strconv.ParseBool(enableClientAuth)
 			if err != nil {
 				return err
 			}
-			ctx, cancel := context.WithCancel(context.Background())
-			var clientAuth bool
-			clientAuth, err =strconv.ParseBool( enableClientAuth)
-			var opts = apiserver.ArgoServerOpts{Namespace: namespace, WfClientSet: wflientset,KubeClientset: kubeConfig, EnableClientAuth: clientAuth}
-			argoSvr := apiserver.NewArgoServer(ctx, opts )
-			defer cancel()
-			go argoSvr.Run(ctx,port)
+
+			opts := apiserver.ArgoServerOpts{
+				Namespace:        namespace,
+				WfClientSet:      wflientset,
+				KubeClientset:    kubeConfig,
+				EnableClientAuth: clientAuth,
+			}
+			apiServer := apiserver.NewArgoServer(opts)
+
+			go apiServer.Run(ctx, port)
 
 			// Wait forever
 			select {}
