@@ -421,6 +421,31 @@ func TestConditionalArchiveLocation(t *testing.T) {
 	assert.Nil(t, tmpl.ArchiveLocation)
 }
 
+// TestDefaultAddArchiveLocationAutoArchiveLogs verifies we add archive location when AutoArchiveLogs is set
+func TestDefaultAddArchiveLocationAutoArchiveLogs(t *testing.T) {
+	woc := newWoc()
+	trueValue := true
+	woc.artifactRepository = &config.ArtifactRepository{
+		AutoArchiveLogs: &trueValue,
+		ArchiveLogs:     &trueValue,
+	}
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyFormat: "path/in/bucket",
+	}
+	woc.operate()
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	var tmpl wfv1.Template
+	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	assert.NoError(t, err)
+	assert.True(t, *tmpl.ArchiveLocation.ArchiveLogs)
+}
+
 // TestVolumeAndVolumeMounts verifies the ability to carry forward volumes and volumeMounts from workflow.spec
 func TestVolumeAndVolumeMounts(t *testing.T) {
 	volumes := []apiv1.Volume{
@@ -879,7 +904,7 @@ spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
-    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'	
+    podSpecPatch: '{"containers":[{"name":"main", "resources":{"limits":{"cpu": "800m"}}}]}'
     container:
       image: docker/whalesay:latest
       command: [cowsay]

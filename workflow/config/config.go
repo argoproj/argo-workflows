@@ -83,6 +83,8 @@ type KubeConfig struct {
 type ArtifactRepository struct {
 	// ArchiveLogs enables log archiving
 	ArchiveLogs *bool `json:"archiveLogs,omitempty"`
+	// AutoArchiveLogs enables log archiving for all tasks regardless of workflow configuration
+	AutoArchiveLogs *bool `json:"autoArchiveLogs,omitempty"`
 	// S3 stores artifact in a S3-compliant object store
 	S3 *S3ArtifactRepository `json:"s3,omitempty"`
 	// Artifactory stores artifacts to JFrog Artifactory
