@@ -4198,7 +4198,8 @@
           "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
         },
         "podGC": {
-          "$ref": "#/definitions/v1alpha1PodGC"
+          "$ref": "#/definitions/v1alpha1PodGC",
+          "title": "PodGC describes the strategy to use when to deleting completed pods"
         },
         "podPriorityClassName": {
           "type": "string",
@@ -4217,7 +4218,8 @@
           "title": "+patchStrategy=merge\n+patchMergeKey=ip"
         },
         "securityContext": {
-          "$ref": "#/definitions/v1PodSecurityContext"
+          "$ref": "#/definitions/v1PodSecurityContext",
+          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
         },
         "podSpecPatch": {
           "type": "string",

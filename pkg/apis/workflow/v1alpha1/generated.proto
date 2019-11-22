@@ -847,6 +847,7 @@ message WorkflowSpec {
   // +optional
   optional string schedulerName = 21;
 
+  // PodGC describes the strategy to use when to deleting completed pods
   optional PodGC podGC = 22;
 
   // PriorityClassName to apply to workflow pods.
@@ -859,6 +860,9 @@ message WorkflowSpec {
   // +patchMergeKey=ip
   repeated k8s.io.api.core.v1.HostAlias hostAliases = 25;
 
+  // SecurityContext holds pod-level security attributes and common container settings.
+  // Optional: Defaults to empty.  See type description for default values of each field.
+  // +optional
   optional k8s.io.api.core.v1.PodSecurityContext securityContext = 26;
 
   // PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
