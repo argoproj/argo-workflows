@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-
 var wf = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -159,11 +158,11 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
-func TestMarshalling(t *testing.T){
+func TestMarshalling(t *testing.T) {
 
 	workf := unmarshalWF(wf)
 
-	wr :=WorkflowResponse{ Workflows:workf}
+	wr := WorkflowResponse{Workflows: workf}
 	bytes, err := wr.Marshal()
 	if err != nil {
 
@@ -171,6 +170,6 @@ func TestMarshalling(t *testing.T){
 	wr1 := WorkflowResponse{}
 	wr1.Unmarshal(bytes)
 	fmt.Println(wr1)
-	assert.Equal(t, wr,wr1)
+	assert.Equal(t, wr, wr1)
 
 }

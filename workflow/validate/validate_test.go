@@ -3,10 +3,10 @@ package validate
 import (
 	"testing"
 
-	"sigs.k8s.io/yaml"
 	"github.com/stretchr/testify/assert"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -302,7 +302,6 @@ func TestStepOutputReference(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-
 var stepStatusReferences = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -340,7 +339,6 @@ func TestStepStatusReference(t *testing.T) {
 	err := validate(stepStatusReferences)
 	assert.Nil(t, err)
 }
-
 
 var stepStatusReferencesNoFutureReference = `
 apiVersion: argoproj.io/v1alpha1
@@ -974,7 +972,6 @@ func TestPriorityVariable(t *testing.T) {
 	err := validate(workflowWithPriority)
 	assert.Nil(t, err)
 }
-
 
 var volumeMountArtifactPathCollision = `
 apiVersion: argoproj.io/v1alpha1
