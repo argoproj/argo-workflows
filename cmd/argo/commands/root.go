@@ -53,5 +53,10 @@ func addKubectlFlagsToCmd(cmd *cobra.Command) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
 	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+	SetClientConfig(clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin))
+}
+
+// SetClientConfig is a utility function used to set the clientConfig
+func SetClientConfig(config clientcmd.ClientConfig) {
+	clientConfig = config
 }
