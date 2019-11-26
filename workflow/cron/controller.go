@@ -139,7 +139,7 @@ func (cc *Controller) processNextCronItem() bool {
 		delete(cc.nameEntryIDMap, key.(string))
 	}
 
-	entryId, err := cc.cron.AddJob(cronWf.Options.Schedule, cronWorkflowOperationCtx)
+	entryId, err := cc.cron.AddJob(cronWf.Spec.Schedule, cronWorkflowOperationCtx)
 	if err != nil {
 		log.Errorf("could not schedule CronWorkflow: %s", err)
 		return true

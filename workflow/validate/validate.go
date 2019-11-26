@@ -187,18 +187,18 @@ func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, c
 		namespace = cronWf.Namespace
 	}
 
-	if _, err := cron.ParseStandard(cronWf.Options.Schedule); err != nil {
+	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
 	}
 
-	switch cronWf.Options.ConcurrencyPolicy {
+	switch cronWf.Spec.ConcurrencyPolicy {
 	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
 		// Do nothing
 	default:
-		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Options.ConcurrencyPolicy)
+		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
 	}
 
-	if cronWf.Options.StartingDeadlineSeconds != nil && *cronWf.Options.StartingDeadlineSeconds < 0 {
+	if cronWf.Spec.StartingDeadlineSeconds != nil && *cronWf.Spec.StartingDeadlineSeconds < 0 {
 		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
 	}
 
@@ -210,7 +210,7 @@ func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, c
 	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
 
 	// Check if all templates can be resolved.
-	for _, template := range cronWf.Spec.Templates {
+	for _, template := range cronWf.Spec.WorkflowSpec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())

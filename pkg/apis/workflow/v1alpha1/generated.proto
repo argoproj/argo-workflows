@@ -129,11 +129,9 @@ message ContinueOn {
 message CronWorkflow {
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
-  optional WorkflowSpec spec = 2;
+  optional CronWorkflowSpec spec = 2;
 
   optional CronWorkflowStatus status = 3;
-
-  optional CronWorkflowOptions options = 4;
 }
 
 // CronWorkflowList is list of CronWorkflow resources
@@ -144,20 +142,22 @@ message CronWorkflowList {
   repeated CronWorkflow items = 2;
 }
 
-// CronWorkflowOptions is the schedule of when to run CronWorkflows
-message CronWorkflowOptions {
+message CronWorkflowSpec {
+  // WorkflowSpec is the spec of the workflow to be run
+  optional WorkflowSpec workflowSpec = 1;
+
   // Schedule is a schedule to run the Workflow in Cron format
-  optional string schedule = 1;
+  optional string schedule = 2;
 
   // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
-  optional string concurrencyPolicy = 2;
+  optional string concurrencyPolicy = 3;
 
   // Suspend is a flag that will stop new CronWorkflows from running if set to true
-  optional bool suspend = 3;
+  optional bool suspend = 4;
 
   // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
   // original scheduled time if it is missed.
-  optional int64 startingDeadlineSeconds = 4;
+  optional int64 startingDeadlineSeconds = 5;
 }
 
 message CronWorkflowStatus {
@@ -530,6 +530,9 @@ message ResourceTemplate {
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
   optional int32 limit = 1;
+
+  // RetryOn is a list of NodePhase statuses that will be retried
+  optional string retryPolicy = 2;
 }
 
 // S3Artifact is the location of an S3 artifact

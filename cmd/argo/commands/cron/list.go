@@ -78,7 +78,7 @@ func printTable(wfList []wfv1.CronWorkflow, listArgs *listFlags) {
 		} else {
 			cleanLastScheduledTime = "N/A"
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, wf.Options.Schedule, wf.Options.Suspend)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%t", wf.ObjectMeta.Name, humanize.RelativeDurationShort(wf.ObjectMeta.CreationTimestamp.Time, time.Now()), cleanLastScheduledTime, wf.Spec.Schedule, wf.Spec.Suspend)
 		fmt.Fprintf(w, "\n")
 	}
 	_ = w.Flush()

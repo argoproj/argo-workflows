@@ -88,13 +88,13 @@ func (woc *cronWfOperationCtx) persistUpdate() error {
 }
 
 func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
-	if woc.cronWf.Options.Suspend {
+	if woc.cronWf.Spec.Suspend {
 		log.Infof("%s is suspended, skipping execution", woc.name)
 		return false, nil
 	}
 
-	if woc.cronWf.Options.ConcurrencyPolicy != "" {
-		switch woc.cronWf.Options.ConcurrencyPolicy {
+	if woc.cronWf.Spec.ConcurrencyPolicy != "" {
+		switch woc.cronWf.Spec.ConcurrencyPolicy {
 		case v1alpha1.AllowConcurrent, "":
 			// Do nothing
 		case v1alpha1.ForbidConcurrent:
@@ -111,7 +111,7 @@ func (woc *cronWfOperationCtx) enforceRuntimePolicy() (bool, error) {
 				}
 			}
 		default:
-			return false, fmt.Errorf("invalid ConcurrencyPolicy: %s", woc.cronWf.Options.ConcurrencyPolicy)
+			return false, fmt.Errorf("invalid ConcurrencyPolicy: %s", woc.cronWf.Spec.ConcurrencyPolicy)
 		}
 	}
 	return true, nil
@@ -134,7 +134,7 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 	if woc.cronWf.Status.LastScheduledTime != nil {
 		now := time.Now()
 		var missedExecutionTime time.Time
-		cronSchedule, err := cron.ParseStandard(woc.cronWf.Options.Schedule)
+		cronSchedule, err := cron.ParseStandard(woc.cronWf.Spec.Schedule)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func (woc *cronWfOperationCtx) runOutstandingWorkflows() error {
 		// We missed the latest execution time
 		if !missedExecutionTime.IsZero() {
 			// If StartingDeadlineSeconds is not set, or we are still within the deadline window, run the Workflow
-			if woc.cronWf.Options.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Options.StartingDeadlineSeconds)*time.Second)) {
+			if woc.cronWf.Spec.StartingDeadlineSeconds == nil || now.Before(missedExecutionTime.Add(time.Duration(*woc.cronWf.Spec.StartingDeadlineSeconds)*time.Second)) {
 				log.Infof("%s missed an execution at %s and is within StartingDeadline", woc.cronWf.Name, missedExecutionTime.Format("Mon Jan _2 15:04:05 2006"))
 				woc.Run()
 			}

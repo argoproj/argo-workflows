@@ -663,7 +663,7 @@ func CastToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 	wf := &wfv1.Workflow{
 		TypeMeta:   newTypeMeta,
 		ObjectMeta: newObjectMeta,
-		Spec:       cronWf.Spec,
+		Spec:       cronWf.Spec.WorkflowSpec,
 	}
 	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
 	return wf, nil

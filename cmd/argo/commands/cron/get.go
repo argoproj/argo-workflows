@@ -64,13 +64,13 @@ func printCronWorkflowTemplate(wf *wfv1.CronWorkflow, outFmt string) {
 	fmt.Printf(fmtStr, "Name:", wf.ObjectMeta.Name)
 	fmt.Printf(fmtStr, "Namespace:", wf.ObjectMeta.Namespace)
 	fmt.Printf(fmtStr, "Created:", humanize.Timestamp(wf.ObjectMeta.CreationTimestamp.Time))
-	fmt.Printf(fmtStr, "Schedule:", wf.Options.Schedule)
-	fmt.Printf(fmtStr, "Suspended:", wf.Options.Suspend)
-	if wf.Options.StartingDeadlineSeconds != nil {
-		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Options.StartingDeadlineSeconds)
+	fmt.Printf(fmtStr, "Schedule:", wf.Spec.Schedule)
+	fmt.Printf(fmtStr, "Suspended:", wf.Spec.Suspend)
+	if wf.Spec.StartingDeadlineSeconds != nil {
+		fmt.Printf(fmtStr, "StartingDeadlineSeconds:", *wf.Spec.StartingDeadlineSeconds)
 	}
-	if wf.Options.ConcurrencyPolicy != "" {
-		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Options.ConcurrencyPolicy)
+	if wf.Spec.ConcurrencyPolicy != "" {
+		fmt.Printf(fmtStr, "ConcurrencyPolicy:", wf.Spec.ConcurrencyPolicy)
 	}
 	if wf.Status.LastScheduledTime != nil {
 		fmt.Printf(fmtStr, "LastScheduledTime:", humanize.Timestamp(wf.Status.LastScheduledTime.Time))
