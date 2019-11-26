@@ -896,6 +896,10 @@
           "description": "Limit is the maximum number of attempts when retrying a container",
           "type": "integer",
           "format": "int32"
+        },
+        "retryPolicy": {
+          "description": "RetryOn is a list of NodePhase statuses that will be retried",
+          "type": "string"
         }
       }
     },
