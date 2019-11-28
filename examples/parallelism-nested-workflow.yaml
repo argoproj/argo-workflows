@@ -1,5 +1,5 @@
 # Example on specifying parallelism on the outer workflow and limiting the number of its
-# children workflowss to be run at the same time.
+# children workflows to be run at the same time.
 # 
 # As the parallelism of A is 1, the four steps of seq-step will run sequentially.
 
