@@ -200,7 +200,7 @@ func TestGetCurrentTemplateBase(t *testing.T) {
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 }
 
-func TestGetTemplateBase(t *testing.T) {
+func TestWithTemplateHolder(t *testing.T) {
 	wfClientset := fakewfclientset.NewSimpleClientset()
 	err := createWorkflowTemplate(wfClientset, anotherWorkflowTemplateYaml)
 	if err != nil {
@@ -213,46 +213,54 @@ func TestGetTemplateBase(t *testing.T) {
 	wftmpl := unmarshalWftmpl(baseWorkflowTemplateYaml)
 	ctx := NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault), wftmpl, nil)
 
+	var tmplGetter wfv1.TemplateGetter
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
-	tmplBase, err := ctx.GetTemplateBase(&tmplHolder)
+	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok := tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok := newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "base-workflow-template", wftmpl.Name)
+	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template name.
 	tmplHolder = wfv1.Template{Template: "unknown"}
-	tmplBase, err = ctx.GetTemplateBase(&tmplHolder)
+	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "base-workflow-template", wftmpl.Name)
+	assert.Equal(t, "base-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of existing template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	tmplBase, err = ctx.GetTemplateBase(&tmplHolder)
+	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
-		t.Fatal("tmplBase is not a WorkflowTemplate")
+		t.Fatal("tmplBase is not a lazy WorkflowTemplate")
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 
 	// Get the template base of unexisting template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
-	_, err = ctx.GetTemplateBase(&tmplHolder)
-	assert.EqualError(t, err, "workflow template unknown-workflow-template not found")
+	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
+	if !assert.NoError(t, err) {
+		t.Fatal(err)
+	}
+	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*lazyWorkflowTemplate)
+	if !assert.True(t, ok) {
+		t.Fatal("tmplBase is not a lazy WorkflowTemplate")
+	}
+	assert.Equal(t, "unknown-workflow-template", tmplGetter.GetName())
 }
 
 func TestResolveTemplate(t *testing.T) {
@@ -281,17 +289,18 @@ func TestResolveTemplate(t *testing.T) {
 	assert.Equal(t, "base-workflow-template", wftmpl.Name)
 	assert.Equal(t, "whalesay", tmpl.Name)
 
+	var tmplGetter wfv1.TemplateGetter
 	// Get the template of template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
 	ctx, tmpl, err = ctx.ResolveTemplate(&tmplHolder)
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = ctx.tmplBase.(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
-		t.Fatal("tmplBase is not a WorkflowTemplate")
+		t.Fatal("tmplBase is not a lazy WorkflowTemplate")
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
@@ -301,11 +310,11 @@ func TestResolveTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = ctx.tmplBase.(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "local-whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
@@ -315,11 +324,11 @@ func TestResolveTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = ctx.tmplBase.(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "another-workflow-template", wftmpl.Name)
+	assert.Equal(t, "another-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "another-whalesay", tmpl.Name)
 	assert.NotNil(t, tmpl.Container)
 
@@ -331,11 +340,11 @@ func TestResolveTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = ctx.tmplBase.(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "whalesay-with-arguments", tmpl.Name)
 	assert.Equal(t, "message", tmpl.Inputs.Parameters[0].Name)
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)
@@ -348,11 +357,11 @@ func TestResolveTemplate(t *testing.T) {
 	if !assert.NoError(t, err) {
 		t.Fatal(err)
 	}
-	wftmpl, ok = ctx.tmplBase.(*wfv1.WorkflowTemplate)
+	tmplGetter, ok = ctx.tmplBase.(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
 	}
-	assert.Equal(t, "some-workflow-template", wftmpl.Name)
+	assert.Equal(t, "some-workflow-template", tmplGetter.GetName())
 	assert.Equal(t, "nested-whalesay-with-arguments", tmpl.Name)
 	assert.Equal(t, "message", tmpl.Inputs.Parameters[0].Name)
 	assert.Equal(t, []string{"{{inputs.parameters.message}}"}, tmpl.Container.Args)

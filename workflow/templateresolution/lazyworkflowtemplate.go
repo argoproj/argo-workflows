@@ -56,11 +56,7 @@ func (lwt *lazyWorkflowTemplate) GetTemplateByName(name string) *wfv1.Template {
 
 // GetTemplateScope returns the template scope of workflow template.
 func (lwt *lazyWorkflowTemplate) GetTemplateScope() string {
-	err := lwt.ensureWorkflowTemplate()
-	if err != nil {
-		return ""
-	}
-	return lwt.wftmpl.GetTemplateScope()
+	return lwt.name
 }
 
 func (lwt *lazyWorkflowTemplate) ensureWorkflowTemplate() error {

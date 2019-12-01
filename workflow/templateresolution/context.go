@@ -117,20 +117,6 @@ func (ctx *Context) GetCurrentTemplateBase() wfv1.TemplateGetter {
 	return ctx.tmplBase
 }
 
-// GetTemplateBase returns a template base of a found template.
-func (ctx *Context) GetTemplateBase(tmplHolder wfv1.TemplateHolder) (wfv1.TemplateGetter, error) {
-	tmplRef := tmplHolder.GetTemplateRef()
-	if tmplRef != nil {
-		wftmpl, err := ctx.wftmplGetter.Get(tmplRef.Name)
-		if err != nil && apierr.IsNotFound(err) {
-			return nil, errors.Errorf(errors.CodeNotFound, "workflow template %s not found", tmplRef.Name)
-		}
-		return wftmpl, err
-	} else {
-		return ctx.tmplBase, nil
-	}
-}
-
 // ResolveTemplate digs into referenes and returns a merged template.
 // This method is the public start point of template resolution.
 func (ctx *Context) ResolveTemplate(tmplHolder wfv1.TemplateHolder) (*Context, *wfv1.Template, error) {
@@ -180,11 +166,11 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 		tmpl = newTmpl
 	}
 
-	newTmplBase, err := ctx.GetTemplateBase(tmplHolder)
+	// Update the template base of the context.
+	newTmplCtx, err := ctx.WithTemplateHolder(tmplHolder)
 	if err != nil {
 		return nil, nil, err
 	}
-	newTmplCtx := ctx.WithTemplateBase(newTmplBase)
 
 	// Return a concrete template without digging into it.
 	if tmpl.GetType() != wfv1.TemplateTypeUnknown {
@@ -204,6 +190,16 @@ func (ctx *Context) resolveTemplateImpl(tmplHolder wfv1.TemplateHolder, depth in
 	}
 
 	return finalTmplCtx, mergedTmpl, nil
+}
+
+// WithTemplateHolder creates new context with a template base of a given template holder.
+func (ctx *Context) WithTemplateHolder(tmplHolder wfv1.TemplateHolder) (*Context, error) {
+	tmplRef := tmplHolder.GetTemplateRef()
+	if tmplRef != nil {
+		return ctx.WithLazyWorkflowTemplate(ctx.tmplBase.GetNamespace(), tmplRef.Name)
+	} else {
+		return ctx.WithTemplateBase(ctx.tmplBase), nil
+	}
 }
 
 // WithTemplateBase creates new context with a wfv1.TemplateGetter.
