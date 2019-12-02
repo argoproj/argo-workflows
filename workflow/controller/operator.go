@@ -1984,7 +1984,7 @@ func processItem(fstTmpl *fasttemplate.Template, name string, index int, item wf
 		vals := make([]string, 0)
 		for itemKey, itemVal := range item.MapVal {
 			replaceMap[fmt.Sprintf("item.%s", itemKey)] = fmt.Sprintf("%v", itemVal)
-
+			vals = append(vals, fmt.Sprintf("%s:%s", itemKey, itemVal))
 		}
 		// sort the values so that the name is deterministic
 		sort.Strings(vals)
