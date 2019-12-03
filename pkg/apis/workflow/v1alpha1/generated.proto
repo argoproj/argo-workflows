@@ -484,6 +484,9 @@ message ResourceTemplate {
 message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
   optional int32 limit = 1;
+
+  // RetryPolicy is a policy of NodePhase statuses that will be retried
+  optional string retryPolicy = 2;
 }
 
 // S3Artifact is the location of an S3 artifact

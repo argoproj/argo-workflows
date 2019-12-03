@@ -1486,7 +1486,7 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 					},
 					"retryPolicy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "RetryOn is a list of NodePhase statuses that will be retried",
+							Description: "RetryPolicy is a policy of NodePhase statuses that will be retried",
 							Type:        []string{"string"},
 							Format:      "",
 						},
