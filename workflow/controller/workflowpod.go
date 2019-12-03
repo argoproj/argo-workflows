@@ -266,11 +266,20 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
 	}
-	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+
+	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(nodeID, metav1.GetOptions{})
+
+	if err != nil {
+		woc.log.Infof("There was an error when getting the pod named %s: %v", nodeID, err)
+		created, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
+	} else {
+		// workflow pod names are deterministic. We can get here if the
+		// controller fails to persist the workflow after creating the pod.
+		woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
+	}
+
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {
-			// workflow pod names are deterministic. We can get here if the
-			// controller fails to persist the workflow after creating the pod.
 			woc.log.Infof("Skipped pod %s (%s) creation: already exists", nodeName, nodeID)
 			return created, nil
 		}
