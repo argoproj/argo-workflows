@@ -87,8 +87,8 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 	}
 
 	if postgresConfig.SSL {
-		var options := map[string]string{
-			"sslmode": "true"
+		options := map[string]string{
+			"sslmode": "true",
 		}
 		settings.Options = options
 	}
