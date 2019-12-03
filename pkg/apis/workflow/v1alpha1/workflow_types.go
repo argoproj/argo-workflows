@@ -734,7 +734,7 @@ type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
-	// RetryOn is a list of NodePhase statuses that will be retried
+	// RetryPolicy is a policy of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 }
 
