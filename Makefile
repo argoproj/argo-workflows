@@ -54,30 +54,30 @@ builder-image:
 
 .PHONY: cli
 cli:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
 
 .PHONY: cli-linux-amd64
 cli-linux-amd64:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-amd64 ./cmd/argo
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-amd64 ./cmd/argo
 
 .PHONY: cli-linux-ppc64le
 cli-linux-ppc64le:
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-ppc64le ./cmd/argo
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-ppc64le ./cmd/argo
 
 .PHONY: cli-linux-s390x
 cli-linux-s390x:
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-s390x ./cmd/argo
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-s390x ./cmd/argo
 
 .PHONY: cli-linux
 cli-linux: cli-linux-amd64 cli-linux-ppc64le cli-linux-s390x
 
 .PHONY: cli-darwin
 cli-darwin:
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-darwin-amd64 ./cmd/argo
+	CGO_ENABLED=0 GOOS=darwin go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-darwin-amd64 ./cmd/argo
 
 .PHONY: cli-windows
 cli-windows:
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-windows-amd64 ./cmd/argo
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
 cli-image:
@@ -86,12 +86,12 @@ cli-image:
 
 .PHONY: controller
 controller:
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+	CGO_ENABLED=0 go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image:
 ifeq ($(DEV_IMAGE), true)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o workflow-controller ./cmd/workflow-controller
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS}' -o workflow-controller ./cmd/workflow-controller
 	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
 	rm -f workflow-controller
 else
@@ -101,7 +101,7 @@ endif
 
 .PHONY: executor
 executor:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
 .PHONY: executor-base-image
 executor-base-image:
@@ -118,7 +118,7 @@ executor-base-image:
 .PHONY: executor-image
 ifeq ($(DEV_IMAGE), true)
 executor-image: executor-base-image
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
@@ -182,8 +182,8 @@ release-clis: cli-image
 	docker build --iidfile /tmp/argo-cli-build --target argo-build --build-arg MAKE_TARGET="cli-darwin cli-windows" .
 	docker create --name tmp-cli `cat /tmp/argo-cli-build`
 	mkdir -p ${DIST_DIR}
-	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-darwin-amd64 ${DIST_DIR}/argo-darwin-amd64
-	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-windows-amd64 ${DIST_DIR}/argo-windows-amd64
+	docker cp tmp-cli:/argo/dist/argo-darwin-amd64 ${DIST_DIR}/argo-darwin-amd64
+	docker cp tmp-cli:/argo/dist/argo-windows-amd64 ${DIST_DIR}/argo-windows-amd64
 	docker rm tmp-cli
 	docker create --name tmp-cli $(IMAGE_PREFIX)argocli:$(IMAGE_TAG)
 	docker cp tmp-cli:/bin/argo ${DIST_DIR}/argo-linux-amd64
