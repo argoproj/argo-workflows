@@ -270,7 +270,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Get(nodeID, metav1.GetOptions{})
 
 	if err != nil {
-		woc.log.Infof("There was an error when getting the pod named %s: %v", nodeID, err)
+		// pod does not exist yet
 		created, err = woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	} else {
 		// workflow pod names are deterministic. We can get here if the
