@@ -28,7 +28,7 @@ spec:
         arguments:
           parameters:
           - name: cmd
-            value: dep ensure && make lint test verify-codegen
+            value: make lint test verify-codegen
 
   - name: ci-builder
     inputs:
@@ -36,7 +36,7 @@ spec:
       - name: cmd
       artifacts:
       - name: code
-        path: /go/src/github.com/argoproj/argo
+        path: argo
         git:
           repo: "{{workflow.parameters.repo}}"
           revision: "{{workflow.parameters.revision}}"
@@ -44,7 +44,7 @@ spec:
       image: argoproj/argo-ci-builder:latest
       command: [sh, -c]
       args: ["{{inputs.parameters.cmd}}"]
-      workingDir: /go/src/github.com/argoproj/argo
+      workingDir: argo
 
   - name: ci-dind
     inputs:
@@ -52,7 +52,7 @@ spec:
       - name: cmd
       artifacts:
       - name: code
-        path: /go/src/github.com/argoproj/argo
+        path: argo
         git:
           repo: "{{workflow.parameters.repo}}"
           revision: "{{workflow.parameters.revision}}"
@@ -60,7 +60,7 @@ spec:
       image: argoproj/argo-ci-builder:latest
       command: [sh, -c]
       args: ["until docker ps; do sleep 3; done && {{inputs.parameters.cmd}}"]
-      workingDir: /go/src/github.com/argoproj/argo
+      workingDir: argo
       env:
       - name: DOCKER_HOST
         value: 127.0.0.1
