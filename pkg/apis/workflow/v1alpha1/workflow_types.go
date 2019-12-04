@@ -68,6 +68,7 @@ type TemplateGetter interface {
 	GetName() string
 	GroupVersionKind() schema.GroupVersionKind
 	GetTemplateByName(name string) *Template
+	GetTemplateScope() string
 }
 
 // TemplateHolder is an interface for holders of templates.
@@ -75,6 +76,12 @@ type TemplateHolder interface {
 	GetTemplateName() string
 	GetTemplateRef() *TemplateRef
 	IsResolvable() bool
+}
+
+// TemplateStorage is an interface of template storage getter and setter.
+type TemplateStorage interface {
+	GetStoredTemplate(templateScope string, holder TemplateHolder) *Template
+	SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error)
 }
 
 // Workflow is the definition of a workflow resource
@@ -97,6 +104,7 @@ type WorkflowList struct {
 }
 
 var _ TemplateGetter = &Workflow{}
+var _ TemplateStorage = &Workflow{}
 
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
@@ -739,7 +747,7 @@ type RetryStrategy struct {
 	// Limit is the maximum number of attempts when retrying a container
 	Limit *int32 `json:"limit,omitempty" protobuf:"varint,1,opt,name=limit"`
 
-	// RetryOn is a list of NodePhase statuses that will be retried
+	// RetryPolicy is a policy of NodePhase statuses that will be retried
 	RetryPolicy RetryPolicy `json:"retryPolicy,omitempty" protobuf:"bytes,2,opt,name=retryPolicy,casttype=RetryPolicy"`
 
 	// Backoff is a backoff strategy
@@ -770,10 +778,15 @@ type NodeStatus struct {
 	TemplateRef *TemplateRef `json:"templateRef,omitempty" protobuf:"bytes,6,opt,name=templateRef"`
 
 	// StoredTemplateID is the ID of stored template.
+	// DEPRECATED: This value is not used anymore.
 	StoredTemplateID string `json:"storedTemplateID,omitempty" protobuf:"bytes,18,opt,name=storedTemplateID"`
 
 	// WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.
+	// DEPRECATED: This value is not used anymore.
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
+
+	// TemplateScope is the template scope in which the template of this node was retrieved.
+	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
 	// Can be used as a state machine.
@@ -864,6 +877,20 @@ func (n NodeStatus) Successful() bool {
 func (n NodeStatus) CanRetry() bool {
 	// TODO(shri): Check if there are some 'unretryable' errors.
 	return n.Completed() && !n.Successful()
+}
+
+var _ TemplateHolder = &NodeStatus{}
+
+func (n *NodeStatus) GetTemplateName() string {
+	return n.TemplateName
+}
+
+func (n *NodeStatus) GetTemplateRef() *TemplateRef {
+	return n.TemplateRef
+}
+
+func (n *NodeStatus) IsResolvable() bool {
+	return true
 }
 
 // S3Bucket contains the access information required for interfacing with an S3 bucket
@@ -1279,6 +1306,11 @@ func (wf *Workflow) GetTemplateByName(name string) *Template {
 	return nil
 }
 
+// GetTemplateScope returns the template scope of workflow.
+func (wf *Workflow) GetTemplateScope() string {
+	return ""
+}
+
 // NodeID creates a deterministic node ID based on a node name
 func (wf *Workflow) NodeID(name string) string {
 	if name == wf.ObjectMeta.Name {
@@ -1289,34 +1321,47 @@ func (wf *Workflow) NodeID(name string) string {
 	return fmt.Sprintf("%s-%v", wf.ObjectMeta.Name, h.Sum32())
 }
 
-// GetStoredTemplate gets a resolved template from stored data.
-func (wf *Workflow) GetStoredTemplate(node *NodeStatus) *Template {
-	id := node.StoredTemplateID
-	if id == "" {
+// GetStoredTemplate retrieves a template from stored templates of the workflow.
+func (wf *Workflow) GetStoredTemplate(templateScope string, holder TemplateHolder) *Template {
+	tmplID := wf.getStoredTemplateName(templateScope, holder)
+	if tmplID == "" {
 		return nil
 	}
-	tmpl, ok := wf.Status.StoredTemplates[id]
-	if ok {
-		return &tmpl
+	tmpl, ok := wf.Status.StoredTemplates[tmplID]
+	if !ok {
+		return nil
 	}
-	return nil
+	return &tmpl
 }
 
-// GetStoredOrLocalTemplate gets a resolved template from stored data or local template.
-func (wf *Workflow) GetStoredOrLocalTemplate(node *NodeStatus) *Template {
-	// Try to find a template from stored data.
-	tmpl := wf.GetStoredTemplate(node)
-	if tmpl != nil {
-		return tmpl
+// SetStoredTemplate stores a new template in stored templates of the workflow.
+func (wf *Workflow) SetStoredTemplate(templateScope string, holder TemplateHolder, tmpl *Template) (bool, error) {
+	tmplID := wf.getStoredTemplateName(templateScope, holder)
+	if tmplID == "" {
+		return false, nil
 	}
-	// Try to get template from Workflow.
-	if node.WorkflowTemplateName == "" && node.TemplateName != "" {
-		tmpl := wf.GetTemplateByName(node.TemplateName)
-		if tmpl != nil {
-			return tmpl
+	_, ok := wf.Status.StoredTemplates[tmplID]
+	if !ok {
+		if wf.Status.StoredTemplates == nil {
+			wf.Status.StoredTemplates = map[string]Template{}
 		}
+		wf.Status.StoredTemplates[tmplID] = *tmpl
+		return true, nil
 	}
-	return nil
+	return false, nil
+}
+
+// getStoredTemplateName returns the stored template name of a given template holder on the template scope.
+func (wf *Workflow) getStoredTemplateName(templateScope string, holder TemplateHolder) string {
+	tmplRef := holder.GetTemplateRef()
+	if tmplRef != nil {
+		return fmt.Sprintf("%s/%s", tmplRef.Name, tmplRef.Template)
+	} else if templateScope != "" {
+		return fmt.Sprintf("%s/%s", templateScope, holder.GetTemplateName())
+	} else {
+		// Do not store workflow-local templates.
+		return ""
+	}
 }
 
 // ContinueOn defines if a workflow should continue even if a task or step fails/errors.

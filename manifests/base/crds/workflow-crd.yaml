@@ -3,6 +3,16 @@ kind: CustomResourceDefinition
 metadata:
   name: workflows.argoproj.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    name: Age
+    format: date-time
+    type: date
   group: argoproj.io
   version: v1alpha1
   scope: Namespaced
