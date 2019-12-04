@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
@@ -25,9 +24,8 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			_ = InitWorkflowClient()
-			wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
 			var err error
+			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
 				if len(args) > 1 {

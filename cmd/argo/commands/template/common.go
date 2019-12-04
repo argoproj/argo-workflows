@@ -3,8 +3,10 @@ package template
 import (
 	"log"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -57,3 +59,14 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
 	return wftmplClient
 }
+
+type LazyWorkflowTemplateGetter struct{}
+
+func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	if wftmplClient == nil {
+		_ = InitWorkflowTemplateClient()
+	}
+	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
+}
+
+var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}

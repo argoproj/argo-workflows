@@ -10,6 +10,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -21,9 +22,9 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
-	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
+	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
 	namespace        string
@@ -120,3 +121,14 @@ func ansiFormat(s string, codes ...int) string {
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
 }
+
+type LazyWorkflowTemplateGetter struct{}
+
+func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	if wftmplClient == nil {
+		_ = InitWorkflowClient()
+	}
+	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
+}
+
+var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
