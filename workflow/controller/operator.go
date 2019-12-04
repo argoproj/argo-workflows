@@ -1147,10 +1147,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			// Last child node is still running.
 			return retryParentNode, nil
 		}
-		// This is the case the child node has been done,
-		//  but the retry node state is still running.
-		//  Create another child node.
+
+
+		// Create a new child node and append it to the retry node.
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
+		woc.addChildNode(retryNodeName, nodeName)
 		node = nil
 
 		// Change the `pod.name` variable to the new retry node name
@@ -1202,9 +1203,8 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	node = woc.getNodeByName(node.Name)
 
-	// Swap the node back to retry node and add worker node as child.
+	// Swap the node back to retry node.
 	if retryNodeName != "" {
-		woc.addChildNode(retryNodeName, node.Name)
 		node = woc.getNodeByName(retryNodeName)
 	}
 
