@@ -490,7 +490,7 @@ message RetryStrategy {
   // Limit is the maximum number of attempts when retrying a container
   optional int32 limit = 1;
 
-  // RetryOn is a list of NodePhase statuses that will be retried
+  // RetryPolicy is a policy of NodePhase statuses that will be retried
   optional string retryPolicy = 2;
 }
 
