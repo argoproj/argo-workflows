@@ -536,7 +536,7 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 
 		// Max duration limit hasn't been exceeded, process back off
 		if retryStrategy.Backoff.Duration == "" {
-			return nil, false, fmt.Errorf("Failed to find first child of node " + node.Name)
+			return nil, false, fmt.Errorf("no base duration specified for retryStrategy")
 		}
 		baseDuration, err := parseStringToDuration(retryStrategy.Backoff.Duration)
 		if err != nil {
@@ -1226,10 +1226,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
 			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
-		processedRetryParentNode, ok, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
+		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
 			return woc.markNodeError(retryNodeName, err), err
-		} else if !ok {
+		} else if !continueExecution {
+			// We are still waiting for a retry delay to finish
 			return retryParentNode, nil
 		}
 		retryParentNode = processedRetryParentNode
