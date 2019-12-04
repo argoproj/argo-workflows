@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
@@ -30,6 +31,7 @@ func NewLintCommand() *cobra.Command {
 			}
 
 			_ = InitWorkflowTemplateClient()
+			wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
 				if len(args) > 1 {
@@ -37,7 +39,7 @@ func NewLintCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				fmt.Printf("Verifying all workflow template manifests in directory: %s\n", args[0])
-				err = validate.LintWorkflowTemplateDir(wfClientset, namespace, args[0], strict)
+				err = validate.LintWorkflowTemplateDir(wftmplGetter, namespace, args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -48,7 +50,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = validate.LintWorkflowTemplateFile(wfClientset, namespace, yamlFile, strict)
+					err = validate.LintWorkflowTemplateFile(wftmplGetter, namespace, yamlFile, strict)
 					if err != nil {
 						break
 					}

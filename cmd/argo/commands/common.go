@@ -21,6 +21,7 @@ var (
 	restConfig       *rest.Config
 	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
+	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
@@ -97,6 +98,7 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	}
 	wfClientset = versioned.NewForConfigOrDie(restConfig)
 	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
+	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
 	return wfClient
 }
 
