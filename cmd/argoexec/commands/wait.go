@@ -37,9 +37,9 @@ func waitContainer() error {
 	}()
 
 	// Wait for main container to complete
-	err := wfExecutor.Wait()
-	if err != nil {
-		wfExecutor.AddError(err)
+	waitErr := wfExecutor.Wait()
+	if waitErr != nil {
+		wfExecutor.AddError(waitErr)
 		// do not return here so we can still try to kill sidecars & save outputs
 	}
 
@@ -72,5 +72,11 @@ func waitContainer() error {
 		wfExecutor.AddError(err)
 		return err
 	}
+
+	// To prevent the workflow step from completing successfully, return the error occurred during wait.
+	if waitErr != nil {
+		return waitErr
+	}
+
 	return nil
 }
