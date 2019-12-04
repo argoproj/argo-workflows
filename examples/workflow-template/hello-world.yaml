@@ -9,7 +9,7 @@ spec:
     templateRef:
       name: workflow-template-whalesay-template
       template: whalesay-template
-    arguments:
+    inputs:
       parameters:
       - name: message
         value: "hello world"

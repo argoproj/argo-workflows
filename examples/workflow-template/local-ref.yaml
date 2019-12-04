@@ -7,10 +7,10 @@ spec:
   templates:
   - name: whalesay
     template: whalesay-template
-    arguments:
+    inputs:
       parameters:
       - name: message
-        value: "hello world"
+        value: "hello from local ref"
   - name: whalesay-template
     inputs:
       parameters:
