@@ -258,7 +258,7 @@ func shouldExecute(when string) (bool, error) {
 	expression, err := govaluate.NewEvaluableExpression(when)
 	if err != nil {
 		if strings.Contains(err.Error(), "Invalid token") {
-			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (Hint: try wrapping the affected expression in quotes (\"))", when, err)
+			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err)
 		}
 		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
