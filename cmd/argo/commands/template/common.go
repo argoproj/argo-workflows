@@ -60,8 +60,11 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 	return wftmplClient
 }
 
+// LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
+// supports lazy initialization.
 type LazyWorkflowTemplateGetter struct{}
 
+// Get initializes it just before it's actually used and returns a retrieved workflow template.
 func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
 	if wftmplClient == nil {
 		_ = InitWorkflowTemplateClient()
