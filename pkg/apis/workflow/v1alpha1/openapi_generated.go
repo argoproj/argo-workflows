@@ -1052,14 +1052,21 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"storedTemplateID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StoredTemplateID is the ID of stored template.",
+							Description: "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"workflowTemplateName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.",
+							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"templateScope": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateScope is the template scope in which the template of this node was retrieved.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

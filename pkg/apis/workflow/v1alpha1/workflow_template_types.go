@@ -41,3 +41,8 @@ func (wftmpl *WorkflowTemplate) GetTemplateByName(name string) *Template {
 	}
 	return nil
 }
+
+// GetTemplateScope returns the template scope of workflow template.
+func (wftmpl *WorkflowTemplate) GetTemplateScope() string {
+	return wftmpl.Name
+}
