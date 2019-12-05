@@ -363,6 +363,7 @@ message NodeStatus {
   optional string workflowTemplateName = 19;
 
   // TemplateScope is the template scope in which the template of this node was retrieved.
+  // DEPRECATED: This value is not used anymore.
   optional string templateScope = 20;
 
   // Phase a simple, high-level summary of where the node is in its lifecycle.
