@@ -2929,6 +2929,13 @@ func (m *NodeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.TemplateScope)
+	copy(dAtA[i:], m.TemplateScope)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.TemplateScope)))
+	i--
+	dAtA[i] = 0x1
+	i--
+	dAtA[i] = 0xa2
 	i -= len(m.WorkflowTemplateName)
 	copy(dAtA[i:], m.WorkflowTemplateName)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.WorkflowTemplateName)))
@@ -5500,6 +5507,8 @@ func (m *NodeStatus) Size() (n int) {
 	n += 2 + l + sovGenerated(uint64(l))
 	l = len(m.WorkflowTemplateName)
 	n += 2 + l + sovGenerated(uint64(l))
+	l = len(m.TemplateScope)
+	n += 2 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -6487,6 +6496,7 @@ func (this *NodeStatus) String() string {
 		`OutboundNodes:` + fmt.Sprintf("%v", this.OutboundNodes) + `,`,
 		`StoredTemplateID:` + fmt.Sprintf("%v", this.StoredTemplateID) + `,`,
 		`WorkflowTemplateName:` + fmt.Sprintf("%v", this.WorkflowTemplateName) + `,`,
+		`TemplateScope:` + fmt.Sprintf("%v", this.TemplateScope) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -11528,6 +11538,38 @@ func (m *NodeStatus) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.WorkflowTemplateName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 20:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TemplateScope", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TemplateScope = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
