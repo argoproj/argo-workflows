@@ -12,9 +12,11 @@ import (
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
 var wfClientset = fakewfclientset.NewSimpleClientset()
+var wftmplGetter = templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(metav1.NamespaceDefault))
 
 func createWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
@@ -29,14 +31,14 @@ func createWorkflowTemplate(yamlStr string) error {
 // its validation result.
 func validate(yamlStr string) error {
 	wf := unmarshalWf(yamlStr)
-	return ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	return ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 }
 
 // validateWorkflowTemplate is a test helper to accept WorkflowTemplate YAML as a string and return
 // its validation result.
 func validateWorkflowTemplate(yamlStr string) error {
 	wftmpl := unmarshalWftmpl(yamlStr)
-	return ValidateWorkflowTemplate(wfClientset, metav1.NamespaceDefault, wftmpl)
+	return ValidateWorkflowTemplate(wftmplGetter, wftmpl)
 }
 
 func unmarshalWf(yamlStr string) *wfv1.Workflow {
@@ -1007,14 +1009,13 @@ spec:
 func TestVolumeMountArtifactPathCollision(t *testing.T) {
 	// ensure we detect and reject path collisions
 	wf := unmarshalWf(volumeMountArtifactPathCollision)
-	namespace := metav1.NamespaceDefault
-	err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	if assert.NotNil(t, err) {
 		assert.Contains(t, err.Error(), "already mounted")
 	}
 	// tweak the mount path and validation should now be successful
 	wf.Spec.Templates[0].Container.VolumeMounts[0].MountPath = "/differentpath"
-	err = ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -1300,7 +1301,7 @@ func TestPodNameVariable(t *testing.T) {
 }
 
 func TestGlobalParamWithVariable(t *testing.T) {
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, test.LoadE2EWorkflow("functional/global-outputs-variable.yaml"), ValidateOpts{})
 	assert.NoError(t, err)
 }
 
@@ -1325,9 +1326,9 @@ spec:
 // TestSpecArgumentNoValue we allow parameters to have no value at the spec level during linting
 func TestSpecArgumentNoValue(t *testing.T) {
 	wf := unmarshalWf(specArgumentNoValue)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
 	assert.NoError(t, err)
-	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.NotNil(t, err)
 }
 
@@ -1362,7 +1363,7 @@ spec:
 // TestSpecArgumentSnakeCase we allow parameter and artifact names to be snake case
 func TestSpecArgumentSnakeCase(t *testing.T) {
 	wf := unmarshalWf(specArgumentSnakeCase)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
 	assert.NoError(t, err)
 }
 
@@ -1397,7 +1398,7 @@ spec:
 // TestSpecBadSequenceCountAndEnd verifies both count and end cannot be defined
 func TestSpecBadSequenceCountAndEnd(t *testing.T) {
 	wf := unmarshalWf(specBadSequenceCountAndEnd)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
 	assert.Error(t, err)
 }
 
@@ -1417,7 +1418,7 @@ spec:
 // TestCustomTemplatVariable verifies custom template variable
 func TestCustomTemplatVariable(t *testing.T) {
 	wf := unmarshalWf(customVariableInput)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{Lint: true})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{Lint: true})
 	assert.Equal(t, err, nil)
 }
 
@@ -1518,28 +1519,28 @@ func TestBaseImageOutputVerify(t *testing.T) {
 	for _, executor := range []string{common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet, common.ContainerRuntimeExecutorPNS, common.ContainerRuntimeExecutorDocker, ""} {
 		switch executor {
 		case common.ContainerRuntimeExecutorK8sAPI, common.ContainerRuntimeExecutorKubelet:
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorPNS:
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.Error(t, err)
 		case common.ContainerRuntimeExecutorDocker, "":
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseOutParam, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
-			err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+			err = ValidateWorkflow(wftmplGetter, wfBaseWithEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 			assert.NoError(t, err)
 		}
-		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
+		err = ValidateWorkflow(wftmplGetter, wfEmptyDirOutArt, ValidateOpts{ContainerRuntimeExecutor: executor})
 		assert.NoError(t, err)
 	}
 }
@@ -1737,7 +1738,7 @@ spec:
 // TestValidResourceWorkflow verifies a workflow of a valid resource.
 func TestValidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(validResourceWorkflow)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.Equal(t, err, nil)
 }
 
@@ -1780,11 +1781,11 @@ spec:
 // TestInvalidResourceWorkflow verifies an error against a workflow of an invalid resource.
 func TestInvalidResourceWorkflow(t *testing.T) {
 	wf := unmarshalWf(invalidResourceWorkflow)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "templates.whalesay.resource.manifest must be a valid yaml")
 
 	wf = unmarshalWf(invalidActionResourceWorkflow)
-	err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "templates.whalesay.resource.action must be one of: get, create, apply, delete, replace, patch")
 }
 
@@ -1808,12 +1809,12 @@ spec:
 // TestUnknownPodGCStrategy verifies pod gc strategy is correct.
 func TestUnknownPodGCStrategy(t *testing.T) {
 	wf := unmarshalWf(invalidPodGC)
-	err := ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+	err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 	assert.EqualError(t, err, "podGC.strategy unknown strategy 'Foo'")
 
 	for _, strat := range []wfv1.PodGCStrategy{wfv1.PodGCOnPodCompletion, wfv1.PodGCOnPodSuccess, wfv1.PodGCOnWorkflowCompletion, wfv1.PodGCOnWorkflowSuccess} {
 		wf.Spec.PodGC.Strategy = strat
-		err = ValidateWorkflow(wfClientset, metav1.NamespaceDefault, wf, ValidateOpts{})
+		err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
 }
@@ -1886,25 +1887,24 @@ spec:
 
 // TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
 func TestAutomountServiceAccountTokenUse(t *testing.T) {
-	namespace := metav1.NamespaceDefault
 	{
 		wf := unmarshalWf(validAutomountServiceAccountTokenUseWfLevel)
-		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
 	{
 		wf := unmarshalWf(validAutomountServiceAccountTokenUseTmplLevel)
-		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.NoError(t, err)
 	}
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseWfLevel)
-		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 	{
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
-		err := ValidateWorkflow(wfClientset, namespace, wf, ValidateOpts{})
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
 	}
 }
