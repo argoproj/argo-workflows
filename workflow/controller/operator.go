@@ -542,8 +542,12 @@ func (woc *wfOperationCtx) processNodeRetries(node *wfv1.NodeStatus, retryStrate
 		if err != nil {
 			return nil, false, err
 		}
-		// Formula: timeToWait = duration * factor^retry_number
-		timeToWait := baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
+
+		timeToWait := baseDuration
+		if retryStrategy.Backoff.Factor > 0 {
+			// Formula: timeToWait = duration * factor^retry_number
+			timeToWait = baseDuration * time.Duration(math.Pow(float64(retryStrategy.Backoff.Factor), float64(len(node.Children))))
+		}
 		waitingDeadline := lastChildNode.FinishedAt.Add(timeToWait)
 
 		// See if we have waited past the deadline
