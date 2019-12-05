@@ -3,6 +3,7 @@ package templateresolution
 import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	typed "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/sirupsen/logrus"
@@ -17,6 +18,10 @@ const maxResolveDepth int = 10
 // workflowTemplateInterfaceWrapper is an internal struct to wrap clientset.
 type workflowTemplateInterfaceWrapper struct {
 	clientset typed.WorkflowTemplateInterface
+}
+
+func WrapWorkflowTemplateInterface(clientset v1alpha1.WorkflowTemplateInterface) WorkflowTemplateNamespacedGetter {
+	return &workflowTemplateInterfaceWrapper{clientset: clientset}
 }
 
 // Get retrieves the WorkflowTemplate of a given name.
@@ -55,7 +60,7 @@ func NewContext(wftmplGetter WorkflowTemplateNamespacedGetter, tmplBase wfv1.Tem
 // NewContext returns new Context.
 func NewContextFromClientset(clientset typed.WorkflowTemplateInterface, tmplBase wfv1.TemplateGetter, storage wfv1.TemplateStorage) *Context {
 	return &Context{
-		wftmplGetter: &workflowTemplateInterfaceWrapper{clientset: clientset},
+		wftmplGetter: WrapWorkflowTemplateInterface(clientset),
 		tmplBase:     tmplBase,
 		storage:      storage,
 		log:          log.WithFields(logrus.Fields{}),
