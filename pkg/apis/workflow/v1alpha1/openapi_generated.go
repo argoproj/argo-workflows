@@ -1163,7 +1163,7 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"templateScope": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TemplateScope is the template scope in which the template of this node was retrieved. DEPRECATED: This value is not used anymore.",
+							Description: "TemplateScope is the template scope in which the template of this node was retrieved.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
