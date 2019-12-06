@@ -791,7 +791,6 @@ type NodeStatus struct {
 	WorkflowTemplateName string `json:"workflowTemplateName,omitempty" protobuf:"bytes,19,opt,name=workflowTemplateName"`
 
 	// TemplateScope is the template scope in which the template of this node was retrieved.
-	// DEPRECATED: This value is not used anymore.
 	TemplateScope string `json:"templateScope,omitempty" protobuf:"bytes,20,opt,name=templateScope"`
 
 	// Phase a simple, high-level summary of where the node is in its lifecycle.
