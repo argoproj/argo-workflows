@@ -1155,7 +1155,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			return retryParentNode, nil
 		}
 
-
 		// Create a new child node and append it to the retry node.
 		nodeName = fmt.Sprintf("%s(%d)", retryNodeName, len(retryParentNode.Children))
 		woc.addChildNode(retryNodeName, nodeName)

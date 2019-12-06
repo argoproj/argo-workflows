@@ -46,7 +46,7 @@ type stackTracer interface {
 // New returns an error with the supplied message.
 // New also records the stack trace at the point it was called.
 func New(code string, message string) error {
- 	err := errors.New(message)
+	err := errors.New(message)
 	return argoerr{code, message, err.(stackTracer)}
 }
 
