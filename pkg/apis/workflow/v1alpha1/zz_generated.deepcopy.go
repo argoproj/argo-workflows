@@ -1053,7 +1053,7 @@ func (in *Workflow) DeepCopyObject() runtime.Object {
 func (in *WorkflowList) DeepCopyInto(out *WorkflowList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Workflow, len(*in))
@@ -1335,7 +1335,7 @@ func (in *WorkflowTemplate) DeepCopyObject() runtime.Object {
 func (in *WorkflowTemplateList) DeepCopyInto(out *WorkflowTemplateList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]WorkflowTemplate, len(*in))

@@ -1,4 +1,44 @@
 # Changelog
+## 2.4.3 (2019-12-05)
+
+## Changelog since v2.4.2
+
+### Bugs
+- Error occurred on pod watch should result in an error on the wait container (#1776) (@gerdos82)
+- SSL enabled database connection for workflow repository (#1756) (@AntoineDao)
+- Added hint when using certain tokens in when expressions (#1810) (@simbeh7)
+- Handle operation level errors PVC in Retry (#1762) (@dtaniwaki)
+- Do not resolve remote templates in lint (#1787) (@dtaniwaki)
+- Fix retry node name issue on error (#1732) (@dtaniwaki)
+- Refactoring Template Resolution Logic (#1744) (@dtaniwaki)
+- Support no-headers flag (#1760) (@dtaniwaki)
+- Filter workflows in list  based on name prefix (#1721) (@sanoojm)
+- Added ability to auto-resume from suspended state (#1715) (@simbeh7)
+- Fixed incorrect `pod.name` in retry pods (#1699) (@simbeh7)
+
+## 2.4.2 (2019-10-21)
+
+## Changelog since v2.4.1
+
+### New Features
++ Apply Strategic merge patch against the pod spec (#1687) (@sarabala1979)
++ Added status of previous steps as variables (#1681)(@simster7)
++ Print multiple workflows in one command (#1650) (@dtaniwaki)
+
+### Bugs 
+- Fixed broke metrics endpoint per #1634 (#1695) (@RichardAvendano)
+- Fix issue that workflow.priority substitution didn't pass validation (#1690) (@mark9white)
+
+
+## 2.4.1 (2019-10-08)
+
+## Changelog since v2.4.0
+
+### Bugs
+- Stop failing if artifact file exists, but empty (#1653) (@Ark-kun)
+- Don't provision VM for empty artifacts(#1660) (@simster7)
+-  Resolve WorkflowTemplate lazily (#1655) (@dtaniwaki )
+
 
 ## 2.4.0 (2019-10-02)
 

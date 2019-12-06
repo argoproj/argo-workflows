@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sidecar-
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: load-data
+        template: load-data
+  - name: load-data
+    container:
+        image: alpine:3.7
+        command: [sh, -c]
+        args: ["
+          apk update &&
+          apk add postgresql-client &&
+          until pg_isready -h 127.0.0.1 -p 5432 ; do sleep .5; echo sleep; done &&
+          PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres -c 'CREATE TABLE films (code char(5) CONSTRAINT firstkey PRIMARY KEY);';
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -p 5432 -c 'SELECT table_schema,table_name FROM information_schema.tables ORDER BY table_schema,table_name;';
+        "]
+    sidecars:
+    - name: postgres
+      image: postgres:9-alpine
+      env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
