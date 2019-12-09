@@ -62,7 +62,7 @@ script:
 func TestScriptTemplateWithVolume(t *testing.T) {
 	tmpl := unmarshalTemplate(scriptTemplateWithInputArtifact)
 	woc := newWoc()
-	_, err := woc.executeScript(tmpl.Name, woc.tmplCtx, tmpl, &wfv1.Template{}, "")
+	_, err := woc.executeScript(tmpl.Name, woc.tmplCtx, tmpl, tmpl, "")
 	assert.NoError(t, err)
 }
 
