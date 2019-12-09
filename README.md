@@ -92,6 +92,7 @@ Currently **officially** using Argo:
 1. [Datadog](https://www.datadoghq.com/)
 1. [DataStax](https://www.datastax.com/)
 1. [Equinor](https://www.equinor.com/)
+1. [Fairwinds](https://fairwinds.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
@@ -114,9 +115,6 @@ Currently **officially** using Argo:
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
-
-
-
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
