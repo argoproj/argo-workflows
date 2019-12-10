@@ -65,7 +65,7 @@ spec:
 }
 
 func (suite *WorkflowSuite) TestContinueOnFail() {
-	commands.SubmitWorkflows([]string{"functional/continue-fail.yaml"}, nil,nil)
+	commands.SubmitWorkflows([]string{"functional/continue-on-fail.yaml"}, nil, nil)
 }
 
 func TestArgoWorkflows(t *testing.T) {

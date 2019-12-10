@@ -28,6 +28,7 @@ type E2ESuite struct {
 func (suite *E2ESuite) SetupSuite() {
 	if *kubeConfig == "" {
 		suite.T().Skip("Skipping test. Kubeconfig not provided")
+		return
 	}
 
 	_, clientset := getKubernetesClient()
