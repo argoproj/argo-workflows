@@ -2,9 +2,11 @@ package e2e
 
 import (
 	"flag"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -61,4 +63,20 @@ func deleteTestNamespace(namespace string) error {
 	_, clientset := getKubernetesClient()
 	deleteOptions := metav1.DeleteOptions{}
 	return clientset.CoreV1().Namespaces().Delete(namespace, &deleteOptions)
+}
+
+
+func createTempFile(text string) (string, func()) {
+	content := []byte(text)
+	tmpfile, err := ioutil.TempFile("", "argo_test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := tmpfile.Write(content); err != nil {
+		log.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		log.Fatal(err)
+	}
+	return tmpfile.Name(), func() { _ = os.Remove(tmpfile.Name()) }
 }

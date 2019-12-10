@@ -2,15 +2,14 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"testing"
 
-	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/argoproj/argo/cmd/argo/commands"
 )
 
 type WaitSuite struct {
@@ -36,7 +35,7 @@ func (suite *WaitSuite) TestWait() {
 	t := suite.T()
 
 	workflowName := "my-test"
-	workflowYaml := `
+	tmpfile, closer := createTempFile(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -48,22 +47,10 @@ spec:
       container:
         image: alpine:3.6
         command: [sleep, 5]
-`
+`)
+	defer closer()
 
-	content := []byte(workflowYaml)
-	tmpfile, err := ioutil.TempFile("", "argo_test")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.Remove(tmpfile.Name())
-	if _, err := tmpfile.Write(content); err != nil {
-		log.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		log.Fatal(err)
-	}
-
-	commands.SubmitWorkflows([]string{tmpfile.Name()}, nil, nil)
+	commands.SubmitWorkflows([]string{tmpfile}, nil, nil)
 
 	wfClient := commands.InitWorkflowClient()
 	commands.WaitWorkflows([]string{workflowName}, false, false)
