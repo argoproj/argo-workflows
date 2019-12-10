@@ -26,8 +26,9 @@ type E2ESuite struct {
 }
 
 func (suite *E2ESuite) SetupSuite() {
-	if *kubeConfig == "" {
-		suite.T().Skip("Skipping test. Kubeconfig not provided")
+	_, err := os.Stat(*kubeConfig)
+	if os.IsNotExist(err) {
+		suite.T().Skip("Skipping test. Kubeconfig does not exist")
 		return
 	}
 
