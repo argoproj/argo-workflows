@@ -6,10 +6,10 @@ spec:
   entrypoint: whalesay
   templates:
   - name: whalesay
+    inputs:
+      parameters:
+      - name: message
+        value: hello from nested
     templateRef:
       name: workflow-template-nested-template
       template: whalesay-template
-    arguments:
-      parameters:
-      - name: message
-        value: "hello"

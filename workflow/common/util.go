@@ -565,7 +565,39 @@ func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.
 	newTmpl := referred.DeepCopy()
 
 	newTmpl.Name = tmpl.Name
-	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(tmpl.Inputs.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
+		copy(parameters, tmpl.Inputs.Parameters)
+		newTmpl.Inputs.Parameters = parameters
+	}
+	if len(tmpl.Inputs.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
+		copy(artifacts, tmpl.Inputs.Artifacts)
+		newTmpl.Inputs.Artifacts = artifacts
+	}
+
+	if len(tmpl.Outputs.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Outputs.Parameters))
+		copy(parameters, tmpl.Outputs.Parameters)
+		newTmpl.Outputs.Parameters = parameters
+	}
+	if len(tmpl.Outputs.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Outputs.Artifacts))
+		copy(artifacts, tmpl.Outputs.Artifacts)
+		newTmpl.Outputs.Artifacts = artifacts
+	}
+
+	if len(tmpl.Arguments.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Arguments.Parameters))
+		copy(parameters, tmpl.Arguments.Parameters)
+		newTmpl.Arguments.Parameters = parameters
+	}
+	if len(tmpl.Arguments.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Arguments.Artifacts))
+		copy(artifacts, tmpl.Arguments.Artifacts)
+		newTmpl.Arguments.Artifacts = artifacts
+	}
 
 	if len(tmpl.NodeSelector) > 0 {
 		m := make(map[string]string, len(tmpl.NodeSelector))
