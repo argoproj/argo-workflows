@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"fmt"
 	"log"
 	"testing"
 
@@ -13,22 +12,8 @@ import (
 )
 
 type WaitSuite struct {
-	suite.Suite
+	E2ESuite
 	testNamespace string
-}
-
-func (suite *WaitSuite) SetupSuite() {
-	if *kubeConfig == "" {
-		suite.T().Skip("Skipping test. Kubeconfig not provided")
-	}
-	suite.testNamespace = createNamespaceForTest()
-}
-
-func (suite *WaitSuite) TearDownSuite() {
-	if err := deleteTestNamespace(suite.testNamespace); err != nil {
-		panic(err)
-	}
-	fmt.Printf("Deleted namespace %s\n", suite.testNamespace)
 }
 
 func (suite *WaitSuite) TestWait() {

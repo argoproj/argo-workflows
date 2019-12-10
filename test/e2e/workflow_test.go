@@ -13,23 +13,7 @@ import (
 )
 
 type WorkflowSuite struct {
-	suite.Suite
-	testNamespace string
-}
-
-func (suite *WorkflowSuite) SetupSuite() {
-	if *kubeConfig == "" {
-		suite.T().Skip("Skipping test. Kubeconfig not provided")
-		return
-	}
-	suite.testNamespace = createNamespaceForTest()
-}
-
-func (suite *WorkflowSuite) TearDownSuite() {
-	if err := deleteTestNamespace(suite.testNamespace); err != nil {
-		panic(err)
-	}
-	fmt.Printf("Deleted namespace %s\n", suite.testNamespace)
+	E2ESuite
 }
 
 func (suite *WorkflowSuite) TestRunWorkflowBasic() {
@@ -74,11 +58,14 @@ spec:
 		}
 	}
 
-	deleteOptions := metav1.DeleteOptions{}
-	err := wfClient.Delete(workflowName, &deleteOptions)
+	err := wfClient.Delete(workflowName, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (suite *WorkflowSuite) TestContinueOnFail() {
+	commands.SubmitWorkflows([]string{"functional/continue-fail.yaml"}, nil,nil)
 }
 
 func TestArgoWorkflows(t *testing.T) {
