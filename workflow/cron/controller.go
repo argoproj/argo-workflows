@@ -112,8 +112,6 @@ func (cc *Controller) processNextCronItem() bool {
 		return true
 	}
 
-	// The workflow informer receives unstructured objects to deal with the possibility of invalid
-	// workflow manifests that are unable to unmarshal to workflow objects
 	cronWf, ok := obj.(*v1alpha1.CronWorkflow)
 	if !ok {
 		log.Warnf("Key '%s' in index is not a CronWorkflow", key)
@@ -207,6 +205,8 @@ func (cc *Controller) processNextWorkflowItem() bool {
 		log.Warnf("Workflow '%s' from CronWorkflow '%s' completed", wf.Name, woc.cronWf.Name)
 		woc.removeActiveWf(wf)
 	}
+
+	woc.enforceHistoryLimit()
 	return true
 }
 

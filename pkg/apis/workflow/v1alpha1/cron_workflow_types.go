@@ -36,6 +36,10 @@ type CronWorkflowSpec struct {
 	// StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
 	// original scheduled time if it is missed.
 	StartingDeadlineSeconds *int64 `json:"startingDeadlineSeconds,omitempty" protobuf:"varint,5,opt,name=startingDeadlineSeconds"`
+	// SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
+	SuccessfulJobsHistoryLimit *int32 `json:"successfulJobsHistoryLimit,omitempty" protobuf:"varint,6,opt,name=successfulJobsHistoryLimit"`
+	// FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
+	FailedJobsHistoryLimit *int32 `json:"failedJobsHistoryLimit,omitempty" protobuf:"varint,7,opt,name=failedJobsHistoryLimit"`
 }
 
 type CronWorkflowStatus struct {

@@ -166,6 +166,12 @@ message CronWorkflowSpec {
   // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
   // original scheduled time if it is missed.
   optional int64 startingDeadlineSeconds = 5;
+
+  // SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 successfulJobsHistoryLimit = 6;
+
+  // FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 failedJobsHistoryLimit = 7;
 }
 
 message CronWorkflowStatus {

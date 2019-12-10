@@ -16,7 +16,7 @@ var (
 	clientConfig clientcmd.ClientConfig
 	clientset    *kubernetes.Clientset
 	wfClientset  *versioned.Clientset
-	wftmplClient v1alpha1.CronWorkflowInterface
+	cronWfClient v1alpha1.CronWorkflowInterface
 	namespace    string
 )
 
@@ -40,8 +40,8 @@ func initKubeClient() *kubernetes.Clientset {
 
 // InitCronWorkflowClient creates a new client for the Kubernetes WorkflowTemplate CRD.
 func InitCronWorkflowClient(ns ...string) v1alpha1.CronWorkflowInterface {
-	if wftmplClient != nil {
-		return wftmplClient
+	if cronWfClient != nil {
+		return cronWfClient
 	}
 	initKubeClient()
 	var err error
@@ -54,6 +54,6 @@ func InitCronWorkflowClient(ns ...string) v1alpha1.CronWorkflowInterface {
 		}
 	}
 	wfClientset = versioned.NewForConfigOrDie(restConfig)
-	wftmplClient = wfClientset.ArgoprojV1alpha1().CronWorkflows(namespace)
-	return wftmplClient
+	cronWfClient = wfClientset.ArgoprojV1alpha1().CronWorkflows(namespace)
+	return cronWfClient
 }

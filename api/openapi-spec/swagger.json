@@ -279,6 +279,11 @@
           "description": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
           "type": "string"
         },
+        "failedJobsHistoryLimit": {
+          "description": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+          "type": "integer",
+          "format": "int32"
+        },
         "schedule": {
           "description": "Schedule is a schedule to run the Workflow in Cron format",
           "type": "string"
@@ -287,6 +292,11 @@
           "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
           "type": "integer",
           "format": "int64"
+        },
+        "successfulJobsHistoryLimit": {
+          "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
+          "type": "integer",
+          "format": "int32"
         },
         "suspend": {
           "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",

@@ -11,6 +11,7 @@ import (
 	"github.com/robfig/cron"
 	v12 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sort"
 	"time"
 )
 
@@ -171,4 +172,77 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 			}
 		}
 	}
+}
+
+func (woc *cronWfOperationCtx) enforceHistoryLimit() {
+	listOptions := &v1.ListOptions{}
+	wfInformerListOptionsFunc(listOptions)
+	wfList, err := woc.wfClient.List(*listOptions)
+	if err != nil {
+		log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return
+	}
+
+	var successfulWorkflows []v1alpha1.Workflow
+	var failedWorkflows []v1alpha1.Workflow
+
+	for _, wf := range wfList.Items {
+		if wf.Status.Completed() {
+			if wf.Status.Successful() {
+				successfulWorkflows = append(successfulWorkflows, wf)
+			} else {
+				failedWorkflows = append(failedWorkflows, wf)
+			}
+		}
+	}
+
+	workflowsToKeep := int32(3)
+	if woc.cronWf.Spec.SuccessfulJobsHistoryLimit != nil && *woc.cronWf.Spec.SuccessfulJobsHistoryLimit >= 0 {
+		workflowsToKeep = *woc.cronWf.Spec.SuccessfulJobsHistoryLimit
+	}
+	err = woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
+	if err != nil {
+		log.Errorf("Unable to delete Successful Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return
+	}
+
+	workflowsToKeep = int32(1)
+	if woc.cronWf.Spec.FailedJobsHistoryLimit != nil && *woc.cronWf.Spec.FailedJobsHistoryLimit >= 0 {
+		workflowsToKeep = *woc.cronWf.Spec.SuccessfulJobsHistoryLimit
+	}
+	err = woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
+	if err != nil {
+		log.Errorf("Unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
+		return
+	}
+
+}
+
+type newestFirst []v1alpha1.Workflow
+
+func (n newestFirst) Len() int {
+	return len(n)
+}
+
+func (n newestFirst) Swap(i, j int) {
+	n[i], n[j] = n[j], n[i]
+}
+
+func (n newestFirst) Less(i, j int) bool {
+	return n[i].Status.FinishedAt.Time.Before(n[j].Status.FinishedAt.Time)
+}
+
+func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow, workflowsToKeep int) error {
+	if workflowsToKeep >= len(jobList) {
+		return nil
+	}
+
+	sort.Sort(newestFirst(jobList))
+	for _, wf := range jobList[workflowsToKeep:] {
+		err := woc.wfClient.Delete(wf.Name, &v1.DeleteOptions{})
+		if err != nil {
+			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
+		}
+	}
+	return nil
 }
