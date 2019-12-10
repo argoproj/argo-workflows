@@ -913,6 +913,14 @@
   revision = "be0da057c5e3c2df569a2c25cd280149b7d7e7d0"
 
 [[projects]]
+  digest = "1:c9adfdd54f2576a0453e082193916f72c45e29791a809ef366e183cd3bac65d4"
+  name = "gonum.org/v1/gonum"
+  packages = ["graph"]
+  pruneopts = ""
+  revision = "ef62c3b63e85fdc2902c339d3ca49d34546d21f4"
+  version = "v0.6.1"
+
+[[projects]]
   digest = "1:ea4822af073aae8c1f0868534aa49e2e97c1cd4fcad76f0ef91427ce26428923"
   name = "google.golang.org/api"
   packages = ["support/bundler"]
@@ -1533,6 +1541,7 @@
     "github.com/valyala/fasttemplate",
     "golang.org/x/crypto/ssh",
     "golang.org/x/net/context",
+    "gonum.org/v1/gonum/graph",
     "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",

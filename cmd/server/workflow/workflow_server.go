@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	apisrvcmn "github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -72,13 +73,13 @@ func (s *WorkflowServer) GetWFClient(ctx context.Context) (*versioned.Clientset,
 	}
 
 	var restConfigStr, bearerToken string
-	if len(md.Get(CLIENT_REST_CONFIG)) == 0 {
+	if len(md.Get(apisrvcmn.CLIENT_REST_CONFIG)) == 0 {
 		return nil, nil, errors.New("Client kubeconfig is not found")
 	}
-	restConfigStr = md.Get(CLIENT_REST_CONFIG)[0]
+	restConfigStr = md.Get(apisrvcmn.CLIENT_REST_CONFIG)[0]
 
-	if len(md.Get(AUTH_TOKEN)) > 0 {
-		bearerToken = md.Get(AUTH_TOKEN)[0]
+	if len(md.Get(apisrvcmn.AUTH_TOKEN)) > 0 {
+		bearerToken = md.Get(apisrvcmn.AUTH_TOKEN)[0]
 	}
 
 	restConfig := rest.Config{}

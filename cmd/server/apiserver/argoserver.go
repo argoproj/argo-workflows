@@ -3,6 +3,7 @@ package apiserver
 import (
 	"crypto/tls"
 	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -163,6 +164,9 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 	workflowServer := workflow.NewWorkflowServer(as.Namespace, as.WfClientSet, as.KubeClientset, configMap, as.EnableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 
+	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.Namespace, as.WfClientSet, as.KubeClientset, configMap, as.EnableClientAuth)
+	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
+
 	return grpcServer
 }
 
@@ -192,7 +196,7 @@ func (a *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 	gwCookieOpts := runtime.WithForwardResponseOption(a.translateGrpcCookieHeader)
 	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-
+	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
 	return &httpServer
 }

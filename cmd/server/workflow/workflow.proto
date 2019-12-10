@@ -14,58 +14,58 @@ import "k8s.io/api/core/v1/generated.proto";
 package workflow;
 
 message SubmitOptions {
-    string Name = 1;
-    string GenerateName = 2;
-    string InstanceID = 3;
-    string Entrypoint = 4;
-    repeated string Parameters = 5;
-    string ServiceAccount = 6;
-    bool ServerDryRun = 7;
-    string Labels = 8;
-    k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference OwnerReference = 9;
+    string name = 1;
+    string generateName = 2;
+    string instanceID = 3;
+    string entrypoint = 4;
+    repeated string parameters = 5;
+    string serviceAccount = 6;
+    bool serverDryRun = 7;
+    string labels = 8;
+    k8s.io.apimachinery.pkg.apis.meta.v1.OwnerReference ownerReference = 9;
 }
 
 message WorkflowCreateRequest {
-    string Namespace = 1;
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow Workflow = 2;
-    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions CreateOptions = 3;
-    SubmitOptions SubmitOptions = 4;
+    string namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
+    SubmitOptions submitOptions = 4;
 }
 
 message WorkflowGetRequest {
-    string WorkflowName = 1;
-    string Namespace = 2;
-    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions GetOptions = 3;
+    string workflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
 }
 
 message WorkflowListRequest {
-    string Namespace = 1;
-    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions ListOptions = 2;
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
 message WorkflowUpdateRequest {
-    string WorkflowName = 1;
-    string Namespace = 2;
-    bool Memoized = 3;
+    string workflowName = 1;
+    string namespace = 2;
+    bool memoized = 3;
 }
 
 message WorkflowLogRequest {
-    string WorkflowName = 1;
-    string Namespace = 2;
-    string PodName = 3;
-    string Container = 4;
+    string workflowName = 1;
+    string namespace = 2;
+    string podName = 3;
+    string container = 4;
     k8s.io.api.core.v1.PodLogOptions logOptions = 5;
 }
 
 
 message WorkflowDeleteRequest {
-    string WorkflowName = 1;
-    string Namespace = 2;
-    k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions DeleteOptions = 3;
+    string workflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
 message WorkflowDeleteResponse {
-    string WorkflowName = 1;
-    string Status = 2;
+    string workflowName = 1;
+    string status = 2;
 }
 
 message LogEntry {
@@ -82,48 +82,48 @@ service WorkflowService {
     }
 
     rpc Get (WorkflowGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
-        option (google.api.http).get = "/api/v1/workflows/{Namespace}/{WorkflowName}";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}";
     }
 
     rpc List (WorkflowListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
-        option (google.api.http).get = "/api/v1/workflows/{Namespace}";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}";
     }
 
     rpc Delete (WorkflowDeleteRequest) returns (WorkflowDeleteResponse) {
-        option (google.api.http).delete = "/api/v1/workflows/{Namespace}/{WorkflowName}";
+        option (google.api.http).delete = "/api/v1/workflows/{namespace}/{workflowName}";
     }
 
     rpc Retry (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{Namespace}/{WorkflowName}/retry"
+			put: "/api/v1/workflows/{namespace}/{workflowName}/retry"
 			body: "*"
 		};
     }
 
     rpc Resubmit (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{Namespace}/{WorkflowName}/resubmit"
+			put: "/api/v1/workflows/{namespace}/{workflowName}/resubmit"
 			body: "*"
 		};
     }
 
     rpc Resume (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{Namespace}/{WorkflowName}/resume"
+			put: "/api/v1/workflows/{namespace}/{workflowName}/resume"
 			body: "*"
 		};
     }
 
     rpc Suspend (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{Namespace}/{WorkflowName}/suspend"
+			put: "/api/v1/workflows/{namespace}/{workflowName}/suspend"
 			body: "*"
 		};
     }
 
     rpc Terminate (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{Namespace}/{WorkflowName}/terminate"
+			put: "/api/v1/workflows/{namespace}/{workflowName}/terminate"
 			body: "*"
 		};
     }
@@ -137,11 +137,11 @@ service WorkflowService {
 
     // PodLogs returns stream of log entries for the specified pod. Pod
     rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflow/{Namespace}/{WorkflowName}/pods/{PodName}/logs";
+        option (google.api.http).get = "/api/v1/workflow/{namespace}/{workflowName}/pods/{podName}/logs";
     }
 
     // Watch returns stream of application change events.
     rpc Watch (WorkflowGetRequest) returns (stream github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
-        option (google.api.http).get = "/api/v1/stream/workflows/{Namespace}/{WorkflowName}";
+        option (google.api.http).get = "/api/v1/stream/workflows/{namespace}/{workflowName}";
     }
 }

@@ -3,6 +3,7 @@ package workflow
 import (
 	"encoding/json"
 	"errors"
+	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -39,13 +40,13 @@ func (s *KubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *k
 	}
 
 	var restConfigStr, bearerToken string
-	if len(md.Get(CLIENT_REST_CONFIG)) == 0 {
+	if len(md.Get(common.CLIENT_REST_CONFIG)) == 0 {
 		return nil, nil, errors.New("Client kubeconfig is not found")
 	}
-	restConfigStr = md.Get(CLIENT_REST_CONFIG)[0]
+	restConfigStr = md.Get(common.CLIENT_REST_CONFIG)[0]
 
-	if len(md.Get(AUTH_TOKEN)) > 0 {
-		bearerToken = md.Get(AUTH_TOKEN)[0]
+	if len(md.Get(common.AUTH_TOKEN)) > 0 {
+		bearerToken = md.Get(common.AUTH_TOKEN)[0]
 	}
 
 	restConfig := rest.Config{}
