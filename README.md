@@ -110,6 +110,7 @@ Currently **officially** using Argo:
 1. [OVH](https://www.ovh.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [Red Hat](https://www.redhat.com/en)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
 1. [Styra](https://www.styra.com/)
