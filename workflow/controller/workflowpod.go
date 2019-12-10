@@ -266,6 +266,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 			return nil, errors.Wrap(err, "", "Error in Unmarshalling after merge the patch")
 		}
 	}
+	log.Infof("pod=%v", pod)
 	created, err := woc.controller.kubeclientset.CoreV1().Pods(woc.wf.ObjectMeta.Namespace).Create(pod)
 	if err != nil {
 		if apierr.IsAlreadyExists(err) {

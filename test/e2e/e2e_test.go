@@ -2,6 +2,8 @@ package e2e
 
 import (
 	"flag"
+	"os"
+	"path/filepath"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,9 +13,15 @@ import (
 
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/argoproj/argo/cmd/argo/commands"
 )
 
-var kubeConfig = flag.String("kubeconfig", "", "Path to Kubernetes config file")
+var kubeConfig = flag.String("kubeconfig", filepath.Join(os.Getenv("HOME"), ".kube", "config"), "Path to Kubernetes config file")
+
+func init() {
+	_ = commands.NewCommand()
+}
 
 func getKubernetesClient() (*rest.Config, *kubernetes.Clientset) {
 	if *kubeConfig == "" {
