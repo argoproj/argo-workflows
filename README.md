@@ -116,6 +116,7 @@ Currently **officially** using Argo:
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
+1. [BioBox Analytics](https://biobox.io)
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)
