@@ -31,10 +31,7 @@ func (w *When) SubmitWorkflow() *When {
 
 func (w *When) WaitForWorkflow() *When {
 	fmt.Printf("waiting for %s\n", w.name)
-	wfClient := w.client
-	_, err := wfClient.Get(w.name, metav1.GetOptions{})
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()}
-	watchIf, err := wfClient.Watch(opts)
+	watchIf, err := w.client.Watch(metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()})
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -46,7 +43,6 @@ func (w *When) WaitForWorkflow() *When {
 			return w
 		}
 	}
-	return w
 }
 
 func (w *When) DeleteWorkflow() *When {

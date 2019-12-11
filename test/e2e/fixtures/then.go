@@ -24,6 +24,9 @@ func (t *Then) Expect(block func(t *testing.T, wf *wfv1.WorkflowStatus)) *Then {
 		t.t.Fatal(err)
 	}
 	bytes, err := yaml.Marshal(wf.Status)
+	if err != nil {
+		t.t.Fatal(err)
+	}
 	fmt.Println(string(bytes))
 	block(t.t, &wf.Status)
 	return t

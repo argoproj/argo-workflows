@@ -8,5 +8,5 @@ import (
 
 func TestNodes_FindByDisplayName(t *testing.T) {
 	assert.Nil(t, Nodes{}.FindByDisplayName(""))
-	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName:"foo"}}.FindByDisplayName("foo"))
+	assert.NotNil(t, Nodes{"": NodeStatus{DisplayName: "foo"}}.FindByDisplayName("foo"))
 }
