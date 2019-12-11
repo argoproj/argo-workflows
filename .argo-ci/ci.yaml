@@ -3,6 +3,19 @@ kind: Workflow
 metadata:
   generateName: argo-ci-
 spec:
+  volumes:
+    - name: k3setc
+      emptyDir: {}
+    - name: k3svar
+      emptyDir: {}
+    - name: tmp
+      emptyDir: {}
+    - name: dockerdemon
+      emptyDir: {}
+    - name: lib
+      emptyDir: {}
+    - name: log
+      emptyDir: {}
   entrypoint: argo-ci
   arguments:
     parameters:
@@ -14,21 +27,24 @@ spec:
   templates:
   - name: argo-ci
     steps:
-    - - name: build
-        template: ci-dind
-        arguments:
-          parameters:
-          - name: cmd
-            value: "{{item}}"
-        withItems:
-        - make controller-image executor-image
-        - make release-clis
-      - name: test
-        template: ci-builder
-        arguments:
-          parameters:
-          - name: cmd
-            value: dep ensure && make lint test verify-codegen
+      - - name: build
+          template: ci-dind
+          arguments:
+            parameters:
+            - name: cmd
+              value: "{{item}}"
+          withItems:
+          - make controller-image executor-image
+          - make release-clis
+        - name: test
+          template: ci-builder
+          arguments:
+            parameters:
+            - name: cmd
+              value: dep ensure && make lint test verify-codegen
+        - name: e2e-test
+          template: ci-builder-e2e
+
 
   - name: ci-builder
     inputs:
@@ -72,3 +88,94 @@ spec:
       securityContext:
         privileged: true
       mirrorVolumeMounts: true
+
+  - name: ci-builder-e2e
+    inputs:
+      artifacts:
+        - name: code
+          path: /go/src/github.com/argoproj/argo
+          git:
+            repo: "{{workflow.parameters.repo}}"
+            revision: "{{workflow.parameters.revision}}"
+    container:
+      image: argoproj/argo-cd-ci-builder:v0.13.1
+      imagePullPolicy: Always
+      command: [sh, -c]
+      args: ["
+      dep ensure && until docker ps; do sleep 3; done && \
+      make cli controller-image executor-image IMAGE_TAG=dev DEV_IMAGE=true && mkdir -p /var/lib/rancher/k3s/agent/images && \
+      docker save workflow-controller:dev > /var/lib/rancher/k3s/agent/images/workflow-controller.tar && \
+      docker save argoexec:dev > /var/lib/rancher/k3s/agent/images/argoexec.tar && \
+      touch /var/lib/rancher/k3s/ready && until ls /etc/rancher/k3s/k3s.yaml; do sleep 3; done && \
+      ls /var/lib/rancher/k3s/agent/images/ && \
+      kubectl create ns argo && kubectl get ns && \
+      kubectl create ns argoci-workflows && kubectl get ns && \
+      wget https://dl.min.io/client/mc/release/linux-amd64/mc && \
+      chmod +x mc && \
+      kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml && \
+      kubectl patch storageclass local-path -p '{\"metadata\": {\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"}}}' &&\
+      kubectl create -f  test/e2e/manifests/minio-standalone-pvc.yaml && \
+      kubectl create -f test/e2e/manifests/minio-standalone-deployment.yaml && \
+      kubectl create -f test/e2e/manifests/minio-standalone-service.yaml && \
+      kubectl apply -f test/e2e/manifests/install-e2e-argo.yaml -n argo && \
+      kubectl apply -f test/e2e/manifests/install-e2e-default.yaml && \
+      (kubectl proxy --port=9000 &) && \
+      ./mc config host add local http://localhost:9000 minio minio123 --api S3v4 && \
+      ./mc config host ls && \
+      sleep 30 && \
+      ./mc mb local/my-bucket && \
+      echo Starting E2E testing && \
+      go test -timeout 45m --tags=e2e ./test/e2e
+       "]
+#              go test -timeout 120m --tags=e2e ./test/e2e && \
+      workingDir: /go/src/github.com/argoproj/argo
+      env:
+        - name: USER
+          value: argocd
+        - name: DOCKER_HOST
+          value: 127.0.0.1
+        - name: DOCKER_BUILDKIT
+          value: "1"
+        - name: KUBECONFIG
+          value: /etc/rancher/k3s/k3s.yaml
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: k3setc
+          mountPath: /etc/rancher/k3s
+        - name: k3svar
+          mountPath: /var/lib/rancher/k3s
+    sidecars:
+      - name: dind
+        image: docker:18.09-dind
+        securityContext:
+          privileged: true
+        mirrorVolumeMounts: true
+        volumeMounts:
+          - name: dockerdemon
+            mountPath: /var/run
+          - name: lib
+            mountPath: /var/lib/pods
+          - name: log
+            mountPath: /var/log/pods
+
+      - name: k3s
+        image: rancher/k3s:v0.3.0-rc1
+        imagePullPolicy: Always
+        command: [sh, -c]
+        args: ["until ls /var/lib/rancher/k3s/ready; do sleep 3; done &&  k3s server || true"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+          - name: k3setc
+            mountPath: /etc/rancher/k3s
+          - name: k3svar
+            mountPath: /var/lib/rancher/k3s
+          - name: dockerdemon
+            mountPath: /var/run
+          - name: lib
+            mountPath: /var/lib/pods
+          - name: log
+            mountPath: /var/log/pods
