@@ -12,26 +12,31 @@ import (
 )
 
 type When struct {
-	given *Given
+	t      *testing.T
+	wf     *wfv1.Workflow
+	client v1alpha1.WorkflowInterface
+	name   string
 }
 
 func (w *When) SubmitWorkflow() *When {
-	fmt.Printf("submitting %s\n", w.wf().Name)
-	_, err := w.client().Create(w.wf())
+	fmt.Printf("submitting workflow\n")
+	wf, err := w.client.Create(w.wf)
 	if err != nil {
-		w.t().Fatal(err)
+		w.t.Fatal(err)
+	} else {
+		w.name = wf.Name
 	}
 	return w
 }
 
 func (w *When) WaitForWorkflow() *When {
-	fmt.Printf("waiting for %s\n", w.wf().Name)
-	wfClient := w.client()
-	_, err := wfClient.Get(w.wf().Name, metav1.GetOptions{})
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.wf().Name)).String()}
+	fmt.Printf("waiting for %s\n", w.name)
+	wfClient := w.client
+	_, err := wfClient.Get(w.name, metav1.GetOptions{})
+	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()}
 	watchIf, err := wfClient.Watch(opts)
 	if err != nil {
-		w.t().Fatal(err)
+		w.t.Fatal(err)
 	}
 	defer watchIf.Stop()
 	for {
@@ -45,26 +50,18 @@ func (w *When) WaitForWorkflow() *When {
 }
 
 func (w *When) DeleteWorkflow() *When {
-	fmt.Printf("deleting %s\n", w.wf().Name)
-	err := w.client().Delete(w.given.wf.Name, nil)
+	fmt.Printf("deleting %s\n", w.name)
+	err := w.client.Delete(w.name, nil)
 	if err != nil {
-		w.t().Fatal(err)
+		w.t.Fatal(err)
 	}
 	return w
 }
 
 func (w *When) Then() *Then {
-	return &Then{w.given}
-}
-
-func (w *When) wf() *wfv1.Workflow {
-	return w.given.wf
-}
-
-func (w *When) client() v1alpha1.WorkflowInterface {
-	return w.given.client()
-}
-
-func (w *When) t() *testing.T {
-	return w.given.t()
+	return &Then{
+		t:      w.t,
+		name:   w.name,
+		client: w.client,
+	}
 }

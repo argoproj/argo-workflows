@@ -20,7 +20,7 @@ func (suite *WorkflowSuite) TestRunWorkflowBasic() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-    name: my-test
+    generateName: my-test-
 spec:
     entrypoint: run-workflow
     templates:
@@ -41,7 +41,7 @@ func (suite *WorkflowSuite) TestContinueOnFail() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: continue-on-fail
+  generateName: continue-on-fail-
 spec:
   entrypoint: workflow-ignore
   parallelism: 1
@@ -73,7 +73,7 @@ spec:
   - name: whalesplosion
     container:
       image: docker/whalesay:latest
-      command: [boom]
+      command: ["sh", "-c", "sleep 2 ; boom"]
 `).
 		When().
 		SubmitWorkflow().

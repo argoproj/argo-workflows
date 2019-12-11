@@ -12,8 +12,8 @@ import (
 )
 
 type Given struct {
-	suite *E2ESuite
-	// workflow
+	t *testing.T
+	client v1alpha1.WorkflowInterface
 	wf *wfv1.Workflow
 }
 
@@ -28,15 +28,15 @@ func (g *Given) Workflow(text string) *Given {
 	} else {
 		f, err := ioutil.TempFile("", "argo_e2e")
 		if err != nil {
-			g.t().Fatal(err)
+			g.t.Fatal(err)
 		}
 		_, err = f.Write([]byte(text))
 		if err != nil {
-			g.t().Fatal(err)
+			g.t.Fatal(err)
 		}
 		err = f.Close()
 		if err != nil {
-			g.t().Fatal(err)
+			g.t.Fatal(err)
 		}
 		file = f.Name()
 	}
@@ -44,24 +44,20 @@ func (g *Given) Workflow(text string) *Given {
 	{
 		file, err := ioutil.ReadFile(file)
 		if err != nil {
-			g.t().Fatal(err)
+			g.t.Fatal(err)
 		}
 		g.wf = &wfv1.Workflow{}
 		err = yaml.Unmarshal(file, g.wf)
 		if err != nil {
-			g.t().Fatal(err)
+			g.t.Fatal(err)
 		}
 	}
 	return g
 }
 func (g *Given) When() *When {
-	return &When{given: g}
-}
-
-func (g *Given) client() v1alpha1.WorkflowInterface {
-	return g.suite.wfi
-}
-
-func (g *Given) t() *testing.T {
-	return g.suite.T()
+	return &When{
+		t:      g.t,
+		wf:     g.wf,
+		client: g.client,
+	}
 }

@@ -24,7 +24,7 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	wfi v1alpha1.WorkflowInterface
+	client v1alpha1.WorkflowInterface
 }
 
 func (suite *E2ESuite) SetupSuite() {
@@ -33,14 +33,19 @@ func (suite *E2ESuite) SetupSuite() {
 		suite.T().Skip("Skipping test: " + err.Error())
 		return
 	}
-	suite.wfi = commands.InitWorkflowClient()
-	fmt.Println("deleting all workflows")
-	err = suite.wfi.DeleteCollection(nil, v1.ListOptions{})
+	suite.client = commands.InitWorkflowClient()
+	fmt.Println("deleting workflows")
+	timeout := int64(10)
+	err = suite.client.DeleteCollection(nil, v1.ListOptions{TimeoutSeconds: &timeout})
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func (suite *E2ESuite) Given() *Given {
-	return &Given{suite: suite}
+	return &Given{
+		t:      suite.T(),
+		client: suite.client,
+	}
 }
