@@ -191,8 +191,11 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	if !ok {
 		return false
 	}
-	tmpl := d.wf.GetStoredOrLocalTemplate(&childNode)
-	if tmpl != nil && tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
+	_, tmpl, err := d.tmplCtx.ResolveTemplate(&childNode)
+	if err != nil {
+		return false
+	}
+	if tmpl.RetryStrategy != nil && tmpl.RetryStrategy.Limit != nil && int32(len(node.Children)) > *tmpl.RetryStrategy.Limit {
 		return false
 	}
 	return true
@@ -476,11 +479,11 @@ func (woc *wfOperationCtx) resolveDependencyReferences(dagCtx *dagContext, task 
 					ancestorNodes = append(ancestorNodes, node)
 				}
 			}
-			tmpl := dagCtx.wf.GetStoredOrLocalTemplate(ancestorNode)
-			if tmpl == nil {
-				return nil, errors.InternalErrorf("Template of ancestor node '%s' not found", ancestorNode.Name)
+			_, tmpl, err := dagCtx.tmplCtx.ResolveTemplate(ancestorNode)
+			if err != nil {
+				return nil, errors.InternalWrapError(err)
 			}
-			err := woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
+			err = woc.processAggregateNodeOutputs(tmpl, &scope, prefix, ancestorNodes)
 			if err != nil {
 				return nil, errors.InternalWrapError(err)
 			}
