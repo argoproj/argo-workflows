@@ -1,34 +1,52 @@
-# Example on continue-on-fail, where the workflow will continue running even
-# some steps fail.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: continue-on-fail-
+  name: dag-contiue-on-fail
 spec:
-  entrypoint: workflow-ignore
-  parallelism: 1
+  entrypoint: workflow
   templates:
-  - name: workflow-ignore
-    steps:
-    - - name: A
-        template: whalesay
-    - - name: B
-        template: whalesay
-      - name: C
-        template: intentional-fail
-        continueOn:
-          failed: true
-    - - name: D
-        template: whalesay
+    - name: workflow
+      dag:
+        failFast: false
+        tasks:
+          - name: A
+            template: whalesay
+          - name: B
+            dependencies: [A]
+            template: intentional-fail-dag
+            continueOn:
+              failed: true
+              error: true
+          - name: C
+            dependencies: [A]
+            template: whalesay
+          - name: D
+            dependencies: [B, C]
+            template: whalesay
+          - name: E
+            dependencies: [A]
+            template: whalesay
+          - name: F
+            dependencies: [A]
+            template: whalesay
+          - name: G
+            dependencies: [E, F]
+            template: whalesay
 
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
+    - name: whalesay
+      container:
+        image: docker/whalesay:latest
+        command: [cowsay]
+        args: ["hello world"]
 
-  - name: intentional-fail
-    container:
-      image: alpine:latest
-      command: [sh, -c]
-      args: ["echo intentional failure; exit 1"]
+    - name: intentional-fail-dag
+      dag:
+        tasks:
+          - name: intentional-fail
+            template: intentional-fail
+
+    - name: intentional-fail
+      container:
+        image: alpine:latest
+        command: [sh, -c]
+        args: ["sleep 20; echo intentional failure; exit 1"]

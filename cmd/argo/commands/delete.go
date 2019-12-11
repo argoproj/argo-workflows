@@ -48,7 +48,7 @@ func NewDeleteCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				for _, wfName := range args {
-					deleteWorkflow(wfName)
+					DeleteWorkflow(wfName)
 				}
 			}
 		},
@@ -60,7 +60,7 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func deleteWorkflow(wfName string) {
+func DeleteWorkflow(wfName string) {
 	err := wfClient.Delete(wfName, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -79,6 +79,6 @@ func deleteWorkflows(options metav1.ListOptions, older *time.Time) {
 				continue
 			}
 		}
-		deleteWorkflow(wf.ObjectMeta.Name)
+		DeleteWorkflow(wf.ObjectMeta.Name)
 	}
 }

@@ -3,7 +3,6 @@ package e2e
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -18,47 +17,49 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
+
+var kubeConfig = flag.String("kubeconfig", filepath.Join(os.Getenv("HOME"), ".kube", "config"), "Path to Kubernetes config file")
+
+func init() {
+	_ = commands.NewCommand()
+}
 
 type E2ESuite struct {
 	suite.Suite
+	kube      *kubernetes.Clientset
+	wf        v1alpha1.WorkflowInterface
 	namespace string
 }
 
 func (suite *E2ESuite) SetupSuite() {
 	_, err := os.Stat(*kubeConfig)
 	if os.IsNotExist(err) {
-		suite.T().Skip("Skipping test. Kubeconfig does not exist")
+		suite.T().Skip("Skipping test: " + err.Error())
 		return
 	}
-
-	_, clientset := getKubernetesClient()
-	ns := &v1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "argo-e2e-test-",
-		},
-	}
-	cns, err := clientset.CoreV1().Namespaces().Create(ns)
+	_, suite.kube = getKubernetesClient()
+	ns := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{GenerateName: "argo-e2e-test-"}}
+	cns, err := suite.kube.CoreV1().Namespaces().Create(ns)
 	if err != nil {
 		panic(err)
 	}
 	suite.namespace = cns.Name
+	suite.wf = commands.InitWorkflowClient()
 }
 
 func (suite *E2ESuite) TearDownSuite() {
-	_, clientset := getKubernetesClient()
 	deleteOptions := metav1.DeleteOptions{}
-	err := clientset.CoreV1().Namespaces().Delete(suite.namespace, &deleteOptions)
+	err := suite.kube.CoreV1().Namespaces().Delete(suite.namespace, &deleteOptions)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Deleted namespace %s\n", suite.namespace)
 }
 
-var kubeConfig = flag.String("kubeconfig", filepath.Join(os.Getenv("HOME"), ".kube", "config"), "Path to Kubernetes config file")
-
-func init() {
-	_ = commands.NewCommand()
+func (suite *E2ESuite) Given() *Given {
+	return &Given{suite: suite}
 }
 
 func getKubernetesClient() (*rest.Config, *kubernetes.Clientset) {
@@ -79,18 +80,4 @@ func getKubernetesClient() (*rest.Config, *kubernetes.Clientset) {
 	}
 
 	return config, clientSet
-}
-func createTempFile(text string) (string, func()) {
-	content := []byte(text)
-	tmpfile, err := ioutil.TempFile("", "argo_test")
-	if err != nil {
-		panic(err)
-	}
-	if _, err := tmpfile.Write(content); err != nil {
-		panic(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		panic(err)
-	}
-	return tmpfile.Name(), func() { _ = os.Remove(tmpfile.Name()) }
 }
