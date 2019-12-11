@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 
 	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -27,6 +29,10 @@ func (suite *E2ESuite) SetupSuite() {
 	if os.IsNotExist(err) {
 		suite.T().Skip("Skipping test: " + err.Error())
 		return
+	}
+	err = commands.InitWorkflowClient().DeleteCollection(nil, v1.ListOptions{})
+	if err != nil {
+		panic(err)
 	}
 }
 
