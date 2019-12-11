@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/pkg/humanize"
 	"math"
 	"reflect"
 	"regexp"
@@ -12,8 +13,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/argoproj/pkg/humanize"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
 
@@ -94,7 +93,7 @@ var (
 
 // maxOperationTime is the maximum time a workflow operation is allowed to run
 // for before requeuing the workflow onto the workqueue.
-const maxOperationTime = 10 * time.Second
+const maxOperationTime time.Duration = 10 * time.Second
 
 //maxWorkflowSize is the maximum  size for workflow.yaml
 const maxWorkflowSize int = 1024 * 1024

@@ -6,12 +6,11 @@ import (
 	"strings"
 
 	"github.com/Knetic/govaluate"
-	"github.com/valyala/fasttemplate"
-
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	"github.com/valyala/fasttemplate"
 )
 
 // stepsContext holds context information about this context's steps
