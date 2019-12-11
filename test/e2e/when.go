@@ -12,7 +12,7 @@ func (w *When) SubmitWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow() *When {
-	commands.WaitWorkflows([]string{w.given.name}, false, true)
+	commands.WaitWorkflows([]string{w.given.name}, false, false)
 	return w
 }
 

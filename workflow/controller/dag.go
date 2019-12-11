@@ -46,6 +46,15 @@ func (d *dagContext) getTask(taskName string) *wfv1.DAGTask {
 	panic("target " + taskName + " does not exist")
 }
 
+func (d *dagContext) getTaskByNodeID(nodeID string) *wfv1.DAGTask {
+	for _, task := range d.tasks {
+		if d.taskNodeID(task.Name) == nodeID {
+			return &task
+		}
+	}
+	panic("target " + nodeID + " does not exist")
+}
+
 // taskNodeName formulates the nodeName for a dag task
 func (d *dagContext) taskNodeName(taskName string) string {
 	return fmt.Sprintf("%s.%s", d.boundaryName, taskName)
@@ -99,7 +108,7 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 	// nodes have been exhausted.
 	var unsuccessfulPhase wfv1.NodePhase
 	retriesExhausted := true
-	for _, node := range nodes {
+	for nodeID, node := range nodes {
 		if node.BoundaryID != d.boundaryID {
 			continue
 		}
@@ -112,7 +121,9 @@ func (d *dagContext) assessDAGPhase(targetTasks []string, nodes map[string]wfv1.
 		// failed retry attempts should not factor into the overall unsuccessful phase of the dag
 		// because the subsequent attempt may have succeeded
 		if unsuccessfulPhase == "" && !isRetryAttempt(node, nodes) {
-			unsuccessfulPhase = node.Phase
+			if !d.getTaskByNodeID(nodeID).ContinuesOn(node.Phase) {
+				unsuccessfulPhase = node.Phase
+			}
 		}
 		if node.Type == wfv1.NodeTypeRetry && d.hasMoreRetries(&node) {
 			retriesExhausted = false

@@ -1,52 +1,45 @@
+# Example on continue-on-fail, where the workflow will continue running even
+# some steps fail.
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: dag-contiue-on-fail
+  generateName: continue-on-fail-
 spec:
-  entrypoint: workflow
+  entrypoint: workflow-ignore
+  parallelism: 1
   templates:
-    - name: workflow
-      dag:
-        failFast: false
-        tasks:
-          - name: A
-            template: whalesay
-          - name: B
-            dependencies: [A]
-            template: intentional-fail-dag
-            continueOn:
-              failed: true
-              error: true
-          - name: C
-            dependencies: [A]
-            template: whalesay
-          - name: D
-            dependencies: [B, C]
-            template: whalesay
-          - name: E
-            dependencies: [A]
-            template: whalesay
-          - name: F
-            dependencies: [A]
-            template: whalesay
-          - name: G
-            dependencies: [E, F]
-            template: whalesay
+  - name: workflow-ignore
+    steps:
+    - - name: A
+        template: whalesay
+    - - name: B
+        template: whalesay
+      - name: C
+        template: intentional-fail
+        continueOn:
+          failed: true
+      - name: D
+        template: dag
+        continueOn:
+          failed: true
+    - - name: E
+        dependencies: [B, C, D]
+        template: whalesay
 
-    - name: whalesay
-      container:
-        image: docker/whalesay:latest
-        command: [cowsay]
-        args: ["hello world"]
+  - name: dag
+    dag:
+      tasks:
+        - name: dag
+          template: intentional-fail
 
-    - name: intentional-fail-dag
-      dag:
-        tasks:
-          - name: intentional-fail
-            template: intentional-fail
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
 
-    - name: intentional-fail
-      container:
-        image: alpine:latest
-        command: [sh, -c]
-        args: ["sleep 20; echo intentional failure; exit 1"]
+  - name: intentional-fail
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["sleep 5s ; echo intentional failure; exit 1"]
