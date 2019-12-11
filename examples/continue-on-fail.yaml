@@ -18,19 +18,8 @@ spec:
         template: intentional-fail
         continueOn:
           failed: true
-      - name: D
-        template: dag
-        continueOn:
-          failed: true
-    - - name: E
-        dependencies: [B, C, D]
+    - - name: D
         template: whalesay
-
-  - name: dag
-    dag:
-      tasks:
-        - name: dag
-          template: intentional-fail
 
   - name: whalesay
     container:
@@ -42,4 +31,4 @@ spec:
     container:
       image: alpine:latest
       command: [sh, -c]
-      args: ["sleep 5s ; echo intentional failure; exit 1"]
+      args: ["echo intentional failure; exit 1"]
