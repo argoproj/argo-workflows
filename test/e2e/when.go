@@ -12,10 +12,11 @@ func (w *When) SubmitWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow() *When {
-	commands.WaitWorkflows([]string{w.given.workflowName}, false, true)
+	commands.WaitWorkflows([]string{w.given.name}, false, true)
 	return w
 }
 
-func (w *When) DeleteWorkflow() {
-	commands.DeleteWorkflow(w.given.workflowName)
+func (w *When) DeleteWorkflow() *When {
+	commands.DeleteWorkflow(w.given.name)
+	return w
 }

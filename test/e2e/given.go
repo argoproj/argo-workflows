@@ -8,9 +8,11 @@ import (
 )
 
 type Given struct {
-	suite        *E2ESuite
-	workflowName string
-	file         string
+	suite *E2ESuite
+	// workflow name
+	name string
+	// workflow file
+	file string
 }
 
 func (g *Given) Workflow(text string) *Given {
@@ -18,19 +20,17 @@ func (g *Given) Workflow(text string) *Given {
 	if strings.HasPrefix(text, "@") {
 		g.file = strings.TrimPrefix(text, "@")
 	} else {
-		content := []byte(text)
-
-		tmpfile, err := ioutil.TempFile("", "argo_test")
+		f, err := ioutil.TempFile("", "argo_e2e")
 		if err != nil {
 			panic(err)
 		}
-		if _, err := tmpfile.Write(content); err != nil {
+		if _, err := f.Write([]byte(text)); err != nil {
 			panic(err)
 		}
-		if err := tmpfile.Close(); err != nil {
+		if err := f.Close(); err != nil {
 			panic(err)
 		}
-		g.file = tmpfile.Name()
+		g.file = f.Name()
 	}
 
 	file, err := ioutil.ReadFile(g.file)
@@ -43,7 +43,7 @@ func (g *Given) Workflow(text string) *Given {
 		panic(err)
 	}
 
-	g.workflowName = obj["metadata"].(map[interface{}]interface{})["name"].(string)
+	g.name = obj["metadata"].(map[interface{}]interface{})["name"].(string)
 
 	return g
 }
