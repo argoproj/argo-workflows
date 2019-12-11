@@ -1847,101 +1847,6 @@ func TestWithParamAsJsonList(t *testing.T) {
 	assert.Equal(t, 4, len(pods.Items))
 }
 
-var containerOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: container-on-exit
-spec:
-  entrypoint: start
-  templates:
-  - name: start
-    onExit: exitContainer
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["hello world"]
-
-  - name: exitContainer
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
-func TestContainerOnExit(t *testing.T) {
-	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// Test list expansion
-	wf := unmarshalWF(containerOnExit)
-	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.operate()
-
-	// start template is run
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
-
-	woc.operate()
-
-	// exitContainer template is run
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
-}
-
-var scriptOnExit = `
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  name: container-on-exit
-spec:
-  entrypoint: start
-  templates:
-  - name: start
-    onExit: exitContainer
-    script:
-      image: python:alpine3.6
-      command: [python]
-      source: |
-        print("hello world")
-
-  - name: exitContainer
-    container:
-      image: docker/whalesay
-      command: [cowsay]
-      args: ["goodbye world"]
-`
-
-func TestScriptOnExit(t *testing.T) {
-	controller := newController()
-	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
-
-	// Test list expansion
-	wf := unmarshalWF(scriptOnExit)
-	wf, err := wfcset.Create(wf)
-	assert.Nil(t, err)
-	woc := newWorkflowOperationCtx(wf, controller)
-
-	woc.operate()
-
-	// start template is run
-	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 1, len(pods.Items))
-
-	woc.operate()
-
-	// exitContainer template is run
-	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pods.Items))
-}
-
 var stepsOnExit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1952,15 +1857,11 @@ spec:
   templates:
   - name: suspend
     steps:
-    - - name: steps1
-        template: stepsTemplate
-
-  - name: stepsTemplate
-    onExit: exitContainer
-    steps:
     - - name: leafA
+        onExit: exitContainer
         template: whalesay
     - - name: leafB
+        onExit: exitContainer
         template: whalesay
 
   - name: whalesay

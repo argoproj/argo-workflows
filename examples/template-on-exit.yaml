@@ -1,5 +1,6 @@
-# Example showing a template (in this case a container) with an onExit template. The onExit template ("exitContainer")
+# Example showing a Step with an onExit template. The onExit template ("exitContainer")
 # will run after the parent ("whalesay"), regardless of if it fails or succeeds.
+# This is also similarly possible with DAG Tasks
 # 
 #   STEP                                        PODNAME                             DURATION  MESSAGE
 #   ✔ container-on-exit-m6wq5 (step-template)
@@ -20,12 +21,13 @@ spec:
     - name: step-template
       steps:
         - - name: stepA
+            onExit: exitContainer
             template: whalesay
         - - name: stepB
+            onExit: exitContainer
             template: whalesay
 
     - name: whalesay
-      onExit: exitContainer
       container:
         image: docker/whalesay
         command: [cowsay]
