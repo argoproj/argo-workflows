@@ -1122,6 +1122,9 @@ type ResourceTemplate struct {
 	// FailureCondition is a label selector expression which describes the conditions
 	// of the k8s resource in which the step was considered failed
 	FailureCondition string `json:"failureCondition,omitempty" protobuf:"bytes,6,opt,name=failureCondition"`
+
+	// IgnoreNotFound tells kubectl not to return an error if the resource is not found. It defaults to false
+	IgnoreNotFound bool `json:"ignoreNotFound,omitempty" protobuf:"varint,7,opt,name=ignoreNotFound"`
 }
 
 // GetType returns the type of this template

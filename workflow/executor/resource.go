@@ -50,6 +50,10 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (st
 		args = append(args, string(buff))
 	}
 
+	if we.Template.Resource.IgnoreNotFound {
+		args = append(args, "--ignore-not-found")
+	}
+
 	args = append(args, "-f")
 	args = append(args, manifestPath)
 	args = append(args, "-o")
@@ -63,6 +67,9 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (st
 		return "", "", errors.New(errors.CodeBadRequest, errMsg)
 	}
 	if action == "delete" {
+		return "", "", nil
+	}
+	if we.Template.Resource.IgnoreNotFound && len(out) == 0 {
 		return "", "", nil
 	}
 	obj := unstructured.Unstructured{}
@@ -263,6 +270,12 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 	log.Infof("Saving resource output parameters")
 	for i, param := range we.Template.Outputs.Parameters {
 		if param.ValueFrom == nil {
+			continue
+		}
+		if we.Template.Resource.IgnoreNotFound && resourceName == "" {
+			// Resource wasn't found, so we populate result with sentinel value
+			output := "<NOT_FOUND>"
+			we.Template.Outputs.Parameters[i].Value = &output
 			continue
 		}
 		var cmd *exec.Cmd
