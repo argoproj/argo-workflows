@@ -686,6 +686,17 @@ type Arguments struct {
 
 var _ ArgumentsProvider = &Arguments{}
 
+type Nodes map[string]NodeStatus
+
+func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	for _, i := range n {
+		if i.DisplayName == name {
+			return &i
+		}
+	}
+	return nil
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -715,7 +726,7 @@ type WorkflowStatus struct {
 	CompressedNodes string `json:"compressedNodes,omitempty" protobuf:"bytes,5,opt,name=compressedNodes"`
 
 	// Nodes is a mapping between a node ID and the node's status.
-	Nodes map[string]NodeStatus `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
+	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`

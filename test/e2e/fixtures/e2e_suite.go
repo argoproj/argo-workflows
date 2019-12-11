@@ -1,7 +1,8 @@
-package e2e
+package fixtures
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -12,6 +13,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 var kubeConfig = flag.String("kubeconfig", filepath.Join(os.Getenv("HOME"), ".kube", "config"), "Path to Kubernetes config file")
@@ -22,6 +24,7 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
+	wfi v1alpha1.WorkflowInterface
 }
 
 func (suite *E2ESuite) SetupSuite() {
@@ -30,7 +33,9 @@ func (suite *E2ESuite) SetupSuite() {
 		suite.T().Skip("Skipping test: " + err.Error())
 		return
 	}
-	err = commands.InitWorkflowClient().DeleteCollection(nil, v1.ListOptions{})
+	suite.wfi = commands.InitWorkflowClient()
+	fmt.Println("deleting all workflows")
+	err = suite.wfi.DeleteCollection(nil, v1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
