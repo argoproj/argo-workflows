@@ -242,6 +242,10 @@
           "description": "Name is the name of the target",
           "type": "string"
         },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "type": "string"
+        },
         "template": {
           "description": "Name of template to execute",
           "type": "string"
@@ -627,10 +631,6 @@
           "description": "Name is unique name in the node tree used to generate the node ID",
           "type": "string"
         },
-        "onExitNode": {
-          "description": "OnExitNode tracks the onExit node of this node, if any",
-          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.OnExitNodeStatus"
-        },
         "outboundNodes": {
           "description": "OutboundNodes tracks the node IDs which are considered \"outbound\" nodes to a template invocation. For every invocation of a template, there are nodes which we considered as \"outbound\". Essentially, these are last nodes in the execution sequence to run, before the template is considered completed. These nodes are then connected as parents to a following step.\n\nIn the case of single pod steps (i.e. container, script, resource templates), this list will be nil since the pod itself is already considered the \"outbound\" node. In the case of DAGs, outbound nodes are the \"target\" tasks (tasks with no children). In the case of steps, outbound nodes are all the containers involved in the last step group. NOTE: since templates are composable, the list of outbound nodes are carried upwards when a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of a template, will be a superset of the outbound nodes of its last children.",
           "type": "array",
@@ -683,24 +683,6 @@
     "io.argoproj.workflow.v1alpha1.NoneStrategy": {
       "description": "NoneStrategy indicates to skip tar process and upload the files or directory tree as independent files. Note that if the artifact is a directory, the artifact driver must support the ability to save/load the directory appropriately.",
       "type": "object"
-    },
-    "io.argoproj.workflow.v1alpha1.OnExitNodeStatus": {
-      "description": "OnExitNodeStatus contains information about the OnExit node of a parent node",
-      "type": "object",
-      "properties": {
-        "id": {
-          "description": "ID is the ID of the OnExit node",
-          "type": "string"
-        },
-        "name": {
-          "description": "Name is the name of the OnExit node",
-          "type": "string"
-        },
-        "templateRef": {
-          "description": "TemplateRef is a reference to the OnExit template that will run",
-          "type": "string"
-        }
-      }
     },
     "io.argoproj.workflow.v1alpha1.Outputs": {
       "description": "Outputs hold parameters, artifacts, and results from a step",
@@ -1185,10 +1167,6 @@
           "additionalProperties": {
             "type": "string"
           }
-        },
-        "onExit": {
-          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
-          "type": "string"
         },
         "outputs": {
           "description": "Outputs describe the parameters and artifacts that this template produces",
@@ -1742,6 +1720,10 @@
         },
         "name": {
           "description": "Name of the step",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {

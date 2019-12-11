@@ -86,13 +86,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			failMessage := fmt.Sprintf("step group %s was unsuccessful: %s", sgNode.ID, sgNode.Message)
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
-			// Run the Step node's onExit node, if any, when it fails
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-				// The onExit node is either not complete or has errored out, return.
-				// "err" here could be "nil".
-				return err
-			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
 			return nil
 		}
@@ -139,13 +132,6 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 		node := woc.getNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
-	}
-	// Run the Step node's onExit node, if any, when it succeeds
-	hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, stepsCtx.boundaryID)
-	if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-		// The onExit node is either not complete or has errored out, return.
-		// "err" here could be "nil".
-		return err
 	}
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
@@ -244,17 +230,24 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
+	completed := true
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
+		step := nodeSteps[childNode.Name]
 		if !childNode.Completed() {
-			return node
-		}
-		// Check that the child node's onExit handler is completed. If it isn't, then the child node and therefore the
-		// step group is also not completed
-		if childNode.Type == wfv1.NodeTypePod && childNode.OnExitNode != nil && !woc.wf.Status.Nodes[childNode.OnExitNode.ID].Completed() {
-			return node
+			completed = false
+		} else {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				completed = false
+			}
 		}
 	}
+	if !completed {
+		return node
+	}
+
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]

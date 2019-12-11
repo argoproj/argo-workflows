@@ -384,11 +384,6 @@ type Template struct {
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
 	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,31,opt,name=podSpecPatch"`
-
-	// OnExit is a template reference which is invoked at the end of the
-	// template, irrespective of the success, failure, or error of the
-	// primary template.
-	OnExit string `json:"onExit,omitempty" protobuf:"bytes,34,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &Template{}
@@ -601,6 +596,11 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,9,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -836,21 +836,6 @@ type NodeStatus struct {
 	// a DAG/steps template invokes another DAG/steps template. In other words, the outbound nodes of
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
-
-	// OnExitNode tracks the onExit node of this node, if any
-	OnExitNode *OnExitNodeStatus `json:"onExitNode,omitempty" protobuf:"bytes,21,rep,name=onExitNode"`
-}
-
-// OnExitNodeStatus contains information about the OnExit node of a parent node
-type OnExitNodeStatus struct {
-	// Name is the name of the OnExit node
-	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
-
-	// ID is the ID of the OnExit node
-	ID string `json:"id,omitempty" protobuf:"bytes,2,opt,name=id"`
-
-	// TemplateRef is a reference to the OnExit template that will run
-	TemplateRef string `json:"templateRef,omitempty" protobuf:"bytes,3,opt,name=templateRef"`
 }
 
 //func (n NodeStatus) String() string {
@@ -1218,6 +1203,11 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,10,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &DAGTask{}

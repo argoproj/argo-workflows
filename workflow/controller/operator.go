@@ -1185,13 +1185,6 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 
 	if node != nil {
 		if node.Completed() {
-			// Run the node's onExit node, if any
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-				// The onExit node is either not complete or has errored out, return.
-				// "err" here could be "nil".
-				return nil, err
-			}
 			woc.log.Debugf("Node %s already completed", nodeName)
 			return node, nil
 		}
@@ -1411,11 +1404,6 @@ var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 // initializeExecutableNode initializes a node and stores the template.
 func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
-
-	// Set onExit node information
-	if executeTmpl.OnExit != "" {
-		woc.addOnExitNode(node, executeTmpl.OnExit)
-	}
 
 	// Set the input values to the node.
 	if executeTmpl.Inputs.HasInputs() {
@@ -1888,26 +1876,6 @@ func (woc *wfOperationCtx) addChildNode(parent string, child string) {
 	woc.updated = true
 }
 
-// addOnExitNode adds the onExit node information to a parent node
-func (woc *wfOperationCtx) addOnExitNode(parentNode *wfv1.NodeStatus, onExitTemplateRef string) {
-	if parentNode.OnExitNode != nil {
-		if parentNode.OnExitNode.Name != "" && parentNode.OnExitNode.TemplateRef != "" {
-			return
-		}
-	}
-
-	onExitNodeName := parentNode.Name + ".onExit"
-	onExitNodeID := woc.wf.NodeID(onExitNodeName)
-	parentNode.OnExitNode = &wfv1.OnExitNodeStatus{
-		Name:        onExitNodeName,
-		ID:          onExitNodeID,
-		TemplateRef: onExitTemplateRef,
-	}
-
-	woc.wf.Status.Nodes[parentNode.ID] = *parentNode
-	woc.updated = true
-}
-
 // executeResource is runs a kubectl command against a manifest
 func (woc *wfOperationCtx) executeResource(nodeName string, tmpl *wfv1.Template, boundaryID string) error {
 	tmpl = tmpl.DeepCopy()
@@ -1956,13 +1924,6 @@ func (woc *wfOperationCtx) executeSuspend(nodeName string, tmpl *wfv1.Template, 
 		if time.Now().UTC().After(suspendDeadline) {
 			// Suspension is expired, node can be resumed
 			woc.log.Infof("auto resuming node %s", nodeName)
-			// Run the node's onExit node, if any
-			hasOnExitNode, onExitNode, err := woc.runOnExitNode(node.OnExitNode, boundaryID)
-			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
-				// The onExit node is either not complete or has errored out, return.
-				// "err" here could be "nil".
-				return err
-			}
 			_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 			return nil
 		}
@@ -2160,10 +2121,11 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	return nil
 }
 
-func (woc *wfOperationCtx) runOnExitNode(onExitNodeStatus *wfv1.OnExitNodeStatus, boundaryID string) (bool, *wfv1.NodeStatus, error) {
-	if onExitNodeStatus != nil {
-		woc.log.Infof("Running OnExit handler: %s", onExitNodeStatus.TemplateRef)
-		onExitNode, err := woc.executeTemplate(onExitNodeStatus.Name, &wfv1.Template{Template: onExitNodeStatus.TemplateRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string) (bool, *wfv1.NodeStatus, error) {
+	if templateRef != "" {
+		woc.log.Infof("Running OnExit handler: %s", templateRef)
+		onExitNodeName := parentName + ".onExit"
+		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
 		return true, onExitNode, err
 	}
 	return false, nil, nil
