@@ -12,7 +12,7 @@ type WorkflowSuite struct {
 
 func (suite *WorkflowSuite) TestRunWorkflowBasic() {
 	suite.Given().
-		Workflow("my-test", `
+		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
@@ -33,7 +33,7 @@ spec:
 
 func (suite *WorkflowSuite) TestContinueOnFail() {
 	suite.Given().
-		Workflow("dag-contiue-on-fail", "@functional/continue-on-fail.yaml").
+		Workflow("@functional/continue-on-fail.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().

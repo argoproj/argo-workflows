@@ -3,6 +3,8 @@ package e2e
 import (
 	"io/ioutil"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Given struct {
@@ -11,9 +13,8 @@ type Given struct {
 	file         string
 }
 
-func (g *Given) Workflow(name, text string) *Given {
+func (g *Given) Workflow(text string) *Given {
 
-	g.workflowName = name
 	if strings.HasPrefix(text, "@") {
 		g.file = strings.TrimPrefix(text, "@")
 	} else {
@@ -31,6 +32,19 @@ func (g *Given) Workflow(name, text string) *Given {
 		}
 		g.file = tmpfile.Name()
 	}
+
+	file, err := ioutil.ReadFile(g.file)
+	if err != nil {
+		panic(err)
+	}
+	obj := make(map[string]interface{})
+	err = yaml.Unmarshal(file, obj)
+	if err != nil {
+		panic(err)
+	}
+
+	g.workflowName = obj["metadata"].(map[interface{}]interface{})["name"].(string)
+
 	return g
 }
 
