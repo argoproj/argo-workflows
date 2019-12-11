@@ -63,8 +63,6 @@ func (woc *cronWfOperationCtx) Run() {
 	if err != nil {
 		log.Error(err)
 	}
-
-	log.Infof("Created %s", woc.cronWf.ObjectMeta.Name)
 }
 
 func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow) v12.ObjectReference {
@@ -175,6 +173,8 @@ func (woc *cronWfOperationCtx) removeActiveWf(wf *v1alpha1.Workflow) {
 }
 
 func (woc *cronWfOperationCtx) enforceHistoryLimit() {
+	log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
+
 	listOptions := &v1.ListOptions{}
 	wfInformerListOptionsFunc(listOptions)
 	wfList, err := woc.wfClient.List(*listOptions)
@@ -185,7 +185,6 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
-
 	for _, wf := range wfList.Items {
 		if wf.Status.Completed() {
 			if wf.Status.Successful() {
@@ -208,9 +207,9 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 
 	workflowsToKeep = int32(1)
 	if woc.cronWf.Spec.FailedJobsHistoryLimit != nil && *woc.cronWf.Spec.FailedJobsHistoryLimit >= 0 {
-		workflowsToKeep = *woc.cronWf.Spec.SuccessfulJobsHistoryLimit
+		workflowsToKeep = *woc.cronWf.Spec.FailedJobsHistoryLimit
 	}
-	err = woc.deleteOldestWorkflows(successfulWorkflows, int(workflowsToKeep))
+	err = woc.deleteOldestWorkflows(failedWorkflows, int(workflowsToKeep))
 	if err != nil {
 		log.Errorf("Unable to delete Failed Workflows of CronWorkflow '%s': %s", woc.cronWf.Name, err)
 		return
@@ -218,31 +217,21 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 
 }
 
-type newestFirst []v1alpha1.Workflow
-
-func (n newestFirst) Len() int {
-	return len(n)
-}
-
-func (n newestFirst) Swap(i, j int) {
-	n[i], n[j] = n[j], n[i]
-}
-
-func (n newestFirst) Less(i, j int) bool {
-	return n[i].Status.FinishedAt.Time.Before(n[j].Status.FinishedAt.Time)
-}
-
 func (woc *cronWfOperationCtx) deleteOldestWorkflows(jobList []v1alpha1.Workflow, workflowsToKeep int) error {
 	if workflowsToKeep >= len(jobList) {
 		return nil
 	}
 
-	sort.Sort(newestFirst(jobList))
+	sort.SliceStable(jobList, func(i, j int) bool {
+		return jobList[i].Status.FinishedAt.Time.After(jobList[j].Status.FinishedAt.Time)
+	})
+
 	for _, wf := range jobList[workflowsToKeep:] {
 		err := woc.wfClient.Delete(wf.Name, &v1.DeleteOptions{})
 		if err != nil {
 			return fmt.Errorf("error deleting workflow '%s': %e", wf.Name, err)
 		}
+		log.Infof("Deleted Workflow '%s' due to CronWorkflow '%s' history limit", wf.Name, woc.cronWf.Name)
 	}
 	return nil
 }

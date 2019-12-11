@@ -29,7 +29,7 @@ func NewLintCommand() *cobra.Command {
 				log.Fatal(err)
 			}
 
-			_ = InitCronWorkflowClient()
+			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
 				if len(args) > 1 {
@@ -37,7 +37,7 @@ func NewLintCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				fmt.Printf("Verifying all cron workflow manifests in directory: %s\n", args[0])
-				err = validate.LintCronWorkflowDir(wfClientset, namespace, args[0], strict)
+				err = validate.LintCronWorkflowDir(wftmplGetter, namespace, args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -48,7 +48,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = validate.LintCronWorkflowFile(wfClientset, namespace, yamlFile, strict)
+					err = validate.LintCronWorkflowFile(wftmplGetter, namespace, yamlFile, strict)
 					if err != nil {
 						break
 					}

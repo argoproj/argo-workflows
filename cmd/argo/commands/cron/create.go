@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"log"
 	"os"
 
@@ -62,7 +63,8 @@ func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, cronWf := range cronWorkflows {
-		err := validate.ValidateCronWorkflow(wfClientset, namespace, &cronWf)
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
+		err := validate.ValidateCronWorkflow(wftmplGetter, &cronWf)
 		if err != nil {
 			log.Fatalf("Failed to validate cron workflow: %v", err)
 		}

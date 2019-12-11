@@ -174,11 +174,7 @@ func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNa
 }
 
 // ValidateCronWorkflow validates a CronWorkflow
-func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, cronWf *wfv1.CronWorkflow) error {
-	if cronWf.Namespace != "" {
-		namespace = cronWf.Namespace
-	}
-
+func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cronWf *wfv1.CronWorkflow) error {
 	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
 	}
@@ -194,15 +190,15 @@ func ValidateCronWorkflow(wfClientset wfclientset.Interface, namespace string, c
 		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
 	}
 
-	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
 	wf, err := common.CastToWorkflow(cronWf)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
 	}
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
+	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wf, wf)
 
 	// Check if all templates can be resolved.
-	for _, template := range cronWf.Spec.WorkflowSpec.Templates {
+	for _, template := range wf.Spec.Templates {
 		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())

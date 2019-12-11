@@ -127,7 +127,7 @@ func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNa
 }
 
 // LintCronWorkflowDir validates all cron workflow manifests in a directory. Ignores non-workflow template manifests
-func LintCronWorkflowDir(wfClientset wfclientset.Interface, namespace, dirPath string, strict bool) error {
+func LintCronWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
@@ -138,14 +138,14 @@ func LintCronWorkflowDir(wfClientset wfclientset.Interface, namespace, dirPath s
 		default:
 			return nil
 		}
-		return LintCronWorkflowFile(wfClientset, namespace, path, strict)
+		return LintCronWorkflowFile(wftmplGetter, namespace, path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // LintCronWorkflowFile lints a json file, or multiple cron workflow manifest in a single yaml file. Ignores
 // non-cron workflow manifests
-func LintCronWorkflowFile(wfClientset wfclientset.Interface, namespace, filePath string, strict bool) error {
+func LintCronWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
@@ -174,7 +174,7 @@ func LintCronWorkflowFile(wfClientset wfclientset.Interface, namespace, filePath
 		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
 	for _, cronWf := range cronWorkflows {
-		err = ValidateCronWorkflow(wfClientset, namespace, &cronWf)
+		err = ValidateCronWorkflow(wftmplGetter, &cronWf)
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
 		}
