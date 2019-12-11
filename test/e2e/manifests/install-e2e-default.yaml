@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-service
+  namespace: argoci-workflows
+type: Opaque
+stringData:
+  accesskey: minio
+  secretkey: minio123
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-e2e-rbac
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-e2e-rbac-1
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: argoci-workflows
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+  namespace: argoci-workflows
+type: Opaque
+stringData:
+  mypassword: mypassword
+ 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-existing-volume
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+

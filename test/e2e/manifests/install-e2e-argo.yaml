@@ -1,0 +1,275 @@
+# This is an auto-generated file. DO NOT EDIT
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: workflows.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: Workflow
+    plural: workflows
+    shortNames:
+    - wf
+  scope: Namespaced
+  version: v1alpha1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-ui
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: argo-aggregate-to-admin
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: argo-aggregate-to-edit
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: argo-aggregate-to-view
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-ui-cluster-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: argo
+  namespace: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argo-ui-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: argo-ui-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: argo-ui
+  namespace: argo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-controller-configmap
+  namespace: argo
+data:
+  config: |
+    containerRuntimeExecutor: pns
+    artifactRepository:
+      s3:
+        bucket: my-bucket
+        keyPrefix: prefix/in/bucket     #optional
+        endpoint: minio-service.argoci-workflows:9000        #AWS => s3.amazonaws.com; GCS => storage.googleapis.com
+        insecure: true                  #omit for S3/GCS. Needed when minio runs without TLS
+        accessKeySecret:                #omit if accessing via AWS IAM
+          name: minio-service
+          key: accesskey
+        secretKeySecret:                #omit if accessing via AWS IAM
+          name: minio-service
+          key: secretkey
+---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: argo-ui
+#spec:
+#  ports:
+#  - port: 80
+#    targetPort: 8001
+#  selector:
+#    app: argo-ui
+---
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  name: argo-ui
+#spec:
+#  selector:
+#    matchLabels:
+#      app: argo-ui
+#  template:
+#    metadata:
+#      labels:
+#        app: argo-ui
+#    spec:
+#      containers:
+#      - env:
+#        - name: ARGO_NAMESPACE
+#          valueFrom:
+#            fieldRef:
+#              apiVersion: v1
+#              fieldPath: metadata.namespace
+#        - name: IN_CLUSTER
+#          value: "true"
+#        - name: ENABLE_WEB_CONSOLE
+#          value: "false"
+#        - name: BASE_HREF
+#          value: /
+#        image: argoproj/argoui:v2.3.0-rc2
+#        name: argo-ui
+#      serviceAccountName: argo-ui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-controller
+spec:
+  selector:
+    matchLabels:
+      app: workflow-controller
+  template:
+    metadata:
+      labels:
+        app: workflow-controller
+    spec:
+      containers:
+      - args:
+        - --configmap
+        - workflow-controller-configmap
+        - --executor-image
+        - argoexec:dev
+        command:
+        - workflow-controller
+        image: workflow-controller:dev
+        name: workflow-controller
+      serviceAccountName: argo
+
