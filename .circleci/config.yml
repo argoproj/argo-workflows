@@ -82,7 +82,6 @@ jobs:
             cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run: make minio
-      - run: make argosay
       - run: make executor-image DEV_IMAGE=true
       - save_go_cache
       - run:

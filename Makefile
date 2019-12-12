@@ -164,10 +164,6 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
-.PHONY: argosay
-argosay:
-	cd test/e2e/argosay && make
-
 .PHONY: minio
 minio:
 	kubectl apply --wait --force -f test/e2e/minio

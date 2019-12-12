@@ -3,6 +3,7 @@ package fixtures
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,11 +38,20 @@ func (w *When) WaitForWorkflow() *When {
 		w.t.Fatal(err)
 	}
 	defer watchIf.Stop()
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(10 * time.Second)
+		timeout <- true
+	}()
 	for {
-		next := <-watchIf.ResultChan()
-		wf, _ := next.Object.(*wfv1.Workflow)
-		if !wf.Status.FinishedAt.IsZero() {
-			return w
+		select {
+		case next := <-watchIf.ResultChan():
+			wf, _ := next.Object.(*wfv1.Workflow)
+			if !wf.Status.FinishedAt.IsZero() {
+				return w
+			}
+		case <-timeout:
+			w.t.Fatal("timeout waiting for completion")
 		}
 	}
 }
