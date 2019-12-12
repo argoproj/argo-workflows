@@ -62,7 +62,5 @@ images.controller workflow-controller:latest
 
 ### E2E Testing
 
-E2E tests are designed to be easy to run locally as well as easy to diagnose failures on CI. To run them locally in all their glory
-
-1. Run `make start-e2e DEV_IMAGE=true`.
-2. Either (a) run your test in your IDE or (b) `make test-e2e`.
+1. Run `make start-e2e`.
+2. Either (a) run your test in your IDE or (b) run `make test-e2e`.
