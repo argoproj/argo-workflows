@@ -1,0 +1,84 @@
+version: 2.1
+commands:
+  dep_ensure:
+    steps:
+      - restore_cache:
+          keys:
+            - vendor-v1-{{ checksum "Gopkg.lock" }}
+      - run:
+          name: Run dep ensure
+          command: dep ensure -v
+      - save_cache:
+          key: vendor-v1-{{ checksum "Gopkg.lock" }}
+          paths:
+            - vendor
+  install_golang:
+    steps:
+      - run:
+          name: Install Golang v1.12.6
+          command: |
+            go get golang.org/dl/go1.12.6
+            [ -e /home/circleci/sdk/go1.12.6 ] || go1.12.6 download
+            echo "export GOPATH=/home/circleci/.go_workspace" | tee -a $BASH_ENV
+            echo "export PATH=/home/circleci/sdk/go1.12.6/bin:\$PATH" | tee -a $BASH_ENV
+  save_go_cache:
+    steps:
+      - save_cache:
+          key: go-v1-{{ .Branch }}
+          paths:
+            - /home/circleci/.go_workspace
+            - /home/circleci/.cache/go-build
+            - /home/circleci/sdk/go1.12.6
+  restore_go_cache:
+    steps:
+      - restore_cache:
+          keys:
+            - go-v1-{{ .Branch }}
+            - go-v1-master
+jobs:
+  e2e:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: circleci/classic:201808-01
+    steps:
+      - run:
+          name: Install and start K3S v0.5.0
+          command: |
+            curl -sfL https://get.k3s.io | sh -
+            sudo chmod -R a+rw /etc/rancher/k3s
+            kubectl version
+          background: true
+          environment:
+            INSTALL_K3S_EXEC: --docker
+            INSTALL_K3S_VERSION: v0.5.0
+      - restore_go_cache
+      - install_golang
+      - checkout
+      - dep_ensure
+      - run: make cli
+      - run:
+          name: Create namespace
+          command: |
+            set -x
+            kubectl create ns argo
+            kubens argo
+            # install the certificates (not 100% sure we need this)
+            sudo cp /var/lib/rancher/k3s/server/tls/token-ca.crt /usr/local/share/ca-certificates/k3s.crt
+            sudo update-ca-certificates
+            # create the kubecfg, again - not sure we need this
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
+            echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
+      - run: kubectl apply -f manifests/install.yaml
+      - run: sleep 10
+      - run:
+          command: make test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - e2e
