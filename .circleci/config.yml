@@ -83,6 +83,10 @@ jobs:
       - run: make minio
       - run: make argosay
       - run:
+          name: Follow controller logs
+          command: kubectl logs -f $(kubectl get pods -l app=workflow-controller -o name)
+          background: true
+      - run:
           name: Create test report dir
           command: mkdir -p test-results
       - run:
