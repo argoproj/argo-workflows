@@ -171,7 +171,6 @@ argosay:
 .PHONY: minio
 minio:
 	kubectl apply --wait --force -f test/e2e/minio
-	kubectl exec minio -- mkdir -p /data/my-bucket
 
 .PHONY: clean
 clean:
