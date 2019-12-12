@@ -17,6 +17,7 @@ type FunctionalSuite struct {
 
 func (suite FunctionalSuite) TestFunctional() {
 	t := suite.T()
+	t.SkipNow()
 	files, err := ioutil.ReadDir("functional")
 	if assert.NoError(t, err) {
 		for _, file := range files {

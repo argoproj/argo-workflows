@@ -20,9 +20,3 @@ spec:
         - minio
         - server
         - /data
-      volumeMounts:
-        - mountPath: /data
-          name: data
-  volumes:
-    - name: data
-      emptyDir: {}

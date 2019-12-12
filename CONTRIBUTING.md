@@ -59,3 +59,10 @@ $ ./dist/argo version
 $ helm install argo/argo --set images.namespace=mydockerrepo --set
 images.controller workflow-controller:latest
 ```
+
+### E2E Testing
+
+To run E2E tests:
+
+1. Install and run Argo Workflows, e.g `kubectl apply -f manifests/install.yaml`.
+1. Install Minio, e.g. `make minio`.
