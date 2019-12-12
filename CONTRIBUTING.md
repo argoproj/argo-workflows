@@ -62,7 +62,7 @@ images.controller workflow-controller:latest
 
 ### E2E Testing
 
-To run E2E tests:
+E2E tests are designed to be easy to run locally as well as easy to diagnose failures on CI. To run them locally in all their glory
 
-1. Install and run Argo Workflows, e.g `kubectl apply -f manifests/install.yaml`.
-1. Install Minio, e.g. `make minio`.
+1. Run `make start-e2e`.
+2. Either (a) run your test in your IDE or (b) `make test-e2e`.

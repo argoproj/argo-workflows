@@ -25,7 +25,7 @@ commands:
   save_go_cache:
     steps:
       - save_cache:
-          key: go-v2-{{ .Branch }}
+          key: go-v3-{{ .Branch }}
           paths:
             - /home/circleci/.go_workspace
             - /home/circleci/.cache/go-build
@@ -34,10 +34,8 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - go-v2-{{ .Branch }}
-            - go-v2-master
-            - go-v1-{{ .Branch }}
-            - go-v1-master
+            - go-v3-{{ .Branch }}
+            - go-v3-master
 jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -68,15 +66,6 @@ jobs:
       - checkout
       - dep_ensure
       - run:
-          name: Make controller using DEV_IMAGE as it is faster
-          command: make controller-image DEV_IMAGE=true
-      - run:
-          name: Install Argo Workflows into K3S, even though we've not created the executor image (which takes ages)
-          command: |
-            set -x
-            kubectl apply --wait -f manifests/install.yaml
-            kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
-      - run:
           name: Configure K3S
           command: |
             # install the certificates (not 100% sure we need this)
@@ -86,22 +75,19 @@ jobs:
             cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run:
-          name: Install MinIO so we can run tests with outputs
-          command: make minio
-      - run:
           name: Make executor image
           command: make executor-image DEV_IMAGE=true
       - save_go_cache
       - run:
-          name: Follow controller logs, to help diagnos failures
+          name: Follow controller logs, to help diagnose failures
           command: kubectl logs -f $(kubectl get pods -l app=workflow-controller -o name)
           background: true
       - run:
-          name: Create test report dir
-          command: mkdir -p test-results
-      - run:
           name: Run tests
-          command: go test -v ./test/e2e | go-junit-report > test-results/go-test-report.xml
+          command: |
+            mkdir -p test-results
+            make test-e2e | go-junit-report > test-results/go-test-report.xml
+      - save_go_cache
       - store_test_results:
           path: test-results
       - store_artifacts:

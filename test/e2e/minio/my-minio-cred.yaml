@@ -5,5 +5,4 @@ data:
 kind: Secret
 metadata:
   name: my-minio-cred
-  namespace: argo
 type: Opaque

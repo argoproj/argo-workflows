@@ -164,9 +164,15 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
-.PHONY: minio
-minio:
+.PHONY: start-e2e
+start-e2e: controller-image
+	kubectl apply --wait --force -f manifests/install.yaml
+	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default || true
 	kubectl apply --wait --force -f test/e2e/minio
+
+.PHONY: test-e2e
+test-e2e:
+	go test -v ./test/e2e
 
 .PHONY: clean
 clean:
