@@ -56,8 +56,8 @@ spec:
         template: boom
         continueOn:
           failed: true
-    - - name: D
-        depedencies: [A, B]
+    - - name: C
+        dependencies: [A, B]
         template: argosay
 
   - name: boom
@@ -73,7 +73,7 @@ spec:
   - name: whalesplosion
     container:
       image: argosay:v1
-      command: ["--sleep", "5s", "--exit-code", "1"]
+      command: ["argosay", "--sleep", "5s", "--exit-code", "1"]
 `).
 		When().
 		SubmitWorkflow().
