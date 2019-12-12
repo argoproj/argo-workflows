@@ -172,7 +172,7 @@ start-e2e:
 	# Install MinIO and set-up config-map.
 	kubectl apply --wait --force -f test/e2e/manifests
 	# Ensure the executor can do it's business.
-	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default || true
+	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:argo || true
 	# Ensure that we use the image we're about to create, do not pull.
 	kubectl patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
 	kubectl scale deployment/workflow-controller --replicas 0
@@ -180,6 +180,10 @@ start-e2e:
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	# Scale up and wait up to 10s to be ready.
 	kubectl scale deployment/workflow-controller --replicas 1 --timeout 10s
+
+.PHONY: logs-e2e
+logs-e2e:
+	kubectl get pods -l app=workflow-controller -o name | xargs kubectl logs -f
 
 .PHONY: test-e2e
 test-e2e:

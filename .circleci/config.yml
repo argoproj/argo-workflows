@@ -78,7 +78,7 @@ jobs:
       - save_go_cache
       - run:
           name: Follow controller logs, to help diagnose failures
-          command: kubectl logs -f $(kubectl get pods -l app=workflow-controller -o name)
+          command: make logs-e2e
           background: true
       - run:
           name: Run tests
