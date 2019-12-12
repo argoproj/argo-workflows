@@ -27,10 +27,6 @@ func (s AutoSuite) TestExpectedFailures() {
 	s.runDir("expectedfailures", wfv1.NodeFailed)
 }
 
-func (s AutoSuite) TestLintFail() {
-	s.runDir("lintfail", wfv1.NodeError)
-}
-
 func (s AutoSuite) runDir(dir string, nodePhase wfv1.NodePhase) {
 	err := filepath.Walk(dir, func(path string, file os.FileInfo, err error) error {
 		if !file.IsDir() {
