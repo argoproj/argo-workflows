@@ -69,7 +69,6 @@ jobs:
             kubectl create ns argo
             kubectl config set-context --current --namespace=argo
             kubectl apply --wait -f manifests/install.yaml
-            kubectl scale
       - run:
           name: Configure K3S
           command: |
