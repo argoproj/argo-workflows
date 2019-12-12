@@ -54,6 +54,9 @@ jobs:
           environment:
             INSTALL_K3S_EXEC: --docker
             INSTALL_K3S_VERSION: v0.5.0
+      - run:
+          run: docker pull golang:1.11.5
+          background: true
       - restore_go_cache
       - install_golang
       - run:
@@ -62,8 +65,6 @@ jobs:
       - checkout
       - dep_ensure
       - run: make controller-image DEV_IMAGE=true
-      - run: make executor-image DEV_IMAGE=true
-      - save_go_cache
       - run:
           name: Install Argo Workflows into K3S
           command: |
@@ -82,6 +83,8 @@ jobs:
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run: make minio
       - run: make argosay
+      - run: make executor-image DEV_IMAGE=true
+      - save_go_cache
       - run:
           name: Follow controller logs
           command: kubectl logs -f $(kubectl get pods -l app=workflow-controller -o name)
