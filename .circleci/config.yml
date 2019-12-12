@@ -60,7 +60,7 @@ jobs:
           command: |
             set -x
             kubectl create ns argo
-            kubens argo
+            kubectl config set-context --current --namespace=argo
             # install the certificates (not 100% sure we need this)
             sudo cp /var/lib/rancher/k3s/server/tls/token-ca.crt /usr/local/share/ca-certificates/k3s.crt
             sudo update-ca-certificates
