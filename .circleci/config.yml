@@ -5,9 +5,8 @@ commands:
       - restore_cache:
           keys:
             - vendor-v1-{{ checksum "Gopkg.lock" }}
-      - run:
-          name: Run dep ensure
-          command: dep ensure -v
+      - run: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - run: dep ensure -v
       - save_cache:
           key: vendor-v1-{{ checksum "Gopkg.lock" }}
           paths:
