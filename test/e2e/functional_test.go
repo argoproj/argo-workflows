@@ -23,7 +23,7 @@ func (suite FunctionalSuite) TestFunctional() {
 		for _, file := range files {
 			suite.Run(file.Name(), func() {
 				suite.Given().
-					Workflow("@functional/"+file.Name()).
+					Workflow("@functional/" + file.Name()).
 					When().
 					SubmitWorkflow().
 					WaitForWorkflow().
