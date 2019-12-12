@@ -613,12 +613,6 @@ func (step *WorkflowStep) IsResolvable() bool {
 	return true
 }
 
-//// Item expands a single workflow step into multiple parallel steps
-//// The value of Item can be a map, string, bool, or number
-//type Item struct {
-//	Value interface{} `json:"value,omitempty"`
-//}
-
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -833,10 +827,6 @@ type NodeStatus struct {
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
-
-//func (n NodeStatus) String() string {
-//	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
-//}
 
 func isCompletedPhase(phase NodePhase) bool {
 	return phase == NodeSucceeded ||
@@ -1199,6 +1189,21 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,10,opt,name=continueOn"`
+
+	// Depends are name of other targets which this depends on
+	Depends *Depends `json:"depends,omitempty" protobuf:"bytes,11,rep,name=depends"`
+}
+
+type Depends struct {
+	Succeeded  string    `json:"succeeded" protobuf:"bytes,1,opt,name=succeeded"`
+	Failed     string    `json:"failed" protobuf:"bytes,2,opt,name=failed"`
+	Skipped    string    `json:"skipped" protobuf:"bytes,3,opt,name=skipped"`
+	Completed  string    `json:"completed" protobuf:"bytes,4,opt,name=completed"`
+	Any        string    `json:"any" protobuf:"bytes,5,opt,name=any"`
+	Successful string    `json:"successful" protobuf:"bytes,9,opt,name=successful"`
+	And        []Depends `json:"and" protobuf:"bytes,6,rep,name=and"`
+	Or         []Depends `json:"or" protobuf:"bytes,7,rep,name=or"`
+	Not        *Depends  `json:"not" protobuf:"bytes,8,rep,name=not"`
 }
 
 var _ TemplateHolder = &DAGTask{}

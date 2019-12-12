@@ -3,6 +3,8 @@ API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,DAGTask,Dependencies
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,DAGTask,WithItems
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,DAGTemplate,Tasks
+API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Depends,And
+API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Depends,Or
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,GitArtifact,Fetch
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,HDFSConfig,Addresses
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Inputs,Artifacts

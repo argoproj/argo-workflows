@@ -298,33 +298,17 @@ func (woc *wfOperationCtx) executeDAGTask(dagCtx *dagContext, taskName string) {
 	}
 	// Check if our dependencies completed. If not, recurse our parents executing them if necessary
 	task := dagCtx.getTask(taskName)
-	dependenciesCompleted := true
-	dependenciesSuccessful := true
 	nodeName := dagCtx.taskNodeName(taskName)
-	for _, depName := range task.Dependencies {
-		depNode := dagCtx.GetTaskNode(depName)
-		if depNode != nil {
-			if depNode.Completed() {
-				if !depNode.Successful() && !dagCtx.getTask(depName).ContinuesOn(depNode.Phase) {
-					dependenciesSuccessful = false
-				}
-				continue
-			}
+	depends, err := getTaskDepends(task)
+	if err != nil {
+		woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, task, dagCtx.boundaryID, wfv1.NodeError, err.Error())
+		return
+	}
+	if depends != nil {
+		proceed := evaluateDependsLogic(*depends, dagCtx)
+		if !proceed {
+			return
 		}
-		dependenciesCompleted = false
-		dependenciesSuccessful = false
-		// recurse our dependency
-		woc.executeDAGTask(dagCtx, depName)
-	}
-	if !dependenciesCompleted {
-		return
-	}
-
-	if !dependenciesSuccessful {
-		// TODO: in the future we may support some more sophisticated syntax for deciding on how
-		// to proceed if at least one dependency succeeded, analogous to airflow's trigger rules,
-		// (e.g. one_success, all_done, one_failed, etc...). This decision would be made here.
-		return
 	}
 
 	// All our dependencies were satisfied and successful. It's our turn to run
@@ -557,4 +541,91 @@ func (woc *wfOperationCtx) expandTask(task wfv1.DAGTask) ([]wfv1.DAGTask, error)
 		expandedTasks = append(expandedTasks, newTask)
 	}
 	return expandedTasks, nil
+}
+
+func evaluateDependsLogic(logic wfv1.Depends, dagCtx *dagContext) bool {
+
+	// Single dependency case (base cases)
+	if logic.Succeeded != "" {
+		return evaluateDependsLeaf(logic.Succeeded, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Phase == wfv1.NodeSucceeded
+		})
+	}
+	if logic.Failed != "" {
+		return evaluateDependsLeaf(logic.Failed, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Phase == wfv1.NodeFailed
+		})
+	}
+	if logic.Skipped != "" {
+		return evaluateDependsLeaf(logic.Skipped, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Phase == wfv1.NodeSkipped
+		})
+	}
+	if logic.Completed != "" {
+		return evaluateDependsLeaf(logic.Completed, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Phase == wfv1.NodeSucceeded || status.Phase == wfv1.NodeFailed
+		})
+	}
+	if logic.Any != "" {
+		return evaluateDependsLeaf(logic.Any, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Phase == wfv1.NodeSucceeded || status.Phase == wfv1.NodeFailed || status.Phase == wfv1.NodeSkipped
+		})
+	}
+	if logic.Successful != "" {
+		return evaluateDependsLeaf(logic.Successful, dagCtx, func(status *wfv1.NodeStatus) bool {
+			return status.Successful() && !dagCtx.getTask(logic.Successful).ContinuesOn(status.Phase)
+		})
+	}
+
+	// Multi-dependency case (recursive cases)
+	if len(logic.And) > 0 {
+		for _, node := range logic.And {
+			if !evaluateDependsLogic(node, dagCtx) {
+				return false
+			}
+		}
+		return true
+	}
+	if len(logic.Or) > 0 {
+		for _, node := range logic.Or {
+			if evaluateDependsLogic(node, dagCtx) {
+				return true
+			}
+		}
+		return false
+	}
+	if logic.Not != nil {
+		return !evaluateDependsLogic(*logic.Not, dagCtx)
+	}
+	return false
+}
+
+func evaluateDependsLeaf(dependencyName string, dagCtx *dagContext, evalFunc func(phase *wfv1.NodeStatus) bool) bool {
+	depNode := dagCtx.GetTaskNode(dependencyName)
+	if depNode == nil || depNode.Phase == wfv1.NodeRunning {
+		return false
+	}
+	return evalFunc(depNode)
+}
+
+func getTaskDepends(dagTask *wfv1.DAGTask) (*wfv1.Depends, error) {
+	if len(dagTask.Dependencies) > 0 && dagTask.Depends != nil {
+		return nil, fmt.Errorf("cannot have a task with both 'dependencies' and 'depends'")
+	}
+
+	if dagTask.Depends != nil {
+		return dagTask.Depends, nil
+	}
+
+	if len(dagTask.Dependencies) > 0 {
+		depends := &wfv1.Depends{
+			And: make([]wfv1.Depends, 0),
+		}
+		for _, dependency := range dagTask.Dependencies {
+			depends.And = append(depends.And, wfv1.Depends{Successful: dependency})
+		}
+		return depends, nil
+	}
+
+	return nil, nil
 }

@@ -238,6 +238,10 @@
             "type": "string"
           }
         },
+        "depends": {
+          "description": "Depends are name of other targets which this depends on",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
+        },
         "name": {
           "description": "Name is the name of the target",
           "type": "string"
@@ -294,6 +298,55 @@
           },
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.Depends": {
+      "type": "object",
+      "required": [
+        "succeeded",
+        "failed",
+        "skipped",
+        "completed",
+        "any",
+        "successful",
+        "and",
+        "or",
+        "not"
+      ],
+      "properties": {
+        "and": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
+          }
+        },
+        "any": {
+          "type": "string"
+        },
+        "completed": {
+          "type": "string"
+        },
+        "failed": {
+          "type": "string"
+        },
+        "not": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
+        },
+        "or": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Depends"
+          }
+        },
+        "skipped": {
+          "type": "string"
+        },
+        "succeeded": {
+          "type": "string"
+        },
+        "successful": {
+          "type": "string"
         }
       }
     },
