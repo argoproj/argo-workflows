@@ -52,6 +52,8 @@ jobs:
             INSTALL_K3S_VERSION: v0.5.0
       - restore_go_cache
       - install_golang
+      - run: go get github.com/jstemmer/go-junit-report
+      - run: mkdir -p test-results
       - save_go_cache
       - checkout
       - dep_ensure
@@ -72,7 +74,7 @@ jobs:
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run: make minio
       - run: make argosay
-      - run: go test ./test/e2e
+      - run: go test ./test/e2e | go-junit-report > test-results/go-test-report.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
