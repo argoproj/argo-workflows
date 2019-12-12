@@ -16,7 +16,6 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -48,7 +47,7 @@ type templateValidationCtx struct {
 	wf *wfv1.Workflow
 }
 
-func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
+func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
 	globalParams[common.GlobalVarWorkflowName] = placeholderValue
 	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
@@ -85,13 +84,9 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts ValidateOpts) error {
-	if wf.Namespace != "" {
-		namespace = wf.Namespace
-	}
-
-	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
+	ctx := newTemplateValidationCtx(wf, opts)
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wf, wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -163,12 +158,9 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 }
 
 // ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace string, wftmpl *wfv1.WorkflowTemplate) error {
-	if wftmpl.Namespace != "" {
-		namespace = wftmpl.Namespace
-	}
-	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wftmpl *wfv1.WorkflowTemplate) error {
+	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wftmpl, nil)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
@@ -289,7 +281,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder, args, ctx.globalParams, map[string]string{}, true)
+	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
@@ -299,6 +291,16 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.InternalWrapError(err)
 		}
 		return nil, err
+	}
+
+	// Validate retryStrategy
+	if resolvedTmpl.RetryStrategy != nil {
+		switch resolvedTmpl.RetryStrategy.RetryPolicy {
+		case wfv1.RetryPolicyAlways, wfv1.RetryPolicyOnError, wfv1.RetryPolicyOnFailure, "":
+			// Passes validation
+		default:
+			return nil, fmt.Errorf("%s is not a valid RetryPolicy", resolvedTmpl.RetryStrategy.RetryPolicy)
+		}
 	}
 
 	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, extraScope)

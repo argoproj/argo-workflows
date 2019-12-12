@@ -20,6 +20,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactRepositoryRef": schema_pkg_apis_workflow_v1alpha1_ArtifactRepositoryRef(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact":   schema_pkg_apis_workflow_v1alpha1_ArtifactoryArtifact(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":       schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff":               schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":            schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
@@ -389,6 +390,36 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref common.ReferenceCallb
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_Backoff(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"duration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"factor": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+					"maxDuration": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -1118,14 +1149,21 @@ func schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref common.ReferenceCallback) 
 					},
 					"storedTemplateID": {
 						SchemaProps: spec.SchemaProps{
-							Description: "StoredTemplateID is the ID of stored template.",
+							Description: "StoredTemplateID is the ID of stored template. DEPRECATED: This value is not used anymore.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
 					},
 					"workflowTemplateName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.",
+							Description: "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved. DEPRECATED: This value is not used anymore.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"templateScope": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TemplateScope is the template scope in which the template of this node was retrieved.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1484,9 +1522,24 @@ func schema_pkg_apis_workflow_v1alpha1_RetryStrategy(ref common.ReferenceCallbac
 							Format:      "int32",
 						},
 					},
+					"retryPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RetryPolicy is a policy of NodePhase statuses that will be retried",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"backoff": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Backoff is a backoff strategy",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff"),
+						},
+					},
 				},
 			},
 		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff"},
 	}
 }
 
@@ -1914,6 +1967,15 @@ func schema_pkg_apis_workflow_v1alpha1_SuspendTemplate(ref common.ReferenceCallb
 			SchemaProps: spec.SchemaProps{
 				Description: "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time",
 				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"duration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Duration is the seconds to wait before automatically resuming a template",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}

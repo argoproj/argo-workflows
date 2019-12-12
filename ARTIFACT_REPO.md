@@ -91,7 +91,7 @@ Use the `endpoint` corresponding to your S3 provider:
 - GCS: storage.googleapis.com
 - Minio: my-minio-endpoint.default:9000
 
-The `key` is name of the object in the `bucket` The `accessKeySecret` and `secretKeySecret` are secret selectors that reference the specified kubernetes secret.  The secret is expected to have have the keys 'accessKey' and 'secretKey', containing the base64 encoded credentials to the bucket.
+The `key` is name of the object in the `bucket` The `accessKeySecret` and `secretKeySecret` are secret selectors that reference the specified kubernetes secret.  The secret is expected to have the keys 'accessKey' and 'secretKey', containing the base64 encoded credentials to the bucket.
 
 For AWS, the `accessKeySecret` and `secretKeySecret` correspond to AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY respectively.
 

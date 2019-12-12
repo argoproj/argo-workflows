@@ -50,9 +50,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
-	if err != nil {
-
-	}
+	assert.NoError(t, err)
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
@@ -66,9 +64,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
-	if err != nil {
-
-	}
+	assert.NoError(t, err)
 	var err1 error = errors.New("23324", "test")
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
@@ -84,9 +80,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
-	if err != nil {
-
-	}
+	assert.NoError(t, err)
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
@@ -100,9 +94,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
-	if err != nil {
-
-	}
+	assert.NoError(t, err)
 	var err1 error = errors.New("23324", "test")
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), true, false)
 	woc := newWorkflowOperationCtx(wf, controller)

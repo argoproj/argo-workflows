@@ -10,6 +10,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -23,6 +24,7 @@ var (
 	clientset        *kubernetes.Clientset
 	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
+	wftmplClient     v1alpha1.WorkflowTemplateInterface
 	jobStatusIconMap map[wfv1.NodePhase]string
 	noColor          bool
 	namespace        string
@@ -97,6 +99,7 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	}
 	wfClientset = versioned.NewForConfigOrDie(restConfig)
 	wfClient = wfClientset.ArgoprojV1alpha1().Workflows(namespace)
+	wftmplClient = wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace)
 	return wfClient
 }
 
@@ -118,3 +121,17 @@ func ansiFormat(s string, codes ...int) string {
 	sequence := strings.Join(codeStrs, ";")
 	return fmt.Sprintf("%s[%sm%s%s[%dm", escape, sequence, s, escape, noFormat)
 }
+
+// LazyWorkflowTemplateGetter is a wrapper of v1alpha1.WorkflowTemplateInterface which
+// supports lazy initialization.
+type LazyWorkflowTemplateGetter struct{}
+
+// Get initializes it just before it's actually used and returns a retrieved workflow template.
+func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, error) {
+	if wftmplClient == nil {
+		_ = InitWorkflowClient()
+	}
+	return templateresolution.WrapWorkflowTemplateInterface(wftmplClient).Get(name)
+}
+
+var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
