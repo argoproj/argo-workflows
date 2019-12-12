@@ -5,7 +5,9 @@ commands:
       - restore_cache:
           keys:
             - vendor-v1-{{ checksum "Gopkg.lock" }}
-      - run: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - run:
+          name: Install Dep
+          command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
       - run: dep ensure -v
       - save_cache:
           key: vendor-v1-{{ checksum "Gopkg.lock" }}
@@ -52,19 +54,25 @@ jobs:
             INSTALL_K3S_VERSION: v0.5.0
       - restore_go_cache
       - install_golang
-      - run: go get github.com/jstemmer/go-junit-report
+      - run:
+          name: Install Go test report to Junit test report
+          command: go get github.com/jstemmer/go-junit-report
       - save_go_cache
       - checkout
       - dep_ensure
-      - run: make controller-image
-      - run: make executor-image
+      - run: make controller-image DEV_IMAGE=true
+      - run: make executor-image DEV_IMAGE=true
       - run:
-          name: Create namespace
+          name: Install Argo Workflows into K3S
           command: |
             set -x
             kubectl create ns argo
             kubectl config set-context --current --namespace=argo
-            kubectl apply -f manifests/install.yaml
+            kubectl apply --wait -f manifests/install.yaml
+            kubectl scale
+      - run:
+          name: Configure K3S
+          command: |
             # install the certificates (not 100% sure we need this)
             sudo cp /var/lib/rancher/k3s/server/tls/token-ca.crt /usr/local/share/ca-certificates/k3s.crt
             sudo update-ca-certificates
@@ -73,8 +81,12 @@ jobs:
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run: make minio
       - run: make argosay
-      - run: mkdir -p test-results
-      - run: go test ./test/e2e | go-junit-report > test-results/go-test-report.xml
+      - run:
+          name: Create test report dir
+          command: mkdir -p test-results
+      - run:
+          name: Run tests
+          command: go test ./test/e2e | go-junit-report > test-results/go-test-report.xml
       - store_test_results:
           path: test-results
       - store_artifacts:
