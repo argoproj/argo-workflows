@@ -25,7 +25,7 @@ commands:
   save_go_cache:
     steps:
       - save_cache:
-          key: go-v1-{{ .Branch }}
+          key: go-v2-{{ .Branch }}
           paths:
             - /home/circleci/.go_workspace
             - /home/circleci/.cache/go-build
@@ -34,6 +34,8 @@ commands:
     steps:
       - restore_cache:
           keys:
+            - go-v2-{{ .Branch }}
+            - go-v2-master
             - go-v1-{{ .Branch }}
             - go-v1-master
 jobs:
@@ -57,11 +59,11 @@ jobs:
       - run:
           name: Install Go test report to Junit test report
           command: go get github.com/jstemmer/go-junit-report
-      - save_go_cache
       - checkout
       - dep_ensure
       - run: make controller-image DEV_IMAGE=true
       - run: make executor-image DEV_IMAGE=true
+      - save_go_cache
       - run:
           name: Install Argo Workflows into K3S
           command: |
