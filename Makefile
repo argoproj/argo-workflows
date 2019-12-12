@@ -166,7 +166,7 @@ manifests:
 
 .PHONY: start-e2e
 start-e2e:
-	kubectl create ns argo
+	kubectl create ns argo || true
 	kubectl config set-context --current --namespace=argo
 	kubectl apply --wait --force -f manifests/install.yaml
 	# Install MinIO and set-up config-map.
