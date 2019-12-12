@@ -55,6 +55,8 @@ jobs:
       - save_go_cache
       - checkout
       - dep_ensure
+      - run: make controller-image
+      - run: make executor-image
       - run:
           name: Create namespace
           command: |
@@ -70,7 +72,6 @@ jobs:
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
       - run: make minio
       - run: make argosay
-      - run: sleep 10
       - run: go test ./test/e2e
       - store_test_results:
           path: test-results
