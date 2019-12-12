@@ -52,25 +52,26 @@ jobs:
             INSTALL_K3S_VERSION: v0.5.0
       - restore_go_cache
       - install_golang
+      - save_go_cache
       - checkout
       - dep_ensure
-      - run: make cli
       - run:
           name: Create namespace
           command: |
             set -x
             kubectl create ns argo
             kubectl config set-context --current --namespace=argo
+            kubectl apply -f manifests/install.yaml
             # install the certificates (not 100% sure we need this)
             sudo cp /var/lib/rancher/k3s/server/tls/token-ca.crt /usr/local/share/ca-certificates/k3s.crt
             sudo update-ca-certificates
             # create the kubecfg, again - not sure we need this
             cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
-      - run: kubectl apply -f manifests/install.yaml
+      - run: make minio
+      - run: make argosay
       - run: sleep 10
-      - run:
-          command: make test
+      - run: go test ./test/e2e
       - store_test_results:
           path: test-results
       - store_artifacts:
