@@ -167,20 +167,18 @@ manifests:
 .PHONY: start-e2e
 start-e2e:
 	kubectl create ns argo || true
-	kubectl config set-context --current --namespace=argo
-	kubectl apply --wait --force -f manifests/install.yaml
+	kubectl -n argo apply --wait --force -f manifests/install.yaml
 	# Install MinIO and set-up config-map.
-	kubectl apply --wait --force -f test/e2e/manifests
-	# Ensure the executor can do it's business.
-	kubectl delete rolebinding rolebinding default-admin || true
-	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=argo:default
+	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Ensure that we use the image we're about to create, do not pull.
-	kubectl patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
-	kubectl scale deployment/workflow-controller --replicas 0
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
 	# Build controller and executor images.
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	# Scale up.
-	kubectl scale deployment/workflow-controller --replicas 1
+	kubectl -n argo scale deployment/workflow-controller --replicas 1
+	# Switch to default ns
+	kubectl config set-context --current --namespace=default
 
 .PHONY: logs-e2e
 logs-e2e:
