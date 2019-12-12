@@ -11,15 +11,17 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-type FunctionalSuite struct {
+type AutoSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s FunctionalSuite) TestFunctional() {
-	t := s.T()
-	t.SkipNow()
+func (s AutoSuite) SetupSuite() {
+	s.T().SkipNow()
+}
+
+func (s AutoSuite) TestFunctional() {
 	files, err := ioutil.ReadDir("functional")
-	if assert.NoError(t, err) {
+	if assert.NoError(s.T(), err) {
 		for _, file := range files {
 			s.Run(file.Name(), func() {
 				s.Given().
@@ -36,6 +38,24 @@ func (s FunctionalSuite) TestFunctional() {
 	}
 }
 
+func (s AutoSuite) TestExpectedFailures() {
+	files, err := ioutil.ReadDir("expectedfailures")
+	if assert.NoError(s.T(), err) {
+		for _, file := range files {
+			s.Run(file.Name(), func() {
+				s.Given().
+					Workflow("@expectedfailures/" + file.Name()).
+					When().
+					SubmitWorkflow().
+					WaitForWorkflow().
+					Then().
+					Expect(func(t *testing.T, wf *v1alpha1.WorkflowStatus) {
+						assert.Equal(t, v1alpha1.NodeFailed, wf.Phase)
+					})
+			})
+		}
+	}
+}
 func TestFunctionalSuite(t *testing.T) {
-	suite.Run(t, new(FunctionalSuite))
+	suite.Run(t, new(AutoSuite))
 }

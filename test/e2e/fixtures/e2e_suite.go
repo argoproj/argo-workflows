@@ -73,12 +73,13 @@ func (s *E2ESuite) printDiagnostics() {
 	}
 	for _, wf := range wfs.Items {
 		log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name}).Info("Printing diagnostics")
-
+		// print status
 		bytes, err := yaml.Marshal(wf.Status)
 		if err != nil {
 			s.T().Fatal(err)
 		}
 		fmt.Println(string(bytes))
+		// print logs
 		wf, err := s.client.Get(wf.Name, metav1.GetOptions{})
 		if err != nil {
 			s.T().Fatal(err)

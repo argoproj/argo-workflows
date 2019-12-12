@@ -74,8 +74,6 @@ jobs:
           name: Install Argo Workflows into K3S, even though we've not created the executor image (which takes ages)
           command: |
             set -x
-            kubectl create ns argo
-            kubectl config set-context --current --namespace=argo
             kubectl apply --wait -f manifests/install.yaml
             kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
       - run:
