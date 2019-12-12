@@ -23,7 +23,8 @@ func (suite ArtifactSuite) Test() {
 		Then().
 		Expect(func(t *testing.T, wf *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, wf.Phase)
-		})
+		}).
+		Logs()
 }
 
 func TestArtifactSuite(t *testing.T) {

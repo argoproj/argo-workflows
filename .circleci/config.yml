@@ -91,7 +91,7 @@ jobs:
           command: mkdir -p test-results
       - run:
           name: Run tests
-          command: go test ./test/e2e | go-junit-report > test-results/go-test-report.xml
+          command: go test -v ./test/e2e | go-junit-report > test-results/go-test-report.xml
       - store_test_results:
           path: test-results
       - store_artifacts:

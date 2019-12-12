@@ -6,16 +6,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type When struct {
-	t      *testing.T
-	wf     *wfv1.Workflow
-	client v1alpha1.WorkflowInterface
-	name   string
+	t          *testing.T
+	wf         *wfv1.Workflow
+	client     v1alpha1.WorkflowInterface
+	kubeClient kubernetes.Interface
+	name       string
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -56,8 +58,9 @@ func (w *When) DeleteWorkflow() *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:      w.t,
-		name:   w.name,
-		client: w.client,
+		t:          w.t,
+		name:       w.name,
+		client:     w.client,
+		kubeClient: w.kubeClient,
 	}
 }

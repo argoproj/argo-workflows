@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -24,7 +26,8 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	client v1alpha1.WorkflowInterface
+	client     v1alpha1.WorkflowInterface
+	kubeClient kubernetes.Interface
 }
 
 func (suite *E2ESuite) SetupSuite() {
@@ -33,6 +36,14 @@ func (suite *E2ESuite) SetupSuite() {
 		suite.T().Skip("Skipping test: " + err.Error())
 		return
 	}
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
+	if err != nil {
+		panic(err)
+	}
+	suite.kubeClient, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
 	suite.client = commands.InitWorkflowClient()
 	fmt.Println("deleting workflows")
 	timeout := int64(10)
@@ -40,12 +51,12 @@ func (suite *E2ESuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func (suite *E2ESuite) Given() *Given {
 	return &Given{
 		t:      suite.T(),
 		client: suite.client,
+		kubeClient: suite.kubeClient,
 	}
 }
