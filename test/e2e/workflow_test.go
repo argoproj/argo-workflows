@@ -26,13 +26,15 @@ spec:
     templates:
     - name: run-workflow
       container:
-        image: alpine:3.6
-        command: ["sleep", "1"]
+        image: argosay:v1
 `).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow().
-		DeleteWorkflow()
+		Then().
+		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
+		})
 }
 
 func (suite *WorkflowSuite) TestContinueOnFail() {
@@ -49,14 +51,14 @@ spec:
   - name: workflow-ignore
     steps:
     - - name: A
-        template: whalesay
+        template: argosay
       - name: B
         template: boom
         continueOn:
           failed: true
     - - name: D
         depedencies: [A, B]
-        template: whalesay
+        template: argosay
 
   - name: boom
     dag:
@@ -64,16 +66,14 @@ spec:
       - name: B-1
         template: whalesplosion
 
-  - name: whalesay
+  - name: argosay
     container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
+      image: argosay:v1
 
   - name: whalesplosion
     container:
-      image: docker/whalesay:latest
-      command: ["sh", "-c", "sleep 2 ; boom"]
+      image: argosay:v1
+      command: ["--sleep", "5s", "--exit-code", "1"]
 `).
 		When().
 		SubmitWorkflow().
@@ -91,6 +91,6 @@ spec:
 		})
 }
 
-func TestArgoWorkflows(t *testing.T) {
+func TestWorkflowSuite(t *testing.T) {
 	suite.Run(t, new(WorkflowSuite))
 }

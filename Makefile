@@ -164,6 +164,10 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
+.PHONY: argosay
+argosay:
+	cd test/e2e/argosay && make
+
 .PHONY: clean
 clean:
 	-rm -rf ${CURRENT_DIR}/dist
