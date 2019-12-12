@@ -166,12 +166,12 @@ manifests:
 
 .PHONY: start-e2e
 start-e2e:
-	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	kubectl apply --wait --force -f manifests/install.yaml
-	kubectl scale deployment/workflow-controller --replicas 0
-	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default || true
-	# scale down and up incase image has changed
 	kubectl apply --wait --force -f test/e2e/minio
+	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default || true
+	kubectl patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers[0]", "value": {"imagePullPolicy": "Never"}}]'
+	kubectl scale deployment/workflow-controller --replicas 0
+	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	kubectl scale deployment/workflow-controller --replicas 1
 
 .PHONY: test-e2e
