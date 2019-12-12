@@ -15,14 +15,14 @@ type FunctionalSuite struct {
 	fixtures.E2ESuite
 }
 
-func (suite FunctionalSuite) TestFunctional() {
-	t := suite.T()
+func (s FunctionalSuite) TestFunctional() {
+	t := s.T()
 	t.SkipNow()
 	files, err := ioutil.ReadDir("functional")
 	if assert.NoError(t, err) {
 		for _, file := range files {
-			suite.Run(file.Name(), func() {
-				suite.Given().
+			s.Run(file.Name(), func() {
+				s.Given().
 					Workflow("@functional/" + file.Name()).
 					When().
 					SubmitWorkflow().

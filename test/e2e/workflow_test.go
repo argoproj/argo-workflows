@@ -14,8 +14,8 @@ type WorkflowSuite struct {
 	fixtures.E2ESuite
 }
 
-func (suite *WorkflowSuite) TestRunWorkflowBasic() {
-	suite.Given().
+func (s *WorkflowSuite) TestRunWorkflowBasic() {
+	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -37,8 +37,8 @@ spec:
 		})
 }
 
-func (suite *WorkflowSuite) TestContinueOnFail() {
-	suite.Given().
+func (s *WorkflowSuite) TestContinueOnFail() {
+	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow

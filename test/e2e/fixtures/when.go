@@ -4,24 +4,23 @@ import (
 	"fmt"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type When struct {
-	t          *testing.T
-	wf         *wfv1.Workflow
-	client     v1alpha1.WorkflowInterface
-	kubeClient kubernetes.Interface
-	name       string
+	t      *testing.T
+	wf     *wfv1.Workflow
+	client v1alpha1.WorkflowInterface
+	name   string
 }
 
 func (w *When) SubmitWorkflow() *When {
-	fmt.Printf("submitting workflow\n")
+	log.WithField("test", w.t.Name()).Info("Submitting workflow")
 	wf, err := w.client.Create(w.wf)
 	if err != nil {
 		w.t.Fatal(err)
@@ -32,7 +31,7 @@ func (w *When) SubmitWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow() *When {
-	fmt.Printf("waiting for %s\n", w.name)
+	log.WithField("test", w.t.Name()).WithField("wf", w.name).Info("Waiting")
 	watchIf, err := w.client.Watch(metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()})
 	if err != nil {
 		w.t.Fatal(err)
@@ -48,7 +47,7 @@ func (w *When) WaitForWorkflow() *When {
 }
 
 func (w *When) DeleteWorkflow() *When {
-	fmt.Printf("deleting %s\n", w.name)
+	log.WithField("test", w.t.Name()).WithField("wf", w.name).Info("Deleting")
 	err := w.client.Delete(w.name, nil)
 	if err != nil {
 		w.t.Fatal(err)
@@ -58,9 +57,8 @@ func (w *When) DeleteWorkflow() *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:          w.t,
-		name:       w.name,
-		client:     w.client,
-		kubeClient: w.kubeClient,
+		t:      w.t,
+		name:   w.name,
+		client: w.client,
 	}
 }

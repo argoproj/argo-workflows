@@ -14,8 +14,8 @@ type ArtifactSuite struct {
 	fixtures.E2ESuite
 }
 
-func (suite ArtifactSuite) Test() {
-	suite.Given().
+func (s ArtifactSuite) Test() {
+	s.Given().
 		Workflow("@functional/artifact-input-output-samedir.yaml").
 		When().
 		SubmitWorkflow().
@@ -23,8 +23,7 @@ func (suite ArtifactSuite) Test() {
 		Then().
 		Expect(func(t *testing.T, wf *v1alpha1.WorkflowStatus) {
 			assert.Equal(t, v1alpha1.NodeSucceeded, wf.Phase)
-		}).
-		Logs()
+		})
 }
 
 func TestArtifactSuite(t *testing.T) {

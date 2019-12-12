@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -15,7 +14,6 @@ import (
 type Given struct {
 	t          *testing.T
 	client     v1alpha1.WorkflowInterface
-	kubeClient kubernetes.Interface
 	wf         *wfv1.Workflow
 }
 
@@ -61,6 +59,5 @@ func (g *Given) When() *When {
 		t:      g.t,
 		wf:     g.wf,
 		client: g.client,
-		kubeClient: g.kubeClient,
 	}
 }

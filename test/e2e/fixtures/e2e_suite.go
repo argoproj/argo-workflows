@@ -1,16 +1,20 @@
 package fixtures
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"gopkg.in/yaml.v2"
+	v1 "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-
 	// load the gcp plugin (required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -30,33 +34,84 @@ type E2ESuite struct {
 	kubeClient kubernetes.Interface
 }
 
-func (suite *E2ESuite) SetupSuite() {
+func (s *E2ESuite) SetupSuite() {
 	_, err := os.Stat(*kubeConfig)
 	if os.IsNotExist(err) {
-		suite.T().Skip("Skipping test: " + err.Error())
-		return
+		s.T().Skip("Skipping test: " + err.Error())
 	}
+}
+
+func (s *E2ESuite) BeforeTest(_, _ string) {
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
 	if err != nil {
 		panic(err)
 	}
-	suite.kubeClient, err = kubernetes.NewForConfig(config)
+	s.kubeClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	suite.client = commands.InitWorkflowClient()
-	fmt.Println("deleting workflows")
+	s.client = commands.InitWorkflowClient()
+	log.WithField("test", s.T().Name()).Info("Deleting all existing workflows")
 	timeout := int64(10)
-	err = suite.client.DeleteCollection(nil, v1.ListOptions{TimeoutSeconds: &timeout})
+	err = s.client.DeleteCollection(nil, metav1.ListOptions{TimeoutSeconds: &timeout})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (suite *E2ESuite) Given() *Given {
+func (s *E2ESuite) AfterTest(_, _ string) {
+	if s.T().Failed() {
+		s.printDiagnostics()
+	}
+}
+
+func (s *E2ESuite) printDiagnostics() {
+	wfs, err := s.client.List(metav1.ListOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	for _, wf := range wfs.Items {
+		log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name}).Info("Printing diagnostics")
+
+		bytes, err := yaml.Marshal(wf.Status)
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		fmt.Println(string(bytes))
+		wf, err := s.client.Get(wf.Name, metav1.GetOptions{})
+		if err != nil {
+			s.T().Fatal(err)
+		}
+		for _, node := range wf.Status.Nodes {
+			pods := s.kubeClient.CoreV1().Pods(wf.Namespace)
+			podName := node.ID
+			pod, err := pods.Get(podName, metav1.GetOptions{})
+			if apierr.IsNotFound(err) {
+				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName}).Warn("Not found")
+				continue
+			}
+			if err != nil {
+				s.T().Fatal(err)
+			}
+			for _, container := range pod.Status.ContainerStatuses {
+				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Warn("Not found")
+				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name,}).Stream()
+				if err != nil {
+					s.T().Fatal(err)
+				}
+				scanner := bufio.NewScanner(stream)
+				for scanner.Scan() {
+					fmt.Println(scanner.Text())
+				}
+				_ = stream.Close()
+			}
+		}
+	}
+}
+
+func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:      suite.T(),
-		client: suite.client,
-		kubeClient: suite.kubeClient,
+		t:      s.T(),
+		client: s.client,
 	}
 }
