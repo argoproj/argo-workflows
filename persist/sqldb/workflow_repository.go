@@ -83,6 +83,11 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 
 	wfdb, err := convert(wf)
 	if err != nil {
+		return err
+	}
+
+	err = wdc.update(wfdb)
+	if err != nil {
 		if errors.IsCode(CodeDBUpdateRowNotFound, err) {
 			return wdc.insert(wfdb)
 		} else {
@@ -91,10 +96,7 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 		}
 	}
 
-	err = wdc.update(wfdb)
-	if err != nil {
-		return err
-	}
+
 
 	log.Info("Workflow update successfully into persistence")
 	return nil
@@ -205,8 +207,19 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(nil, "DB session is not initialized")
 	}
+	var err error
+	//default Orderby
+	defaultOrderBy:= "-startedat"
+	if condition != nil && orderBy != nil {
+		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs)
+	}else if condition != nil && orderBy == nil {
+		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(defaultOrderBy).All(&wfDBs)
+	}else if condition == nil && orderBy != nil {
+		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(orderBy).All(&wfDBs)
+	}else {
+		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(defaultOrderBy).All(&wfDBs)
+	}
 
-	err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs)
 	if err != nil {
 		return nil, DBOperationError(err, "DB Query operation failed")
 	}

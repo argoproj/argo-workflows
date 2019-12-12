@@ -41,9 +41,11 @@ func NewWorkflowServer(namespace string, wfClientset *versioned.Clientset, kubeC
 	wfServer := WorkflowServer{Namespace: namespace, WfClientset: wfClientset, KubeClientset: kubeClientSet, EnableClientAuth: enableClientAuth}
 	var err error
 	if config != nil && config.Persistence != nil {
-		wfServer.WfDBService.wfDBctx, err = wfServer.CreatePersistenceContext(namespace, kubeClientSet, config.Persistence)
+		wfServer.WfDBService, err = NewDBService(kubeClientSet, namespace, config.Persistence)
+			//CreatePersistenceContext(namespace, kubeClientSet, config.Persistence)
 	}
 	if err != nil {
+		wfServer.WfDBService = nil
 		log.Errorf("Error Creating DB Context. %v", err)
 		return nil
 	}
@@ -53,7 +55,6 @@ func NewWorkflowServer(namespace string, wfClientset *versioned.Clientset, kubeC
 func (s *WorkflowServer) CreatePersistenceContext(namespace string, kubeClientSet *kubernetes.Clientset, config *config.PersistConfig) (*sqldb.WorkflowDBContext, error) {
 	var wfDBCtx sqldb.WorkflowDBContext
 	var err error
-
 	wfDBCtx.NodeStatusOffload = config.NodeStatusOffload
 	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(kubeClientSet, namespace, config)
 
@@ -177,15 +178,25 @@ func (s *WorkflowServer) List(ctx context.Context, wfReq *WorkflowListRequest) (
 	}
 
 	var wfList *v1alpha1.WorkflowList
+	var listOption v1.ListOptions = v1.ListOptions{}
 	namespace := s.Namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
 
+	if wfReq.ListOptions != nil {
+		listOption = *wfReq.ListOptions
+	}
+
 	if s.WfDBService != nil {
-		wfList, err = s.WfDBService.List(namespace, uint(wfReq.ListOptions.Limit), "")
+		var pagesize uint = 0
+		if wfReq.ListOptions != nil {
+			pagesize = uint(wfReq.ListOptions.Limit)
+		}
+
+		wfList, err = s.WfDBService.List(namespace, pagesize, "")
 	} else {
-		wfList, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).List(v1.ListOptions{})
+		wfList, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).List(listOption)
 	}
 	if err != nil {
 		return nil, err

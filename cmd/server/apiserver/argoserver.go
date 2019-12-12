@@ -105,17 +105,12 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 		httpL = tcpm.Match(cmux.HTTP1Fast())
 		grpcL = tcpm.Match(cmux.Any())
 	} else {
-		// We first match on HTTP 1.1 methods.
-		//httpL = tcpm.Match(cmux.HTTP1Fast())
 
 		// If not matched, we assume that its TLS.
 		tlsl := tcpm.Match(cmux.Any())
 		tlsConfig := tls.Config{
 			//Certificates: []tls.Certificate{*as.settings.Certificate},
 		}
-		//if as.TLSConfigCustomizer != nil {
-		//	as.TLSConfigCustomizer(&tlsConfig)
-		//}
 
 		tlsl = tls.NewListener(tlsl, &tlsConfig)
 
@@ -124,14 +119,6 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 		httpsL = tlsm.Match(cmux.HTTP1Fast())
 		grpcL = tlsm.Match(cmux.Any())
 	}
-	//lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 8083))
-	//if err != nil {
-	//	log.Fatalf("failed to listen: %v", err)
-	//}
-	//lis1, err := net.Listen("tcp", fmt.Sprintf(":%d", 8082))
-	//if err != nil {
-	//	log.Fatalf("failed to listen: %v", err)
-	//}
 
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
@@ -140,7 +127,7 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 		go func() { as.checkServeErr("httpsServer", httpsServer.Serve(httpsL)) }()
 		go func() { as.checkServeErr("tlsm", tlsm.Serve()) }()
 	}
-
+	log.Info("Argo API Server started successfully")
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }
@@ -211,41 +198,6 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
-//type handlerSwitcher struct {
-//	handler              http.Handler
-//	contentTypeToHandler map[string]http.Handler
-//}
-//
-//func (s *handlerSwitcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//	if contentHandler, ok := s.contentTypeToHandler[r.Header.Get("content-type")]; ok {
-//		contentHandler.ServeHTTP(w, r)
-//	} else {
-//		s.handler.ServeHTTP(w, r)
-//	}
-//}
-
-// Workaround for https://github.com/golang/go/issues/21955 to support escaped URLs in URL path.
-//type bug21955Workaround struct {
-//	handler http.Handler
-//}
-//
-//var pathPatters = []*regexp.Regexp{
-//	regexp.MustCompile(`/api/v1/workflows/[^/]+`),
-//}
-//
-//func (bf *bug21955Workaround) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//	for _, pattern := range pathPatters {
-//		if pattern.MatchString(r.URL.RawPath) {
-//			r.URL.Path = r.URL.RawPath
-//			break
-//		}
-//	}
-//	bf.handler.ServeHTTP(w, r)
-//}
-
-//func bug21955WorkaroundInterceptor(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-//	return handler(ctx, req)
-//}
 
 // newRedirectServer returns an HTTP server which does a 307 redirect to the HTTPS server
 func newRedirectServer(port int) *http.Server {
@@ -283,6 +235,7 @@ func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControll
 		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", a.ConfigName, common.WorkflowControllerConfigMapKey)
 	}
 	var config config.WorkflowControllerConfig
+	log.Infof("Config Map: %s", configStr)
 	err := yaml.Unmarshal([]byte(configStr), &config)
 	if err != nil {
 		return nil, errors.InternalWrapError(err)

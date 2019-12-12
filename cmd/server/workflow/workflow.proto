@@ -130,7 +130,7 @@ service WorkflowService {
 
     rpc Lint (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			post: "/api/v1/workflows/lint"
+			post: "/api/v1/workflows/{namespace}/lint"
 			body: "*"
 		};
     }
