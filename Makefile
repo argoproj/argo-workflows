@@ -168,6 +168,10 @@ manifests:
 argosay:
 	cd test/e2e/argosay && make
 
+.PHONY: minio
+minio:
+	kubectl apply --force -f test/e2e/minio
+
 .PHONY: clean
 clean:
 	-rm -rf ${CURRENT_DIR}/dist

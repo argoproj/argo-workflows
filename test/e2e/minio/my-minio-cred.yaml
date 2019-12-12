@@ -1,0 +1,9 @@
+apiVersion: v1
+data:
+  accesskey: QUtJQUlPU0ZPRE5ON0VYQU1QTEU=
+  secretkey: d0phbHJYVXRuRkVNSS9LN01ERU5HL2JQeFJmaUNZRVhBTVBMRUtFWQ==
+kind: Secret
+metadata:
+  name: my-minio-cred
+  namespace: argo
+type: Opaque
