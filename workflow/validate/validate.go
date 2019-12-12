@@ -194,15 +194,9 @@ func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamesp
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
 	}
-	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContext(wftmplGetter, wf, wf)
-
-	// Check if all templates can be resolved.
-	for _, template := range wf.Spec.Templates {
-		_, err := ctx.validateTemplateHolder(&wfv1.Template{Template: template.Name}, tmplCtx, &FakeArguments{}, map[string]interface{}{})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
-		}
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
 	return nil
 }
