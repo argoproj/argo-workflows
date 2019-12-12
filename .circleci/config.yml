@@ -77,6 +77,7 @@ jobs:
             kubectl create ns argo
             kubectl config set-context --current --namespace=argo
             kubectl apply --wait -f manifests/install.yaml
+            kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default
       - run:
           name: Configure K3S
           command: |
