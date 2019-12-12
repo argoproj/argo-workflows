@@ -40,7 +40,7 @@ func (w *When) WaitForWorkflow() *When {
 	defer watchIf.Stop()
 	timeout := make(chan bool, 1)
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		timeout <- true
 	}()
 	for {
@@ -51,7 +51,7 @@ func (w *When) WaitForWorkflow() *When {
 				return w
 			}
 		case <-timeout:
-			w.t.Fatal("timeout waiting for completion")
+			w.t.Fatal("timeout after 30s waiting for finish")
 		}
 	}
 }

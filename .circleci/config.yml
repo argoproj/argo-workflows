@@ -74,9 +74,7 @@ jobs:
             # create the kubecfg, again - not sure we need this
             cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
             echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
-      - run:
-          name: Make executor image
-          command: make executor-image DEV_IMAGE=true
+      - run: make start-e2e
       - save_go_cache
       - run:
           name: Follow controller logs, to help diagnose failures

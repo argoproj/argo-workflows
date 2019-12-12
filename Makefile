@@ -165,10 +165,14 @@ manifests:
 	./hack/update-manifests.sh
 
 .PHONY: start-e2e
-start-e2e: controller-image
+start-e2e:
+	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	kubectl apply --wait --force -f manifests/install.yaml
+	kubectl scale deployment/workflow-controller --replicas 0
 	kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default || true
+	# scale down and up incase image has changed
 	kubectl apply --wait --force -f test/e2e/minio
+	kubectl scale deployment/workflow-controller --replicas 1
 
 .PHONY: test-e2e
 test-e2e:
