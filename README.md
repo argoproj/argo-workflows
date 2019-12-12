@@ -97,6 +97,7 @@ Currently **officially** using Argo:
 1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [HOVER](https://hover.to)
 1. [IBM](https://ibm.com)
 1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
