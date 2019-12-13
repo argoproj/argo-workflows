@@ -113,6 +113,10 @@ func (s *E2ESuite) printDiagnostics() {
 				logCtx.Error("Cannot get pod")
 				continue
 			}
+			logCtx.WithFields(log.Fields{"phase": pod.Status.Phase}).Info("Pod phase")
+			for _, condition := range pod.Status.Conditions {
+				logCtx.WithFields(log.Fields{"status": condition.Status, "reason": condition.Reason}).Info(condition.Message)
+			}
 			for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
 				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
