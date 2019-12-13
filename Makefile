@@ -177,8 +177,12 @@ start-e2e:
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	# Scale up.
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
-	# Switch to default ns
+	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
+	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
+	docker pull docker/whalesay:latest
+	# Wait for pods to be ready
+	while [[ `kubectl get pods --field-selector=status.phase==Running -o name|wc -l|tr -d ' '` != "3" ]]; do kubectl get pods && sleep 3 ; done
 
 .PHONY: logs-e2e
 logs-e2e:
