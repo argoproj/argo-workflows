@@ -87,7 +87,8 @@ jobs:
           name: Run tests
           command: |
             mkdir -p test-results
-            make test-e2e | go-junit-report > test-results/go-test-report.xml
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test-e2e 2>&1 | tee test-results/test.out
       - save_go_cache
       - store_test_results:
           path: test-results
