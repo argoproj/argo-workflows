@@ -64,7 +64,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	// wait for all pods to be deleted
 	for {
 		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for pods to go away")
-		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow", Limit: 1})
+		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
 		if err != nil {
 			panic(err)
 		}
