@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -54,11 +55,23 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		panic(err)
 	}
 	s.client = commands.InitWorkflowClient()
-	timeout := int64(10)
-	log.WithFields(log.Fields{"test": s.T().Name(), "timeout": timeout}).Info("Deleting all existing workflows")
-	err = s.client.DeleteCollection(nil, metav1.ListOptions{TimeoutSeconds: &timeout})
+	// delete all workflows
+	log.WithFields(log.Fields{"test": s.T().Name()}).Info("Deleting all existing workflows")
+	err = s.client.DeleteCollection(nil, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
+	}
+	// wait for all pods to be deleted
+	for {
+		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for pods to go away")
+		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow", Limit: 1})
+		if err != nil {
+			panic(err)
+		}
+		if len(pods.Items) == 0 {
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -90,6 +103,9 @@ func (s *E2ESuite) printDiagnostics() {
 			s.T().Fatal(err)
 		}
 		for _, node := range wf.Status.Nodes {
+			if node.Type != "Pod" {
+				continue
+			}
 			pods := s.kubeClient.CoreV1().Pods(wf.Namespace)
 			podName := node.ID
 			pod, err := pods.Get(podName, metav1.GetOptions{})
@@ -105,14 +121,14 @@ func (s *E2ESuite) printDiagnostics() {
 				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
 				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
 				if err != nil {
-					logCtx.Warn("Cannot get logs")
+					logCtx.WithField("err", err).Error("Cannot get logs")
 					continue
 				}
 				logCtx.Info("Container logs:")
 				scanner := bufio.NewScanner(stream)
 				fmt.Println("---")
 				for scanner.Scan() {
-					fmt.Println(scanner.Text())
+					fmt.Println("  " + scanner.Text())
 				}
 				fmt.Println("---")
 				_ = stream.Close()
