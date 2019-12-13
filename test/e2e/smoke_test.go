@@ -10,11 +10,11 @@ import (
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
-type WorkflowSuite struct {
+type SmokeSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *WorkflowSuite) TestRunWorkflowBasic() {
+func (s *SmokeSuite) TestBasic() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -37,7 +37,7 @@ spec:
 		})
 }
 
-func (s *WorkflowSuite) TestContinueOnFail() {
+func (s *SmokeSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -91,6 +91,6 @@ spec:
 		})
 }
 
-func TestWorkflowSuite(t *testing.T) {
-	suite.Run(t, new(WorkflowSuite))
+func TestSmokeSuit(t *testing.T) {
+	suite.Run(t, new(SmokeSuite))
 }
