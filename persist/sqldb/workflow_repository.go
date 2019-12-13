@@ -96,8 +96,6 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 		}
 	}
 
-
-
 	log.Info("Workflow update successfully into persistence")
 	return nil
 }
@@ -209,15 +207,16 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 	}
 	var err error
 	//default Orderby
-	defaultOrderBy:= "-startedat"
-	if condition != nil && orderBy != nil {
-		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).All(&wfDBs)
-	}else if condition != nil && orderBy == nil {
-		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(defaultOrderBy).All(&wfDBs)
-	}else if condition == nil && orderBy != nil {
-		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(orderBy).All(&wfDBs)
-	}else {
-		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(defaultOrderBy).All(&wfDBs)
+	var queryOrderBy []interface{}
+	queryOrderBy = append(queryOrderBy, "-startedat")
+
+	if orderBy != nil {
+		queryOrderBy = orderBy
+	}
+	if condition != nil {
+		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(queryOrderBy).All(&wfDBs)
+	} else {
+		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(queryOrderBy).All(&wfDBs)
 	}
 
 	if err != nil {

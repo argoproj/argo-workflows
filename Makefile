@@ -46,7 +46,7 @@ endif
 
 # Build the project
 .PHONY: all
-all: cli controller-image executor-image
+all: cli controller-image executor-image argo-server
 
 .PHONY: builder-image
 builder-image:
@@ -113,6 +113,32 @@ else
 	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) --target argo-server .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) ; fi
+
+.PHONY: argo-server-linux-amd64
+argo-server-linux-amd64:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
+
+.PHONY: argo-server-linux-ppc64le
+argo-server-linux-ppc64le:
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
+
+.PHONY: argo-server-linux-s390x
+argo-server-linux-s390x:
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
+
+.PHONY: argo-server-linux
+argo-server-linux: argo-server-linux-amd64 argo-server-linux-ppc64le argo-server-linux-s390x
+
+.PHONY: argo-server-darwin
+argo-server-darwin:
+	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
+
+.PHONY: argo-server-windows
+argo-server-windows:
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
+
+
+
 
 
 .PHONY: executor

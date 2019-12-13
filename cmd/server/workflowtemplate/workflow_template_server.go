@@ -10,6 +10,7 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/config"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
@@ -85,8 +86,10 @@ func (wts *WorkflowTemplateServer) Create(ctx context.Context, wftmplReq *Workfl
 	if wftmplReq.Template == nil {
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 
-	err = validate.ValidateWorkflowTemplate(wfClient, namespace, wftmplReq.Template)
+
+	err = validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create workflow template: %v", err)
 	}
@@ -172,8 +175,9 @@ func (wts *WorkflowTemplateServer) Lint(ctx context.Context, wftmplReq *Workflow
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 
-	err = validate.ValidateWorkflowTemplate(wfClient, namespace, wftmplReq.Template)
+	err = validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
 	if err != nil {
 		return nil, err
 	}

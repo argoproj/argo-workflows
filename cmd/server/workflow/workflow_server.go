@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -39,16 +40,17 @@ type WorkflowServer struct {
 
 func NewWorkflowServer(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowServer {
 	wfServer := WorkflowServer{Namespace: namespace, WfClientset: wfClientset, KubeClientset: kubeClientSet, EnableClientAuth: enableClientAuth}
-	var err error
 	if config != nil && config.Persistence != nil {
+		var err error
 		wfServer.WfDBService, err = NewDBService(kubeClientSet, namespace, config.Persistence)
-			//CreatePersistenceContext(namespace, kubeClientSet, config.Persistence)
+		if err != nil {
+			wfServer.WfDBService = nil
+			log.Errorf("Error Creating DB Context. %v", err)
+		}else {
+			log.Infof("DB Context created successfully")
+		}
 	}
-	if err != nil {
-		wfServer.WfDBService = nil
-		log.Errorf("Error Creating DB Context. %v", err)
-		return nil
-	}
+
 	return &wfServer
 }
 
@@ -109,6 +111,7 @@ func (s *WorkflowServer) GetWFClient(ctx context.Context) (*versioned.Clientset,
 
 func (s *WorkflowServer) Create(ctx context.Context, wfReq *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
 	wfClient, _, err := s.GetWFClient(ctx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +130,9 @@ func (s *WorkflowServer) Create(ctx context.Context, wfReq *WorkflowCreateReques
 		return nil, err
 	}
 
-	err = validate.ValidateWorkflow(wfClient, namespace, wf, validate.ValidateOpts{})
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+
+	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -369,8 +374,9 @@ func (s *WorkflowServer) Lint(ctx context.Context, wfReq *WorkflowCreateRequest)
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 
-	err = validate.ValidateWorkflow(wfClient, namespace, wfReq.Workflow, validate.ValidateOpts{})
+	err = validate.ValidateWorkflow(wftmplGetter, wfReq.Workflow, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}

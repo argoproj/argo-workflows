@@ -23,6 +23,7 @@ type Clientset struct {
 	argoprojV1alpha1 *argoprojv1alpha1.ArgoprojV1alpha1Client
 }
 
+
 // ArgoprojV1alpha1 retrieves the ArgoprojV1alpha1Client
 func (c *Clientset) ArgoprojV1alpha1() argoprojv1alpha1.ArgoprojV1alpha1Interface {
 	return c.argoprojV1alpha1
