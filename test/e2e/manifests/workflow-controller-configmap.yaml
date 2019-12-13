@@ -12,6 +12,7 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    containerRuntimeExecutor: pns
     executor:
       imagePullPolicy: Never
 kind: ConfigMap
