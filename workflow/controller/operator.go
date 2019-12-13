@@ -1309,8 +1309,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
-		// If retry policy is not set to Always or OnError, we won't attempt to retry an errored container
-		if processedTmpl.RetryStrategy != nil && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError {
+		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
+		// and we return instead
+		if processedTmpl.RetryStrategy == nil ||
+			(processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
+				processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
 			return node, err
 		}
 	}
