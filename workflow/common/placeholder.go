@@ -2,10 +2,12 @@ package common
 
 import "fmt"
 
+// placeholderGenerator is to generate dynamically-generated placeholder strings.
 type placeholderGenerator struct {
 	index int
 }
 
+// NewPlaceholderGenerator returns a placeholderGenerator.
 func NewPlaceholderGenerator() *placeholderGenerator {
 	return &placeholderGenerator{}
 }

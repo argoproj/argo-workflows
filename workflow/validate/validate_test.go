@@ -1942,7 +1942,7 @@ spec:
         mountPath: "{{inputs.parameters.bar}}"
 `
 
-// TestAutomountServiceAccountTokenUse verifies an error against a workflow of an invalid automountServiceAccountToken use.
+// TestTemplateResolutionWithPlaceholderWorkflow verifies the placeholder use during a validation process.
 func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
 	{
 		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
