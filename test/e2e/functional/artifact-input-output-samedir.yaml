@@ -3,8 +3,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: artifact-input-output-samedir-
-  annotations:
-    argo-e2e/skip: "false"
 spec:
   entrypoint: artifact-input-output-samedir
   templates:

@@ -180,7 +180,7 @@ start-e2e:
 
 .PHONY: logs-e2e
 logs-e2e:
-	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl logs -f
+	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl -n argo logs -f
 
 .PHONY: test-e2e
 test-e2e:
