@@ -15,7 +15,7 @@ type SmokeSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SmokeSuite) TestBasic() {
+func (s *SmokeSuite) TestAAABasic() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
