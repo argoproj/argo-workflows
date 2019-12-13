@@ -1596,7 +1596,7 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 		outputs.Parameters = make([]wfv1.Parameter, 0)
 		for _, param := range tmpl.Outputs.Parameters {
 			if param.ValueFrom == nil {
-				return nil, fmt.Errorf("template outputs must have a valueFrom specified")
+				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
 			}
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
