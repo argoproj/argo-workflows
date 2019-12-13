@@ -83,10 +83,6 @@ jobs:
             make logs-e2e
           background: true
       - run:
-          name: Watch events
-          command: make watch-e2e
-          background: true
-      - run:
           name: Run tests
           command: |
             mkdir -p test-results

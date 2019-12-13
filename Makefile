@@ -184,10 +184,6 @@ start-e2e:
 logs-e2e:
 	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl -n argo logs -f
 
-.PHONY: watch-e2e
-watch-e2e:
-	kubectl get events --all-namespaces --watch --output=custom-columns=TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message
-
 .PHONY: test-e2e
 test-e2e:
 	go test -v -count 1 -p 1 ./test/e2e
