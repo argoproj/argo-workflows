@@ -23,6 +23,9 @@ type WorkflowControllerConfig struct {
 	// DEPRECATED: use `executor.resources` in configmap instead
 	ExecutorResources *apiv1.ResourceRequirements `json:"executorResources,omitempty"`
 
+	// MainImagePullPolicy the image policy to use for the main image, you should never need to change this.
+	MainImagePullPolicy string `json:"mainImagePullPolicy,omitempty"`
+
 	// KubeConfig specifies a kube config file for the wait & init containers
 	KubeConfig *KubeConfig `json:"kubeConfig,omitempty"`
 

@@ -81,6 +81,10 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	}
 }
 
+func (wfc *WorkflowController) mainImagePullPolicy() apiv1.PullPolicy {
+	return apiv1.PullPolicy(wfc.Config.MainImagePullPolicy)
+}
+
 func (wfc *WorkflowController) watchControllerConfigMap(ctx context.Context) (cache.Controller, error) {
 	source := wfc.newControllerConfigMapWatch()
 	_, controller := cache.NewInformer(

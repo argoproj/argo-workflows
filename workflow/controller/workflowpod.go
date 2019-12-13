@@ -92,6 +92,7 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	wfSpec := woc.wf.Spec.DeepCopy()
 
 	mainCtr.Name = common.MainContainerName
+	mainCtr.ImagePullPolicy = woc.controller.executorImagePullPolicy()
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nodeID,

@@ -12,6 +12,9 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    executor:
+      imagePullPolicy: Never
+    mainIimagePullPolicy: Never
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
