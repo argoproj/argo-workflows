@@ -85,7 +85,9 @@ jobs:
           background: true
       - run:
           name: Pull Docker image
-          command: docker pull docker/whalesay:latest
+          command: |
+            docker pull docker/whalesay:latest
+            kubectl get pods
       - run:
           name: Run tests
           command: |
