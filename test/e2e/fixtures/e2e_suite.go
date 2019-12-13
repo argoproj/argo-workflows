@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
-	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -110,12 +109,9 @@ func (s *E2ESuite) printDiagnostics() {
 			podName := node.ID
 			pod, err := pods.Get(podName, metav1.GetOptions{})
 			logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName})
-			if apierr.IsNotFound(err) {
-				logCtx.Warn("Pod not found")
-				continue
-			}
 			if err != nil {
-				s.T().Fatal(err)
+				logCtx.Error("Cannot get pod")
+				continue
 			}
 			for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
