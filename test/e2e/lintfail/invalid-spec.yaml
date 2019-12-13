@@ -5,8 +5,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: invalid-spec-
-  annotations:
-    argo-e2e/skip: "false"
 spec:
   entrypoint: doesnotexist
   templates:

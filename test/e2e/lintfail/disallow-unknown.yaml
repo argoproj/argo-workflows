@@ -2,8 +2,6 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: disallow-unknown-
-  annotations:
-    argo-e2e/skip: "false"
 spec:
   entrypoint: whalesay
   templates:
