@@ -117,7 +117,7 @@ func (s *E2ESuite) printDiagnostics() {
 			if err != nil {
 				s.T().Fatal(err)
 			}
-			for _, container := range pod.Status.ContainerStatuses {
+			for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
 				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
 				if err != nil {
