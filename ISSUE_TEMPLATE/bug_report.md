@@ -5,6 +5,13 @@ title: ''
 labels: 'bug'
 assignees: ''
 ---
+Checklist:
+
+ * [ ] I've included the version.
+ * [ ] I've included reproduction steps.
+ * [ ] I've included the workflow YAML.
+ * [ ] I've included the logs.
+ 
 **What happened**:
 
 **What you expected to happen**:
