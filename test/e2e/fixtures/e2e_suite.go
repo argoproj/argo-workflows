@@ -72,13 +72,15 @@ func (s *E2ESuite) printDiagnostics() {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name}).Info("Printing diagnostics")
+		log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name}).Info("Workflow status:")
 		// print status
 		bytes, err := yaml.Marshal(wf.Status)
 		if err != nil {
 			s.T().Fatal(err)
 		}
+		fmt.Println("---")
 		fmt.Println(string(bytes))
+		fmt.Println("---")
 		// print logs
 		wf, err := s.client.Get(wf.Name, metav1.GetOptions{})
 		if err != nil {
@@ -96,7 +98,7 @@ func (s *E2ESuite) printDiagnostics() {
 				s.T().Fatal(err)
 			}
 			for _, container := range pod.Status.ContainerStatuses {
-				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Info("Container logs")
+				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Info("Container logs:")
 				if container.Started != nil {
 					continue
 				}
@@ -105,11 +107,11 @@ func (s *E2ESuite) printDiagnostics() {
 					s.T().Fatal(err)
 				}
 				scanner := bufio.NewScanner(stream)
-				fmt.Println("===")
+				fmt.Println("---")
 				for scanner.Scan() {
 					fmt.Println(scanner.Text())
 				}
-				fmt.Println("===")
+				fmt.Println("---")
 				_ = stream.Close()
 			}
 		}
