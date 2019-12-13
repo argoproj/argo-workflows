@@ -15,7 +15,7 @@ type SmokeSuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *SmokeSuite) TestAAABasic() {
+func (s *SmokeSuite) TestBasic() {
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -81,7 +81,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
+		WaitForWorkflow(120*time.Second).
 		Then().
 		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
