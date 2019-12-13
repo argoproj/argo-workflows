@@ -101,7 +101,7 @@ func (s *E2ESuite) printDiagnostics() {
 			}
 			for _, container := range pod.Status.ContainerStatuses {
 				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Info("Container logs:")
-				if container.Started != nil {
+				if container.Started == nil {
 					continue
 				}
 				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name,}).Stream()
