@@ -33,7 +33,8 @@ func (w *When) SubmitWorkflow() *When {
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	log.WithFields(log.Fields{"test": w.t.Name(), "wf": w.name}).Info("Waiting on workflow")
-	watchIf, err := w.client.Watch(metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()})
+	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()}
+	watchIf, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -45,10 +46,14 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	}()
 	for {
 		select {
-		case next := <-watchIf.ResultChan():
-			wf, ok := next.Object.(*wfv1.Workflow)
-			if ok && !wf.Status.FinishedAt.IsZero() {
-				return w
+		case event := <-watchIf.ResultChan():
+			wf, ok := event.Object.(*wfv1.Workflow)
+			if ok {
+				if !wf.Status.FinishedAt.IsZero(){
+					return w
+				}
+			} else {
+				log.WithField("event", event).Warn("Did not get workflow event")
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for finish", timeout)
