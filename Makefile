@@ -177,8 +177,6 @@ start-e2e:
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	# Scale up.
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
-	# Switch to default ns
-	kubectl config set-context --current --namespace=default
 
 .PHONY: logs-e2e
 logs-e2e:
