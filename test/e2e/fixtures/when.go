@@ -32,7 +32,7 @@ func (w *When) SubmitWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	log.WithField("test", w.t.Name()).WithField("wf", w.name).Info("Waiting")
+	log.WithFields(log.Fields{"test": w.t.Name(), "wf": w.name}).Info("Waiting on workflow")
 	watchIf, err := w.client.Watch(metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()})
 	if err != nil {
 		w.t.Fatal(err)
@@ -51,7 +51,7 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 				return w
 			}
 		case <-timeoutCh:
-			w.t.Fatal("timeout after 30s waiting for finish")
+			w.t.Fatalf("timeout after %v waiting for finish", timeout)
 		}
 	}
 }

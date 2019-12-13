@@ -2,7 +2,6 @@ package fixtures
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,9 +22,12 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
-var kubeConfig = flag.String("kubeconfig", filepath.Join(os.Getenv("HOME"), ".kube", "config"), "Path to Kubernetes config file")
+var kubeConfig = os.Getenv("KUBECONFIG")
 
 func init() {
+	if kubeConfig == "" {
+		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	}
 	_ = commands.NewCommand()
 }
 
@@ -36,14 +38,14 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(*kubeConfig)
+	_, err := os.Stat(kubeConfig)
 	if os.IsNotExist(err) {
 		s.T().Skip("Skipping test: " + err.Error())
 	}
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
 		panic(err)
 	}

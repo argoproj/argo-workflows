@@ -87,6 +87,7 @@ spec:
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
 		})
 }
+
 func (s *SmokeSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`
@@ -96,7 +97,7 @@ metadata:
   generateName: continue-on-fail-
 spec:
   entrypoint: workflow-ignore
-  parallelism: 1
+  parallelism: 2
   templates:
   - name: workflow-ignore
     steps:
@@ -127,7 +128,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(20*time.Second).
+		WaitForWorkflow(30*time.Second).
 		Then().
 		Expect(func(t *testing.T, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
