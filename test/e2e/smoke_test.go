@@ -75,13 +75,13 @@ spec:
       - name: message
         path: /tmp/message
     container:
-      image: alpine:latest
+      image: docker/whalesay:latest
       command: [sh, -c]
       args: ["cat /tmp/message"]
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(60*time.Second).
+		WaitForWorkflow(20*time.Second).
 		Then().
 		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)

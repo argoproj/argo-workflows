@@ -64,3 +64,9 @@ images.controller workflow-controller:latest
 
 1. Run `make start-e2e`.
 2. Either (a) run your test in your IDE or (b) run `make test-e2e`.
+
+Notes:
+
+* Everything runs in the `argo` namespace (including MinIO). 
+* For speed, you're only allowed to use `docker/whalesay:latest`. You'll see `ErrImageNeverPull` if you try and use another image.
+* Test can take longer on CI. Adds 5s to timeout values.

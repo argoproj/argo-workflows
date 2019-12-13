@@ -81,7 +81,11 @@ func (wfc *WorkflowController) executorImagePullPolicy() apiv1.PullPolicy {
 	}
 }
 
-func (wfc *WorkflowController) mainImagePullPolicy() apiv1.PullPolicy {
+func (wfc *WorkflowController) mainImagePullPolicy(policy apiv1.PullPolicy) apiv1.PullPolicy {
+	// always prefer the configured version
+	if policy != "" {
+		return policy
+	}
 	return apiv1.PullPolicy(wfc.Config.MainImagePullPolicy)
 }
 
