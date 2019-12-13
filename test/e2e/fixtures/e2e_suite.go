@@ -96,7 +96,7 @@ func (s *E2ESuite) printDiagnostics() {
 				s.T().Fatal(err)
 			}
 			for _, container := range pod.Status.ContainerStatuses {
-				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Warn("Not found")
+				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Info("Container logs")
 				if container.Started != nil {
 					continue
 				}
@@ -105,9 +105,11 @@ func (s *E2ESuite) printDiagnostics() {
 					s.T().Fatal(err)
 				}
 				scanner := bufio.NewScanner(stream)
+				fmt.Println("===")
 				for scanner.Scan() {
 					fmt.Println(scanner.Text())
 				}
+				fmt.Println("===")
 				_ = stream.Close()
 			}
 		}
