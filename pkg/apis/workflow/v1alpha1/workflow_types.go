@@ -613,12 +613,6 @@ func (step *WorkflowStep) IsResolvable() bool {
 	return true
 }
 
-//// Item expands a single workflow step into multiple parallel steps
-//// The value of Item can be a map, string, bool, or number
-//type Item struct {
-//	Value interface{} `json:"value,omitempty"`
-//}
-
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -924,14 +918,6 @@ type S3Artifact struct {
 	// Key is the key in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
-
-//func (s *S3Artifact) String() string {
-//	protocol := "https"
-//	if s.Insecure != nil && *s.Insecure {
-//		protocol = "http"
-//	}
-//	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
-//}
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Bucket != ""
