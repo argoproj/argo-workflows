@@ -1,8 +1,6 @@
 package common
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type placeholderGenerator struct {
 	index int
