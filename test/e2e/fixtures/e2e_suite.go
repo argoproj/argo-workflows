@@ -54,8 +54,8 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		panic(err)
 	}
 	s.client = commands.InitWorkflowClient()
-	log.WithField("test", s.T().Name()).Info("Deleting all existing workflows")
 	timeout := int64(10)
+	log.WithFields(log.Fields{"test": s.T().Name(), "timeout": timeout}).Info("Deleting all existing workflows")
 	err = s.client.DeleteCollection(nil, metav1.ListOptions{TimeoutSeconds: &timeout})
 	if err != nil {
 		panic(err)
@@ -63,7 +63,8 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	if s.T().Failed() {
+	// TODO - only on failure?
+	if s.T().Failed() || true {
 		s.printDiagnostics()
 	}
 }
@@ -92,22 +93,22 @@ func (s *E2ESuite) printDiagnostics() {
 			pods := s.kubeClient.CoreV1().Pods(wf.Namespace)
 			podName := node.ID
 			pod, err := pods.Get(podName, metav1.GetOptions{})
+			logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName})
 			if apierr.IsNotFound(err) {
-				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName}).Warn("Not found")
+				logCtx.Warn("Pod not found")
 				continue
 			}
 			if err != nil {
 				s.T().Fatal(err)
 			}
 			for _, container := range pod.Status.ContainerStatuses {
-				log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName, "container": container.Name, "state": container.State}).Info("Container logs:")
-				if container.Started == nil {
+				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
+				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
+				if err != nil {
+					logCtx.Warn("Cannot get logs")
 					continue
 				}
-				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name,}).Stream()
-				if err != nil {
-					s.T().Fatal(err)
-				}
+				logCtx.Info("Container logs:")
 				scanner := bufio.NewScanner(stream)
 				fmt.Println("---")
 				for scanner.Scan() {

@@ -21,7 +21,7 @@ func (s *SmokeSuite) TestBasic() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-    generateName: my-test-
+    name: basic
 spec:
     entrypoint: run-workflow
     templates:
@@ -44,7 +44,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: artifact-passing-
+  name: artifact-passing
 spec:
   entrypoint: artifact-example
   templates:
@@ -94,7 +94,7 @@ func (s *SmokeSuite) TestContinueOnFail() {
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: continue-on-fail-
+  name: continue-on-fail
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
