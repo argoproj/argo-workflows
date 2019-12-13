@@ -87,7 +87,8 @@ func (s *E2ESuite) printDiagnostics() {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name}).Info("Workflow status:")
+		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+		logCtx.Info("Workflow status:")
 		// print status
 		bytes, err := yaml.Marshal(wf.Status)
 		if err != nil {
@@ -108,7 +109,7 @@ func (s *E2ESuite) printDiagnostics() {
 			pods := s.kubeClient.CoreV1().Pods(wf.Namespace)
 			podName := node.ID
 			pod, err := pods.Get(podName, metav1.GetOptions{})
-			logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "wf": wf.Name, "node": node.DisplayName, "pod": podName})
+			logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName, "pod": podName})
 			if err != nil {
 				logCtx.Error("Cannot get pod")
 				continue

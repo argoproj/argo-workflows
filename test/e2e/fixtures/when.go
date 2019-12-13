@@ -32,7 +32,8 @@ func (w *When) SubmitWorkflow() *When {
 }
 
 func (w *When) WaitForWorkflow(timeout time.Duration) *When {
-	log.WithFields(log.Fields{"test": w.t.Name(), "wf": w.name}).Info("Waiting on workflow")
+	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": w.name})
+	logCtx.Info("Waiting on workflow")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()}
 	watchIf, err := w.client.Watch(opts)
 	if err != nil {
@@ -53,7 +54,7 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 					return w
 				}
 			} else {
-				log.WithField("event", event).Warn("Did not get workflow event")
+				logCtx.WithField("event", event).Warn("Did not get workflow event")
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for finish", timeout)
