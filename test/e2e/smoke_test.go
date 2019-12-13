@@ -92,6 +92,6 @@ spec:
 		})
 }
 
-func TestSmokeSuit(t *testing.T) {
+func TestSmokeSuite(t *testing.T) {
 	suite.Run(t, new(SmokeSuite))
 }
