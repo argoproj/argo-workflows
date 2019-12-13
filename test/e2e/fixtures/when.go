@@ -46,8 +46,8 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	for {
 		select {
 		case next := <-watchIf.ResultChan():
-			wf, _ := next.Object.(*wfv1.Workflow)
-			if !wf.Status.FinishedAt.IsZero() {
+			wf, ok := next.Object.(*wfv1.Workflow)
+			if ok && !wf.Status.FinishedAt.IsZero() {
 				return w
 			}
 		case <-timeoutCh:
