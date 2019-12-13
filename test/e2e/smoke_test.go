@@ -38,6 +38,55 @@ spec:
 		})
 }
 
+func (s *SmokeSuite) TestArtifactPassing() {
+	s.Given().
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: artifact-passing-
+spec:
+  entrypoint: artifact-example
+  templates:
+  - name: artifact-example
+    steps:
+    - - name: generate-artifact
+        template: generate-message
+    - - name: consume-artifact
+        template: print-message
+        arguments:
+          artifacts:
+          - name: message
+            from: "{{steps.generate-artifact.outputs.artifacts.hello-art}}"
+
+  - name: generate-message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay hello world | tee /tmp/hello_world.txt"]
+    outputs:
+      artifacts:
+      - name: hello-art
+        path: /tmp/hello_world.txt
+
+  - name: print-message
+    inputs:
+      artifacts:
+      - name: message
+        path: /tmp/message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["cat /tmp/message"]
+`).
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(60*time.Second).
+		Then().
+		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
+		})
+}
 func (s *SmokeSuite) TestContinueOnFail() {
 	s.Given().
 		Workflow(`

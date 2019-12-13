@@ -14,7 +14,7 @@ data:
           key: secretkey
     executor:
       imagePullPolicy: Never
-    mainIimagePullPolicy: Never
+    mainImagePullPolicy: Never
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
