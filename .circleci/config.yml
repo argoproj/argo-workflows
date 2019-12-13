@@ -84,6 +84,9 @@ jobs:
             make logs-e2e
           background: true
       - run:
+          name: Pull Docker image
+          command: docker pull docker/whalesay:latest
+      - run:
           name: Run tests
           command: |
             mkdir -p test-results
