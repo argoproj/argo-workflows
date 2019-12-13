@@ -31,17 +31,17 @@ func (w *When) SubmitWorkflow() *When {
 	return w
 }
 
-func (w *When) WaitForWorkflow() *When {
+func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	log.WithField("test", w.t.Name()).WithField("wf", w.name).Info("Waiting")
 	watchIf, err := w.client.Watch(metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.name)).String()})
 	if err != nil {
 		w.t.Fatal(err)
 	}
 	defer watchIf.Stop()
-	timeout := make(chan bool, 1)
+	timeoutCh := make(chan bool, 1)
 	go func() {
-		time.Sleep(30 * time.Second)
-		timeout <- true
+		time.Sleep(timeout)
+		timeoutCh <- true
 	}()
 	for {
 		select {
@@ -50,7 +50,7 @@ func (w *When) WaitForWorkflow() *When {
 			if !wf.Status.FinishedAt.IsZero() {
 				return w
 			}
-		case <-timeout:
+		case <-timeoutCh:
 			w.t.Fatal("timeout after 30s waiting for finish")
 		}
 	}

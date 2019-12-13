@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -52,7 +53,7 @@ func (s AutoSuite) runFile(name string, nodePhase wfv1.NodePhase) {
 					Workflow("@" + name).
 					When().
 					SubmitWorkflow().
-					WaitForWorkflow().
+					WaitForWorkflow(10 * time.Second).
 					Then().
 					Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 						assert.Equal(t, nodePhase, wf.Phase)
