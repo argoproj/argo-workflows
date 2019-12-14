@@ -2,22 +2,12 @@ version: 2.1
 commands:
   dep_ensure:
     steps:
-      - restore_cache:
-          name: Restore vendor cache
-          keys:
-            - vendor-v3-{{ checksum "Gopkg.lock" }}
-            - vendor-v2-{{ checksum "Gopkg.lock" }}
       - run:
           name: Install Dep v0.5.3
           command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
       - run:
           name: Ensure dependencies
           command: dep ensure -v -vendor-only
-      - save_cache:
-          name: Save vendor cache
-          key: vendor-v3-{{ checksum "Gopkg.lock" }}
-          paths:
-            - vendor
   install_golang:
     steps:
       - run:
@@ -30,7 +20,8 @@ commands:
   save_go_cache:
     steps:
       - save_cache:
-          key: go-v3-{{ .Branch }}
+          name: Save Golang cache
+          key: go-v4-{{ .Branch }}
           paths:
             - /home/circleci/.go_workspace
             - /home/circleci/.cache/go-build
@@ -40,6 +31,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
+            - go-v4-{{ .Branch }}
+            - go-v4-master
             - go-v3-{{ .Branch }}
             - go-v3-master
 jobs:
@@ -76,7 +69,6 @@ jobs:
           name: Configure K3S
           command: cat /etc/rancher/k3s/k3s.yaml | tee ~/.kube/config
       - run: make start-e2e
-      - save_go_cache
       - run:
           name: Follow controller logs, to help diagnose failures
           command: |
@@ -97,7 +89,8 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_cache
+      - save_go_cache:
+          when: always
       - store_test_results:
           path: test-results
       - store_artifacts:
