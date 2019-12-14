@@ -3,10 +3,10 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io"
 	"path"
 	"path/filepath"
+	"sigs.k8s.io/yaml"
 	"strconv"
 
 	"github.com/argoproj/argo/errors"
