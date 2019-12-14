@@ -5,9 +5,18 @@ commands:
       - run:
           name: Install Dep v0.5.3
           command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - restore_cache:
+          name: Restore vendor cache
+          keys:
+            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v -vendor-only
+      - save_cache:
+          name: Save vendor cache
+          key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - vendor
   install_golang:
     steps:
       - run:
@@ -21,19 +30,18 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v4-{{ .Branch }}
+          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          # https://circleci.com/docs/2.0/language-go/
           paths:
-            - /home/circleci/.go_workspace
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
-          when: always
   restore_go_cache:
     steps:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v4-{{ .Branch }}
-            - go-v4-master
+            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
 jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
