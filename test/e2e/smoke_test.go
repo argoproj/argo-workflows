@@ -16,6 +16,9 @@ type SmokeSuite struct {
 }
 
 func (s *SmokeSuite) TestBasic() {
+
+	// TODO
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1
@@ -89,6 +92,8 @@ spec:
 }
 
 func (s *SmokeSuite) TestContinueOnFail() {
+	// TODO
+	s.T().SkipNow()
 	s.Given().
 		Workflow(`
 apiVersion: argoproj.io/v1alpha1

@@ -55,6 +55,10 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 				}
 			} else {
 				logCtx.WithField("event", event).Warn("Did not get workflow event")
+				watchIf, err = w.client.Watch(opts)
+				if err != nil {
+					w.t.Fatal(err)
+				}
 			}
 		case <-timeoutCh:
 			w.t.Fatalf("timeout after %v waiting for finish", timeout)
