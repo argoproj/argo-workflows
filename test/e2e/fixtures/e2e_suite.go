@@ -60,16 +60,16 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	// wait for all pods to be deleted
+	// wait for workflow pods to be deleted
 	for {
-		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{})
+		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
 		if err != nil {
 			panic(err)
 		}
-		if len(pods.Items) <= 3 {
+		if len(pods.Items) == 0 {
 			break
 		}
-		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for pods to go away")
+		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for workflow pods to go away")
 		time.Sleep(1 * time.Second)
 	}
 }
