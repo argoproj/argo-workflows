@@ -89,7 +89,7 @@ jobs:
           background: true
       - run:
           name: Watch Kubernetes events, to help diagnose failures
-          command: kubectl get events --watch
+          command: kubectl -n argo get events --watch
           background: true
       - run:
           name: Run tests

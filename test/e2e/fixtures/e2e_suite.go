@@ -16,9 +16,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
 
-	// load the gcp plugin (required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	"github.com/argoproj/argo/cmd/argo/commands"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )

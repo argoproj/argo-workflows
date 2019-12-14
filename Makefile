@@ -178,13 +178,13 @@ start-e2e:
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/
 	# Scale up.
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
+	# Wait for pods to be ready (only look for ones labelled "app", others are probably not what we want).
+	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller --timeout=30s
+	kubectl -n argo  wait --for=condition=Ready pod --all -l app=minio --timeout=1m
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
-	# Wait for pods to be ready (only look for ones labelled "app", others are probably not what we want).
-	kubectl wait --for=condition=Ready pod --all -l app=workflow-controller --timeout=2m
-	kubectl wait --for=condition=Ready pod --all -l app=minio --timeout=2m
 
 .PHONY: logs-e2e
 logs-e2e:
