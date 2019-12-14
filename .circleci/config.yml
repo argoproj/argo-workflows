@@ -43,7 +43,7 @@ jobs:
       image: circleci/classic:201808-01
     steps:
       - run:
-          name: Install and start K3S v0.5.0
+          name: Install and start K3S v1.0.0
           command: |
             curl -sfL https://get.k3s.io | sh -
             sudo chmod -R a+rw /etc/rancher/k3s
@@ -51,7 +51,7 @@ jobs:
           background: true
           environment:
             INSTALL_K3S_EXEC: --docker
-            INSTALL_K3S_VERSION: v0.5.0
+            INSTALL_K3S_VERSION: v1.0.0
       - run:
           name: Pull some Docker images now, to save time later
           command: |
