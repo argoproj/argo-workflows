@@ -181,8 +181,8 @@ start-e2e:
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
-	# Wait for pods to be ready
-	while [ `kubectl get pods --field-selector=status.phase==Running -o name|wc -l|tr -d ' '` != "3" ]; do kubectl get pods && sleep 3 ; done
+	# Wait for pods to be ready (only look for ones labelled "app", others are probably not what we want)
+	while [ `kubectl get pods --field-selector=status.phase==Running -l app -o name|wc -l|tr -d ' '` != "3" ]; do kubectl get pods && sleep 3 ; done
 
 .PHONY: logs-e2e
 logs-e2e:

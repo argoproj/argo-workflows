@@ -5,6 +5,8 @@ metadata:
   labels:
     app: minio
 spec:
+  externalTrafficPolicy: Cluster
+  type: LoadBalancer
   selector:
     app: minio
   ports:

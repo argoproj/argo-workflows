@@ -8,4 +8,4 @@ bases:
 
 patchesStrategicMerge:
 - ./overlays/workflow-controller-configmap.yaml
-- ./overlays/argo-ui-deployment.yaml
+- ./overlays/argo-ui-minio-pod.yaml
