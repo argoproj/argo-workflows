@@ -50,7 +50,7 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 		case event := <-watchIf.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
-				if !wf.Status.FinishedAt.IsZero(){
+				if !wf.Status.FinishedAt.IsZero() {
 					return w
 				}
 			} else {

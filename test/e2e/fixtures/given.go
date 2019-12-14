@@ -12,9 +12,9 @@ import (
 )
 
 type Given struct {
-	t          *testing.T
-	client     v1alpha1.WorkflowInterface
-	wf         *wfv1.Workflow
+	t      *testing.T
+	client v1alpha1.WorkflowInterface
+	wf     *wfv1.Workflow
 }
 
 // creates a workflow based on the parameter, this may be:

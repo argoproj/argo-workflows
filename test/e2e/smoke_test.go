@@ -34,7 +34,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(10*time.Second).
+		WaitForWorkflow(10 * time.Second).
 		Then().
 		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
@@ -84,7 +84,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
@@ -133,7 +133,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(30*time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
