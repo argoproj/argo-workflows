@@ -69,7 +69,7 @@ jobs:
       - run:
           name: Set-up Kube Config
           command: |
-            mkdirp -p ~/.kube
+            mkdir -p ~/.kube
             sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
