@@ -62,8 +62,6 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	}
 	// wait for all pods to be deleted
 	for {
-		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for pods to go away")
-		time.Sleep(1 * time.Second)
 		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{})
 		if err != nil {
 			panic(err)
@@ -71,6 +69,8 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		if len(pods.Items) <= 3 {
 			break
 		}
+		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for pods to go away")
+		time.Sleep(1 * time.Second)
 	}
 }
 
