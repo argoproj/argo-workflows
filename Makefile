@@ -178,8 +178,6 @@ start-e2e:
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--configmap", "workflow-controller-configmap", "--executor-image", "argoproj/argoexec:e2e"]}]'
 	# Build controller and executor images.
 	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=e2e
-	@if [ -e /var/lib/rancher/k3s/agent/images ]; then docker save workflow-controller:e2e > /var/lib/rancher/k3s/agent/images/workflow-controller.tar; fi
-	@if [ -e /var/lib/rancher/k3s/agent/images ]; then docker save argoexec:e2e > /var/lib/rancher/k3s/agent/images/argoexec.tar; fi
 	# Scale up.
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	# Wait for pods to be ready.

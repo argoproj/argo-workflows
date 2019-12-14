@@ -42,23 +42,15 @@ jobs:
     steps:
       - run:
           name: Install and start K3S v1.0.0
-          command: |
-            curl -sfL https://get.k3s.io | sh -
-            sudo chmod -R a+rw /etc/rancher/k3s
-            kubectl version
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker sh -
           background: true
-          environment:
-            INSTALL_K3S_EXEC: --docker
-            INSTALL_K3S_VERSION: v1.0.0
-      #- run:
-      #    name: Pull some Docker images now, to save time later
-      #    command: |
-      #      docker pull golang:1.11.5
-      #      docker pull minio/minio
-      #      docker pull docker/whalesay:latest
-      #      docker pull argoproj/workflow-controller:latest
-      #      docker pull argoproj/argoexec:latest
-      #    background: true
+      - run:
+          name: Pull some Docker images now, to save time later
+          command: |
+            docker pull golang:1.11.5
+            docker pull minio/minio
+            docker pull docker/whalesay:latest
+          background: true
       - restore_go_cache
       - install_golang
       - run:
