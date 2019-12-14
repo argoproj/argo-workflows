@@ -11,14 +11,14 @@ import (
 )
 
 type Then struct {
-	t      *testing.T
-	name   string
-	client v1alpha1.WorkflowInterface
+	t            *testing.T
+	workflowName string
+	client       v1alpha1.WorkflowInterface
 }
 
 func (t *Then) Expect(block func(t *testing.T, wf *wfv1.WorkflowStatus)) *Then {
-	log.WithField("name", t.name).Info("Checking expectation")
-	wf, err := t.client.Get(t.name, metav1.GetOptions{})
+	log.WithField("workflow", t.workflowName).Info("Checking expectation")
+	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}

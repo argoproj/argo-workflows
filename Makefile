@@ -167,6 +167,7 @@ manifests:
 .PHONY: start-e2e
 start-e2e:
 	kubectl create ns argo || true
+	# Install the standard Argo.
 	kubectl -n argo apply --wait --force -f manifests/install.yaml
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
@@ -181,8 +182,9 @@ start-e2e:
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
-	# Wait for pods to be ready (only look for ones labelled "app", others are probably not what we want)
-	while [ `kubectl get pods --field-selector=status.phase==Running -l app -o name|wc -l|tr -d ' '` != "3" ]; do kubectl get pods && sleep 3 ; done
+	# Wait for pods to be ready (only look for ones labelled "app", others are probably not what we want).
+	kubectl wait --for=condition=Ready pod --all -l app=workflow-controller --timeout=2m
+	kubectl wait --for=condition=Ready pod --all -l app=minio --timeout=2m
 
 .PHONY: logs-e2e
 logs-e2e:

@@ -70,14 +70,13 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		if len(pods.Items) == 0 {
 			break
 		}
-		log.WithFields(log.Fields{"test": s.T().Name()}).Info("Waiting for workflow pods to go away")
+		log.WithFields(log.Fields{"test": s.T().Name(), "num": len(pods.Items)}).Info("Waiting for workflow pods to go away")
 		time.Sleep(1 * time.Second)
 	}
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	// TODO - only on failure?
-	if s.T().Failed() || true {
+	if s.T().Failed() {
 		s.printDiagnostics()
 	}
 }

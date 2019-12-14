@@ -10,9 +10,9 @@ spec:
       image: minio/minio
       env:
         - name: MINIO_ACCESS_KEY
-          value: AKIAIOSFODNN7EXAMPLE
+          value: admin
         - name: MINIO_SECRET_KEY
-          value: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+          value: password
       ports:
         - containerPort: 9000
           hostPort: 9000

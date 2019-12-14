@@ -5,15 +5,17 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v3-{{ checksum "Gopkg.lock" }}
             - vendor-v2-{{ checksum "Gopkg.lock" }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}
       - run:
-          name: Install Dep
-          command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-      - run: dep ensure -v -vendor-only
+          name: Install Dep v0.5.3
+          command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - run:
+          name: Ensure dependencies
+          command: dep ensure -v -vendor-only
       - save_cache:
           name: Save vendor cache
-          key: vendor-v2-{{ checksum "Gopkg.lock" }}
+          key: vendor-v3-{{ checksum "Gopkg.lock" }}
           paths:
             - vendor
   install_golang:
@@ -36,6 +38,7 @@ commands:
   restore_go_cache:
     steps:
       - restore_cache:
+          name: Restore Golang cache
           keys:
             - go-v3-{{ .Branch }}
             - go-v3-master
