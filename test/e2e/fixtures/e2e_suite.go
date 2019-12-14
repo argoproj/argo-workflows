@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
 	"path/filepath"
 	"time"
@@ -124,8 +123,7 @@ func (s *E2ESuite) printJSON(obj interface{}) {
 
 func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
 	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
-	pods := s.kubeClient.CoreV1().Pods(namespace)
-	pod, err := pods.Get(podName, metav1.GetOptions{})
+	pod, err := s.kubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		logCtx.Error("Cannot get pod")
 		return
@@ -133,13 +131,13 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 	logCtx.Info("Pod manifest:")
 	s.printJSON(pod)
 	for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
-		s.printPodLogs(logCtx, container, pods, podName)
+		logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image, "pod": pod.Name})
+		s.printPodLogs(logCtx, pod.Namespace, pod.Name, container.Name)
 	}
 }
 
-func (s *E2ESuite) printPodLogs(logCtx *log.Entry, container v1.ContainerStatus, pods v12.PodInterface, podName string) {
-	logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
-	stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
+func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container string) {
+	stream, err := s.kubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
 	if err != nil {
 		logCtx.WithField("err", err).Error("Cannot get logs")
 		return

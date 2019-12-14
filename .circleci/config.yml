@@ -8,7 +8,7 @@ commands:
       - run:
           name: Install Dep
           command: curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-      - run: dep ensure -v
+      - run: dep ensure -v -vendor-only
       - save_cache:
           key: vendor-v1-{{ checksum "Gopkg.lock" }}
           paths:
