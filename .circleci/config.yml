@@ -50,7 +50,7 @@ jobs:
     steps:
       - run:
           name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker sh -
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC="--docker --write-kubeconfig-mode" sh -
           background: true
       - run:
           name: Pull some Docker images now, to save time later
@@ -66,11 +66,6 @@ jobs:
           command: go get github.com/jstemmer/go-junit-report
       - checkout
       - dep_ensure
-      - run:
-          name: Set-up Kube Config
-          command: |
-            mkdir -p ~/.kube
-            sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
           name: Follow controller logs, to help diagnose failures
