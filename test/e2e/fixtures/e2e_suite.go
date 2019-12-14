@@ -95,7 +95,7 @@ func (s *E2ESuite) printDiagnostics() {
 func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
 	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 	logCtx.Info("Workflow status:")
-	s.printJSON(wf.Status)
+	printJSON(wf.Status)
 	// print logs
 	workflow, err := s.client.Get(wf.Name, metav1.GetOptions{})
 	if err != nil {
@@ -110,11 +110,11 @@ func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
 	}
 }
 
-func (s *E2ESuite) printJSON(obj interface{}) {
+func printJSON(obj interface{}) {
 	// print status
 	bytes, err := yaml.Marshal(obj)
 	if err != nil {
-		s.T().Fatal(err)
+		panic(err)
 	}
 	fmt.Println("---")
 	fmt.Println(string(bytes))
@@ -129,8 +129,10 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 		return
 	}
 	logCtx.Info("Pod manifest:")
-	s.printJSON(pod)
-	for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+	printJSON(pod)
+	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
+	logCtx.WithField("numContainers", len(containers)).Info()
+	for _, container := range containers {
 		logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image, "pod": pod.Name})
 		s.printPodLogs(logCtx, pod.Namespace, pod.Name, container.Name)
 	}
