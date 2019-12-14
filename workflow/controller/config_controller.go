@@ -41,6 +41,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		return errors.InternalWrapError(err)
 	}
 	log.Printf("workflow controller configuration from %s:\n%s", wfc.configMap, configStr)
+	log.Printf("ALEX\n")
 	if wfc.cliExecutorImage == "" && config.ExecutorImage == "" {
 		return errors.Errorf(errors.CodeBadRequest, "ConfigMap '%s' does not have executorImage", wfc.configMap)
 	}
