@@ -11,7 +11,7 @@ commands:
             - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
-          command: dep ensure -v -vendor-only
+          command: dep ensure -v
       - save_cache:
           name: Save vendor cache
           key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
