@@ -84,7 +84,7 @@ spec:
 `).
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(120*time.Second).
+		WaitForWorkflow(30*time.Second).
 		Then().
 		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)

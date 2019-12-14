@@ -3,6 +3,8 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
+	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	v12 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"os"
 	"path/filepath"
 	"time"
@@ -87,55 +89,69 @@ func (s *E2ESuite) printDiagnostics() {
 		s.T().Fatal(err)
 	}
 	for _, wf := range wfs.Items {
-		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
-		logCtx.Info("Workflow status:")
-		// print status
-		bytes, err := yaml.Marshal(wf.Status)
-		if err != nil {
-			s.T().Fatal(err)
-		}
-		fmt.Println("---")
-		fmt.Println(string(bytes))
-		fmt.Println("---")
-		// print logs
-		wf, err := s.client.Get(wf.Name, metav1.GetOptions{})
-		if err != nil {
-			s.T().Fatal(err)
-		}
-		for _, node := range wf.Status.Nodes {
-			if node.Type != "Pod" {
-				continue
-			}
-			pods := s.kubeClient.CoreV1().Pods(wf.Namespace)
-			podName := node.ID
-			pod, err := pods.Get(podName, metav1.GetOptions{})
-			logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName, "pod": podName})
-			if err != nil {
-				logCtx.Error("Cannot get pod")
-				continue
-			}
-			logCtx.WithFields(log.Fields{"phase": pod.Status.Phase}).Info("Pod phase")
-			for _, condition := range pod.Status.Conditions {
-				logCtx.WithFields(log.Fields{"status": condition.Status, "reason": condition.Reason}).Info(condition.Message)
-			}
-			for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
-				logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
-				stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
-				if err != nil {
-					logCtx.WithField("err", err).Error("Cannot get logs")
-					continue
-				}
-				logCtx.Info("Container logs:")
-				scanner := bufio.NewScanner(stream)
-				fmt.Println("---")
-				for scanner.Scan() {
-					fmt.Println("  " + scanner.Text())
-				}
-				fmt.Println("---")
-				_ = stream.Close()
-			}
-		}
+		s.printWorkflowDiagnostics(wf)
 	}
+}
+
+func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
+	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+	logCtx.Info("Workflow status:")
+	s.printJSON(wf.Status)
+	// print logs
+	workflow, err := s.client.Get(wf.Name, metav1.GetOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	for _, node := range workflow.Status.Nodes {
+		if node.Type != "Pod" {
+			continue
+		}
+		logCtx := logCtx.WithFields(log.Fields{"node": node.DisplayName})
+		s.printPodDiagnostics(logCtx, workflow.Namespace, node.ID)
+	}
+}
+
+func (s *E2ESuite) printJSON(obj interface{}) {
+	// print status
+	bytes, err := yaml.Marshal(obj)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	fmt.Println("---")
+	fmt.Println(string(bytes))
+	fmt.Println("---")
+}
+
+func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
+	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
+	pods := s.kubeClient.CoreV1().Pods(namespace)
+	pod, err := pods.Get(podName, metav1.GetOptions{})
+	if err != nil {
+		logCtx.Error("Cannot get pod")
+		return
+	}
+	logCtx.Info("Pod manifest:")
+	s.printJSON(pod)
+	for _, container := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		s.printPodLogs(logCtx, container, pods, podName)
+	}
+}
+
+func (s *E2ESuite) printPodLogs(logCtx *log.Entry, container v1.ContainerStatus, pods v12.PodInterface, podName string) {
+	logCtx = logCtx.WithFields(log.Fields{"container": container.Name, "image": container.Image})
+	stream, err := pods.GetLogs(podName, &v1.PodLogOptions{Container: container.Name}).Stream()
+	if err != nil {
+		logCtx.WithField("err", err).Error("Cannot get logs")
+		return
+	}
+	defer func() { _ = stream.Close() }()
+	logCtx.Info("Container logs:")
+	scanner := bufio.NewScanner(stream)
+	fmt.Println("---")
+	for scanner.Scan() {
+		fmt.Println("  " + scanner.Text())
+	}
+	fmt.Println("---")
 }
 
 func (s *E2ESuite) Given() *Given {
