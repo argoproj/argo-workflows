@@ -21,6 +21,7 @@ import (
 )
 
 var kubeConfig = os.Getenv("KUBECONFIG")
+
 const namespace = "argo"
 
 func init() {
@@ -74,13 +75,11 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	if true || s.T().Failed() {
-		s.printDiagnostics()
-	}
+	s.printDiagnostics()
 }
 
 func (s *E2ESuite) printDiagnostics() {
-	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.name=" + namespace})
+	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace})
 	if err != nil {
 		s.T().Fatal(err)
 	}
