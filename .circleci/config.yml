@@ -73,6 +73,11 @@ jobs:
           command: cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
+          name: Copy images to K3S
+          command: |
+            docker save workflow-controller:e2e > /var/lib/rancher/k3s/agent/images/workflow-controller.tar
+            docker save argoexec:e2e > /var/lib/rancher/k3s/agent/images/argoexec.tar
+      - run:
           name: Follow controller logs, to help diagnose failures
           command: |
             sleep 10
