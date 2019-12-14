@@ -86,7 +86,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test-e2e 2>&1 | tee test-results/test.out
+            KUBECONFIG=/etc/rancher/k3s/k3s.yaml make test-e2e 2>&1 | tee test-results/test.out
       - save_go_cache
       - store_test_results:
           path: test-results
