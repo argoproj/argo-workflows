@@ -69,7 +69,7 @@ jobs:
       - run:
           command: |
             mkdir -p ~/.kube
-            sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: KUBECONFIG=~/.kube/config make start-e2e
       - run:
           name: Follow controller logs, to help diagnose failures
