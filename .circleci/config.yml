@@ -58,6 +58,8 @@ jobs:
             docker pull golang:1.11.5
             docker pull minio/minio
             docker pull docker/whalesay:latest
+            docker pull argoproj/workflow-controller:latest
+            docker pull argoproj/argoexec:latest
           background: true
       - restore_go_cache
       - install_golang

@@ -15,6 +15,7 @@ data:
     containerRuntimeExecutor: pns
     executor:
       imagePullPolicy: Never
+      image: argoproj/argoexec:e2e
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
