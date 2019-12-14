@@ -34,8 +34,6 @@ commands:
           keys:
             - go-v4-{{ .Branch }}
             - go-v4-master
-            - go-v3-{{ .Branch }}
-            - go-v3-master
 jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -52,15 +50,15 @@ jobs:
           environment:
             INSTALL_K3S_EXEC: --docker
             INSTALL_K3S_VERSION: v1.0.0
-      - run:
-          name: Pull some Docker images now, to save time later
-          command: |
-            docker pull golang:1.11.5
-            docker pull minio/minio
-            docker pull docker/whalesay:latest
-            docker pull argoproj/workflow-controller:latest
-            docker pull argoproj/argoexec:latest
-          background: true
+      #- run:
+      #    name: Pull some Docker images now, to save time later
+      #    command: |
+      #      docker pull golang:1.11.5
+      #      docker pull minio/minio
+      #      docker pull docker/whalesay:latest
+      #      docker pull argoproj/workflow-controller:latest
+      #      docker pull argoproj/argoexec:latest
+      #    background: true
       - restore_go_cache
       - install_golang
       - run:
@@ -72,11 +70,6 @@ jobs:
           name: Set-up Kube Config
           command: cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
-      - run:
-          name: Copy images to K3S
-          command: |
-            docker save workflow-controller:e2e > /var/lib/rancher/k3s/agent/images/workflow-controller.tar
-            docker save argoexec:e2e > /var/lib/rancher/k3s/agent/images/argoexec.tar
       - run:
           name: Follow controller logs, to help diagnose failures
           command: |
