@@ -50,7 +50,7 @@ jobs:
     steps:
       - run:
           name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=777 sh -
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
           background: true
       - run:
           name: Pull some Docker images now, to save time later
@@ -66,6 +66,10 @@ jobs:
           command: go get github.com/jstemmer/go-junit-report
       - checkout
       - dep_ensure
+      - run:
+          command: |
+            mkdir -p ~/.kube
+            sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
           name: Follow controller logs, to help diagnose failures
@@ -86,7 +90,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            KUBECONFIG=/etc/rancher/k3s/k3s.yaml make test-e2e 2>&1 | tee test-results/test.out
+            make test-e2e 2>&1 | tee test-results/test.out
       - save_go_cache
       - store_test_results:
           path: test-results
