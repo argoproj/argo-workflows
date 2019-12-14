@@ -55,7 +55,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.client = commands.InitWorkflowClient()
 	// delete all workflows
 	log.WithFields(log.Fields{"test": s.T().Name()}).Info("Deleting all existing workflows")
-	err = s.client.DeleteCollection(nil, metav1.ListOptions{FieldSelector: "metadata.name="+namespace})
+	err = s.client.DeleteCollection(nil, metav1.ListOptions{})
 	if err != nil {
 		panic(err)
 	}
