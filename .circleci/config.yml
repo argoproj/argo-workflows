@@ -50,7 +50,7 @@ jobs:
     steps:
       - run:
           name: Install and start K3S v1.0.0
-          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=777 sh -
           background: true
       - run:
           name: Pull some Docker images now, to save time later
