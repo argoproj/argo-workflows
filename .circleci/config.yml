@@ -68,13 +68,7 @@ jobs:
       - dep_ensure
       - run:
           name: Configure K3S
-          command: |
-            # install the certificates (not 100% sure we need this)
-            sudo cp /var/lib/rancher/k3s/server/tls/token-ca.crt /usr/local/share/ca-certificates/k3s.crt
-            sudo update-ca-certificates
-            # create the kubecfg, again - not sure we need this
-            cat /etc/rancher/k3s/k3s.yaml | sed "s/localhost/`hostname`/" | tee ~/.kube/config
-            echo "127.0.0.1 `hostname`" | sudo tee -a /etc/hosts
+          command: cat /etc/rancher/k3s/k3s.yaml | tee ~/.kube/config
       - run: make start-e2e
       - save_go_cache
       - run:
