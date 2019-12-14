@@ -8,6 +8,7 @@ spec:
   containers:
     - name: main
       image: minio/minio
+      imagePullPolicy: IfNotPresent
       env:
         - name: MINIO_ACCESS_KEY
           value: admin
@@ -25,11 +26,11 @@ spec:
         httpGet:
           path: /minio/health/ready
           port: 9000
-        initialDelaySeconds: 30
-        periodSeconds: 30
+        initialDelaySeconds: 5
+        periodSeconds: 10
       livenessProbe:
         httpGet:
           path: /minio/health/live
           port: 9000
-        initialDelaySeconds: 30
-        periodSeconds: 30
+        initialDelaySeconds: 5
+        periodSeconds: 10

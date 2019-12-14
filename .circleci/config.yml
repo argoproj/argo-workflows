@@ -67,7 +67,7 @@ jobs:
       - checkout
       - dep_ensure
       - run:
-          name: Configure K3S
+          name: Set-up Kube Config
           command: cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
