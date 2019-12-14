@@ -8,7 +8,6 @@ spec:
   containers:
     - name: main
       image: minio/minio
-      imagePullPolicy: IfNotPresent
       env:
         - name: MINIO_ACCESS_KEY
           value: admin
