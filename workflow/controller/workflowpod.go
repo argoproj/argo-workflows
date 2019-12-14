@@ -284,12 +284,12 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	if err != nil {
 		return nil, err
 	}
-	woc.log.Info("ALEX\n" + string(bytes))
+	fmt.Println("ALEX\n" + string(bytes))
 	bytes, err = yaml.Marshal(created)
 	if err != nil {
 		return nil, err
 	}
-	woc.log.Info("ALEX\n" + string(bytes))
+	fmt.Println("ALEX\n" + string(bytes))
 	woc.activePods++
 	return created, nil
 }
