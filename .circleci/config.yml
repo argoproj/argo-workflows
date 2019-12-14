@@ -84,6 +84,10 @@ jobs:
             make logs-e2e
           background: true
       - run:
+          name: Watch Docker events, to help diagnose failures
+          command: docker events
+          background: true
+      - run:
           name: Run tests
           command: |
             mkdir -p test-results
