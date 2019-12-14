@@ -6,7 +6,6 @@ import (
 	"io"
 	"path"
 	"path/filepath"
-	"sigs.k8s.io/yaml"
 	"strconv"
 
 	"github.com/argoproj/argo/errors"
@@ -164,7 +163,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 	// Add init container only if it needs input artifacts. This is also true for
 	// script templates (which needs to populate the script)
 	if len(tmpl.Inputs.Artifacts) > 0 || tmpl.GetType() == wfv1.TemplateTypeScript {
-		woc.log.Debug("ALEX Adding init container")
 		initCtr := woc.newInitContainer(tmpl)
 		pod.Spec.InitContainers = []apiv1.Container{initCtr}
 	}
@@ -280,16 +278,6 @@ func (woc *wfOperationCtx) createWorkflowPod(nodeName string, mainCtr apiv1.Cont
 		return nil, errors.InternalWrapError(err)
 	}
 	woc.log.Infof("Created pod: %s (%s)", nodeName, created.Name)
-	bytes, err := yaml.Marshal(pod)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("ALEX\n" + string(bytes))
-	bytes, err = yaml.Marshal(created)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("ALEX\n" + string(bytes))
 	woc.activePods++
 	return created, nil
 }

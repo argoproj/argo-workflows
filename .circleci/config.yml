@@ -67,6 +67,7 @@ jobs:
       - checkout
       - dep_ensure
       - run:
+          name: Create KUBECONFIG
           command: |
             mkdir -p ~/.kube
             cp /etc/rancher/k3s/k3s.yaml ~/.kube/config

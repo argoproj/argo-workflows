@@ -3,5 +3,5 @@ kind: Kustomization
 
 resources:
 - workflow-controller-configmap.yaml
-- workflow-controller-minio-pod.yaml
+- workflow-controller-deployment.yaml
 - workflow-controller-sa.yaml
