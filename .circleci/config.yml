@@ -68,7 +68,7 @@ jobs:
       - dep_ensure
       - run:
           name: Configure K3S
-          command: cat /etc/rancher/k3s/k3s.yaml | tee ~/.kube/config
+          command: cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: make start-e2e
       - run:
           name: Follow controller logs, to help diagnose failures
