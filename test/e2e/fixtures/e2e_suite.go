@@ -74,7 +74,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	if s.T().Failed() {
+	if true || s.T().Failed() {
 		s.printDiagnostics()
 	}
 }
