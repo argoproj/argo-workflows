@@ -21,6 +21,7 @@ import (
 )
 
 var kubeConfig = os.Getenv("KUBECONFIG")
+const namespace = "argo"
 
 func init() {
 	if kubeConfig == "" {
@@ -54,13 +55,13 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.client = commands.InitWorkflowClient()
 	// delete all workflows
 	log.WithFields(log.Fields{"test": s.T().Name()}).Info("Deleting all existing workflows")
-	err = s.client.DeleteCollection(nil, metav1.ListOptions{})
+	err = s.client.DeleteCollection(nil, metav1.ListOptions{FieldSelector: "metadata.name="+namespace})
 	if err != nil {
 		panic(err)
 	}
 	// wait for workflow pods to be deleted
 	for {
-		pods, err := s.kubeClient.CoreV1().Pods("argo").List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+		pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
 		if err != nil {
 			panic(err)
 		}
@@ -79,7 +80,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 }
 
 func (s *E2ESuite) printDiagnostics() {
-	wfs, err := s.client.List(metav1.ListOptions{})
+	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.name=" + namespace})
 	if err != nil {
 		s.T().Fatal(err)
 	}

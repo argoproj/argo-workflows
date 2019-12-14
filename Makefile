@@ -184,8 +184,6 @@ start-e2e:
 	# Wait for pods to be ready.
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller --timeout=30s
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio --timeout=1m
-	# Switch to "argo" ns.
-	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
 

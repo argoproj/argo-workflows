@@ -52,6 +52,7 @@ func (g *Given) Workflow(text string) *Given {
 			g.t.Fatal(err)
 		}
 	}
+	g.wf.SetNamespace(namespace)
 	return g
 }
 func (g *Given) When() *When {
