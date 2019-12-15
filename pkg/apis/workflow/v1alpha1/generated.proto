@@ -455,6 +455,9 @@ message Parameter {
   // GlobalName exports an output parameter to the global scope, making it available as
   // '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
   optional string globalName = 5;
+
+  // EmitMetric is a flag to determine whether to export the value as a Prometheus metric
+  optional bool emitMetric = 6;
 }
 
 // PodGC describes how to delete completed pods as they complete

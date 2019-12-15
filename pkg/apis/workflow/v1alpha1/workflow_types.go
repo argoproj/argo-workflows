@@ -453,6 +453,9 @@ type Parameter struct {
 	// GlobalName exports an output parameter to the global scope, making it available as
 	// '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters
 	GlobalName string `json:"globalName,omitempty" protobuf:"bytes,5,opt,name=globalName"`
+
+	// EmitMetric is a flag to determine whether to export the value as a Prometheus metric
+	EmitMetric bool `json:"emitMetric,omitempty" protobuf:"varint,6,opt,name=emitMetric"`
 }
 
 // ValueFrom describes a location in which to obtain the value to a parameter
@@ -827,10 +830,6 @@ type NodeStatus struct {
 	// a template, will be a superset of the outbound nodes of its last children.
 	OutboundNodes []string `json:"outboundNodes,omitempty" protobuf:"bytes,17,rep,name=outboundNodes"`
 }
-
-//func (n NodeStatus) String() string {
-//	return fmt.Sprintf("%s (%s)", n.Name, n.ID)
-//}
 
 func isCompletedPhase(phase NodePhase) bool {
 	return phase == NodeSucceeded ||

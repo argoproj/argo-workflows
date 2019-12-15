@@ -733,6 +733,10 @@
           "description": "Default is the default value to use for an input parameter if a value was not supplied",
           "type": "string"
         },
+        "emitMetric": {
+          "description": "EmitMetric is a flag to determine whether to export the value as a Prometheus metric",
+          "type": "boolean"
+        },
         "globalName": {
           "description": "GlobalName exports an output parameter to the global scope, making it available as '{{workflow.outputs.parameters.XXXX}} and in workflow.status.outputs.parameters",
           "type": "string"

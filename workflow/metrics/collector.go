@@ -1,7 +1,10 @@
 package metrics
 
 import (
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,8 +15,9 @@ import (
 )
 
 var (
-	descWorkflowDefaultLabels = []string{"namespace", "name", "entrypoint"}
-	descWorkflowNodeDefaultLabels = []string{"name"}
+	descWorkflowDefaultLabels                 = []string{"namespace", "name", "entrypoint"}
+	descWorkflowStepDefaultLabels             = []string{"namespace", "name", "step_name"}
+	descWorkflowNodeCustomMetricDefaultLabels = append(descWorkflowStepDefaultLabels, "metric_name")
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
@@ -46,15 +50,21 @@ var (
 		nil,
 	)
 	descWorkflowNodeStartedAt = prometheus.NewDesc(
-		"argo_workflow_node_start_time",
-		"Start time in unix timestamp for a workflow node.",
-		descWorkflowNodeDefaultLabels,
+		"argo_workflow_step_start_time",
+		"Start time in unix timestamp for a workflow step.",
+		descWorkflowStepDefaultLabels,
 		nil,
 	)
 	descWorkflowNodeFinishedAt = prometheus.NewDesc(
-		"argo_workflow_node_completion_time",
-		"Completion time in unix timestamp for a workflow node.",
-		descWorkflowNodeDefaultLabels,
+		"argo_workflow_step_completion_time",
+		"Completion time in unix timestamp for a workflow step.",
+		descWorkflowStepDefaultLabels,
+		nil,
+	)
+	descWorkflowNodeStatusPhase = prometheus.NewDesc(
+		"argo_workflow_step_status_phase",
+		"The workflow step current phase.",
+		append(descWorkflowStepDefaultLabels, "phase"),
 		nil,
 	)
 )
@@ -145,18 +155,25 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 
 	// Collect Node metrics
 	for _, node := range wf.Status.Nodes {
-		wc.collectWorkflowNode(ch, node)
+		wc.collectWorkflowNode(ch, node, wf.Name, wf.Namespace)
 	}
 }
 
-func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, node wfv1.NodeStatus) {
+func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, node wfv1.NodeStatus, wfName, wfNamespace string) {
 	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
-		lv = append([]string{node.Name}, lv...)
+		lv = append([]string{wfNamespace, wfName, node.Name}, lv...)
 		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
 	}
 	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
 		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
 	}
+
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodePending || node.Phase == ""), string(wfv1.NodePending))
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodeRunning), string(wfv1.NodeRunning))
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodeSucceeded), string(wfv1.NodeSucceeded))
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodeSkipped), string(wfv1.NodeSkipped))
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodeFailed), string(wfv1.NodeFailed))
+	addGauge(descWorkflowNodeStatusPhase, boolFloat64(node.Phase == wfv1.NodeError), string(wfv1.NodeError))
 
 	if !node.StartedAt.IsZero() {
 		addGauge(descWorkflowNodeStartedAt, float64(node.StartedAt.Unix()))
@@ -164,5 +181,25 @@ func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, no
 
 	if !node.FinishedAt.IsZero() {
 		addGauge(descWorkflowNodeFinishedAt, float64(node.FinishedAt.Unix()))
+	}
+
+	if node.Outputs != nil {
+		for _, param := range node.Outputs.Parameters {
+			if param.EmitMetric {
+				metricDesc := prometheus.NewDesc(
+					"argo_workflow_" + param.Name,
+					fmt.Sprintf("Custom metric '%s' from Workflow '%s'", param.Name, wfName),
+					descWorkflowStepDefaultLabels,
+					nil,
+				)
+
+				parsedValue, err := strconv.ParseFloat(*param.Value, 64)
+				if err == nil {
+					addGauge(metricDesc, parsedValue)
+				} else {
+					log.Infof("Not able to add value as metric")
+				}
+			}
+		}
 	}
 }

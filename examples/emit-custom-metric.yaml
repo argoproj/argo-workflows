@@ -1,0 +1,32 @@
+# To emit a custom metric, specify an output parameter with `emitMetric: true`
+# The custom metric will be created as `argo_workflow_{parameter_name}`
+# Example output:
+# HELP argo_workflow_step_script_result Custom metric 'script_result' from Workflow 'custom-metric-tl6d8'
+# TYPE argo_workflow_step_script_result gauge
+# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(0:A)"} 65
+# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(1:B)"} 86
+# argo_workflow_script_result{name="custom-metric-tl6d8",namespace="default",step_name="custom-metric-tl6d8[0].generate(2:C)"} 80
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: custom-metric-
+spec:
+  entrypoint: custom-metric-example
+  templates:
+    - name: custom-metric-example
+      steps:
+        - - name: generate
+            template: gen-random-int
+            withParam: '["A", "B", "C"]'
+    - name: gen-random-int
+      outputs:
+        parameters:
+          - name: script_result
+            valueFrom:
+              path: "/tmp/metric.txt"
+            emitMetric: true
+      script:
+        image: debian:9.4
+        command: [bash]
+        source: |
+          cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}' > /tmp/metric.txt

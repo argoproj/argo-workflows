@@ -1403,6 +1403,13 @@ func schema_pkg_apis_workflow_v1alpha1_Parameter(ref common.ReferenceCallback) c
 							Format:      "",
 						},
 					},
+					"emitMetric": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EmitMetric is a flag to determine whether to export the value as a Prometheus metric",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name"},
 			},
