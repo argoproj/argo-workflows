@@ -13,6 +13,7 @@ import (
 
 var (
 	descWorkflowDefaultLabels = []string{"namespace", "name", "entrypoint"}
+	descWorkflowNodeDefaultLabels = []string{"name"}
 
 	descWorkflowInfo = prometheus.NewDesc(
 		"argo_workflow_info",
@@ -42,6 +43,18 @@ var (
 		"argo_workflow_status_phase",
 		"The workflow current phase.",
 		append(descWorkflowDefaultLabels, "phase"),
+		nil,
+	)
+	descWorkflowNodeStartedAt = prometheus.NewDesc(
+		"argo_workflow_node_start_time",
+		"Start time in unix timestamp for a workflow node.",
+		descWorkflowNodeDefaultLabels,
+		nil,
+	)
+	descWorkflowNodeFinishedAt = prometheus.NewDesc(
+		"argo_workflow_node_completion_time",
+		"Completion time in unix timestamp for a workflow node.",
+		descWorkflowNodeDefaultLabels,
 		nil,
 	)
 )
@@ -111,7 +124,6 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 	}
 
 	addGauge(descWorkflowInfo, 1, wf.Spec.ServiceAccountName, joinTemplates(wf.Spec.Templates))
-
 	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodePending || wf.Status.Phase == ""), string(wfv1.NodePending))
 	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeRunning), string(wfv1.NodeRunning))
 	addGauge(descWorkflowStatusPhase, boolFloat64(wf.Status.Phase == wfv1.NodeSucceeded), string(wfv1.NodeSucceeded))
@@ -131,4 +143,26 @@ func (wc *workflowCollector) collectWorkflow(ch chan<- prometheus.Metric, wf wfv
 		addGauge(descWorkflowFinishedAt, float64(wf.Status.FinishedAt.Unix()))
 	}
 
+	// Collect Node metrics
+	for _, node := range wf.Status.Nodes {
+		wc.collectWorkflowNode(ch, node)
+	}
+}
+
+func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, node wfv1.NodeStatus) {
+	addConstMetric := func(desc *prometheus.Desc, t prometheus.ValueType, v float64, lv ...string) {
+		lv = append([]string{node.Name}, lv...)
+		ch <- prometheus.MustNewConstMetric(desc, t, v, lv...)
+	}
+	addGauge := func(desc *prometheus.Desc, v float64, lv ...string) {
+		addConstMetric(desc, prometheus.GaugeValue, v, lv...)
+	}
+
+	if !node.StartedAt.IsZero() {
+		addGauge(descWorkflowNodeStartedAt, float64(node.StartedAt.Unix()))
+	}
+
+	if !node.FinishedAt.IsZero() {
+		addGauge(descWorkflowNodeFinishedAt, float64(node.FinishedAt.Unix()))
+	}
 }
