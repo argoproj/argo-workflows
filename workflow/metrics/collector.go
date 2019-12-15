@@ -187,15 +187,15 @@ func (wc *workflowCollector) collectWorkflowNode(ch chan<- prometheus.Metric, no
 		for _, param := range node.Outputs.Parameters {
 			if param.EmitMetric {
 				metricDesc := prometheus.NewDesc(
-					"argo_workflow_" + param.Name,
+					"argo_workflow_"+param.Name,
 					fmt.Sprintf("Custom metric '%s' from Workflow '%s'", param.Name, wfName),
-					descWorkflowStepDefaultLabels,
+					descWorkflowNodeCustomMetricDefaultLabels,
 					nil,
 				)
 
 				parsedValue, err := strconv.ParseFloat(*param.Value, 64)
 				if err == nil {
-					addGauge(metricDesc, parsedValue)
+					addGauge(metricDesc, parsedValue, param.Name)
 				} else {
 					log.Infof("Not able to add value as metric")
 				}
