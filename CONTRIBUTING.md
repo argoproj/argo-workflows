@@ -68,5 +68,5 @@ images.controller workflow-controller:latest
 Notes:
 
 * Everything runs in the `argo` namespace (including MinIO). 
-* For speed, you're only allowed to use `docker/whalesay:latest`. You'll see `ErrImageNeverPull` if you try and use another image.
+* For speed, please only use `docker/whalesay:latest`. 
 * Test can take longer on CI. Adds 5s to timeout values.
