@@ -115,6 +115,7 @@ Currently **officially** using Argo:
 1. [Red Hat](https://www.redhat.com/en)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
+1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
