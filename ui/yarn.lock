@@ -11521,6 +11521,11 @@ xterm@2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/xterm/-/xterm-2.4.0.tgz#d70227993b74323e36495ab9c7bdee0bc8d0dbba"
 
+xterm@3.8.1:
+  version "3.8.1"
+  resolved "https://registry.yarnpkg.com/xterm/-/xterm-3.8.1.tgz#0beabaccdc23bd3ab2397c5129ed9b06b0abb167"
+  integrity sha512-M8bKuibUOr07zReT+2XWQgwoHvBZpi8rkuiYMY+xstmMjfxtb3BgCTQMesmi2WEtmXQu6vIw6rg0v736KkLtQQ==
+
 y18n@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-3.2.1.tgz#6d15fba884c08679c0d77e88e7759e811e07fa41"
