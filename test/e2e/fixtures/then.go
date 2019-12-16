@@ -17,7 +17,7 @@ type Then struct {
 }
 
 func (t *Then) Expect(block func(t *testing.T, wf *wfv1.WorkflowStatus)) *Then {
-	log.WithField("workflow", t.workflowName).Info("Checking expectation")
+	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": t.workflowName}).Info("Checking expectation")
 	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
