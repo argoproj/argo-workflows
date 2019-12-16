@@ -23,6 +23,7 @@ import (
 var kubeConfig = os.Getenv("KUBECONFIG")
 
 const namespace = "argo"
+const label = "argo-e2e"
 
 func init() {
 	if kubeConfig == "" {
@@ -55,22 +56,28 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	}
 	s.client = commands.InitWorkflowClient()
 	// delete all workflows
-	log.WithFields(log.Fields{"test": s.T().Name()}).Info("Deleting all existing workflows")
-	err = s.client.DeleteCollection(nil, metav1.ListOptions{})
+	list, err := s.client.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
-	// wait for workflow pods to be deleted
-	for {
-		pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow"})
+	for _, wf := range list.Items {
+		log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name}).Infof("Deleting workflow")
+		err = s.client.Delete(wf.Name, nil)
 		if err != nil {
 			panic(err)
 		}
-		if len(pods.Items) == 0 {
-			break
+		// wait for workflow pods to be deleted
+		for {
+			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name})
+			if err != nil {
+				panic(err)
+			}
+			if len(pods.Items) == 0 {
+				break
+			}
+			log.WithFields(log.Fields{"test": s.T().Name(), "num": len(pods.Items)}).Info("Waiting for workflow pods to go away")
+			time.Sleep(1 * time.Second)
 		}
-		log.WithFields(log.Fields{"test": s.T().Name(), "num": len(pods.Items)}).Info("Waiting for workflow pods to go away")
-		time.Sleep(1 * time.Second)
 	}
 }
 
