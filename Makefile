@@ -175,10 +175,10 @@ start-e2e:
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
 	# Change to use a "e2e" tag.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:e2e"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--configmap", "workflow-controller-configmap", "--executor-image", "argoproj/argoexec:e2e", "--executor-image-pull-policy", "Never"]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--configmap", "workflow-controller-configmap", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	# Build controller and executor images.
-	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=e2e
+	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	# Wait for pods to be ready.
