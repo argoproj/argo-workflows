@@ -82,6 +82,7 @@ Currently **officially** using Argo:
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
+1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
 1. [CCRi](https://www.ccri.com/)
