@@ -2,10 +2,10 @@
 
 ## Argo Workflow Overview
 
-![diagram](overview.jpeg)
+![diagram](assets/overview.jpeg)
 
 
 ## Workflow controller architecture
 
-![diagram](architecture.jpeg)
+![diagram](assets/architecture.jpeg)
 

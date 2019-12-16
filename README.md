@@ -2,7 +2,7 @@
 
 # Argoproj - Get stuff done with Kubernetes
 
-![Argo Image](argo.png)
+![Argo Image](docs/assets/argo.png)
 
 ## Quickstart
 ```bash
@@ -47,9 +47,9 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Argo Workflows puts a cloud-scale supercomputer at your fingertips!
 
 ## Documentation
-* [Get started here](demo.md)
+* [Get started here](docs/getting-started.md)
 * [How to write Argo Workflow specs](examples/README.md)
-* [How to configure your artifact repository](ARTIFACT_REPO.md)
+* [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
 * DAG or Steps based declaration of workflows
