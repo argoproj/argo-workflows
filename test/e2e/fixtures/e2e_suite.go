@@ -75,7 +75,9 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
-	s.printDiagnostics()
+	if s.T().Failed() {
+		s.printDiagnostics()
+	}
 }
 
 func (s *E2ESuite) printDiagnostics() {
