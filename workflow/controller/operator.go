@@ -1309,8 +1309,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
-		// If retry policy is not set to Always or OnError, we won't attempt to retry an errored container
-		if processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError {
+		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
+		// and we return instead.
+		if processedTmpl.RetryStrategy == nil ||
+			(processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
+				processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
 			return node, err
 		}
 	}
@@ -1592,6 +1595,9 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	if len(tmpl.Outputs.Parameters) > 0 {
 		outputs.Parameters = make([]wfv1.Parameter, 0)
 		for _, param := range tmpl.Outputs.Parameters {
+			if param.ValueFrom == nil {
+				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
+			}
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
 				return nil, err

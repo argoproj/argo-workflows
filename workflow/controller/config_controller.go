@@ -48,11 +48,12 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 
 	if wfc.Config.Persistence != nil {
 		log.Info("Persistence configuration enabled")
-		wfc.wfDBctx, err = wfc.createPersistenceContext()
+		dbctx, err := wfc.createPersistenceContext()
 		if err != nil {
 			log.Errorf("Error Creating Persistence context. %v", err)
 		} else {
 			log.Info("Persistence Session created successfully")
+			wfc.wfDBctx = dbctx
 		}
 	} else {
 		log.Info("Persistence configuration disabled")

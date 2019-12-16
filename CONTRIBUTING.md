@@ -59,3 +59,7 @@ $ ./dist/argo version
 $ helm install argo/argo --set images.namespace=mydockerrepo --set
 images.controller workflow-controller:latest
 ```
+
+### E2E Testing
+
+See [test/e2e/README.md](test/e2e/README.md).
