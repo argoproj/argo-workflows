@@ -185,6 +185,7 @@ func (c *Controller) deleteWorkflow(key string) error {
 		log.Warnf("Failed to unmarshal key '%s' to workflow object: %v", key, err)
 		return nil
 	}
+	# Need to start to add things here
 	if c.ttlExpired(wf) {
 		log.Infof("Deleting TTL expired workflow %s/%s", wf.Namespace, wf.Name)
 		policy := metav1.DeletePropagationForeground
