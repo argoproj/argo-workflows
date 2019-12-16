@@ -3,17 +3,19 @@ package workflow
 import (
 	"encoding/json"
 	"errors"
-	"github.com/argoproj/argo/cmd/server/common"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/workflow/util"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo/cmd/server/common"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/workflow/util"
+
 )
 
 type KubeService struct {

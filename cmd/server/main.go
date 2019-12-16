@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/cmd/server/apiserver"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/pkg/cli"
-	kubecli "github.com/argoproj/pkg/kube/cli"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -16,9 +15,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"strconv"
-	"time"
+
+	"github.com/argoproj/argo/cmd/server/apiserver"
+	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	cmdutil "github.com/argoproj/argo/util/cmd"
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 )
 
 const (

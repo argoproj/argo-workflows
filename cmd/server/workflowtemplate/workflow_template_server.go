@@ -5,6 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
 	common "github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -12,11 +20,6 @@ import (
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/metadata"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type WorkflowTemplateServer struct {
