@@ -562,12 +562,6 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.PodPriority != nil {
 		pod.Spec.Priority = wfSpec.PodPriority
 	}
-	// Set schedulerName (if specified)
-	if tmpl.SchedulerName != "" {
-		pod.Spec.SchedulerName = tmpl.SchedulerName
-	} else if wfSpec.SchedulerName != "" {
-		pod.Spec.SchedulerName = wfSpec.SchedulerName
-	}
 
 	// set hostaliases
 	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
