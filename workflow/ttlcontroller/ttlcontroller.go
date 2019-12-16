@@ -202,10 +202,21 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || wf.Spec.TTLSecondsAfterFinished == nil || wf.Status.FinishedAt.IsZero() {
 		return false
+		// HERE 
+		// Check that the workflow is finished
 	}
 	now := c.clock.Now()
-	expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLSecondsAfterFinished))
-	return now.After(expiry)
+	// Check if workflow failed
+	if wf.Status.Failed()
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess))
+		return now.After(expiry)
+	else if wf.Status.Successful()
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailed))
+		return now.After(expiry)
+	else if wf.Status.Error()
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterError))
+		return now.After(expiry)
+	return false
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
