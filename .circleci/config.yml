@@ -1,0 +1,105 @@
+version: 2.1
+commands:
+  dep_ensure:
+    steps:
+      - run:
+          name: Install Dep v0.5.3
+          command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+      - restore_cache:
+          name: Restore vendor cache
+          keys:
+            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+      - run:
+          name: Ensure dependencies
+          command: dep ensure -v
+      - save_cache:
+          name: Save vendor cache
+          key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          paths:
+            - vendor
+  install_golang:
+    steps:
+      - run:
+          name: Install Golang v1.12.6
+          command: |
+            go get golang.org/dl/go1.12.6
+            [ -e /home/circleci/sdk/go1.12.6 ] || go1.12.6 download
+            echo "export GOPATH=/home/circleci/.go_workspace" | tee -a $BASH_ENV
+            echo "export PATH=/home/circleci/sdk/go1.12.6/bin:\$PATH" | tee -a $BASH_ENV
+  save_go_cache:
+    steps:
+      - save_cache:
+          name: Save Golang cache
+          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          # https://circleci.com/docs/2.0/language-go/
+          paths:
+            - /home/circleci/.cache/go-build
+            - /home/circleci/sdk/go1.12.6
+  restore_go_cache:
+    steps:
+      - restore_cache:
+          name: Restore Golang cache
+          keys:
+            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
+jobs:
+  e2e:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: circleci/classic:201808-01
+    steps:
+      - run:
+          name: Install and start K3S v1.0.0
+          command: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.0.0 INSTALL_K3S_EXEC=--docker K3S_KUBECONFIG_MODE=644 sh -
+          background: true
+      - run:
+          name: Pull some Docker images now, to save time later
+          command: |
+            docker pull golang:1.11.5
+            docker pull minio/minio
+            docker pull docker/whalesay:latest
+          background: true
+      - restore_go_cache
+      - install_golang
+      - run:
+          name: Install Go test report to Junit test report
+          command: go get github.com/jstemmer/go-junit-report
+      - checkout
+      - dep_ensure
+      - run:
+          name: Create KUBECONFIG
+          command: |
+            mkdir -p ~/.kube
+            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+      - run: KUBECONFIG=~/.kube/config make start-e2e
+      - run:
+          name: Follow controller logs, to help diagnose failures
+          command: |
+            sleep 10
+            make logs-e2e
+          background: true
+      - run:
+          name: Watch Docker events, to help diagnose failures
+          command: docker events
+          background: true
+      - run:
+          name: Watch Kubernetes events, to help diagnose failures
+          command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test-e2e 2>&1 | tee test-results/test.out
+      - save_go_cache
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
+workflows:
+  version: 2
+  workflow:
+    jobs:
+      - e2e
