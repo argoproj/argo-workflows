@@ -61,7 +61,8 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		panic(err)
 	}
 	for _, wf := range list.Items {
-		log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name}).Infof("Deleting workflow")
+		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+		logCtx.Infof("Deleting workflow")
 		err = s.client.Delete(wf.Name, nil)
 		if err != nil {
 			panic(err)
@@ -75,7 +76,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			if len(pods.Items) == 0 {
 				break
 			}
-			log.WithFields(log.Fields{"test": s.T().Name(), "num": len(pods.Items)}).Info("Waiting for workflow pods to go away")
+			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
 			time.Sleep(1 * time.Second)
 		}
 	}

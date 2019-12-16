@@ -174,7 +174,7 @@ start-e2e:
 	# Change to use a "e2e" tag.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--configmap", "workflow-controller-configmap", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
