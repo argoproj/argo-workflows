@@ -233,12 +233,32 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	for _, taskNames := range targetTasks {
 		woc.executeDAGTask(dagCtx, taskNames)
 	}
+
+	updateOutboundNodes := func() {
+		// set the outbound nodes from the target tasks
+		outbound := make([]string, 0)
+		for _, depName := range targetTasks {
+			depNode := dagCtx.GetTaskNode(depName)
+			if depNode == nil {
+				woc.log.Println(depName)
+				continue
+			}
+			outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
+			outbound = append(outbound, outboundNodeIDs...)
+		}
+		woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
+		node = woc.getNodeByName(nodeName)
+		node.OutboundNodes = outbound
+		woc.wf.Status.Nodes[node.ID] = *node
+	}
+
 	// check if we are still running any tasks in this dag and return early if we do
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
 		return nil
 	case wfv1.NodeError, wfv1.NodeFailed:
+		updateOutboundNodes()
 		_ = woc.markNodePhase(nodeName, dagPhase)
 		return nil
 	}
@@ -266,20 +286,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
 
-	// set the outbound nodes from the target tasks
-	outbound := make([]string, 0)
-	for _, depName := range targetTasks {
-		depNode := dagCtx.GetTaskNode(depName)
-		if depNode == nil {
-			woc.log.Println(depName)
-		}
-		outboundNodeIDs := woc.getOutboundNodes(depNode.ID)
-		outbound = append(outbound, outboundNodeIDs...)
-	}
-	woc.log.Infof("Outbound nodes of %s set to %s", node.ID, outbound)
-	node = woc.getNodeByName(nodeName)
-	node.OutboundNodes = outbound
-	woc.wf.Status.Nodes[node.ID] = *node
+	updateOutboundNodes()
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
 	return nil
