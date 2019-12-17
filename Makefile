@@ -224,8 +224,6 @@ start-e2e:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
-	# Set-up port-forwards
-	make port-forward-e2e
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
@@ -234,11 +232,10 @@ start-e2e:
 .PHONY: port-forward-e2e
 port-forward-e2e:
 	killall kubectl || true
-	kubectl -n argo port-forward svc/minio 9000:9000 &
-	kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
-	sleep 1 && curl -s :8001 > /dev/null
-	kubectl -n argo port-forward svc/argo-server 2746:2746 &
-	sleep 1 && curl -s :2746/api/v1/workflows/argo > /dev/null
+	# kubectl -n argo port-forward svc/minio 9000:9000 &
+	# kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
+	# sleep 1 && curl -s :8001 > /dev/null
+	kubectl -n argo port-forward svc/argo-server 2746:2746
 
 .PHONY: logs-e2e
 logs-e2e:
