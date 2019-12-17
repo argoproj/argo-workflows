@@ -76,7 +76,7 @@ jobs:
             cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: KUBECONFIG=~/.kube/config make start-e2e
       - run:
-          name: Follow controller logs, to help diagnose failures
+          name: Follow logs, to help diagnose failures
           command: |
             sleep 10
             make logs-e2e
