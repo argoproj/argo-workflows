@@ -232,9 +232,6 @@ start-e2e:
 .PHONY: port-forward-e2e
 port-forward-e2e:
 	killall kubectl || true
-	# kubectl -n argo port-forward svc/minio 9000:9000 &
-	# kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
-	# sleep 1 && curl -s :8001 > /dev/null
 	kubectl -n argo port-forward svc/argo-server 2746:2746
 
 .PHONY: logs-e2e

@@ -14,16 +14,6 @@ spec:
     spec:
       containers:
         - name: main
-          image: argo-server/argo-server:latest
+          image: argoproj/argo-server:latest
           ports:
             - containerPort: 2746
-              hostPort: 2746
-          #readinessProbe:
-          #  httpGet:
-          #    path: /api/v1/workflows/argo
-          #    port: 2746
-          #    httpHeaders:
-          #      - name: Accept
-          #        value: "*/*"
-          #  initialDelaySeconds: 5
-          #  periodSeconds: 10

@@ -217,11 +217,10 @@ spec:
         app: argo-server
     spec:
       containers:
-      - image: argo-server/argo-server:latest
+      - image: argoproj/argo-server:latest
         name: main
         ports:
         - containerPort: 2746
-          hostPort: 2746
 ---
 apiVersion: apps/v1
 kind: Deployment
