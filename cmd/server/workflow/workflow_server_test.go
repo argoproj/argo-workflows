@@ -382,7 +382,7 @@ func TestCreateWorkflow(t *testing.T){
 
 	server := getWorkflowServer()
 	var req WorkflowCreateRequest
-	json.Unmarshal([]byte(workflow), &req)
+	_ = json.Unmarshal([]byte(workflow), &req)
 
 	wf, err :=server.Create(context.TODO(),&req)
 
