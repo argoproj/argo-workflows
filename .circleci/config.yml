@@ -74,10 +74,6 @@ jobs:
             cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - run: KUBECONFIG=~/.kube/config make start-e2e
       - run:
-          name: Re-establish port forward
-          command: make port-forward-e2e
-          background: true
-      - run:
           name: Follow logs, to help diagnose failures
           command: |
             sleep 10
@@ -90,6 +86,10 @@ jobs:
       - run:
           name: Watch Kubernetes events, to help diagnose failures
           command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Establish port forward
+          command: make port-forward-e2e
           background: true
       - run:
           name: Run tests

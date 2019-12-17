@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
@@ -18,7 +19,13 @@ type ArgoServerSuite struct {
 
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.e = httpexpect.New(s.T(), "http://localhost:2746/api/v1")
+	s.e = httpexpect.WithConfig(httpexpect.Config{
+		BaseURL:  "http://localhost:2746/api/v1",
+		Reporter: httpexpect.NewRequireReporter(s.T()),
+		Printers: []httpexpect.Printer{
+			httpexpect.NewDebugPrinter(s.T(), true),
+		},
+	})
 }
 
 func (s *ArgoServerSuite) TestLintWorkflow() {
@@ -129,6 +136,32 @@ func (s *ArgoServerSuite) TestWorkflows() {
 		JSON().
 		Path("$.spec.suspend").
 		Equal(true)
+
+	s.e.PUT("/workflows/argo/test/resume").
+		Expect().
+		Status(200)
+
+	s.e.GET("/workflows/argo/test").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.spec").
+		Object().
+		NotContainsKey("suspend")
+
+	s.e.PUT("/workflows/argo/test/terminate").
+		Expect().
+		Status(200)
+
+	// sleep in a test is bad practice
+	time.Sleep(1 * time.Second)
+
+	s.e.GET("/workflows/argo/test").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.status.message").
+		Equal("terminated")
 
 	s.e.DELETE("/workflows/argo/test").
 		Expect().
