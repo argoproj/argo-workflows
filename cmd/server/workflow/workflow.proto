@@ -63,7 +63,7 @@ message LogEntry {
 service WorkflowService {
     rpc Create (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			post: "/api/v1/workflows"
+			post: "/api/v1/workflows/{namespace}"
 			body: "*"
 		};
     }
