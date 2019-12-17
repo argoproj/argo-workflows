@@ -318,6 +318,93 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
+func TestAssessNodeStatus(t *testing.T) {
+	daemoned := true
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		node *wfv1.NodeStatus
+		want wfv1.NodePhase
+	}{{
+		name: "pod pending",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodPending,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodePending,
+	}, {
+		name: "pod succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeSucceeded,
+	}, {
+		name: "pod failed - daemoned",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{Daemoned: &daemoned},
+		want: wfv1.NodeSucceeded,
+	}, {
+		name: "pod failed - not daemoned",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod termination",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeError,
+	}, {
+		name: "pod running",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					common.AnnotationKeyTemplate: "{}",
+				},
+			},
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeRunning,
+	}, {
+		name: "default",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodUnknown,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeError,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := assessNodeStatus(test.pod, test.node)
+			assert.Equal(t, test.want, got.Phase)
+		})
+	}
+}
+
 var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
