@@ -8,13 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
             - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v
       - save_cache:
           name: Save vendor cache
-          key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
@@ -30,7 +31,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           # https://circleci.com/docs/2.0/language-go/
           paths:
             - /home/circleci/.cache/go-build
@@ -40,6 +41,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
+            - go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v2-master-{{ .Environment.CIRCLE_JOB }}
             - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v1-master-{{ .Environment.CIRCLE_JOB }}
 jobs:
