@@ -9,7 +9,6 @@ commands:
           name: Restore vendor cache
           keys:
             - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v
@@ -43,8 +42,6 @@ commands:
           keys:
             - go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v2-master-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
 jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
@@ -99,7 +96,8 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_cache
+      - save_go_cache:
+          when: always
       - store_test_results:
           path: test-results
       - store_artifacts:
