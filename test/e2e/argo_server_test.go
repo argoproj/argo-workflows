@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-const baseUrl = "http://localhost:32746/api/v1"
+const baseUrl = "http://localhost:2746/api/v1"
 
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
