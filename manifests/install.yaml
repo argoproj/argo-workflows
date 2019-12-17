@@ -4,6 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   name: workflows.argoproj.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    format: date-time
+    name: Age
+    type: date
   group: argoproj.io
   names:
     kind: Workflow
@@ -255,6 +265,20 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
+  labels:
+    app: argo-server
+  name: argo-server
+spec:
+  ports:
+  - port: 2746
+    protocol: TCP
+    targetPort: 2746
+  selector:
+    app: argo-server
+---
+apiVersion: v1
+kind: Service
+metadata:
   name: argo-ui
 spec:
   ports:
@@ -262,6 +286,39 @@ spec:
     targetPort: 8001
   selector:
     app: argo-ui
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: argo-server
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+      - image: argo-server/argo-server:dev
+        livenessProbe:
+          httpGet:
+            path: /api/v1/workflows/argo
+            port: 2746
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        name: main
+        ports:
+        - containerPort: 2746
+          hostPort: 2746
+        readinessProbe:
+          httpGet:
+            path: /api/v1/workflows/argo
+            port: 2746
+          initialDelaySeconds: 5
+          periodSeconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment

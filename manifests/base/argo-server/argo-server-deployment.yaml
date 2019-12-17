@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+        - name: main
+          image: argo-server/argo-server:latest
+          ports:
+            - containerPort: 2746
+              hostPort: 2746
+          readinessProbe:
+            httpGet:
+              path: /api/v1/workflows/argo
+              port: 2746
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/workflows/argo
+              port: 2746
+            initialDelaySeconds: 5
+            periodSeconds: 10
