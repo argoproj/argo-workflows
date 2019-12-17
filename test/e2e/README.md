@@ -26,7 +26,7 @@ Then open http://localhost:9000 using admin/password.
 If you want to run the controller in your IDE (e.g. to debug it), firstly scale down the controller:
 
 ```
-kubectl -n argo scale deployment/workflow-controller --replicas 0
+kubectl -n argo scale deploy/workflow-controller --replicas 0
 ```
 
 The run `cmd/workflow-controller/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
@@ -34,6 +34,19 @@ The run `cmd/workflow-controller/main.go` using these arguments, which enable de
 ```
 --loglevel debug --executor-image argoproj/argoexec:dev --executor-image-pull-policy Never
 ```
+
+### Running The Argo Server In Your IDE
+
+```
+kubectl scale deploy/argo-server --replicas 0
+```
+
+The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
+
+```
+--loglevel debug --insecure
+```
+
 
 ### To Update The Executor
 

@@ -3,13 +3,15 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
 const baseUrl = "http://localhost:2746/api/v1"
@@ -22,6 +24,42 @@ type ArgoServerSuite struct {
 
 func (s *ArgoServerSuite) TestWorkflows() {
 	t := s.T()
+	t.Run("CreateWorkflow/DryRun", func(t *testing.T) {
+		resp, err := http.Post(baseUrl+"/workflows/argo", "json", bytes.NewBuffer([]byte(`{
+  "createOptions": {
+    "dryRun": ["All"]
+  },
+  "workflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "name": "",
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)))
+		if assert.NoError(t, err) {
+			// GRPC is non-standard for return codes, 200 rather than 201
+			assert.Equal(t, "200 OK", resp.Status)
+			body, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			// make sure we can un-marshall the response
+			err = json.Unmarshal(body, &wfv1.Workflow{})
+			assert.NoError(t, err)
+		}
+	})
 	t.Run("CreateWorkflow", func(t *testing.T) {
 		resp, err := http.Post(baseUrl+"/workflows/argo", "json", bytes.NewBuffer([]byte(`{
   "workflow": {
@@ -54,7 +92,6 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			err = json.Unmarshal(body, &wfv1.Workflow{})
 			assert.NoError(t, err)
 		}
-
 	})
 	t.Run("ListWorkflows", func(t *testing.T) {
 		resp, err := http.Get(baseUrl + "/workflows/argo")

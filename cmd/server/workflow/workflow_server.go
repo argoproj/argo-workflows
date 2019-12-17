@@ -126,14 +126,19 @@ func (s *WorkflowServer) Create(ctx context.Context, wfReq *WorkflowCreateReques
 		return nil, err
 	}
 
-	// TODO server dry-run
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Create(wfReq.Workflow)
-	if err != nil {
-		log.Errorf("Create request is failed. Error: %s", err)
-		return nil, err
+	dryRun := wfReq.CreateOptions != nil && len(wfReq.CreateOptions.DryRun) > 0
+	log.WithField("dryRun", dryRun).Info("Creating workflow")
+	if !dryRun {
+		wf, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Create(wfReq.Workflow)
+		if err != nil {
+			log.Errorf("Create request is failed. Error: %s", err)
+			return nil, err
+		}
+		log.Infof("Workflow '%s' created successfully", wf.Name)
+		return wf, nil
+	} else {
+		return wfReq.Workflow, nil
 	}
-	log.Infof("Workflow '%s' created successfully", wf.Name)
-	return wf, nil
 }
 
 func (s *WorkflowServer) Get(ctx context.Context, wfReq *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
