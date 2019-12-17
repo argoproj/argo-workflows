@@ -351,11 +351,11 @@ const workflow =`
 func getWorkflowServer() * WorkflowServer {
 	//var kubeClientSet versioned.Interface
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
-	json.Unmarshal([]byte(wf1), &wfObj1)
-	json.Unmarshal([]byte(wf2), &wfObj2)
-	json.Unmarshal([]byte(wf3), &wfObj3)
-	json.Unmarshal([]byte(wf4), &wfObj4)
-	json.Unmarshal([]byte(wf5), &wfObj5)
+	_ = json.Unmarshal([]byte(wf1), &wfObj1)
+	_ = json.Unmarshal([]byte(wf2), &wfObj2)
+	_ = json.Unmarshal([]byte(wf3), &wfObj3)
+	_ = json.Unmarshal([]byte(wf4), &wfObj4)
+	_ = json.Unmarshal([]byte(wf5), &wfObj5)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset( &wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
 	server :=NewWorkflowServer ("Default",wfClientset, kubeClientSet,&config.WorkflowControllerConfig{}, false )
