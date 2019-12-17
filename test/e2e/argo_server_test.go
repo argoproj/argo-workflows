@@ -23,8 +23,7 @@ type ArgoServerSuite struct {
 func (s *ArgoServerSuite) TestArgoServer() {
 	t := s.T()
 	t.Run("CreateWorkflow", func(t *testing.T) {
-		resp, err := http.Post(baseUrl+"/workflows", "json", bytes.NewBuffer([]byte(`{
-  "namespace": "argo",
+		resp, err := http.Post(baseUrl+"/workflows/argo", "json", bytes.NewBuffer([]byte(`{
   "workflow": {
     "metadata": {
       "name": "test",
