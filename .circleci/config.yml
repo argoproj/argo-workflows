@@ -35,6 +35,7 @@ commands:
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
+          when: always
   restore_go_cache:
     steps:
       - restore_cache:
@@ -96,8 +97,7 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - save_go_cache:
-          when: always
+      - save_go_cache
       - store_test_results:
           path: test-results
       - store_artifacts:
