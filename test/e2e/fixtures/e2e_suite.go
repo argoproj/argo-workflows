@@ -63,7 +63,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	for _, wf := range list.Items {
 		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 		logCtx.Infof("Deleting workflow")
-		err = s.client.Delete(wf.Name, nil)
+		err = s.client.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
