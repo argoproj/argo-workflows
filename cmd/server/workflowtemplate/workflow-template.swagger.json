@@ -2689,6 +2689,21 @@
       },
       "title": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory"
     },
+    "v1alpha1Backoff": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string"
+        },
+        "factor": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxDuration": {
+          "type": "string"
+        }
+      }
+    },
     "v1alpha1ContinueOn": {
       "type": "object",
       "properties": {
@@ -3127,6 +3142,14 @@
           "type": "integer",
           "format": "int32",
           "title": "Limit is the maximum number of attempts when retrying a container"
+        },
+        "retryPolicy": {
+          "type": "string",
+          "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
+        },
+        "backoff": {
+          "$ref": "#/definitions/v1alpha1Backoff",
+          "title": "Backoff is a backoff strategy"
         }
       },
       "title": "RetryStrategy provides controls on how to retry a workflow step"
@@ -3216,6 +3239,12 @@
     },
     "v1alpha1SuspendTemplate": {
       "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string",
+          "title": "Duration is the seconds to wait before automatically resuming a template"
+        }
+      },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
     },
     "v1alpha1TarStrategy": {

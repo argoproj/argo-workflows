@@ -75,7 +75,7 @@ func (s *KubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *k
 	return wfClientset, clientset, nil
 }
 
-func (s *KubeService) Create(wfClient *versioned.Clientset, namespace string, wf *v1alpha1.Workflow) (*v1alpha1.Workflow, error) {
+func (s *KubeService) Create(wfClient versioned.Interface, namespace string, wf *v1alpha1.Workflow) (*v1alpha1.Workflow, error) {
 	createdWf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
 	if err != nil {
 		log.Warnf("Create request is failed. Error: %s", err)

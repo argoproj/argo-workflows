@@ -30,15 +30,15 @@ import (
 
 type WorkflowServer struct {
 	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
+	WfClientset      versioned.Interface
+	KubeClientset    kubernetes.Interface
 	EnableClientAuth bool
 	Config           *config.WorkflowControllerConfig
 	WfDBService      *DBService
 	WfKubeService    *KubeService
 }
 
-func NewWorkflowServer(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowServer {
+func NewWorkflowServer(namespace string, wfClientset versioned.Interface, kubeClientSet kubernetes.Interface, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowServer {
 	wfServer := WorkflowServer{Namespace: namespace, WfClientset: wfClientset, KubeClientset: kubeClientSet, EnableClientAuth: enableClientAuth}
 	if config != nil && config.Persistence != nil {
 		var err error
@@ -68,7 +68,7 @@ func (s *WorkflowServer) CreatePersistenceContext(namespace string, kubeClientSe
 	return &wfDBCtx, nil
 }
 
-func (s *WorkflowServer) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
+func (s *WorkflowServer) GetWFClient(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 
 	if !s.EnableClientAuth {

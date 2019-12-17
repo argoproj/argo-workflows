@@ -3292,6 +3292,21 @@
       },
       "title": "ArtifactoryAuth describes the secret selectors required for authenticating to artifactory"
     },
+    "v1alpha1Backoff": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string"
+        },
+        "factor": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "maxDuration": {
+          "type": "string"
+        }
+      }
+    },
     "v1alpha1ContinueOn": {
       "type": "object",
       "properties": {
@@ -3739,6 +3754,14 @@
           "type": "integer",
           "format": "int32",
           "title": "Limit is the maximum number of attempts when retrying a container"
+        },
+        "retryPolicy": {
+          "type": "string",
+          "title": "RetryPolicy is a policy of NodePhase statuses that will be retried"
+        },
+        "backoff": {
+          "$ref": "#/definitions/v1alpha1Backoff",
+          "title": "Backoff is a backoff strategy"
         }
       },
       "title": "RetryStrategy provides controls on how to retry a workflow step"
@@ -3828,6 +3851,12 @@
     },
     "v1alpha1SuspendTemplate": {
       "type": "object",
+      "properties": {
+        "duration": {
+          "type": "string",
+          "title": "Duration is the seconds to wait before automatically resuming a template"
+        }
+      },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
     },
     "v1alpha1TarStrategy": {
@@ -4449,11 +4478,15 @@
         },
         "storedTemplateID": {
           "type": "string",
-          "description": "StoredTemplateID is the ID of stored template."
+          "description": "StoredTemplateID is the ID of stored template.\nDEPRECATED: This value is not used anymore."
         },
         "workflowTemplateName": {
           "type": "string",
-          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved."
+          "description": "WorkflowTemplateName is the WorkflowTemplate resource name on which the resolved template of this node is retrieved.\nDEPRECATED: This value is not used anymore."
+        },
+        "templateScope": {
+          "type": "string",
+          "description": "TemplateScope is the template scope in which the template of this node was retrieved."
         },
         "phase": {
           "type": "string",
