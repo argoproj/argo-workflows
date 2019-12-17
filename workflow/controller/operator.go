@@ -797,29 +797,36 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
-		newPhase = wfv1.NodeRunning
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
-			return nil
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
-		if err != nil {
-			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
-			return nil
-		}
-		if tmpl.Daemon != nil && *tmpl.Daemon {
-			// pod is running and template is marked daemon. check if everything is ready
-			for _, ctrStatus := range pod.Status.ContainerStatuses {
-				if !ctrStatus.Ready {
-					return nil
-				}
-			}
-			// proceed to mark node status as running (and daemoned)
+		if pod.DeletionTimestamp != nil {
+			// pod is being terminated
+			newPhase = wfv1.NodeError
+			message = "pod termination"
+			log.Info(message)
+		} else {
 			newPhase = wfv1.NodeRunning
-			newDaemonStatus = pointer.BoolPtr(true)
-			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+			if !ok {
+				log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+				return nil
+			}
+			var tmpl wfv1.Template
+			err := json.Unmarshal([]byte(tmplStr), &tmpl)
+			if err != nil {
+				log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+				return nil
+			}
+			if tmpl.Daemon != nil && *tmpl.Daemon {
+				// pod is running and template is marked daemon. check if everything is ready
+				for _, ctrStatus := range pod.Status.ContainerStatuses {
+					if !ctrStatus.Ready {
+						return nil
+					}
+				}
+				// proceed to mark node status as running (and daemoned)
+				newPhase = wfv1.NodeRunning
+				newDaemonStatus = pointer.BoolPtr(true)
+				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+			}
 		}
 	default:
 		newPhase = wfv1.NodeError
