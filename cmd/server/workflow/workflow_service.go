@@ -15,30 +15,29 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/util"
-
 )
 
 type KubeService struct {
-	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
-	EnableClientAuth bool
+	namespace        string
+	wfClientset      *versioned.Clientset
+	kubeClientset    *kubernetes.Clientset
+	enableClientAuth bool
 }
 
 func NewKubeServer(Namespace string, wfClientset *wfclientset.Clientset, kubeClientSet *kubernetes.Clientset, enableClientAuth bool) *KubeService {
 	return &KubeService{
-		Namespace:        Namespace,
-		WfClientset:      wfClientset,
-		KubeClientset:    kubeClientSet,
-		EnableClientAuth: enableClientAuth,
+		namespace:        Namespace,
+		wfClientset:      wfClientset,
+		kubeClientset:    kubeClientSet,
+		enableClientAuth: enableClientAuth,
 	}
 }
 
 func (s *KubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 
-	if s.EnableClientAuth {
-		return s.WfClientset, s.KubeClientset, nil
+	if s.enableClientAuth {
+		return s.wfClientset, s.kubeClientset, nil
 	}
 
 	var restConfigStr, bearerToken string
@@ -62,21 +61,21 @@ func (s *KubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *k
 
 	wfClientset, err := wfclientset.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create WfClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create KubeClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
 	return wfClientset, clientset, nil
 }
 
-func (s *KubeService) Create(wfClient *versioned.Clientset, namespace string, wf *v1alpha1.Workflow) (*v1alpha1.Workflow, error) {
-	createdWf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Create(wf)
+func (s *KubeService) Create(wfClient *versioned.Clientset, wfReq *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+	createdWf, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Create(wfReq.Workflow)
 	if err != nil {
 		log.Warnf("Create request is failed. Error: %s", err)
 		return nil, err
@@ -86,8 +85,8 @@ func (s *KubeService) Create(wfClient *versioned.Clientset, namespace string, wf
 	return createdWf, nil
 }
 
-func (s *KubeService) Get(wfClient *versioned.Clientset, namespace string, wfReq *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+func (s *KubeService) Get(wfClient *versioned.Clientset, wfReq *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

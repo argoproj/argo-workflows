@@ -220,7 +220,7 @@ start-e2e:
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--insecure"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
@@ -232,6 +232,11 @@ start-e2e:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
+	# Set-up port-forwards
+	killall kubectl || true
+	kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
+	kubectl -n argo port-forward svc/minio 9000:9000 &
+	kubectl -n argo port-forward svc/argo-server 2746:2746 &
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
@@ -239,7 +244,7 @@ start-e2e:
 
 .PHONY: logs-e2e
 logs-e2e:
-	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl -n argo logs -f
+	kubectl -n argo logs -f -l app
 
 .PHONY: test-e2e
 test-e2e:

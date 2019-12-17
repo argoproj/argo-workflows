@@ -8,6 +8,8 @@ import (
 	"time"
 
 	golang_proto "github.com/golang/protobuf/proto"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	log "github.com/sirupsen/logrus"
 	"github.com/soheilhy/cmux"
@@ -24,18 +26,20 @@ import (
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	grpcutil "github.com/argoproj/argo/util/grpc"
 	"github.com/argoproj/argo/util/json"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 )
 
 type ArgoServer struct {
-	Namespace        string
-	KubeClientset    *kubernetes.Clientset
-	WfClientSet      *versioned.Clientset
-	EnableClientAuth bool
-	Config           *config.WorkflowControllerConfig
-	ConfigName       string
+	namespace        string
+	kubeClientset    *kubernetes.Clientset
+	wfClientSet      *versioned.Clientset
+	enableClientAuth bool
+	insecure         bool
+	config           *config.WorkflowControllerConfig
+	configName       string
 	stopCh           chan struct{}
 }
 
@@ -50,11 +54,12 @@ type ArgoServerOpts struct {
 
 func NewArgoServer(opts ArgoServerOpts) *ArgoServer {
 	return &ArgoServer{
-		Namespace:        opts.Namespace,
-		WfClientSet:      opts.WfClientSet,
-		KubeClientset:    opts.KubeClientset,
-		EnableClientAuth: opts.EnableClientAuth,
-		ConfigName:       opts.ConfigName,
+		namespace:        opts.Namespace,
+		wfClientSet:      opts.WfClientSet,
+		kubeClientset:    opts.KubeClientset,
+		enableClientAuth: opts.EnableClientAuth,
+		insecure:         opts.Insecure,
+		configName:       opts.ConfigName,
 	}
 }
 
@@ -66,7 +71,7 @@ var backoff = wait.Backoff{
 }
 
 func (as *ArgoServer) useTLS() bool {
-	return false
+	return !as.insecure
 }
 
 func (as *ArgoServer) Run(ctx context.Context, port int) {
@@ -134,6 +139,7 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 }
 
 func (as *ArgoServer) newGRPCServer() *grpc.Server {
+	serverLog := log.NewEntry(log.StandardLogger())
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -141,18 +147,26 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 		grpc.MaxRecvMsgSize(apiclient.MaxGRPCMessageSize),
 		grpc.MaxSendMsgSize(apiclient.MaxGRPCMessageSize),
 		grpc.ConnectionTimeout(300 * time.Second),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_logrus.UnaryServerInterceptor(serverLog),
+			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
+		)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_logrus.StreamServerInterceptor(serverLog),
+			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
+		)),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	configMap, err := as.RsyncConfig(as.Namespace, as.WfClientSet, as.KubeClientset)
+	configMap, err := as.RsyncConfig(as.namespace, as.wfClientSet, as.kubeClientset)
 	if err != nil {
 		// TODO: this currently returns an error every time
 		log.Errorf("Error marshalling config map: %s", err)
 	}
-	workflowServer := workflow.NewWorkflowServer(as.Namespace, as.WfClientSet, as.KubeClientset, configMap, as.EnableClientAuth)
+	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 
-	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.Namespace, as.WfClientSet, as.KubeClientset, configMap, as.EnableClientAuth)
+	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
 	return grpcServer
@@ -160,7 +174,7 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (a *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
+func (as *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
@@ -181,7 +195,7 @@ func (a *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	gwCookieOpts := runtime.WithForwardResponseOption(a.translateGrpcCookieHeader)
+	gwCookieOpts := runtime.WithForwardResponseOption(as.translateGrpcCookieHeader)
 	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -214,25 +228,25 @@ func newRedirectServer(port int) *http.Server {
 }
 
 // TranslateGrpcCookieHeader conditionally sets a cookie on the response.
-func (a *ArgoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
-
+func (as *ArgoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
+	// TODO - what is the point of this func?
 	return nil
 }
 
 // ResyncConfig reloads the controller config from the configmap
-func (a *ArgoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
+func (as *ArgoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
 	cmClient := kubeClientSet.CoreV1().ConfigMaps(namespace)
 	cm, err := cmClient.Get("workflow-controller-configmap", metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.InternalWrapError(err)
 	}
-	return a.UpdateConfig(cm)
+	return as.UpdateConfig(cm)
 }
 
-func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
+func (as *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
-		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", a.ConfigName, common.WorkflowControllerConfigMapKey)
+		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", as.configName, common.WorkflowControllerConfigMapKey)
 	}
 	var config config.WorkflowControllerConfig
 	log.Infof("Config Map: %s", configStr)
@@ -244,9 +258,9 @@ func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControll
 }
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
-func (a *ArgoServer) checkServeErr(name string, err error) {
+func (as *ArgoServer) checkServeErr(name string, err error) {
 	if err != nil {
-		if a.stopCh == nil {
+		if as.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown
 			log.Infof("graceful shutdown %s: %v", name, err)
 		} else {

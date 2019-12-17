@@ -21,32 +21,36 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
 type WorkflowServer struct {
-	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
-	EnableClientAuth bool
-	Config           *config.WorkflowControllerConfig
-	WfDBService      *DBService
-	WfKubeService    *KubeService
+	namespace        string
+	wfClientset      *versioned.Clientset
+	kubeClientset    *kubernetes.Clientset
+	enableClientAuth bool
+	config           *config.WorkflowControllerConfig
+	wfDBService      *DBService
+	wfKubeService    *KubeService
 }
 
 func NewWorkflowServer(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowServer {
-	wfServer := WorkflowServer{Namespace: namespace, WfClientset: wfClientset, KubeClientset: kubeClientSet, EnableClientAuth: enableClientAuth}
+	wfServer := WorkflowServer{
+		namespace:        namespace,
+		wfClientset:      wfClientset,
+		kubeClientset:    kubeClientSet,
+		enableClientAuth: enableClientAuth,
+		wfKubeService:    NewKubeServer(namespace, wfClientset, kubeClientSet, enableClientAuth),
+	}
 	if config != nil && config.Persistence != nil {
 		var err error
-		wfServer.WfDBService, err = NewDBService(kubeClientSet, namespace, config.Persistence)
+		wfServer.wfDBService, err = NewDBService(kubeClientSet, namespace, config.Persistence)
 		if err != nil {
-			wfServer.WfDBService = nil
+			wfServer.wfDBService = nil
 			log.Errorf("Error Creating DB Context. %v", err)
-		}else {
+		} else {
 			log.Infof("DB Context created successfully")
 		}
 	}
@@ -71,8 +75,8 @@ func (s *WorkflowServer) CreatePersistenceContext(namespace string, kubeClientSe
 func (s *WorkflowServer) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 
-	if !s.EnableClientAuth {
-		return s.WfClientset, s.KubeClientset, nil
+	if !s.enableClientAuth {
+		return s.wfClientset, s.kubeClientset, nil
 	}
 
 	var restConfigStr, bearerToken string
@@ -96,13 +100,13 @@ func (s *WorkflowServer) GetWFClient(ctx context.Context) (*versioned.Clientset,
 
 	wfClientset, err := wfclientset.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create WfClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create KubeClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
@@ -115,7 +119,7 @@ func (s *WorkflowServer) Create(ctx context.Context, wfReq *WorkflowCreateReques
 	if err != nil {
 		return nil, err
 	}
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -125,23 +129,15 @@ func (s *WorkflowServer) Create(ctx context.Context, wfReq *WorkflowCreateReques
 
 	wfReq.Workflow.Namespace = namespace
 
-	wf, err := s.ApplyWorkflowOptions(wfReq.Workflow, wfReq.SubmitOptions)
-	if err != nil {
-		return nil, err
-	}
-
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
 
-	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	err = validate.ValidateWorkflow(wftmplGetter, wfReq.Workflow, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
 
-	if wfReq.SubmitOptions != nil && wfReq.SubmitOptions.ServerDryRun {
-		return util.CreateServerDryRun(wf, wfClient)
-	}
-
-	wf, err = s.WfKubeService.Create(wfClient, namespace, wfReq.Workflow)
+	// TODO server dry-run
+	wf, err := s.wfKubeService.Create(wfClient, wfReq)
 
 	if err != nil {
 		log.Errorf("Create request is failed. Error: %s", err)
@@ -158,13 +154,13 @@ func (s *WorkflowServer) Get(ctx context.Context, wfReq *WorkflowGetRequest) (*v
 	}
 
 	var wf *v1alpha1.Workflow
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
 
-	if s.WfDBService != nil {
-		wf, err = s.WfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
+	if s.wfDBService != nil {
+		wf, err = s.wfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
 	} else {
 
 		wf, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
@@ -184,7 +180,7 @@ func (s *WorkflowServer) List(ctx context.Context, wfReq *WorkflowListRequest) (
 
 	var wfList *v1alpha1.WorkflowList
 	var listOption v1.ListOptions = v1.ListOptions{}
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -193,13 +189,13 @@ func (s *WorkflowServer) List(ctx context.Context, wfReq *WorkflowListRequest) (
 		listOption = *wfReq.ListOptions
 	}
 
-	if s.WfDBService != nil {
+	if s.wfDBService != nil {
 		var pagesize uint = 0
 		if wfReq.ListOptions != nil {
 			pagesize = uint(wfReq.ListOptions.Limit)
 		}
 
-		wfList, err = s.WfDBService.List(namespace, pagesize, "")
+		wfList, err = s.wfDBService.List(namespace, pagesize, "")
 	} else {
 		wfList, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).List(listOption)
 	}
@@ -216,13 +212,13 @@ func (s *WorkflowServer) Delete(ctx context.Context, wfReq *WorkflowDeleteReques
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
 
-	if s.WfDBService != nil {
-		err = s.WfDBService.Delete(wfReq.WorkflowName, wfReq.Namespace)
+	if s.wfDBService != nil {
+		err = s.wfDBService.Delete(wfReq.WorkflowName, wfReq.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +236,7 @@ func (s *WorkflowServer) Delete(ctx context.Context, wfReq *WorkflowDeleteReques
 }
 
 func (s *WorkflowServer) Retry(ctx context.Context, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -270,7 +266,7 @@ func (s *WorkflowServer) Resubmit(ctx context.Context, in *WorkflowUpdateRequest
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if in.Namespace != "" {
 		namespace = in.Namespace
 	}
@@ -297,7 +293,7 @@ func (s *WorkflowServer) Resume(ctx context.Context, wfReq *WorkflowUpdateReques
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -322,7 +318,7 @@ func (s *WorkflowServer) Suspend(ctx context.Context, wfReq *WorkflowUpdateReque
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -346,7 +342,7 @@ func (s *WorkflowServer) Terminate(ctx context.Context, wfReq *WorkflowUpdateReq
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -370,7 +366,7 @@ func (s *WorkflowServer) Lint(ctx context.Context, wfReq *WorkflowCreateRequest)
 		return nil, err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -390,7 +386,7 @@ func (s *WorkflowServer) Watch(wfReq *WorkflowGetRequest, ws WorkflowService_Wat
 		return err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -430,7 +426,7 @@ func (s *WorkflowServer) PodLogs(wfReq *WorkflowLogRequest, log WorkflowService_
 		return err
 	}
 
-	namespace := s.Namespace
+	namespace := s.namespace
 	if wfReq.Namespace != "" {
 		namespace = wfReq.Namespace
 	}
@@ -472,68 +468,4 @@ func (s *WorkflowServer) PodLogs(wfReq *WorkflowLogRequest, log WorkflowService_
 		}
 	}
 	return err
-}
-
-func (s *WorkflowServer) ApplyWorkflowOptions(wf *v1alpha1.Workflow, opts *SubmitOptions) (*v1alpha1.Workflow, error) {
-	if opts == nil {
-		return wf, nil
-	}
-	if opts.Entrypoint != "" {
-		wf.Spec.Entrypoint = opts.Entrypoint
-	}
-	if opts.ServiceAccount != "" {
-		wf.Spec.ServiceAccountName = opts.ServiceAccount
-	}
-	labels := wf.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	if opts.Labels != "" {
-		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
-		}
-		for k, v := range passedLabels {
-			labels[k] = v
-		}
-	}
-	if opts.InstanceID != "" {
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-	}
-	wf.SetLabels(labels)
-	if len(opts.Parameters) > 0 {
-		newParams := make([]v1alpha1.Parameter, 0)
-		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := v1alpha1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
-		}
-
-		for _, param := range wf.Spec.Arguments.Parameters {
-			if _, ok := passedParams[param.Name]; ok {
-				// this parameter was overridden via command line
-				continue
-			}
-			newParams = append(newParams, param)
-		}
-		wf.Spec.Arguments.Parameters = newParams
-	}
-	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
-	}
-	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
-	}
-	if opts.OwnerReference != nil {
-		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
-	}
-	return wf, nil
 }

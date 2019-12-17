@@ -1,11 +1,10 @@
 package workflowtemplate
 
 import (
-	context "context"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
@@ -13,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	common "github.com/argoproj/argo/cmd/server/common"
+	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -23,24 +22,22 @@ import (
 )
 
 type WorkflowTemplateServer struct {
-	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
-	EnableClientAuth bool
-	Config           *config.WorkflowControllerConfig
+	namespace        string
+	wfClientset      *versioned.Clientset
+	kubeClientset    *kubernetes.Clientset
+	enableClientAuth bool
+	config           *config.WorkflowControllerConfig
 }
 
 func NewWorkflowTemplateServer(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowTemplateServer {
-	wfTmplServer := WorkflowTemplateServer{Namespace: namespace, WfClientset: wfClientset, KubeClientset: kubeClientSet, EnableClientAuth: enableClientAuth}
-
-	return &wfTmplServer
+	return &WorkflowTemplateServer{namespace: namespace, wfClientset: wfClientset, kubeClientset: kubeClientSet, enableClientAuth: enableClientAuth}
 }
 
 func (s *WorkflowTemplateServer) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 
-	if !s.EnableClientAuth {
-		return s.WfClientset, s.KubeClientset, nil
+	if !s.enableClientAuth {
+		return s.wfClientset, s.kubeClientset, nil
 	}
 
 	var restConfigStr, bearerToken string
@@ -64,13 +61,13 @@ func (s *WorkflowTemplateServer) GetWFClient(ctx context.Context) (*versioned.Cl
 
 	wfClientset, err := wfclientset.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create WfClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create KubeClientset with ClientConfig '%+v': %s", restConfig, err)
+		log.Errorf("Failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
 
@@ -82,7 +79,7 @@ func (wts *WorkflowTemplateServer) Create(ctx context.Context, wftmplReq *Workfl
 	if err != nil {
 		return nil, err
 	}
-	namespace := wts.Namespace
+	namespace := wts.namespace
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}
@@ -90,7 +87,6 @@ func (wts *WorkflowTemplateServer) Create(ctx context.Context, wftmplReq *Workfl
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-
 
 	err = validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
 	if err != nil {
@@ -112,7 +108,7 @@ func (wts *WorkflowTemplateServer) Get(ctx context.Context, wftmplReq *WorkflowT
 		return nil, err
 	}
 
-	namespace := wts.Namespace
+	namespace := wts.namespace
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}
@@ -132,7 +128,7 @@ func (wts *WorkflowTemplateServer) List(ctx context.Context, wftmplReq *Workflow
 		return nil, err
 	}
 
-	namespace := wts.Namespace
+	namespace := wts.namespace
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}
@@ -152,7 +148,7 @@ func (wts *WorkflowTemplateServer) Delete(ctx context.Context, wftmplReq *Workfl
 		return nil, err
 	}
 
-	namespace := wts.Namespace
+	namespace := wts.namespace
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}
@@ -174,7 +170,7 @@ func (wts *WorkflowTemplateServer) Lint(ctx context.Context, wftmplReq *Workflow
 		return nil, err
 	}
 
-	namespace := wts.Namespace
+	namespace := wts.namespace
 	if wftmplReq.Namespace != "" {
 		namespace = wftmplReq.Namespace
 	}

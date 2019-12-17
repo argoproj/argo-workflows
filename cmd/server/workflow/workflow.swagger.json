@@ -4370,42 +4370,6 @@
         }
       }
     },
-    "workflowSubmitOptions": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "generateName": {
-          "type": "string"
-        },
-        "instanceID": {
-          "type": "string"
-        },
-        "entrypoint": {
-          "type": "string"
-        },
-        "parameters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "serviceAccount": {
-          "type": "string"
-        },
-        "serverDryRun": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "labels": {
-          "type": "string"
-        },
-        "ownerReference": {
-          "$ref": "#/definitions/v1OwnerReference"
-        }
-      }
-    },
     "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
@@ -4417,9 +4381,6 @@
         },
         "createOptions": {
           "$ref": "#/definitions/v1CreateOptions"
-        },
-        "submitOptions": {
-          "$ref": "#/definitions/workflowSubmitOptions"
         }
       }
     },
