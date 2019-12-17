@@ -128,7 +128,7 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 		go func() { as.checkServeErr("httpsServer", httpsServer.Serve(httpsL)) }()
 		go func() { as.checkServeErr("tlsm", tlsm.Serve()) }()
 	}
-	log.Info("Argo API Server started successfully")
+	log.Infof("Argo Server started successfully on port %v", port)
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }

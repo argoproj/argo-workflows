@@ -6,3 +6,10 @@ resources:
 - workflow-controller
 - argo-ui
 - argo-server
+images:
+- name: argoproj/argoui
+  newName: argoproj/argoui
+  newTag: latest
+- name: argoproj/workflow-controller
+  newName: argoproj/workflow-controller
+  newTag: latest

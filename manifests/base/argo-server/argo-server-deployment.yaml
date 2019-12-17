@@ -18,15 +18,16 @@ spec:
           ports:
             - containerPort: 2746
               hostPort: 2746
-          readinessProbe:
-            httpGet:
-              path: /api/v1/workflows/argo
-              port: 2746
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /api/v1/workflows/argo
-              port: 2746
-            initialDelaySeconds: 5
-            periodSeconds: 10
+          # TODO - need to fix this
+          #readinessProbe:
+          #  httpGet:
+          #    path: /api/v1/workflows/argo
+          #    port: 2746
+          #  initialDelaySeconds: 5
+          #  periodSeconds: 10
+          #livenessProbe:
+          #  httpGet:
+          #    path: /api/v1/workflows/argo
+          #    port: 2746
+          #  initialDelaySeconds: 5
+          #  periodSeconds: 10
