@@ -124,8 +124,7 @@ This tutorial uses Minio for the sake of portability.
 
 Install Minio:
 ```sh
-helm install stable/minio \
-  --name argo-artifacts \
+helm install argo-artifacts stable/minio \
   --set service.type=LoadBalancer \
   --set defaultBucket.enabled=true \
   --set defaultBucket.name=my-bucket \
