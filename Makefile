@@ -225,14 +225,18 @@ start-e2e:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
 	# Set-up port-forwards
-	killall kubectl || true
-	kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
-	kubectl -n argo port-forward svc/minio 9000:9000 &
-	kubectl -n argo port-forward svc/argo-server 2746:2746 &
+	make port-forward-e2e
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
+
+.PHONY: port-forward-e2e
+port-forward-e2e:
+	killall kubectl || true
+	kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
+	kubectl -n argo port-forward svc/minio 9000:9000 &
+	kubectl -n argo port-forward svc/argo-server 2746:2746 &
 
 .PHONY: logs-e2e
 logs-e2e:
