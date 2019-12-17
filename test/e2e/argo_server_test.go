@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-const baseUrl = "http://localhost:32746/api/v1"
+const baseUrl = "http://localhost:2746/api/v1"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
