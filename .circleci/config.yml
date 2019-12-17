@@ -77,7 +77,7 @@ jobs:
       - run: KUBECONFIG=~/.kube/config make start-e2e
       - run:
           name: Re-establish port forward
-          command: make port-forward-e2e
+          command: make port-forward-e2e && wait
           background: true
       - run:
           name: Follow logs, to help diagnose failures
