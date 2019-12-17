@@ -31,7 +31,6 @@ type WorkflowServer struct {
 	wfClientset      *versioned.Clientset
 	kubeClientset    *kubernetes.Clientset
 	enableClientAuth bool
-	config           *config.WorkflowControllerConfig
 	wfDBService      *DBService
 	wfKubeService    *KubeService
 }

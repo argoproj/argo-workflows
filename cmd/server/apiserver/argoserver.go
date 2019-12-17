@@ -38,7 +38,6 @@ type ArgoServer struct {
 	wfClientSet      *versioned.Clientset
 	enableClientAuth bool
 	insecure         bool
-	config           *config.WorkflowControllerConfig
 	configName       string
 	stopCh           chan struct{}
 }

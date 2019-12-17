@@ -26,7 +26,6 @@ type WorkflowTemplateServer struct {
 	wfClientset      *versioned.Clientset
 	kubeClientset    *kubernetes.Clientset
 	enableClientAuth bool
-	config           *config.WorkflowControllerConfig
 }
 
 func NewWorkflowTemplateServer(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset, config *config.WorkflowControllerConfig, enableClientAuth bool) *WorkflowTemplateServer {
