@@ -211,12 +211,11 @@ start-e2e:
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	# Change to use a "dev" tag and enable debug logging.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--insecure"]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--insecure"]}]'
+	kubectl -n argo patch svc/argo-ui --type json --patch '[{"op": "add", "path": "/spec/ports/0/nodePort", "value": 30001}, {"op": "add", "path": "/spec/type", "value": "NodePort"}]'
+	kubectl -n argo patch svc/minio --type json --patch '[{"op": "add", "path": "/spec/ports/0/nodePort", "value": 30000}, {"op": "add", "path": "/spec/type", "value": "NodePort"}]'
+	kubectl -n argo patch svc/argo-server --type json --patch '[{"op": "add", "path": "/spec/ports/0/nodePort", "value": 32746}, {"op": "add", "path": "/spec/type", "value": "NodePort"}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
@@ -228,11 +227,6 @@ start-e2e:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
-	# Set-up port-forwards
-	killall kubectl || true
-	kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
-	kubectl -n argo port-forward svc/minio 9000:9000 &
-	kubectl -n argo port-forward svc/argo-server 2746:2746 &
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
