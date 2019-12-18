@@ -244,7 +244,7 @@ port-forward:
 
 .PHONY: logs
 logs:
-	kubectl -n argo logs -f -l app
+	kubectl -n argo logs -f -l app --max-log-requests 10
 
 .PHONY: test-e2e
 test-e2e:

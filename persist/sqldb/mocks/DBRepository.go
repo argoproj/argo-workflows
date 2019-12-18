@@ -80,11 +80,11 @@ func (_m *DBRepository) IsNodeStatusOffload() bool {
 }
 
 // List provides a mock function with given fields: orderBy
-func (_m *DBRepository) List(orderBy interface{}) (*v1alpha1.WorkflowList, error) {
+func (_m *DBRepository) List(orderBy string) (*v1alpha1.WorkflowList, error) {
 	ret := _m.Called(orderBy)
 
 	var r0 *v1alpha1.WorkflowList
-	if rf, ok := ret.Get(0).(func(interface{}) *v1alpha1.WorkflowList); ok {
+	if rf, ok := ret.Get(0).(func(string) *v1alpha1.WorkflowList); ok {
 		r0 = rf(orderBy)
 	} else {
 		if ret.Get(0) != nil {
@@ -93,7 +93,7 @@ func (_m *DBRepository) List(orderBy interface{}) (*v1alpha1.WorkflowList, error
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(interface{}) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(orderBy)
 	} else {
 		r1 = ret.Error(1)
@@ -103,14 +103,18 @@ func (_m *DBRepository) List(orderBy interface{}) (*v1alpha1.WorkflowList, error
 }
 
 // Query provides a mock function with given fields: condition, orderBy
-func (_m *DBRepository) Query(condition db.Cond, orderBy ...interface{}) ([]v1alpha1.Workflow, error) {
+func (_m *DBRepository) Query(condition db.Cond, orderBy ...string) ([]v1alpha1.Workflow, error) {
+	_va := make([]interface{}, len(orderBy))
+	for _i := range orderBy {
+		_va[_i] = orderBy[_i]
+	}
 	var _ca []interface{}
 	_ca = append(_ca, condition)
-	_ca = append(_ca, orderBy...)
+	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
 	var r0 []v1alpha1.Workflow
-	if rf, ok := ret.Get(0).(func(db.Cond, ...interface{}) []v1alpha1.Workflow); ok {
+	if rf, ok := ret.Get(0).(func(db.Cond, ...string) []v1alpha1.Workflow); ok {
 		r0 = rf(condition, orderBy...)
 	} else {
 		if ret.Get(0) != nil {
@@ -119,7 +123,7 @@ func (_m *DBRepository) Query(condition db.Cond, orderBy ...interface{}) ([]v1al
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(db.Cond, ...interface{}) error); ok {
+	if rf, ok := ret.Get(1).(func(db.Cond, ...string) error); ok {
 		r1 = rf(condition, orderBy...)
 	} else {
 		r1 = ret.Error(1)

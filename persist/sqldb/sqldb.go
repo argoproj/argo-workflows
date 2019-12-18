@@ -17,27 +17,16 @@ const (
 	CodeDBOperationError    = "ERR_DB_OPERATION_ERROR"
 )
 
-func DBInvalidSession(err error, message ...string) error {
-	if len(message) == 0 {
-		return errors.Wrap(err, CodeInvalidDBSession, err.Error())
-	}
-	return errors.Wrap(err, CodeInvalidDBSession, message[0])
-
+func DBInvalidSession(err error) error {
+	return errors.Wrap(err, CodeInvalidDBSession, err.Error())
 }
 
-func DBOperationError(err error, message ...string) error {
-	if len(message) == 0 {
-		return errors.Wrap(err, CodeDBOperationError, err.Error())
-	}
-	return errors.Wrap(err, CodeInvalidDBSession, message[0])
-
+func DBOperationError(err error) error {
+	return errors.Wrap(err, CodeDBOperationError, err.Error())
 }
 
-func DBUpdateNoRowFoundError(err error, message ...string) error {
-	if len(message) == 0 {
-		return errors.Wrap(err, CodeDBUpdateRowNotFound, err.Error())
-	}
-	return errors.Wrap(err, CodeDBUpdateRowNotFound, message[0])
+func DBUpdateNoRowFoundError(err error) error {
+	return errors.Wrap(err, CodeDBUpdateRowNotFound, err.Error())
 }
 
 // CreateDBSession creates the dB session

@@ -69,7 +69,13 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 		// wait for workflow pods to be deleted
 		for {
-			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name})
+			// it seems "argo delete" can leave pods behind
+			options := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name}
+			err := s.kubeClient.CoreV1().Pods(namespace).DeleteCollection(nil, options)
+			if err != nil {
+				panic(err)
+			}
+			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(options)
 			if err != nil {
 				panic(err)
 			}

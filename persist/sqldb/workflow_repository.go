@@ -3,6 +3,8 @@ package sqldb
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+
 	"upper.io/db.v3"
 
 	"strings"
@@ -24,8 +26,8 @@ type WorkflowDBContext struct {
 type DBRepository interface {
 	Save(wf *wfv1.Workflow) error
 	Get(uid string) (*wfv1.Workflow, error)
-	List(orderBy interface{}) (*wfv1.WorkflowList, error)
-	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
+	List(orderBy string) (*wfv1.WorkflowList, error)
+	Query(condition db.Cond, orderBy ...string) ([]wfv1.Workflow, error)
 	Delete(condition db.Cond) error
 	Close() error
 	IsNodeStatusOffload() bool
@@ -78,7 +80,7 @@ func (wdc *WorkflowDBContext) Init(sess sqlbuilder.Database) {
 // Save will upset the workflow
 func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 	if wdc != nil && wdc.Session == nil {
-		return DBInvalidSession(nil, "DB session is not initialized")
+		return DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	wfdb, err := convert(wf)
@@ -102,7 +104,7 @@ func (wdc *WorkflowDBContext) Save(wf *wfv1.Workflow) error {
 
 func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
-		return DBInvalidSession(nil, "DB session is not initialized")
+		return DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	tx, err := wdc.Session.NewTx(context.TODO())
@@ -134,7 +136,7 @@ func (wdc *WorkflowDBContext) insert(wfDB *WorkflowDB) error {
 
 func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	if wdc.Session == nil {
-		return DBInvalidSession(nil, "DB session is not initialized")
+		return DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	tx, err := wdc.Session.NewTx(context.TODO())
@@ -154,7 +156,7 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 	err = tx.Collection(wdc.TableName).UpdateReturning(wfDB)
 	if err != nil {
 		if strings.Contains(err.Error(), "upper: no more rows in this result set") {
-			return DBUpdateNoRowFoundError(err, "")
+			return DBUpdateNoRowFoundError(err)
 		}
 		return errors.InternalErrorf("Error in updating workflow in persistence %v", err)
 	}
@@ -169,25 +171,25 @@ func (wdc *WorkflowDBContext) update(wfDB *WorkflowDB) error {
 
 func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
 	if wdc.Session == nil {
-		return nil, DBInvalidSession(nil, "DB session is not initialized")
+		return nil, DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	cond := db.Cond{"id": uid}
 	wfs, err := wdc.Query(cond)
 	if err != nil {
-		return nil, DBOperationError(err, "DB GET operation failed")
+		return nil, DBOperationError(err)
 	}
 
 	if len(wfs) > 0 {
 		return &wfs[0], nil
 	}
 
-	return nil, DBOperationError(nil, "Row is not found")
+	return nil, DBOperationError(fmt.Errorf("not workflows"))
 }
 
-func (wdc *WorkflowDBContext) List(orderBy interface{}) (*wfv1.WorkflowList, error) {
+func (wdc *WorkflowDBContext) List(orderBy string) (*wfv1.WorkflowList, error) {
 	if wdc.Session == nil {
-		return nil, DBInvalidSession(nil, "DB session is not initialized")
+		return nil, DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	wfs, err := wdc.Query(nil, orderBy)
@@ -200,14 +202,14 @@ func (wdc *WorkflowDBContext) List(orderBy interface{}) (*wfv1.WorkflowList, err
 	}, nil
 }
 
-func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {
+func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...string) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
-		return nil, DBInvalidSession(nil, "DB session is not initialized")
+		return nil, DBInvalidSession(fmt.Errorf("session nil"))
 	}
 	var err error
 	//default Orderby
-	var queryOrderBy []interface{}
+	var queryOrderBy []string
 	queryOrderBy = append(queryOrderBy, "-startedat")
 
 	if orderBy != nil {
@@ -220,7 +222,7 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 	}
 
 	if err != nil {
-		return nil, DBOperationError(err, "DB Query operation failed")
+		return nil, DBOperationError(err)
 	}
 
 	var wfs []wfv1.Workflow
@@ -238,7 +240,7 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 
 func (wdc *WorkflowDBContext) Close() error {
 	if wdc.Session == nil {
-		return DBInvalidSession(nil, "DB session is not initialized")
+		return DBInvalidSession(fmt.Errorf("session nil"))
 	}
 	return wdc.Session.Close()
 }
@@ -246,12 +248,12 @@ func (wdc *WorkflowDBContext) Close() error {
 func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit uint, lastId string, orderBy ...interface{}) (*wfv1.WorkflowList, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
-		return nil, DBInvalidSession(nil, "DB session is not initialized")
+		return nil, DBInvalidSession(fmt.Errorf("session nil"))
 	}
 
 	err := wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(orderBy).Paginate(pageLimit).NextPage(lastId).All(&wfDBs)
 	if err != nil {
-		return nil, DBOperationError(err, "DB Query operation failed")
+		return nil, DBOperationError(err)
 	}
 
 	var wfs []wfv1.Workflow
@@ -272,7 +274,7 @@ func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit u
 
 func (wdc *WorkflowDBContext) Delete(condition db.Cond) error {
 	if wdc.Session == nil {
-		return DBInvalidSession(nil, "DB session is not initialized")
+		return DBInvalidSession(fmt.Errorf("session nil"))
 	}
 	return wdc.Session.Collection(wdc.TableName).Find(condition).Delete()
 }
