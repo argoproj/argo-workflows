@@ -7,9 +7,10 @@ This section shows how to configure the artifact repository. Subsequent sections
 ## Configuring Minio
 
 ```
-$ brew install kubernetes-helm # mac
-$ helm init
-$ helm install stable/minio --name argo-artifacts --set service.type=LoadBalancer
+$ brew install helm # mac, helm 3.x
+$ helm repo add stable https://kubernetes-charts.storage.googleapis.com/ # official Helm stable charts
+$ helm repo update
+$ helm install argo-artifacts stable/minio --set service.type=LoadBalancer --set fullnameOverride=argo-artifacts
 ```
 
 Login to the Minio UI using a web browser (port 9000) after obtaining the external IP using `kubectl`.
