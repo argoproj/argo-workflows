@@ -27,7 +27,7 @@ type DBRepository interface {
 	Save(wf *wfv1.Workflow) error
 	Get(uid string) (*wfv1.Workflow, error)
 	List(orderBy string) (*wfv1.WorkflowList, error)
-	Query(condition db.Cond, orderBy ...string) ([]wfv1.Workflow, error)
+	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
 	Delete(condition db.Cond) error
 	Close() error
 	IsNodeStatusOffload() bool
@@ -202,23 +202,23 @@ func (wdc *WorkflowDBContext) List(orderBy string) (*wfv1.WorkflowList, error) {
 	}, nil
 }
 
-func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...string) ([]wfv1.Workflow, error) {
+func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
 		return nil, DBInvalidSession(fmt.Errorf("session nil"))
 	}
 	var err error
 	//default Orderby
-	var queryOrderBy []string
+	var queryOrderBy []interface{}
 	queryOrderBy = append(queryOrderBy, "-startedat")
 
 	if orderBy != nil {
 		queryOrderBy = orderBy
 	}
 	if condition != nil {
-		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(queryOrderBy).All(&wfDBs)
+		err = wdc.Session.Collection(wdc.TableName).Find(condition).OrderBy(queryOrderBy...).All(&wfDBs)
 	} else {
-		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(queryOrderBy).All(&wfDBs)
+		err = wdc.Session.Collection(wdc.TableName).Find().OrderBy(queryOrderBy...).All(&wfDBs)
 	}
 
 	if err != nil {

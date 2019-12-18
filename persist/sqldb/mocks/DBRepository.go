@@ -103,18 +103,14 @@ func (_m *DBRepository) List(orderBy string) (*v1alpha1.WorkflowList, error) {
 }
 
 // Query provides a mock function with given fields: condition, orderBy
-func (_m *DBRepository) Query(condition db.Cond, orderBy ...string) ([]v1alpha1.Workflow, error) {
-	_va := make([]interface{}, len(orderBy))
-	for _i := range orderBy {
-		_va[_i] = orderBy[_i]
-	}
+func (_m *DBRepository) Query(condition db.Cond, orderBy ...interface{}) ([]v1alpha1.Workflow, error) {
 	var _ca []interface{}
 	_ca = append(_ca, condition)
-	_ca = append(_ca, _va...)
+	_ca = append(_ca, orderBy...)
 	ret := _m.Called(_ca...)
 
 	var r0 []v1alpha1.Workflow
-	if rf, ok := ret.Get(0).(func(db.Cond, ...string) []v1alpha1.Workflow); ok {
+	if rf, ok := ret.Get(0).(func(db.Cond, ...interface{}) []v1alpha1.Workflow); ok {
 		r0 = rf(condition, orderBy...)
 	} else {
 		if ret.Get(0) != nil {
@@ -123,7 +119,7 @@ func (_m *DBRepository) Query(condition db.Cond, orderBy ...string) ([]v1alpha1.
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(db.Cond, ...string) error); ok {
+	if rf, ok := ret.Get(1).(func(db.Cond, ...interface{}) error); ok {
 		r1 = rf(condition, orderBy...)
 	} else {
 		r1 = ret.Error(1)
