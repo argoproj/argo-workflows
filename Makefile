@@ -202,14 +202,13 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
-.PHONY: start-e2e
-start-e2e:
+.PHONY: start
+start:
 	kubectl create ns argo || true
 	# Install the standard Argo.
 	kubectl -n argo apply --wait --force -f manifests/install.yaml
 	# Scale down in preparation for re-configuration.
-	kubectl -n argo scale deployment/workflow-controller --replicas 0
-	kubectl -n argo scale deployment/argo-server --replicas 0
+	make down
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--insecure"]}]'
@@ -218,8 +217,7 @@ start-e2e:
 	# Build controller and executor images.
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
-	kubectl -n argo scale deployment/workflow-controller --replicas 1
-	kubectl -n argo scale deployment/argo-server --replicas 1
+	make up
 	# Wait for pods to be ready.
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
@@ -229,13 +227,23 @@ start-e2e:
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
 	docker pull docker/whalesay:latest
 
-.PHONY: port-forward-e2e
-port-forward-e2e:
+.PHONY: down
+down:
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
+	kubectl -n argo scale deployment/argo-server --replicas 0
+
+.PHONY: up
+up:
+	kubectl -n argo scale deployment/workflow-controller --replicas 1
+	kubectl -n argo scale deployment/argo-server --replicas 1
+
+.PHONY: port-forward
+port-forward:
 	killall kubectl || true
 	kubectl -n argo port-forward svc/argo-server 2746:2746
 
-.PHONY: logs-e2e
-logs-e2e:
+.PHONY: logs
+logs:
 	kubectl -n argo logs -f -l app
 
 .PHONY: test-e2e

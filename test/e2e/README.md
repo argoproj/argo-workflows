@@ -1,7 +1,7 @@
 # E2E Testing
 
 1. Run `make start-e2e`.
-2. Either (a) run your test in your IDE or (b) run `make test-e2e`.
+2. Either (a) run your test in your IDE or (b) run `make test`.
 
 Notes:
 

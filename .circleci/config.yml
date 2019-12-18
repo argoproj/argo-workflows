@@ -72,12 +72,12 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start-e2e
+      - run: KUBECONFIG=~/.kube/config make start
       - run:
           name: Follow logs, to help diagnose failures
           command: |
             sleep 10
-            make logs-e2e
+            make logs
           background: true
       - run:
           name: Watch Docker events, to help diagnose failures
@@ -89,7 +89,7 @@ jobs:
           background: true
       - run:
           name: Establish port forward
-          command: make port-forward-e2e
+          command: make port-forward
           background: true
       - run:
           name: Run tests
