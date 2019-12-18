@@ -129,32 +129,32 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
-ui:
-  docker:
-    - image: node:11.15.0
-  working_directory: ~/argo/ui
-  steps:
-    - checkout:
-        path: ~/argo
-    - restore_cache:
-        name: Restore Yarn cache
-        keys:
-          - yarn-packages-v1-{{ checksum "yarn.lock" }}
-    - run:
-        name: Download dependencies
-        command: yarn install --frozen-lockfile --ignore-optional --non-interactive
-    - save_cache:
-        name: Save Yarn cache
-        key: yarn-packages-v1-{{ checksum "yarn.lock" }}
-        paths: [~/.cache/yarn, node_modules]
-    # - run: yarn test
-    # - run: ./node_modules/.bin/codecov -p ..
-    - run:
-        name: Build
-        command: NODE_ENV='production' yarn build
-    - run:
-        name: Lint
-        command: yarn lint
+  ui:
+    docker:
+      - image: node:11.15.0
+    working_directory: ~/argo/ui
+    steps:
+      - checkout:
+          path: ~/argo
+      - restore_cache:
+          name: Restore Yarn cache
+          keys:
+            - yarn-packages-v1-{{ checksum "yarn.lock" }}
+      - run:
+          name: Download dependencies
+          command: yarn install --frozen-lockfile --ignore-optional --non-interactive
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+      # - run: yarn test
+      # - run: ./node_modules/.bin/codecov -p ..
+      - run:
+          name: Build
+          command: NODE_ENV='production' yarn build
+      - run:
+          name: Lint
+          command: yarn lint
 workflows:
   version: 2
   workflow:
