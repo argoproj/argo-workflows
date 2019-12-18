@@ -41,7 +41,7 @@ Then open http://localhost:9000 using admin/password.
 kubectl -n argo port-forward $(kubectl -n argo get pod -l app=postgres -o name) 5432:5432
 ```
 
-Add the to `/etc/hosts`:
+Add to `/etc/hosts`:
 
 ```
 127.0.0.1 postgres
@@ -78,6 +78,8 @@ The run `cmd/workflow-controller/main.go` using these arguments, which enable de
 ```
 kubectl -n argo scale deploy/argo-server --replicas 0
 ```
+
+Kill any port forwards on 2746.
 
 The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
