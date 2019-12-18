@@ -17,7 +17,42 @@ type FunctionalSuite struct {
 
 func (s *FunctionalSuite) TestContinueOnFail() {
 	s.Given().
-		Workflow("@functional/continue-on-fail.yaml").
+		Workflow(`
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: continue-on-fail
+spec:
+  entrypoint: workflow-ignore
+  parallelism: 2
+  templates:
+  - name: workflow-ignore
+    steps:
+    - - name: A
+        template: whalesay
+      - name: B
+        template: boom
+        continueOn:
+          failed: true
+    - - name: C
+        dependencies: [A, B]
+        template: whalesay
+
+  - name: boom
+    dag:
+      tasks:
+      - name: B-1
+        template: whalesplosion
+
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+
+  - name: whalesplosion
+    container:
+      image: docker/whalesay:latest
+      command: ["sh", "-c", "sleep 5 ; exit 1"]
+`).
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
