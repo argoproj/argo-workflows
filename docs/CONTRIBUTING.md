@@ -62,4 +62,4 @@ images.controller workflow-controller:latest
 
 ### E2E Testing
 
-See [test/e2e/README.md](test/e2e/README.md).
+See [test/e2e/README.md](../test/e2e/README.md).
