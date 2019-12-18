@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetPlaceholder verifies dynamically-generated placeholder strings.
-func TestGetPlaceholder(t *testing.T) {
+// TestNextPlaceholder verifies dynamically-generated placeholder strings.
+func TestNextPlaceholder(t *testing.T) {
 	pg := NewPlaceholderGenerator()
-	assert.Equal(t, pg.GetPlaceholder(), "placeholder-0")
-	assert.Equal(t, pg.GetPlaceholder(), "placeholder-1")
-	assert.Equal(t, pg.GetPlaceholder(), "placeholder-2")
+	assert.Equal(t, pg.NextPlaceholder(), "placeholder-0")
+	assert.Equal(t, pg.NextPlaceholder(), "placeholder-1")
+	assert.Equal(t, pg.NextPlaceholder(), "placeholder-2")
 }

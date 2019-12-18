@@ -49,9 +49,9 @@ type templateValidationCtx struct {
 
 func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
-	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.GetPlaceholder()
-	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.GetPlaceholder()
-	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.GetPlaceholder()
+	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		ValidateOpts: opts,
 		globalParams: globalParams,
@@ -74,7 +74,7 @@ var (
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := placeholderGenerator.GetPlaceholder()
+	s := placeholderGenerator.NextPlaceholder()
 	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
@@ -108,16 +108,16 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
-				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.GetPlaceholder()
+				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
 		}
 	}
 
 	for k := range wf.ObjectMeta.Annotations {
-		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.GetPlaceholder()
+		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	for k := range wf.ObjectMeta.Labels {
-		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.GetPlaceholder()
+		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
 
 	if wf.Spec.Priority != nil {
@@ -133,7 +133,7 @@ func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.GetPlaceholder()
+		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
@@ -196,8 +196,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[common.LocalVarPodName] = placeholderGenerator.GetPlaceholder()
-		scope[common.LocalVarPodName] = placeholderGenerator.GetPlaceholder()
+		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -652,7 +652,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
 			globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 			scope[globalParamName] = true
-			ctx.globalParams[globalParamName] = placeholderGenerator.GetPlaceholder()
+			ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
@@ -660,7 +660,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
 			globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
 			scope[globalArtName] = true
-			ctx.globalParams[globalArtName] = placeholderGenerator.GetPlaceholder()
+			ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	if aggregate {
