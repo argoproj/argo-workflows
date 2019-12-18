@@ -8,5 +8,5 @@ export function uiUrl(uiPath: string): string {
 }
 
 export function apiUrl(apiPath: string): string {
-    return `${baseUrl()}api${apiPath}`;
+    return `${baseUrl()}api/v1${apiPath}`;
 }

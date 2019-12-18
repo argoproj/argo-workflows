@@ -1,12 +1,11 @@
-import {AppContext, Layout, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
-import createHistory from 'history/createBrowserHistory';
+import {createBrowserHistory} from 'history';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
 
 import {uiUrl} from './shared/base';
-
-export const history = createHistory();
+import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
+import {AppContext, ContextApis, Provider} from './shared/context';
 
 import help from './help';
 import workflows from './workflows';
@@ -14,10 +13,16 @@ import workflows from './workflows';
 const workflowsUrl = uiUrl('workflows');
 const helpUrl = uiUrl('help');
 const timelineUrl = uiUrl('timeline');
-const routes: {[path: string]: {component: React.ComponentType<RouteComponentProps<any>>}} = {
+const routes: {
+    [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
+} = {
     [workflowsUrl]: {component: workflows.component},
     [helpUrl]: {component: help.component}
 };
+
+const bases = document.getElementsByTagName('base');
+const base = bases.length > 0 ? bases[0].getAttribute('href') || '/' : '/';
+export const history = createBrowserHistory({basename: base});
 
 const navItems = [
     {
@@ -40,12 +45,14 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
 
     private popupManager: PopupManager;
     private notificationsManager: NotificationsManager;
+    private navigationManager: NavigationManager;
 
     constructor(props: {}) {
         super(props);
         this.state = {popupProps: null};
         this.popupManager = new PopupManager();
         this.notificationsManager = new NotificationsManager();
+        this.navigationManager = new NavigationManager(history);
     }
 
     public componentDidMount() {
@@ -53,8 +60,14 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
     }
 
     public render() {
+        const providerContext: ContextApis = {
+            notifications: this.notificationsManager,
+            popup: this.popupManager,
+            navigation: this.navigationManager,
+            history: history,
+        };
         return (
-            <div>
+            <Provider value={providerContext}>
                 {this.state.popupProps && <Popup {...this.state.popupProps} />}
                 <Router history={history}>
                     <Switch>
@@ -83,11 +96,17 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
                         </Layout>
                     </Switch>
                 </Router>
-            </div>
+            </Provider>
         );
     }
 
     public getChildContext() {
-        return {history, apis: {popup: this.popupManager, notifications: this.notificationsManager}};
+        return {
+            history,
+            apis: {
+                popup: this.popupManager,
+                notifications: this.notificationsManager
+            }
+        };
     }
 }

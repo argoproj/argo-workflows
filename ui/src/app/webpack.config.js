@@ -59,7 +59,7 @@ const config = {
         historyApiFallback: true,
         proxy: {
             '/api': {
-                'target': process.env.ARGO_API_URL || 'http://localhost:8001',
+                'target': process.env.ARGO_API_URL || 'http://localhost:8081',
                 'secure': false,
             }
         }
