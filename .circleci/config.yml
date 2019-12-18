@@ -8,13 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
             - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v
       - save_cache:
           name: Save vendor cache
-          key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
@@ -49,7 +50,7 @@ commands:
           command: go get github.com/jstemmer/go-junit-report
 jobs:
   test:
-    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo-cd
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
       image: circleci/classic:201808-01
     steps:
