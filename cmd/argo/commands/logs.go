@@ -23,10 +23,11 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	workflowv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
-	"github.com/argoproj/pkg/errors"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 type logEntry struct {
@@ -136,7 +137,7 @@ func (p *logPrinter) PrintPodLogs(podName string) error {
 // Prints logs for workflow pod steps and return most recent log timestamp per pod name
 func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*time.Time {
 	var podNodes []v1alpha1.NodeStatus
-	err := util.DecompressWorkflow(wf)
+	wf, err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Warn(err)
 		return nil
@@ -198,7 +199,7 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 	defer cancel()
 
 	processPods := func(wf *v1alpha1.Workflow) {
-		err := util.DecompressWorkflow(wf)
+		wf, err := packer.DecompressWorkflow(wf)
 		if err != nil {
 			log.Warn(err)
 			return

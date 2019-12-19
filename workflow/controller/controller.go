@@ -9,6 +9,8 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
 	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -293,7 +295,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Decompress the node if it is compressed
-	err = util.DecompressWorkflow(woc.wf)
+	woc.wf, err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))

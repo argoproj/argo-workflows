@@ -159,7 +159,6 @@ func (s *WorkflowServer) Get(ctx context.Context, wfReq *WorkflowGetRequest) (*v
 	if s.WfDBService != nil {
 		wf, err = s.WfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
 	} else {
-
 		wf, err = wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
 	}
 	if err != nil {

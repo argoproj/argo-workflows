@@ -15,7 +15,6 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/util"
-
 )
 
 type KubeService struct {
