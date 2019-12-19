@@ -348,7 +348,7 @@ const workflow =`
 `
 
 
-func getWorkflowServer() * WorkflowServer {
+func getWorkflowServer() *workflowServer {
 	//var kubeClientSet versioned.Interface
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
@@ -362,20 +362,20 @@ func getWorkflowServer() * WorkflowServer {
 	return server
 }
 
-func getWorkflow(server *WorkflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error){
+func getWorkflow(server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error){
 	req := WorkflowGetRequest{
 		WorkflowName: wfName,
 		Namespace: namespace,
 	}
-	return server.Get(context.TODO(),&req)
+	return server.GetWorkflow(context.TODO(),&req)
 }
 
 
-func getWorkflowList(server *WorkflowServer, namespace string) (*v1alpha1.WorkflowList, error){
+func getWorkflowList(server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error){
 	req := WorkflowListRequest{
 		Namespace: namespace,
 	}
-	return server.List(context.TODO(),&req)
+	return server.ListWorkflows(context.TODO(),&req)
 }
 
 func TestCreateWorkflow(t *testing.T){
@@ -384,7 +384,7 @@ func TestCreateWorkflow(t *testing.T){
 	var req WorkflowCreateRequest
 	_ = json.Unmarshal([]byte(workflow), &req)
 
-	wf, err :=server.Create(context.TODO(),&req)
+	wf, err :=server.CreateWorkflow(context.TODO(),&req)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
@@ -442,7 +442,7 @@ func TestDeleteWorkflow(t *testing.T){
 		Namespace:            wf.Namespace,
 
 	}
-	delRsp, err := server.Delete(context.TODO(), &delReq )
+	delRsp, err := server.DeleteWorkflow(context.TODO(), &delReq )
 	assert.NotNil(t, delRsp)
 	assert.Equal(t,wf.Name, delRsp.WorkflowName)
 	assert.Equal(t,"Deleted", delRsp.Status)
@@ -465,11 +465,11 @@ func TestSuspendResumeWorkflow(t *testing.T){
 		WorkflowName:         wf.Name,
 		Namespace:            wf.Namespace,
 	}
-	wf, err = server.Suspend(context.TODO(), &rsmWfReq)
+	wf, err = server.SuspendWorkflow(context.TODO(), &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, true , *wf.Spec.Suspend)
 	assert.Nil(t, err)
-	wf, err = server.Resume(context.TODO(),&rsmWfReq)
+	wf, err = server.ResumeWorkflow(context.TODO(),&rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Nil(t,  wf.Spec.Suspend)
 	assert.Nil(t, err)
@@ -482,10 +482,10 @@ func TestSuspendResumeWorkflowWithNotFound(t *testing.T){
 		WorkflowName:        "hello-world-9tql2-not",
 		Namespace:           "workflows",
 	}
-	wf, err := server.Suspend(context.TODO(), &rsmWfReq)
+	wf, err := server.SuspendWorkflow(context.TODO(), &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
-	wf, err = server.Resume(context.TODO(),&rsmWfReq)
+	wf, err = server.ResumeWorkflow(context.TODO(),&rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }
@@ -500,7 +500,7 @@ func TestTerminateWorkflow(t *testing.T){
 		WorkflowName:         wf.Name,
 		Namespace:            wf.Namespace,
 	}
-	wf, err = server.Terminate(context.TODO(), &rsmWfReq)
+	wf, err = server.TerminateWorkflow(context.TODO(), &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, int64(0) , *wf.Spec.ActiveDeadlineSeconds)
 	assert.Nil(t, err)
@@ -509,7 +509,7 @@ func TestTerminateWorkflow(t *testing.T){
 		WorkflowName:         "hello-world-9tql2-not",
 		Namespace:            "workflows",
 	}
-	wf, err = server.Terminate(context.TODO(), &rsmWfReq)
+	wf, err = server.TerminateWorkflow(context.TODO(), &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }

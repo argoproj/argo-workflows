@@ -665,77 +665,78 @@ func init() {
 func init() { proto.RegisterFile("cmd/server/workflow/workflow.proto", fileDescriptor_192bc67c39cca05a) }
 
 var fileDescriptor_192bc67c39cca05a = []byte{
-	// 1113 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x97, 0xcf, 0x4f, 0x24, 0x45,
-	0x14, 0xc7, 0x53, 0xfc, 0x18, 0x86, 0x62, 0xc1, 0x58, 0x2a, 0x4e, 0x3a, 0x2c, 0x8b, 0x9d, 0xa8,
-	0x84, 0xac, 0xdd, 0x30, 0xb0, 0xba, 0xb2, 0xc1, 0x15, 0xc1, 0xa0, 0x09, 0xd9, 0xdd, 0x34, 0x98,
-	0x0d, 0xc6, 0x4b, 0xd1, 0xf3, 0xb6, 0x69, 0xe9, 0xae, 0x6a, 0xbb, 0x6a, 0x20, 0x48, 0x38, 0xe8,
-	0x61, 0xe3, 0xcd, 0x83, 0x31, 0xf1, 0x6e, 0x62, 0x36, 0x1b, 0xe3, 0xc9, 0x3f, 0xc2, 0xa3, 0xc6,
-	0x7f, 0xc0, 0x10, 0x2f, 0x9e, 0xfd, 0x07, 0x4c, 0x55, 0xff, 0x86, 0x81, 0xcc, 0x08, 0x73, 0xeb,
-	0x7a, 0xaf, 0xdf, 0xab, 0x4f, 0x7d, 0xdf, 0x9b, 0x57, 0xd3, 0xd8, 0x74, 0xc3, 0x96, 0x2d, 0x20,
-	0x3e, 0x80, 0xd8, 0x3e, 0xe4, 0xf1, 0xfe, 0x93, 0x80, 0x1f, 0xe6, 0x0f, 0x56, 0x14, 0x73, 0xc9,
-	0x49, 0x3d, 0x5b, 0x1b, 0x2f, 0x7b, 0xdc, 0xe3, 0xda, 0x68, 0xab, 0xa7, 0xc4, 0x6f, 0x4c, 0x79,
-	0x9c, 0x7b, 0x01, 0xd8, 0x34, 0xf2, 0x6d, 0xca, 0x18, 0x97, 0x54, 0xfa, 0x9c, 0x89, 0xd4, 0xbb,
-	0xb4, 0x7f, 0x57, 0x58, 0x3e, 0x57, 0xde, 0x90, 0xba, 0x7b, 0x3e, 0x83, 0xf8, 0xc8, 0x8e, 0xf6,
-	0x3d, 0x65, 0x10, 0x76, 0x08, 0x92, 0xda, 0x07, 0x0b, 0xb6, 0x07, 0x0c, 0x62, 0x2a, 0xa1, 0x95,
-	0x46, 0xad, 0x79, 0xbe, 0xdc, 0x6b, 0xef, 0x5a, 0x2e, 0x0f, 0x6d, 0x1a, 0xeb, 0x4d, 0x3f, 0xd7,
-	0x0f, 0x45, 0x68, 0x8e, 0x7b, 0xb0, 0x40, 0x83, 0x68, 0x8f, 0x9e, 0x4f, 0x62, 0x16, 0x5b, 0xdb,
-	0x2e, 0x8f, 0xa1, 0xc3, 0x46, 0xe6, 0x3f, 0x03, 0x78, 0x7c, 0xab, 0xbd, 0x1b, 0xfa, 0xf2, 0x61,
-	0xa4, 0xb1, 0x09, 0xc1, 0x43, 0x8c, 0x86, 0xd0, 0x40, 0x33, 0x68, 0x76, 0xd4, 0xd1, 0xcf, 0xc4,
-	0xc4, 0x37, 0xb2, 0xc0, 0x07, 0xca, 0x37, 0xa0, 0x7d, 0x15, 0x1b, 0x99, 0xc6, 0xd8, 0x67, 0x42,
-	0x52, 0xe6, 0xc2, 0xc7, 0xeb, 0x8d, 0x41, 0xfd, 0x46, 0xc9, 0xa2, 0xfc, 0xc0, 0x64, 0x7c, 0x14,
-	0x71, 0x9f, 0xc9, 0xc6, 0x50, 0xe2, 0x2f, 0x2c, 0xca, 0x1f, 0xd1, 0x98, 0x86, 0x20, 0x21, 0x16,
-	0x8d, 0xe1, 0x99, 0x41, 0xe5, 0x2f, 0x2c, 0xe4, 0x0d, 0x3c, 0xa1, 0x0a, 0xe5, 0xbb, 0xb0, 0xea,
-	0xba, 0xbc, 0xcd, 0x64, 0xa3, 0xa6, 0x73, 0x9c, 0xb1, 0x2a, 0xd6, 0xa4, 0xa0, 0xeb, 0xf1, 0x91,
-	0xd3, 0x66, 0x8d, 0x91, 0x19, 0x34, 0x5b, 0x77, 0x2a, 0x36, 0x32, 0x89, 0x6b, 0x01, 0xdd, 0x85,
-	0x40, 0x34, 0xea, 0x3a, 0x47, 0xba, 0x22, 0x9f, 0xe1, 0x09, 0x7e, 0xc8, 0x20, 0x76, 0xe0, 0x09,
-	0xc4, 0xc0, 0x5c, 0x68, 0x8c, 0xce, 0xa0, 0xd9, 0xb1, 0xe6, 0x92, 0x95, 0x48, 0x69, 0x95, 0xab,
-	0x68, 0x45, 0xfb, 0x9e, 0x32, 0x08, 0x4b, 0x55, 0xd1, 0x3a, 0x58, 0xb0, 0x1e, 0x56, 0x62, 0x9d,
-	0x33, 0xb9, 0xcc, 0xe7, 0x03, 0xf8, 0x95, 0xc7, 0x69, 0xd5, 0xd6, 0x62, 0xa0, 0x12, 0x1c, 0xf8,
-	0xa2, 0x0d, 0x42, 0x92, 0x29, 0x3c, 0xaa, 0x74, 0x16, 0x11, 0x75, 0x33, 0xe1, 0x0b, 0x03, 0xd9,
-	0xc1, 0x79, 0x0b, 0x6a, 0xe5, 0xc7, 0x9a, 0x2b, 0x56, 0xd1, 0x1f, 0x56, 0xd6, 0x1f, 0xfa, 0xa1,
-	0x80, 0xca, 0xbb, 0x38, 0xeb, 0x0f, 0x2b, 0xdb, 0xdb, 0xc9, 0xd3, 0x91, 0x1d, 0x3c, 0xee, 0x6a,
-	0x92, 0xb4, 0xfa, 0xba, 0x6e, 0x63, 0xcd, 0xc5, 0xee, 0xce, 0xbb, 0x56, 0x0e, 0x75, 0xaa, 0x99,
-	0xc8, 0x0a, 0x1e, 0x17, 0xe5, 0xc6, 0xd2, 0x25, 0x1f, 0x6b, 0xbe, 0x5a, 0x80, 0x55, 0xfa, 0xce,
-	0xa9, 0xbe, 0x6d, 0x3e, 0x43, 0x98, 0x64, 0xc0, 0x1b, 0x20, 0x33, 0xa5, 0x4c, 0x7c, 0x23, 0x8b,
-	0x7f, 0x50, 0x74, 0x69, 0xc5, 0x56, 0x55, 0x73, 0xe0, 0xac, 0x9a, 0x8f, 0x30, 0xf6, 0x40, 0x56,
-	0xcf, 0x3b, 0xdf, 0xdd, 0x79, 0x37, 0xf2, 0x38, 0xa7, 0x94, 0xc3, 0xfc, 0x06, 0xe1, 0x97, 0x32,
-	0xd4, 0x4d, 0x5f, 0xc8, 0xee, 0xaa, 0xba, 0x85, 0xc7, 0x02, 0x5f, 0xe4, 0x20, 0x49, 0x61, 0x17,
-	0xba, 0x03, 0xd9, 0x2c, 0x02, 0x9d, 0x72, 0x16, 0xb3, 0x5d, 0x74, 0xd8, 0x27, 0x51, 0xab, 0xd4,
-	0x61, 0x57, 0xd7, 0xcd, 0xc0, 0xf5, 0x10, 0x42, 0xee, 0x7f, 0x09, 0x2d, 0xad, 0x5a, 0xdd, 0xc9,
-	0xd7, 0xe6, 0x1f, 0xa5, 0x62, 0x6d, 0x72, 0xef, 0xfa, 0x36, 0x6d, 0xe0, 0x91, 0x88, 0xb7, 0x74,
-	0x70, 0x32, 0x51, 0xb2, 0xa5, 0x8a, 0x73, 0x39, 0x93, 0x54, 0x29, 0x94, 0x4e, 0x93, 0xc2, 0x40,
-	0x56, 0x31, 0x0e, 0xb8, 0x97, 0x69, 0x3b, 0xac, 0xb5, 0x7d, 0xad, 0xa4, 0xad, 0xa5, 0xe6, 0xa1,
-	0x52, 0xf2, 0x11, 0x6f, 0x6d, 0xe6, 0x2f, 0x3a, 0xa5, 0x20, 0xf3, 0x57, 0x54, 0x68, 0xb9, 0x0e,
-	0x01, 0x5c, 0xa7, 0x96, 0x3b, 0x78, 0xbc, 0xa5, 0x53, 0xfe, 0xaf, 0x9f, 0xdd, 0x7a, 0x39, 0xd4,
-	0xa9, 0x66, 0x32, 0xb7, 0xf1, 0xe4, 0x59, 0x6a, 0x11, 0x71, 0x26, 0xa0, 0x2b, 0xec, 0x49, 0x5c,
-	0x13, 0x92, 0xca, 0xb6, 0x48, 0x99, 0xd3, 0x95, 0xc9, 0x70, 0x7d, 0x93, 0x7b, 0x1f, 0xaa, 0x69,
-	0xad, 0x6a, 0xa2, 0x84, 0x06, 0x26, 0xd3, 0x14, 0xd9, 0x92, 0x7c, 0x84, 0x47, 0xa5, 0x1f, 0xc2,
-	0x96, 0xa4, 0x61, 0x94, 0x36, 0xf4, 0x5c, 0x77, 0x47, 0xda, 0xf6, 0x43, 0x70, 0x8a, 0xe0, 0xe6,
-	0xbf, 0x13, 0xf8, 0x85, 0xec, 0x18, 0x5b, 0xc9, 0x7c, 0x27, 0x4f, 0x11, 0xae, 0x25, 0x13, 0x87,
-	0xdc, 0x2a, 0x86, 0x48, 0xc7, 0x81, 0x6a, 0x5c, 0x6d, 0x40, 0x9a, 0x53, 0x5f, 0xff, 0xf9, 0xf7,
-	0x77, 0x03, 0x93, 0xe6, 0x8b, 0xfa, 0xee, 0x3c, 0x58, 0xc8, 0x2f, 0x5b, 0xb1, 0x8c, 0xe6, 0xc8,
-	0x0f, 0x08, 0x0f, 0x6e, 0x80, 0x24, 0x53, 0xe7, 0x29, 0x8a, 0x49, 0x75, 0x55, 0x84, 0x25, 0x8d,
-	0x60, 0x91, 0xdb, 0xe7, 0x10, 0xec, 0xe3, 0xbc, 0x91, 0x4e, 0xec, 0xe3, 0x72, 0xf9, 0x4e, 0xc8,
-	0xb7, 0x08, 0x0f, 0xa9, 0xe1, 0x40, 0x6e, 0x9e, 0x67, 0x2b, 0x8d, 0x26, 0x63, 0xf5, 0x4a, 0x70,
-	0x2a, 0x93, 0xf9, 0xba, 0x06, 0xbc, 0x45, 0x6e, 0x5e, 0x0a, 0x48, 0xbe, 0x42, 0xb8, 0x96, 0x34,
-	0x62, 0xa7, 0xaa, 0x55, 0x7e, 0x58, 0xc6, 0xcc, 0xc5, 0x2f, 0x24, 0x3d, 0x9c, 0xa9, 0x32, 0xd7,
-	0x9b, 0x2a, 0x3f, 0x21, 0x3c, 0xec, 0x80, 0xea, 0xdd, 0x0e, 0x08, 0x95, 0x39, 0x79, 0xd5, 0xaa,
-	0xad, 0x68, 0xbe, 0x77, 0x8c, 0x66, 0x2f, 0x7c, 0x76, 0xac, 0xd8, 0x54, 0x67, 0xfd, 0x8c, 0x70,
-	0xdd, 0x81, 0xe4, 0x22, 0xec, 0x3b, 0xeb, 0xfb, 0x9a, 0x75, 0xd9, 0xb8, 0xd3, 0x23, 0x6b, 0x82,
-	0xa7, 0x70, 0x9f, 0x21, 0x5c, 0x53, 0xb8, 0x21, 0xf4, 0x1d, 0xf6, 0x3d, 0x0d, 0x7b, 0xd7, 0x58,
-	0xec, 0x19, 0x36, 0x04, 0x85, 0xfa, 0x1c, 0xe1, 0x91, 0xad, 0xb6, 0x88, 0x80, 0xb5, 0xfa, 0xce,
-	0x7a, 0x5f, 0xb3, 0xbe, 0x6b, 0x2c, 0xf5, 0xc4, 0x2a, 0x12, 0x3a, 0x05, 0xfb, 0x0b, 0xc2, 0xa3,
-	0xdb, 0x10, 0x87, 0x3e, 0xbb, 0x60, 0xd8, 0x5d, 0x2b, 0xee, 0xaa, 0xc6, 0xbd, 0x67, 0xbc, 0xdd,
-	0x13, 0xae, 0xcc, 0xf8, 0x14, 0xf0, 0xf7, 0x7a, 0xec, 0x30, 0xd9, 0xf7, 0xc1, 0xfc, 0x96, 0x66,
-	0x7d, 0xd3, 0x34, 0x2f, 0x67, 0x0d, 0x7c, 0xa6, 0x1b, 0xf4, 0x29, 0xc2, 0x23, 0xc9, 0x0d, 0x2f,
-	0x3a, 0x4d, 0xeb, 0xe2, 0xaf, 0x8a, 0x41, 0x0a, 0x6f, 0x76, 0xd1, 0x99, 0x1b, 0x7a, 0xb3, 0x55,
-	0x72, 0xff, 0xec, 0x66, 0x97, 0xe9, 0x12, 0xf1, 0x96, 0xb0, 0x8f, 0xd3, 0x7f, 0x29, 0x27, 0x76,
-	0xc0, 0x3d, 0x31, 0x8f, 0xc8, 0x8f, 0x08, 0x0f, 0x3f, 0xa6, 0xd2, 0xdd, 0xeb, 0xef, 0xa5, 0x71,
-	0x4f, 0x13, 0xdf, 0x21, 0xf9, 0xaf, 0x44, 0xc8, 0x18, 0x68, 0xd8, 0x55, 0x45, 0xe7, 0xd1, 0x07,
-	0xcb, 0xbf, 0x9d, 0x4e, 0xa3, 0xdf, 0x4f, 0xa7, 0xd1, 0x5f, 0xa7, 0xd3, 0xe8, 0xd3, 0xdb, 0x17,
-	0x7e, 0x83, 0x76, 0xf8, 0x68, 0xde, 0xad, 0xe9, 0xef, 0xc9, 0xc5, 0xff, 0x02, 0x00, 0x00, 0xff,
-	0xff, 0x4e, 0x70, 0xc1, 0xe2, 0x52, 0x0f, 0x00, 0x00,
+	// 1121 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x97, 0xcf, 0x4f, 0x24, 0x45,
+	0x14, 0xc7, 0x53, 0xec, 0x2e, 0x0c, 0x35, 0x0c, 0x68, 0xa9, 0x38, 0xe9, 0xb0, 0x2c, 0x76, 0xa2,
+	0x12, 0xb2, 0x76, 0xc3, 0xc0, 0xea, 0xca, 0x06, 0x57, 0x04, 0x83, 0x26, 0x93, 0xdd, 0x4d, 0x83,
+	0xd9, 0x60, 0xbc, 0x14, 0x3d, 0x6f, 0x9b, 0x96, 0xe9, 0xaa, 0xb6, 0xab, 0x06, 0x82, 0x84, 0x8b,
+	0x07, 0xa3, 0x67, 0x2f, 0xc6, 0xc4, 0xc4, 0xa3, 0xd1, 0xc4, 0x18, 0xb3, 0xf1, 0x6f, 0xf0, 0xa8,
+	0xf1, 0xe2, 0xd1, 0x10, 0x2f, 0xfe, 0x17, 0xa6, 0xaa, 0x7f, 0x03, 0x3b, 0xce, 0x2c, 0x64, 0x6e,
+	0x5d, 0xef, 0xf5, 0x7b, 0xf5, 0xe9, 0xef, 0x7b, 0xfd, 0xaa, 0x1b, 0x9b, 0x6e, 0xd0, 0xb2, 0x05,
+	0x44, 0xfb, 0x10, 0xd9, 0x07, 0x3c, 0xda, 0x7b, 0xd4, 0xe6, 0x07, 0xd9, 0x85, 0x15, 0x46, 0x5c,
+	0x72, 0x52, 0x49, 0xd7, 0xc6, 0xf3, 0x1e, 0xf7, 0xb8, 0x36, 0xda, 0xea, 0x2a, 0xf6, 0x1b, 0x53,
+	0x1e, 0xe7, 0x5e, 0x1b, 0x6c, 0x1a, 0xfa, 0x36, 0x65, 0x8c, 0x4b, 0x2a, 0x7d, 0xce, 0x44, 0xe2,
+	0x5d, 0xda, 0xbb, 0x2d, 0x2c, 0x9f, 0x2b, 0x6f, 0x40, 0xdd, 0x5d, 0x9f, 0x41, 0x74, 0x68, 0x87,
+	0x7b, 0x9e, 0x32, 0x08, 0x3b, 0x00, 0x49, 0xed, 0xfd, 0x05, 0xdb, 0x03, 0x06, 0x11, 0x95, 0xd0,
+	0x4a, 0xa2, 0xd6, 0x3c, 0x5f, 0xee, 0x76, 0x76, 0x2c, 0x97, 0x07, 0x36, 0x8d, 0xf4, 0xa6, 0x1f,
+	0xeb, 0x8b, 0x3c, 0x34, 0xc3, 0xdd, 0x5f, 0xa0, 0xed, 0x70, 0x97, 0x9e, 0x4d, 0x62, 0xe6, 0x5b,
+	0xdb, 0x2e, 0x8f, 0xe0, 0x9c, 0x8d, 0xcc, 0x7f, 0x87, 0x70, 0x6d, 0xb3, 0xb3, 0x13, 0xf8, 0xf2,
+	0x7e, 0xa8, 0xb1, 0x09, 0xc1, 0x57, 0x19, 0x0d, 0xa0, 0x8e, 0x66, 0xd0, 0xec, 0xa8, 0xa3, 0xaf,
+	0x89, 0x89, 0xc7, 0xd2, 0xc0, 0x7b, 0xca, 0x37, 0xa4, 0x7d, 0x25, 0x1b, 0x99, 0xc6, 0xd8, 0x67,
+	0x42, 0x52, 0xe6, 0xc2, 0xfb, 0xeb, 0xf5, 0x2b, 0xfa, 0x8e, 0x82, 0x45, 0xf9, 0x81, 0xc9, 0xe8,
+	0x30, 0xe4, 0x3e, 0x93, 0xf5, 0xab, 0xb1, 0x3f, 0xb7, 0x28, 0x7f, 0x48, 0x23, 0x1a, 0x80, 0x84,
+	0x48, 0xd4, 0xaf, 0xcd, 0x5c, 0x51, 0xfe, 0xdc, 0x42, 0x5e, 0xc1, 0xe3, 0xaa, 0x50, 0xbe, 0x0b,
+	0xab, 0xae, 0xcb, 0x3b, 0x4c, 0xd6, 0x87, 0x75, 0x8e, 0x53, 0x56, 0xc5, 0x1a, 0x17, 0x74, 0x3d,
+	0x3a, 0x74, 0x3a, 0xac, 0x3e, 0x32, 0x83, 0x66, 0x2b, 0x4e, 0xc9, 0x46, 0x26, 0xf1, 0x70, 0x9b,
+	0xee, 0x40, 0x5b, 0xd4, 0x2b, 0x3a, 0x47, 0xb2, 0x22, 0x1f, 0xe1, 0x71, 0x7e, 0xc0, 0x20, 0x72,
+	0xe0, 0x11, 0x44, 0xc0, 0x5c, 0xa8, 0x8f, 0xce, 0xa0, 0xd9, 0x6a, 0x63, 0xc9, 0x8a, 0xa5, 0xb4,
+	0x8a, 0x55, 0xb4, 0xc2, 0x3d, 0x4f, 0x19, 0x84, 0xa5, 0xaa, 0x68, 0xed, 0x2f, 0x58, 0xf7, 0x4b,
+	0xb1, 0xce, 0xa9, 0x5c, 0xe6, 0x0f, 0x43, 0xf8, 0x85, 0x87, 0x49, 0xd5, 0xd6, 0x22, 0xa0, 0x12,
+	0x1c, 0xf8, 0xa4, 0x03, 0x42, 0x92, 0x29, 0x3c, 0xaa, 0x74, 0x16, 0x21, 0x75, 0x53, 0xe1, 0x73,
+	0x03, 0xd9, 0xc6, 0x59, 0x0b, 0x6a, 0xe5, 0xab, 0x8d, 0x15, 0x2b, 0xef, 0x0f, 0x2b, 0xed, 0x0f,
+	0x7d, 0x91, 0x43, 0x65, 0x5d, 0x9c, 0xf6, 0x87, 0x95, 0xee, 0xed, 0x64, 0xe9, 0xc8, 0x36, 0xae,
+	0xb9, 0x9a, 0x24, 0xa9, 0xbe, 0xae, 0x5b, 0xb5, 0xb1, 0xd8, 0xdb, 0xf3, 0xae, 0x15, 0x43, 0x9d,
+	0x72, 0x26, 0xb2, 0x82, 0x6b, 0xa2, 0xd8, 0x58, 0xba, 0xe4, 0xd5, 0xc6, 0x8b, 0x39, 0x58, 0xa9,
+	0xef, 0x9c, 0xf2, 0xdd, 0xe6, 0xf7, 0x08, 0x93, 0x14, 0x78, 0x03, 0x64, 0xaa, 0x94, 0x89, 0xc7,
+	0xd2, 0xf8, 0x7b, 0x79, 0x97, 0x96, 0x6c, 0x65, 0x35, 0x87, 0x4e, 0xab, 0xf9, 0x00, 0x63, 0x0f,
+	0x64, 0xf9, 0x79, 0xe7, 0x7b, 0x7b, 0xde, 0x8d, 0x2c, 0xce, 0x29, 0xe4, 0x30, 0xbf, 0x40, 0xf8,
+	0xb9, 0x14, 0xb5, 0xe9, 0x0b, 0xd9, 0x5b, 0x55, 0x37, 0x71, 0xb5, 0xed, 0x8b, 0x0c, 0x24, 0x2e,
+	0xec, 0x42, 0x6f, 0x20, 0xcd, 0x3c, 0xd0, 0x29, 0x66, 0x31, 0x3b, 0x79, 0x87, 0x7d, 0x10, 0xb6,
+	0x0a, 0x1d, 0x76, 0x71, 0xdd, 0x0c, 0x5c, 0x09, 0x20, 0xe0, 0xfe, 0xa7, 0xd0, 0xd2, 0xaa, 0x55,
+	0x9c, 0x6c, 0x6d, 0xfe, 0x51, 0x28, 0x56, 0x93, 0x7b, 0x97, 0xb7, 0x69, 0x1d, 0x8f, 0x84, 0xbc,
+	0xa5, 0x83, 0xe3, 0x89, 0x92, 0x2e, 0x55, 0x9c, 0xcb, 0x99, 0xa4, 0x4a, 0xa1, 0x64, 0x9a, 0xe4,
+	0x06, 0xb2, 0x8a, 0x71, 0x9b, 0x7b, 0xa9, 0xb6, 0xd7, 0xb4, 0xb6, 0x2f, 0x15, 0xb4, 0xb5, 0xd4,
+	0x3c, 0x54, 0x4a, 0x3e, 0xe0, 0xad, 0x66, 0x76, 0xa3, 0x53, 0x08, 0x32, 0x1f, 0xa3, 0x5c, 0xcb,
+	0x75, 0x68, 0xc3, 0x65, 0x6a, 0xb9, 0x8d, 0x6b, 0x2d, 0x9d, 0xf2, 0xa9, 0x5e, 0xbb, 0xf5, 0x62,
+	0xa8, 0x53, 0xce, 0x64, 0x6e, 0xe1, 0xc9, 0xd3, 0xd4, 0x22, 0xe4, 0x4c, 0x40, 0x4f, 0xd8, 0x93,
+	0x78, 0x58, 0x48, 0x2a, 0x3b, 0x22, 0x61, 0x4e, 0x56, 0x26, 0xc3, 0x95, 0x26, 0xf7, 0xde, 0x55,
+	0xd3, 0x5a, 0xd5, 0x44, 0x09, 0x0d, 0x4c, 0x26, 0x29, 0xd2, 0x25, 0x79, 0x0f, 0x8f, 0x4a, 0x3f,
+	0x80, 0x4d, 0x49, 0x83, 0x30, 0x69, 0xe8, 0xb9, 0xde, 0x1e, 0x69, 0xcb, 0x0f, 0xc0, 0xc9, 0x83,
+	0x1b, 0x7f, 0x4d, 0xe0, 0x89, 0xf4, 0x31, 0x36, 0xe3, 0xf9, 0x4e, 0xbe, 0x41, 0x78, 0x3c, 0x9e,
+	0x38, 0xa9, 0x87, 0xdc, 0xc8, 0x87, 0xc9, 0xb9, 0x83, 0xd5, 0xb8, 0xd8, 0xa0, 0x34, 0x67, 0x3f,
+	0xfb, 0xf3, 0x9f, 0xaf, 0x86, 0x4c, 0xf3, 0xba, 0x3e, 0x43, 0xf7, 0x17, 0xb2, 0x43, 0x57, 0xd8,
+	0x47, 0x59, 0x35, 0x8f, 0x97, 0xd1, 0x1c, 0xf9, 0x0e, 0xe1, 0xea, 0x06, 0xc8, 0x8c, 0x6c, 0xea,
+	0x2c, 0x59, 0x3e, 0xc5, 0x2e, 0x8a, 0xb5, 0xa4, 0xb1, 0x2c, 0x72, 0xb3, 0x2b, 0x96, 0x7d, 0x54,
+	0x2c, 0xed, 0x31, 0xf9, 0x1a, 0xe1, 0x9a, 0x1a, 0x1c, 0x69, 0x1a, 0x41, 0xae, 0x9f, 0x85, 0x2c,
+	0xcc, 0x2f, 0x63, 0xf5, 0x42, 0x94, 0x2a, 0x93, 0xf9, 0xb2, 0x26, 0xbd, 0x41, 0xba, 0x0b, 0x48,
+	0xbe, 0x44, 0x78, 0x3c, 0xee, 0xd6, 0x6e, 0xa5, 0x2d, 0xbd, 0x85, 0xc6, 0xcc, 0x93, 0x6f, 0x88,
+	0x1b, 0x3e, 0x95, 0x69, 0xae, 0x3f, 0x99, 0x7e, 0x42, 0xb8, 0xe6, 0x80, 0x8c, 0x0e, 0xbb, 0xa1,
+	0x94, 0x86, 0xeb, 0x45, 0xcb, 0xb9, 0xa2, 0x39, 0xdf, 0x30, 0x1a, 0xfd, 0x70, 0xda, 0x91, 0x62,
+	0x54, 0xad, 0xf7, 0x18, 0xe1, 0x67, 0x1c, 0x88, 0x4f, 0xcf, 0x81, 0x31, 0xbf, 0xad, 0x99, 0x97,
+	0x8d, 0x5b, 0x7d, 0x32, 0xc7, 0x98, 0x0a, 0xfb, 0x67, 0x84, 0xc7, 0x15, 0x76, 0x00, 0x03, 0x83,
+	0x7e, 0x4b, 0x43, 0xdf, 0x36, 0x16, 0xfb, 0x86, 0x0e, 0x40, 0x21, 0xff, 0x82, 0xf0, 0xc4, 0x66,
+	0x47, 0x84, 0xc0, 0x5a, 0x03, 0x63, 0xbe, 0xab, 0x99, 0xdf, 0x34, 0x96, 0xfa, 0x62, 0x16, 0x31,
+	0xa5, 0x82, 0xfe, 0x15, 0xe1, 0x67, 0xb7, 0x20, 0x0a, 0x7c, 0xf6, 0x3f, 0x93, 0xf3, 0x52, 0xb1,
+	0x57, 0x35, 0xf6, 0x1d, 0xe3, 0xf5, 0xbe, 0xb0, 0x65, 0xca, 0xa9, 0xc0, 0xbf, 0x45, 0x78, 0xac,
+	0xe9, 0x33, 0x39, 0xb0, 0x69, 0xff, 0x9a, 0x66, 0x7e, 0xd5, 0x34, 0xbb, 0x33, 0xb7, 0x7d, 0xa6,
+	0x1b, 0xf8, 0x73, 0x84, 0x47, 0xe2, 0xcf, 0x07, 0x71, 0xde, 0xb8, 0xcf, 0xbf, 0x83, 0x0c, 0x92,
+	0x7b, 0xd3, 0x53, 0xd4, 0xdc, 0xd0, 0x9b, 0xad, 0x92, 0xbb, 0xa7, 0x37, 0xeb, 0xa6, 0x4f, 0xc8,
+	0x5b, 0xc2, 0x3e, 0x4a, 0x3e, 0x81, 0x8e, 0xed, 0x36, 0xf7, 0xc4, 0x3c, 0x22, 0x3f, 0x22, 0x5c,
+	0x7b, 0x48, 0xa5, 0xbb, 0x3b, 0x98, 0xd3, 0xe7, 0x8e, 0x26, 0xbf, 0x45, 0xb2, 0xb7, 0x48, 0xc8,
+	0x08, 0x68, 0xd0, 0x53, 0x85, 0xe7, 0xd1, 0x3b, 0xcb, 0xbf, 0x9d, 0x4c, 0xa3, 0xdf, 0x4f, 0xa6,
+	0xd1, 0xdf, 0x27, 0xd3, 0xe8, 0xc3, 0x9b, 0x4f, 0xfc, 0xd1, 0x3d, 0xe7, 0xcf, 0x7c, 0x67, 0x58,
+	0xff, 0xb4, 0x2e, 0xfe, 0x17, 0x00, 0x00, 0xff, 0xff, 0x2d, 0x19, 0x0e, 0xd5, 0xb7, 0x0f, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -750,20 +751,20 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type WorkflowServiceClient interface {
-	Create(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Get(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	List(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error)
-	Delete(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error)
-	Retry(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Resubmit(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Resume(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Suspend(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Terminate(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	Lint(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	CreateWorkflow(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	GetWorkflow(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	ListWorkflows(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error)
+	DeleteWorkflow(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error)
+	RetryWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	ResubmitWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	ResumeWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	SuspendWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	TerminateWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	LintWorkflow(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
 	// PodLogs returns stream of log entries for the specified pod. Pod
 	PodLogs(ctx context.Context, in *WorkflowLogRequest, opts ...grpc.CallOption) (WorkflowService_PodLogsClient, error)
 	// Watch returns stream of application change events.
-	Watch(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (WorkflowService_WatchClient, error)
+	WatchWorkflow(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (WorkflowService_WatchWorkflowClient, error)
 }
 
 type workflowServiceClient struct {
@@ -774,90 +775,90 @@ func NewWorkflowServiceClient(cc *grpc.ClientConn) WorkflowServiceClient {
 	return &workflowServiceClient{cc}
 }
 
-func (c *workflowServiceClient) Create(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) CreateWorkflow(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Create", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/CreateWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Get(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) GetWorkflow(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Get", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/GetWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) List(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
+func (c *workflowServiceClient) ListWorkflows(ctx context.Context, in *WorkflowListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error) {
 	out := new(v1alpha1.WorkflowList)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/List", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/ListWorkflows", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Delete(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error) {
+func (c *workflowServiceClient) DeleteWorkflow(ctx context.Context, in *WorkflowDeleteRequest, opts ...grpc.CallOption) (*WorkflowDeleteResponse, error) {
 	out := new(WorkflowDeleteResponse)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Delete", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/DeleteWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Retry(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) RetryWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Retry", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/RetryWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Resubmit(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) ResubmitWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Resubmit", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/ResubmitWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Resume(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) ResumeWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Resume", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/ResumeWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Suspend(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) SuspendWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Suspend", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/SuspendWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Terminate(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) TerminateWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Terminate", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/TerminateWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *workflowServiceClient) Lint(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+func (c *workflowServiceClient) LintWorkflow(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
 	out := new(v1alpha1.Workflow)
-	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/Lint", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/workflow.WorkflowService/LintWorkflow", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -896,12 +897,12 @@ func (x *workflowServicePodLogsClient) Recv() (*LogEntry, error) {
 	return m, nil
 }
 
-func (c *workflowServiceClient) Watch(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (WorkflowService_WatchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_WorkflowService_serviceDesc.Streams[1], "/workflow.WorkflowService/Watch", opts...)
+func (c *workflowServiceClient) WatchWorkflow(ctx context.Context, in *WorkflowGetRequest, opts ...grpc.CallOption) (WorkflowService_WatchWorkflowClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_WorkflowService_serviceDesc.Streams[1], "/workflow.WorkflowService/WatchWorkflow", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &workflowServiceWatchClient{stream}
+	x := &workflowServiceWatchWorkflowClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -911,16 +912,16 @@ func (c *workflowServiceClient) Watch(ctx context.Context, in *WorkflowGetReques
 	return x, nil
 }
 
-type WorkflowService_WatchClient interface {
+type WorkflowService_WatchWorkflowClient interface {
 	Recv() (*v1alpha1.Workflow, error)
 	grpc.ClientStream
 }
 
-type workflowServiceWatchClient struct {
+type workflowServiceWatchWorkflowClient struct {
 	grpc.ClientStream
 }
 
-func (x *workflowServiceWatchClient) Recv() (*v1alpha1.Workflow, error) {
+func (x *workflowServiceWatchWorkflowClient) Recv() (*v1alpha1.Workflow, error) {
 	m := new(v1alpha1.Workflow)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -930,243 +931,243 @@ func (x *workflowServiceWatchClient) Recv() (*v1alpha1.Workflow, error) {
 
 // WorkflowServiceServer is the server API for WorkflowService service.
 type WorkflowServiceServer interface {
-	Create(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
-	Get(context.Context, *WorkflowGetRequest) (*v1alpha1.Workflow, error)
-	List(context.Context, *WorkflowListRequest) (*v1alpha1.WorkflowList, error)
-	Delete(context.Context, *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error)
-	Retry(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
-	Resubmit(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
-	Resume(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
-	Suspend(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
-	Terminate(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
-	Lint(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
+	CreateWorkflow(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
+	GetWorkflow(context.Context, *WorkflowGetRequest) (*v1alpha1.Workflow, error)
+	ListWorkflows(context.Context, *WorkflowListRequest) (*v1alpha1.WorkflowList, error)
+	DeleteWorkflow(context.Context, *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error)
+	RetryWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	ResubmitWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	ResumeWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	SuspendWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	TerminateWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
+	LintWorkflow(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
 	// PodLogs returns stream of log entries for the specified pod. Pod
 	PodLogs(*WorkflowLogRequest, WorkflowService_PodLogsServer) error
 	// Watch returns stream of application change events.
-	Watch(*WorkflowGetRequest, WorkflowService_WatchServer) error
+	WatchWorkflow(*WorkflowGetRequest, WorkflowService_WatchWorkflowServer) error
 }
 
 // UnimplementedWorkflowServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedWorkflowServiceServer struct {
 }
 
-func (*UnimplementedWorkflowServiceServer) Create(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+func (*UnimplementedWorkflowServiceServer) CreateWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Get(ctx context.Context, req *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+func (*UnimplementedWorkflowServiceServer) GetWorkflow(ctx context.Context, req *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) List(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+func (*UnimplementedWorkflowServiceServer) ListWorkflows(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListWorkflows not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Delete(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+func (*UnimplementedWorkflowServiceServer) DeleteWorkflow(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Retry(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Retry not implemented")
+func (*UnimplementedWorkflowServiceServer) RetryWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetryWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Resubmit(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Resubmit not implemented")
+func (*UnimplementedWorkflowServiceServer) ResubmitWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResubmitWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Resume(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Resume not implemented")
+func (*UnimplementedWorkflowServiceServer) ResumeWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResumeWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Suspend(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Suspend not implemented")
+func (*UnimplementedWorkflowServiceServer) SuspendWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SuspendWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Terminate(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Terminate not implemented")
+func (*UnimplementedWorkflowServiceServer) TerminateWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TerminateWorkflow not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Lint(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Lint not implemented")
+func (*UnimplementedWorkflowServiceServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LintWorkflow not implemented")
 }
 func (*UnimplementedWorkflowServiceServer) PodLogs(req *WorkflowLogRequest, srv WorkflowService_PodLogsServer) error {
 	return status.Errorf(codes.Unimplemented, "method PodLogs not implemented")
 }
-func (*UnimplementedWorkflowServiceServer) Watch(req *WorkflowGetRequest, srv WorkflowService_WatchServer) error {
-	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
+func (*UnimplementedWorkflowServiceServer) WatchWorkflow(req *WorkflowGetRequest, srv WorkflowService_WatchWorkflowServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchWorkflow not implemented")
 }
 
 func RegisterWorkflowServiceServer(s *grpc.Server, srv WorkflowServiceServer) {
 	s.RegisterService(&_WorkflowService_serviceDesc, srv)
 }
 
-func _WorkflowService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_CreateWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowCreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Create(ctx, in)
+		return srv.(WorkflowServiceServer).CreateWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Create",
+		FullMethod: "/workflow.WorkflowService/CreateWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Create(ctx, req.(*WorkflowCreateRequest))
+		return srv.(WorkflowServiceServer).CreateWorkflow(ctx, req.(*WorkflowCreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Get(ctx, in)
+		return srv.(WorkflowServiceServer).GetWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Get",
+		FullMethod: "/workflow.WorkflowService/GetWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Get(ctx, req.(*WorkflowGetRequest))
+		return srv.(WorkflowServiceServer).GetWorkflow(ctx, req.(*WorkflowGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_ListWorkflows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).List(ctx, in)
+		return srv.(WorkflowServiceServer).ListWorkflows(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/List",
+		FullMethod: "/workflow.WorkflowService/ListWorkflows",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).List(ctx, req.(*WorkflowListRequest))
+		return srv.(WorkflowServiceServer).ListWorkflows(ctx, req.(*WorkflowListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_DeleteWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowDeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Delete(ctx, in)
+		return srv.(WorkflowServiceServer).DeleteWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Delete",
+		FullMethod: "/workflow.WorkflowService/DeleteWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Delete(ctx, req.(*WorkflowDeleteRequest))
+		return srv.(WorkflowServiceServer).DeleteWorkflow(ctx, req.(*WorkflowDeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Retry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_RetryWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Retry(ctx, in)
+		return srv.(WorkflowServiceServer).RetryWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Retry",
+		FullMethod: "/workflow.WorkflowService/RetryWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Retry(ctx, req.(*WorkflowUpdateRequest))
+		return srv.(WorkflowServiceServer).RetryWorkflow(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Resubmit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_ResubmitWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Resubmit(ctx, in)
+		return srv.(WorkflowServiceServer).ResubmitWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Resubmit",
+		FullMethod: "/workflow.WorkflowService/ResubmitWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Resubmit(ctx, req.(*WorkflowUpdateRequest))
+		return srv.(WorkflowServiceServer).ResubmitWorkflow(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Resume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_ResumeWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Resume(ctx, in)
+		return srv.(WorkflowServiceServer).ResumeWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Resume",
+		FullMethod: "/workflow.WorkflowService/ResumeWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Resume(ctx, req.(*WorkflowUpdateRequest))
+		return srv.(WorkflowServiceServer).ResumeWorkflow(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Suspend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_SuspendWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Suspend(ctx, in)
+		return srv.(WorkflowServiceServer).SuspendWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Suspend",
+		FullMethod: "/workflow.WorkflowService/SuspendWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Suspend(ctx, req.(*WorkflowUpdateRequest))
+		return srv.(WorkflowServiceServer).SuspendWorkflow(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Terminate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_TerminateWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowUpdateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Terminate(ctx, in)
+		return srv.(WorkflowServiceServer).TerminateWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Terminate",
+		FullMethod: "/workflow.WorkflowService/TerminateWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Terminate(ctx, req.(*WorkflowUpdateRequest))
+		return srv.(WorkflowServiceServer).TerminateWorkflow(ctx, req.(*WorkflowUpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _WorkflowService_Lint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _WorkflowService_LintWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WorkflowCreateRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(WorkflowServiceServer).Lint(ctx, in)
+		return srv.(WorkflowServiceServer).LintWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/workflow.WorkflowService/Lint",
+		FullMethod: "/workflow.WorkflowService/LintWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkflowServiceServer).Lint(ctx, req.(*WorkflowCreateRequest))
+		return srv.(WorkflowServiceServer).LintWorkflow(ctx, req.(*WorkflowCreateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1192,24 +1193,24 @@ func (x *workflowServicePodLogsServer) Send(m *LogEntry) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _WorkflowService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _WorkflowService_WatchWorkflow_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(WorkflowGetRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(WorkflowServiceServer).Watch(m, &workflowServiceWatchServer{stream})
+	return srv.(WorkflowServiceServer).WatchWorkflow(m, &workflowServiceWatchWorkflowServer{stream})
 }
 
-type WorkflowService_WatchServer interface {
+type WorkflowService_WatchWorkflowServer interface {
 	Send(*v1alpha1.Workflow) error
 	grpc.ServerStream
 }
 
-type workflowServiceWatchServer struct {
+type workflowServiceWatchWorkflowServer struct {
 	grpc.ServerStream
 }
 
-func (x *workflowServiceWatchServer) Send(m *v1alpha1.Workflow) error {
+func (x *workflowServiceWatchWorkflowServer) Send(m *v1alpha1.Workflow) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -1218,44 +1219,44 @@ var _WorkflowService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*WorkflowServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Create",
-			Handler:    _WorkflowService_Create_Handler,
+			MethodName: "CreateWorkflow",
+			Handler:    _WorkflowService_CreateWorkflow_Handler,
 		},
 		{
-			MethodName: "Get",
-			Handler:    _WorkflowService_Get_Handler,
+			MethodName: "GetWorkflow",
+			Handler:    _WorkflowService_GetWorkflow_Handler,
 		},
 		{
-			MethodName: "List",
-			Handler:    _WorkflowService_List_Handler,
+			MethodName: "ListWorkflows",
+			Handler:    _WorkflowService_ListWorkflows_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _WorkflowService_Delete_Handler,
+			MethodName: "DeleteWorkflow",
+			Handler:    _WorkflowService_DeleteWorkflow_Handler,
 		},
 		{
-			MethodName: "Retry",
-			Handler:    _WorkflowService_Retry_Handler,
+			MethodName: "RetryWorkflow",
+			Handler:    _WorkflowService_RetryWorkflow_Handler,
 		},
 		{
-			MethodName: "Resubmit",
-			Handler:    _WorkflowService_Resubmit_Handler,
+			MethodName: "ResubmitWorkflow",
+			Handler:    _WorkflowService_ResubmitWorkflow_Handler,
 		},
 		{
-			MethodName: "Resume",
-			Handler:    _WorkflowService_Resume_Handler,
+			MethodName: "ResumeWorkflow",
+			Handler:    _WorkflowService_ResumeWorkflow_Handler,
 		},
 		{
-			MethodName: "Suspend",
-			Handler:    _WorkflowService_Suspend_Handler,
+			MethodName: "SuspendWorkflow",
+			Handler:    _WorkflowService_SuspendWorkflow_Handler,
 		},
 		{
-			MethodName: "Terminate",
-			Handler:    _WorkflowService_Terminate_Handler,
+			MethodName: "TerminateWorkflow",
+			Handler:    _WorkflowService_TerminateWorkflow_Handler,
 		},
 		{
-			MethodName: "Lint",
-			Handler:    _WorkflowService_Lint_Handler,
+			MethodName: "LintWorkflow",
+			Handler:    _WorkflowService_LintWorkflow_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -1265,8 +1266,8 @@ var _WorkflowService_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "Watch",
-			Handler:       _WorkflowService_Watch_Handler,
+			StreamName:    "WatchWorkflow",
+			Handler:       _WorkflowService_WatchWorkflow_Handler,
 			ServerStreams: true,
 		},
 	},

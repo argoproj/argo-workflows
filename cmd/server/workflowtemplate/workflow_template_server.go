@@ -77,7 +77,7 @@ func (s *WorkflowTemplateServer) GetWFClient(ctx context.Context) (*versioned.Cl
 	return wfClientset, clientset, nil
 }
 
-func (wts *WorkflowTemplateServer) Create(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (wts *WorkflowTemplateServer) Create(ctx context.Context, wftmplReq *Workfl
 	return created, err
 }
 
-func (wts *WorkflowTemplateServer) Get(ctx context.Context, wftmplReq *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (wts *WorkflowTemplateServer) Get(ctx context.Context, wftmplReq *WorkflowT
 	return wfTmpl, err
 }
 
-func (wts *WorkflowTemplateServer) List(ctx context.Context, wftmplReq *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
+func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wftmplReq *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (wts *WorkflowTemplateServer) List(ctx context.Context, wftmplReq *Workflow
 	return wfList, nil
 }
 
-func (wts *WorkflowTemplateServer) Delete(ctx context.Context, wftmplReq *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
+func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (wts *WorkflowTemplateServer) Delete(ctx context.Context, wftmplReq *Workfl
 	}, nil
 }
 
-func (wts *WorkflowTemplateServer) Lint(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)
 	if err != nil {
 		return nil, err

@@ -53,26 +53,26 @@ message WorkflowDeleteResponse {
 
 
 service WorkflowTemplateService {
-    rpc Create (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+    rpc CreateWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
 			post: "/api/v1/workflowtemplates/{namespace}"
 			body: "*"
 		};
     }
 
-    rpc Get (WorkflowTemplateGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+    rpc GetWorkflowTemplate (WorkflowTemplateGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}/{templateName}";
     }
 
-    rpc List (WorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
+    rpc ListWorkflowTemplates (WorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
         option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}";
     }
 
-    rpc Delete (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
+    rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
         option (google.api.http).delete = "/api/v1/workflowtemplates/{namespace}/{templateName}";
     }
 
-    rpc Lint (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+    rpc LintWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
 			post: "/api/v1/workflowtemplates/{namespace}/lint"
 			body: "*"

@@ -19,7 +19,7 @@
     "/api/v1/stream/workflows/{namespace}/{workflowName}": {
       "get": {
         "summary": "Watch returns stream of application change events.",
-        "operationId": "Watch",
+        "operationId": "WatchWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
@@ -168,35 +168,9 @@
         ]
       }
     },
-    "/api/v1/workflows": {
-      "post": {
-        "operationId": "Create",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
     "/api/v1/workflows/{namespace}": {
       "get": {
-        "operationId": "List",
+        "operationId": "ListWorkflows",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -276,11 +250,41 @@
         "tags": [
           "WorkflowService"
         ]
+      },
+      "post": {
+        "operationId": "CreateWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowCreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
       }
     },
     "/api/v1/workflows/{namespace}/lint": {
       "post": {
-        "operationId": "Lint",
+        "operationId": "LintWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -312,7 +316,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}": {
       "get": {
-        "operationId": "Get",
+        "operationId": "GetWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -347,7 +351,7 @@
         ]
       },
       "delete": {
-        "operationId": "Delete",
+        "operationId": "DeleteWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -425,7 +429,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/resubmit": {
       "put": {
-        "operationId": "Resubmit",
+        "operationId": "ResubmitWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -463,7 +467,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/resume": {
       "put": {
-        "operationId": "Resume",
+        "operationId": "ResumeWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -501,7 +505,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/retry": {
       "put": {
-        "operationId": "Retry",
+        "operationId": "RetryWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -539,7 +543,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/suspend": {
       "put": {
-        "operationId": "Suspend",
+        "operationId": "SuspendWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -577,7 +581,7 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/terminate": {
       "put": {
-        "operationId": "Terminate",
+        "operationId": "TerminateWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",

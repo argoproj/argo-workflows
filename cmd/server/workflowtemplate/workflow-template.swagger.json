@@ -18,7 +18,7 @@
   "paths": {
     "/api/v1/workflowtemplates/{namespace}": {
       "get": {
-        "operationId": "List",
+        "operationId": "ListWorkflowTemplates",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -100,7 +100,7 @@
         ]
       },
       "post": {
-        "operationId": "Create",
+        "operationId": "CreateWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -132,7 +132,7 @@
     },
     "/api/v1/workflowtemplates/{namespace}/lint": {
       "post": {
-        "operationId": "Lint",
+        "operationId": "LintWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -164,7 +164,7 @@
     },
     "/api/v1/workflowtemplates/{namespace}/{templateName}": {
       "get": {
-        "operationId": "Get",
+        "operationId": "GetWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -199,7 +199,7 @@
         ]
       },
       "delete": {
-        "operationId": "Delete",
+        "operationId": "DeleteWorkflowTemplate",
         "responses": {
           "200": {
             "description": "A successful response.",

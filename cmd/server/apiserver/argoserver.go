@@ -29,7 +29,7 @@ import (
 	"github.com/argoproj/argo/workflow/config"
 )
 
-type ArgoServer struct {
+type argoServer struct {
 	Namespace        string
 	KubeClientset    *kubernetes.Clientset
 	WfClientSet      *versioned.Clientset
@@ -48,8 +48,8 @@ type ArgoServerOpts struct {
 	ConfigName       string
 }
 
-func NewArgoServer(opts ArgoServerOpts) *ArgoServer {
-	return &ArgoServer{
+func NewArgoServer(opts ArgoServerOpts) *argoServer {
+	return &argoServer{
 		Namespace:        opts.Namespace,
 		WfClientSet:      opts.WfClientSet,
 		KubeClientset:    opts.KubeClientset,
@@ -65,11 +65,11 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
-func (as *ArgoServer) useTLS() bool {
+func (as *argoServer) useTLS() bool {
 	return false
 }
 
-func (as *ArgoServer) Run(ctx context.Context, port int) {
+func (as *argoServer) Run(ctx context.Context, port int) {
 	grpcServer := as.newGRPCServer()
 	var httpServer *http.Server
 	var httpsServer *http.Server
@@ -133,7 +133,7 @@ func (as *ArgoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-func (as *ArgoServer) newGRPCServer() *grpc.Server {
+func (as *argoServer) newGRPCServer() *grpc.Server {
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -160,7 +160,7 @@ func (as *ArgoServer) newGRPCServer() *grpc.Server {
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (a *ArgoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
+func (a *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
 	mux := http.NewServeMux()
@@ -214,13 +214,13 @@ func newRedirectServer(port int) *http.Server {
 }
 
 // TranslateGrpcCookieHeader conditionally sets a cookie on the response.
-func (a *ArgoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
+func (a *argoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
 
 	return nil
 }
 
 // ResyncConfig reloads the controller config from the configmap
-func (a *ArgoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
+func (a *argoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
 	cmClient := kubeClientSet.CoreV1().ConfigMaps(namespace)
 	cm, err := cmClient.Get("workflow-controller-configmap", metav1.GetOptions{})
 	if err != nil {
@@ -229,7 +229,7 @@ func (a *ArgoServer) RsyncConfig(namespace string, wfClientset *versioned.Client
 	return a.UpdateConfig(cm)
 }
 
-func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
+func (a *argoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
 	configStr, ok := cm.Data[common.WorkflowControllerConfigMapKey]
 	if !ok {
 		return nil, errors.InternalErrorf("ConfigMap '%s' does not have key '%s'", a.ConfigName, common.WorkflowControllerConfigMapKey)
@@ -244,7 +244,7 @@ func (a *ArgoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControll
 }
 
 // checkServeErr checks the error from a .Serve() call to decide if it was a graceful shutdown
-func (a *ArgoServer) checkServeErr(name string, err error) {
+func (a *argoServer) checkServeErr(name string, err error) {
 	if err != nil {
 		if a.stopCh == nil {
 			// a nil stopCh indicates a graceful shutdown
