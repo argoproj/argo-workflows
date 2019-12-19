@@ -1,6 +1,6 @@
-import { expect } from 'chai';
+import {expect} from 'chai';
 
-import { Utils } from './utils';
+import {Utils} from './utils';
 
 describe('Utils', () => {
     it('returns correct short node name', () => {
