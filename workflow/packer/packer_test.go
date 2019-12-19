@@ -9,8 +9,8 @@ import (
 )
 
 func TestDecompressWorkflow(t *testing.T) {
-	defer func() { maxWorkflowSize = defaultMaxWorkflowSize }()
-	maxWorkflowSize = 300
+	defer func() { MaxWorkflowSize = DefaultMaxWorkflowSize }()
+	MaxWorkflowSize = 300
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf, err := CompressWorkflow(&wfv1.Workflow{
@@ -56,7 +56,8 @@ func TestDecompressWorkflow(t *testing.T) {
 		})
 		if assert.Error(t, err) {
 			assert.True(t, IsTooLargeError(err))
-			assert.Nil(t, wf)
+			// if too large, we want the original back please
+			assert.NotNil(t, wf)
 		}
 	})
 }

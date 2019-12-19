@@ -354,15 +354,14 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
 	wf, err := packer.CompressWorkflow(woc.wf)
-	canOffload := woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
-	willOffload := false
+	willOffloadNodeStatus := false
 	if packer.IsTooLargeError(err) {
-		willOffload = canOffload
+		willOffloadNodeStatus = woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
 	} else if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
 		woc.markWorkflowFailed(err.Error())
 	}
-	if willOffload {
+	if willOffloadNodeStatus {
 		woc.wf.Status.Nodes = nil
 		woc.wf.Status.CompressedNodes = ""
 	}
@@ -385,7 +384,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 		}
 	}
 	woc.wf.ResourceVersion = wf.ResourceVersion
-	if willOffload {
+	if willOffloadNodeStatus {
 		err = woc.controller.wfDBctx.Save(wf)
 		if err != nil {
 			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
