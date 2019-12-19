@@ -29,6 +29,33 @@ function parseSidePanelParam(param: string) {
     return null;
 }
 
+// TODO(simon): most likely extract this to a util file
+function isWorkflowSuspended(wf: models.Workflow): boolean {
+    if (wf == null || wf.spec == null) {
+        return false;
+    }
+    if (wf.spec.suspend != undefined && wf.spec.suspend) {
+        return true;
+    }
+    if (wf.status && wf.status.nodes) {
+        for (let node of Object.values(wf.status.nodes)) {
+            if (node.type == 'Suspend' && node.phase == 'Running') {
+                return true;
+            }
+
+        }
+    }
+    return false;
+}
+
+function isWorkflowRunning(wf: models.Workflow): boolean {
+    if (wf == null || wf.spec == null) {
+        return false;
+    }
+    return wf.status.phase == 'Running';
+
+}
+
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflow: models.Workflow}> {
     public static contextTypes = {
         router: PropTypes.object,
@@ -127,7 +154,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Suspend',
                                         iconClassName: 'fa fa-pause',
-                                        disabled: workflowPhase != undefined && workflowPhase != NODE_PHASE.SUSPENDED,
+                                        disabled: isWorkflowRunning(this.state.workflow) && isWorkflowSuspended(this.state.workflow),
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
@@ -144,7 +171,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Resume',
                                         iconClassName: 'fa fa-play',
-                                        disabled: workflowPhase == undefined || workflowPhase != NODE_PHASE.SUSPENDED,
+                                        disabled: !isWorkflowSuspended(this.state.workflow),
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
