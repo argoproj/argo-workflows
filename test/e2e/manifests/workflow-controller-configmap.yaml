@@ -39,7 +39,6 @@ data:
       #  passwordSecret:
       #    name: argo-mysql-config
       #    key: password
-    containerRuntimeExecutor: pns
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
