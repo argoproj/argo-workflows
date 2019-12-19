@@ -8,13 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
             - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v
       - save_cache:
           name: Save vendor cache
-          key: vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
@@ -42,7 +43,40 @@ commands:
           keys:
             - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v1-master-{{ .Environment.CIRCLE_JOB }}
+  go_junit_report:
+    steps:
+      - run:
+          name: Install Go test report to Junit test report
+          command: go get github.com/jstemmer/go-junit-report
 jobs:
+  test:
+    working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
+    machine:
+      image: circleci/classic:201808-01
+    steps:
+      - restore_go_cache
+      - install_golang
+      - go_junit_report
+      - checkout
+      - dep_ensure
+      - run:
+          name: Run tests
+          command: |
+            mkdir -p test-results
+            trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            make test 2>&1 | tee test-results/test.out
+      - run:
+          name: Verify code generation
+          command: make verify-codegen
+      - save_go_cache
+      - run:
+          name: Uploading code coverage
+          command: bash <(curl -s https://codecov.io/bash) -f coverage.out
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: .
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
@@ -61,9 +95,7 @@ jobs:
           background: true
       - restore_go_cache
       - install_golang
-      - run:
-          name: Install Go test report to Junit test report
-          command: go get github.com/jstemmer/go-junit-report
+      - go_junit_report
       - checkout
       - dep_ensure
       - run:
@@ -98,8 +130,36 @@ jobs:
       - store_artifacts:
           path: test-results
           destination: .
+  ui:
+    docker:
+      - image: node:11.15.0
+    working_directory: ~/argo/ui
+    steps:
+      - checkout:
+          path: ~/argo
+      - restore_cache:
+          name: Restore Yarn cache
+          keys:
+            - yarn-packages-v1-{{ checksum "yarn.lock" }}
+      - run:
+          name: Download dependencies
+          command: yarn install --frozen-lockfile --ignore-optional --non-interactive
+      - save_cache:
+          name: Save Yarn cache
+          key: yarn-packages-v1-{{ checksum "yarn.lock" }}
+          paths: [~/.cache/yarn, node_modules]
+      # - run: yarn test
+      # - run: ./node_modules/.bin/codecov -p ..
+      - run:
+          name: Build
+          command: NODE_ENV='production' yarn build
+      - run:
+          name: Lint
+          command: yarn lint
 workflows:
   version: 2
   workflow:
     jobs:
+      - test
+      - ui
       - e2e
