@@ -2,71 +2,19 @@ package workflow
 
 import (
 	"bufio"
-	"encoding/json"
-	"errors"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/metadata"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
-	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/util"
 )
 
 type kubeService struct {
-	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
-	EnableClientAuth bool
-}
-
-func (s *kubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-
-	if s.EnableClientAuth {
-		return s.WfClientset, s.KubeClientset, nil
-	}
-
-	var restConfigStr, bearerToken string
-	if len(md.Get(common.CLIENT_REST_CONFIG)) == 0 {
-		return nil, nil, errors.New("Client kubeconfig is not found")
-	}
-	restConfigStr = md.Get(common.CLIENT_REST_CONFIG)[0]
-
-	if len(md.Get(common.AUTH_TOKEN)) > 0 {
-		bearerToken = md.Get(common.AUTH_TOKEN)[0]
-	}
-
-	restConfig := rest.Config{}
-
-	err := json.Unmarshal([]byte(restConfigStr), &restConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	restConfig.BearerToken = bearerToken
-
-	wfClientset, err := wfclientset.NewForConfig(&restConfig)
-	if err != nil {
-		log.Errorf("Failure to create WfClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
-	}
-
-	clientset, err := kubernetes.NewForConfig(&restConfig)
-	if err != nil {
-		log.Errorf("Failure to create KubeClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
-	}
-
-	return wfClientset, clientset, nil
 }
 
 func (s *kubeService) Create(wfClient versioned.Interface, namespace string, wf *v1alpha1.Workflow) (*v1alpha1.Workflow, error) {

@@ -127,7 +127,7 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 
-	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
+	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
 	return grpcServer
@@ -175,23 +175,8 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
-// newRedirectServer returns an HTTP server which does a 307 redirect to the HTTPS server
-func newRedirectServer(port int) *http.Server {
-	return &http.Server{
-		Addr: fmt.Sprintf("localhost:%d", port),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			target := "https://" + req.Host + req.URL.Path
-			if len(req.URL.RawQuery) > 0 {
-				target += "?" + req.URL.RawQuery
-			}
-			http.Redirect(w, req, target, http.StatusTemporaryRedirect)
-		}),
-	}
-}
-
 // TranslateGrpcCookieHeader conditionally sets a cookie on the response.
 func (as *argoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
-	// TODO - what is the point of this func?
 	return nil
 }
 
