@@ -20,6 +20,7 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -175,7 +176,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
-	err := util.DecompressWorkflow(wf)
+	wf, err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,18 +1,16 @@
 package util
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"os"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/util/retry"
-	"k8s.io/client-go/rest"
 )
 
 type Closer interface {
@@ -58,21 +56,4 @@ func WriteTeriminateMessage(message string) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func GetClientConfig() clientcmd.ClientConfig {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	//kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
-}
-
-func InitKubeClient() *rest.Config {
-	clientConfig := GetClientConfig()
-	config, err := clientConfig.ClientConfig()
-	if err != nil {
-		panic(err)
-	}
-	return config
 }

@@ -164,9 +164,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, wfReq *WorkflowGetRequ
 	if s.WfDBService != nil {
 		wf, err = s.WfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
 	} else {
-
 		wf, err = s.WfKubeService.Get(wfClient, wfReq.Namespace, wfReq.WorkflowName, wfReq.GetOptions)
-		//wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
 	}
 	if err != nil {
 		return nil, err
