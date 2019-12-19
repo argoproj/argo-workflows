@@ -2,6 +2,7 @@ import {Observable} from 'rxjs';
 
 import * as models from '../../../models';
 import requests from './requests';
+import {WorkflowDeleteResponse} from './responses';
 
 export class WorkflowsService {
     public get(namespace: string, name: string): Promise<models.Workflow> {
@@ -67,6 +68,17 @@ export class WorkflowsService {
             .put(`/workflows/${namespace}/${workflowName}/resume`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
+    }
+
+    public terminate(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/terminate`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public delete(workflowName: string, namespace: string): Promise<WorkflowDeleteResponse> {
+        return requests.delete(`/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {

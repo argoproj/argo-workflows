@@ -9,7 +9,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {NODE_PHASE, NodePhase} from '../../../../models';
+import {NodePhase} from '../../../../models';
 import {Consumer} from '../../../shared/context';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowDag} from '../workflow-dag/workflow-dag';
@@ -47,6 +47,7 @@ function isWorkflowSuspended(wf: models.Workflow): boolean {
     return false;
 }
 
+// TODO(simon): most likely extract this to a util file
 function isWorkflowRunning(wf: models.Workflow): boolean {
     if (wf === null || wf.spec === null) {
         return false;
@@ -152,7 +153,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Suspend',
                                         iconClassName: 'fa fa-pause',
-                                        disabled: isWorkflowRunning(this.state.workflow) && isWorkflowSuspended(this.state.workflow),
+                                        disabled: !isWorkflowRunning(this.state.workflow) || isWorkflowSuspended(this.state.workflow),
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
@@ -178,6 +179,38 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                                 .catch(error => {
                                                     this.appContext.apis.notifications.show({
                                                         content: 'Unable to resume workflow',
+                                                        type: NotificationType.Error
+                                                    });
+                                                });
+                                        }
+                                    },
+                                    {
+                                        title: 'Terminate',
+                                        iconClassName: 'fa fa-times-circle',
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .terminate(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                                .catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to terminate workflow',
+                                                        type: NotificationType.Error
+                                                    });
+                                                });
+                                        }
+                                    },
+                                    {
+                                        title: 'Delete',
+                                        iconClassName: 'fa fa-trash',
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .delete(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wfDeleteRes => ctx.navigation.goto(`/workflows/`))
+                                                .catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to delete workflow',
                                                         type: NotificationType.Error
                                                     });
                                                 });
