@@ -3,14 +3,14 @@ import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 
-import {uiUrl} from '../../../shared/base';
-import {Autocomplete, DataLoader, MockupList, Page, TopBarFilter, SlidingPanel} from 'argo-ui';
-import {AppContext, Consumer} from '../../../shared/context';
+import {Autocomplete, DataLoader, MockupList, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {AppContext, Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-import {Query} from '../../../shared/components/query';
 import {WorkflowListItem} from '..';
+import {Query} from '../../../shared/components/query';
 
 require('./workflows-list.scss');
 
@@ -169,7 +169,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                             onClose={() => ctx.navigation.goto('.', {new: null})}
                             header={
                                 <div>
-                                    <button className='argo-button argo-button--base' onClick={() => alert('submit' )} /* createApi && createApi.submitForm(null)} */>
+                                    <button className='argo-button argo-button--base' onClick={() => alert('submit')} /* createApi && createApi.submitForm(null)} */>
                                         Submit
                                     </button>{' '}
                                     <button onClick={() => ctx.navigation.goto('.', {new: null})} className='argo-button argo-button--base-o'>

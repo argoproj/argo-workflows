@@ -9,6 +9,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
+import {Consumer} from '../../../shared/context';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowDag} from '../workflow-dag/workflow-dag';
 import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
@@ -80,71 +81,89 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes[this.selectedNodeId];
         return (
-            <Page
-                title={'Workflow Details'}
-                toolbar={{
-                    breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}, {title: this.props.match.params.name}],
-                    tools: (
-                        <div className='workflow-details__topbar-buttons'>
-                            <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
-                                <i className='fa fa-columns' />
-                            </a>
-                            <a className={classNames({active: this.selectedTabKey === 'timeline'})} onClick={() => this.selectTab('timeline')}>
-                                <i className='fa argo-icon-timeline' />
-                            </a>
-                            <a className={classNames({active: this.selectedTabKey === 'workflow'})} onClick={() => this.selectTab('workflow')}>
-                                <i className='fa argo-icon-workflow' />
-                            </a>
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title={'Workflow Details'}
+                        toolbar={{
+                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}, {title: this.props.match.params.name}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Resubmit',
+                                        iconClassName: 'fa fa-undo',
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .resubmit(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                        }
+                                    }
+                                ]
+                            },
+                            tools: (
+                                <div className='workflow-details__topbar-buttons'>
+                                    <a className={classNames({active: this.selectedTabKey === 'summary'})} onClick={() => this.selectTab('summary')}>
+                                        <i className='fa fa-columns' />
+                                    </a>
+                                    <a className={classNames({active: this.selectedTabKey === 'timeline'})} onClick={() => this.selectTab('timeline')}>
+                                        <i className='fa argo-icon-timeline' />
+                                    </a>
+                                    <a className={classNames({active: this.selectedTabKey === 'workflow'})} onClick={() => this.selectTab('workflow')}>
+                                        <i className='fa argo-icon-workflow' />
+                                    </a>
+                                </div>
+                            )
+                        }}>
+                        <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
+                            {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
+                                (this.state.workflow && (
+                                    <div>
+                                        <div className='workflow-details__graph-container'>
+                                            {(this.selectedTabKey === 'workflow' && (
+                                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
+                                            )) || (
+                                                <WorkflowTimeline
+                                                    workflow={this.state.workflow}
+                                                    selectedNodeId={this.selectedNodeId}
+                                                    nodeClicked={node => this.selectNode(node.id)}
+                                                    ref={timeline => (this.timelineComponent = timeline)}
+                                                />
+                                            )}
+                                        </div>
+                                        <div className='workflow-details__step-info'>
+                                            <button className='workflow-details__step-info-close' onClick={() => this.removeNodeSelection()}>
+                                                <i className='argo-icon-close' />
+                                            </button>
+                                            {selectedNode && (
+                                                <WorkflowNodeInfo
+                                                    node={selectedNode}
+                                                    workflow={this.state.workflow}
+                                                    onShowContainerLogs={(nodeId, container) => this.openContainerLogsPanel(nodeId, container)}
+                                                    onShowYaml={nodeId => this.openNodeYaml(nodeId)}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                         </div>
-                    )
-                }}>
-                <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
-                    {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
-                        (this.state.workflow && (
-                            <div>
-                                <div className='workflow-details__graph-container'>
-                                    {(this.selectedTabKey === 'workflow' && (
-                                        <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.selectedNodeId} nodeClicked={node => this.selectNode(node.id)} />
-                                    )) || (
-                                        <WorkflowTimeline
-                                            workflow={this.state.workflow}
-                                            selectedNodeId={this.selectedNodeId}
-                                            nodeClicked={node => this.selectNode(node.id)}
-                                            ref={timeline => (this.timelineComponent = timeline)}
-                                        />
-                                    )}
-                                </div>
-                                <div className='workflow-details__step-info'>
-                                    <button className='workflow-details__step-info-close' onClick={() => this.removeNodeSelection()}>
-                                        <i className='argo-icon-close' />
-                                    </button>
-                                    {selectedNode && (
-                                        <WorkflowNodeInfo
-                                            node={selectedNode}
-                                            workflow={this.state.workflow}
-                                            onShowContainerLogs={(nodeId, container) => this.openContainerLogsPanel(nodeId, container)}
-                                            onShowYaml={nodeId => this.openNodeYaml(nodeId)}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                </div>
-                {this.state.workflow && (
-                    <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
-                        {this.sidePanel && this.sidePanel.type === 'logs' && (
-                            <LogsViewer
-                                source={{
-                                    key: this.sidePanel.nodeId,
-                                    loadLogs: () => services.workflows.getContainerLogs(this.state.workflow, this.sidePanel.nodeId, this.sidePanel.container || 'main'),
-                                    shouldRepeat: () => this.state.workflow.status.nodes[this.sidePanel.nodeId].phase === 'Running'
-                                }}
-                            />
+                        {this.state.workflow && (
+                            <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
+                                {this.sidePanel && this.sidePanel.type === 'logs' && (
+                                    <LogsViewer
+                                        source={{
+                                            key: this.sidePanel.nodeId,
+                                            loadLogs: () => services.workflows.getContainerLogs(this.state.workflow, this.sidePanel.nodeId, this.sidePanel.container || 'main'),
+                                            shouldRepeat: () => this.state.workflow.status.nodes[this.sidePanel.nodeId].phase === 'Running'
+                                        }}
+                                    />
+                                )}
+                                {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
+                            </SlidingPanel>
                         )}
-                        {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
-                    </SlidingPanel>
+                    </Page>
                 )}
-            </Page>
+            </Consumer>
         );
     }
 
