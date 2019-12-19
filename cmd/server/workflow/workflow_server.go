@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -18,8 +18,6 @@ import (
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -43,7 +41,7 @@ func NewWorkflowServer(namespace string, wfClientset versioned.Interface, kubeCl
 		if err != nil {
 			wfServer.WfDBService = nil
 			log.Errorf("Error Creating DB Context. %v", err)
-		}else {
+		} else {
 			log.Infof("DB Context created successfully")
 		}
 	}
@@ -112,7 +110,6 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, wfReq *WorkflowCrea
 	if err != nil {
 		return nil, err
 	}
-
 	if wfReq.Workflow == nil {
 		return nil, fmt.Errorf("workflow body not specified")
 	}
@@ -120,30 +117,39 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, wfReq *WorkflowCrea
 	if wfReq.Workflow.Namespace == "" {
 		wfReq.Workflow.Namespace = wfReq.Namespace
 	}
-
-	wf, err := s.ApplyWorkflowOptions(wfReq.Workflow, wfReq.SubmitOptions)
-	if err != nil {
-		return nil, err
+	labels := wfReq.Workflow.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string)
 	}
+
+	if wfReq.InstanceID != "" {
+		labels := wfReq.Workflow.GetLabels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels[common.LabelKeyControllerInstanceID] = wfReq.InstanceID
+		wfReq.Workflow.SetLabels(labels)
+	}
+
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(wfReq.Namespace))
 
-	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	err = validate.ValidateWorkflow(wftmplGetter, wfReq.Workflow, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
 
-	if wfReq.SubmitOptions != nil && wfReq.SubmitOptions.ServerDryRun {
-		return util.CreateServerDryRun(wf, wfClient)
+	if wfReq.ServerDryRun {
+		return util.CreateServerDryRun(wfReq.Workflow, wfClient)
 	}
 
-	wf, err = s.WfKubeService.Create(wfClient, wfReq.Namespace, wfReq.Workflow)
+	wf, err := s.WfKubeService.Create(wfClient, wfReq.Namespace, wfReq.Workflow)
 
 	if err != nil {
 		log.Errorf("Create request is failed. Error: %s", err)
 		return nil, err
+
 	}
-	log.Infof("Workflow '%s' created successfully", wf.Name)
 	return wf, nil
 }
 
@@ -298,66 +304,3 @@ func (s *workflowServer) PodLogs(wfReq *WorkflowLogRequest, log WorkflowService_
 	return s.WfKubeService.PodLogs(kubeClient, wfReq, log)
 }
 
-func (s *workflowServer) ApplyWorkflowOptions(wf *v1alpha1.Workflow, opts *SubmitOptions) (*v1alpha1.Workflow, error) {
-	if opts == nil {
-		return wf, nil
-	}
-	if opts.Entrypoint != "" {
-		wf.Spec.Entrypoint = opts.Entrypoint
-	}
-	if opts.ServiceAccount != "" {
-		wf.Spec.ServiceAccountName = opts.ServiceAccount
-	}
-	labels := wf.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	if opts.Labels != "" {
-		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
-		}
-		for k, v := range passedLabels {
-			labels[k] = v
-		}
-	}
-	if opts.InstanceID != "" {
-		labels[common.LabelKeyControllerInstanceID] = opts.InstanceID
-	}
-	wf.SetLabels(labels)
-	if len(opts.Parameters) > 0 {
-		newParams := make([]v1alpha1.Parameter, 0)
-		passedParams := make(map[string]bool)
-		for _, paramStr := range opts.Parameters {
-			parts := strings.SplitN(paramStr, "=", 2)
-			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
-			}
-			param := v1alpha1.Parameter{
-				Name:  parts[0],
-				Value: &parts[1],
-			}
-			newParams = append(newParams, param)
-			passedParams[param.Name] = true
-		}
-
-		for _, param := range wf.Spec.Arguments.Parameters {
-			if _, ok := passedParams[param.Name]; ok {
-				// this parameter was overridden via command line
-				continue
-			}
-			newParams = append(newParams, param)
-		}
-		wf.Spec.Arguments.Parameters = newParams
-	}
-	if opts.GenerateName != "" {
-		wf.ObjectMeta.GenerateName = opts.GenerateName
-	}
-	if opts.Name != "" {
-		wf.ObjectMeta.Name = opts.Name
-	}
-	if opts.OwnerReference != nil {
-		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
-	}
-	return wf, nil
-}

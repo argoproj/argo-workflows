@@ -16,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/stream/workflows/{namespace}/{workflowName}": {
+    "/api/v1/stream/workflows/{namespace}/{workflowName}/watch": {
       "get": {
         "summary": "Watch returns stream of application change events.",
         "operationId": "WatchWorkflow",
@@ -54,7 +54,7 @@
         ]
       }
     },
-    "/api/v1/workflow/{namespace}/{workflowName}/pods/{podName}/logs": {
+    "/api/v1/workflow/{namespace}/{workflowName}/{podName}/log": {
       "get": {
         "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
         "operationId": "PodLogs",
@@ -4374,42 +4374,6 @@
         }
       }
     },
-    "workflowSubmitOptions": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "generateName": {
-          "type": "string"
-        },
-        "instanceID": {
-          "type": "string"
-        },
-        "entrypoint": {
-          "type": "string"
-        },
-        "parameters": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "serviceAccount": {
-          "type": "string"
-        },
-        "serverDryRun": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "labels": {
-          "type": "string"
-        },
-        "ownerReference": {
-          "$ref": "#/definitions/v1OwnerReference"
-        }
-      }
-    },
     "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
@@ -4419,11 +4383,15 @@
         "workflow": {
           "$ref": "#/definitions/v1alpha1Workflow"
         },
+        "instanceID": {
+          "type": "string"
+        },
+        "ServerDryRun": {
+          "type": "boolean",
+          "format": "boolean"
+        },
         "createOptions": {
           "$ref": "#/definitions/v1CreateOptions"
-        },
-        "submitOptions": {
-          "$ref": "#/definitions/workflowSubmitOptions"
         }
       }
     },

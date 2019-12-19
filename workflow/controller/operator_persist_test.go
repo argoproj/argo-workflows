@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/argoproj/argo/errors"
@@ -51,7 +52,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), false, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
@@ -66,7 +67,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	var err1 error = errors.New("23324", "test")
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), false, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()
@@ -81,7 +82,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil, "test"), true, true)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not row found")), true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
@@ -96,7 +97,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
 	var err1 error = errors.New("23324", "test")
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1, "test"), true, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1), true, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 
 	woc.operate()

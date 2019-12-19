@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-server
+spec:
+  selector:
+    matchLabels:
+      app: argo-server
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: argo-server
+    spec:
+      containers:
+        - name: main
+          image: argoproj/argo-server:latest
+          ports:
+            - containerPort: 2746

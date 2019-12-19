@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
+	"github.com/argoproj/pkg/cli"
+	kubecli "github.com/argoproj/pkg/kube/cli"
 	"github.com/argoproj/pkg/stats"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -19,13 +20,11 @@ import (
 	"github.com/argoproj/argo/cmd/server/apiserver"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	cmdutil "github.com/argoproj/argo/util/cmd"
-	"github.com/argoproj/pkg/cli"
-	kubecli "github.com/argoproj/pkg/kube/cli"
 )
 
 const (
 	// CLIName is the name of the CLI
-	CLIName = "argo-api-server"
+	CLIName = "argo-server"
 )
 
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
@@ -33,14 +32,14 @@ func NewRootCommand() *cobra.Command {
 	var (
 		clientConfig     clientcmd.ClientConfig
 		logLevel         string // --loglevel
-		enableClientAuth string
+		enableClientAuth bool
+		insecure         bool
 		configMap        string
 		port             int
 	)
 
 	var command = cobra.Command{
-		Use:   CLIName,
-		Short: "argo-api-server is Argo's API server",
+		Use: CLIName,
 		RunE: func(c *cobra.Command, args []string) error {
 			cli.SetLogLevel(logLevel)
 			stats.RegisterStackDumper()
@@ -64,16 +63,12 @@ func NewRootCommand() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			clientAuth, err := strconv.ParseBool(enableClientAuth)
-			if err != nil {
-				return err
-			}
-
 			opts := apiserver.ArgoServerOpts{
 				Namespace:        namespace,
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
-				EnableClientAuth: clientAuth,
+				EnableClientAuth: enableClientAuth,
+				Insecure:         insecure,
 			}
 			apiServer := apiserver.NewArgoServer(opts)
 
@@ -87,10 +82,11 @@ func NewRootCommand() *cobra.Command {
 
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
-	command.Flags().IntVar(&port, "port", 8080, "")
-	command.Flags().StringVar(&enableClientAuth, "enableClientAuth", "false", "")
+	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
+	command.Flags().BoolVar(&enableClientAuth, "enable-client-auth", false, "Enable client auth")
+	command.Flags().BoolVar(&insecure, "insecure", false, "Insecure")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
-	command.Flags().StringVar(&logLevel, "loglevel", "debug", "Set the logging level. One of: debug|info|warn|error")
+	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	return &command
 }
 

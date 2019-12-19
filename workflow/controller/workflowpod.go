@@ -562,12 +562,6 @@ func addSchedulingConstraints(pod *apiv1.Pod, wfSpec *wfv1.WorkflowSpec, tmpl *w
 	} else if wfSpec.PodPriority != nil {
 		pod.Spec.Priority = wfSpec.PodPriority
 	}
-	// Set schedulerName (if specified)
-	if tmpl.SchedulerName != "" {
-		pod.Spec.SchedulerName = tmpl.SchedulerName
-	} else if wfSpec.SchedulerName != "" {
-		pod.Spec.SchedulerName = wfSpec.SchedulerName
-	}
 
 	// set hostaliases
 	pod.Spec.HostAliases = append(pod.Spec.HostAliases, wfSpec.HostAliases...)
@@ -833,6 +827,9 @@ func (woc *wfOperationCtx) addArchiveLocation(pod *apiv1.Pod, tmpl *wfv1.Templat
 			needLocation = true
 			break
 		}
+	}
+	if woc.artifactRepository.IsArchiveLogs() {
+		needLocation = true
 	}
 	if !needLocation {
 		woc.log.Debugf("archive location unnecessary")
