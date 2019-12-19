@@ -43,7 +43,7 @@ func NewGetCommand() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
-				wf, err = packer.DecompressWorkflow(wf)
+				err = packer.DecompressWorkflow(wf)
 				if err != nil {
 					log.Fatal(err)
 				}

@@ -3054,6 +3054,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 							},
 						},
 					},
+					"offloadNodeStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether on not node status has been offloaded to a database",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"storedTemplates": {
 						SchemaProps: spec.SchemaProps{
 							Description: "StoredTemplates is a mapping between a template ref and the node's status.",

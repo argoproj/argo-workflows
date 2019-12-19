@@ -137,7 +137,7 @@ func (p *logPrinter) PrintPodLogs(podName string) error {
 // Prints logs for workflow pod steps and return most recent log timestamp per pod name
 func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*time.Time {
 	var podNodes []v1alpha1.NodeStatus
-	wf, err := packer.DecompressWorkflow(wf)
+	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Warn(err)
 		return nil
@@ -199,7 +199,7 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 	defer cancel()
 
 	processPods := func(wf *v1alpha1.Workflow) {
-		wf, err := packer.DecompressWorkflow(wf)
+		err := packer.DecompressWorkflow(wf)
 		if err != nil {
 			log.Warn(err)
 			return

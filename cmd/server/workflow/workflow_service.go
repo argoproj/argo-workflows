@@ -9,11 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	corev1 "k8s.io/api/core/v1"
-
 
 	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -121,7 +120,7 @@ func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfR
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return &WorkflowDeleteResponse{WorkflowName: wfReq.WorkflowName, Status: "deleted"}, nil
 }
 
 func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
@@ -199,7 +198,6 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 	return wf, nil
 }
 
-
 func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *WorkflowGetRequest, ws WorkflowService_WatchWorkflowServer) error {
 	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Watch(v1.ListOptions{})
 	if err != nil {
@@ -207,7 +205,7 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 	}
 
 	done := make(chan bool)
-	go func(){
+	go func() {
 		for next := range wfs.ResultChan() {
 			a := *next.Object.(*v1alpha1.Workflow)
 			if wfReq.WorkflowName == "" || wfReq.WorkflowName == a.Name {
@@ -231,7 +229,7 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 	return nil
 }
 
-func (s *kubeService) PodLogs( kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
+func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
 	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, &corev1.PodLogOptions{
 		Container:    wfReq.Container,
 		Follow:       wfReq.LogOptions.Follow,

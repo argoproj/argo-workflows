@@ -346,6 +346,7 @@ const workflow = `
   }
 }
 `
+
 func getWorkflowServer() *workflowServer {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
@@ -360,25 +361,23 @@ func getWorkflowServer() *workflowServer {
 	return server
 }
 
-func getWorkflow(server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error){
+func getWorkflow(server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
 
 	req := WorkflowGetRequest{
 		WorkflowName: wfName,
 		Namespace:    namespace,
 	}
 
-	return server.GetWorkflow(context.TODO(),&req)
+	return server.GetWorkflow(context.TODO(), &req)
 }
 
-
-func getWorkflowList(server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error){
+func getWorkflowList(server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error) {
 	req := WorkflowListRequest{
 		Namespace: namespace,
 	}
-	return server.ListWorkflows(context.TODO(),&req)
+	return server.ListWorkflows(context.TODO(), &req)
 
 }
-
 
 func TestCreateWorkflow(t *testing.T) {
 
@@ -386,9 +385,7 @@ func TestCreateWorkflow(t *testing.T) {
 	var req WorkflowCreateRequest
 	_ = json.Unmarshal([]byte(workflow), &req)
 
-
-	wf, err :=server.CreateWorkflow(context.TODO(),&req)
-
+	wf, err := server.CreateWorkflow(context.TODO(), &req)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
@@ -444,7 +441,7 @@ func TestDeleteWorkflow(t *testing.T) {
 		Namespace:    wf.Namespace,
 	}
 
-	delRsp, err := server.DeleteWorkflow(context.TODO(), &delReq )
+	delRsp, err := server.DeleteWorkflow(context.TODO(), &delReq)
 
 	assert.NotNil(t, delRsp)
 	assert.Equal(t, wf.Name, delRsp.WorkflowName)
@@ -472,7 +469,7 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 	assert.Equal(t, true, *wf.Spec.Suspend)
 	assert.Nil(t, err)
 
-	wf, err = server.ResumeWorkflow(context.TODO(),&rsmWfReq)
+	wf, err = server.ResumeWorkflow(context.TODO(), &rsmWfReq)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, wf.Spec.Suspend)
@@ -489,7 +486,7 @@ func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
 	wf, err := server.SuspendWorkflow(context.TODO(), &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
-	wf, err = server.ResumeWorkflow(context.TODO(),&rsmWfReq)
+	wf, err = server.ResumeWorkflow(context.TODO(), &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }

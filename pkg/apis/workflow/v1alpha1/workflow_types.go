@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -721,6 +722,9 @@ type WorkflowStatus struct {
 
 	// Nodes is a mapping between a node ID and the node's status.
 	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
+
+	// Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.
+	OffloadNodeStatus bool `json:"offloadNodeStatus,omitempty" protobuf:"bytes,10,rep,name=offloadNodeStatus"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`

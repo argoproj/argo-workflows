@@ -295,7 +295,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Decompress the node if it is compressed
-	woc.wf, err = packer.DecompressWorkflow(woc.wf)
+	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))

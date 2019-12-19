@@ -352,18 +352,18 @@ func (woc *wfOperationCtx) persistUpdates() {
 	if !woc.updated {
 		return
 	}
-	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(woc.wf.ObjectMeta.Namespace)
-	wf, err := packer.CompressWorkflow(woc.wf)
-	willOffloadNodeStatus := false
+	wf := woc.wf.DeepCopy()
+	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace)
+	err := packer.CompressWorkflow(wf)
 	if packer.IsTooLargeError(err) {
-		willOffloadNodeStatus = woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
+		wf.Status.OffloadNodeStatus = woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
 	} else if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
 		woc.markWorkflowFailed(err.Error())
 	}
-	if willOffloadNodeStatus {
-		woc.wf.Status.Nodes = nil
-		woc.wf.Status.CompressedNodes = ""
+	if wf.Status.OffloadNodeStatus {
+		wf.Status.Nodes = nil
+		wf.Status.CompressedNodes = ""
 	}
 
 	wf, err = wfClient.Update(wf)
@@ -376,15 +376,17 @@ func (woc *wfOperationCtx) persistUpdates() {
 		if !apierr.IsConflict(err) {
 			return
 		}
-		woc.log.Info("Re-appying updates on latest version and retrying update")
+		woc.log.Info("Re-applying updates on latest version and retrying update")
 		err = woc.reapplyUpdate(wfClient)
 		if err != nil {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
 		}
+	} else {
+		wf.Status.Nodes = woc.wf.Status.Nodes
 	}
-	woc.wf.ResourceVersion = wf.ResourceVersion
-	if willOffloadNodeStatus {
+
+	if wf.Status.OffloadNodeStatus {
 		err = woc.controller.wfDBctx.Save(wf)
 		if err != nil {
 			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
@@ -394,7 +396,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 			}
 		}
 	}
-
+	woc.wf = wf
 	woc.log.Info("Workflow update successful")
 
 	// HACK(jessesuen) after we successfully persist an update to the workflow, the informer's
@@ -411,21 +413,21 @@ func (woc *wfOperationCtx) persistUpdates() {
 	// Send succeeded pods or completed pods to gcPods channel to delete it later depend on the PodGCStrategy.
 	// Notice we do not need to label the pod if we will delete it later for GC. Otherwise, that may even result in
 	// errors if we label a pod that was deleted already.
-	if woc.wf.Spec.PodGC != nil {
-		switch woc.wf.Spec.PodGC.Strategy {
+	if wf.Spec.PodGC != nil {
+		switch wf.Spec.PodGC.Strategy {
 		case wfv1.PodGCOnPodSuccess:
 			for podName := range woc.succeededPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 			}
 		case wfv1.PodGCOnPodCompletion:
 			for podName := range woc.completedPods {
-				woc.controller.gcPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+				woc.controller.gcPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 			}
 		}
 	} else {
 		// label pods which will not be deleted
 		for podName := range woc.completedPods {
-			woc.controller.completedPods <- fmt.Sprintf("%s/%s", woc.wf.ObjectMeta.Namespace, podName)
+			woc.controller.completedPods <- fmt.Sprintf("%s/%s", wf.ObjectMeta.Namespace, podName)
 		}
 	}
 }

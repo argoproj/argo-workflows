@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
 
@@ -117,10 +120,6 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, wfReq *WorkflowCrea
 	if wfReq.Workflow.Namespace == "" {
 		wfReq.Workflow.Namespace = wfReq.Namespace
 	}
-	labels := wfReq.Workflow.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string)
-	}
 
 	if wfReq.InstanceID != "" {
 		labels := wfReq.Workflow.GetLabels()
@@ -130,7 +129,6 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, wfReq *WorkflowCrea
 		labels[common.LabelKeyControllerInstanceID] = wfReq.InstanceID
 		wfReq.Workflow.SetLabels(labels)
 	}
-
 
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(wfReq.Namespace))
 
@@ -159,15 +157,18 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, wfReq *WorkflowGetRequ
 		return nil, err
 	}
 
-	var wf *v1alpha1.Workflow
-
-	if s.WfDBService != nil {
-		wf, err = s.WfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
-	} else {
-		wf, err = s.WfKubeService.Get(wfClient, wfReq.Namespace, wfReq.WorkflowName, wfReq.GetOptions)
-	}
+	wf, err := s.WfKubeService.Get(wfClient, wfReq.Namespace, wfReq.WorkflowName, wfReq.GetOptions)
 	if err != nil {
 		return nil, err
+	}
+
+	if wf.Status.OffloadNodeStatus {
+		offloaded, err := s.WfDBService.Get(wfReq.WorkflowName, wfReq.Namespace)
+		if err != nil {
+			return nil, err
+		}
+		wf.Status.Nodes = offloaded.Status.Nodes
+		wf.Status.CompressedNodes = offloaded.Status.CompressedNodes
 	}
 
 	return wf, err
@@ -179,20 +180,31 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, wfReq *WorkflowListR
 		return nil, err
 	}
 
-	var wfList *v1alpha1.WorkflowList
-
-	if s.WfDBService != nil {
-		var pagesize uint = 0
-		if wfReq.ListOptions != nil {
-			pagesize = uint(wfReq.ListOptions.Limit)
-		}
-
-		wfList, err = s.WfDBService.List(wfReq.Namespace, pagesize, "")
-	} else {
-		wfList, err = s.WfKubeService.List(wfClient, wfReq.Namespace, wfReq)
-	}
+	wfList, err := s.WfKubeService.List(wfClient, wfReq.Namespace, wfReq)
 	if err != nil {
 		return nil, err
+	}
+
+	if s.WfDBService != nil {
+		offloadedWorkflows, err := s.WfDBService.List(wfReq.Namespace, 0, "")
+		if err != nil {
+			return nil, err
+		}
+		status := map[types.UID]v1alpha1.WorkflowStatus{}
+		for _, item := range offloadedWorkflows.Items {
+			status[item.UID] = item.Status
+		}
+		for _, wf := range wfList.Items {
+			if wf.Status.OffloadNodeStatus {
+				status, ok := status[wf.UID]
+				if ok {
+					wf.Status.Nodes = status.Nodes
+					wf.Status.CompressedNodes = status.CompressedNodes
+				} else {
+					return nil, fmt.Errorf("unable to find offloaded workflow status for %s/%s", wfReq.Namespace, wf.UID)
+				}
+			}
+		}
 	}
 
 	return wfList, nil
@@ -204,19 +216,19 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, wfReq *WorkflowDele
 		return nil, err
 	}
 
-	if s.WfDBService != nil {
+	wf, err := s.WfKubeService.Get(wfClient, wfReq.Namespace, wfReq.WorkflowName, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if wf.Status.OffloadNodeStatus {
 		err = s.WfDBService.Delete(wfReq.WorkflowName, wfReq.Namespace)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	wfDelRes, err := s.WfKubeService.Delete(wfClient, wfReq.Namespace, wfReq)
-	if err != nil {
-		return nil, err
-	}
-
-	return wfDelRes, nil
+	return s.WfKubeService.Delete(wfClient, wfReq.Namespace, wfReq)
 }
 
 func (s *workflowServer) RetryWorkflow(ctx context.Context, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
@@ -246,7 +258,7 @@ func (s *workflowServer) ResumeWorkflow(ctx context.Context, wfReq *WorkflowUpda
 		return nil, err
 	}
 
-	return s.WfKubeService.Resubmit(wfClient, wfReq.Namespace, wfReq)
+	return s.WfKubeService.Resume(wfClient, wfReq.Namespace, wfReq)
 
 }
 
@@ -301,4 +313,3 @@ func (s *workflowServer) PodLogs(wfReq *WorkflowLogRequest, log WorkflowService_
 
 	return s.WfKubeService.PodLogs(kubeClient, wfReq, log)
 }
-

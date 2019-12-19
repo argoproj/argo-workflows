@@ -137,7 +137,6 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-
 func (as *argoServer) newGRPCServer() *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
@@ -244,7 +243,6 @@ func (as *argoServer) RsyncConfig(namespace string, wfClientset *versioned.Clien
 	}
 	return as.UpdateConfig(cm)
 }
-
 
 func (as *argoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
 

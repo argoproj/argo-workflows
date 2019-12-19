@@ -54,7 +54,7 @@ func watchWorkflow(name string) {
 			errors.CheckError(err)
 			continue
 		}
-		wf, err := packer.DecompressWorkflow(wf)
+		err := packer.DecompressWorkflow(wf)
 		errors.CheckError(err)
 		print("\033[H\033[2J")
 		print("\033[0;0H")
