@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/test"
 	"github.com/argoproj/argo/workflow/util"
@@ -42,6 +43,68 @@ spec:
     name: whalesay
 status:
   phase: Running
+  startedAt: 2018-08-27T20:41:38Z
+`
+
+var succeededWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  clusterName: ""
+  creationTimestamp: 2018-08-27T20:41:38Z
+  generateName: hello-world-
+  generation: 1
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: hello-world-nrgbf
+  namespace: default
+  resourceVersion: "1063703"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-nrgbf
+  uid: 9866f345-aa39-11e8-b103-025000000001
+spec:
+  entrypoint: whalesay
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+status:
+  phase: Succeeded
+  startedAt: 2018-08-27T20:41:38Z
+`
+
+var failedWf = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  clusterName: ""
+  creationTimestamp: 2018-08-27T20:41:38Z
+  generateName: hello-world-
+  generation: 1
+  labels:
+    workflows.argoproj.io/completed: "true"
+    workflows.argoproj.io/phase: Succeeded
+  name: hello-world-nrgbf
+  namespace: default
+  resourceVersion: "1063703"
+  selfLink: /apis/argoproj.io/v1alpha1/namespaces/default/workflows/hello-world-nrgbf
+  uid: 9866f345-aa39-11e8-b103-025000000001
+spec:
+  entrypoint: whalesay
+  templates:
+  - container:
+      args:
+      - hello world
+      command:
+      - cowsay
+      image: docker/whalesay:latest
+    name: whalesay
+status:
+  phase: Failed
   startedAt: 2018-08-27T20:41:38Z
 `
 
@@ -85,4 +148,146 @@ func TestEnqueueWF(t *testing.T) {
 	assert.NoError(t, err)
 	controller.enqueueWF(un)
 	assert.Equal(t, 1, controller.workqueue.Len())
+}
+
+func TestTTLStrategySucceded(t *testing.T) {
+	var err error
+	var un *unstructured.Unstructured
+	var ten int32 = 10
+
+	controller := newTTLController()
+
+	// Veirfy we do not enqueue if not completed
+	wf := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	un, err = util.ToUnstructured(wf)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 0, controller.workqueue.Len())
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf1.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf1)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 1, controller.workqueue.Len())
+
+}
+
+func TestTTLStrategyFailed(t *testing.T) {
+	var err error
+	var un *unstructured.Unstructured
+	var ten int32 = 10
+
+	controller := newTTLController()
+
+	// Veirfy we do not enqueue if not completed
+	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterFailed: &ten}
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	un, err = util.ToUnstructured(wf)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 0, controller.workqueue.Len())
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf1.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterFailed: &ten}
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf1)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 1, controller.workqueue.Len())
+
+}
+
+func TestNoTTLStrategyFailed(t *testing.T) {
+	var err error
+	var un *unstructured.Unstructured
+	controller := newTTLController()
+	// Veirfy we do not enqueue if not completed
+	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	un, err = util.ToUnstructured(wf)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 0, controller.workqueue.Len())
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf1)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 0, controller.workqueue.Len())
+
+}
+
+func TestNoTTLStrategyFailedButTTLSecondsAfterFinished(t *testing.T) {
+	var err error
+	var un *unstructured.Unstructured
+	var ten int32 = 10
+
+	controller := newTTLController()
+
+	// Veirfy we do not enqueue if not completed
+	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf.Spec.TTLSecondsAfterFinished = &ten
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	un, err = util.ToUnstructured(wf)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 0, controller.workqueue.Len())
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf1.Spec.TTLSecondsAfterFinished = &ten
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	un, err = util.ToUnstructured(wf1)
+	assert.NoError(t, err)
+	controller.enqueueWF(un)
+	assert.Equal(t, 1, controller.workqueue.Len())
+}
+
+func TestTTLlExpired(t *testing.T) {
+	controller := newTTLController()
+	var ten int32 = 10
+
+	wf := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterFailed: &ten}
+	wf.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, wf.Status.Failed())
+	now := controller.clock.Now()
+	assert.Equal(t, true, now.After(wf.Status.FinishedAt.Add(time.Second*time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailed))))
+	assert.Equal(t, true, wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailed != nil)
+	assert.Equal(t, true, controller.ttlExpired(wf))
+
+	wf1 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf1.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterFailed: &ten}
+	wf1.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf1))
+
+	wf2 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf2.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterFailed: &ten}
+	wf2.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf2))
+
+	wf3 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf3.Spec.TTLSecondsAfterFinished = &ten
+	wf3.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf3))
+
+	wf4 := test.LoadWorkflowFromBytes([]byte(failedWf))
+	wf4.Spec.TTLSecondsAfterFinished = &ten
+	wf4.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf4))
+
+	wf5 := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf5.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
+	wf5.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-5 * time.Second)}
+	assert.Equal(t, false, controller.ttlExpired(wf5))
+
+	wf6 := test.LoadWorkflowFromBytes([]byte(succeededWf))
+	wf6.Spec.TTLStrategy = wfv1.TTLStrategy{SecondsAfterSuccess: &ten}
+	wf6.Status.FinishedAt = metav1.Time{Time: controller.clock.Now().Add(-11 * time.Second)}
+	assert.Equal(t, true, controller.ttlExpired(wf6))
 }
