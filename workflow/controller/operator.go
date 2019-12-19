@@ -801,7 +801,6 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 			// pod is being terminated
 			newPhase = wfv1.NodeError
 			message = "pod termination"
-			log.Info(message)
 		} else {
 			newPhase = wfv1.NodeRunning
 			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
