@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/argoproj/argo/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/workflow/packer"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
@@ -47,6 +49,8 @@ spec:
 
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
+	closer := makeMax()
+	defer closer()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -55,52 +59,56 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
-
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
+	closer := makeMax()
+	defer closer()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	var err1 error = errors.New("23324", "test")
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1), false, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
-	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
-
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
+	closer := makeMax()
+	defer closer()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not row found")), true, true)
+	controller.wfDBctx = getMockDBCtx(nil, true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
-	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
+	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
+	closer := makeMax()
+	defer closer()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	var err1 error = errors.New("23324", "test")
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(err1), true, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), true, false)
 	woc := newWorkflowOperationCtx(wf, controller)
-
 	woc.operate()
-	assert.True(t, woc.wf.Status.Phase == wfv1.NodeFailed)
+	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+}
 
+func makeMax() func() {
+	packer.MaxWorkflowSize = 50
+	return func() { packer.MaxWorkflowSize = packer.DefaultMaxWorkflowSize }
 }
