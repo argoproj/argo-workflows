@@ -1203,6 +1203,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
+	// Set templateScope from which the template resolution starts.
+	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
@@ -1235,7 +1238,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		retryParentNode := node
 		if retryParentNode == nil {
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
-			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
 		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
@@ -1288,7 +1291,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			err := errors.InternalErrorf("Template '%s' has unknown node type", processedTmpl.Name)
 			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
-		node = woc.initializeExecutableNode(nodeName, nodeType, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
+		node = woc.initializeExecutableNode(nodeName, nodeType, templateScope, processedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
 	}
 
 	switch processedTmpl.GetType() {
@@ -1309,8 +1312,11 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 	if err != nil {
 		node = woc.markNodeError(node.Name, err)
-		// If retry policy is not set to Always or OnError, we won't attempt to retry an errored container
-		if processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways && processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError {
+		// If retry policy is not set, or if it is not set to Always or OnError, we won't attempt to retry an errored container
+		// and we return instead.
+		if processedTmpl.RetryStrategy == nil ||
+			(processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyAlways &&
+				processedTmpl.RetryStrategy.RetryPolicy != wfv1.RetryPolicyOnError) {
 			return node, err
 		}
 	}
@@ -1401,7 +1407,7 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
-func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
 
 	// Set the input values to the node.
@@ -1409,7 +1415,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
-	node.TemplateScope = tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	node.TemplateScope = templateScope
 
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node
@@ -1592,6 +1598,9 @@ func getTemplateOutputsFromScope(tmpl *wfv1.Template, scope *wfScope) (*wfv1.Out
 	if len(tmpl.Outputs.Parameters) > 0 {
 		outputs.Parameters = make([]wfv1.Parameter, 0)
 		for _, param := range tmpl.Outputs.Parameters {
+			if param.ValueFrom == nil {
+				return nil, fmt.Errorf("output parameters must have a valueFrom specified")
+			}
 			val, err := scope.resolveParameter(param.ValueFrom.Parameter)
 			if err != nil {
 				return nil, err
