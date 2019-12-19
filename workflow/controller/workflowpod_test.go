@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/utils/pointer"
-
-	"github.com/argoproj/argo/test/util"
-	"github.com/argoproj/argo/workflow/config"
-
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/test/util"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/config"
 )
 
 func unmarshalTemplate(yamlStr string) *wfv1.Template {

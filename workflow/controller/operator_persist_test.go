@@ -9,11 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/packer"
-
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) sqldb.DBRepository {

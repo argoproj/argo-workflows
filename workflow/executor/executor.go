@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	argofile "github.com/argoproj/pkg/file"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,8 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-
-	argofile "github.com/argoproj/pkg/file"
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"

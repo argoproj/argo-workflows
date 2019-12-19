@@ -6,11 +6,6 @@ import (
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -29,10 +24,14 @@ import (
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/metrics"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )

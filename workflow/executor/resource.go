@@ -10,10 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
