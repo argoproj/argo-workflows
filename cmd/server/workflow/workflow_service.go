@@ -28,15 +28,6 @@ type kubeService struct {
 	EnableClientAuth bool
 }
 
-func NewKubeServer(Namespace string, wfClientset *wfclientset.Clientset, kubeClientSet *kubernetes.Clientset, enableClientAuth bool) *kubeService {
-	return &kubeService{
-		Namespace:        Namespace,
-		WfClientset:      wfClientset,
-		KubeClientset:    kubeClientSet,
-		EnableClientAuth: enableClientAuth,
-	}
-}
-
 func (s *kubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 
@@ -102,12 +93,10 @@ func (s *kubeService) Get(wfClient versioned.Interface, namespace string, workfl
 }
 
 func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
-
-	var listOption v1.ListOptions = v1.ListOptions{}
+	var listOption = v1.ListOptions{}
 	if wfReq.ListOptions != nil {
 		listOption = *wfReq.ListOptions
 	}
-
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(listOption)
 	if err != nil {
 		return nil, err
