@@ -82,7 +82,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil), true, true)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not row found")), true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
