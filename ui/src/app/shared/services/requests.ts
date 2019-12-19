@@ -1,8 +1,8 @@
 import * as _superagent from 'superagent';
 const superagentPromise = require('superagent-promise');
-import { Observable, Observer } from 'rxjs';
+import {Observable, Observer} from 'rxjs';
 
-import { apiUrl } from '../base';
+import {apiUrl} from '../base';
 
 type Callback = (data: any) => void;
 
@@ -16,10 +16,10 @@ declare class EventSource {
 }
 
 enum ReadyState {
-  CONNECTING = 0,
-  OPEN = 1,
-  CLOSED = 2,
-  DONE = 4,
+    CONNECTING = 0,
+    OPEN = 1,
+    CLOSED = 2,
+    DONE = 4
 }
 
 const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, global.Promise);
@@ -45,7 +45,7 @@ export default {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(apiUrl(url));
             let opened = false;
-            eventSource.onopen = (msg) => {
+            eventSource.onopen = msg => {
                 if (!opened) {
                     opened = true;
                 } else if (!allowAutoRetry) {
@@ -53,8 +53,8 @@ export default {
                     observer.complete();
                 }
             };
-            eventSource.onmessage = (msg) => observer.next(msg.data);
-            eventSource.onerror = (e) => () => {
+            eventSource.onmessage = msg => observer.next(msg.data);
+            eventSource.onerror = e => () => {
                 if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
                     observer.complete();
                 } else {
@@ -65,5 +65,5 @@ export default {
                 eventSource.close();
             };
         });
-    },
+    }
 };
