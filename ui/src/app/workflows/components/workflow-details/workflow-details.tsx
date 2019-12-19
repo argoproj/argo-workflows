@@ -9,6 +9,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
+import {NODE_PHASE, NodePhase} from '../../../../models';
 import {Consumer} from '../../../shared/context';
 import {WorkflowArtifacts} from '../workflow-artifacts';
 import {WorkflowDag} from '../workflow-dag/workflow-dag';
@@ -17,7 +18,6 @@ import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
-import {NODE_PHASE, NodePhase} from "../../../../models";
 
 require('./workflow-details.scss');
 
@@ -31,29 +31,27 @@ function parseSidePanelParam(param: string) {
 
 // TODO(simon): most likely extract this to a util file
 function isWorkflowSuspended(wf: models.Workflow): boolean {
-    if (wf == null || wf.spec == null) {
+    if (wf === null || wf.spec === null) {
         return false;
     }
-    if (wf.spec.suspend != undefined && wf.spec.suspend) {
+    if (wf.spec.suspend !== undefined && wf.spec.suspend) {
         return true;
     }
     if (wf.status && wf.status.nodes) {
-        for (let node of Object.values(wf.status.nodes)) {
-            if (node.type == 'Suspend' && node.phase == 'Running') {
+        for (const node of Object.values(wf.status.nodes)) {
+            if (node.type === 'Suspend' && node.phase === 'Running') {
                 return true;
             }
-
         }
     }
     return false;
 }
 
 function isWorkflowRunning(wf: models.Workflow): boolean {
-    if (wf == null || wf.spec == null) {
+    if (wf === null || wf.spec === null) {
         return false;
     }
-    return wf.status.phase == 'Running';
-
+    return wf.status.phase === 'Running';
 }
 
 export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {workflow: models.Workflow}> {
@@ -108,7 +106,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes[this.selectedNodeId];
-        const workflowPhase: NodePhase = (this.state.workflow && this.state.workflow.status) ? this.state.workflow.status.phase : undefined;
+        const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
         return (
             <Consumer>
                 {ctx => (
@@ -121,18 +119,18 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Retry',
                                         iconClassName: 'fa fa-undo',
-                                        disabled: workflowPhase == undefined || !(workflowPhase == NODE_PHASE.FAILED || workflowPhase == NODE_PHASE.ERROR),
+                                        disabled: workflowPhase === undefined || !(workflowPhase === 'Failed' || workflowPhase === 'Error'),
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
                                                 .retry(this.props.match.params.name, this.props.match.params.namespace)
-                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                                .catch(error => {
                                                     this.appContext.apis.notifications.show({
                                                         content: 'Unable to retry workflow',
                                                         type: NotificationType.Error
-                                                    })
-                                                }
-                                            );
+                                                    });
+                                                });
                                         }
                                     },
                                     {
@@ -142,13 +140,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
                                                 .resubmit(this.props.match.params.name, this.props.match.params.namespace)
-                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                                .catch(error => {
                                                     this.appContext.apis.notifications.show({
                                                         content: 'Unable to resubmit workflow',
                                                         type: NotificationType.Error
-                                                    })
-                                                }
-                                            );
+                                                    });
+                                                });
                                         }
                                     },
                                     {
@@ -159,13 +157,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
                                                 .suspend(this.props.match.params.name, this.props.match.params.namespace)
-                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                                .catch(error => {
                                                     this.appContext.apis.notifications.show({
                                                         content: 'Unable to suspend workflow',
                                                         type: NotificationType.Error
-                                                    })
-                                                }
-                                            );
+                                                    });
+                                                });
                                         }
                                     },
                                     {
@@ -176,13 +174,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
                                                 .resume(this.props.match.params.name, this.props.match.params.namespace)
-                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                                .catch(error => {
                                                     this.appContext.apis.notifications.show({
                                                         content: 'Unable to resume workflow',
                                                         type: NotificationType.Error
-                                                    })
-                                                }
-                                            );
+                                                    });
+                                                });
                                         }
                                     }
                                 ]
@@ -201,7 +199,6 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                 </div>
                             )
                         }}>
-
                         <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
                             {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
                                 (this.state.workflow && (

@@ -26,7 +26,7 @@ const NODE_HEIGHT = 52;
 
 // TODO(simon): most likely extract this to a util file
 function isNodeSuspended(node: models.NodeStatus): boolean {
-    return node.type == 'Suspend' && node.phase == 'Running';
+    return node.type === 'Suspend' && node.phase === 'Running';
 }
 
 export class WorkflowDag extends React.Component<WorkflowDagProps> {
