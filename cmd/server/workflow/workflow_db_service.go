@@ -1,13 +1,14 @@
 package workflow
 
 import (
+	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
+	dblib "upper.io/db.v3"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/config"
-	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	dblib "upper.io/db.v3"
 )
 
 type DBService struct {

@@ -4,14 +4,15 @@ import (
 	"testing"
 	"time"
 
-	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/test"
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/util/workqueue"
+
+	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
+	"github.com/argoproj/argo/test"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 var completedWf = `

@@ -12,11 +12,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/argoproj/argo/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/argoproj/argo/errors"
 )
 
 // ExecResource will run kubectl action against a manifest

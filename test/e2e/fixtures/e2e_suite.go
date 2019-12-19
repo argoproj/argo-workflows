@@ -3,10 +3,11 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
 	"time"
+
+	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"

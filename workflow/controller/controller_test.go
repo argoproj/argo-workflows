@@ -2,9 +2,10 @@ package controller
 
 import (
 	"context"
-	"k8s.io/client-go/util/workqueue"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"

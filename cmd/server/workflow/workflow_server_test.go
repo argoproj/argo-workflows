@@ -3,12 +3,14 @@ package workflow
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/argoproj/argo/workflow/config"
-	"github.com/stretchr/testify/assert"
-	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 const wf1 = `

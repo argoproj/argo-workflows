@@ -3056,7 +3056,7 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 					},
 					"offloadNodeStatus": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Whether on not node status has been offloaded to a database",
+							Description: "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

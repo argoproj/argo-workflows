@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 
+	argofile "github.com/argoproj/pkg/file"
+
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
@@ -40,7 +42,6 @@ import (
 	"github.com/argoproj/argo/workflow/artifacts/raw"
 	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
-	argofile "github.com/argoproj/pkg/file"
 )
 
 const (

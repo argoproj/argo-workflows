@@ -12,11 +12,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	log "github.com/sirupsen/logrus"
+	"sigs.k8s.io/yaml"
+
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
-	log "github.com/sirupsen/logrus"
-	"sigs.k8s.io/yaml"
 )
 
 // ResyncConfig reloads the controller config from the configmap

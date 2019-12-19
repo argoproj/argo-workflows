@@ -1,10 +1,11 @@
 package common
 
 import (
+	"time"
+
 	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/flowcontrol"
-	"time"
 )
 
 const CLIENT_REST_CONFIG = "rest.config"

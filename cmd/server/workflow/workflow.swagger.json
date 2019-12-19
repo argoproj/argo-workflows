@@ -4300,7 +4300,7 @@
         "offloadNodeStatus": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Whether on not node status has been offloaded to a database"
+          "description": "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty."
         },
         "storedTemplates": {
           "type": "object",
