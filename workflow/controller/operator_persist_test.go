@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/argoproj/argo/errors"
@@ -51,7 +52,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(nil), false, false)
+	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	assert.True(t, woc.wf.Status.Phase == wfv1.NodeRunning)
