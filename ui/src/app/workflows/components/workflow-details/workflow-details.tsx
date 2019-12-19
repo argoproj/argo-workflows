@@ -17,6 +17,7 @@ import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 import {WorkflowSummaryPanel} from '../workflow-summary-panel';
 import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
 import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
+import {NODE_PHASE, NodePhase} from "../../../../models";
 
 require('./workflow-details.scss');
 
@@ -80,6 +81,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
 
     public render() {
         const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes[this.selectedNodeId];
+        const workflowPhase: NodePhase = (this.state.workflow && this.state.workflow.status) ? this.state.workflow.status.phase : undefined;
         return (
             <Consumer>
                 {ctx => (
@@ -90,13 +92,70 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                             actionMenu: {
                                 items: [
                                     {
-                                        title: 'Resubmit',
+                                        title: 'Retry',
                                         iconClassName: 'fa fa-undo',
+                                        disabled: workflowPhase == undefined || !(workflowPhase == NODE_PHASE.FAILED || workflowPhase == NODE_PHASE.ERROR),
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .retry(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to retry workflow',
+                                                        type: NotificationType.Error
+                                                    })
+                                                }
+                                            );
+                                        }
+                                    },
+                                    {
+                                        title: 'Resubmit',
+                                        iconClassName: 'fa fa-plus-circle ',
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
                                                 .resubmit(this.props.match.params.name, this.props.match.params.namespace)
-                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to resubmit workflow',
+                                                        type: NotificationType.Error
+                                                    })
+                                                }
+                                            );
+                                        }
+                                    },
+                                    {
+                                        title: 'Suspend',
+                                        iconClassName: 'fa fa-pause',
+                                        disabled: workflowPhase != undefined && workflowPhase != NODE_PHASE.SUSPENDED,
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .suspend(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to suspend workflow',
+                                                        type: NotificationType.Error
+                                                    })
+                                                }
+                                            );
+                                        }
+                                    },
+                                    {
+                                        title: 'Resume',
+                                        iconClassName: 'fa fa-play',
+                                        disabled: workflowPhase == undefined || workflowPhase != NODE_PHASE.SUSPENDED,
+                                        action: () => {
+                                            // TODO(simon): most likely extract this somewhere with higher scope
+                                            services.workflows
+                                                .resume(this.props.match.params.name, this.props.match.params.namespace)
+                                                .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)).catch(error => {
+                                                    this.appContext.apis.notifications.show({
+                                                        content: 'Unable to resume workflow',
+                                                        type: NotificationType.Error
+                                                    })
+                                                }
+                                            );
                                         }
                                     }
                                 ]
@@ -115,6 +174,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                 </div>
                             )
                         }}>
+
                         <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!selectedNode})}>
                             {(this.selectedTabKey === 'summary' && this.renderSummaryTab()) ||
                                 (this.state.workflow && (

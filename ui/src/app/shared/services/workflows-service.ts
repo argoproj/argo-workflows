@@ -41,9 +41,30 @@ export class WorkflowsService {
             });
     }
 
+    public retry(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/retry`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
     public resubmit(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
             .put(`/workflows/${namespace}/${workflowName}/resubmit`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public suspend(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/suspend`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public resume(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/resume`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
