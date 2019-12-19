@@ -12,7 +12,6 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
-    containerRuntimeExecutor: pns
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap
