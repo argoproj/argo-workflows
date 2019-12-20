@@ -130,8 +130,8 @@ func getWorkflowTempplateServer()*WorkflowTemplateServer{
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 	server := getWorkflowTempplateServer()
 	var wftReq WorkflowTemplateCreateRequest
-	json.Unmarshal([]byte(wftStr1), &wftReq)
-
+	err := json.Unmarshal([]byte(wftStr1), &wftReq)
+	assert.Nil(t, err)
 	wftRsp, err := server.CreateWorkflowTemplate(context.TODO(), &wftReq)
 	assert.NotNil(t, wftRsp)
 	assert.Nil(t, err)
@@ -183,7 +183,8 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	server := getWorkflowTempplateServer()
 	var wftObj1 v1alpha1.WorkflowTemplate
-	_ = json.Unmarshal([]byte(wftStr2), &wftObj1)
+	err := json.Unmarshal([]byte(wftStr2), &wftObj1)
+	assert.Nil(t, err)
 	wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 	wftReq := WorkflowTemplateUpdateRequest{
 		Namespace:            "default",
