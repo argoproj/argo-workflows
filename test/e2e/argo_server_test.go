@@ -26,7 +26,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	if err != nil {
 		panic(err)
 	}
-	s.authToken = base64.RawStdEncoding.EncodeToString(kubeConfigBytes)
+	s.authToken = base64.StdEncoding.EncodeToString(kubeConfigBytes)
 	s.e = httpexpect.
 		WithConfig(httpexpect.Config{
 			BaseURL:  "http://localhost:2746/api/v1",
