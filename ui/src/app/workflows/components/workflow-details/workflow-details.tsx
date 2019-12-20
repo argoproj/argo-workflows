@@ -187,6 +187,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                     {
                                         title: 'Terminate',
                                         iconClassName: 'fa fa-times-circle',
+                                        disabled: !isWorkflowRunning(this.state.workflow),
                                         action: () => {
                                             // TODO(simon): most likely extract this somewhere with higher scope
                                             services.workflows
