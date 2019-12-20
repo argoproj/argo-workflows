@@ -218,11 +218,8 @@ start:
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
 	make up
-	# Wait for pods to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-ui
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
+	# Wait for apps to be ready.
+	kubectl -n argo wait --for=condition=Ready pod --all -l app
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
