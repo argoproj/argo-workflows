@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/cmd/server/workflowhistory"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/pkg/apiclient"
@@ -126,7 +127,8 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	}
 	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-
+	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
+	workflowhistory.RegisterWorkflowHistoryServiceServer(grpcServer, workflowHistoryServer)
 	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 

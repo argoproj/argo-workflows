@@ -34,6 +34,10 @@ type DBRepository interface {
 	QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{}) (*wfv1.WorkflowList, error)
 }
 
+type WorkflowHistoryRepository interface {
+	ListWorkflowHistory() ([]wfv1.Workflow, error)
+}
+
 type WorkflowDB struct {
 	Id         string         `db:"id"`
 	Name       string         `db:"name"`
@@ -202,6 +206,15 @@ func (wdc *WorkflowDBContext) List(orderBy string) (*wfv1.WorkflowList, error) {
 	}, nil
 }
 
+func (wdc *WorkflowDBContext) ListWorkflowHistory() ([]wfv1.Workflow, error) {
+	if wdc.Session == nil {
+		return nil, DBInvalidSession(fmt.Errorf("session nil"))
+	}
+	var wfDBs []WorkflowDB
+	err := wdc.Session.Collection("workflow_history").Find().OrderBy("-startedat").All(&wfDBs)
+	return wfDB2wf(wfDBs), err
+}
+
 func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	if wdc.Session == nil {
@@ -225,6 +238,10 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 		return nil, DBOperationError(err)
 	}
 
+	return wfDB2wf(wfDBs), nil
+}
+
+func wfDB2wf(wfDBs []WorkflowDB) []wfv1.Workflow {
 	var wfs []wfv1.Workflow
 	for _, wfDB := range wfDBs {
 		var wf wfv1.Workflow
@@ -235,7 +252,7 @@ func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) (
 			wfs = append(wfs, wf)
 		}
 	}
-	return wfs, nil
+	return wfs
 }
 
 func (wdc *WorkflowDBContext) Close() error {

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -eu
-# TODO does not work :(
 
-app=workflow-controller
-app=minio
+app=argo-server
 container=$(docker ps --format="{{.Names}}" | grep $app)
 
 host=$(docker inspect ${container} | grep -o 'KUBERNETES_SERVICE_HOST=[^"]*' | cut -c 25-)
