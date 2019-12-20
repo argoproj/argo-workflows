@@ -1,5 +1,18 @@
 # REST API
 
+> v2.5 and after
+
+Since version v2.5 Argo Workflows ships with a server that provide more features and security that before.
+
+The server can be configured with or without client auth (`--enable-client-auth`). When it is disabled, then clients must pass their Kubeconfig base 64 encoded in the HTTP `Authorization` header:
+
+```
+token=$(cat ${KUBECONFIG:-~/.kube/config} | base64)
+curl -H "Authorization: Bearer $token" http://localhost:2746/api/v1/workflows/argo
+```
+
+> v2.4 and before
+
 Argo is implemented as a kubernetes controller and Workflow [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).
 Argo itself does not run an API server, and with all CRDs, it extends the Kubernetes API server by
 introducing a new API Group/Version (argoproj.io/v1alpha1) and Kind (Workflow). When CRDs are

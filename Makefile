@@ -239,8 +239,7 @@ up:
 
 .PHONY: port-forward
 port-forward:
-	killall kubectl || true
-	kubectl -n argo port-forward svc/argo-server 2746:2746
+	./hack/port-forward.sh
 
 .PHONY: logs
 logs:

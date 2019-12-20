@@ -19,19 +19,11 @@ make logs
 
 ### Accessing Argo UI
 
-```
-kubectl -n argo port-forward deployment/argo-ui 8001:8001
-```
-
-Then open http://localhost:8001
+Open http://localhost:8001
 
 ### Accessing MinIO
 
-```
-kubectl -n argo port-forward pod/minio 9000:9000
-```
-
-Then open http://localhost:9000 using admin/password.
+Open http://localhost:9000 using admin/password.
 
 ### Expose Database
 
