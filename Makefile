@@ -221,6 +221,7 @@ start:
 	# Wait for pods to be ready.
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
+	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-ui
 	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
