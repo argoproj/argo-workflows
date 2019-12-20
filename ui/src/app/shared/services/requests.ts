@@ -3,6 +3,7 @@ import * as _superagent from 'superagent';
 const superagentPromise = require('superagent-promise');
 import {Observable, Observer} from 'rxjs';
 
+import {SuperAgentRequest} from 'superagent';
 import {apiUrl} from '../base';
 
 type Callback = (data: any) => void;
@@ -23,30 +24,32 @@ enum ReadyState {
     DONE = 4
 }
 
-function token() {
-    if (localStorage.getItem('token') === null) {
-        localStorage.setItem('token', window.prompt('Please copy and paste your ~/.kube/config base 64 encoded.' + 'cat ${KUBECONFIG:-~/.kube/config} | base64 | pbcopy'));
+const auth = (req: SuperAgentRequest) => {
+    const token = localStorage.getItem('token');
+    if (token !== null) {
+        return req.auth(token, {type: 'bearer'});
+    } else {
+        return req;
     }
-    return localStorage.getItem('token');
-}
+};
 
 const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, global.Promise);
 
 export default {
     get(url: string) {
-        return superagent.get(apiUrl(url)).auth(token(), {type: 'bearer'});
+        return auth(superagent.get(apiUrl(url)));
     },
 
     post(url: string) {
-        return superagent.post(apiUrl(url)).auth(token(), {type: 'bearer'});
+        return auth(superagent.post(apiUrl(url)));
     },
 
     put(url: string) {
-        return superagent.put(apiUrl(url)).auth(token(), {type: 'bearer'});
+        return auth(superagent.put(apiUrl(url)));
     },
 
     patch(url: string) {
-        return superagent.patch(apiUrl(url)).auth(token(), {type: 'bearer'});
+        return auth(superagent.patch(apiUrl(url)));
     },
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
