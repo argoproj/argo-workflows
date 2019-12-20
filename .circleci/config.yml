@@ -131,6 +131,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
+            ./hack/print-in-cluster-config.sh
             make test-e2e 2>&1 | tee test-results/test.out
       - save_go_cache
       - store_test_results:

@@ -105,6 +105,21 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
+	log.WithField("tableName", "argo_workflow_history").Info("creating table if not exists")
+	_, err = session.Exec(`create table if not exists argo_workflow_history (
+    id varchar(128) ,
+    name varchar(256),
+    phase varchar(25),
+    namespace varchar(256),
+    workflow text,
+    startedat timestamp,
+    finishedat timestamp,
+    primary key (id, namespace)
+)`)
+	if err != nil {
+		return nil, "", err
+	}
+
 	return session, cfg.TableName, nil
 
 }
@@ -160,6 +175,8 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 	if err != nil {
 		return nil, "", err
 	}
+
+	// TODO history table
 
 	return session, cfg.TableName, nil
 
