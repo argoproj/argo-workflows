@@ -7,8 +7,7 @@
     ],
     "scripts": {
         "docker": "./scripts/build_docker.sh",
-        "build": "yarn build:ui && yarn build:api",
-        "build:ui": "webpack --config ./src/app/webpack.config.js",
+        "build": "webpack --config ./src/app/webpack.config.js",
         "build:storybook": "build-storybook -o ./dist/storybook",
         "start": "NODE_OPTIONS='--max-http-header-size 15000' webpack-dev-server --config ./src/app/webpack.config.js",
         "lint": "tslint --fix -p ./src/app",
