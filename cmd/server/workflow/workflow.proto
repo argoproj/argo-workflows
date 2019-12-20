@@ -18,7 +18,7 @@ message WorkflowCreateRequest {
     string namespace = 1;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 2;
     string instanceID = 3;
-    bool ServerDryRun = 4;
+    bool serverDryRun = 4;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
 }
 

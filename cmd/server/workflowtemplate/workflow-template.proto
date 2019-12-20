@@ -13,15 +13,11 @@ import "k8s.io/api/core/v1/generated.proto";
 // Workflow Service API performs CRUD actions against application resources
 package workflowtemplate;
 
-message SubmitOptions {
-    bool Strict = 1;
-}
 
 message WorkflowTemplateCreateRequest {
     string namespace = 1;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 3;
-    SubmitOptions submitOptions = 4;
 }
 
 message WorkflowTemplateGetRequest {
@@ -38,7 +34,7 @@ message WorkflowTemplateListRequest {
 message WorkflowTemplateUpdateRequest {
     string templateName = 1;
     string namespace = 2;
-    bool memoized = 3;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
 }
 
 message WorkflowTemplateDeleteRequest {
@@ -66,6 +62,10 @@ service WorkflowTemplateService {
 
     rpc ListWorkflowTemplates (WorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
         option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}";
+    }
+
+    rpc UpdateWorkflowTemplate (WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
+        option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}/{templateName}";
     }
 
     rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
