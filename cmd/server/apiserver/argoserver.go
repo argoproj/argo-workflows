@@ -127,8 +127,13 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	}
 	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
-	workflowhistory.RegisterWorkflowHistoryServiceServer(grpcServer, workflowHistoryServer)
+	if configMap.Persistence != nil {
+		workflowHistoryServer, err := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth, configMap.Persistence)
+		if err != nil {
+			log.Fatal(err)
+		}
+		workflowhistory.RegisterWorkflowHistoryServiceServer(grpcServer, workflowHistoryServer)
+	}
 	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
@@ -162,6 +167,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	gwCookieOpts := runtime.WithForwardResponseOption(as.translateGrpcCookieHeader)
 	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
 	return &httpServer

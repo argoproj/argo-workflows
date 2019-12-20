@@ -18,8 +18,6 @@ type WorkflowTemplateServer struct {
 	*commonserver.Server
 }
 
-
-
 func NewWorkflowTemplateServer(namespace string, wfClientset versioned.Interface, kubeClientSet kubernetes.Interface, enableClientAuth bool) *WorkflowTemplateServer {
 	return &WorkflowTemplateServer{Server: commonserver.NewServer(enableClientAuth, namespace, wfClientset, kubeClientSet)}
 }
@@ -64,7 +62,6 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wf
 		return nil, err
 	}
 
-
 	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).List(v1.ListOptions{})
 
 	if err != nil {
@@ -79,7 +76,6 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, w
 	if err != nil {
 		return nil, err
 	}
-
 
 	err = wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Delete(wftmplReq.TemplateName, &v1.DeleteOptions{})
 	if err != nil {
@@ -107,7 +103,6 @@ func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, wft
 
 	return wftmplReq.Template, nil
 }
-
 
 func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient, _, err := wts.GetWFClient(ctx)

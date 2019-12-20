@@ -9,10 +9,9 @@ import (
 	wftFake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
-
 )
 
-const wftStr1 =`
+const wftStr1 = `
 {
 	"namespace": "default",
 	"template":
@@ -48,7 +47,7 @@ const wftStr1 =`
 	}
 }
 `
-const wftStr2 =`
+const wftStr2 = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
@@ -83,7 +82,7 @@ const wftStr2 =`
 }
 `
 
-const wftStr3 =`
+const wftStr3 = `
 {
   "apiVersion": "argoproj.io/v1alpha1",
   "kind": "WorkflowTemplate",
@@ -117,8 +116,7 @@ const wftStr3 =`
 }
 `
 
-
-func getWorkflowTempplateServer()*WorkflowTemplateServer{
+func getWorkflowTempplateServer() *WorkflowTemplateServer {
 	var wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	_ = json.Unmarshal([]byte(wftStr2), &wftObj1)
 	_ = json.Unmarshal([]byte(wftStr3), &wftObj2)
@@ -140,8 +138,8 @@ func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 	server := getWorkflowTempplateServer()
 	wftReq := WorkflowTemplateGetRequest{
-		TemplateName:         "workflow-template-whalesay-template2",
-		Namespace:            "default",
+		TemplateName: "workflow-template-whalesay-template2",
+		Namespace:    "default",
 	}
 	wftRsp, err := server.GetWorkflowTemplate(context.TODO(), &wftReq)
 	assert.NotNil(t, wftRsp)
@@ -152,14 +150,14 @@ func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
 func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 	server := getWorkflowTempplateServer()
 	wftReq := WorkflowTemplateListRequest{
-		Namespace:            "default",
+		Namespace: "default",
 	}
 	wftRsp, err := server.ListWorkflowTemplates(context.TODO(), &wftReq)
 	assert.Equal(t, 2, len(wftRsp.Items))
 	assert.Nil(t, err)
 
 	wftReq = WorkflowTemplateListRequest{
-		Namespace:            "test",
+		Namespace: "test",
 	}
 	wftRsp, err = server.ListWorkflowTemplates(context.TODO(), &wftReq)
 	assert.Equal(t, 0, len(wftRsp.Items))
@@ -169,14 +167,13 @@ func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 	server := getWorkflowTempplateServer()
 	wftReq := WorkflowTemplateDeleteRequest{
-		Namespace:            "default",
+		Namespace:    "default",
 		TemplateName: "workflow-template-whalesay-template2",
 	}
-	wftRsp, err :=server.DeleteWorkflowTemplate(context.TODO(), &wftReq)
+	wftRsp, err := server.DeleteWorkflowTemplate(context.TODO(), &wftReq)
 
 	assert.Equal(t, "Deleted", wftRsp.Status)
 	assert.Nil(t, err)
-
 
 }
 
@@ -187,14 +184,13 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	wftObj1.Spec.Templates[0].Container.Image = "alpine:latest"
 	wftReq := WorkflowTemplateUpdateRequest{
-		Namespace:            "default",
-		TemplateName:         "workflow-template-whalesay-template2",
-		Template: &wftObj1,
-		}
-	wftRsp, err :=server.UpdateWorkflowTemplate(context.TODO(), &wftReq)
+		Namespace:    "default",
+		TemplateName: "workflow-template-whalesay-template2",
+		Template:     &wftObj1,
+	}
+	wftRsp, err := server.UpdateWorkflowTemplate(context.TODO(), &wftReq)
 
 	assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
 	assert.Nil(t, err)
-
 
 }

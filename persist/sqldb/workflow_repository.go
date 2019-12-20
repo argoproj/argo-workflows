@@ -34,10 +34,6 @@ type DBRepository interface {
 	QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{}) (*wfv1.WorkflowList, error)
 }
 
-type WorkflowHistoryRepository interface {
-	ListWorkflowHistory() ([]wfv1.Workflow, error)
-}
-
 type WorkflowDB struct {
 	Id         string         `db:"id"`
 	Name       string         `db:"name"`
@@ -204,15 +200,6 @@ func (wdc *WorkflowDBContext) List(orderBy string) (*wfv1.WorkflowList, error) {
 	return &wfv1.WorkflowList{
 		Items: wfs,
 	}, nil
-}
-
-func (wdc *WorkflowDBContext) ListWorkflowHistory() ([]wfv1.Workflow, error) {
-	if wdc.Session == nil {
-		return nil, DBInvalidSession(fmt.Errorf("session nil"))
-	}
-	var wfDBs []WorkflowDB
-	err := wdc.Session.Collection("workflow_history").Find().OrderBy("-startedat").All(&wfDBs)
-	return wfDB2wf(wfDBs), err
 }
 
 func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {
