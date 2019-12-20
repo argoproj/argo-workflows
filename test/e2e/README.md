@@ -84,7 +84,7 @@ Kill any port forwards on 2746.
 The run `cmd/server/main.go` using these arguments, which enable debug logging, and make sure you use locally build image:
 
 ```
---loglevel debug --insecure
+--loglevel debug --enable-client-auth
 ```
 
 

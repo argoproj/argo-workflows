@@ -1,6 +1,8 @@
 package e2e
 
 import (
+	"encoding/base64"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -14,18 +16,39 @@ import (
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
-	e *httpexpect.Expect
+	e         *httpexpect.Expect
+	authToken string
 }
 
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.e = httpexpect.WithConfig(httpexpect.Config{
-		BaseURL:  "http://localhost:2746/api/v1",
-		Reporter: httpexpect.NewRequireReporter(s.T()),
-		Printers: []httpexpect.Printer{
-			httpexpect.NewDebugPrinter(s.T(), true),
-		},
-	})
+	kubeConfigBytes, err := ioutil.ReadFile(fixtures.KubeConfig)
+	if err != nil {
+		panic(err)
+	}
+	s.authToken = base64.RawStdEncoding.EncodeToString(kubeConfigBytes)
+	s.e = httpexpect.
+		WithConfig(httpexpect.Config{
+			BaseURL:  "http://localhost:2746/api/v1",
+			Reporter: httpexpect.NewRequireReporter(s.T()),
+			Printers: []httpexpect.Printer{
+				httpexpect.NewDebugPrinter(s.T(), true),
+			},
+		}).
+		Builder(func(req *httpexpect.Request) {
+			if s.authToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.authToken)
+			}
+		})
+}
+
+func (s *ArgoServerSuite) TestUnauthorized() {
+	token := s.authToken
+	defer func() { s.authToken = token }()
+	s.authToken = ""
+	s.e.GET("/workflows/argo").
+		Expect().
+		Status(401)
 }
 
 func (s *ArgoServerSuite) TestLintWorkflow() {
