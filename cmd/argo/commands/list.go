@@ -176,7 +176,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
-	wf, err := packer.DecompressWorkflow(wf)
+	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Fatal(err)
 	}

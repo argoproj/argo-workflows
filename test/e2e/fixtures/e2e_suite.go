@@ -3,10 +3,11 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
 	"time"
+
+	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -20,14 +21,14 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
-var kubeConfig = os.Getenv("KUBECONFIG")
+var KubeConfig = os.Getenv("KUBECONFIG")
 
 const namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if kubeConfig == "" {
-		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	if KubeConfig == "" {
+		KubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	}
 	_ = commands.NewCommand()
 }
@@ -39,14 +40,14 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(kubeConfig)
+	_, err := os.Stat(KubeConfig)
 	if os.IsNotExist(err) {
 		s.T().Skip("Skipping test: " + err.Error())
 	}
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags("", KubeConfig)
 	if err != nil {
 		panic(err)
 	}

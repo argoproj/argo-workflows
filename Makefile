@@ -211,17 +211,15 @@ start:
 	make down
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--insecure"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
 	make up
-	# Wait for pods to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=argo-server
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio
+	# Wait for apps to be ready.
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
@@ -229,18 +227,19 @@ start:
 
 .PHONY: down
 down:
-	kubectl -n argo scale deployment/workflow-controller --replicas 0
+	kubectl -n argo scale deployment/argo-ui --replicas 0
 	kubectl -n argo scale deployment/argo-server --replicas 0
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
 
 .PHONY: up
 up:
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
+	kubectl -n argo scale deployment/argo-ui --replicas 1
 
 .PHONY: port-forward
 port-forward:
-	killall kubectl || true
-	kubectl -n argo port-forward svc/argo-server 2746:2746
+	./hack/port-forward.sh
 
 .PHONY: logs
 logs:

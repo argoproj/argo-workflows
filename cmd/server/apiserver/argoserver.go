@@ -1,7 +1,6 @@
 package apiserver
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -37,13 +36,11 @@ type argoServer struct {
 	kubeClientset    *kubernetes.Clientset
 	wfClientSet      *versioned.Clientset
 	enableClientAuth bool
-	insecure         bool
 	configName       string
 	stopCh           chan struct{}
 }
 
 type ArgoServerOpts struct {
-	Insecure         bool
 	Namespace        string
 	KubeClientset    *kubernetes.Clientset
 	WfClientSet      *versioned.Clientset
@@ -57,7 +54,6 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 		wfClientSet:      opts.WfClientSet,
 		kubeClientset:    opts.KubeClientset,
 		enableClientAuth: opts.EnableClientAuth,
-		insecure:         opts.Insecure,
 		configName:       opts.ConfigName,
 	}
 }
@@ -69,20 +65,9 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
-func (as *argoServer) useTLS() bool {
-	return false
-}
-
 func (as *argoServer) Run(ctx context.Context, port int) {
 	grpcServer := as.newGRPCServer()
-	var httpServer *http.Server
-	var httpsServer *http.Server
-	if as.useTLS() {
-		httpServer = newRedirectServer(port)
-		httpsServer = as.newHTTPServer(ctx, port)
-	} else {
-		httpServer = as.newHTTPServer(ctx, port)
-	}
+	httpServer := as.newHTTPServer(ctx, port)
 
 	// Start listener
 	var conn net.Listener
@@ -102,41 +87,16 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 
 	// Cmux is used to support servicing gRPC and HTTP1.1+JSON on the same port
 	tcpm := cmux.New(conn)
-	var tlsm cmux.CMux
-	var grpcL net.Listener
-	var httpL net.Listener
-	var httpsL net.Listener
-	if !as.useTLS() {
-		httpL = tcpm.Match(cmux.HTTP1Fast())
-		grpcL = tcpm.Match(cmux.Any())
-	} else {
-
-		// If not matched, we assume that its TLS.
-		tlsl := tcpm.Match(cmux.Any())
-		tlsConfig := tls.Config{
-			//Certificates: []tls.Certificate{*as.settings.Certificate},
-		}
-
-		tlsl = tls.NewListener(tlsl, &tlsConfig)
-
-		// Now, we build another mux recursively to match HTTPS and gRPC.
-		tlsm := cmux.New(tlsl)
-		httpsL = tlsm.Match(cmux.HTTP1Fast())
-		grpcL = tlsm.Match(cmux.Any())
-	}
+	httpL := tcpm.Match(cmux.HTTP1Fast())
+	grpcL := tcpm.Match(cmux.Any())
 
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	if as.useTLS() {
-		go func() { as.checkServeErr("httpsServer", httpsServer.Serve(httpsL)) }()
-		go func() { as.checkServeErr("tlsm", tlsm.Serve()) }()
-	}
 	log.Infof("Argo Server started successfully on port %v", port)
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }
-
 
 func (as *argoServer) newGRPCServer() *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
@@ -167,7 +127,7 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 
-	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
+	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
 	return grpcServer
@@ -215,23 +175,8 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
-// newRedirectServer returns an HTTP server which does a 307 redirect to the HTTPS server
-func newRedirectServer(port int) *http.Server {
-	return &http.Server{
-		Addr: fmt.Sprintf("localhost:%d", port),
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			target := "https://" + req.Host + req.URL.Path
-			if len(req.URL.RawQuery) > 0 {
-				target += "?" + req.URL.RawQuery
-			}
-			http.Redirect(w, req, target, http.StatusTemporaryRedirect)
-		}),
-	}
-}
-
 // TranslateGrpcCookieHeader conditionally sets a cookie on the response.
 func (as *argoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
-	// TODO - what is the point of this func?
 	return nil
 }
 
@@ -244,7 +189,6 @@ func (as *argoServer) RsyncConfig(namespace string, wfClientset *versioned.Clien
 	}
 	return as.UpdateConfig(cm)
 }
-
 
 func (as *argoServer) UpdateConfig(cm *apiv1.ConfigMap) (*config.WorkflowControllerConfig, error) {
 

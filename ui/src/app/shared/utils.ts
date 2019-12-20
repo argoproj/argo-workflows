@@ -1,6 +1,6 @@
-import { Observable } from 'rxjs';
+import {Observable} from 'rxjs';
 import * as models from '../../models';
-import { NODE_PHASE } from '../../models';
+import {NODE_PHASE} from '../../models';
 
 export const Utils = {
     statusIconClasses(status: string): string {
@@ -26,7 +26,7 @@ export const Utils = {
         return classes.join(' ');
     },
 
-    shortNodeName(node: { name: string, displayName: string }): string {
+    shortNodeName(node: {name: string; displayName: string}): string {
         return node.displayName || node.name;
     },
 
@@ -41,13 +41,13 @@ export const Utils = {
     getResolvedTemplates(workflow: models.Workflow, node: models.NodeStatus): models.Template {
         let tmpTemplate = {
             template: node.templateName,
-            templateRef: node.templateRef,
+            templateRef: node.templateRef
         };
         let scope = node.templateScope;
         const referencedTemplates: models.Template[] = [];
         let resolvedTemplate: models.Template;
         const maxDepth = 10;
-        for (let i = 1; i < maxDepth + 1; i ++) {
+        for (let i = 1; i < maxDepth + 1; i++) {
             let storedTemplateName = '';
             if (tmpTemplate.templateRef) {
                 storedTemplateName = `${tmpTemplate.templateRef.name}/${tmpTemplate.templateRef.template}`;
@@ -59,7 +59,7 @@ export const Utils = {
             if (scope && storedTemplateName) {
                 tmpl = workflow.status.storedTemplates[storedTemplateName];
             } else if (tmpTemplate.template) {
-                tmpl = workflow.spec.templates.find((item) => item.name === tmpTemplate.template);
+                tmpl = workflow.spec.templates.find(item => item.name === tmpTemplate.template);
             }
             if (!tmpl) {
                 // tslint:disable-next-line: no-console
@@ -77,12 +77,12 @@ export const Utils = {
                 return undefined;
             }
         }
-        referencedTemplates.reverse().forEach((tmpl) => {
+        referencedTemplates.reverse().forEach(tmpl => {
             tmpl = Object.assign({}, tmpl);
             delete tmpl.template;
             delete tmpl.templateRef;
             resolvedTemplate = Object.assign({}, resolvedTemplate, tmpl);
         });
         return resolvedTemplate;
-    },
+    }
 };

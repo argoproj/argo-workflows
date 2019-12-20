@@ -6,13 +6,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/errors"
-	"github.com/argoproj/argo/workflow/packer"
-
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) sqldb.DBRepository {
@@ -59,6 +59,9 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.False(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
@@ -74,6 +77,9 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), false, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.False(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 }
 
@@ -89,6 +95,9 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	controller.wfDBctx = getMockDBCtx(nil, true, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.True(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
 
 }
@@ -105,6 +114,9 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), true, false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
+	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+	assert.True(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
 }
 

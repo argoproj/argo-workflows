@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/workflow/util"
 )
 
 func NewSuspendCommand() *cobra.Command {

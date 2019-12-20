@@ -2,81 +2,19 @@ package workflow
 
 import (
 	"bufio"
-	"encoding/json"
-	"errors"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/metadata"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	corev1 "k8s.io/api/core/v1"
 
-
-	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/util"
 )
 
 type kubeService struct {
-	Namespace        string
-	WfClientset      *versioned.Clientset
-	KubeClientset    *kubernetes.Clientset
-	EnableClientAuth bool
-}
-
-func NewKubeServer(Namespace string, wfClientset *wfclientset.Clientset, kubeClientSet *kubernetes.Clientset, enableClientAuth bool) *kubeService {
-	return &kubeService{
-		Namespace:        Namespace,
-		WfClientset:      wfClientset,
-		KubeClientset:    kubeClientSet,
-		EnableClientAuth: enableClientAuth,
-	}
-}
-
-func (s *kubeService) GetWFClient(ctx context.Context) (*versioned.Clientset, *kubernetes.Clientset, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-
-	if s.EnableClientAuth {
-		return s.WfClientset, s.KubeClientset, nil
-	}
-
-	var restConfigStr, bearerToken string
-	if len(md.Get(common.CLIENT_REST_CONFIG)) == 0 {
-		return nil, nil, errors.New("Client kubeconfig is not found")
-	}
-	restConfigStr = md.Get(common.CLIENT_REST_CONFIG)[0]
-
-	if len(md.Get(common.AUTH_TOKEN)) > 0 {
-		bearerToken = md.Get(common.AUTH_TOKEN)[0]
-	}
-
-	restConfig := rest.Config{}
-
-	err := json.Unmarshal([]byte(restConfigStr), &restConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	restConfig.BearerToken = bearerToken
-
-	wfClientset, err := wfclientset.NewForConfig(&restConfig)
-	if err != nil {
-		log.Errorf("Failure to create WfClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
-	}
-
-	clientset, err := kubernetes.NewForConfig(&restConfig)
-	if err != nil {
-		log.Errorf("Failure to create KubeClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
-	}
-
-	return wfClientset, clientset, nil
 }
 
 func (s *kubeService) Create(wfClient versioned.Interface, namespace string, wf *v1alpha1.Workflow) (*v1alpha1.Workflow, error) {
@@ -103,12 +41,10 @@ func (s *kubeService) Get(wfClient versioned.Interface, namespace string, workfl
 }
 
 func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
-
-	var listOption v1.ListOptions = v1.ListOptions{}
+	var listOption = v1.ListOptions{}
 	if wfReq.ListOptions != nil {
 		listOption = *wfReq.ListOptions
 	}
-
 	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).List(listOption)
 	if err != nil {
 		return nil, err
@@ -121,7 +57,7 @@ func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfR
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return &WorkflowDeleteResponse{WorkflowName: wfReq.WorkflowName, Status: "Deleted"}, nil
 }
 
 func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
@@ -199,7 +135,6 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 	return wf, nil
 }
 
-
 func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *WorkflowGetRequest, ws WorkflowService_WatchWorkflowServer) error {
 	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Watch(v1.ListOptions{})
 	if err != nil {
@@ -207,7 +142,7 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 	}
 
 	done := make(chan bool)
-	go func(){
+	go func() {
 		for next := range wfs.ResultChan() {
 			a := *next.Object.(*v1alpha1.Workflow)
 			if wfReq.WorkflowName == "" || wfReq.WorkflowName == a.Name {
@@ -231,7 +166,7 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 	return nil
 }
 
-func (s *kubeService) PodLogs( kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
+func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
 	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, &corev1.PodLogOptions{
 		Container:    wfReq.Container,
 		Follow:       wfReq.LogOptions.Follow,

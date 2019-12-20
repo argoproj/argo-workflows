@@ -14,18 +14,17 @@ const DefaultMaxWorkflowSize = 1024 * 1024
 
 var MaxWorkflowSize = DefaultMaxWorkflowSize
 
-func DecompressWorkflow(wf *wfv1.Workflow) (*wfv1.Workflow, error) {
+func DecompressWorkflow(wf *wfv1.Workflow) error {
 	if len(wf.Status.Nodes) == 0 && wf.Status.CompressedNodes != "" {
 		nodeContent, err := file.DecodeDecompressString(wf.Status.CompressedNodes)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		decompressedWf := wf.DeepCopy()
-		err = json.Unmarshal([]byte(nodeContent), &decompressedWf.Status.Nodes)
-		decompressedWf.Status.CompressedNodes = ""
-		return decompressedWf, err
+		err = json.Unmarshal([]byte(nodeContent), &wf.Status.Nodes)
+		wf.Status.CompressedNodes = ""
+		return err
 	}
-	return wf, nil
+	return nil
 }
 
 // getSize return the entire workflow json string size
@@ -48,30 +47,28 @@ func IsTooLargeError(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), tooLarge)
 }
 
-func CompressWorkflow(wf *wfv1.Workflow) (*wfv1.Workflow, error) {
+func CompressWorkflow(wf *wfv1.Workflow) error {
 	large, err := IsLargeWorkflow(wf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !large {
-		return wf, nil
+		return nil
 	}
 	nodeContent, err := json.Marshal(wf.Status.Nodes)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	compressedWf := wf.DeepCopy()
-	compressedWf.Status.CompressedNodes = file.CompressEncodeString(string(nodeContent))
-	compressedWf.Status.Nodes = nil
-
+	wf.Status.CompressedNodes = file.CompressEncodeString(string(nodeContent))
+	wf.Status.Nodes = nil
 	// still too large?
-	large, err = IsLargeWorkflow(compressedWf)
+	large, err = IsLargeWorkflow(wf)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if large {
-		compressedSize, _ := getSize(compressedWf)
-		return compressedWf, fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, MaxWorkflowSize)
+		compressedSize, _ := getSize(wf)
+		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, MaxWorkflowSize)
 	}
-	return compressedWf, nil
+	return nil
 }

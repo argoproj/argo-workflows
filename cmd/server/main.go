@@ -11,10 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/cmd/server/apiserver"
@@ -33,7 +30,6 @@ func NewRootCommand() *cobra.Command {
 		clientConfig     clientcmd.ClientConfig
 		logLevel         string // --loglevel
 		enableClientAuth bool
-		insecure         bool
 		configMap        string
 		port             int
 	)
@@ -68,7 +64,6 @@ func NewRootCommand() *cobra.Command {
 				WfClientSet:      wflientset,
 				KubeClientset:    kubeConfig,
 				EnableClientAuth: enableClientAuth,
-				Insecure:         insecure,
 			}
 			apiServer := apiserver.NewArgoServer(opts)
 
@@ -84,7 +79,6 @@ func NewRootCommand() *cobra.Command {
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
 	command.Flags().BoolVar(&enableClientAuth, "enable-client-auth", false, "Enable client auth")
-	command.Flags().BoolVar(&insecure, "insecure", false, "Insecure")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	return &command

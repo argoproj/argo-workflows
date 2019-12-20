@@ -1674,6 +1674,10 @@
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
           }
         },
+        "offloadNodeStatus": {
+          "description": "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.",
+          "type": "boolean"
+        },
         "outputs": {
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.Outputs"
