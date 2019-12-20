@@ -9,14 +9,9 @@
         "docker": "./scripts/build_docker.sh",
         "build": "yarn build:ui && yarn build:api",
         "build:ui": "webpack --config ./src/app/webpack.config.js",
-        "build:api": "tsc -p ./src/api/tsconfig.json",
         "build:storybook": "build-storybook -o ./dist/storybook",
-        "start": "nf start",
-        "start:ui": "webpack-dev-server --config ./src/app/webpack.config.js",
-        "start:api": "TS_NODE_PROJECT=./src/api/tsconfig.json nodemon --nolazy --inspect -r ts-node/register ./src/api/main.ts",
-        "lint": "yarn lint:ui && yarn lint:api",
-        "lint:ui": "tslint --fix -p ./src/app",
-        "lint:api": "tslint --fix -p ./src/api",
+        "start": "NODE_OPTIONS='--max-http-header-size 15000' webpack-dev-server --config ./src/app/webpack.config.js",
+        "lint": "tslint --fix -p ./src/app",
         "test": "mocha --require ts-node/register ./src/app/**/*.spec.ts"
     },
     "dependencies": {

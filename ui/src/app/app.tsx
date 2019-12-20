@@ -3,8 +3,8 @@ import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
 
-import {uiUrl} from './shared/base';
 import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, PopupManager, PopupProps} from 'argo-ui';
+import {uiUrl} from './shared/base';
 import {AppContext, ContextApis, Provider} from './shared/context';
 
 import help from './help';
@@ -64,7 +64,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
             notifications: this.notificationsManager,
             popup: this.popupManager,
             navigation: this.navigationManager,
-            history: history,
+            history
         };
         return (
             <Provider value={providerContext}>

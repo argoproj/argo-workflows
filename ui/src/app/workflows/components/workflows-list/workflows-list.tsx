@@ -3,15 +3,15 @@ import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 
-import {uiUrl} from '../../../shared/base';
 import {DataLoader, MockupList, Page, TopBarFilter} from 'argo-ui';
-import {AppContext, Consumer} from '../../../shared/context';
 import * as models from '../../../../models';
+import {uiUrl} from '../../../shared/base';
+import {AppContext, Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
 // import {Autocomplete} from '../../../shared/components/autocomplete/autocomplete';
-import {Query} from '../../../shared/components/query';
 import {WorkflowListItem} from '..';
+import {Query} from '../../../shared/components/query';
 
 require('./workflows-list.scss');
 

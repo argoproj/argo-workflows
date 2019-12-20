@@ -11,6 +11,13 @@ token=$(cat ${KUBECONFIG:-~/.kube/config} | base64)
 curl -H "Authorization: Bearer $token" http://localhost:2746/api/v1/workflows/argo
 ```
 
+To view the API:
+ 
+1. Open [https://editor.swagger.io/](https://editor.swagger.io/)
+2. Paste either:
+    1. https://raw.githubusercontent.com/argoproj/argo/apiserverimpl/cmd/server/workflow/workflow.swagger.json
+    2. https://raw.githubusercontent.com/argoproj/argo/apiserverimpl/cmd/server/workflowtemplate/workflow-template.swagger.json 
+
 > v2.4 and before
 
 Argo is implemented as a kubernetes controller and Workflow [Custom Resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/).

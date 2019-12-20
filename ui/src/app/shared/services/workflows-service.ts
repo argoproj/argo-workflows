@@ -12,7 +12,11 @@ export class WorkflowsService {
     }
 
     public list(phases: string[], namespace: string): Promise<models.Workflow[]> {
-        return requests.get(`/workflows/${namespace}`).query({phase: phases}).then((res) => res.body as models.WorkflowList).then((list) => list.items.map(this.populateDefaultFields));
+        return requests
+            .get(`/workflows/${namespace}`)
+            .query({phase: phases})
+            .then(res => res.body as models.WorkflowList)
+            .then(list => list.items.map(this.populateDefaultFields));
     }
 
     public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {

@@ -1,4 +1,5 @@
 import * as _superagent from 'superagent';
+
 const superagentPromise = require('superagent-promise');
 import {Observable, Observer} from 'rxjs';
 
@@ -22,23 +23,30 @@ enum ReadyState {
     DONE = 4
 }
 
+function token() {
+    if (localStorage.getItem('token') === null) {
+        localStorage.setItem('token', window.prompt('Please copy and paste your ~/.kube/config base 64 encoded.' + 'cat ${KUBECONFIG:-~/.kube/config} | base64 | pbcopy'));
+    }
+    return localStorage.getItem('token');
+}
+
 const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, global.Promise);
 
 export default {
     get(url: string) {
-        return superagent.get(apiUrl(url));
+        return superagent.get(apiUrl(url)).auth(token(), {type: 'bearer'});
     },
 
     post(url: string) {
-        return superagent.post(apiUrl(url));
+        return superagent.post(apiUrl(url)).auth(token(), {type: 'bearer'});
     },
 
     put(url: string) {
-        return superagent.put(apiUrl(url));
+        return superagent.put(apiUrl(url)).auth(token(), {type: 'bearer'});
     },
 
     patch(url: string) {
-        return superagent.patch(apiUrl(url));
+        return superagent.patch(apiUrl(url)).auth(token(), {type: 'bearer'});
     },
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {

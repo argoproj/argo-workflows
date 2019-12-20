@@ -229,13 +229,15 @@ start:
 
 .PHONY: down
 down:
-	kubectl -n argo scale deployment/workflow-controller --replicas 0
+	kubectl -n argo scale deployment/argo-ui --replicas 0
 	kubectl -n argo scale deployment/argo-server --replicas 0
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
 
 .PHONY: up
 up:
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
+	kubectl -n argo scale deployment/argo-ui --replicas 1
 
 .PHONY: port-forward
 port-forward:
