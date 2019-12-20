@@ -219,7 +219,7 @@ start:
 	# Scale up.
 	make up
 	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
