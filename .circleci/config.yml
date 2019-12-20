@@ -92,6 +92,7 @@ jobs:
             docker pull golang:1.11.5
             docker pull minio/minio
             docker pull docker/whalesay:latest
+            docker pull bitnami/kubectl
           background: true
       - restore_go_cache
       - install_golang
