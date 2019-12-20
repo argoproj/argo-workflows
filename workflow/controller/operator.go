@@ -799,7 +799,7 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 	case apiv1.PodRunning:
 		if pod.DeletionTimestamp != nil {
 			// pod is being terminated
-			newPhase = wfv1.NodeError
+			newPhase = wfv1.NodeFailed
 			message = "pod termination"
 		} else {
 			newPhase = wfv1.NodeRunning

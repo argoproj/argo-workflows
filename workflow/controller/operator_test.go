@@ -371,7 +371,7 @@ func TestAssessNodeStatus(t *testing.T) {
 			},
 		},
 		node: &wfv1.NodeStatus{},
-		want: wfv1.NodeError,
+		want: wfv1.NodeFailed,
 	}, {
 		name: "pod running",
 		pod: &apiv1.Pod{
