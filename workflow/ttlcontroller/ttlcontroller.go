@@ -133,20 +133,17 @@ func (c *Controller) processNextWorkItem() bool {
 // need to update here as well it seams like .....
 
 func (c *Controller) enqueueWF(obj interface{}) {
-	log.Infof("1")
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		log.Warnf("'%v' is not an unstructured", obj)
 		return
 	}
-	log.Infof("2")
 	wf, err := util.FromUnstructured(un)
 	if err != nil {
 		log.Warnf("Failed to unmarshal workflow %v object: %v", obj, err)
 		return
 	}
 	now := c.clock.Now()
-	log.Infof("3")
 	remaining, expiration := timeLeft(wf, &now)
 	if remaining == nil || *remaining > c.resyncPeriod {
 		return
@@ -206,7 +203,6 @@ func (c *Controller) deleteWorkflow(key string) error {
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
 	if wf.DeletionTimestamp != nil || ((wf.Spec.TTLSecondsAfterFinished == nil) && (wf.Spec.TTLStrategy.SecondsAfterFailed == nil) && (wf.Spec.TTLStrategy.SecondsAfterSuccess == nil)) || wf.Status.FinishedAt.IsZero() {
-		log.Infof("HERE HERE HERE")
 		return false
 	}
 	now := c.clock.Now()

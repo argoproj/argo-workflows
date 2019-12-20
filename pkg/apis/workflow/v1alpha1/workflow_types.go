@@ -869,11 +869,6 @@ func (ws *WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
 }
 
-// Error return whether or not the workflow is in a error state
-func (ws *WorkflowStatus) Error() bool {
-	return ws.Phase == NodeError
-}
-
 // Failed return where or not the workflow has failed
 func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
