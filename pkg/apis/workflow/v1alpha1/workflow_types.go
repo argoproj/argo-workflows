@@ -109,9 +109,8 @@ var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {
-	SecondsAfterSuccess *int32 `json:"SecondsAfterSuccess,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterSuccess"`
+	SecondsAfterSuccess *int32 `json:"SecondsAfterSuccess:,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterSuccess:"`
 	SecondsAfterFailed  *int32 `json:"SecondsAfterFailed,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterFailed"`
-	SecondsAfterError   *int32 `json:"SecondsAfterError,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterError"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -213,7 +212,8 @@ type WorkflowSpec struct {
 	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
 	// deleted after the time to live expires. If this field is unset,
 	// the controller config map will hold the default values
-	TTLStrategy *TTLStrategy
+	// Update
+	TTLStrategy TTLStrategy `json:"TTLStrategy,omitempty" protobuf:"bytes,18,opt,name=TTLStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
@@ -877,6 +877,11 @@ func (ws *WorkflowStatus) Error() bool {
 // Failed return where or not the workflow has failed
 func (ws *WorkflowStatus) Failed() bool {
 	return ws.Phase == NodeFailed
+}
+
+// Remove returns whether or not the node has completed execution
+func (n NodeStatus) Completed() bool {
+	return isCompletedPhase(n.Phase) || n.IsDaemoned() && n.Phase != NodePending
 }
 
 // IsDaemoned returns whether or not the node is deamoned
