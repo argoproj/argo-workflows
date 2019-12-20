@@ -69,6 +69,22 @@ spec:
 		})
 }
 
+func (s *FunctionalSuite) TestFastFailOnPodTermination() {
+	s.Given().
+		Workflow("@expectedfailures/pod-termination-failure.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(120 * time.Second).
+		Then().
+		Expect(func(t *testing.T, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 4)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			assert.Equal(t, "pod termination", nodeStatus.Message)
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
