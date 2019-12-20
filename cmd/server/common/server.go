@@ -40,9 +40,10 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 		return nil, nil, status.Error(codes.Unauthenticated, "Authorization header not found")
 	}
 	// Format is `Bearer base64(~/.kube/config)'
-	restConfigBytes, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(authorization[0], "Bearer "))
+	token := strings.TrimPrefix(authorization[0], "Bearer ")
+	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "Invalid token found in Authorization header: %v", err)
+		return nil, nil, status.Errorf(codes.InvalidArgument, "Invalid token found in Authorization header %s: %v", token, err)
 	}
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(restConfigBytes)
 	if err != nil {
