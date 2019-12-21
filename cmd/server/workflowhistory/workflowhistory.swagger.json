@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflowhistories": {
+    "/api/v1/workflowhistory": {
       "get": {
         "operationId": "ListWorkflowHistory",
         "responses": {

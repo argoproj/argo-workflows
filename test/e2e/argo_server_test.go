@@ -2,6 +2,10 @@ package e2e
 
 import (
 	"encoding/base64"
+	"io/ioutil"
+	"os"
+	"os/user"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -21,21 +25,19 @@ type ArgoServerSuite struct {
 
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	s.authToken = base64.StdEncoding.EncodeToString([]byte(`apiVersion: v1
-kind: Config
-clusters:
-- name: local
-  cluster:
-    server: https://10.96.0.1:443
-    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-users:
-- name: service-account
-  user:
-    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-contexts:
-- context:
-    cluster: local
-    user: service-account`))
+	current, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	getwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	bytes, err := ioutil.ReadFile(filepath.Join(getwd, "kube", "config", current.Username))
+	if err != nil {
+		panic(err)
+	}
+	s.authToken = base64.StdEncoding.EncodeToString(bytes)
 	s.e = httpexpect.
 		WithConfig(httpexpect.Config{
 			BaseURL:  "http://localhost:2746/api/v1",
@@ -198,6 +200,43 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	s.e.DELETE("/workflows/argo/test").
 		Expect().
 		Status(200)
+}
+
+func (s *ArgoServerSuite) TestWorkflowHistory() {
+	s.e.POST("/workflows/argo").
+		WithBytes([]byte(`{
+  "workflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+		Expect().
+		Status(200)
+
+	s.e.GET("/workflowhistory").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.items").
+		Array().
+		Length().
+		Equal(1)
+
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {

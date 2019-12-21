@@ -84,7 +84,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	log.WithField("tableName", cfg.TableName).Info("creating table if not exists")
+	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating table if not exists")
 	_, err = session.Exec(`create table if not exists ` + cfg.TableName + ` (
     id varchar(128) ,
     name varchar(256),
@@ -99,13 +99,13 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
-	log.WithField("tableName", cfg.TableName).Info("creating index on name if not exists")
+	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating index on name if not exists")
 	_, err = session.Exec(`create unique index if not exists idx_name on ` + cfg.TableName + ` (name)`)
 	if err != nil {
 		return nil, "", err
 	}
 
-	log.WithField("tableName", "argo_workflow_history").Info("creating table if not exists")
+	log.WithField("WorkflowHistoryTableName", "argo_workflow_history").Info("creating table if not exists")
 	_, err = session.Exec(`create table if not exists argo_workflow_history (
     id varchar(128) ,
     name varchar(256),
@@ -155,7 +155,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	log.WithField("tableName", cfg.TableName).Info("creating table if not exists")
+	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating table if not exists")
 	_, err = session.Exec(`CREATE TABLE IF NOT EXISTS ` + cfg.TableName + ` (
   id varchar(128) NOT NULL DEFAULT "", 
   name varchar(128) DEFAULT NULL,
@@ -170,7 +170,7 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		return nil, "", err
 	}
 
-	log.WithField("tableName", cfg.TableName).Info("creating index on name if not exists")
+	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating index on name if not exists")
 	_, err = session.Exec(`create unique index if not exists idx_name on ` + cfg.TableName + ` (name)`)
 	if err != nil {
 		return nil, "", err

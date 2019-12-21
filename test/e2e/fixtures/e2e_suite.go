@@ -21,14 +21,14 @@ import (
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
-var KubeConfig = os.Getenv("KUBECONFIG")
+var kubeConfig = os.Getenv("KUBECONFIG")
 
 const namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
-	if KubeConfig == "" {
-		KubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	if kubeConfig == "" {
+		kubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	}
 	_ = commands.NewCommand()
 }
@@ -40,14 +40,14 @@ type E2ESuite struct {
 }
 
 func (s *E2ESuite) SetupSuite() {
-	_, err := os.Stat(KubeConfig)
+	_, err := os.Stat(kubeConfig)
 	if os.IsNotExist(err) {
 		s.T().Skip("Skipping test: " + err.Error())
 	}
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	config, err := clientcmd.BuildConfigFromFlags("", KubeConfig)
+	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
 		panic(err)
 	}

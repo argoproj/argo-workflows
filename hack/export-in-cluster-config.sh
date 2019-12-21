@@ -2,14 +2,16 @@
 set -eu
 
 app=argo-server
-container=$(docker ps --format="{{.Names}}" | grep $app)
+container=$(docker ps --format="{{.Names}}" | grep ${app})
 
 host=$(docker inspect ${container} | grep -o 'KUBERNETES_SERVICE_HOST=[^"]*' | cut -c 25-)
 port=$(docker inspect ${container} | grep -o 'KUBERNETES_SERVICE_PORT=[^"]*' | cut -c 25-)
 
 server=https://${host}:${port}
+file=test/e2e/kubeconfig.$(whoami)
 
-cat <<EOF
+cat > $file <<EOF
+# Automatically created by hack/export-in-cluster-config.sh
 apiVersion: v1
 kind: Config
 clusters:
@@ -26,3 +28,5 @@ contexts:
     cluster: local
     user: service-account
 EOF
+
+echo "created/updated $file"

@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
@@ -55,11 +56,12 @@ func newController() *WorkflowController {
 		Config: config.WorkflowControllerConfig{
 			ExecutorImage: "executor:latest",
 		},
-		kubeclientset:  fake.NewSimpleClientset(),
-		wfclientset:    wfclientset,
-		completedPods:  make(chan string, 512),
-		wftmplInformer: wftmplInformer,
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		kubeclientset:       fake.NewSimpleClientset(),
+		wfclientset:         wfclientset,
+		completedPods:       make(chan string, 512),
+		wftmplInformer:      wftmplInformer,
+		wfQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		workflowHistoryRepo: sqldb.NullWorkflowHistoryRepository,
 	}
 }
 

@@ -57,15 +57,16 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer     cache.SharedIndexInformer
-	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
-	podInformer    cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	podQueue       workqueue.RateLimitingInterface
-	completedPods  chan string
-	gcPods         chan string // pods to be deleted depend on GC strategy
-	throttler      Throttler
-	wfDBctx        sqldb.DBRepository
+	wfInformer          cache.SharedIndexInformer
+	wftmplInformer      wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer         cache.SharedIndexInformer
+	wfQueue             workqueue.RateLimitingInterface
+	podQueue            workqueue.RateLimitingInterface
+	completedPods       chan string
+	gcPods              chan string // pods to be deleted depend on GC strategy
+	throttler           Throttler
+	wfDBctx             sqldb.DBRepository
+	workflowHistoryRepo sqldb.WorkflowHistoryRepository
 }
 
 const (
@@ -533,4 +534,12 @@ func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBCont
 	}
 
 	return &wfDBCtx, nil
+}
+
+func (wfc *WorkflowController) createWorkflowHistoryRepository() (sqldb.WorkflowHistoryRepository, error) {
+	database, _, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
+	if err != nil {
+		return nil, err
+	}
+	return sqldb.NewWorkflowHistoryRepository(database), nil
 }

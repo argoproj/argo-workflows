@@ -217,7 +217,9 @@ spec:
         app: argo-server
     spec:
       containers:
-      - image: argoproj/argo-server:latest
+      - args:
+        - --enable-client-auth
+        image: argoproj/argo-server:latest
         name: main
         ports:
         - containerPort: 2746

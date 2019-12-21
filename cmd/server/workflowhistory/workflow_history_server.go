@@ -18,14 +18,20 @@ type workflowHistoryServer struct {
 }
 
 func NewWorkflowHistoryServer(namespace string, wfClientset versioned.Interface, kubeClientset kubernetes.Interface, enableClientAuth bool, persistConfig *config.PersistConfig) (*workflowHistoryServer, error) {
-	database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
-	if err != nil {
-		return nil, err
+	var repo sqldb.WorkflowHistoryRepository
+	if persistConfig != nil {
+		database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
+		if err != nil {
+			return nil, err
+		}
+		repo = sqldb.NewWorkflowHistoryRepository(database)
+	} else {
+		repo = sqldb.NullWorkflowHistoryRepository
 	}
 	return &workflowHistoryServer{
 		Server: commonserver.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset),
-		repo:   sqldb.NewWorkflowHistoryRepository(database),
-	}, err
+		repo:   repo,
+	}, nil
 }
 
 func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {

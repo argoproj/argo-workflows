@@ -2,7 +2,7 @@
 // source: cmd/server/workflowhistory/workflowhistory.proto
 
 /*
-Package workflow is a reverse proxy.
+Package workflowhistory is a reverse proxy.
 
 It translates gRPC into RESTful JSON APIs.
 */
@@ -151,7 +151,7 @@ func RegisterWorkflowHistoryServiceHandlerClient(ctx context.Context, mux *runti
 }
 
 var (
-	pattern_WorkflowHistoryService_ListWorkflowHistory_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "workflowhistories"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowHistoryService_ListWorkflowHistory_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "workflowhistory"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
