@@ -241,15 +241,20 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		Length().
 		Equal(2)
 
-	s.e.GET("/workflowhistory").
+	json := s.e.GET("/workflowhistory").
 		WithQuery("listOptions.limit", 1).
+		WithQuery("listOptions.offset", 1).
 		Expect().
 		Status(200).
-		JSON().
+		JSON()
+	json.
 		Path("$.items").
 		Array().
 		Length().
 		Equal(1)
+	json.
+		Path("$.metadata.continue").
+		Equal("1")
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
