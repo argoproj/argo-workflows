@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	v1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -16,6 +17,7 @@ import (
 )
 
 type workflowHistoryServer struct {
+	kubeClientset kubernetes.Interface
 	repo sqldb.WorkflowHistoryRepository
 }
 
@@ -46,6 +48,24 @@ func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wor
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
+
+	create, err := w.kubeClientset.AuthorizationV1().SelfSubjectRulesReviews().Create(&v1.SelfSubjectAccessReview{
+		Spec:       v1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes:    &v1.ResourceAttributes{
+				Namespace:   "",
+				Verb:        "get",
+				Group:       "workflows.argoproj.io",
+				Version:     "v1alpha1",
+				Resource:    "workflows",
+				Name:        "",
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	create.Spec
+
 	history, err := w.repo.ListWorkflowHistory(limit, offset)
 	if err != nil {
 		return nil, err

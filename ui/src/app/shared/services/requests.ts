@@ -13,7 +13,9 @@ declare class EventSource {
     public onmessage: Callback;
     public onerror: Callback;
     public readyState: number;
+
     constructor(url: string);
+
     public close(): void;
 }
 
@@ -26,10 +28,13 @@ enum ReadyState {
 
 const auth = (req: SuperAgentRequest) => {
     const token = localStorage.getItem('token');
-    if (token !== null) {
-        return req.auth(token, {type: 'bearer'});
-    } else {
-        return req;
+    return ((token !== null) ? req.auth(token, {type: 'bearer'}) : req)
+        .on("error", handle);
+};
+
+const handle = (err: any) => {
+    if (err.status === 401) {
+        document.location.href = "/login";
     }
 };
 
