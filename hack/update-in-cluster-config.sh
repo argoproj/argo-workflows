@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu -o pipefail
+set -eux -o pipefail
 
 app=argo-server
 container=$(docker ps --format="{{.Names}}" | grep ${app} || true)
