@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -18,12 +16,13 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 var kubeConfig = os.Getenv("KUBECONFIG")
 
-const namespace = "argo"
+const Namespace = "argo"
 const label = "argo-e2e"
 
 func init() {
@@ -35,8 +34,8 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	client     v1alpha1.WorkflowInterface
-	kubeClient kubernetes.Interface
+	wfClient   v1alpha1.WorkflowInterface
+	KubeClient kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -51,20 +50,20 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	s.kubeClient, err = kubernetes.NewForConfig(config)
+	s.KubeClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	s.client = commands.InitWorkflowClient()
+	s.wfClient = commands.InitWorkflowClient()
 	// delete all workflows
-	list, err := s.client.List(metav1.ListOptions{LabelSelector: label})
+	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
 	for _, wf := range list.Items {
 		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 		logCtx.Infof("Deleting workflow")
-		err = s.client.Delete(wf.Name, &metav1.DeleteOptions{})
+		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
@@ -72,11 +71,11 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		for {
 			// it seems "argo delete" can leave pods behind
 			options := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name}
-			err := s.kubeClient.CoreV1().Pods(namespace).DeleteCollection(nil, options)
+			err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(nil, options)
 			if err != nil {
 				panic(err)
 			}
-			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(options)
+			pods, err := s.KubeClient.CoreV1().Pods(Namespace).List(options)
 			if err != nil {
 				panic(err)
 			}
@@ -96,7 +95,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 }
 
 func (s *E2ESuite) printDiagnostics() {
-	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -105,12 +104,12 @@ func (s *E2ESuite) printDiagnostics() {
 	}
 }
 
-func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
+func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
 	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 	logCtx.Info("Workflow status:")
 	printJSON(wf.Status)
 	// print logs
-	workflow, err := s.client.Get(wf.Name, metav1.GetOptions{})
+	workflow, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -136,7 +135,7 @@ func printJSON(obj interface{}) {
 
 func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
 	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
-	pod, err := s.kubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := s.KubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		logCtx.Error("Cannot get pod")
 		return
@@ -152,7 +151,7 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 }
 
 func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container string) {
-	stream, err := s.kubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
+	stream, err := s.KubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
 	if err != nil {
 		logCtx.WithField("err", err).Error("Cannot get logs")
 		return
@@ -170,6 +169,6 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:      s.T(),
-		client: s.client,
+		client: s.wfClient,
 	}
 }

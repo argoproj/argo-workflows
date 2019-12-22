@@ -397,7 +397,14 @@
 [[projects]]
   digest = "1:cbea643bd7f1c76bb6e48ab08f3dd01456602ab7b252f3c85133d7a1a6413a18"
   name = "github.com/grpc-ecosystem/go-grpc-middleware"
-  packages = ["."]
+  packages = [
+    ".",
+    "logging",
+    "logging/logrus",
+    "logging/logrus/ctxlogrus",
+    "tags",
+    "tags/logrus",
+  ]
   pruneopts = ""
   revision = "dd15ed025b6054e5253963e355991f3070d4e593"
   version = "v1.1.0"
@@ -1627,6 +1634,7 @@
     "github.com/golang/protobuf/proto",
     "github.com/gorilla/websocket",
     "github.com/grpc-ecosystem/go-grpc-middleware",
+    "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
     "github.com/mitchellh/go-ps",
@@ -1687,7 +1695,6 @@
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/plugin/pkg/client/auth/azure",
-    "k8s.io/client-go/plugin/pkg/client/auth/exec",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/plugin/pkg/client/auth/oidc",
     "k8s.io/client-go/rest",
@@ -1696,7 +1703,6 @@
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/remotecommand",
     "k8s.io/client-go/tools/watch",
-    "k8s.io/client-go/transport",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",

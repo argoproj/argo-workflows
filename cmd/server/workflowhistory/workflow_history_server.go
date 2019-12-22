@@ -2,22 +2,24 @@ package workflowhistory
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	commonserver "github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/config"
 )
 
 type workflowHistoryServer struct {
-	*commonserver.Server
 	repo sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(namespace string, wfClientset versioned.Interface, kubeClientset kubernetes.Interface, enableClientAuth bool, persistConfig *config.PersistConfig) (*workflowHistoryServer, error) {
+func NewWorkflowHistoryServer(namespace string, kubeClientset kubernetes.Interface, persistConfig *config.PersistConfig) (*workflowHistoryServer, error) {
 	var repo sqldb.WorkflowHistoryRepository
 	if persistConfig != nil {
 		database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
@@ -28,16 +30,29 @@ func NewWorkflowHistoryServer(namespace string, wfClientset versioned.Interface,
 	} else {
 		repo = sqldb.NullWorkflowHistoryRepository
 	}
-	return &workflowHistoryServer{
-		Server: commonserver.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset),
-		repo:   repo,
-	}, nil
+	return &workflowHistoryServer{repo: repo}, nil
 }
 
 func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
-	history, err := w.repo.ListWorkflowHistory()
+	options := req.ListOptions
+	if options == nil {
+		options = &metav1.ListOptions{Limit: 100}
+	}
+	if options.Continue == "" {
+		options.Continue = "0"
+	}
+	limit := int(options.Limit)
+	offset, err := strconv.Atoi(options.Continue)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
+	}
+	history, err := w.repo.ListWorkflowHistory(limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	return &wfv1.WorkflowList{Items: history}, nil
+	meta := metav1.ListMeta{}
+	if len(history) >= limit {
+		meta.Continue = fmt.Sprintf("%v", offset+limit)
+	}
+	return &wfv1.WorkflowList{ListMeta: meta, Items: history}, nil
 }

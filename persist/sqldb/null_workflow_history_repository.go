@@ -13,6 +13,6 @@ func (r *nullWorkflowHistoryRepository) AddWorkflowHistory(wf *wfv1.Workflow) er
 	return nil
 }
 
-func (r *nullWorkflowHistoryRepository) ListWorkflowHistory() ([]wfv1.Workflow, error) {
+func (r *nullWorkflowHistoryRepository) ListWorkflowHistory(int, int) ([]wfv1.Workflow, error) {
 	return []wfv1.Workflow{}, nil
 }

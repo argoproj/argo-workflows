@@ -10,7 +10,7 @@ const WorkflowHistoryTableName = "argo_workflow_history"
 
 type WorkflowHistoryRepository interface {
 	AddWorkflowHistory(wf *wfv1.Workflow) error
-	ListWorkflowHistory() ([]wfv1.Workflow, error)
+	ListWorkflowHistory(limit, offset int) ([]wfv1.Workflow, error)
 }
 
 type workflowHistoryRepository struct {
@@ -31,8 +31,13 @@ func (r *workflowHistoryRepository) AddWorkflowHistory(wf *wfv1.Workflow) error 
 	return err
 }
 
-func (r *workflowHistoryRepository) ListWorkflowHistory() ([]wfv1.Workflow, error) {
+func (r *workflowHistoryRepository) ListWorkflowHistory(limit int, offset int) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
-	err := r.Collection(WorkflowHistoryTableName).Find().OrderBy("-startedat").All(&wfDBs)
+	err := r.Collection(WorkflowHistoryTableName).
+		Find().
+		OrderBy("-startedat").
+		Limit(limit).
+		Offset(offset).
+		All(&wfDBs)
 	return wfDB2wf(wfDBs), err
 }

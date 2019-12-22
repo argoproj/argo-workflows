@@ -29,10 +29,6 @@ Open http://localhost:9000 using admin/password.
 
 #### Postgres
 
-```
-kubectl -n argo port-forward $(kubectl -n argo get pod -l app=postgres -o name) 5432:5432
-```
-
 Add to `/etc/hosts`:
 
 ```
@@ -40,10 +36,6 @@ Add to `/etc/hosts`:
 ```
 
 #### MySQL
-
-```
-kubectl -n argo port-forward $(kubectl -n argo get pod -l app=mysql -o name) 3306:3306
-```
 
 Add to `/etc/hosts`:
 

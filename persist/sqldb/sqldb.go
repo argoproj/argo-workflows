@@ -84,7 +84,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating table if not exists")
+	log.WithField("tableName", cfg.TableName).Info("creating table if not exists")
 	_, err = session.Exec(`create table if not exists ` + cfg.TableName + ` (
     id varchar(128) ,
     name varchar(256),
@@ -99,13 +99,13 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		return nil, "", err
 	}
 
-	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating index on name if not exists")
+	log.WithField("tableName", cfg.TableName).Info("creating index on name if not exists")
 	_, err = session.Exec(`create unique index if not exists idx_name on ` + cfg.TableName + ` (name)`)
 	if err != nil {
 		return nil, "", err
 	}
 
-	log.WithField("WorkflowHistoryTableName", "argo_workflow_history").Info("creating table if not exists")
+	log.WithField("workflowHistoryTableName", "argo_workflow_history").Info("creating table if not exists")
 	_, err = session.Exec(`create table if not exists argo_workflow_history (
     id varchar(128) ,
     name varchar(256),

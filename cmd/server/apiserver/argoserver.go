@@ -127,7 +127,7 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	}
 	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowHistoryServer, err := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth, configMap.Persistence)
+	workflowHistoryServer, err := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.kubeClientset, configMap.Persistence)
 	if err != nil {
 		log.Fatal(err)
 	}
