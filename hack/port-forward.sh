@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eux -o pipefail
+set -eu -o pipefail
 
 killall kubectl || true
 

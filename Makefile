@@ -155,7 +155,7 @@ executor-base-image:
 # NOTE: have to output ouside of dist directory since dist is under .dockerignore
 .PHONY: executor-image
 ifeq ($(DEV_IMAGE), true)
-executor-image: executor-base-image
+executor-image:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
@@ -219,7 +219,7 @@ start:
 	# Scale up.
 	make up
 	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.

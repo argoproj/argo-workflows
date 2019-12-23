@@ -108,10 +108,8 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 	s.e.POST("/workflows/argo").
+		WithQuery("createOptions.dryRun", "[All]").
 		WithBytes([]byte(`{
-  "createOptions": {
-    "dryRun": ["All"]
-  },
   "workflow": {
     "metadata": {
       "name": "test",
