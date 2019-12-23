@@ -190,6 +190,8 @@ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/arti
 
 ## 8. Access the Argo UI
 
+> v2.4 and before
+
 By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
 following:
 

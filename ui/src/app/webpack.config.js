@@ -8,6 +8,7 @@ const path = require('path');
 const isProd = process.env.NODE_ENV === 'production';
 
 const config = {
+    mode: 'production',
     entry: './src/app/index.tsx',
     output: {
         filename: '[name].[chunkhash].js',
@@ -45,7 +46,7 @@ const config = {
         new webpack.DefinePlugin({
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
             SYSTEM_INFO: JSON.stringify({
-                version: process.env.ARGO_VERSION || 'latest',
+                version: process.env.VERSION || 'latest',
             }),
         }),
         new HtmlWebpackPlugin({template: 'src/app/index.html'}),

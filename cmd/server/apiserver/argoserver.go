@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	golang_proto "github.com/golang/protobuf/proto"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
@@ -168,6 +170,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
+	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
+	mux.HandleFunc("/", as.serverStaticFile)
 	return &httpServer
 }
 
@@ -224,4 +228,12 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
+}
+
+func (as *argoServer) serverStaticFile(w http.ResponseWriter, r *http.Request) {
+	// this hack allows us to server the routes (e.g. /workflows) with the index file
+	if !strings.Contains(r.URL.Path, ".") {
+		r.URL.Path = "index.html"
+	}
+	static.ServeHTTP(w, r)
 }

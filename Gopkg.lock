@@ -673,6 +673,22 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:be1114a7a3fbab23c102dd15e850f5a92b60e2ca34918e8cc28eb04e893d470d"
+  name = "github.com/shurcooL/httpfs"
+  packages = ["vfsutil"]
+  pruneopts = ""
+  revision = "8d4bc4ba774931155e6cd5ef6098cb038dd45135"
+
+[[projects]]
+  branch = "master"
+  digest = "1:516000eb63bb341737069fafcb705951091b713d2359f84eec58df4347461cd7"
+  name = "github.com/shurcooL/vfsgen"
+  packages = ["."]
+  pruneopts = ""
+  revision = "6a9ea43bcacdf716a5c1b38efff722c07adf0069"
+
+[[projects]]
   digest = "1:1a405cddcf3368445051fb70ab465ae99da56ad7be8d8ca7fc52159d1c2d873c"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -1002,6 +1018,7 @@
     "go/internal/packagesdriver",
     "go/packages",
     "go/types/typeutil",
+    "godoc/static",
     "imports",
     "internal/fastwalk",
     "internal/gopathwalk",
@@ -1641,6 +1658,7 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/shurcooL/vfsgen",
     "github.com/sirupsen/logrus",
     "github.com/soheilhy/cmux",
     "github.com/spf13/cobra",
@@ -1651,6 +1669,7 @@
     "github.com/valyala/fasttemplate",
     "golang.org/x/crypto/ssh",
     "golang.org/x/net/context",
+    "golang.org/x/tools/godoc/static",
     "gonum.org/v1/gonum/graph",
     "google.golang.org/genproto/googleapis/api/annotations",
     "google.golang.org/grpc",

@@ -2,6 +2,7 @@ run:
   tests: false
   deadline: 2m
   skip-files:
+    - "cmd/server/static/files.go"
     - "pkg/client"
     - "vendor/"
 linters-settings:

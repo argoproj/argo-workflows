@@ -14,12 +14,6 @@ if [ "$argo_server" != "" ]; then
   kubectl -n argo port-forward svc/argo-server 2746:2746 &
 fi
 
-argo_ui=$(kubectl -n argo get pod -l app=argo-ui -o name)
-if [ "$argo_ui" != "" ]; then
-  echo "argo-ui on 8001"
-  kubectl -n argo port-forward deployment/argo-ui 8001:8001 &
-fi
-
 postgres=$(kubectl -n argo get pod -l app=postgres -o name)
 if [ "$postgres" != "" ]; then
   echo "postgres on 5432"

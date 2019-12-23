@@ -99,12 +99,18 @@ else
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
+.PHONY: static
+static: cmd/server/static/files.go
+cmd/server/static/files.go: ui/dist/app/*
+	go get bou.ke/staticfiles
+	staticfiles -o cmd/server/static/files.go ui/dist/app
+
 .PHONY: argo-server
-argo-server:
+argo-server: static
 	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server ./cmd/server
 
 .PHONY: argo-server-image
-argo-server-image:
+argo-server-image: static
 ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argo-server ./cmd/server
 	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server-dev .
@@ -115,35 +121,37 @@ endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) ; fi
 
 .PHONY: argo-server-linux-amd64
-argo-server-linux-amd64:
+argo-server-linux-amd64: static
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
 
 .PHONY: argo-server-linux-ppc64le
-argo-server-linux-ppc64le:
+argo-server-linux-ppc64le: static
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
 
 .PHONY: argo-server-linux-s390x
-argo-server-linux-s390x:
+argo-server-linux-s390x: static
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
 
 .PHONY: argo-server-linux
 argo-server-linux: argo-server-linux-amd64 argo-server-linux-ppc64le argo-server-linux-s390x
 
 .PHONY: argo-server-darwin
-argo-server-darwin:
+argo-server-darwin: static
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
 
 .PHONY: argo-server-windows
-argo-server-windows:
+argo-server-windows: static
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: executor
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
-.PHONY: executor-base-image
-executor-base-image:
+# To speed up local dev, we only create this when a marker file does not exist.
+executor-base-image: dist/executor-base-image
+dist/executor-base-image:
 	docker build -t argoexec-base --target argoexec-base .
+	touch dist/executor-base-image
 
 # The DEV_IMAGE versions of controller-image and executor-image are speed optimized development
 # builds of workflow-controller and argoexec images respectively. It allows for faster image builds
@@ -155,12 +163,12 @@ executor-base-image:
 # NOTE: have to output ouside of dist directory since dist is under .dockerignore
 .PHONY: executor-image
 ifeq ($(DEV_IMAGE), true)
-executor-image:
+executor-image: executor-base-image
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
-executor-image:
+executor-image: executor-base-image
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
@@ -175,9 +183,12 @@ else
 	gometalinter --config gometalinter.json ./...
 endif
 
+ui/dist/app:
+	sh -c 'cd ui && make'
+
 .PHONY: test
 test:
-	go test -covermode=count -coverprofile=coverage.out ./...
+	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v e2e`
 
 .PHONY: cover
 cover:
@@ -222,14 +233,11 @@ start:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
-	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
-	docker pull docker/whalesay:latest
 	# Update the config.
 	./hack/update-in-cluster-config.sh
 
 .PHONY: down
 down:
-	kubectl -n argo scale deployment/argo-ui --replicas 0
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
 
@@ -237,7 +245,6 @@ down:
 up:
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
-	kubectl -n argo scale deployment/argo-ui --replicas 1
 
 .PHONY: port-forward
 port-forward:

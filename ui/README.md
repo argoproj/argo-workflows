@@ -8,5 +8,3 @@ The UI has the following features:
 * View live Argo Workflows running in the cluster
 * View completed Argo Workflows
 * View container logs
-
-

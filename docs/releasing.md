@@ -30,11 +30,6 @@ In argo repo:
 make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
 ```
 
-In argo-ui repo:
-```bash
-IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z yarn docker
-```
-
 8. If successful, publish the release:
 ```bash
 export ARGO_RELEASE=vX.Y.Z
@@ -44,7 +39,7 @@ docker push argoproj/argocli:${ARGO_RELEASE}
 docker push argoproj/argoui:${ARGO_RELEASE}
 ```
 
-9. Push commits and tags to git. Run the following in both the argo and argo-ui repos:
+9. Push commits and tags to git. Run the following in the argo repos:
 
 In argo repo:
 ```bash
@@ -52,11 +47,6 @@ git push upstream
 git push upstream ${ARGO_RELEASE}
 git tag stable
 git push upstream stable
-```
-
-In argo-ui repo:
-```bash
-git push upstream ${ARGO_RELEASE}
 ```
 
 10. Draft GitHub release with the content from CHANGELOG.md, and CLI binaries produced in the `dist` directory
