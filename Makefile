@@ -185,7 +185,7 @@ else
 endif
 
 .PHONY: test
-test:
+test: cmd/server/static/files.go
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v e2e`
 
 .PHONY: cover
