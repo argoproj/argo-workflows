@@ -8,14 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
             - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v -vendor-only
       - save_cache:
           name: Save vendor cache
-          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
@@ -67,7 +67,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
+            make test STATIC=false 2>&1 | tee test-results/test.out
       - run:
           name: Verify code generation
           command: make verify-codegen
