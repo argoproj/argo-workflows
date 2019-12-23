@@ -42,11 +42,6 @@ kind: ServiceAccount
 metadata:
   name: argo
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argo-ui
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -116,36 +111,6 @@ rules:
   - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: argo-ui-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -156,18 +121,6 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: argo-ui-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: argo-ui-role
-subjects:
-- kind: ServiceAccount
-  name: argo-ui
 ---
 apiVersion: v1
 data:
@@ -191,17 +144,6 @@ spec:
   selector:
     app: argo-server
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: argo-ui
-spec:
-  ports:
-  - port: 80
-    targetPort: 8001
-  selector:
-    app: argo-ui
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -223,38 +165,6 @@ spec:
         name: main
         ports:
         - containerPort: 2746
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: argo-ui
-spec:
-  selector:
-    matchLabels:
-      app: argo-ui
-  template:
-    metadata:
-      labels:
-        app: argo-ui
-    spec:
-      containers:
-      - env:
-        - name: FORCE_NAMESPACE_ISOLATION
-          value: "true"
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: IN_CLUSTER
-          value: "true"
-        - name: ENABLE_WEB_CONSOLE
-          value: "false"
-        - name: BASE_HREF
-          value: /
-        image: argoproj/argoui:latest
-        name: argo-ui
-      serviceAccountName: argo-ui
 ---
 apiVersion: apps/v1
 kind: Deployment

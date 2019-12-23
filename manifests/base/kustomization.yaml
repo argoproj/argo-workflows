@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
 - crds
 - workflow-controller
-- argo-ui
 - argo-server
 images:
 - name: argoproj/argoui
