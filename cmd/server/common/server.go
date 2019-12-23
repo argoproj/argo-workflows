@@ -28,15 +28,15 @@ func NewServer(enableClientAuth bool, namespace string, wfClientset versioned.In
 }
 
 func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
-	if !s.enableClientAuth {
-		return s.wfClientset, s.kubeClientset, nil
-	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, nil, fmt.Errorf("unable to get metadata from incoming context")
 	}
 	authorization := md.Get("grpcgateway-authorization")
 	if len(authorization) == 0 {
+		if !s.enableClientAuth {
+			return s.wfClientset, s.kubeClientset, nil
+		}
 		return nil, nil, status.Error(codes.Unauthenticated, "Authorization header not found")
 	}
 	// Format is `Bearer base64(~/.kube/config)'

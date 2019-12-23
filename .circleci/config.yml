@@ -107,7 +107,7 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start
+      - run: KUBECONFIG=~/.kube/config make executor-base-image start
       - run:
           name: Follow logs, to help diagnose failures
           command: |
