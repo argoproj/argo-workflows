@@ -116,7 +116,7 @@ const wftStr3 = `
 }
 `
 
-func getWorkflowTempplateServer() *WorkflowTemplateServer {
+func getWorkflowTemplateServer() *WorkflowTemplateServer {
 	var wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	_ = json.Unmarshal([]byte(wftStr2), &wftObj1)
 	_ = json.Unmarshal([]byte(wftStr3), &wftObj2)
@@ -126,46 +126,50 @@ func getWorkflowTempplateServer() *WorkflowTemplateServer {
 }
 
 func TestWorkflowTemplateServer_CreateWorkflowTemplate(t *testing.T) {
-	server := getWorkflowTempplateServer()
+	server := getWorkflowTemplateServer()
 	var wftReq WorkflowTemplateCreateRequest
 	err := json.Unmarshal([]byte(wftStr1), &wftReq)
 	assert.Nil(t, err)
 	wftRsp, err := server.CreateWorkflowTemplate(context.TODO(), &wftReq)
-	assert.NotNil(t, wftRsp)
-	assert.Nil(t, err)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wftRsp)
+	}
 }
 
 func TestWorkflowTemplateServer_GetWorkflowTemplate(t *testing.T) {
-	server := getWorkflowTempplateServer()
+	server := getWorkflowTemplateServer()
 	wftReq := WorkflowTemplateGetRequest{
 		TemplateName: "workflow-template-whalesay-template2",
 		Namespace:    "default",
 	}
 	wftRsp, err := server.GetWorkflowTemplate(context.TODO(), &wftReq)
-	assert.NotNil(t, wftRsp)
-	assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
-	assert.Nil(t, err)
+	if assert.NoError(t, err) {
+		assert.NotNil(t, wftRsp)
+		assert.Equal(t, "workflow-template-whalesay-template2", wftRsp.Name)
+	}
 }
 
 func TestWorkflowTemplateServer_ListWorkflowTemplates(t *testing.T) {
-	server := getWorkflowTempplateServer()
+	server := getWorkflowTemplateServer()
 	wftReq := WorkflowTemplateListRequest{
 		Namespace: "default",
 	}
 	wftRsp, err := server.ListWorkflowTemplates(context.TODO(), &wftReq)
-	assert.Equal(t, 2, len(wftRsp.Items))
-	assert.Nil(t, err)
+	if assert.NoError(t, err) {
+		assert.Len(t, wftRsp.Items, 2)
+	}
 
 	wftReq = WorkflowTemplateListRequest{
 		Namespace: "test",
 	}
 	wftRsp, err = server.ListWorkflowTemplates(context.TODO(), &wftReq)
-	assert.Equal(t, 0, len(wftRsp.Items))
-	assert.Nil(t, err)
+	if assert.NoError(t, err) {
+		assert.Empty(t, wftRsp.Items)
+	}
 }
 
 func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
-	server := getWorkflowTempplateServer()
+	server := getWorkflowTemplateServer()
 	wftReq := WorkflowTemplateDeleteRequest{
 		Namespace:    "default",
 		TemplateName: "workflow-template-whalesay-template2",
@@ -178,7 +182,7 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 }
 
 func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
-	server := getWorkflowTempplateServer()
+	server := getWorkflowTemplateServer()
 	var wftObj1 v1alpha1.WorkflowTemplate
 	err := json.Unmarshal([]byte(wftStr2), &wftObj1)
 	assert.Nil(t, err)

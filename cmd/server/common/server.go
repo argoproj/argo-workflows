@@ -30,6 +30,9 @@ func NewServer(enableClientAuth bool, namespace string, wfClientset versioned.In
 func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
+		if !s.enableClientAuth {
+			return s.wfClientset, s.kubeClientset, nil
+		}
 		return nil, nil, fmt.Errorf("unable to get metadata from incoming context")
 	}
 	authorization := md.Get("grpcgateway-authorization")

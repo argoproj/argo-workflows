@@ -6,7 +6,6 @@
         "src"
     ],
     "scripts": {
-        "docker": "./scripts/build_docker.sh",
         "build": "webpack --config ./src/app/webpack.config.js",
         "build:storybook": "build-storybook -o ./dist/storybook",
         "start": "NODE_OPTIONS='--max-http-header-size 15000' webpack-dev-server --config ./src/app/webpack.config.js",
