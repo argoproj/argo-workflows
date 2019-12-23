@@ -129,9 +129,6 @@ func (c *Controller) processNextWorkItem() bool {
 }
 
 // enqueueWF conditionally queues a workflow to the ttl queue if it is within the deletion period
-// what is deletion period?
-// need to update here as well it seams like .....
-
 func (c *Controller) enqueueWF(obj interface{}) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
@@ -218,7 +215,6 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	}
 }
 
-// This is used to put thing on the que
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
 	if wf.DeletionTimestamp != nil || (wf.Spec.TTLSecondsAfterFinished == nil && wf.Spec.TTLStrategy.SecondsAfterFailed == nil && wf.Spec.TTLStrategy.SecondsAfterSuccess == nil) || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
