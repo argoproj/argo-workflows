@@ -58,7 +58,7 @@ ui/dist/app:
 ifeq ($(STATIC), true)
 	sh -c 'cd ui && make'
 else
-	mkdir ui/dist/app
+	mkdir -p ui/dist/app
 	echo "UI was disabled in the build" > ui/dist/app/index.html
 endif
 
