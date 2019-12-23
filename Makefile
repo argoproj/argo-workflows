@@ -48,9 +48,16 @@ endif
 .PHONY: all
 all: cli controller-image executor-image argo-server
 
-.PHONY: builder-image
+.PHONY:builder-image
 builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
+
+ui/dist/app:
+	sh -c 'cd ui && make'
+
+cmd/server/static/files.go: ui/dist/app
+	go get bou.ke/staticfiles
+	staticfiles -o cmd/server/static/files.go ui/dist/app
 
 .PHONY: cli
 cli:
@@ -99,18 +106,12 @@ else
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
-.PHONY: static
-static: cmd/server/static/files.go
-cmd/server/static/files.go: ui/dist/app/*
-	go get bou.ke/staticfiles
-	staticfiles -o cmd/server/static/files.go ui/dist/app
-
 .PHONY: argo-server
-argo-server: static
+argo-server: cmd/server/static/files.go
 	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server ./cmd/server
 
 .PHONY: argo-server-image
-argo-server-image: static
+argo-server-image: cmd/server/static/files.go
 ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argo-server ./cmd/server
 	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server-dev .
@@ -121,26 +122,26 @@ endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) ; fi
 
 .PHONY: argo-server-linux-amd64
-argo-server-linux-amd64: static
+argo-server-linux-amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
 
 .PHONY: argo-server-linux-ppc64le
-argo-server-linux-ppc64le: static
+argo-server-linux-ppc64le:
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
 
 .PHONY: argo-server-linux-s390x
-argo-server-linux-s390x: static
+argo-server-linux-s390x:
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
 
 .PHONY: argo-server-linux
 argo-server-linux: argo-server-linux-amd64 argo-server-linux-ppc64le argo-server-linux-s390x
 
 .PHONY: argo-server-darwin
-argo-server-darwin: static
+argo-server-darwin:
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
 
 .PHONY: argo-server-windows
-argo-server-windows: static
+argo-server-windows:
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: executor
@@ -182,9 +183,6 @@ else
 	# Remove gometalinter after a migration time.
 	gometalinter --config gometalinter.json ./...
 endif
-
-ui/dist/app:
-	sh -c 'cd ui && make'
 
 .PHONY: test
 test:
@@ -246,8 +244,8 @@ up:
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
 
-.PHONY: port-forward
-port-forward:
+.PHONY: pf
+pf:
 	./hack/port-forward.sh
 
 .PHONY: logs
@@ -260,7 +258,7 @@ test-e2e:
 
 .PHONY: clean
 clean:
-	-rm -rf ${CURRENT_DIR}/dist
+	git clean -fxd
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen

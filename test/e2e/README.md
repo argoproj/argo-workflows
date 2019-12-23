@@ -1,6 +1,6 @@
 # E2E Testing
 
-1. Run `make start port-forward`
+1. Run `make start pf`
 2. Either (a) run your test in your IDE or (b) run `make test`.
 
 Notes:
@@ -17,9 +17,9 @@ Notes:
 make logs
 ```
 
-### Accessing Argo UI
+### Accessing Argo Server UI
 
-Open http://localhost:8001
+Open http://localhost:2746
 
 ### Accessing MinIO
 
