@@ -16,6 +16,8 @@ IMAGE_TAG             ?= latest
 STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
+# build static files, disable if you don't need HTML files, e.g. when on CI
+STATIC                ?= true
 
 GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
 
@@ -53,7 +55,12 @@ builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
 
 ui/dist/app:
+ifeq ($(STATIC), true)
 	sh -c 'cd ui && make'
+else
+	mkdir ui/dist/app
+	echo "UI was disabled in the build" > ui/dist/app/index.html
+endif
 
 cmd/server/static/files.go: ui/dist/app
 	go get bou.ke/staticfiles
@@ -152,6 +159,7 @@ executor:
 executor-base-image: dist/executor-base-image
 dist/executor-base-image:
 	docker build -t argoexec-base --target argoexec-base .
+	mkdir -p dist
 	touch dist/executor-base-image
 
 # The DEV_IMAGE versions of controller-image and executor-image are speed optimized development
