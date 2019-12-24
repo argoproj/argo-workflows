@@ -21,8 +21,8 @@ spec:
           - name: cmd
             value: "{{item}}"
         withItems:
-        - make controller-image executor-image
-        - make release-clis
+        - make controller-image executor-image STATIC=false
+        - make release-clis STATIC=false
       - name: test
         template: ci-builder
         arguments:
