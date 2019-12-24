@@ -28,7 +28,7 @@ spec:
         arguments:
           parameters:
           - name: cmd
-            value: dep ensure && make lint test verify-codegen
+            value: dep ensure && make lint test verify-codegen STATIC=false
 
   - name: ci-builder
     inputs:
