@@ -2,11 +2,13 @@ package e2e
 
 import (
 	"encoding/base64"
-	"io/ioutil"
-	"path/filepath"
+	"encoding/json"
+	"github.com/argoproj/argo/pkg/apis/workflow"
+	"k8s.io/client-go/tools/clientcmd"
 	"testing"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +28,17 @@ type ArgoServerSuite struct {
 	runningLocally bool
 }
 
+
+func GetLocalKubeConfig() ([]byte, error){
+	var localConfig      workflow.ClientConfig
+	restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
+	if err != nil {
+		panic(err)
+	}
+	copier.Copy(&restConfig, &localConfig)
+	return json.Marshal(localConfig)
+}
+
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
 	//is the server running running locally, or on a cluster
@@ -36,10 +49,13 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.runningLocally = len(list.Items) == 0
 	// if argo-server we are not running locally, then we are running in the cluster, and we need the kubeconfig
 	if !s.runningLocally {
-		bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
+		bytes, err := GetLocalKubeConfig()
+			//ioutil.ReadFile(filepath.Join("kubeconfig"))
+
 		if err != nil {
 			panic(err)
 		}
+
 		s.authToken = base64.StdEncoding.EncodeToString(bytes)
 	}
 	s.e = httpexpect.

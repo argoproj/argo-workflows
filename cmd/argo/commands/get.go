@@ -8,13 +8,16 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/argoproj/pkg/humanize"
+	"google.golang.org/grpc"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/server/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/pkg/humanize"
+
 )
 
 const onExitSuffix = "onExit"
@@ -22,6 +25,7 @@ const onExitSuffix = "onExit"
 type getFlags struct {
 	output string
 	status string
+	serverHost string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -37,17 +41,35 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			wfClient := InitWorkflowClient()
-			for _, arg := range args {
-				wf, err := wfClient.Get(arg, metav1.GetOptions{})
+			if getArgs.serverHost !="" {
+				conn, err := grpc.Dial(getArgs.serverHost, grpc.WithInsecure())
 				if err != nil {
-					log.Fatal(err)
+					panic(err)
 				}
-				err = packer.DecompressWorkflow(wf)
-				if err != nil {
-					log.Fatal(err)
+				defer conn.Close()
+				client, ctx := GetApiServerGRPCClient(conn)
+				ns, _,_ := clientConfig.Namespace()
+				for _, arg := range args {
+					wfReq := workflow.WorkflowGetRequest{
+						WorkflowName:         arg,
+						Namespace:            ns,
+					}
+					wf, err := client.GetWorkflow(ctx, &wfReq)
+					if err != nil {
+						log.Fatal(err)
+					}
+					outputWorkflow(wf, getArgs)
 				}
-				printWorkflow(wf, getArgs.output, getArgs.status)
+
+			}else {
+				wfClient := InitWorkflowClient()
+				for _, arg := range args {
+					wf, err := wfClient.Get(arg, metav1.GetOptions{})
+					if err != nil {
+						log.Fatal(err)
+					}
+					outputWorkflow(wf, getArgs)
+				}
 			}
 		},
 	}
@@ -55,7 +77,16 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
+	command.Flags().StringVar(&getArgs.serverHost, "server", "", "API Server host and port")
 	return command
+}
+
+func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags){
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printWorkflow(wf, getArgs.output, getArgs.status)
 }
 
 func printWorkflow(wf *wfv1.Workflow, output, status string) {

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"google.golang.org/grpc"
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
@@ -18,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
@@ -34,6 +37,7 @@ type listFlags struct {
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
+	serverHost    string   // --server
 }
 
 func NewListCommand() *cobra.Command {
@@ -45,11 +49,28 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var wfClient v1alpha1.WorkflowInterface
-
-			if listArgs.allNamespaces {
-				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
+			var wfApiClient workflow.WorkflowServiceClient
+			var ctx context.Context
+			var ns string
+			if listArgs.serverHost == "" {
+				if listArgs.allNamespaces {
+					wfClient = InitWorkflowClient(apiv1.NamespaceAll)
+				} else {
+					wfClient = InitWorkflowClient()
+				}
 			} else {
-				wfClient = InitWorkflowClient()
+				conn, err := grpc.Dial(listArgs.serverHost, grpc.WithInsecure())
+				if err != nil {
+					panic(err)
+				}
+				defer conn.Close()
+				if listArgs.allNamespaces {
+					ns = apiv1.NamespaceAll
+				}else {
+					ns, _, _ = clientConfig.Namespace()
+				}
+
+				wfApiClient, ctx = GetApiServerGRPCClient(conn)
 			}
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
@@ -71,10 +92,27 @@ func NewListCommand() *cobra.Command {
 			if listArgs.chunkSize != 0 {
 				listOpts.Limit = listArgs.chunkSize
 			}
-			wfList, err := wfClient.List(listOpts)
-			if err != nil {
-				log.Fatal(err)
+			var wfList *wfv1.WorkflowList
+			var err error
+			if listArgs.serverHost == "" {
+				wfList, err = wfClient.List(listOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}else{
+				wfReq := workflow.WorkflowListRequest{
+					Namespace:            ns,
+					ListOptions:          &listOpts,
+					XXX_NoUnkeyedLiteral: struct{}{},
+					XXX_unrecognized:     nil,
+					XXX_sizecache:        0,
+				}
+				wfList, err = wfApiClient.ListWorkflows(ctx,&wfReq)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
+
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {
@@ -136,6 +174,7 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
+	command.Flags().StringVar(&listArgs.serverHost, "server", "", "API Server host and port")
 	return command
 }
 

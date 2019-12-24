@@ -3,17 +3,17 @@ package common
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"k8s.io/client-go/rest"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 )
 
 type Server struct {
@@ -45,19 +45,24 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 	// Format is `Bearer base64(~/.kube/config)'
 	token := strings.TrimPrefix(authorization[0], "Bearer ")
 	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
+
 	if err != nil {
 		return nil, nil, status.Errorf(codes.InvalidArgument, "Invalid token found in Authorization header %s: %v", token, err)
 	}
-	restConfig, err := clientcmd.RESTConfigFromKubeConfig(restConfigBytes)
+
+	var restConfig rest.Config
+	err = json.Unmarshal(restConfigBytes, &restConfig)
+	
 	if err != nil {
 		return nil, nil, err
 	}
-	wfClientset, err := versioned.NewForConfig(restConfig)
+	wfClientset, err := versioned.NewForConfig(&restConfig)
+
 	if err != nil {
 		log.Errorf("Failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
 	}
-	clientset, err := kubernetes.NewForConfig(restConfig)
+	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
 		log.Errorf("Failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 		return nil, nil, err
