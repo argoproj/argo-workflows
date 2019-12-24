@@ -28,13 +28,12 @@ enum ReadyState {
 
 const auth = (req: SuperAgentRequest) => {
     const token = localStorage.getItem('token');
-    return ((token !== null) ? req.auth(token, {type: 'bearer'}) : req)
-        .on("error", handle);
+    return (token !== null ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
 };
 
 const handle = (err: any) => {
     if (err.status === 401) {
-        document.location.href = "/login";
+        document.location.href = '/login';
     }
 };
 
