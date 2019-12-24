@@ -245,9 +245,10 @@ spec:
       - args:
         - --enable-client-auth
         image: argoproj/argo-server:latest
-        name: main
+        name: argo-server
         ports:
         - containerPort: 2746
+      serviceAccountName: argo
 ---
 apiVersion: apps/v1
 kind: Deployment

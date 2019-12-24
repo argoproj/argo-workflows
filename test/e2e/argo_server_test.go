@@ -30,7 +30,7 @@ type ArgoServerSuite struct {
 	runningLocally bool
 }
 
-func getLocalKubeConfig() []byte {
+func getLocalRestConfig() []byte {
 	bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
 	if err != nil {
 		panic(err)
@@ -67,7 +67,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.runningLocally = len(list.Items) == 0
 	// if argo-server we are not running locally, then we are running in the cluster, and we need the kubeconfig
 	if !s.runningLocally {
-		s.authToken = base64.StdEncoding.EncodeToString(getLocalKubeConfig())
+		s.authToken = base64.StdEncoding.EncodeToString(getLocalRestConfig())
 	}
 	s.e = httpexpect.
 		WithConfig(httpexpect.Config{

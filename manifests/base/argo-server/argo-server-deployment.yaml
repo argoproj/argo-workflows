@@ -12,8 +12,9 @@ spec:
       labels:
         app: argo-server
     spec:
+      serviceAccountName: argo
       containers:
-        - name: main
+        - name: argo-server
           image: argoproj/argo-server:latest
           args: [--enable-client-auth]
           ports:
