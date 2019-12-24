@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/client-go/rest"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type Server struct {
@@ -52,7 +52,7 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 
 	var restConfig rest.Config
 	err = json.Unmarshal(restConfigBytes, &restConfig)
-	
+
 	if err != nil {
 		return nil, nil, err
 	}

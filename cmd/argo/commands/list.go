@@ -10,17 +10,17 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"google.golang.org/grpc"
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/cmd/server/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/packer"
@@ -66,7 +66,7 @@ func NewListCommand() *cobra.Command {
 				defer conn.Close()
 				if listArgs.allNamespaces {
 					ns = apiv1.NamespaceAll
-				}else {
+				} else {
 					ns, _, _ = clientConfig.Namespace()
 				}
 
@@ -99,7 +99,7 @@ func NewListCommand() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
-			}else{
+			} else {
 				wfReq := workflow.WorkflowListRequest{
 					Namespace:            ns,
 					ListOptions:          &listOpts,
@@ -107,12 +107,11 @@ func NewListCommand() *cobra.Command {
 					XXX_unrecognized:     nil,
 					XXX_sizecache:        0,
 				}
-				wfList, err = wfApiClient.ListWorkflows(ctx,&wfReq)
+				wfList, err = wfApiClient.ListWorkflows(ctx, &wfReq)
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
-
 
 			tmpWorkFlows := wfList.Items
 			for wfList.ListMeta.Continue != "" {

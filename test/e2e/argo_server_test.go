@@ -3,18 +3,20 @@ package e2e
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/argoproj/argo/pkg/apis/workflow"
-	"k8s.io/client-go/tools/clientcmd"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/postgresql"
 
+	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -28,20 +30,36 @@ type ArgoServerSuite struct {
 	runningLocally bool
 }
 
-
-func GetLocalKubeConfig() ([]byte, error){
-	var localConfig      workflow.ClientConfig
-	restConfig, err := clientcmd.DefaultClientConfig.ClientConfig()
+func getLocalKubeConfig() []byte {
+	bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
 	if err != nil {
 		panic(err)
 	}
-	copier.Copy(&restConfig, &localConfig)
-	return json.Marshal(localConfig)
+	clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
+	if err != nil {
+		panic(err)
+	}
+	rawConfig, err := clientConfig.RawConfig()
+	if err != nil {
+		panic(err)
+	}
+	restConfig := &workflow.ClientConfig{
+		Host:            rawConfig.Clusters["local"].Server,
+		BearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		TLSClientConfig: rest.TLSClientConfig{
+			CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+		},
+	}
+	marshal, err := json.Marshal(restConfig)
+	if err != nil {
+		panic(err)
+	}
+	return marshal
 }
 
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	//is the server running running locally, or on a cluster
+	// is the server running running locally, or on a cluster?
 	list, err := s.KubeClient.CoreV1().Pods(fixtures.Namespace).List(metav1.ListOptions{LabelSelector: "app=argo-server"})
 	if err != nil {
 		panic(err)
@@ -49,14 +67,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.runningLocally = len(list.Items) == 0
 	// if argo-server we are not running locally, then we are running in the cluster, and we need the kubeconfig
 	if !s.runningLocally {
-		bytes, err := GetLocalKubeConfig()
-			//ioutil.ReadFile(filepath.Join("kubeconfig"))
-
-		if err != nil {
-			panic(err)
-		}
-
-		s.authToken = base64.StdEncoding.EncodeToString(bytes)
+		s.authToken = base64.StdEncoding.EncodeToString(getLocalKubeConfig())
 	}
 	s.e = httpexpect.
 		WithConfig(httpexpect.Config{
@@ -255,18 +266,18 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		Length().
 		Equal(2)
 
-	json := s.e.GET("/workflowhistory").
+	j := s.e.GET("/workflowhistory").
 		WithQuery("listOptions.limit", 1).
 		WithQuery("listOptions.offset", 1).
 		Expect().
 		Status(200).
 		JSON()
-	json.
+	j.
 		Path("$.items").
 		Array().
 		Length().
 		Equal(1)
-	json.
+	j.
 		Path("$.metadata.continue").
 		Equal("1")
 }

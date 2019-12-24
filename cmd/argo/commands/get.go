@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"google.golang.org/grpc"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -17,14 +17,13 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/pkg/humanize"
-
 )
 
 const onExitSuffix = "onExit"
 
 type getFlags struct {
-	output string
-	status string
+	output     string
+	status     string
 	serverHost string
 }
 
@@ -41,18 +40,18 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			if getArgs.serverHost !="" {
+			if getArgs.serverHost != "" {
 				conn, err := grpc.Dial(getArgs.serverHost, grpc.WithInsecure())
 				if err != nil {
 					panic(err)
 				}
 				defer conn.Close()
 				client, ctx := GetApiServerGRPCClient(conn)
-				ns, _,_ := clientConfig.Namespace()
+				ns, _, _ := clientConfig.Namespace()
 				for _, arg := range args {
 					wfReq := workflow.WorkflowGetRequest{
-						WorkflowName:         arg,
-						Namespace:            ns,
+						WorkflowName: arg,
+						Namespace:    ns,
 					}
 					wf, err := client.GetWorkflow(ctx, &wfReq)
 					if err != nil {
@@ -61,7 +60,7 @@ func NewGetCommand() *cobra.Command {
 					outputWorkflow(wf, getArgs)
 				}
 
-			}else {
+			} else {
 				wfClient := InitWorkflowClient()
 				for _, arg := range args {
 					wf, err := wfClient.Get(arg, metav1.GetOptions{})
@@ -81,7 +80,7 @@ func NewGetCommand() *cobra.Command {
 	return command
 }
 
-func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags){
+func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
 	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Fatal(err)
