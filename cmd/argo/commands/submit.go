@@ -10,6 +10,7 @@ import (
 
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
@@ -153,7 +154,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 			wfClient = InitWorkflowClient(wf.Namespace)
 		} else {
 			// This is here to avoid passing an empty namespace when using --server-dry-run
-			namespace, _, err := clientConfig.Namespace()
+			namespace, _, err := client.Config.Namespace()
 			if err != nil {
 				log.Fatal(err)
 			}

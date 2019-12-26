@@ -2,27 +2,19 @@ package commands
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/jinzhu/copier"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/transport"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	apiServer "github.com/argoproj/argo/cmd/server/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -32,7 +24,6 @@ import (
 // Global variables
 var (
 	restConfig       *rest.Config
-	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
 	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
@@ -81,7 +72,7 @@ func InitKubeClient() *kubernetes.Clientset {
 		return clientset
 	}
 	var err error
-	restConfig, err = clientConfig.ClientConfig()
+	restConfig, err = client.Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,7 +95,7 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if len(ns) > 0 {
 		namespace = ns[0]
 	} else {
-		namespace, _, err = clientConfig.Namespace()
+		namespace, _, err = client.Config.Namespace()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -148,37 +139,6 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
 
-func GetKubeConfigWithExecProviderToken() *workflow.ClientConfig {
-	var err error
-	restConfig, err = clientConfig.ClientConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if restConfig.ExecProvider != nil {
-		tc, _ := restConfig.TransportConfig()
-		auth, _ := exec.GetAuthenticator(restConfig.ExecProvider)
-		auth.UpdateTransportConfig(tc)
-		rt, _ := transport.New(tc)
-		req := http.Request{Header: map[string][]string{}}
-		rt.RoundTrip(&req)
-		token := req.Header.Get("Authorization")
-		restConfig.BearerToken = strings.TrimPrefix(token, "Bearer ")
-	}
-	var clientConfig workflow.ClientConfig
-	copier.Copy(&clientConfig, restConfig)
-
-	return &clientConfig
-}
-
 func GetApiServerGRPCClient(conn *grpc.ClientConn) (apiServer.WorkflowServiceClient, context.Context) {
-	localConfig := GetKubeConfigWithExecProviderToken()
-	configByte, err := json.Marshal(localConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	configEncoded := base64.StdEncoding.EncodeToString(configByte)
-	client := apiServer.NewWorkflowServiceClient(conn)
-	md := metadata.Pairs("grpcgateway-authorization", configEncoded, "token", localConfig.BearerToken)
-	ctx := metadata.NewOutgoingContext(context.Background(), md)
-	return client, ctx
+	return apiServer.NewWorkflowServiceClient(conn), client.ContextWithAuthorization()
 }
