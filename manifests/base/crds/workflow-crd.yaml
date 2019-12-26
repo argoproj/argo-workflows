@@ -49,3 +49,4 @@ spec:
     plural: cronworkflows
     shortNames:
       - cronwf
+      - cwf

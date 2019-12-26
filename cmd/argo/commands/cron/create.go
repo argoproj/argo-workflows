@@ -41,9 +41,6 @@ func NewCreateCommand() *cobra.Command {
 }
 
 func CreateCronWorkflows(filePaths []string, cliOpts *cliCreateOpts) {
-	if cliOpts == nil {
-		cliOpts = &cliCreateOpts{}
-	}
 	defaultCronWfClient := InitCronWorkflowClient()
 
 	fileContents, err := util.ReadManifest(filePaths...)
