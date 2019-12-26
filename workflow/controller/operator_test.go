@@ -405,6 +405,80 @@ func TestAssessNodeStatus(t *testing.T) {
 	}
 }
 
+var workflowStepRetry = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: step-retry
+spec:
+  entrypoint: step-retry
+  templates:
+  - name: step-retry
+    retryStrategy:
+      limit: 1
+    steps:
+      - - name: whalesay-success
+          arguments:
+            parameters:
+            - name: message
+              value: success
+          template: whalesay
+      - - name: whalesay-failure
+          arguments:
+            parameters:
+            - name: message
+              value: failure
+          template: whalesay
+
+  - name: whalesay
+    inputs:
+      parameters:
+        - name: message
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay {{inputs.parameters.message}}"]
+`
+
+// TestWorkflowParallelismLimit verifies parallelism at a workflow level is honored.
+func TestWorkflowStepRetry(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wf := unmarshalWF(workflowStepRetry)
+	wf, err := wfcset.Create(wf)
+	assert.Nil(t, err)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(pods.Items))
+
+	//complete the first pod
+	makePodsPhase(t, apiv1.PodSucceeded, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	// fail the second pod
+	makePodsPhase(t, apiv1.PodFailed, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
+	assert.Nil(t, err)
+	woc = newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+	pods, err = controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(pods.Items))
+	assert.Equal(t, "cowsay success", pods.Items[0].Spec.Containers[1].Args[0])
+	assert.Equal(t, "cowsay failure", pods.Items[1].Spec.Containers[1].Args[0])
+
+	//verify that after the cowsay failure pod failed, we are retrying cowsay success
+	assert.Equal(t, "cowsay success", pods.Items[2].Spec.Containers[1].Args[0])
+
+}
+
 var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -451,7 +525,7 @@ func TestWorkflowParallelismLimit(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(pods.Items))
 	// operate again and make sure we don't schedule any more pods
-	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
@@ -510,7 +584,7 @@ func TestStepsTemplateParallelismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 
 	// operate again and make sure we don't schedule any more pods
-	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
@@ -566,7 +640,7 @@ func TestDAGTemplateParallelismLimit(t *testing.T) {
 	assert.Equal(t, 2, len(pods.Items))
 
 	// operate again and make sure we don't schedule any more pods
-	makePodsRunning(t, controller.kubeclientset, wf.ObjectMeta.Namespace)
+	makePodsPhase(t, apiv1.PodRunning, controller.kubeclientset, wf.ObjectMeta.Namespace)
 	wf, err = wfcset.Get(wf.ObjectMeta.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
 	// wfBytes, _ := json.MarshalIndent(wf, "", "  ")
