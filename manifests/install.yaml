@@ -248,7 +248,6 @@ spec:
         name: argo-server
         ports:
         - containerPort: 2746
-      serviceAccountName: argo
 ---
 apiVersion: apps/v1
 kind: Deployment
