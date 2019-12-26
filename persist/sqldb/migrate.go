@@ -19,14 +19,14 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 	if err != nil {
 		return err
 	}
-	schemaVersion := 0
+	schemaVersion := -1
 	if rs.Next() {
 		err := rs.Scan(&schemaVersion)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err := session.Exec("insert into schema_history values(0)")
+		_, err := session.Exec("insert into schema_history values(-1)")
 		if err != nil {
 			return err
 		}
@@ -37,6 +37,8 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 	}
 	log.WithField("schemaVersion", schemaVersion).Info("Migrating database schema")
 
+	// try and make changes idempotent, as it is possible for the change to apply, but the history update to fail
+	// and therefore try and apply again next try
 	for changeSchemaVersion, change := range []string{
 		`create table if not exists ` + cfg.tableName + ` (
     id varchar(128) ,
