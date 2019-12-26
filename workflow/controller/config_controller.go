@@ -48,27 +48,27 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 	}
 	wfc.Config = config
 
+	if wfc.session != nil {
+		err := wfc.session.Close()
+		if err != nil {
+			return err
+		}
+		wfc.session = nil
+		wfc.wfDBctx = nil
+		wfc.wfHistoryRepository = sqldb.NullWorkflowHistoryRepository
+	}
 	if wfc.Config.Persistence != nil {
 		log.Info("Persistence configuration enabled")
-		dbctx, err := wfc.createPersistenceContext()
+		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
 		if err != nil {
-			log.WithField("err", err).Errorf("Error Creating Persistence context")
-		} else {
-			log.Info("Persistence Session created successfully")
-			wfc.wfDBctx = dbctx
+			return err
 		}
-		workflowHistoryRepository, err := wfc.createWorkflowHistoryRepository()
-		if err != nil {
-			log.WithField("err", err).Errorf("Error creating workflow history repository")
-			wfc.workflowHistoryRepo = sqldb.NullWorkflowHistoryRepository
-		} else {
-			log.Info("Workflow history successfully created")
-			wfc.workflowHistoryRepo = workflowHistoryRepository
-		}
+		wfc.session = session
+		wfc.wfDBctx = sqldb.NewWorkflowDBContext(tableName, wfc.Config.Persistence.NodeStatusOffload, session)
+		wfc.wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
+		log.Info("Persistence Session created successfully")
 	} else {
 		log.Info("Persistence configuration disabled")
-		wfc.wfDBctx = nil
-		wfc.workflowHistoryRepo = sqldb.NullWorkflowHistoryRepository
 	}
 	wfc.throttler.SetParallelism(config.Parallelism)
 	return nil

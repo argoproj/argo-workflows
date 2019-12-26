@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -65,8 +66,9 @@ type WorkflowController struct {
 	completedPods       chan string
 	gcPods              chan string // pods to be deleted depend on GC strategy
 	throttler           Throttler
+	session             sqlbuilder.Database
 	wfDBctx             sqldb.DBRepository
-	workflowHistoryRepo sqldb.WorkflowHistoryRepository
+	wfHistoryRepository sqldb.WorkflowHistoryRepository
 }
 
 const (
@@ -516,30 +518,4 @@ func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.Work
 		informerFactory = wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
 	}
 	return informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-}
-
-func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
-
-	var wfDBCtx sqldb.WorkflowDBContext
-	var err error
-
-	//wfDBCtx.TableName = wfc.Config.Persistence.TableName
-	wfDBCtx.NodeStatusOffload = wfc.Config.Persistence.NodeStatusOffload
-
-	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
-
-	if err != nil {
-		log.Errorf("Error in createPersistenceContext. %v", err)
-		return nil, err
-	}
-
-	return &wfDBCtx, nil
-}
-
-func (wfc *WorkflowController) createWorkflowHistoryRepository() (sqldb.WorkflowHistoryRepository, error) {
-	database, _, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
-	if err != nil {
-		return nil, err
-	}
-	return sqldb.NewWorkflowHistoryRepository(database), nil
 }

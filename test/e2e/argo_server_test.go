@@ -25,7 +25,7 @@ import (
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
 	e              *httpexpect.Expect
-	authToken      string
+	bearerToken    string
 	db             sqlbuilder.Database
 	runningLocally bool
 }
@@ -67,7 +67,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.runningLocally = len(list.Items) == 0
 	// if argo-server we are not running locally, then we are running in the cluster, and we need the kubeconfig
 	if !s.runningLocally {
-		s.authToken = base64.StdEncoding.EncodeToString(getLocalRestConfig())
+		s.bearerToken = base64.StdEncoding.EncodeToString(getLocalRestConfig())
 	}
 	s.e = httpexpect.
 		WithConfig(httpexpect.Config{
@@ -78,8 +78,8 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {
-			if s.authToken != "" {
-				req.WithHeader("Authorization", "Bearer "+s.authToken)
+			if s.bearerToken != "" {
+				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
 	// create database collection
@@ -98,9 +98,9 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 	if s.runningLocally {
 		s.T().SkipNow()
 	}
-	token := s.authToken
-	defer func() { s.authToken = token }()
-	s.authToken = ""
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+	s.bearerToken = ""
 	s.e.GET("/workflows/argo").
 		Expect().
 		Status(401)

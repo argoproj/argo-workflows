@@ -1,41 +1,19 @@
 package workflow
 
 import (
-	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
 	dblib "upper.io/db.v3"
 
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 type DBService struct {
 	wfDBctx sqldb.DBRepository
 }
 
-func NewDBService(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (*DBService, error) {
-	var dbService DBService
-	var err error
-	dbService.wfDBctx, err = createDBContext(kubectlConfig, namespace, persistConfig)
-	if err != nil {
-		return nil, err
-	}
-	return &dbService, nil
-}
-
-func createDBContext(kubectlConfig kubernetes.Interface, namespace string, persistConfig *config.PersistConfig) (*sqldb.WorkflowDBContext, error) {
-	var wfDBCtx sqldb.WorkflowDBContext
-	var err error
-
-	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(kubectlConfig, namespace, persistConfig)
-
-	if err != nil {
-		log.Errorf("Error in CreateDBContext. %v", err)
-		return nil, err
-	}
-	return &wfDBCtx, nil
+func NewDBService(wfDBctx sqldb.DBRepository) *DBService {
+	return &DBService{wfDBctx}
 }
 
 func (db *DBService) Get(wfName string, namespace string) (*v1alpha1.Workflow, error) {

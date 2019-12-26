@@ -10,7 +10,6 @@ import (
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 const wf1 = `
@@ -359,7 +358,7 @@ func getWorkflowServer() *workflowServer {
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
-	server := NewWorkflowServer("Default", wfClientset, kubeClientSet, &config.WorkflowControllerConfig{}, false)
+	server := NewWorkflowServer("Default", wfClientset, kubeClientSet, false, nil)
 	return server
 }
 

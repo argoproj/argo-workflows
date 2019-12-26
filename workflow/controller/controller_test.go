@@ -61,7 +61,7 @@ func newController() *WorkflowController {
 		completedPods:       make(chan string, 512),
 		wftmplInformer:      wftmplInformer,
 		wfQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		workflowHistoryRepo: sqldb.NullWorkflowHistoryRepository,
+		wfHistoryRepository: sqldb.NullWorkflowHistoryRepository,
 	}
 }
 
