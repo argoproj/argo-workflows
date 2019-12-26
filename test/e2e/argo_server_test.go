@@ -13,8 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"upper.io/db.v3/lib/sqlbuilder"
-	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -26,7 +24,6 @@ type ArgoServerSuite struct {
 	fixtures.E2ESuite
 	e              *httpexpect.Expect
 	bearerToken    string
-	db             sqlbuilder.Database
 	runningLocally bool
 }
 
@@ -82,16 +79,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 				req.WithHeader("Authorization", "Bearer "+s.bearerToken)
 			}
 		})
-	// create database collection
-	s.db, err = postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
-	if err != nil {
-		panic(err)
-	}
-	// delete everything from history
-	_, err = s.db.DeleteFrom("argo_workflow_history").Exec()
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {

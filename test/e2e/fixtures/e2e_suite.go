@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
+	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -85,6 +86,16 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
 			time.Sleep(1 * time.Second)
 		}
+	}
+	// create database collection
+	db, err := postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
+	if err != nil {
+		panic(err)
+	}
+	// delete everything from history
+	_, err = db.DeleteFrom("argo_workflow_history").Exec()
+	if err != nil {
+		panic(err)
 	}
 }
 
