@@ -23,13 +23,20 @@ type WorkflowDBContext struct {
 	Session           sqlbuilder.Database
 }
 
+func NewWorkflowDBContext(tableName string, nodeStatusOffload bool, session sqlbuilder.Database) *WorkflowDBContext {
+	return &WorkflowDBContext{
+		TableName:         tableName,
+		NodeStatusOffload: nodeStatusOffload,
+		Session:           session,
+	}
+}
+
 type DBRepository interface {
 	Save(wf *wfv1.Workflow) error
 	Get(uid string) (*wfv1.Workflow, error)
 	List(orderBy string) (*wfv1.WorkflowList, error)
 	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
 	Delete(condition db.Cond) error
-	Close() error
 	IsNodeStatusOffload() bool
 	QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{}) (*wfv1.WorkflowList, error)
 }
@@ -240,13 +247,6 @@ func wfDB2wf(wfDBs []WorkflowDB) []wfv1.Workflow {
 		}
 	}
 	return wfs
-}
-
-func (wdc *WorkflowDBContext) Close() error {
-	if wdc.Session == nil {
-		return DBInvalidSession(fmt.Errorf("session nil"))
-	}
-	return wdc.Session.Close()
 }
 
 func (wdc *WorkflowDBContext) QueryWithPagination(condition db.Cond, pageLimit uint, lastId string, orderBy ...interface{}) (*wfv1.WorkflowList, error) {

@@ -14,7 +14,6 @@ import (
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/config"
 )
 
 type workflowHistoryServer struct {
@@ -22,17 +21,19 @@ type workflowHistoryServer struct {
 	repo          sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(namespace string, kubeClientset kubernetes.Interface, persistConfig *config.PersistConfig) (*workflowHistoryServer, error) {
-	var repo sqldb.WorkflowHistoryRepository
-	if persistConfig != nil {
-		database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
-		if err != nil {
-			return nil, err
+func NewWorkflowHistoryServer(kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
+	/*
+		var repo sqldb.WorkflowHistoryRepository
+		if persistConfig != nil {
+			database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
+			if err != nil {
+				return nil, err
+			}
+			repo = sqldb.NewWorkflowHistoryRepository(database)
+		} else {
+			repo = sqldb.NullWorkflowHistoryRepository
 		}
-		repo = sqldb.NewWorkflowHistoryRepository(database)
-	} else {
-		repo = sqldb.NullWorkflowHistoryRepository
-	}
+	*/
 	return &workflowHistoryServer{repo: repo, kubeClientset: kubeClientset}, nil
 }
 

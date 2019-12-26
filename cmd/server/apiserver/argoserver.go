@@ -26,6 +26,7 @@ import (
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	"github.com/argoproj/argo/errors"
+	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apiclient"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	grpcutil "github.com/argoproj/argo/util/grpc"
@@ -127,9 +128,19 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 		// TODO: this currently returns an error every time
 		log.Errorf("Error marshalling config map: %s", err)
 	}
-	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, configMap, as.enableClientAuth)
+	var wfDBServer *workflow.DBService
+	var wfHistoryRepository sqldb.WorkflowHistoryRepository = sqldb.NullWorkflowHistoryRepository
+	if configMap.Persistence != nil {
+		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
+		if err != nil {
+			log.Fatal(err)
+		}
+		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
+		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
+	}
+	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth, wfDBServer)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowHistoryServer, err := workflowhistory.NewWorkflowHistoryServer(as.namespace, as.kubeClientset, configMap.Persistence)
+	workflowHistoryServer, err := workflowhistory.NewWorkflowHistoryServer(as.kubeClientset, wfHistoryRepository)
 	if err != nil {
 		log.Fatal(err)
 	}

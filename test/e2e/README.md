@@ -105,14 +105,14 @@ kubectl -n argo scale deploy/mysql --replicas 1
 To access the Postgres database as follows:
 
 ```
-kubectl exec -ti $(kubectl get pod -l app=postgres -o name) -- psql -U postgres
+kubectl exec -ti $(kubectl get pod -l app=postgres -o name|cut -c 5s) -- psql -U postgres
 select * from argo_workflows;
 ```
 
 To access the MySQL database as follows:
 
 ```
-kubectl exec -ti $(kubectl get pod -l app=mysql -o name) -- mysql -u mysql -ppassword argo
+kubectl exec -ti $(kubectl get pod -l app=mysql -o name|cut -c 5s) -- mysql -u mysql -ppassword argo
 select * from argo_workflows;
 ```
 

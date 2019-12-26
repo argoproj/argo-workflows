@@ -1,7 +1,6 @@
 package sqldb
 
 import (
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -84,38 +83,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	log.WithField("tableName", cfg.TableName).Info("creating table if not exists")
-	_, err = session.Exec(`create table if not exists ` + cfg.TableName + ` (
-    id varchar(128) ,
-    name varchar(256),
-    phase varchar(25),
-    namespace varchar(256),
-    workflow text,
-    startedat timestamp,
-    finishedat timestamp,
-    primary key (id, namespace)
-)`)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.WithField("tableName", cfg.TableName).Info("creating index on name if not exists")
-	_, err = session.Exec(`create unique index if not exists idx_name on ` + cfg.TableName + ` (name)`)
-	if err != nil {
-		return nil, "", err
-	}
-
-	log.WithField("workflowHistoryTableName", "argo_workflow_history").Info("creating table if not exists")
-	_, err = session.Exec(`create table if not exists argo_workflow_history (
-    id varchar(128) ,
-    name varchar(256),
-    phase varchar(25),
-    namespace varchar(256),
-    workflow text,
-    startedat timestamp,
-    finishedat timestamp,
-    primary key (id, namespace)
-)`)
+	err = migrate(migrateCfg{cfg.TableName}, session)
 	if err != nil {
 		return nil, "", err
 	}
@@ -155,28 +123,10 @@ func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, 
 		session.SetMaxIdleConns(persistPool.MaxIdleConns)
 	}
 
-	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating table if not exists")
-	_, err = session.Exec(`CREATE TABLE IF NOT EXISTS ` + cfg.TableName + ` (
-  id varchar(128) NOT NULL DEFAULT "", 
-  name varchar(128) DEFAULT NULL,
-  phase varchar(24) DEFAULT NULL,
-  namespace varchar(24) NOT NULL DEFAULT "" ,
-  workflow longtext,
-  startedat datetime DEFAULT NULL,
-  finishedat datetime DEFAULT NULL,
-  PRIMARY KEY (id(24), namespace(24))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;`)
+	err = migrate(migrateCfg{cfg.TableName}, session)
 	if err != nil {
 		return nil, "", err
 	}
-
-	log.WithField("WorkflowHistoryTableName", cfg.TableName).Info("creating index on name if not exists")
-	_, err = session.Exec(`create unique index if not exists idx_name on ` + cfg.TableName + ` (name)`)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// TODO history table
 
 	return session, cfg.TableName, nil
 

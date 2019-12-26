@@ -9,11 +9,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	commonserver "github.com/argoproj/argo/cmd/server/common"
-	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
@@ -25,34 +23,11 @@ type workflowServer struct {
 	wfKubeService *kubeService
 }
 
-func NewWorkflowServer(namespace string, wfClientset versioned.Interface, kubeClientset kubernetes.Interface, config *config.WorkflowControllerConfig, enableClientAuth bool) *workflowServer {
-	wfServer := workflowServer{Server: commonserver.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset)}
-	if config != nil && config.Persistence != nil {
-		var err error
-		wfServer.wfDBService, err = NewDBService(kubeClientset, namespace, config.Persistence)
-		if err != nil {
-			wfServer.wfDBService = nil
-			log.Errorf("Error Creating DB Context. %v", err)
-		} else {
-			log.Infof("DB Context created successfully")
-		}
+func NewWorkflowServer(namespace string, wfClientset versioned.Interface, kubeClientset kubernetes.Interface, enableClientAuth bool, wfDBService *DBService) *workflowServer {
+	return &workflowServer{
+		Server:      commonserver.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset),
+		wfDBService: wfDBService,
 	}
-
-	return &wfServer
-}
-
-func (s *workflowServer) CreatePersistenceContext(namespace string, kubeClientSet *kubernetes.Clientset, config *config.PersistConfig) (*sqldb.WorkflowDBContext, error) {
-	var wfDBCtx sqldb.WorkflowDBContext
-	var err error
-	wfDBCtx.NodeStatusOffload = config.NodeStatusOffload
-	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(kubeClientSet, namespace, config)
-
-	if err != nil {
-		log.Errorf("Error in createPersistenceContext: %s", err)
-		return nil, err
-	}
-
-	return &wfDBCtx, nil
 }
 
 func (s *workflowServer) CreateWorkflow(ctx context.Context, wfReq *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
