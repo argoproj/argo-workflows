@@ -8,15 +8,16 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 const onExitSuffix = "onExit"

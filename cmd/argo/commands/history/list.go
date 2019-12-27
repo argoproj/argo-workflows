@@ -39,6 +39,6 @@ func NewListCommand() *cobra.Command {
 			}
 		},
 	}
-	command.Flags().StringVar(&server, "server", "localhost:2746", "Server")
+	command.Flags().StringVar(&server, "server", "", "API Server host and port")
 	return command
 }

@@ -24,7 +24,6 @@ import (
 var kubeConfig = os.Getenv("KUBECONFIG")
 
 const Namespace = "argo"
-const label = "argo-e2e"
 
 func init() {
 	if kubeConfig == "" {
@@ -57,7 +56,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	}
 	s.wfClient = commands.InitWorkflowClient()
 	// delete all workflows
-	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
+	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: "argo-e2e"})
 	if err != nil {
 		panic(err)
 	}

@@ -1,10 +1,11 @@
 package workflow
 
 import (
+	"time"
+
 	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/flowcontrol"
-	"time"
 )
 
 type ClientConfig struct {
