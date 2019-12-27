@@ -97,11 +97,8 @@ func NewListCommand() *cobra.Command {
 				}
 			} else {
 				wfReq := workflow.WorkflowListRequest{
-					Namespace:            ns,
-					ListOptions:          &listOpts,
-					XXX_NoUnkeyedLiteral: struct{}{},
-					XXX_unrecognized:     nil,
-					XXX_sizecache:        0,
+					Namespace:   ns,
+					ListOptions: &listOpts,
 				}
 				wfList, err = wfApiClient.ListWorkflows(ctx, &wfReq)
 				if err != nil {
