@@ -26,6 +26,7 @@ export class WorkflowHistoryList extends React.Component<RouteComponentProps<any
                         {(workflows: models.Workflow[]) => (
                             <div className='row'>
                                 <div className='columns small-12 xxlarge-2'>
+                                    {workflows.length === 0 && "No history to show. History must be enabled in configuration and workflows must have completed to appear here."}
                                     {workflows.map(workflow => (
                                         <div key={workflow.metadata.name}>
                                             <Link to={uiUrl(`workflow-history/${workflow.metadata.namespace}/${workflow.metadata.uid}`)}>

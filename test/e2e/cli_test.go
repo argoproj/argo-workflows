@@ -3,10 +3,14 @@ package e2e
 import (
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -29,7 +33,7 @@ func (s *CLISuite) TestCompletion() {
 	s.Assert().Contains(output, "bash completion for argo")
 }
 
-func (s *CLISuite) TestCLI() {
+func (s *CLISuite) TestCore() {
 	s.T().Run("Submit", func(t *testing.T) {
 		output, err := argo("submit", "smoke/basic.yaml", "--wait")
 		assert.NoError(t, err)
@@ -40,11 +44,29 @@ func (s *CLISuite) TestCLI() {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
-	s.T().Run("HistoryList", func(t *testing.T) {
+}
+
+func (s *CLISuite) TestHistory() {
+	var uid types.UID
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
+	s.T().Run("List", func(t *testing.T) {
 		output, err := argo("history", "list", "--server", "localhost:2746")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
+	})
+	s.T().Run("Get", func(t *testing.T) {
+		output, err := argo("history", "get", "--server", "localhost:2746", fixtures.Namespace, string(uid))
+		assert.NoError(t, err)
+		assert.Contains(t, output, "Succeeded")
 	})
 }
 

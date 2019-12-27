@@ -12,5 +12,6 @@ func NewHistoryCommand() *cobra.Command {
 		},
 	}
 	command.AddCommand(NewListCommand())
+	command.AddCommand(NewGetCommand())
 	return command
 }

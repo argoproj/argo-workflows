@@ -73,7 +73,6 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
 }
 
-
 func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
 	wf, err := w.repo.GetWorkflowHistory(req.Namespace, req.Uid)
 	return wf, err

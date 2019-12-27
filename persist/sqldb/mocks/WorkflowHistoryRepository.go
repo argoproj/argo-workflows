@@ -25,6 +25,29 @@ func (_m *WorkflowHistoryRepository) AddWorkflowHistory(wf *v1alpha1.Workflow) e
 	return r0
 }
 
+// GetWorkflowHistory provides a mock function with given fields: namespace, uid
+func (_m *WorkflowHistoryRepository) GetWorkflowHistory(namespace string, uid string) (*v1alpha1.Workflow, error) {
+	ret := _m.Called(namespace, uid)
+
+	var r0 *v1alpha1.Workflow
+	if rf, ok := ret.Get(0).(func(string, string) *v1alpha1.Workflow); ok {
+		r0 = rf(namespace, uid)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.Workflow)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(namespace, uid)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListWorkflowHistory provides a mock function with given fields: limit, offset
 func (_m *WorkflowHistoryRepository) ListWorkflowHistory(limit int, offset int) ([]v1alpha1.Workflow, error) {
 	ret := _m.Called(limit, offset)
