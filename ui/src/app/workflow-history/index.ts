@@ -1,5 +1,5 @@
-import {WorkflowsContainer} from './components/workflows-container';
+import {WorkflowHistoryContainer} from './components/workflow-history-container';
 
 export default {
-    component: WorkflowsContainer
+    component: WorkflowHistoryContainer
 };
