@@ -244,7 +244,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second)
 
-	s.e.GET("/workflowhistory").
+	s.e.GET("/workflow-history").
 		Expect().
 		Status(200).
 		JSON().
@@ -253,7 +253,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		Length().
 		Equal(2)
 
-	j := s.e.GET("/workflowhistory").
+	j := s.e.GET("/workflow-history").
 		WithQuery("listOptions.limit", 1).
 		WithQuery("listOptions.offset", 1).
 		Expect().

@@ -15,6 +15,6 @@ message WorkflowHistoryListRequest {
 
 service WorkflowHistoryService {
     rpc ListWorkflowHistory (WorkflowHistoryListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
-        option (google.api.http).get = "/api/v1/workflowhistory";
+        option (google.api.http).get = "/api/v1/workflow-history";
     }
 }

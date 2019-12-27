@@ -28,7 +28,7 @@ export class WorkflowHistoryList extends React.Component<RouteComponentProps<any
                                 <div className='columns small-12 xxlarge-2'>
                                     {workflows.map(workflow => (
                                         <div key={workflow.metadata.name}>
-                                            <Link to={uiUrl(`workflowhistor/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
+                                            <Link to={uiUrl(`workflow-history/${workflow.metadata.namespace}/${workflow.metadata.uid}`)}>
                                                 <WorkflowListItem workflow={workflow} />
                                             </Link>
                                         </div>
