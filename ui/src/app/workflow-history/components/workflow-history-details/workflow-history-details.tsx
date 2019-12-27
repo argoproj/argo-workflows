@@ -1,5 +1,7 @@
-import {DataLoader, Page, SlidingPanel} from 'argo-ui';
+import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {AppContext} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
+import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import * as models from '../../../../models';
@@ -14,6 +16,11 @@ import {WorkflowSummaryPanel} from '../../../workflows/components/workflow-summa
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<any>, any> {
+    public static contextTypes = {
+        router: PropTypes.object,
+        apis: PropTypes.object
+    };
+
     private get namespace() {
         return this.props.match.params.namespace;
     }
@@ -134,16 +141,18 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
         );
     }
 
-    private getParam(key: string) {
-        return new URLSearchParams(this.props.location.search).get(key);
+    private getParam(name: string) {
+        return new URLSearchParams(this.appContext.router.route.location.search).get(name);
     }
 
-    private setParam(key: string, val: string) {
-        let search = document.location.search.split('&').filter(v => !v.startsWith(key + '='));
-        if (val !== null) {
-            search = search.concat([key + '=' + val]);
+    private setParam(name: string, value: string) {
+        const params = new URLSearchParams(this.appContext.router.route.location.search);
+        if (value !== null) {
+            params.set(name, value);
+        } else {
+            params.delete(name);
         }
-        document.location.search = search.join('&');
+        this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 
     private node(wf: models.Workflow) {
@@ -157,7 +166,10 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
         services.workflowHistory
             .resubmit(this.namespace, this.uid)
             .catch(e => {
-                alert('Failed to resubmit workflow history ' + e);
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to resubmit workflow history ' + e,
+                    type: NotificationType.Error
+                });
             })
             .then((wf: models.Workflow) => {
                 document.location.href = `/workflows/${wf.metadata.namespace}/${wf.metadata.name}`;
@@ -165,16 +177,23 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
     }
 
     private deleteWorkflowHistory() {
-        if (!confirm('Are you sure you want to delete this workflow history? There is no undo.')) {
+        if (!confirm('Are you sure you want to delete this workflow history?\nThere is no undo.')) {
             return;
         }
         services.workflowHistory
             .delete(this.namespace, this.uid)
             .catch(e => {
-                alert('Failed to delete workflow history ' + e);
+                this.appContext.apis.notifications.show({
+                    content: 'Failed to delete workflow history ' + e,
+                    type: NotificationType.Error
+                });
             })
             .then(() => {
                 document.location.href = '/workflow-history';
             });
+    }
+
+    private get appContext(): AppContext {
+        return this.context as AppContext;
     }
 }
