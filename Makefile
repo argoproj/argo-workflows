@@ -19,8 +19,6 @@ DEV_IMAGE             ?= false
 # build static files, disable if you don't need HTML files, e.g. when on CI
 STATIC                ?= true
 
-GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
-
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \
@@ -184,13 +182,7 @@ endif
 
 .PHONY: lint
 lint:
-	go fmt ./...
-ifdef GOLANGCI_EXISTS
 	golangci-lint run --fix --verbose --config golangci.yml
-else
-	# Remove gometalinter after a migration time.
-	gometalinter --config gometalinter.json ./...
-endif
 
 .PHONY: test
 test: cmd/server/static/files.go
