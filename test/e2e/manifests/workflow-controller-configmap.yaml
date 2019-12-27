@@ -16,7 +16,8 @@ data:
       connectionPool:
         maxIdleConns: 100
         maxOpenConns: 0
-      nodeStatusOffLoad: false
+      nodeStatusOffLoad: true
+      history: true
       postgresql:
         host: postgres
         port: 5432

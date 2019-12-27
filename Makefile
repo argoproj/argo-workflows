@@ -224,9 +224,11 @@ start:
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
-	make cli controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
+	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
 	make up
+	# Make the CLI
+	make cli
 	# Wait for apps to be ready.
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.

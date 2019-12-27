@@ -52,7 +52,6 @@ func NewListCommand() *cobra.Command {
 					_, _ = fmt.Fprintln(w, item.Namespace, item.Name, item.UID)
 				}
 				_ = w.Flush()
-
 			}
 		},
 	}

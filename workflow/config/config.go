@@ -97,10 +97,12 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 }
 
 type PersistConfig struct {
-	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
-	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
-	PostgreSQL        *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL             *MySQLConfig      `json:"mysql,omitempty"`
+	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
+	// Record workflow history to persistence.
+	History        bool              `json:"history,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
 type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`
