@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,6 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/packer"
 )
 
 func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) sqldb.DBRepository {
@@ -121,6 +121,6 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 }
 
 func makeMax() func() {
-	packer.MaxWorkflowSize = 50
-	return func() { packer.MaxWorkflowSize = packer.DefaultMaxWorkflowSize }
+	_ = os.Setenv("MAX_WORKFLOW_SIZE", "50")
+	return func() { _ = os.Unsetenv("MAX_WORKFLOW_SIZE") }
 }

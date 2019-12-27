@@ -42,5 +42,6 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(template.NewTemplateCommand())
 	command.AddCommand(history.NewHistoryCommand())
 	client.AddKubectlFlagsToCmd(command)
+	client.AddArgoServerFlagsToCmd(command)
 	return command
 }

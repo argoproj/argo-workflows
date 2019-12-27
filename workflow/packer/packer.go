@@ -3,16 +3,21 @@ package packer
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/file"
 )
 
-//MaxWorkflowSize is the maximum  size for workflow.yaml
-const DefaultMaxWorkflowSize = 1024 * 1024
-
-var MaxWorkflowSize = DefaultMaxWorkflowSize
+func getMaxWorkflowSize() int {
+	s, _ := strconv.Atoi(os.Getenv("MAX_WORKFLOW_SIZE"))
+	if s == 0 {
+		s = 1024 * 1024
+	}
+	return s
+}
 
 func DecompressWorkflow(wf *wfv1.Workflow) error {
 	if len(wf.Status.Nodes) == 0 && wf.Status.CompressedNodes != "" {
@@ -38,7 +43,7 @@ func getSize(wf *wfv1.Workflow) (int, error) {
 
 func IsLargeWorkflow(wf *wfv1.Workflow) (bool, error) {
 	size, err := getSize(wf)
-	return size > MaxWorkflowSize, err
+	return size > getMaxWorkflowSize(), err
 }
 
 const tooLarge = "workflow is longer than maximum allowed size."
@@ -68,7 +73,7 @@ func CompressWorkflow(wf *wfv1.Workflow) error {
 	}
 	if large {
 		compressedSize, _ := getSize(wf)
-		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, MaxWorkflowSize)
+		return fmt.Errorf("%s compressed size %d > maxSize %d", tooLarge, compressedSize, getMaxWorkflowSize())
 	}
 	return nil
 }

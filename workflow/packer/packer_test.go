@@ -1,6 +1,7 @@
 package packer
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,9 +9,13 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
+func TestDefault(t *testing.T) {
+	assert.Equal(t, 1024*1024, getMaxWorkflowSize())
+}
+
 func TestDecompressWorkflow(t *testing.T) {
-	defer func() { MaxWorkflowSize = DefaultMaxWorkflowSize }()
-	MaxWorkflowSize = 300
+	defer func() { _ = os.Unsetenv("MAX_WORKFLOW_SIZE") }()
+	_ = os.Setenv("MAX_WORKFLOW_SIZE", "300")
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{

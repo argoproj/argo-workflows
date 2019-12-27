@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -18,8 +19,14 @@ type CLISuite struct {
 	fixtures.E2ESuite
 }
 
-func (s *CLISuite) BeforeTest(a, b string) {
-	s.E2ESuite.BeforeTest(a, b)
+func (s *CLISuite) BeforeTest(suiteName, testName string) {
+	s.E2ESuite.BeforeTest(suiteName, testName)
+	_ = os.Setenv("ARGO_SERVER", "localhost:2746")
+}
+
+func (s *CLISuite) AfterTest(suiteName, testName string) {
+	s.E2ESuite.AfterTest(suiteName, testName)
+	_ = os.Unsetenv("ARGO_SERVER")
 }
 
 func argo(args ...string) (string, error) {
@@ -58,13 +65,13 @@ func (s *CLISuite) TestHistory() {
 			uid = metadata.UID
 		})
 	s.T().Run("List", func(t *testing.T) {
-		output, err := argo("history", "list", "--server", "localhost:2746")
+		output, err := argo("history", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
 	})
 	s.T().Run("Get", func(t *testing.T) {
-		output, err := argo("history", "get", "--server", "localhost:2746", fixtures.Namespace, string(uid))
+		output, err := argo("history", "get", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})

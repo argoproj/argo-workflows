@@ -13,17 +13,17 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 func NewListCommand() *cobra.Command {
 	var (
 		output string
-		server string
 	)
 	var command = &cobra.Command{
 		Use: "list",
 		Run: func(cmd *cobra.Command, args []string) {
-			conn := client.GetClientConn(server)
+			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
 			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
 			resp, err := wfHistoryClient.ListWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryListRequest{
@@ -31,6 +31,12 @@ func NewListCommand() *cobra.Command {
 			})
 			if err != nil {
 				log.Fatal(err)
+			}
+			for _, wf := range resp.Items {
+				err = packer.DecompressWorkflow(&wf)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 			switch output {
 			case "json":
@@ -55,7 +61,6 @@ func NewListCommand() *cobra.Command {
 			}
 		},
 	}
-	command.Flags().StringVar(&server, "server", "", "API Server host and port")
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
 	return command
 }

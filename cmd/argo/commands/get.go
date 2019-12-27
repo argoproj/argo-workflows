@@ -10,7 +10,6 @@ import (
 
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -23,9 +22,8 @@ import (
 const onExitSuffix = "onExit"
 
 type getFlags struct {
-	output     string
-	status     string
-	serverHost string
+	output string
+	status string
 }
 
 func NewGetCommand() *cobra.Command {
@@ -41,11 +39,8 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			if getArgs.serverHost != "" {
-				conn, err := grpc.Dial(getArgs.serverHost, grpc.WithInsecure())
-				if err != nil {
-					panic(err)
-				}
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
 				defer conn.Close()
 				ns, _, _ := client.Config.Namespace()
 				client, ctx := GetApiServerGRPCClient(conn)
@@ -77,7 +72,6 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().StringVarP(&getArgs.output, "output", "o", "", "Output format. One of: json|yaml|wide")
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
-	command.Flags().StringVar(&getArgs.serverHost, "server", "", "API Server host and port")
 	return command
 }
 

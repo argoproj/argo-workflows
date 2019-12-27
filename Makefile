@@ -52,13 +52,16 @@ all: cli controller-image executor-image argo-server
 builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
 
-ui/dist/app:
+ui/dist/app: ui/src
 ifeq ($(STATIC), true)
 	sh -c 'cd ui && make'
 else
 	mkdir -p ui/dist/app
 	echo "UI was disabled in the build" > ui/dist/app/index.html
 endif
+
+vendor: Gopkg.toml
+	dep ensure -v -vendor-only
 
 cmd/server/static/files.go: ui/dist/app
 	go get bou.ke/staticfiles
@@ -220,6 +223,8 @@ start:
 	make down
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
@@ -260,7 +265,7 @@ test-e2e:
 
 .PHONY: clean
 clean:
-	-rm -rf ${CURRENT_DIR}/dist
+	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen
