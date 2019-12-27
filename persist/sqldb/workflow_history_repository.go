@@ -3,6 +3,7 @@ package sqldb
 import (
 	"encoding/json"
 
+	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -46,10 +47,19 @@ func (r *workflowHistoryRepository) ListWorkflowHistory(limit int, offset int) (
 }
 
 func (r *workflowHistoryRepository) GetWorkflowHistory(namespace string, uid string) (*wfv1.Workflow, error) {
+	rs := r.Collection(WorkflowHistoryTableName).
+		Find().
+		Where(db.Cond{"id": uid}).
+		And(db.Cond{"namespace": namespace})
+	exists, err := rs.Exists()
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, nil
+	}
 	wfDB := &WorkflowDB{}
-	err := r.Collection(WorkflowHistoryTableName).
-		Find("namespace", namespace, "uid", uid).
-		One(wfDB)
+	err = rs.One(wfDB)
 	if err != nil {
 		return nil, err
 	}

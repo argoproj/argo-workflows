@@ -11,10 +11,12 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
 
@@ -232,11 +234,16 @@ func (s *ArgoServerSuite) TestWorkflows() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowHistory() {
+	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second)
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+			uid = metadata.UID
+	})
 
 	s.Given().
 		Workflow("@smoke/basic-2.yaml").
@@ -268,7 +275,11 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		Path("$.metadata.continue").
 		Equal("1")
 
-	s.e.GET("/workflow-history/argo/basic").
+	s.e.GET("/workflow-history/argo/not-found").
+		Expect().
+		Status(404)
+
+	s.e.GET("/workflow-history/argo/{uid}", uid).
 		Expect().
 		Status(200).
 		JSON().
