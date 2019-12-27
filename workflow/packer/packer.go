@@ -11,12 +11,19 @@ import (
 	"github.com/argoproj/argo/util/file"
 )
 
+const envVarName = "MAX_WORKFLOW_SIZE"
+
 func getMaxWorkflowSize() int {
-	s, _ := strconv.Atoi(os.Getenv("MAX_WORKFLOW_SIZE"))
+	s, _ := strconv.Atoi(os.Getenv(envVarName))
 	if s == 0 {
 		s = 1024 * 1024
 	}
 	return s
+}
+
+func SetMaxWorkflowSize(s int) func() {
+	_ = os.Setenv(envVarName, strconv.Itoa(s))
+	return func() { _ = os.Unsetenv(envVarName) }
 }
 
 func DecompressWorkflow(wf *wfv1.Workflow) error {

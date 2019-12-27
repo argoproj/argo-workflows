@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,12 +12,11 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
-func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) sqldb.DBRepository {
-
+func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool, isInterfaceNil bool) *mocks.DBRepository {
 	mockDBRepo := &mocks.DBRepository{}
-
 	mockDBRepo.On("Save", mock.Anything).Return(expectedResullt)
 	mockDBRepo.On("IsNodeStatusOffload").Return(largeWfSupport)
 	mockDBRepo.On("IsInterfaceNil").Return(isInterfaceNil)
@@ -49,8 +47,7 @@ spec:
 
 // TestPersistWithoutLargeWfSupport verifies persistence with no largeWFsuppport
 func TestPersistWithoutLargeWfSupport(t *testing.T) {
-	closer := makeMax()
-	defer closer()
+	defer makeMax()()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -63,12 +60,13 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence error with no largeWFsuppport
 func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
-	closer := makeMax()
-	defer closer()
+	defer makeMax()()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -81,12 +79,13 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence with largeWFsuppport
 func TestPersistWithLargeWfSupport(t *testing.T) {
-	closer := makeMax()
-	defer closer()
+	defer makeMax()()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -97,15 +96,20 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeRunning, woc.wf.Status.Phase)
-
+	// check the saved version has been offloaded
+	assert.True(t, wf.Status.OffloadNodeStatus)
+	assert.Empty(t, wf.Status.Nodes)
+	assert.Empty(t, wf.Status.CompressedNodes)
+	// check the updated in-memory version is pre-offloaded state
+	assert.True(t, woc.wf.Status.OffloadNodeStatus)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 // TestPersistWithoutLargeWfSupport verifies persistence error with largeWFsuppport
 func TestPersistErrorWithLargeWfSupport(t *testing.T) {
-	closer := makeMax()
-	defer closer()
+	defer makeMax()()
 	controller := newController()
 	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
 	wf := unmarshalWF(helloWorldWfPersist)
@@ -116,11 +120,17 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
 	assert.NoError(t, err)
-	assert.True(t, wf.Status.OffloadNodeStatus)
 	assert.Equal(t, wfv1.NodeFailed, woc.wf.Status.Phase)
+	// check the saved version has not been offloaded
+	assert.True(t, wf.Status.OffloadNodeStatus)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+	assert.Empty(t, woc.wf.Status.CompressedNodes)
+	// check the updated in-memory version is pre-offloaded state
+	assert.False(t, woc.wf.Status.OffloadNodeStatus)
+	assert.NotEmpty(t, woc.wf.Status.Nodes)
+	assert.Empty(t, woc.wf.Status.CompressedNodes)
 }
 
 func makeMax() func() {
-	_ = os.Setenv("MAX_WORKFLOW_SIZE", "50")
-	return func() { _ = os.Unsetenv("MAX_WORKFLOW_SIZE") }
+	return packer.SetMaxWorkflowSize(50)
 }

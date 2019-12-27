@@ -8,7 +8,7 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-
+# Do we have yarn installed locally? If so, use it. It is much faster.
 YARN                   = $(shell which yarn)
 
 # docker image publishing options
@@ -18,7 +18,7 @@ IMAGE_TAG             ?= latest
 STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
-# build static files, disable if you don't need HTML files, e.g. when on CI
+# Build static files, disable if you don't need HTML files, e.g. when on CI.
 STATIC                ?= true
 
 override LDFLAGS += \
@@ -239,7 +239,7 @@ start:
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
+	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
@@ -273,6 +273,14 @@ pf:
 .PHONY: logs
 logs:
 	kubectl -n argo logs -f -l app --max-log-requests 10
+
+.PHONY: postgres-cli
+postgres-cli:
+	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+
+.PHONY: mysql-cli
+mysql-cli:
+	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
 test-e2e:

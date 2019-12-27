@@ -1,7 +1,6 @@
 package packer
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +13,7 @@ func TestDefault(t *testing.T) {
 }
 
 func TestDecompressWorkflow(t *testing.T) {
-	defer func() { _ = os.Unsetenv("MAX_WORKFLOW_SIZE") }()
-	_ = os.Setenv("MAX_WORKFLOW_SIZE", "300")
+	defer SetMaxWorkflowSize(300)()
 
 	t.Run("SmallWorkflow", func(t *testing.T) {
 		wf := &wfv1.Workflow{

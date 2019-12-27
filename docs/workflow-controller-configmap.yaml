@@ -130,6 +130,9 @@ data:
         maxOpenConns: 0
       # save the entire workflow into etcd and DB
       nodeStatusOffLoad: false
+      # save completed workloads to the history, even if disabled, you'll be able to
+      # read from the history
+      history: false
       postgresql:
         host: localhost
         port: 5432

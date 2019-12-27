@@ -19,6 +19,7 @@ import (
 	"github.com/argoproj/argo/cmd/argo/commands"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 var kubeConfig = os.Getenv("KUBECONFIG")
@@ -124,6 +125,10 @@ func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
 	printJSON(wf.Status)
 	// print logs
 	workflow, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = packer.DecompressWorkflow(workflow)
 	if err != nil {
 		s.T().Fatal(err)
 	}

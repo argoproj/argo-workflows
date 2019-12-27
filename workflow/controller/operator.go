@@ -352,6 +352,8 @@ func (woc *wfOperationCtx) persistUpdates() {
 	}
 	wf := woc.wf.DeepCopy()
 	wfClient := woc.controller.wfclientset.ArgoprojV1alpha1().Workflows(wf.ObjectMeta.Namespace)
+	// try and compress nodes if needed
+	nodes := wf.Status.Nodes
 	err := packer.CompressWorkflow(wf)
 	if packer.IsTooLargeError(err) {
 		wf.Status.OffloadNodeStatus = woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
@@ -363,7 +365,6 @@ func (woc *wfOperationCtx) persistUpdates() {
 		wf.Status.Nodes = nil
 		wf.Status.CompressedNodes = ""
 	}
-
 	wf, err = wfClient.Update(wf)
 	if err != nil {
 		woc.log.Warnf("Error updating workflow: %v %s", err, apierr.ReasonForError(err))
@@ -380,18 +381,16 @@ func (woc *wfOperationCtx) persistUpdates() {
 			woc.log.Infof("Failed to re-apply update: %+v", err)
 			return
 		}
-	} else {
-		wf.Status.Nodes = woc.wf.Status.Nodes
 	}
-
+	// restore to pre-compressed state
+	wf.Status.Nodes = nodes
+	wf.Status.CompressedNodes = ""
 	if wf.Status.OffloadNodeStatus {
 		err = woc.controller.wfDBctx.Save(wf)
 		if err != nil {
 			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
-			if woc.controller.wfDBctx.IsNodeStatusOffload() {
-				woc.markWorkflowFailed(err.Error())
-				return
-			}
+			woc.markWorkflowFailed(err.Error())
+			return
 		}
 	}
 	woc.wf = wf
