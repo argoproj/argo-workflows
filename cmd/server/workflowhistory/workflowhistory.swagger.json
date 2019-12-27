@@ -92,6 +92,43 @@
           "WorkflowHistoryService"
         ]
       }
+    },
+    "/api/v1/workflow-history/{namespace}/{uid}": {
+      "get": {
+        "operationId": "GetWorkflowHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "getOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowHistoryService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -799,6 +836,16 @@
         }
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
+    },
+    "v1GetOptions": {
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv."
+        }
+      },
+      "description": "GetOptions is the standard query options to the standard REST get call."
     },
     "v1GitRepoVolumeSource": {
       "type": "object",

@@ -22,22 +22,10 @@ type workflowHistoryServer struct {
 }
 
 func NewWorkflowHistoryServer(kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
-	/*
-		var repo sqldb.WorkflowHistoryRepository
-		if persistConfig != nil {
-			database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
-			if err != nil {
-				return nil, err
-			}
-			repo = sqldb.NewWorkflowHistoryRepository(database)
-		} else {
-			repo = sqldb.NullWorkflowHistoryRepository
-		}
-	*/
 	return &workflowHistoryServer{repo: repo, kubeClientset: kubeClientset}, nil
 }
 
-func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
+func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
 		options = &metav1.ListOptions{Limit: 100}
@@ -83,4 +71,10 @@ func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wor
 		meta.Continue = fmt.Sprintf("%v", offset+limit)
 	}
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
+}
+
+
+func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
+	wf, err := w.repo.GetWorkflowHistory(req.Namespace, req.Uid)
+	return wf, err
 }

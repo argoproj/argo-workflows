@@ -267,6 +267,13 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 	j.
 		Path("$.metadata.continue").
 		Equal("1")
+
+	s.e.GET("/workflow-history/argo/basic").
+		Expect().
+		Status(200).
+		JSON().
+		Path("$.metadata.name").
+		Equal("basic")
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {

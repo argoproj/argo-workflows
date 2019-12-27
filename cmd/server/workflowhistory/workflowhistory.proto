@@ -13,8 +13,17 @@ message WorkflowHistoryListRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
 }
 
+message WorkflowHistoryGetRequest {
+    string namespace = 1;
+    string uid = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+
 service WorkflowHistoryService {
     rpc ListWorkflowHistory (WorkflowHistoryListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
         option (google.api.http).get = "/api/v1/workflow-history";
+    }
+    rpc GetWorkflowHistory (WorkflowHistoryGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http).get = "/api/v1/workflow-history/{namespace}/{uid}";
     }
 }
