@@ -36,7 +36,7 @@ func (s *CLISuite) TestCLI() {
 		assert.Contains(t, output, "Succeeded")
 	})
 	s.T().Run("Get", func(t *testing.T) {
-		output, err := argo("get", "basic", "--server", "localhost:2746")
+		output, err := argo("get", "basic")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
