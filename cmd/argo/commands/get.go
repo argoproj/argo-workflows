@@ -10,7 +10,6 @@ import (
 
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -41,11 +40,11 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			if getArgs.serverHost != "" {
-				conn, err := grpc.Dial(getArgs.serverHost, grpc.WithInsecure())
-				if err != nil {
-					panic(err)
-				}
+			conn, err := GetServerConn(getArgs.serverHost)
+			if err != nil {
+				panic(err)
+			}
+			if conn != nil {
 				defer conn.Close()
 				ns, _, _ := client.Config.Namespace()
 				client, ctx := GetApiServerGRPCClient(conn)
@@ -60,7 +59,6 @@ func NewGetCommand() *cobra.Command {
 					}
 					outputWorkflow(wf, getArgs)
 				}
-
 			} else {
 				wfClient := InitWorkflowClient()
 				for _, arg := range args {

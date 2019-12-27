@@ -3,22 +3,23 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"google.golang.org/grpc"
 	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 
 	apiServer "github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 )
 
 func NewLintCommand() *cobra.Command {
 	var (
-		strict bool
+		strict     bool
 		serverHost string
 	)
 	var command = &cobra.Command{
@@ -34,11 +35,17 @@ func NewLintCommand() *cobra.Command {
 			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 
-			if serverHost != "" {
-				err = ServerSideLint(args[0],serverHost,strict)
-
-			}else {
-
+			conn, err := GetServerConn(serverHost)
+			if err != nil {
+				panic(err)
+			}
+			if conn != nil {
+				defer conn.Close()
+				err = ServerSideLint(args[0], conn, strict)
+				if err != nil {
+					return
+				}
+			} else {
 				if validateDir {
 					if len(args) > 1 {
 						fmt.Printf("Validation of a single directory supported")
@@ -46,7 +53,9 @@ func NewLintCommand() *cobra.Command {
 					}
 					fmt.Printf("Verifying all workflow manifests in directory: %s\n", args[0])
 					err = validate.LintWorkflowDir(wftmplGetter, args[0], strict)
-
+					if err != nil {
+						return
+					}
 				} else {
 					yamlFiles := make([]string, 0)
 					for _, filePath := range args {
@@ -63,7 +72,6 @@ func NewLintCommand() *cobra.Command {
 						}
 					}
 				}
-
 			}
 			if err != nil {
 				log.Fatal(err)
@@ -76,16 +84,13 @@ func NewLintCommand() *cobra.Command {
 	return command
 }
 
-func ServerSideLint(arg string, server string, strict bool) error {
+func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(arg)
-	conn, err := grpc.Dial(server, grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
-	defer conn.Close()
-	client, ctx := GetApiServerGRPCClient(conn)
-	ns, _, _ := clientConfig.Namespace()
+	grpcClient, ctx := GetApiServerGRPCClient(conn)
+	ns, _, _ := client.Config.Namespace()
 	var wfs [] v1alpha1.Workflow
+	var err error
+
 	if validateDir {
 		walkFunc := func(path string, info os.FileInfo, err error) error {
 			if info == nil || info.IsDir() {
@@ -101,21 +106,24 @@ func ServerSideLint(arg string, server string, strict bool) error {
 			if err1 != nil {
 				return err1
 			}
-			for _, wf := range wfs{
-				err = ServerLintValidation(ctx, client, wf, ns)
+			for _, wf := range wfs {
+				err = ServerLintValidation(ctx, grpcClient, wf, ns)
 				if err != nil {
-					log.Errorf("Validation Error in %s :%v", path,err)
+					log.Errorf("Validation Error in %s :%v", path, err)
 				}
 			}
 			return err
 		}
-		filepath.Walk(arg, walkFunc)
-	}else{
+		return filepath.Walk(arg, walkFunc)
+	} else {
 		wfs, err = validate.ParseWfFromFile(arg, strict)
 	}
-
-	for _, wf := range wfs{
-		err = ServerLintValidation(ctx, client, wf, ns)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	for _, wf := range wfs {
+		err = ServerLintValidation(ctx, grpcClient, wf, ns)
 		if err != nil {
 			log.Error(err)
 		}
@@ -123,12 +131,11 @@ func ServerSideLint(arg string, server string, strict bool) error {
 	return err
 }
 
-
 func ServerLintValidation(ctx context.Context, client apiServer.WorkflowServiceClient, wf v1alpha1.Workflow, ns string) error {
 	wfReq := apiServer.WorkflowCreateRequest{
-		Namespace:            ns,
-		Workflow:             &wf,
+		Namespace: ns,
+		Workflow:  &wf,
 	}
-	_, err :=client.LintWorkflow(ctx, &wfReq)
+	_, err := client.LintWorkflow(ctx, &wfReq)
 	return err
 }

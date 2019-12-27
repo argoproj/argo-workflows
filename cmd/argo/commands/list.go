@@ -52,23 +52,27 @@ func NewListCommand() *cobra.Command {
 			var wfApiClient workflow.WorkflowServiceClient
 			var ctx context.Context
 			var ns string
-			if listArgs.serverHost == "" {
+
+			conn, err := GetServerConn(listArgs.serverHost)
+			if err != nil {
+				panic(err)
+			}
+			if conn == nil {
 				if listArgs.allNamespaces {
 					wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 				} else {
 					wfClient = InitWorkflowClient()
 				}
 			} else {
-				conn := client.GetClientConn(listArgs.serverHost)
 				defer conn.Close()
 				if listArgs.allNamespaces {
 					ns = apiv1.NamespaceAll
 				} else {
 					ns, _, _ = client.Config.Namespace()
 				}
-
 				wfApiClient, ctx = GetApiServerGRPCClient(conn)
 			}
+
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
@@ -90,8 +94,8 @@ func NewListCommand() *cobra.Command {
 				listOpts.Limit = listArgs.chunkSize
 			}
 			var wfList *wfv1.WorkflowList
-			var err error
-			if listArgs.serverHost == "" {
+
+			if conn == nil {
 				wfList, err = wfClient.List(listOpts)
 				if err != nil {
 					log.Fatal(err)

@@ -33,6 +33,8 @@ var (
 	namespace        string
 )
 
+const ARGO_SERVER_ENV = "ARGO_SERVER"
+
 func init() {
 	cobra.OnInitialize(initializeSession)
 }
@@ -141,4 +143,14 @@ var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplat
 
 func GetApiServerGRPCClient(conn *grpc.ClientConn) (apiServer.WorkflowServiceClient, context.Context) {
 	return apiServer.NewWorkflowServiceClient(conn), client.ContextWithAuthorization()
+}
+
+func GetServerConn(server string) (* grpc.ClientConn, error) {
+	if server == "" {
+		server = os.Getenv(ARGO_SERVER_ENV)
+	}
+	if server == ""{
+		return nil, nil
+	}
+	return grpc.Dial(server, grpc.WithInsecure())
 }
