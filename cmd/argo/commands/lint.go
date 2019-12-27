@@ -35,11 +35,8 @@ func NewLintCommand() *cobra.Command {
 			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 
-			conn, err := GetServerConn(serverHost)
-			if err != nil {
-				panic(err)
-			}
-			if conn != nil {
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
 				defer conn.Close()
 				err = ServerSideLint(args[0], conn, strict)
 				if err != nil {
