@@ -25,6 +25,20 @@ func (_m *WorkflowHistoryRepository) AddWorkflowHistory(wf *v1alpha1.Workflow) e
 	return r0
 }
 
+// DeleteWorkflowHistory provides a mock function with given fields: namespace, uid
+func (_m *WorkflowHistoryRepository) DeleteWorkflowHistory(namespace string, uid string) error {
+	ret := _m.Called(namespace, uid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
+		r0 = rf(namespace, uid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetWorkflowHistory provides a mock function with given fields: namespace, uid
 func (_m *WorkflowHistoryRepository) GetWorkflowHistory(namespace string, uid string) (*v1alpha1.Workflow, error) {
 	ret := _m.Called(namespace, uid)

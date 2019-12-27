@@ -13,7 +13,6 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
-	"github.com/argoproj/argo/workflow/packer"
 )
 
 func NewListCommand() *cobra.Command {
@@ -31,12 +30,6 @@ func NewListCommand() *cobra.Command {
 			})
 			if err != nil {
 				log.Fatal(err)
-			}
-			for _, wf := range resp.Items {
-				err = packer.DecompressWorkflow(&wf)
-				if err != nil {
-					log.Fatal(err)
-				}
 			}
 			switch output {
 			case "json":

@@ -20,5 +20,9 @@ func (r *nullWorkflowHistoryRepository) ListWorkflowHistory(int, int) ([]wfv1.Wo
 }
 
 func (r *nullWorkflowHistoryRepository) GetWorkflowHistory(string, string) (*wfv1.Workflow, error) {
-	return nil, fmt.Errorf("this should not be possible")
+	return nil, fmt.Errorf("getting workflow history not supported")
+}
+
+func (r *nullWorkflowHistoryRepository) DeleteWorkflowHistory(namespace string, uid string) error {
+	return fmt.Errorf("deleting workflow history not supported")
 }

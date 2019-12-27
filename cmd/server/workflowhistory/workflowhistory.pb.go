@@ -79,12 +79,11 @@ func (m *WorkflowHistoryListRequest) GetListOptions() *v1.ListOptions {
 }
 
 type WorkflowHistoryGetRequest struct {
-	Namespace            string         `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Uid                  string         `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	GetOptions           *v1.GetOptions `protobuf:"bytes,3,opt,name=getOptions,proto3" json:"getOptions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *WorkflowHistoryGetRequest) Reset()         { *m = WorkflowHistoryGetRequest{} }
@@ -134,16 +133,161 @@ func (m *WorkflowHistoryGetRequest) GetUid() string {
 	return ""
 }
 
-func (m *WorkflowHistoryGetRequest) GetGetOptions() *v1.GetOptions {
-	if m != nil {
-		return m.GetOptions
-	}
-	return nil
+type WorkflowHistoryUpdateRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
+
+func (m *WorkflowHistoryUpdateRequest) Reset()         { *m = WorkflowHistoryUpdateRequest{} }
+func (m *WorkflowHistoryUpdateRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowHistoryUpdateRequest) ProtoMessage()    {}
+func (*WorkflowHistoryUpdateRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0a546c3f97ba9ddb, []int{2}
+}
+func (m *WorkflowHistoryUpdateRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowHistoryUpdateRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowHistoryUpdateRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowHistoryUpdateRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowHistoryUpdateRequest.Merge(m, src)
+}
+func (m *WorkflowHistoryUpdateRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowHistoryUpdateRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowHistoryUpdateRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowHistoryUpdateRequest proto.InternalMessageInfo
+
+func (m *WorkflowHistoryUpdateRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *WorkflowHistoryUpdateRequest) GetUid() string {
+	if m != nil {
+		return m.Uid
+	}
+	return ""
+}
+
+type WorkflowHistoryDeleteRequest struct {
+	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowHistoryDeleteRequest) Reset()         { *m = WorkflowHistoryDeleteRequest{} }
+func (m *WorkflowHistoryDeleteRequest) String() string { return proto.CompactTextString(m) }
+func (*WorkflowHistoryDeleteRequest) ProtoMessage()    {}
+func (*WorkflowHistoryDeleteRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0a546c3f97ba9ddb, []int{3}
+}
+func (m *WorkflowHistoryDeleteRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowHistoryDeleteRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowHistoryDeleteRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowHistoryDeleteRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowHistoryDeleteRequest.Merge(m, src)
+}
+func (m *WorkflowHistoryDeleteRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowHistoryDeleteRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowHistoryDeleteRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowHistoryDeleteRequest proto.InternalMessageInfo
+
+func (m *WorkflowHistoryDeleteRequest) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *WorkflowHistoryDeleteRequest) GetUid() string {
+	if m != nil {
+		return m.Uid
+	}
+	return ""
+}
+
+type WorkflowHistoryDeleteResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowHistoryDeleteResponse) Reset()         { *m = WorkflowHistoryDeleteResponse{} }
+func (m *WorkflowHistoryDeleteResponse) String() string { return proto.CompactTextString(m) }
+func (*WorkflowHistoryDeleteResponse) ProtoMessage()    {}
+func (*WorkflowHistoryDeleteResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0a546c3f97ba9ddb, []int{4}
+}
+func (m *WorkflowHistoryDeleteResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *WorkflowHistoryDeleteResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_WorkflowHistoryDeleteResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *WorkflowHistoryDeleteResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowHistoryDeleteResponse.Merge(m, src)
+}
+func (m *WorkflowHistoryDeleteResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *WorkflowHistoryDeleteResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowHistoryDeleteResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowHistoryDeleteResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*WorkflowHistoryListRequest)(nil), "WorkflowHistoryListRequest")
 	proto.RegisterType((*WorkflowHistoryGetRequest)(nil), "WorkflowHistoryGetRequest")
+	proto.RegisterType((*WorkflowHistoryUpdateRequest)(nil), "WorkflowHistoryUpdateRequest")
+	proto.RegisterType((*WorkflowHistoryDeleteRequest)(nil), "WorkflowHistoryDeleteRequest")
+	proto.RegisterType((*WorkflowHistoryDeleteResponse)(nil), "WorkflowHistoryDeleteResponse")
 }
 
 func init() {
@@ -151,35 +295,40 @@ func init() {
 }
 
 var fileDescriptor_0a546c3f97ba9ddb = []byte{
-	// 443 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x53, 0x3f, 0x6b, 0x14, 0x41,
-	0x14, 0x67, 0x2e, 0x20, 0x64, 0xd2, 0xc8, 0x28, 0x72, 0xae, 0xe1, 0x08, 0x5b, 0x89, 0xe8, 0x4c,
-	0xf6, 0x62, 0x61, 0x63, 0x11, 0x2d, 0xce, 0x22, 0xa0, 0x5c, 0x0a, 0xc1, 0x6e, 0xb2, 0xf7, 0x9c,
-	0x1d, 0xf7, 0xcf, 0x6c, 0x66, 0x66, 0x37, 0x84, 0x90, 0xc6, 0xaf, 0x60, 0x61, 0x65, 0xe5, 0x97,
-	0xb1, 0x14, 0x6c, 0x2c, 0xe5, 0xf0, 0x83, 0xc8, 0x4c, 0xf6, 0xcf, 0xb1, 0xe7, 0x82, 0x60, 0xf7,
-	0xf6, 0x3d, 0xde, 0xef, 0xcf, 0xfc, 0xde, 0xe2, 0xc3, 0x38, 0x5f, 0x31, 0x03, 0xba, 0x06, 0xcd,
-	0x2e, 0x94, 0x4e, 0xdf, 0x67, 0xea, 0x22, 0x91, 0xc6, 0x2a, 0x7d, 0x39, 0xfc, 0xa6, 0xa5, 0x56,
-	0x56, 0x05, 0x77, 0x85, 0x12, 0xca, 0x97, 0xcc, 0x55, 0x4d, 0x77, 0x5f, 0x28, 0x25, 0x32, 0x60,
-	0xbc, 0x94, 0x8c, 0x17, 0x85, 0xb2, 0xdc, 0x4a, 0x55, 0x98, 0x66, 0xfa, 0x34, 0x7d, 0x66, 0xa8,
-	0x54, 0x6e, 0x9a, 0xf3, 0x38, 0x91, 0x05, 0xe8, 0x4b, 0x56, 0xa6, 0xc2, 0x35, 0x0c, 0xcb, 0xc1,
-	0x72, 0x56, 0x47, 0x4c, 0x40, 0x01, 0x9a, 0x5b, 0x58, 0x35, 0x5b, 0x2f, 0x85, 0xb4, 0x49, 0x75,
-	0x46, 0x63, 0x95, 0x33, 0xae, 0x3d, 0xe9, 0x07, 0x5f, 0xf4, 0xab, 0xad, 0x44, 0x56, 0x47, 0x3c,
-	0x2b, 0x13, 0xbe, 0x0d, 0x12, 0xf6, 0xd4, 0x2c, 0x56, 0x1a, 0xfe, 0x42, 0x14, 0x9e, 0xe3, 0xe0,
-	0x6d, 0x03, 0xf4, 0xea, 0xc6, 0xeb, 0x89, 0x34, 0x76, 0x09, 0xe7, 0x15, 0x18, 0x4b, 0x4e, 0xf1,
-	0x5e, 0x26, 0x8d, 0x7d, 0x5d, 0x7a, 0x47, 0x53, 0x74, 0x80, 0x1e, 0xee, 0xcd, 0x23, 0x7a, 0x83,
-	0x4b, 0x37, 0x2d, 0xd1, 0x32, 0x15, 0xae, 0x61, 0xa8, 0xb3, 0x44, 0xeb, 0x88, 0x9e, 0xf4, 0x8b,
-	0xcb, 0x4d, 0x94, 0xf0, 0x0b, 0xc2, 0xf7, 0x07, 0x9c, 0x0b, 0xe8, 0x28, 0xf7, 0xf1, 0x6e, 0xc1,
-	0x73, 0x30, 0x25, 0x8f, 0xc1, 0x13, 0xee, 0x2e, 0xfb, 0x06, 0xb9, 0x8d, 0x77, 0x2a, 0xb9, 0x9a,
-	0x4e, 0x7c, 0xdf, 0x95, 0xe4, 0x0d, 0xc6, 0x02, 0x3a, 0x85, 0x3b, 0x5e, 0xe1, 0xe1, 0xbf, 0x29,
-	0x5c, 0x74, 0x7b, 0xcb, 0x0d, 0x8c, 0xf9, 0xcf, 0x09, 0xbe, 0x37, 0xd0, 0x77, 0x0a, 0xba, 0x96,
-	0x31, 0x90, 0xcf, 0x08, 0xdf, 0x71, 0xbe, 0x06, 0x63, 0xf2, 0x80, 0x8e, 0x3f, 0x62, 0x70, 0x4c,
-	0xfb, 0x30, 0x69, 0x1b, 0xa6, 0x2f, 0x7a, 0x49, 0x6d, 0x98, 0xb4, 0x0d, 0xb3, 0x03, 0x74, 0x48,
-	0xe1, 0xc1, 0xc7, 0x1f, 0xbf, 0x3f, 0x4d, 0x02, 0x32, 0xf5, 0x59, 0xd6, 0x51, 0x17, 0xfe, 0x93,
-	0xe6, 0x40, 0xc9, 0x57, 0x84, 0xc9, 0x02, 0xb6, 0x84, 0x05, 0x74, 0xf4, 0xa5, 0x83, 0xe7, 0xff,
-	0xa5, 0x2b, 0x9c, 0x7b, 0x4d, 0x8f, 0xc9, 0xa3, 0x31, 0x4d, 0xec, 0xaa, 0xcb, 0xed, 0x9a, 0x5d,
-	0x55, 0x72, 0x75, 0xfd, 0xe2, 0xf8, 0xdb, 0x7a, 0x86, 0xbe, 0xaf, 0x67, 0xe8, 0xd7, 0x7a, 0x86,
-	0xde, 0x1d, 0x8d, 0x1e, 0xf9, 0xf8, 0x9f, 0x79, 0x76, 0xcb, 0xdf, 0xed, 0xd1, 0x9f, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0x2d, 0x3f, 0x93, 0xfd, 0xbe, 0x03, 0x00, 0x00,
+	// 515 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0xd6, 0x16, 0x81, 0xd4, 0xed, 0x05, 0x2d, 0x7f, 0xc1, 0xa4, 0xa1, 0xf2, 0x09, 0x45, 0xb0,
+	0x8b, 0x13, 0x0e, 0x15, 0x12, 0x48, 0x05, 0xa4, 0x22, 0x51, 0x81, 0x94, 0x0a, 0x21, 0x71, 0xdb,
+	0xd8, 0x83, 0xb3, 0xc4, 0xf6, 0xba, 0xbb, 0x6b, 0x57, 0x55, 0xd5, 0x0b, 0x47, 0xae, 0x1c, 0x38,
+	0x72, 0xe0, 0x21, 0x78, 0x05, 0x8e, 0x48, 0xbc, 0x00, 0x8a, 0x78, 0x10, 0xe4, 0x8d, 0x1d, 0x17,
+	0x07, 0x97, 0x9f, 0x72, 0x9b, 0xcc, 0x66, 0xbe, 0xef, 0x9b, 0x99, 0xcf, 0x83, 0x6f, 0xfb, 0x71,
+	0xc0, 0x34, 0xa8, 0x1c, 0x14, 0xdb, 0x97, 0x6a, 0xfa, 0x2a, 0x92, 0xfb, 0x13, 0xa1, 0x8d, 0x54,
+	0x07, 0xcd, 0xdf, 0x34, 0x55, 0xd2, 0x48, 0xe7, 0x62, 0x28, 0x43, 0x69, 0x43, 0x56, 0x44, 0x65,
+	0xb6, 0x1b, 0x4a, 0x19, 0x46, 0xc0, 0x78, 0x2a, 0x18, 0x4f, 0x12, 0x69, 0xb8, 0x11, 0x32, 0xd1,
+	0xe5, 0xeb, 0x9d, 0xe9, 0xa6, 0xa6, 0x42, 0x16, 0xaf, 0x31, 0xf7, 0x27, 0x22, 0x01, 0x75, 0xc0,
+	0xd2, 0x69, 0x58, 0x24, 0x34, 0x8b, 0xc1, 0x70, 0x96, 0x7b, 0x2c, 0x84, 0x04, 0x14, 0x37, 0x10,
+	0x94, 0x55, 0x0f, 0x43, 0x61, 0x26, 0xd9, 0x98, 0xfa, 0x32, 0x66, 0x5c, 0x59, 0xd2, 0xd7, 0x36,
+	0xa8, 0x4b, 0x2b, 0x89, 0x2c, 0xf7, 0x78, 0x94, 0x4e, 0xf8, 0x32, 0x88, 0x5b, 0x53, 0x33, 0x5f,
+	0x2a, 0xf8, 0x05, 0x91, 0xbb, 0x87, 0x9d, 0x17, 0x25, 0xd0, 0xe3, 0x79, 0xaf, 0x3b, 0x42, 0x9b,
+	0x11, 0xec, 0x65, 0xa0, 0x0d, 0xd9, 0xc5, 0x6b, 0x91, 0xd0, 0xe6, 0x59, 0x6a, 0x3b, 0xea, 0xa0,
+	0x0d, 0x74, 0x63, 0x6d, 0xe0, 0xd1, 0x39, 0x2e, 0x3d, 0xde, 0x12, 0x4d, 0xa7, 0x61, 0x91, 0xd0,
+	0xb4, 0x68, 0x89, 0xe6, 0x1e, 0xdd, 0xa9, 0x0b, 0x47, 0xc7, 0x51, 0xdc, 0x27, 0xf8, 0x6a, 0x83,
+	0x72, 0x1b, 0x16, 0x8c, 0x5d, 0xbc, 0x9a, 0xf0, 0x18, 0x74, 0xca, 0x7d, 0xb0, 0x7c, 0xab, 0xa3,
+	0x3a, 0x41, 0xce, 0xe3, 0x33, 0x99, 0x08, 0x3a, 0x2b, 0x36, 0x5f, 0x84, 0xee, 0x53, 0xdc, 0x6d,
+	0x80, 0x3d, 0x4f, 0x03, 0x6e, 0xe0, 0xff, 0xe1, 0x3d, 0x82, 0x08, 0xfe, 0x1d, 0xef, 0x3a, 0x5e,
+	0x6f, 0xc1, 0xd3, 0xa9, 0x4c, 0x34, 0x0c, 0x3e, 0x9c, 0xc5, 0x97, 0x1b, 0xff, 0xd8, 0x05, 0x95,
+	0x0b, 0x1f, 0xc8, 0x7b, 0x84, 0x2f, 0x14, 0x53, 0x6c, 0x3c, 0x93, 0x6b, 0xb4, 0x7d, 0x65, 0xce,
+	0x16, 0xad, 0xad, 0x43, 0x2b, 0xeb, 0xd8, 0xa0, 0x5e, 0x51, 0x65, 0x1d, 0x5a, 0x59, 0x67, 0x01,
+	0x58, 0x20, 0xb9, 0x1b, 0x6f, 0xbe, 0x7e, 0x7f, 0xb7, 0xe2, 0x90, 0x8e, 0x75, 0x4e, 0xee, 0x2d,
+	0xac, 0x76, 0xab, 0xfc, 0x1c, 0xc8, 0x47, 0x84, 0xc9, 0x36, 0x2c, 0x09, 0x73, 0x68, 0xeb, 0x62,
+	0x9d, 0x7b, 0xa7, 0xd2, 0xe5, 0x0e, 0xac, 0xa6, 0x9b, 0xa4, 0xdf, 0xa6, 0x89, 0x1d, 0x2e, 0xd6,
+	0x70, 0xc4, 0x0e, 0x33, 0x11, 0x1c, 0x91, 0x4f, 0x08, 0x5f, 0x19, 0x81, 0xce, 0xc6, 0xb1, 0x58,
+	0x92, 0xba, 0x4e, 0x4f, 0xb2, 0xcd, 0x69, 0xd5, 0xde, 0xb7, 0x6a, 0x37, 0x9d, 0xe1, 0x9f, 0xab,
+	0x65, 0xaa, 0x54, 0x7a, 0x17, 0xf5, 0xc9, 0x5b, 0x84, 0x2f, 0xcd, 0x7d, 0xf2, 0x5b, 0xdd, 0x3f,
+	0xd9, 0xd3, 0xe9, 0xd1, 0x13, 0xdd, 0x56, 0x8d, 0xb1, 0xff, 0x17, 0x63, 0x7c, 0xb0, 0xf5, 0x79,
+	0xd6, 0x43, 0x5f, 0x66, 0x3d, 0xf4, 0x6d, 0xd6, 0x43, 0x2f, 0x87, 0xad, 0x97, 0xa9, 0xfd, 0x9c,
+	0x8e, 0xcf, 0xd9, 0x63, 0x33, 0xfc, 0x11, 0x00, 0x00, 0xff, 0xff, 0x24, 0xaf, 0xd1, 0x6d, 0x73,
+	0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -196,6 +345,8 @@ const _ = grpc.SupportPackageIsVersion4
 type WorkflowHistoryServiceClient interface {
 	ListWorkflowHistory(ctx context.Context, in *WorkflowHistoryListRequest, opts ...grpc.CallOption) (*v1alpha1.WorkflowList, error)
 	GetWorkflowHistory(ctx context.Context, in *WorkflowHistoryGetRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	ResubmitWorkflowHistory(ctx context.Context, in *WorkflowHistoryUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
+	DeleteWorkflowHistory(ctx context.Context, in *WorkflowHistoryDeleteRequest, opts ...grpc.CallOption) (*WorkflowHistoryDeleteResponse, error)
 }
 
 type workflowHistoryServiceClient struct {
@@ -224,10 +375,30 @@ func (c *workflowHistoryServiceClient) GetWorkflowHistory(ctx context.Context, i
 	return out, nil
 }
 
+func (c *workflowHistoryServiceClient) ResubmitWorkflowHistory(ctx context.Context, in *WorkflowHistoryUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error) {
+	out := new(v1alpha1.Workflow)
+	err := c.cc.Invoke(ctx, "/WorkflowHistoryService/ResubmitWorkflowHistory", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workflowHistoryServiceClient) DeleteWorkflowHistory(ctx context.Context, in *WorkflowHistoryDeleteRequest, opts ...grpc.CallOption) (*WorkflowHistoryDeleteResponse, error) {
+	out := new(WorkflowHistoryDeleteResponse)
+	err := c.cc.Invoke(ctx, "/WorkflowHistoryService/DeleteWorkflowHistory", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkflowHistoryServiceServer is the server API for WorkflowHistoryService service.
 type WorkflowHistoryServiceServer interface {
 	ListWorkflowHistory(context.Context, *WorkflowHistoryListRequest) (*v1alpha1.WorkflowList, error)
 	GetWorkflowHistory(context.Context, *WorkflowHistoryGetRequest) (*v1alpha1.Workflow, error)
+	ResubmitWorkflowHistory(context.Context, *WorkflowHistoryUpdateRequest) (*v1alpha1.Workflow, error)
+	DeleteWorkflowHistory(context.Context, *WorkflowHistoryDeleteRequest) (*WorkflowHistoryDeleteResponse, error)
 }
 
 // UnimplementedWorkflowHistoryServiceServer can be embedded to have forward compatible implementations.
@@ -239,6 +410,12 @@ func (*UnimplementedWorkflowHistoryServiceServer) ListWorkflowHistory(ctx contex
 }
 func (*UnimplementedWorkflowHistoryServiceServer) GetWorkflowHistory(ctx context.Context, req *WorkflowHistoryGetRequest) (*v1alpha1.Workflow, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWorkflowHistory not implemented")
+}
+func (*UnimplementedWorkflowHistoryServiceServer) ResubmitWorkflowHistory(ctx context.Context, req *WorkflowHistoryUpdateRequest) (*v1alpha1.Workflow, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResubmitWorkflowHistory not implemented")
+}
+func (*UnimplementedWorkflowHistoryServiceServer) DeleteWorkflowHistory(ctx context.Context, req *WorkflowHistoryDeleteRequest) (*WorkflowHistoryDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteWorkflowHistory not implemented")
 }
 
 func RegisterWorkflowHistoryServiceServer(s *grpc.Server, srv WorkflowHistoryServiceServer) {
@@ -281,6 +458,42 @@ func _WorkflowHistoryService_GetWorkflowHistory_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkflowHistoryService_ResubmitWorkflowHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowHistoryUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowHistoryServiceServer).ResubmitWorkflowHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/WorkflowHistoryService/ResubmitWorkflowHistory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowHistoryServiceServer).ResubmitWorkflowHistory(ctx, req.(*WorkflowHistoryUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkflowHistoryService_DeleteWorkflowHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WorkflowHistoryDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkflowHistoryServiceServer).DeleteWorkflowHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/WorkflowHistoryService/DeleteWorkflowHistory",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkflowHistoryServiceServer).DeleteWorkflowHistory(ctx, req.(*WorkflowHistoryDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _WorkflowHistoryService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "WorkflowHistoryService",
 	HandlerType: (*WorkflowHistoryServiceServer)(nil),
@@ -292,6 +505,14 @@ var _WorkflowHistoryService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetWorkflowHistory",
 			Handler:    _WorkflowHistoryService_GetWorkflowHistory_Handler,
+		},
+		{
+			MethodName: "ResubmitWorkflowHistory",
+			Handler:    _WorkflowHistoryService_ResubmitWorkflowHistory_Handler,
+		},
+		{
+			MethodName: "DeleteWorkflowHistory",
+			Handler:    _WorkflowHistoryService_DeleteWorkflowHistory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -361,17 +582,46 @@ func (m *WorkflowHistoryGetRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 		i -= len(m.XXX_unrecognized)
 		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.GetOptions != nil {
-		{
-			size, err := m.GetOptions.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintWorkflowhistory(dAtA, i, uint64(size))
-		}
+	if len(m.Uid) > 0 {
+		i -= len(m.Uid)
+		copy(dAtA[i:], m.Uid)
+		i = encodeVarintWorkflowhistory(dAtA, i, uint64(len(m.Uid)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflowhistory(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowHistoryUpdateRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowHistoryUpdateRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowHistoryUpdateRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if len(m.Uid) > 0 {
 		i -= len(m.Uid)
@@ -386,6 +636,74 @@ func (m *WorkflowHistoryGetRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 		i = encodeVarintWorkflowhistory(dAtA, i, uint64(len(m.Namespace)))
 		i--
 		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowHistoryDeleteRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowHistoryDeleteRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowHistoryDeleteRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Uid) > 0 {
+		i -= len(m.Uid)
+		copy(dAtA[i:], m.Uid)
+		i = encodeVarintWorkflowhistory(dAtA, i, uint64(len(m.Uid)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Namespace) > 0 {
+		i -= len(m.Namespace)
+		copy(dAtA[i:], m.Namespace)
+		i = encodeVarintWorkflowhistory(dAtA, i, uint64(len(m.Namespace)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *WorkflowHistoryDeleteResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *WorkflowHistoryDeleteResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *WorkflowHistoryDeleteResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return len(dAtA) - i, nil
 }
@@ -431,10 +749,58 @@ func (m *WorkflowHistoryGetRequest) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovWorkflowhistory(uint64(l))
 	}
-	if m.GetOptions != nil {
-		l = m.GetOptions.Size()
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowHistoryUpdateRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
 		n += 1 + l + sovWorkflowhistory(uint64(l))
 	}
+	l = len(m.Uid)
+	if l > 0 {
+		n += 1 + l + sovWorkflowhistory(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowHistoryDeleteRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Namespace)
+	if l > 0 {
+		n += 1 + l + sovWorkflowhistory(uint64(l))
+	}
+	l = len(m.Uid)
+	if l > 0 {
+		n += 1 + l + sovWorkflowhistory(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *WorkflowHistoryDeleteResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
 	}
@@ -630,11 +996,65 @@ func (m *WorkflowHistoryGetRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.Uid = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field GetOptions", wireType)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowhistory(dAtA[iNdEx:])
+			if err != nil {
+				return err
 			}
-			var msglen int
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowHistoryUpdateRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowhistory
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowHistoryUpdateRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowHistoryUpdateRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowWorkflowhistory
@@ -644,28 +1064,228 @@ func (m *WorkflowHistoryGetRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthWorkflowhistory
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthWorkflowhistory
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.GetOptions == nil {
-				m.GetOptions = &v1.GetOptions{}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
 			}
-			if err := m.GetOptions.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowhistory
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Uid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowhistory(dAtA[iNdEx:])
+			if err != nil {
 				return err
 			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowHistoryDeleteRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowhistory
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowHistoryDeleteRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowHistoryDeleteRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowhistory
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Namespace = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowWorkflowhistory
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Uid = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipWorkflowhistory(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthWorkflowhistory
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *WorkflowHistoryDeleteResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowWorkflowhistory
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: WorkflowHistoryDeleteResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: WorkflowHistoryDeleteResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipWorkflowhistory(dAtA[iNdEx:])

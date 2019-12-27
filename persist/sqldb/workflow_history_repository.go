@@ -15,6 +15,7 @@ type WorkflowHistoryRepository interface {
 	AddWorkflowHistory(wf *wfv1.Workflow) error
 	ListWorkflowHistory(limit, offset int) ([]wfv1.Workflow, error)
 	GetWorkflowHistory(namespace string, uid string) (*wfv1.Workflow, error)
+	DeleteWorkflowHistory(namespace string, uid string) error
 }
 
 type workflowHistoryRepository struct {
@@ -26,7 +27,10 @@ func NewWorkflowHistoryRepository(database sqlbuilder.Database) WorkflowHistoryR
 }
 
 func (r *workflowHistoryRepository) AddWorkflowHistory(wf *wfv1.Workflow) error {
-	// TODO upsert
+	err := r.DeleteWorkflowHistory(wf.Namespace, string(wf.UID))
+	if err != nil {
+		return err
+	}
 	wfDB, err := convert(wf)
 	if err != nil {
 		return err
@@ -69,4 +73,12 @@ func (r *workflowHistoryRepository) GetWorkflowHistory(namespace string, uid str
 		return nil, err
 	}
 	return wf, nil
+}
+
+func (r *workflowHistoryRepository) DeleteWorkflowHistory(namespace string, uid string) error {
+	return r.Collection(WorkflowHistoryTableName).
+		Find().
+		Where(db.Cond{"id": uid}).
+		And(db.Cond{"namespace": namespace}).
+		Delete()
 }

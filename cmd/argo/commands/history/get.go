@@ -8,12 +8,10 @@ import (
 
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
-	"github.com/argoproj/argo/workflow/packer"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -33,14 +31,9 @@ func NewGetCommand() *cobra.Command {
 			ctx := client.ContextWithAuthorization()
 			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
 			wf, err := wfHistoryClient.GetWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryGetRequest{
-				Namespace:  namespace,
-				Uid:        uid,
-				GetOptions: &metav1.GetOptions{},
+				Namespace: namespace,
+				Uid:       uid,
 			})
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = packer.DecompressWorkflow(wf)
 			if err != nil {
 				log.Fatal(err)
 			}

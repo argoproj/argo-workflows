@@ -1,22 +1,28 @@
 syntax = "proto3";
 option go_package = "github.com/argoproj/argo/cmd/server/workflowhistory";
 
-
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
 import "k8s.io/api/core/v1/generated.proto";
 
-
 message WorkflowHistoryListRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 1;
 }
-
 message WorkflowHistoryGetRequest {
     string namespace = 1;
     string uid = 2;
-    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+message WorkflowHistoryUpdateRequest {
+    string namespace = 1;
+    string uid = 2;
+}
+message WorkflowHistoryDeleteRequest {
+    string namespace = 1;
+    string uid = 2;
+}
+message WorkflowHistoryDeleteResponse {
 }
 
 service WorkflowHistoryService {
@@ -25,5 +31,14 @@ service WorkflowHistoryService {
     }
     rpc GetWorkflowHistory (WorkflowHistoryGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http).get = "/api/v1/workflow-history/{namespace}/{uid}";
+    }
+    rpc ResubmitWorkflowHistory (WorkflowHistoryUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflow-history/{namespace}/{uid}/resubmit"
+			body: "*"
+		};
+    }
+    rpc DeleteWorkflowHistory (WorkflowHistoryDeleteRequest) returns (WorkflowHistoryDeleteResponse) {
+        option (google.api.http).delete = "/api/v1/workflow-history/{namespace}/{uid}";
     }
 }

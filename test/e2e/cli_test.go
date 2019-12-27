@@ -75,6 +75,19 @@ func (s *CLISuite) TestHistory() {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
+	s.T().Run("Resubmit", func(t *testing.T) {
+		output, err := argo("history", "resubmit", fixtures.Namespace, string(uid))
+		assert.NoError(t, err)
+		assert.Contains(t, output, "Workflow")
+		assert.Contains(t, output, "basic")
+		assert.Contains(t, output, "resubmitted")
+	})
+	s.T().Run("Delete", func(t *testing.T) {
+		output, err := argo("history", "delete", fixtures.Namespace, string(uid))
+		assert.NoError(t, err)
+		assert.Contains(t, output, "Workflow")
+		assert.Contains(t, output, "deleted")
+	})
 }
 
 func TestCliSuite(t *testing.T) {

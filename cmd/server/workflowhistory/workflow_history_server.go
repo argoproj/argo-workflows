@@ -13,15 +13,18 @@ import (
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 type workflowHistoryServer struct {
-	kubeClientset kubernetes.Interface
-	repo          sqldb.WorkflowHistoryRepository
+	wfClient   versioned.Interface
+	kubeClient kubernetes.Interface
+	repo       sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
-	return &workflowHistoryServer{repo: repo, kubeClientset: kubeClientset}, nil
+func NewWorkflowHistoryServer(wfClient versioned.Interface, kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
+	return &workflowHistoryServer{repo: repo, wfClient: wfClient, kubeClient: kubeClientset}, nil
 }
 
 func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
@@ -60,7 +63,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 }
 
 func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow) (bool, error) {
-	review, err := w.kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
+	review, err := w.kubeClient.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
 		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: wf.Namespace,
@@ -94,4 +97,32 @@ func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *Workf
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	return wf, err
+}
+
+func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req *WorkflowHistoryUpdateRequest) (*wfv1.Workflow, error) {
+	wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
+	if err != nil {
+		return nil, err
+	}
+	wf, err = util.FormulateResubmitWorkflow(wf, false)
+	if err != nil {
+		return nil, err
+	}
+	wf, err = util.SubmitWorkflow(w.wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), w.wfClient, wf.Namespace, wf, nil)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
+}
+
+func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *WorkflowHistoryDeleteRequest) (*WorkflowHistoryDeleteResponse, error) {
+	_, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
+	if err != nil {
+		return nil, err
+	}
+	err = w.repo.DeleteWorkflowHistory(req.Namespace, req.Uid)
+	if err != nil {
+		return nil, err
+	}
+	return &WorkflowHistoryDeleteResponse{}, nil
 }
