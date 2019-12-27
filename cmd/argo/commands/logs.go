@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	workflowv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
@@ -52,7 +53,7 @@ func NewLogsCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			conf, err := clientConfig.ClientConfig()
+			conf, err := client.Config.ClientConfig()
 			errors.CheckError(err)
 			printer.kubeClient = kubernetes.NewForConfigOrDie(conf)
 			if tail > 0 {
@@ -116,7 +117,7 @@ func (p *logPrinter) PrintWorkflowLogs(workflow string) error {
 
 // PrintPodLogs prints logs for a single pod
 func (p *logPrinter) PrintPodLogs(podName string) error {
-	namespace, _, err := clientConfig.Namespace()
+	namespace, _, err := client.Config.Namespace()
 	if err != nil {
 		return err
 	}

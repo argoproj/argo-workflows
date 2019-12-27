@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -25,7 +26,7 @@ func NewResubmitCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			namespace, _, err := clientConfig.Namespace()
+			namespace, _, err := client.Config.Namespace()
 			if err != nil {
 				log.Fatal(err)
 			}

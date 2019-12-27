@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 )
 
 type Server struct {

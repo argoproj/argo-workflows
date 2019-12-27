@@ -51,10 +51,6 @@ func (g *Given) Workflow(text string) *Given {
 		if err != nil {
 			g.t.Fatal(err)
 		}
-		if g.wf.GetLabels() == nil {
-			g.wf.SetLabels(map[string]string{})
-		}
-		g.wf.GetLabels()[label] = "true"
 	}
 	return g
 }

@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflowhistory": {
+    "/api/v1/workflow-history": {
       "get": {
         "operationId": "ListWorkflowHistory",
         "responses": {
@@ -83,6 +83,43 @@
           {
             "name": "listOptions.continue",
             "description": "The continue option should be set when retrieving more results from the server. Since this value is\nserver defined, clients may only use the continue value from a previous query result with identical\nquery parameters (except for the value of continue) and the server may reject a continue value it\ndoes not recognize. If the specified continue value is no longer valid whether due to expiration\n(generally five to fifteen minutes) or a configuration change on the server, the server will\nrespond with a 410 ResourceExpired error together with a continue token. If the client needs a\nconsistent list, it must restart their list without the continue field. Otherwise, the client may\nsend another list request with the token received with the 410 error, the server will respond with\na list starting from the next key, but from the latest snapshot, which is inconsistent from the\nprevious list results - objects that are created, modified, or deleted after the first list request\nwill be included in the response, as long as their keys are after the \"next key\".\n\nThis field is not supported when watch is true. Clients may start a watch from the last\nresourceVersion value returned by the server and not miss any modifications.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowHistoryService"
+        ]
+      }
+    },
+    "/api/v1/workflow-history/{namespace}/{uid}": {
+      "get": {
+        "operationId": "GetWorkflowHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "uid",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "getOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -799,6 +836,16 @@
         }
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
+    },
+    "v1GetOptions": {
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv."
+        }
+      },
+      "description": "GetOptions is the standard query options to the standard REST get call."
     },
     "v1GitRepoVolumeSource": {
       "type": "object",

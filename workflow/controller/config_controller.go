@@ -57,16 +57,22 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		wfc.wfDBctx = nil
 		wfc.wfHistoryRepository = sqldb.NullWorkflowHistoryRepository
 	}
-	if wfc.Config.Persistence != nil {
+	persistence := wfc.Config.Persistence
+	if persistence != nil {
 		log.Info("Persistence configuration enabled")
-		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
+		session, tableName, err := sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, persistence)
 		if err != nil {
 			return err
 		}
-		wfc.session = session
-		wfc.wfDBctx = sqldb.NewWorkflowDBContext(tableName, wfc.Config.Persistence.NodeStatusOffload, session)
-		wfc.wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
 		log.Info("Persistence Session created successfully")
+		wfc.session = session
+		wfc.wfDBctx = sqldb.NewWorkflowDBContext(tableName, persistence.NodeStatusOffload, session)
+		if persistence.History {
+			wfc.wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
+			log.Info("Workflow history is enabled")
+		} else {
+			log.Info("Workflow history is disabled")
+		}
 	} else {
 		log.Info("Persistence configuration disabled")
 	}

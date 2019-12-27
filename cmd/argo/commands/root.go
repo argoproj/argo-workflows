@@ -1,11 +1,10 @@
 package commands
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/argo/commands/history"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
 	"github.com/argoproj/argo/util/cmd"
 )
@@ -41,18 +40,7 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
-
-	addKubectlFlagsToCmd(command)
+	command.AddCommand(history.NewHistoryCommand())
+	client.AddKubectlFlagsToCmd(command)
 	return command
-}
-
-func addKubectlFlagsToCmd(cmd *cobra.Command) {
-	// The "usual" clientcmd/kubectl flags
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	overrides := clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	cmd.PersistentFlags().StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-	clientcmd.BindOverrideFlags(&overrides, cmd.PersistentFlags(), kflags)
-	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 }

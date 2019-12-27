@@ -16,12 +16,12 @@ type Then struct {
 	client       v1alpha1.WorkflowInterface
 }
 
-func (t *Then) Expect(block func(t *testing.T, wf *wfv1.WorkflowStatus)) *Then {
+func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
 	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": t.workflowName}).Info("Checking expectation")
 	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
 	}
-	block(t.t, &wf.Status)
+	block(t.t, &wf.ObjectMeta, &wf.Status)
 	return t
 }

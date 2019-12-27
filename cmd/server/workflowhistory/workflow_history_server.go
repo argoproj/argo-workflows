@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -22,22 +21,10 @@ type workflowHistoryServer struct {
 }
 
 func NewWorkflowHistoryServer(kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
-	/*
-		var repo sqldb.WorkflowHistoryRepository
-		if persistConfig != nil {
-			database, _, err := sqldb.CreateDBSession(kubeClientset, namespace, persistConfig)
-			if err != nil {
-				return nil, err
-			}
-			repo = sqldb.NewWorkflowHistoryRepository(database)
-		} else {
-			repo = sqldb.NullWorkflowHistoryRepository
-		}
-	*/
 	return &workflowHistoryServer{repo: repo, kubeClientset: kubeClientset}, nil
 }
 
-func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
+func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
 		options = &metav1.ListOptions{Limit: 100}
@@ -57,25 +44,12 @@ func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wor
 	allowedItems := make([]wfv1.Workflow, 0)
 	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
 	for _, item := range allItems {
-		review, err := w.kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
-			Spec: authorizationv1.SelfSubjectAccessReviewSpec{
-				ResourceAttributes: &authorizationv1.ResourceAttributes{
-					Namespace: item.Namespace,
-					Verb:      "get",
-					Group:     item.GroupVersionKind().Group,
-					Version:   item.GroupVersionKind().Version,
-					Resource:  "workflows",
-					Name:      item.Name,
-				},
-			},
-		})
+		allowed, err := w.isAllowed(&item)
 		if err != nil {
 			return nil, err
 		}
-		if review.Status.Allowed {
+		if allowed {
 			allowedItems = append(allowedItems, item)
-		} else {
-			log.WithFields(log.Fields{"review": review}).Warn("Access denied")
 		}
 	}
 	meta := metav1.ListMeta{}
@@ -83,4 +57,41 @@ func (w workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wor
 		meta.Continue = fmt.Sprintf("%v", offset+limit)
 	}
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
+}
+
+func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow) (bool, error) {
+	review, err := w.kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
+		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: wf.Namespace,
+				Verb:      "get",
+				Group:     wf.GroupVersionKind().Group,
+				Version:   wf.GroupVersionKind().Version,
+				Resource:  "workflows",
+				Name:      wf.Name,
+			},
+		},
+	})
+	if err != nil {
+		return false, err
+	}
+	return review.Status.Allowed, nil
+}
+
+func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
+	wf, err := w.repo.GetWorkflowHistory(req.Namespace, req.Uid)
+	if err != nil {
+		return nil, err
+	}
+	if wf == nil {
+		return nil, status.Error(codes.NotFound, "not found")
+	}
+	allowed, err := w.isAllowed(wf)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
+	return wf, err
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -22,7 +23,7 @@ func (s *SmokeSuite) TestBasic() {
 		SubmitWorkflow().
 		WaitForWorkflow(10 * time.Second).
 		Then().
-		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
+		Expect(func(t *testing.T, _ *metav1.ObjectMeta, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
 		})
 }
@@ -34,7 +35,7 @@ func (s *SmokeSuite) TestArtifactPassing() {
 		SubmitWorkflow().
 		WaitForWorkflow(20 * time.Second).
 		Then().
-		Expect(func(t *testing.T, wf *wfv1.WorkflowStatus) {
+		Expect(func(t *testing.T, _ *metav1.ObjectMeta, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
 		})
 }

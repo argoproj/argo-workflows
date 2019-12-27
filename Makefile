@@ -19,8 +19,6 @@ DEV_IMAGE             ?= false
 # build static files, disable if you don't need HTML files, e.g. when on CI
 STATIC                ?= true
 
-GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
-
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \
@@ -184,13 +182,7 @@ endif
 
 .PHONY: lint
 lint:
-	go fmt ./...
-ifdef GOLANGCI_EXISTS
 	golangci-lint run --fix --verbose --config golangci.yml
-else
-	# Remove gometalinter after a migration time.
-	gometalinter --config gometalinter.json ./...
-endif
 
 .PHONY: test
 test: cmd/server/static/files.go
@@ -235,6 +227,8 @@ start:
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
 	make up
+	# Make the CLI
+	make cli
 	# Wait for apps to be ready.
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.

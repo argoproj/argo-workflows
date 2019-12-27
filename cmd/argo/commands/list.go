@@ -13,12 +13,12 @@ import (
 	"github.com/argoproj/pkg/humanize"
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -59,15 +59,12 @@ func NewListCommand() *cobra.Command {
 					wfClient = InitWorkflowClient()
 				}
 			} else {
-				conn, err := grpc.Dial(listArgs.serverHost, grpc.WithInsecure())
-				if err != nil {
-					panic(err)
-				}
+				conn := client.GetClientConn(listArgs.serverHost)
 				defer conn.Close()
 				if listArgs.allNamespaces {
 					ns = apiv1.NamespaceAll
 				} else {
-					ns, _, _ = clientConfig.Namespace()
+					ns, _, _ = client.Config.Namespace()
 				}
 
 				wfApiClient, ctx = GetApiServerGRPCClient(conn)
