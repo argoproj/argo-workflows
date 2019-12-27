@@ -5,6 +5,9 @@ run:
     - "cmd/server/static/files.go"
     - "pkg/client"
     - "vendor/"
+linters:
+  enable:
+    - goimports
 linters-settings:
   goimports:
     local-prefixes: github.com/argoproj/argo
