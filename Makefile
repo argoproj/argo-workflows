@@ -260,7 +260,7 @@ test-e2e:
 
 .PHONY: clean
 clean:
-	git clean -fxd
+	-rm -rf ${CURRENT_DIR}/dist
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen
