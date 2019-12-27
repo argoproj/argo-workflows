@@ -9,6 +9,8 @@ GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
+YARN                   = $(shell which yarn)
+
 # docker image publishing options
 DOCKER_PUSH           ?= false
 IMAGE_TAG             ?= latest
@@ -52,16 +54,29 @@ all: cli controller-image executor-image argo-server
 builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
 
-ui/dist/app: ui/src
-ifeq ($(STATIC), true)
-	sh -c 'cd ui && make'
+ui/node_modules: ui/package.json ui/yarn.lock
+ifeq ($(STATIC),true)
+ifneq ($(YARN),)
+	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+else
+	docker run --rm -w /ud -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 install --frozen-lockfile --ignore-optional --non-interactive
+endif
+else
+	mkdir -p ui/node_modules
+endif
+	touch ui/node_modules
+
+ui/dist/app: ui/node_modules ui/src
+ifeq ($(STATIC),true)
+ifneq ($(YARN),)
+	yarn --cwd ui build
+else
+	docker run --rm -w /ui -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 build
+endif
 else
 	mkdir -p ui/dist/app
-	echo "UI was disabled in the build" > ui/dist/app/index.html
 endif
-
-vendor: Gopkg.toml
-	dep ensure -v -vendor-only
+	touch ui/dist/app
 
 cmd/server/static/files.go: ui/dist/app
 	go get bou.ke/staticfiles
@@ -184,7 +199,7 @@ endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 .PHONY: lint
-lint:
+lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
 
 .PHONY: test
