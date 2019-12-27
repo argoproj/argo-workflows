@@ -8,6 +8,8 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+# Do we have yarn installed locally? If so, use it. It is much faster.
+YARN                   = $(shell which yarn)
 
 # docker image publishing options
 DOCKER_PUSH           ?= false
@@ -16,7 +18,7 @@ IMAGE_TAG             ?= latest
 STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
-# build static files, disable if you don't need HTML files, e.g. when on CI
+# Build static files, disable if you don't need HTML files, e.g. when on CI.
 STATIC                ?= true
 
 override LDFLAGS += \
@@ -52,13 +54,29 @@ all: cli controller-image executor-image argo-server
 builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
 
-ui/dist/app:
-ifeq ($(STATIC), true)
-	sh -c 'cd ui && make'
+ui/node_modules: ui/package.json ui/yarn.lock
+ifeq ($(STATIC),true)
+ifneq ($(YARN),)
+	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+else
+	docker run --rm -w /ud -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 install --frozen-lockfile --ignore-optional --non-interactive
+endif
+else
+	mkdir -p ui/node_modules
+endif
+	touch ui/node_modules
+
+ui/dist/app: ui/node_modules ui/src
+ifeq ($(STATIC),true)
+ifneq ($(YARN),)
+	yarn --cwd ui build
+else
+	docker run --rm -w /ui -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 build
+endif
 else
 	mkdir -p ui/dist/app
-	echo "UI was disabled in the build" > ui/dist/app/index.html
 endif
+	touch ui/dist/app
 
 cmd/server/static/files.go: ui/dist/app
 	go get bou.ke/staticfiles
@@ -181,7 +199,7 @@ endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 .PHONY: lint
-lint:
+lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
 
 .PHONY: test
@@ -220,6 +238,8 @@ start:
 	make down
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
+	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
@@ -254,13 +274,21 @@ pf:
 logs:
 	kubectl -n argo logs -f -l app --max-log-requests 10
 
+.PHONY: postgres-cli
+postgres-cli:
+	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+
+.PHONY: mysql-cli
+mysql-cli:
+	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
+
 .PHONY: test-e2e
 test-e2e:
 	go test -v -count 1 -p 1 ./test/e2e
 
 .PHONY: clean
 clean:
-	git clean -fxd
+	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen

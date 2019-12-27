@@ -6,5 +6,4 @@ assets
 coverage.out
 dist
 ui/node_modules
-ui/src
 vendor

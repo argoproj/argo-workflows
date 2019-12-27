@@ -37,7 +37,6 @@ type listFlags struct {
 	since         string   // --since
 	chunkSize     int64    // --chunk-size
 	noHeaders     bool     // --no-headers
-	serverHost    string   // --server
 }
 
 func NewListCommand() *cobra.Command {
@@ -53,17 +52,14 @@ func NewListCommand() *cobra.Command {
 			var ctx context.Context
 			var ns string
 
-			conn, err := GetServerConn(listArgs.serverHost)
-			if err != nil {
-				panic(err)
-			}
-			if conn == nil {
+			if client.ArgoServer == "" {
 				if listArgs.allNamespaces {
 					wfClient = InitWorkflowClient(apiv1.NamespaceAll)
 				} else {
 					wfClient = InitWorkflowClient()
 				}
 			} else {
+				conn := client.GetClientConn()
 				defer conn.Close()
 				if listArgs.allNamespaces {
 					ns = apiv1.NamespaceAll
@@ -95,18 +91,16 @@ func NewListCommand() *cobra.Command {
 			}
 			var wfList *wfv1.WorkflowList
 
-			if conn == nil {
+			var err error
+			if client.ArgoServer == "" {
 				wfList, err = wfClient.List(listOpts)
 				if err != nil {
 					log.Fatal(err)
 				}
 			} else {
 				wfReq := workflow.WorkflowListRequest{
-					Namespace:            ns,
-					ListOptions:          &listOpts,
-					XXX_NoUnkeyedLiteral: struct{}{},
-					XXX_unrecognized:     nil,
-					XXX_sizecache:        0,
+					Namespace:   ns,
+					ListOptions: &listOpts,
 				}
 				wfList, err = wfApiClient.ListWorkflows(ctx, &wfReq)
 				if err != nil {
@@ -174,7 +168,6 @@ func NewListCommand() *cobra.Command {
 	command.Flags().StringVar(&listArgs.since, "since", "", "Show only workflows newer than a relative duration")
 	command.Flags().Int64VarP(&listArgs.chunkSize, "chunk-size", "", 500, "Return large lists in chunks rather than all at once. Pass 0 to disable.")
 	command.Flags().BoolVar(&listArgs.noHeaders, "no-headers", false, "Don't print headers (default print headers).")
-	command.Flags().StringVar(&listArgs.serverHost, "server", "", "API Server host and port")
 	return command
 }
 

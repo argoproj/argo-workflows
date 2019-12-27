@@ -25,15 +25,15 @@ func getClientConfig() *workflow.ClientConfig {
 	if restConfig.ExecProvider != nil {
 		tc, _ := restConfig.TransportConfig()
 		auth, _ := exec.GetAuthenticator(restConfig.ExecProvider)
-		auth.UpdateTransportConfig(tc)
+		_ = auth.UpdateTransportConfig(tc)
 		rt, _ := transport.New(tc)
 		req := http.Request{Header: map[string][]string{}}
-		rt.RoundTrip(&req)
+		_, _ = rt.RoundTrip(&req)
 		token := req.Header.Get("Authorization")
 		restConfig.BearerToken = strings.TrimPrefix(token, "Bearer ")
 	}
 	var clientConfig workflow.ClientConfig
-	copier.Copy(&clientConfig, restConfig)
+	_ = copier.Copy(&clientConfig, restConfig)
 	return &clientConfig
 }
 

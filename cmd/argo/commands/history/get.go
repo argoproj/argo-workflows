@@ -13,12 +13,12 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 func NewGetCommand() *cobra.Command {
 	var (
 		output string
-		server string
 	)
 	var command = &cobra.Command{
 		Use: "get NAMESPACE UID",
@@ -29,7 +29,7 @@ func NewGetCommand() *cobra.Command {
 			}
 			namespace := args[0]
 			uid := args[1]
-			conn := client.GetClientConn(server)
+			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
 			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
 			wf, err := wfHistoryClient.GetWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryGetRequest{
@@ -37,6 +37,10 @@ func NewGetCommand() *cobra.Command {
 				Uid:        uid,
 				GetOptions: &metav1.GetOptions{},
 			})
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = packer.DecompressWorkflow(wf)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -79,7 +83,6 @@ func NewGetCommand() *cobra.Command {
 			}
 		},
 	}
-	command.Flags().StringVar(&server, "server", "", "API Server host and port")
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
 	return command
 }
