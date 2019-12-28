@@ -206,7 +206,7 @@ func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	if wf.Status.Failed() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterFailed != nil {
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailed))
 		return now.After(expiry)
-	} else if wf.Status.Successful() {
+	} else if wf.Status.Successful() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
 		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess))
 		return now.After(expiry)
 	} else {
@@ -232,9 +232,11 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
-	} else {
+	} else if wf.Spec.TTLStrategy.SecondsAfterCompleted != nil {
 		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompleted) * time.Second)
 		remaining := expireAtUTC.Sub(sinceUTC)
 		return &remaining, &expireAtUTC
+	} else {
+		return nil, nil
 	}
 }

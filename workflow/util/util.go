@@ -126,7 +126,7 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 		if wf.Spec.TTLStrategy == nil {
 			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompleted: wf.Spec.TTLSecondsAfterFinished}
 			wf.Spec.TTLStrategy = &ttlstrategy
-		} else {
+		} else if wf.Spec.TTLStrategy.SecondsAfterCompleted == nil {
 			wf.Spec.TTLStrategy.SecondsAfterCompleted = wf.Spec.TTLSecondsAfterFinished
 		}
 	}
