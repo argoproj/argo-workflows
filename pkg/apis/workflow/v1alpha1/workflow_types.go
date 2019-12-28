@@ -109,8 +109,9 @@ var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {
-	SecondsAfterSuccess *int32 `json:"secondsAfterSuccess:,omitempty" protobuf:"bytes,1,opt,name=SecondsAfterSuccess:"`
-	SecondsAfterFailed  *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,2,opt,name=SecondsAfterFailed"`
+	SecondsAfterCompleted *int32 `json:"SecondsAfterCompleted:,omitempty" protobuf:"bytes,1,opt,name=SecondsAfterCompleted:"`
+	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess:,omitempty" protobuf:"bytes,1,opt,name=SecondsAfterSuccess:"`
+	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,2,opt,name=SecondsAfterFailed"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
@@ -213,7 +214,7 @@ type WorkflowSpec struct {
 	// deleted after the time to live expires. If this field is unset,
 	// the controller config map will hold the default values
 	// Update
-	TTLStrategy TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,28,opt,name=ttlStrategy"`
+	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,28,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
