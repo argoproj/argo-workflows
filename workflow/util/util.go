@@ -123,9 +123,12 @@ func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
 	if wf.Spec.TTLSecondsAfterFinished != nil {
-		ttlstrategy := wfv1.TTLStrategy{
-			SecondsAfterCompleted: wf.Spec.TTLSecondsAfterFinished}
-		wf.Spec.TTLStrategy = &ttlstrategy
+		if wf.Spec.TTLStrategy == nil {
+			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompleted: wf.Spec.TTLSecondsAfterFinished}
+			wf.Spec.TTLStrategy = &ttlstrategy
+		} else {
+			wf.Spec.TTLStrategy.SecondsAfterCompleted = wf.Spec.TTLSecondsAfterFinished
+		}
 	}
 	return &wf, err
 }

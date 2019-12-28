@@ -6,12 +6,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 )
 
-// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
-type TTLStrategy struct {
-	SecondsAfterSuccess *int32 `json:"SecondsAfterSuccess:,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterSuccess:"`
-	SecondsAfterFailed  *int32 `json:"SecondsAfterFailed,omitempty" protobuf:"bytes,18,opt,name=SecondsAfterFailed"`
-}
-
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
 type WorkflowControllerConfig struct {
 	// ExecutorImage is the image name of the executor to use when running pods
@@ -68,9 +62,6 @@ type WorkflowControllerConfig struct {
 
 	// Config customized Docker Sock path
 	DockerSockPath string `json:"dockerSockPath,omitempty"`
-
-	// Config for the TTLStrategy
-	TTLStrategy *TTLStrategy `json:"TTLStrategy,omitempty"`
 }
 
 // KubeConfig is used for wait & init sidecar containers to communicate with a k8s apiserver by a outofcluster method,
