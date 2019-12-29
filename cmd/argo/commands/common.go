@@ -145,11 +145,11 @@ func GetApiServerGRPCClient(conn *grpc.ClientConn) (apiServer.WorkflowServiceCli
 	return apiServer.NewWorkflowServiceClient(conn), client.ContextWithAuthorization()
 }
 
-func GetServerConn(server string) (* grpc.ClientConn, error) {
+func GetServerConn(server string) (*grpc.ClientConn, error) {
 	if server == "" {
 		server = os.Getenv(ARGO_SERVER_ENV)
 	}
-	if server == ""{
+	if server == "" {
 		return nil, nil
 	}
 	return grpc.Dial(server, grpc.WithInsecure())

@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	apiServer "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 )
 
 func NewLintCommand() *cobra.Command {
@@ -85,7 +85,7 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(arg)
 	grpcClient, ctx := GetApiServerGRPCClient(conn)
 	ns, _, _ := client.Config.Namespace()
-	var wfs [] v1alpha1.Workflow
+	var wfs []v1alpha1.Workflow
 	var err error
 
 	if validateDir {

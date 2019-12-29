@@ -11,6 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/argoproj/argo/cmd/server/common"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -18,16 +19,15 @@ import (
 )
 
 type workflowHistoryServer struct {
-	wfClient   versioned.Interface
-	kubeClient kubernetes.Interface
-	repo       sqldb.WorkflowHistoryRepository
+	*common.Server
+	repo sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(wfClient versioned.Interface, kubeClientset kubernetes.Interface, repo sqldb.WorkflowHistoryRepository) (*workflowHistoryServer, error) {
-	return &workflowHistoryServer{repo: repo, wfClient: wfClient, kubeClient: kubeClientset}, nil
+func NewWorkflowHistoryServer(wfClientset versioned.Interface, kubeClientset kubernetes.Interface, namespace string, enableClientAuth bool, repo sqldb.WorkflowHistoryRepository) *workflowHistoryServer {
+	return &workflowHistoryServer{repo: repo, Server: common.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset)}
 }
 
-func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
+func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
 		options = &metav1.ListOptions{Limit: 100}
@@ -47,7 +47,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 	allowedItems := make([]wfv1.Workflow, 0)
 	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
 	for _, item := range allItems {
-		allowed, err := w.isAllowed(&item, "get")
+		allowed, err := w.isAllowed(ctx, &item, "get")
 		if err != nil {
 			return nil, err
 		}
@@ -62,8 +62,12 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
 }
 
-func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow, verb string ) (bool, error) {
-	review, err := w.kubeClient.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
+func (w *workflowHistoryServer) isAllowed(ctx context.Context, wf *wfv1.Workflow, verb string) (bool, error) {
+	_, kubeClientset, err := w.GetWFClient(ctx)
+	if err != nil {
+		return false, err
+	}
+	review, err := kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
 		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: wf.Namespace,
@@ -81,7 +85,7 @@ func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow, verb string ) (bool
 	return review.Status.Allowed, nil
 }
 
-func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
+func (w *workflowHistoryServer) GetWorkflowHistory(ctx context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
 	wf, err := w.repo.GetWorkflowHistory(req.Namespace, req.Uid)
 	if err != nil {
 		return nil, err
@@ -89,7 +93,7 @@ func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *Workf
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := w.isAllowed(wf, "get")
+	allowed, err := w.isAllowed(ctx, wf, "get")
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +112,11 @@ func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	wf, err = util.SubmitWorkflow(w.wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), w.wfClient, wf.Namespace, wf, nil)
+	wfClient, _, err := w.GetWFClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	wf, err = util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, wf.Namespace, wf, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +128,7 @@ func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := w.isAllowed(wf, "delete")
+	allowed, err := w.isAllowed(ctx, wf, "delete")
 	if err != nil {
 		return nil, err
 	}

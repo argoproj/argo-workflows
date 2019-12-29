@@ -44,6 +44,7 @@ func ContextWithAuthorization() context.Context {
 		log.Fatal(err)
 	}
 	configEncoded := base64.StdEncoding.EncodeToString(configByte)
+	// TODO - do we need "token"?
 	md := metadata.Pairs("grpcgateway-authorization", configEncoded, "token", localConfig.BearerToken)
 	return metadata.NewOutgoingContext(context.Background(), md)
 }

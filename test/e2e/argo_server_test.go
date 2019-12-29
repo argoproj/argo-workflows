@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/argoproj/argo/pkg/apis/workflow"
@@ -24,50 +24,36 @@ import (
 // testing behaviour really is a non-goal
 type ArgoServerSuite struct {
 	fixtures.E2ESuite
-	bearerToken    string
-	runningLocally bool
+	bearerToken string
 }
 
-func getLocalRestConfig() []byte {
+func getClientConfig() *workflow.ClientConfig {
 	bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
 	if err != nil {
 		panic(err)
 	}
-	clientConfig, err := clientcmd.NewClientConfigFromBytes(bytes)
+	config, err := clientcmd.NewClientConfigFromBytes(bytes)
 	if err != nil {
 		panic(err)
 	}
-	rawConfig, err := clientConfig.RawConfig()
+	restConfig, err := config.ClientConfig()
 	if err != nil {
 		panic(err)
 	}
-	restConfig := &workflow.ClientConfig{
-		Host:            rawConfig.Clusters["local"].Server,
-		BearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-		TLSClientConfig: rest.TLSClientConfig{
-			CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-		},
-	}
-	marshal, err := json.Marshal(restConfig)
-	if err != nil {
-		panic(err)
-	}
-	return marshal
+	var clientConfig workflow.ClientConfig
+	_ = copier.Copy(&clientConfig, restConfig)
+	return &clientConfig
 }
 
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	// is the server running running locally, or on a cluster?
-	list, err := s.KubeClient.CoreV1().Pods(fixtures.Namespace).List(metav1.ListOptions{LabelSelector: "app=argo-server"})
+	jsonConfig, err := json.Marshal(getClientConfig())
 	if err != nil {
 		panic(err)
 	}
-	s.runningLocally = len(list.Items) == 0
-	// if argo-server we are not running locally, then we are running in the cluster, and we need the kubeconfig
-	if !s.runningLocally {
-		s.bearerToken = base64.StdEncoding.EncodeToString(getLocalRestConfig())
-	}
+	s.bearerToken = base64.StdEncoding.EncodeToString(jsonConfig)
 }
+
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
@@ -85,9 +71,6 @@ func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 }
 
 func (s *ArgoServerSuite) TestUnauthorized() {
-	if s.runningLocally {
-		s.T().SkipNow()
-	}
 	token := s.bearerToken
 	defer func() { s.bearerToken = token }()
 	s.bearerToken = ""

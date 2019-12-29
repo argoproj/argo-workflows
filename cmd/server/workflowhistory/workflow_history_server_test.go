@@ -22,10 +22,10 @@ import (
 
 
 func Test_workflowHistoryServer(t *testing.T) {
-	repo := mocks.WorkflowHistoryRepository{}
+	repo := &mocks.WorkflowHistoryRepository{}
 	kubeClient := &kubefake.Clientset{}
 	wfClient := &argofake.Clientset{}
-	w := workflowHistoryServer{repo: &repo, kubeClient: kubeClient, wfClient: wfClient}
+	w := NewWorkflowHistoryServer(wfClient, kubeClient, "", false, repo)
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{

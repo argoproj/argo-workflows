@@ -48,7 +48,7 @@ func LintWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 	return nil
 }
 
-func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error){
+func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
@@ -78,6 +78,7 @@ func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error){
 	}
 	return workflows, nil
 }
+
 // LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests
 func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
