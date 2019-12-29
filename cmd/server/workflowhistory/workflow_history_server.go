@@ -47,7 +47,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 	allowedItems := make([]wfv1.Workflow, 0)
 	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
 	for _, item := range allItems {
-		allowed, err := w.isAllowed(&item)
+		allowed, err := w.isAllowed(&item, "get")
 		if err != nil {
 			return nil, err
 		}
@@ -62,12 +62,12 @@ func (w *workflowHistoryServer) ListWorkflowHistory(_ context.Context, req *Work
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
 }
 
-func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow) (bool, error) {
+func (w *workflowHistoryServer) isAllowed(wf *wfv1.Workflow, verb string ) (bool, error) {
 	review, err := w.kubeClient.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
 		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
 				Namespace: wf.Namespace,
-				Verb:      "get",
+				Verb:      verb,
 				Group:     wf.GroupVersionKind().Group,
 				Version:   wf.GroupVersionKind().Version,
 				Resource:  "workflows",
@@ -89,7 +89,7 @@ func (w *workflowHistoryServer) GetWorkflowHistory(_ context.Context, req *Workf
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := w.isAllowed(wf)
+	allowed, err := w.isAllowed(wf, "get")
 	if err != nil {
 		return nil, err
 	}
@@ -116,9 +116,16 @@ func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req
 }
 
 func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *WorkflowHistoryDeleteRequest) (*WorkflowHistoryDeleteResponse, error) {
-	_, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
+	wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
 	if err != nil {
 		return nil, err
+	}
+	allowed, err := w.isAllowed(wf, "delete")
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	err = w.repo.DeleteWorkflowHistory(req.Namespace, req.Uid)
 	if err != nil {
