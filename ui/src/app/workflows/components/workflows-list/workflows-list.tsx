@@ -4,7 +4,6 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 
 import {Autocomplete, DataLoader, MockupList, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
-import {DataLoader, MockupList, Page, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {AppContext, Consumer} from '../../../shared/context';
@@ -12,6 +11,7 @@ import {services} from '../../../shared/services';
 
 import {WorkflowListItem} from '..';
 import {Query} from '../../../shared/components/query';
+import { YamlEditor } from '../../../shared/components/yaml-editor/yaml-editor';
 
 require('./workflows-list.scss');
 
@@ -168,37 +168,18 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                         <SlidingPanel
                             isShown={!!this.wfInput}
                             onClose={() => ctx.navigation.goto('.', {new: null})}
-                            header={
-                                <div>
-                                    <button className='argo-button argo-button--base' onClick={() => alert('submit')} /* createApi && createApi.submitForm(null)} */>
-                                        Submit
-                                    </button>{' '}
-                                    <button onClick={() => ctx.navigation.goto('.', {new: null})} className='argo-button argo-button--base-o'>
-                                        Cancel
-                                    </button>
-                                </div>
-                            }>
-                            Contents
-                            {/*{appInput && (*/}
-                            {/*    <ApplicationCreatePanel*/}
-                            {/*        getFormApi={api => {*/}
-                            {/*            setCreateApi(api);*/}
-                            {/*        }}*/}
-                            {/*        createApp={async app => {*/}
-                            {/*            try {*/}
-                            {/*                await services.applications.create(app);*/}
-                            {/*                ctx.navigation.goto('.', {new: null});*/}
-                            {/*            } catch (e) {*/}
-                            {/*                ctx.notifications.show({*/}
-                            {/*                    content: <ErrorNotification title='Unable to create application' e={e} />,*/}
-                            {/*                    type: NotificationType.Error*/}
-                            {/*                });*/}
-                            {/*            }*/}
-                            {/*        }}*/}
-                            {/*        app={appInput}*/}
-                            {/*        onAppChanged={app => ctx.navigation.goto('.', {new: JSON.stringify(app)}, {replace: true})}*/}
-                            {/*    />*/}
-                            {/*)}*/}
+                        >
+                            Submit Workflow
+                            <YamlEditor
+                                minHeight={800}
+                                initialEditMode={true}
+                                onCancel={() => alert('Cancel')}
+                                onSave={rawWf => {
+                                    // TODO(simon): Remove hardwired 'argo' namespace
+                                    services.workflows.create(JSON.parse(rawWf), 'argo').then()
+                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                }}
+                            />
                         </SlidingPanel>
                     </Page>
                 )}

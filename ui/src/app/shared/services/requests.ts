@@ -60,10 +60,6 @@ export default {
         return auth(superagent.del(apiUrl(url)));
     },
 
-    delete(url: string) {
-        return superagent.del(apiUrl(url));
-    },
-
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
             const eventSource = new EventSource(apiUrl(url));

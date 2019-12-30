@@ -81,6 +81,17 @@ export class WorkflowsService {
         return requests.delete(`/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
+    public create(workflow: models.Workflow, namespace: string): Promise<models.Workflow> {
+        return requests
+            .post(`/workflows/${namespace}`)
+            .send({
+                namespace: namespace,
+                workflow: workflow
+            })
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {
         return requests.loadEventSource(`/logs/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${container}`).map(line => {
             return line ? line + '\n' : line;
