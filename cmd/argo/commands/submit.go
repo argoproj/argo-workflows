@@ -1,17 +1,21 @@
 package commands
 
 import (
+	"context"
 	"log"
 	"os"
 	"strconv"
 
-	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
-
 	apimachineryversion "k8s.io/apimachinery/pkg/version"
 
+	"github.com/argoproj/pkg/errors"
+	argoJson "github.com/argoproj/pkg/json"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	apiwf "github.com/argoproj/argo/cmd/server/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -66,7 +70,6 @@ func NewSubmitCommand() *cobra.Command {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	return command
 }
 
@@ -78,6 +81,12 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 		cliOpts = &cliSubmitOpts{}
 	}
 	defaultWFClient := InitWorkflowClient()
+	var defaultNS string
+
+	defaultNS, _, err := client.Config.Namespace()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fileContents, err := util.ReadManifest(filePaths...)
 	if err != nil {
@@ -146,27 +155,48 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	}
 
 	var workflowNames []string
+	var created *wfv1.Workflow
+	var apiGRPCClient apiwf.WorkflowServiceClient
+	var ctx context.Context
+	if client.ArgoServer != "" {
+		conn := client.GetClientConn()
+		defer conn.Close()
+		apiGRPCClient, ctx = GetApiServerGRPCClient(conn)
+		errors.CheckError(err)
+	}
 
 	for _, wf := range workflows {
-		wf.Spec.Priority = cliOpts.priority
-		wfClient := defaultWFClient
-		if wf.Namespace != "" {
-			wfClient = InitWorkflowClient(wf.Namespace)
-		} else {
+		if wf.Namespace == "" {
 			// This is here to avoid passing an empty namespace when using --server-dry-run
-			namespace, _, err := client.Config.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-			wf.Namespace = namespace
+			wf.Namespace = defaultNS
 		}
-		created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
+		if client.ArgoServer != "" {
+			err = util.ApplySubmitOpts(&wf, submitOpts)
+			errors.CheckError(err)
+			created, err = apiUtil.SubmitWorkflowToAPIServer(apiGRPCClient, ctx, &wf, submitOpts.ServerDryRun)
+			errors.CheckError(err)
+		} else {
+			wf.Spec.Priority = cliOpts.priority
+			wfClient := defaultWFClient
+			if wf.Namespace != defaultNS {
+				wfClient = InitWorkflowClient(wf.Namespace)
+			} else {
+				// This is here to avoid passing an empty namespace when using --server-dry-run
+				namespace, _, err := client.Config.Namespace()
+				if err != nil {
+					log.Fatal(err)
+				}
+				wf.Namespace = namespace
+			}
+			created, err = util.SubmitWorkflow(wfClient, wfClientset, namespace, &wf, submitOpts)
+		}
 		if err != nil {
 			log.Fatalf("Failed to submit workflow: %v", err)
 		}
 		printWorkflow(created, cliOpts.output, DefaultStatus)
 		workflowNames = append(workflowNames, created.Name)
 	}
+
 	waitOrWatch(workflowNames, *cliOpts)
 }
 
@@ -191,11 +221,11 @@ func checkServerVersionForDryRun(serverVersion *apimachineryversion.Info) (bool,
 // unmarshalWorkflows unmarshals the input bytes as either json or yaml
 func unmarshalWorkflows(wfBytes []byte, strict bool) []wfv1.Workflow {
 	var wf wfv1.Workflow
-	var jsonOpts []json.JSONOpt
+	var jsonOpts []argoJson.JSONOpt
 	if strict {
-		jsonOpts = append(jsonOpts, json.DisallowUnknownFields)
+		jsonOpts = append(jsonOpts, argoJson.DisallowUnknownFields)
 	}
-	err := json.Unmarshal(wfBytes, &wf, jsonOpts...)
+	err := argoJson.Unmarshal(wfBytes, &wf, jsonOpts...)
 	if err == nil {
 		return []wfv1.Workflow{wf}
 	}

@@ -9,6 +9,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	apiUtil "github.com/argoproj/argo/util/api"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -30,14 +33,33 @@ func NewResubmitCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+			var created *v1alpha1.Workflow
 
-			wfClient := InitWorkflowClient()
-			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
-			errors.CheckError(err)
-			newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
-			errors.CheckError(err)
-			created, err := util.SubmitWorkflow(wfClient, wfClientset, namespace, newWF, nil)
-			errors.CheckError(err)
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
+				defer conn.Close()
+				apiGRPCClient, ctx := GetApiServerGRPCClient(conn)
+				errors.CheckError(err)
+				wfReq := workflow.WorkflowGetRequest{
+					Namespace:    namespace,
+					WorkflowName: args[0],
+				}
+				wf, err := apiGRPCClient.GetWorkflow(ctx, &wfReq)
+				errors.CheckError(err)
+				newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
+				errors.CheckError(err)
+				newWF.Namespace = namespace
+				created, err = apiUtil.SubmitWorkflowToAPIServer(apiGRPCClient, ctx, newWF, false)
+				errors.CheckError(err)
+			} else {
+				wfClient := InitWorkflowClient()
+				wf, err := wfClient.Get(args[0], metav1.GetOptions{})
+				errors.CheckError(err)
+				newWF, err := util.FormulateResubmitWorkflow(wf, memoized)
+				errors.CheckError(err)
+				created, err = util.SubmitWorkflow(wfClient, wfClientset, namespace, newWF, &util.SubmitOpts{})
+				errors.CheckError(err)
+			}
 			printWorkflow(created, cliSubmitOpts.output, DefaultStatus)
 			waitOrWatch([]string{created.Name}, cliSubmitOpts)
 		},

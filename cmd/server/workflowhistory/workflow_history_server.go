@@ -116,7 +116,7 @@ func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	wf, err = util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, wf.Namespace, wf, nil)
+	wf, err = util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, wf.Namespace, wf, &util.SubmitOpts{})
 	if err != nil {
 		return nil, err
 	}
