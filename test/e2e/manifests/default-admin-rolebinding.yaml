@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: admin
 subjects:
-- kind: ServiceAccount
-  name: default
-  namespace: argo
+  - kind: ServiceAccount
+    name: default
+    namespace: argo

@@ -22,7 +22,7 @@ func NewRetryCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			kubeClient := initKubeClient()
+			kubeClient := InitKubeClient()
 			wfClient := InitWorkflowClient()
 			wf, err := wfClient.Get(args[0], metav1.GetOptions{})
 			if err != nil {

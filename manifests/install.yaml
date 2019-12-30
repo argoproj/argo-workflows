@@ -4,6 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   name: workflows.argoproj.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    format: date-time
+    name: Age
+    type: date
   group: argoproj.io
   names:
     kind: Workflow
@@ -31,11 +41,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: argo
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argo-ui
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -179,37 +184,6 @@ rules:
   - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argo-ui-cluster-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - pods/exec
-  - pods/log
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-- apiGroups:
-  - argoproj.io
-  resources:
-  - workflows
-  - workflowtemplates
-  verbs:
-  - get
-  - list
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -234,19 +208,6 @@ subjects:
   name: argo
   namespace: argo
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argo-ui-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: argo-ui-cluster-role
-subjects:
-- kind: ServiceAccount
-  name: argo-ui
-  namespace: argo
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -255,43 +216,38 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: argo-ui
+  labels:
+    app: argo-server
+  name: argo-server
 spec:
   ports:
-  - port: 80
-    targetPort: 8001
+  - port: 2746
+    protocol: TCP
+    targetPort: 2746
   selector:
-    app: argo-ui
+    app: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: argo-ui
+  name: argo-server
 spec:
+  replicas: 0
   selector:
     matchLabels:
-      app: argo-ui
+      app: argo-server
   template:
     metadata:
       labels:
-        app: argo-ui
+        app: argo-server
     spec:
       containers:
-      - env:
-        - name: ARGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: IN_CLUSTER
-          value: "true"
-        - name: ENABLE_WEB_CONSOLE
-          value: "false"
-        - name: BASE_HREF
-          value: /
-        image: argoproj/argoui:latest
-        name: argo-ui
-      serviceAccountName: argo-ui
+      - args:
+        - --enable-client-auth
+        image: argoproj/argo-server:latest
+        name: argo-server
+        ports:
+        - containerPort: 2746
 ---
 apiVersion: apps/v1
 kind: Deployment

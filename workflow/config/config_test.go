@@ -1,9 +1,10 @@
 package config
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/pointer"
-	"testing"
 )
 
 func TestArtifactRepository_IsArchiveLogs(t *testing.T) {

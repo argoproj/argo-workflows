@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -17,9 +18,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/util"
 )
 
@@ -44,12 +48,27 @@ func NewListCommand() *cobra.Command {
 		Short: "list workflows",
 		Run: func(cmd *cobra.Command, args []string) {
 			var wfClient v1alpha1.WorkflowInterface
+			var wfApiClient workflow.WorkflowServiceClient
+			var ctx context.Context
+			var ns string
 
-			if listArgs.allNamespaces {
-				wfClient = InitWorkflowClient(apiv1.NamespaceAll)
+			if client.ArgoServer == "" {
+				if listArgs.allNamespaces {
+					wfClient = InitWorkflowClient(apiv1.NamespaceAll)
+				} else {
+					wfClient = InitWorkflowClient()
+				}
 			} else {
-				wfClient = InitWorkflowClient()
+				conn := client.GetClientConn()
+				defer conn.Close()
+				if listArgs.allNamespaces {
+					ns = apiv1.NamespaceAll
+				} else {
+					ns, _, _ = client.Config.Namespace()
+				}
+				wfApiClient, ctx = GetApiServerGRPCClient(conn)
 			}
+
 			listOpts := metav1.ListOptions{}
 			labelSelector := labels.NewSelector()
 			if len(listArgs.status) != 0 {
@@ -70,9 +89,23 @@ func NewListCommand() *cobra.Command {
 			if listArgs.chunkSize != 0 {
 				listOpts.Limit = listArgs.chunkSize
 			}
-			wfList, err := wfClient.List(listOpts)
-			if err != nil {
-				log.Fatal(err)
+			var wfList *wfv1.WorkflowList
+
+			var err error
+			if client.ArgoServer == "" {
+				wfList, err = wfClient.List(listOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				wfReq := workflow.WorkflowListRequest{
+					Namespace:   ns,
+					ListOptions: &listOpts,
+				}
+				wfList, err = wfApiClient.ListWorkflows(ctx, &wfReq)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			tmpWorkFlows := wfList.Items
@@ -175,7 +208,7 @@ func countPendingRunningCompleted(wf *wfv1.Workflow) (int, int, int) {
 	pending := 0
 	running := 0
 	completed := 0
-	err := util.DecompressWorkflow(wf)
+	err := packer.DecompressWorkflow(wf)
 	if err != nil {
 		log.Fatal(err)
 	}

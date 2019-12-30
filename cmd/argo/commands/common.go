@@ -1,26 +1,29 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	apiServer "github.com/argoproj/argo/cmd/server/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/templateresolution"
 )
 
 // Global variables
 var (
 	restConfig       *rest.Config
-	clientConfig     clientcmd.ClientConfig
 	clientset        *kubernetes.Clientset
 	wfClientset      *versioned.Clientset
 	wfClient         v1alpha1.WorkflowInterface
@@ -29,6 +32,8 @@ var (
 	noColor          bool
 	namespace        string
 )
+
+const ARGO_SERVER_ENV = "ARGO_SERVER"
 
 func init() {
 	cobra.OnInitialize(initializeSession)
@@ -64,12 +69,12 @@ func initializeSession() {
 	}
 }
 
-func initKubeClient() *kubernetes.Clientset {
+func InitKubeClient() *kubernetes.Clientset {
 	if clientset != nil {
 		return clientset
 	}
 	var err error
-	restConfig, err = clientConfig.ClientConfig()
+	restConfig, err = client.Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,12 +92,12 @@ func InitWorkflowClient(ns ...string) v1alpha1.WorkflowInterface {
 	if wfClient != nil && (len(ns) == 0 || ns[0] == namespace) {
 		return wfClient
 	}
-	initKubeClient()
+	InitKubeClient()
 	var err error
 	if len(ns) > 0 {
 		namespace = ns[0]
 	} else {
-		namespace, _, err = clientConfig.Namespace()
+		namespace, _, err = client.Config.Namespace()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -135,3 +140,17 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 }
 
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
+
+func GetApiServerGRPCClient(conn *grpc.ClientConn) (apiServer.WorkflowServiceClient, context.Context) {
+	return apiServer.NewWorkflowServiceClient(conn), client.ContextWithAuthorization()
+}
+
+func GetServerConn(server string) (*grpc.ClientConn, error) {
+	if server == "" {
+		server = os.Getenv(ARGO_SERVER_ENV)
+	}
+	if server == "" {
+		return nil, nil
+	}
+	return grpc.Dial(server, grpc.WithInsecure())
+}

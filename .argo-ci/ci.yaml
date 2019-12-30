@@ -21,14 +21,14 @@ spec:
           - name: cmd
             value: "{{item}}"
         withItems:
-        - make controller-image executor-image
-        - make release-clis
+        - make controller-image executor-image STATIC=false
+        - make release-clis STATIC=false
       - name: test
         template: ci-builder
         arguments:
           parameters:
           - name: cmd
-            value: dep ensure && make lint test verify-codegen
+            value: dep ensure && make lint test verify-codegen STATIC=false
 
   - name: ci-builder
     inputs:

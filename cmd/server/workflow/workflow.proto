@@ -1,0 +1,137 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/cmd/server/workflow";
+
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
+import "k8s.io/api/core/v1/generated.proto";
+
+// Workflow Service
+//
+// Workflow Service API performs CRUD actions against application resources
+package workflow;
+
+
+message WorkflowCreateRequest {
+    string namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 2;
+    string instanceID = 3;
+    bool serverDryRun = 4;
+    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
+}
+
+message WorkflowGetRequest {
+    string workflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+
+message WorkflowListRequest {
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+
+message WorkflowUpdateRequest {
+    string workflowName = 1;
+    string namespace = 2;
+    bool memoized = 3;
+}
+
+message WorkflowLogRequest {
+    string workflowName = 1;
+    string namespace = 2;
+    string podName = 3;
+    string container = 4;
+    k8s.io.api.core.v1.PodLogOptions logOptions = 5;
+}
+
+
+message WorkflowDeleteRequest {
+    string workflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
+}
+message WorkflowDeleteResponse {
+    string workflowName = 1;
+    string status = 2;
+}
+
+message LogEntry {
+    string content = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.Time timeStamp = 2;
+}
+
+service WorkflowService {
+    rpc CreateWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			post: "/api/v1/workflows/{namespace}"
+			body: "*"
+		};
+    }
+
+    rpc GetWorkflow (WorkflowGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}";
+    }
+
+    rpc ListWorkflows (WorkflowListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
+        option (google.api.http).get = "/api/v1/workflows/{namespace}";
+    }
+
+    rpc DeleteWorkflow (WorkflowDeleteRequest) returns (WorkflowDeleteResponse) {
+        option (google.api.http).delete = "/api/v1/workflows/{namespace}/{workflowName}";
+    }
+
+    rpc RetryWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{workflowName}/retry"
+			body: "*"
+		};
+    }
+
+    rpc ResubmitWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{workflowName}/resubmit"
+			body: "*"
+		};
+    }
+
+    rpc ResumeWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{workflowName}/resume"
+			body: "*"
+		};
+    }
+
+    rpc SuspendWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{workflowName}/suspend"
+			body: "*"
+		};
+    }
+
+    rpc TerminateWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/workflows/{namespace}/{workflowName}/terminate"
+			body: "*"
+		};
+    }
+
+    rpc LintWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			post: "/api/v1/workflows/{namespace}/lint"
+			body: "*"
+		};
+    }
+
+    // PodLogs returns stream of log entries for the specified pod. Pod
+    rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
+        option (google.api.http).get = "/api/v1/workflow/{namespace}/{workflowName}/{podName}/log";
+    }
+
+    // Watch returns stream of application change events.
+    rpc WatchWorkflow (WorkflowGetRequest) returns (stream github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http).get = "/api/v1/stream/workflows/{namespace}/{workflowName}/watch";
+    }
+}

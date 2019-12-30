@@ -24,7 +24,7 @@ const config = {
         rules: [
             {
                 test: /\.tsx?$/,
-                loaders: [ ...( isProd ? [] : ['react-hot-loader/webpack']), `ts-loader?allowTsInNodeModules=true&configFile=${path.resolve('./src/app/tsconfig.json')}`]
+                loaders: [...(isProd ? [] : ['react-hot-loader/webpack']), `ts-loader?allowTsInNodeModules=true&configFile=${path.resolve('./src/app/tsconfig.json')}`]
             }, {
                 enforce: 'pre',
                 test: /\.js$/,
@@ -45,10 +45,10 @@ const config = {
         new webpack.DefinePlugin({
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
             SYSTEM_INFO: JSON.stringify({
-                version: process.env.ARGO_VERSION || 'latest',
+                version: process.env.VERSION || 'latest',
             }),
         }),
-        new HtmlWebpackPlugin({ template: 'src/app/index.html' }),
+        new HtmlWebpackPlugin({template: 'src/app/index.html'}),
         new CopyWebpackPlugin([{
             from: 'node_modules/argo-ui/src/assets', to: 'assets'
         }, {
@@ -59,7 +59,7 @@ const config = {
         historyApiFallback: true,
         proxy: {
             '/api': {
-                'target': process.env.ARGO_API_URL || 'http://localhost:8081',
+                'target': isProd ? '' : 'http://localhost:2746',
                 'secure': false,
             }
         }

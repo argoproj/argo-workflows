@@ -1,9 +1,10 @@
 package config
 
 import (
+	apiv1 "k8s.io/api/core/v1"
+
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/metrics"
-	apiv1 "k8s.io/api/core/v1"
 )
 
 // WorkflowControllerConfig contain the configuration settings for the workflow controller
@@ -96,10 +97,12 @@ func (a *ArtifactRepository) IsArchiveLogs() bool {
 }
 
 type PersistConfig struct {
-	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
-	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
-	PostgreSQL        *PostgreSQLConfig `json:"postgresql,omitempty"`
-	MySQL             *MySQLConfig      `json:"mysql,omitempty"`
+	NodeStatusOffload bool `json:"nodeStatusOffLoad,omitempty"`
+	// Record workflow history to persistence.
+	History        bool              `json:"history,omitempty"`
+	ConnectionPool *ConnectionPool   `json:"connectionPool"`
+	PostgreSQL     *PostgreSQLConfig `json:"postgresql,omitempty"`
+	MySQL          *MySQLConfig      `json:"mysql,omitempty"`
 }
 type ConnectionPool struct {
 	MaxIdleConns int `json:"maxIdleConns"`

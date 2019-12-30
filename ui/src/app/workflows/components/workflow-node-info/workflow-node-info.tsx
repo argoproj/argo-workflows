@@ -67,7 +67,7 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {template && (template.container || template.script) && (
+                {template && (template.container || template.script) && props.onShowContainerLogs && (
                     <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
                         LOGS
                     </button>
@@ -124,9 +124,11 @@ export const WorkflowNodeContainer = (props: {
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
-                    LOGS
-                </button>
+                {props.onShowContainerLogs && (
+                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
+                        LOGS
+                    </button>
+                )}
             </div>
         </div>
     );

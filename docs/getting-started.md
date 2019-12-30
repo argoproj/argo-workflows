@@ -190,6 +190,8 @@ argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/arti
 
 ## 8. Access the Argo UI
 
+> v2.4 and before
+
 By default, the Argo UI service is not exposed with an external IP. To access the UI, use one of the
 following:
 
@@ -223,4 +225,14 @@ NOTE: On Minikube, you won't get an external IP after updating the service -- it
 `pending`. Run the following command to determine the Argo UI URL:
 ```
 minikube service -n argo --url argo-ui
+```
+
+### 9. Access The Argo Server
+
+The Argo Server provide API access to Argo Workflows. This is scaled to zero by default.  
+
+```
+kubectl -n argo scale deployment/argo-server --replicas 1
+kubectl -n argo port-forward svc/argo-server 2746:2746
+curl http://127.0.0.1:2746/api/v1/workflows/argo
 ```

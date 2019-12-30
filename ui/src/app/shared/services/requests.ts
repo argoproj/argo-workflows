@@ -1,7 +1,9 @@
 import * as _superagent from 'superagent';
+
 const superagentPromise = require('superagent-promise');
 import {Observable, Observer} from 'rxjs';
 
+import {SuperAgentRequest} from 'superagent';
 import {apiUrl} from '../base';
 
 type Callback = (data: any) => void;
@@ -11,7 +13,9 @@ declare class EventSource {
     public onmessage: Callback;
     public onerror: Callback;
     public readyState: number;
+
     constructor(url: string);
+
     public close(): void;
 }
 
@@ -22,23 +26,38 @@ enum ReadyState {
     DONE = 4
 }
 
+const auth = (req: SuperAgentRequest) => {
+    const token = localStorage.getItem('token');
+    return (token !== null ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
+};
+
+const handle = (err: any) => {
+    if (err.status === 401) {
+        document.location.href = '/login';
+    }
+};
+
 const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, global.Promise);
 
 export default {
     get(url: string) {
-        return superagent.get(apiUrl(url));
+        return auth(superagent.get(apiUrl(url)));
     },
 
     post(url: string) {
-        return superagent.post(apiUrl(url));
+        return auth(superagent.post(apiUrl(url)));
     },
 
     put(url: string) {
-        return superagent.put(apiUrl(url));
+        return auth(superagent.put(apiUrl(url)));
     },
 
     patch(url: string) {
-        return superagent.patch(apiUrl(url));
+        return auth(superagent.patch(apiUrl(url)));
+    },
+
+    delete(url: string) {
+        return auth(superagent.del(apiUrl(url)));
     },
 
     delete(url: string) {

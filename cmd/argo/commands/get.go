@@ -8,12 +8,15 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/pkg/humanize"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 const onExitSuffix = "onExit"
@@ -36,17 +39,31 @@ func NewGetCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			wfClient := InitWorkflowClient()
-			for _, arg := range args {
-				wf, err := wfClient.Get(arg, metav1.GetOptions{})
-				if err != nil {
-					log.Fatal(err)
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
+				defer conn.Close()
+				ns, _, _ := client.Config.Namespace()
+				client, ctx := GetApiServerGRPCClient(conn)
+				for _, arg := range args {
+					wfReq := workflow.WorkflowGetRequest{
+						WorkflowName: arg,
+						Namespace:    ns,
+					}
+					wf, err := client.GetWorkflow(ctx, &wfReq)
+					if err != nil {
+						log.Fatal(err)
+					}
+					outputWorkflow(wf, getArgs)
 				}
-				err = util.DecompressWorkflow(wf)
-				if err != nil {
-					log.Fatal(err)
+			} else {
+				wfClient := InitWorkflowClient()
+				for _, arg := range args {
+					wf, err := wfClient.Get(arg, metav1.GetOptions{})
+					if err != nil {
+						log.Fatal(err)
+					}
+					outputWorkflow(wf, getArgs)
 				}
-				printWorkflow(wf, getArgs.output, getArgs.status)
 			}
 		},
 	}
@@ -55,6 +72,14 @@ func NewGetCommand() *cobra.Command {
 	command.Flags().BoolVar(&noColor, "no-color", false, "Disable colorized output")
 	command.Flags().StringVar(&getArgs.status, "status", "", "Filter by status (Pending, Running, Succeeded, Skipped, Failed, Error)")
 	return command
+}
+
+func outputWorkflow(wf *wfv1.Workflow, getArgs getFlags) {
+	err := packer.DecompressWorkflow(wf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	printWorkflow(wf, getArgs.output, getArgs.status)
 }
 
 func printWorkflow(wf *wfv1.Workflow, output, status string) {

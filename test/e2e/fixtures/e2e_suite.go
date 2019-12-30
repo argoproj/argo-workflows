@@ -3,7 +3,6 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
 	"time"
@@ -15,15 +14,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/yaml"
+	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 var kubeConfig = os.Getenv("KUBECONFIG")
 
-const namespace = "argo"
-const label = "argo-e2e"
+const Namespace = "argo"
 
 func init() {
 	if kubeConfig == "" {
@@ -34,8 +35,8 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
-	client     v1alpha1.WorkflowInterface
-	kubeClient kubernetes.Interface
+	wfClient   v1alpha1.WorkflowInterface
+	KubeClient kubernetes.Interface
 }
 
 func (s *E2ESuite) SetupSuite() {
@@ -50,26 +51,32 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	s.kubeClient, err = kubernetes.NewForConfig(config)
+	s.KubeClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
-	s.client = commands.InitWorkflowClient()
+	s.wfClient = commands.InitWorkflowClient()
 	// delete all workflows
-	list, err := s.client.List(metav1.ListOptions{LabelSelector: label})
+	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: "argo-e2e"})
 	if err != nil {
 		panic(err)
 	}
 	for _, wf := range list.Items {
 		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 		logCtx.Infof("Deleting workflow")
-		err = s.client.Delete(wf.Name, nil)
+		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
 		}
 		// wait for workflow pods to be deleted
 		for {
-			pods, err := s.kubeClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name})
+			// it seems "argo delete" can leave pods behind
+			options := metav1.ListOptions{LabelSelector: "workflows.argoproj.io/workflow=" + wf.Name}
+			err := s.KubeClient.CoreV1().Pods(Namespace).DeleteCollection(nil, options)
+			if err != nil {
+				panic(err)
+			}
+			pods, err := s.KubeClient.CoreV1().Pods(Namespace).List(options)
 			if err != nil {
 				panic(err)
 			}
@@ -80,6 +87,20 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			time.Sleep(1 * time.Second)
 		}
 	}
+	// create database collection
+	db, err := postgresql.Open(postgresql.ConnectionURL{User: "postgres", Password: "password", Host: "localhost"})
+	if err != nil {
+		panic(err)
+	}
+	// delete everything from offload
+	_, err = db.DeleteFrom("argo_workflows").Exec()
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.DeleteFrom("argo_workflow_history").Exec()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {
@@ -89,7 +110,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 }
 
 func (s *E2ESuite) printDiagnostics() {
-	wfs, err := s.client.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace})
+	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -98,12 +119,16 @@ func (s *E2ESuite) printDiagnostics() {
 	}
 }
 
-func (s *E2ESuite) printWorkflowDiagnostics(wf alpha1.Workflow) {
+func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
 	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
 	logCtx.Info("Workflow status:")
 	printJSON(wf.Status)
 	// print logs
-	workflow, err := s.client.Get(wf.Name, metav1.GetOptions{})
+	workflow, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	err = packer.DecompressWorkflow(workflow)
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -129,7 +154,7 @@ func printJSON(obj interface{}) {
 
 func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podName string) {
 	logCtx = logCtx.WithFields(log.Fields{"pod": podName})
-	pod, err := s.kubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
+	pod, err := s.KubeClient.CoreV1().Pods(namespace).Get(podName, metav1.GetOptions{})
 	if err != nil {
 		logCtx.Error("Cannot get pod")
 		return
@@ -145,7 +170,7 @@ func (s *E2ESuite) printPodDiagnostics(logCtx *log.Entry, namespace string, podN
 }
 
 func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container string) {
-	stream, err := s.kubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
+	stream, err := s.KubeClient.CoreV1().Pods(namespace).GetLogs(pod, &v1.PodLogOptions{Container: container}).Stream()
 	if err != nil {
 		logCtx.WithField("err", err).Error("Cannot get logs")
 		return
@@ -163,6 +188,6 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:      s.T(),
-		client: s.client,
+		client: s.wfClient,
 	}
 }

@@ -12,6 +12,34 @@ data:
         secretKeySecret:
           name: my-minio-cred
           key: secretkey
+    persistence:
+      connectionPool:
+        maxIdleConns: 100
+        maxOpenConns: 0
+      nodeStatusOffLoad: true
+      history: true
+      postgresql:
+        host: postgres
+        port: 5432
+        database: postgres
+        tableName: argo_workflows
+        userNameSecret:
+          name: argo-postgres-config
+          key: username
+        passwordSecret:
+          name: argo-postgres-config
+          key: password
+      #mysql:
+      #  host: mysql
+      #  port: 3306
+      #  database: argo
+      #  tableName: argo_workflows
+      #  userNameSecret:
+      #    name: argo-mysql-config
+      #    key: username
+      #  passwordSecret:
+      #    name: argo-mysql-config
+      #    key: password
 kind: ConfigMap
 metadata:
   name: workflow-controller-configmap

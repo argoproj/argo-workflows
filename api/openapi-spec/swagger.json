@@ -1203,6 +1203,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
@@ -1672,6 +1673,10 @@
           "additionalProperties": {
             "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.NodeStatus"
           }
+        },
+        "offloadNodeStatus": {
+          "description": "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.",
+          "type": "boolean"
         },
         "outputs": {
           "description": "Outputs captures output values and artifact locations produced by the workflow via global outputs",

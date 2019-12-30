@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
@@ -22,6 +23,8 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   name: continue-on-fail
+  labels:
+    argo-e2e: true
 spec:
   entrypoint: workflow-ignore
   parallelism: 2
@@ -57,7 +60,7 @@ spec:
 		SubmitWorkflow().
 		WaitForWorkflow(30 * time.Second).
 		Then().
-		Expect(func(t *testing.T, status *wfv1.WorkflowStatus) {
+		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, status.Phase)
 			assert.Len(t, status.Nodes, 7)
 			nodeStatus := status.Nodes.FindByDisplayName("B")
@@ -66,6 +69,22 @@ spec:
 				assert.Len(t, nodeStatus.Children, 1)
 				assert.Len(t, nodeStatus.OutboundNodes, 1)
 			}
+		})
+}
+
+func (s *FunctionalSuite) TestFastFailOnPodTermination() {
+	s.Given().
+		Workflow("@expectedfailures/pod-termination-failure.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(120 * time.Second).
+		Then().
+		Expect(func(t *testing.T, _ *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			assert.Equal(t, wfv1.NodeFailed, status.Phase)
+			assert.Len(t, status.Nodes, 4)
+			nodeStatus := status.Nodes.FindByDisplayName("sleep")
+			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
+			assert.Equal(t, "pod termination", nodeStatus.Message)
 		})
 }
 

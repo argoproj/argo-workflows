@@ -17,7 +17,7 @@ export class WorkflowsService {
             .get(`/workflows/${namespace}`)
             .query({phase: phases})
             .then(res => res.body as models.WorkflowList)
-            .then(list => list.items.map(this.populateDefaultFields));
+            .then(list => (list.items || []).map(this.populateDefaultFields));
     }
 
     public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {

@@ -8,6 +8,8 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
+# Do we have yarn installed locally? If so, use it. It is much faster.
+YARN                   = $(shell which yarn)
 
 # docker image publishing options
 DOCKER_PUSH           ?= false
@@ -16,8 +18,8 @@ IMAGE_TAG             ?= latest
 STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
-
-GOLANGCI_EXISTS := $(shell command -v golangci-lint 2> /dev/null)
+# Build static files, disable if you don't need HTML files, e.g. when on CI.
+STATIC                ?= true
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
@@ -46,11 +48,33 @@ endif
 
 # Build the project
 .PHONY: all
-all: cli controller-image executor-image
+all: cli controller-image executor-image argo-server
 
-.PHONY: builder-image
+.PHONY:builder-image
 builder-image:
 	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
+
+ui/node_modules: ui/package.json ui/yarn.lock
+ifeq ($(STATIC),true)
+	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+else
+	mkdir -p ui/node_modules
+endif
+	touch ui/node_modules
+
+ui/dist/app: ui/node_modules ui/src
+ifeq ($(STATIC),true)
+	yarn --cwd ui build
+else
+	mkdir -p ui/dist/app
+endif
+	touch ui/dist/app
+
+$(GOPATH)/bin/staticfiles:
+	go get bou.ke/staticfiles
+
+cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
+	staticfiles -o cmd/server/static/files.go ui/dist/app
 
 .PHONY: cli
 cli:
@@ -99,13 +123,54 @@ else
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
+.PHONY: argo-server
+argo-server: cmd/server/static/files.go
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server ./cmd/server
+
+.PHONY: argo-server-image
+argo-server-image: cmd/server/static/files.go
+ifeq ($(DEV_IMAGE), true)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argo-server ./cmd/server
+	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server-dev .
+	rm -f argo-server
+else
+	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) --target argo-server .
+endif
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) ; fi
+
+.PHONY: argo-server-linux-amd64
+argo-server-linux-amd64:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
+
+.PHONY: argo-server-linux-ppc64le
+argo-server-linux-ppc64le:
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
+
+.PHONY: argo-server-linux-s390x
+argo-server-linux-s390x:
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
+
+.PHONY: argo-server-linux
+argo-server-linux: argo-server-linux-amd64 argo-server-linux-ppc64le argo-server-linux-s390x
+
+.PHONY: argo-server-darwin
+argo-server-darwin:
+	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
+
+.PHONY: argo-server-windows
+argo-server-windows:
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
+
 .PHONY: executor
 executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
-.PHONY: executor-base-image
-executor-base-image:
+# To speed up local dev, we only create this when a marker file does not exist.
+executor-base-image: dist/executor-base-image
+dist/executor-base-image:
 	docker build -t argoexec-base --target argoexec-base .
+	mkdir -p dist
+	touch dist/executor-base-image
 
 # The DEV_IMAGE versions of controller-image and executor-image are speed optimized development
 # builds of workflow-controller and argoexec images respectively. It allows for faster image builds
@@ -122,24 +187,18 @@ executor-image: executor-base-image
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
-executor-image:
+executor-image: executor-base-image
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
 
 .PHONY: lint
-lint:
-	go fmt ./...
-ifdef GOLANGCI_EXISTS
+lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
-else
-	# Remove gometalinter after a migration time.
-	gometalinter --config gometalinter.json ./...
-endif
 
 .PHONY: test
-test:
-	go test -covermode=count -coverprofile=coverage.out ./...
+test: cmd/server/static/files.go
+	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v e2e`
 
 .PHONY: cover
 cover:
@@ -164,34 +223,58 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
-.PHONY: start-e2e
-start-e2e:
+.PHONY: start
+start:
 	kubectl create ns argo || true
 	# Install the standard Argo.
 	kubectl -n argo apply --wait --force -f manifests/install.yaml
-	# Ensure that we use the image we're about to create.
-	kubectl -n argo scale deployment/workflow-controller --replicas 0
-	# Change to use a "e2e" tag.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}]'
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	# Scale down in preparation for re-configuration.
+	make down
+	# Change to use a "dev" tag and enable debug logging.
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
+	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
 	# Install MinIO and set-up config-map.
 	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
-	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
+	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
-	kubectl -n argo scale deployment/workflow-controller --replicas 1
-	# Wait for pods to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
-	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio --timeout=1m
+	make up
+	# Make the CLI
+	make cli
+	# Wait for apps to be ready.
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
-	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
-	docker pull docker/whalesay:latest
+	# Update the config.
+	./hack/update-e2e-kubeconfig.sh
 
-.PHONY: logs-e2e
-logs-e2e:
-	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl -n argo logs -f
+.PHONY: down
+down:
+	kubectl -n argo scale deployment/argo-server --replicas 0
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
+
+.PHONY: up
+up:
+	kubectl -n argo scale deployment/workflow-controller --replicas 1
+	kubectl -n argo scale deployment/argo-server --replicas 1
+
+.PHONY: pf
+pf:
+	./hack/port-forward.sh
+
+.PHONY: logs
+logs:
+	kubectl -n argo logs -f -l app --max-log-requests 10
+
+.PHONY: postgres-cli
+postgres-cli:
+	kubectl exec -ti `kubectl get pod -l app=postgres -o name|cut -c 5-` -- psql -U postgres
+
+.PHONY: mysql-cli
+mysql-cli:
+	kubectl exec -ti `kubectl get pod -l app=mysql -o name|cut -c 5-` -- mysql -u mysql -ppassword argo
 
 .PHONY: test-e2e
 test-e2e:
@@ -199,7 +282,7 @@ test-e2e:
 
 .PHONY: clean
 clean:
-	-rm -rf ${CURRENT_DIR}/dist
+	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
 .PHONY: precheckin
 precheckin: test lint verify-codegen

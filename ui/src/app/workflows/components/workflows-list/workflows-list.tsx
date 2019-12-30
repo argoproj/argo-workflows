@@ -4,6 +4,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 
 import {Autocomplete, DataLoader, MockupList, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
+import {DataLoader, MockupList, Page, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {AppContext, Consumer} from '../../../shared/context';
@@ -154,7 +155,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                                 {workflows.map(workflow => (
                                                     <div key={workflow.metadata.name}>
                                                         <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                                            <WorkflowListItem workflow={workflow} />
+                                                            <WorkflowListItem workflow={workflow} history={false} />
                                                         </Link>
                                                     </div>
                                                 ))}

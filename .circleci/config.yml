@@ -8,14 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
-            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v1-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+            - vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+            - vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
-          command: dep ensure -v
+          command: dep ensure -v -vendor-only
       - save_cache:
           name: Save vendor cache
-          key: vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
@@ -31,16 +31,19 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           # https://circleci.com/docs/2.0/language-go/
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
+          when: always
   restore_go_cache:
     steps:
       - restore_cache:
           name: Restore Golang cache
           keys:
+            - go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v2-master-{{ .Environment.CIRCLE_JOB }}
             - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v1-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:
@@ -64,7 +67,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test 2>&1 | tee test-results/test.out
+            make test STATIC=false 2>&1 | tee test-results/test.out
       - run:
           name: Verify code generation
           command: make verify-codegen
@@ -92,6 +95,7 @@ jobs:
             docker pull golang:1.11.5
             docker pull minio/minio
             docker pull docker/whalesay:latest
+            docker pull bitnami/kubectl
           background: true
       - restore_go_cache
       - install_golang
@@ -102,13 +106,13 @@ jobs:
           name: Create KUBECONFIG
           command: |
             mkdir -p ~/.kube
-            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start-e2e
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+      - run: KUBECONFIG=~/.kube/config make start STATIC=false
       - run:
-          name: Follow controller logs, to help diagnose failures
+          name: Follow logs, to help diagnose failures
           command: |
             sleep 10
-            make logs-e2e
+            make logs
           background: true
       - run:
           name: Watch Docker events, to help diagnose failures
@@ -117,6 +121,10 @@ jobs:
       - run:
           name: Watch Kubernetes events, to help diagnose failures
           command: kubectl -n argo get events --watch
+          background: true
+      - run:
+          name: Establish port forward
+          command: make pf
           background: true
       - run:
           name: Run tests
@@ -152,7 +160,7 @@ jobs:
       # - run: ./node_modules/.bin/codecov -p ..
       - run:
           name: Build
-          command: NODE_ENV='production' yarn build
+          command: yarn build
       - run:
           name: Lint
           command: yarn lint

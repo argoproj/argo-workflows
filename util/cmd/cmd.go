@@ -8,9 +8,10 @@ import (
 	"os/user"
 	"strings"
 
-	"github.com/argoproj/argo"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo"
 )
 
 // NewVersionCmd returns a new `version` command to be used as a sub-command to root

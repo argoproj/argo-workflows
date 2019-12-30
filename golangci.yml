@@ -1,6 +1,13 @@
 run:
   tests: false
-  deadline: 30m
+  deadline: 2m
   skip-files:
+    - "cmd/server/static/files.go"
     - "pkg/client"
     - "vendor/"
+linters:
+  enable:
+    - goimports
+linters-settings:
+  goimports:
+    local-prefixes: github.com/argoproj/argo

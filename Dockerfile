@@ -75,7 +75,7 @@ RUN cd ${GOPATH}/src/dummy && \
 # Perform the build
 WORKDIR /go/src/github.com/argoproj/argo
 COPY . .
-ARG MAKE_TARGET="controller executor cli-linux-amd64"
+ARG MAKE_TARGET="controller executor cli-linux-amd64 argo-server"
 RUN make $MAKE_TARGET
 
 
@@ -100,3 +100,11 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
+
+
+####################################################################################################
+# argo-server
+####################################################################################################
+FROM scratch as argo-server
+COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-server /bin/argo-server
+ENTRYPOINT [ "argo-server" ]

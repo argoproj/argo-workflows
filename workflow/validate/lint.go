@@ -34,9 +34,24 @@ func LintWorkflowDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedG
 // LintWorkflowFile lints a json file, or multiple workflow manifest in a single yaml file. Ignores
 // non-workflow manifests
 func LintWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
+
+	workflows, err := ParseWfFromFile(filePath, strict)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
+	}
+	for _, wf := range workflows {
+		err = ValidateWorkflow(wftmplGetter, &wf, ValidateOpts{Lint: true})
+		if err != nil {
+			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
+		}
+	}
+	return nil
+}
+
+func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
+		return nil, errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
 	}
 	var workflows []wfv1.Workflow
 	if json.IsJSON(body) {
@@ -52,22 +67,16 @@ func LintWorkflowFile(wftmplGetter templateresolution.WorkflowTemplateNamespaced
 			if wf.Kind != "" && wf.Kind != workflow.WorkflowKind {
 				// If we get here, it was a k8s manifest which was not of type 'Workflow'
 				// We ignore these since we only care about validating Workflow manifests.
-				return nil
+				return nil, nil
 			}
 		}
 	} else {
 		workflows, err = common.SplitWorkflowYAMLFile(body, strict)
 	}
 	if err != nil {
-		return errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
+		return nil, errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
 	}
-	for _, wf := range workflows {
-		err = ValidateWorkflow(wftmplGetter, &wf, ValidateOpts{Lint: true})
-		if err != nil {
-			return errors.Errorf(errors.CodeBadRequest, "%s: %s", filePath, err.Error())
-		}
-	}
-	return nil
+	return workflows, nil
 }
 
 // LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests

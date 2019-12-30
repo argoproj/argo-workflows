@@ -2278,7 +2278,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"securityContext": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.PodSecurityContext"),
+							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
 						},
 					},
 					"podSpecPatch": {
@@ -3051,6 +3052,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStatus(ref common.ReferenceCallba
 									},
 								},
 							},
+						},
+					},
+					"offloadNodeStatus": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Whether on not node status has been offloaded to a database. If true, then Nodes and CompressedNodes will be empty.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 					"storedTemplates": {

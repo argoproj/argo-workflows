@@ -6,9 +6,6 @@ import (
 	"strings"
 	"time"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
-	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -24,13 +21,18 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"upper.io/db.v3/lib/sqlbuilder"
 
 	"github.com/argoproj/argo"
+	"github.com/argoproj/argo/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	wfextv "github.com/argoproj/argo/pkg/client/informers/externalversions"
+	wfextvv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/config"
 	"github.com/argoproj/argo/workflow/metrics"
-	"github.com/argoproj/argo/workflow/persist/sqldb"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/ttlcontroller"
 	"github.com/argoproj/argo/workflow/util"
 )
@@ -56,15 +58,17 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer     cache.SharedIndexInformer
-	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
-	podInformer    cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	podQueue       workqueue.RateLimitingInterface
-	completedPods  chan string
-	gcPods         chan string // pods to be deleted depend on GC strategy
-	throttler      Throttler
-	wfDBctx        sqldb.DBRepository
+	wfInformer          cache.SharedIndexInformer
+	wftmplInformer      wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer         cache.SharedIndexInformer
+	wfQueue             workqueue.RateLimitingInterface
+	podQueue            workqueue.RateLimitingInterface
+	completedPods       chan string
+	gcPods              chan string // pods to be deleted depend on GC strategy
+	throttler           Throttler
+	session             sqlbuilder.Database
+	wfDBctx             sqldb.DBRepository
+	wfHistoryRepository sqldb.WorkflowHistoryRepository
 }
 
 const (
@@ -293,7 +297,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 	woc := newWorkflowOperationCtx(wf, wfc)
 
 	// Decompress the node if it is compressed
-	err = util.DecompressWorkflow(woc.wf)
+	err = packer.DecompressWorkflow(woc.wf)
 	if err != nil {
 		woc.log.Warnf("workflow decompression failed: %v", err)
 		woc.markWorkflowFailed(fmt.Sprintf("workflow decompression failed: %s", err.Error()))
@@ -514,22 +518,4 @@ func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.Work
 		informerFactory = wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
 	}
 	return informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
-}
-
-func (wfc *WorkflowController) createPersistenceContext() (*sqldb.WorkflowDBContext, error) {
-
-	var wfDBCtx sqldb.WorkflowDBContext
-	var err error
-
-	//wfDBCtx.TableName = wfc.Config.Persistence.TableName
-	wfDBCtx.NodeStatusOffload = wfc.Config.Persistence.NodeStatusOffload
-
-	wfDBCtx.Session, wfDBCtx.TableName, err = sqldb.CreateDBSession(wfc.kubeclientset, wfc.namespace, wfc.Config.Persistence)
-
-	if err != nil {
-		log.Errorf("Error in createPersistenceContext. %v", err)
-		return nil, err
-	}
-
-	return &wfDBCtx, nil
 }
