@@ -155,6 +155,44 @@ type SubmitOpts struct {
 
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
 func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
+
+	ApplySubmitOpts(wf, opts)
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.DryRun {
+		return wf, nil
+	} else if opts.ServerDryRun {
+		wf, err := CreateServerDryRun(wf, wfClientset)
+		if err != nil {
+			return nil, err
+		}
+		return wf, err
+	} else {
+		return wfIf.Create(wf)
+	}
+}
+
+// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
+func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
+	// Keep the workflow metadata because it will be overwritten by the Post request
+	workflowTypeMeta := wf.TypeMeta
+	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
+		Namespace(wf.Namespace).
+		Resource("workflows").
+		Body(wf).
+		Param("dryRun", "All").
+		Do().
+		Into(wf)
+	wf.TypeMeta = workflowTypeMeta
+	return wf, err
+}
+
+// Apply the Submit options into workflow object
+func ApplySubmitOpts(wf *wfv1.Workflow, opts *SubmitOpts) error {
 	if opts == nil {
 		opts = &SubmitOpts{}
 	}
@@ -171,7 +209,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.Labels != "" {
 		passedLabels, err := cmdutil.ParseLabels(opts.Labels)
 		if err != nil {
-			return nil, fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
+			return fmt.Errorf("Expected labels of the form: NAME1=VALUE2,NAME2=VALUE2. Received: %s", opts.Labels)
 		}
 		for k, v := range passedLabels {
 			labels[k] = v
@@ -187,7 +225,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		for _, paramStr := range opts.Parameters {
 			parts := strings.SplitN(paramStr, "=", 2)
 			if len(parts) == 1 {
-				return nil, fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
+				return fmt.Errorf("Expected parameter of the form: NAME=VALUE. Received: %s", paramStr)
 			}
 			param := wfv1.Parameter{
 				Name:  parts[0],
@@ -204,19 +242,19 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			if cmdutil.IsURL(opts.ParameterFile) {
 				body, err = ReadFromUrl(opts.ParameterFile)
 				if err != nil {
-					return nil, errors.InternalWrapError(err)
+					return errors.InternalWrapError(err)
 				}
 			} else {
 				body, err = ioutil.ReadFile(opts.ParameterFile)
 				if err != nil {
-					return nil, errors.InternalWrapError(err)
+					return errors.InternalWrapError(err)
 				}
 			}
 
 			yamlParams := map[string]json.RawMessage{}
 			err = yaml.Unmarshal(body, &yamlParams)
 			if err != nil {
-				return nil, errors.InternalWrapError(err)
+				return errors.InternalWrapError(err)
 			}
 
 			for k, v := range yamlParams {
@@ -257,39 +295,7 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 	if opts.OwnerReference != nil {
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
-
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
-	if err != nil {
-		return nil, err
-	}
-
-	if opts.DryRun {
-		return wf, nil
-	} else if opts.ServerDryRun {
-		wf, err := CreateServerDryRun(wf, wfClientset)
-		if err != nil {
-			return nil, err
-		}
-		return wf, err
-	} else {
-		return wfIf.Create(wf)
-	}
-}
-
-// CreateServerDryRun fills the workflow struct with the server's representation without creating it and returns an error, if there is any
-func CreateServerDryRun(wf *wfv1.Workflow, wfClientset wfclientset.Interface) (*wfv1.Workflow, error) {
-	// Keep the workflow metadata because it will be overwritten by the Post request
-	workflowTypeMeta := wf.TypeMeta
-	err := wfClientset.ArgoprojV1alpha1().RESTClient().Post().
-		Namespace(wf.Namespace).
-		Resource("workflows").
-		Body(wf).
-		Param("dryRun", "All").
-		Do().
-		Into(wf)
-	wf.TypeMeta = workflowTypeMeta
-	return wf, err
+	return nil
 }
 
 // SuspendWorkflow suspends a workflow by setting spec.suspend to true. Retries conflict errors
