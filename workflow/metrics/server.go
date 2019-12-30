@@ -36,3 +36,11 @@ func RunServer(ctx context.Context, config PrometheusConfig, registry *prometheu
 
 	<-ctx.Done()
 }
+
+// Used for testing
+func NewServer(ctx context.Context, config PrometheusConfig, registry *prometheus.Registry) *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle(config.Path, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	srv := &http.Server{Addr: fmt.Sprintf(":%s", config.Port), Handler: mux}
+	return srv
+}
