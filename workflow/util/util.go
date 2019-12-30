@@ -156,13 +156,15 @@ type SubmitOpts struct {
 // SubmitWorkflow validates and submit a single workflow and override some of the fields of the workflow
 func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts *SubmitOpts) (*wfv1.Workflow, error) {
 
-	ApplySubmitOpts(wf, opts)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
-	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	err := ApplySubmitOpts(wf, opts)
 	if err != nil {
 		return nil, err
 	}
-
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+	err = validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
+	if err != nil {
+		return nil, err
+	}
 	if opts.DryRun {
 		return wf, nil
 	} else if opts.ServerDryRun {
