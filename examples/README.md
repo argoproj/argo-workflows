@@ -1,4 +1,4 @@
-# Argo Workflow Templates by Example
+# Argo Workflows: Documentation by Example
 
 ## Welcome!
 
@@ -6,41 +6,41 @@ Argo is an open source project that provides container-native workflows for Kube
 
 Argo is implemented as a Kubernetes CRD (Custom Resource Definition). As a result, Argo workflows can be managed using `kubectl` and natively integrates with other Kubernetes services such as volumes, secrets, and RBAC. The new Argo software is light-weight and installs in under a minute, and provides complete workflow features including parameter substitution, artifacts, fixtures, loops and recursive workflows.
 
-Many of the Argo examples used in this walkthrough are available at https://github.com/argoproj/argo/tree/master/examples. If you like this project, please give us a star!
+Many of the Argo examples used in this walkthrough are available at in this directory. If you like this project, please give us a star!
 
-For a complete description of the Argo workflow spec, please refer to https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go
+For a complete description of the Argo workflow spec, please refer to [our spec definitions](https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go).
 
 ## Table of Contents
 
-- [Argo CLI](#argo-cli)
-- [Hello World!](#hello-world)
-- [Parameters](#parameters)
-- [Steps](#steps)
-- [DAG](#dag)
-- [Artifacts](#artifacts)
-- [The Structure of Workflow Specs](#the-structure-of-workflow-specs)
-- [Secrets](#secrets)
-- [Scripts & Results](#scripts--results)
-- [Output Parameters](#output-parameters)
-- [Loops](#loops)
-- [Conditionals](#conditionals)
-- [Recursion](#recursion)
-- [Exit handlers](#exit-handlers)
-- [Timeouts](#timeouts)
-- [Volumes](#volumes)
-- [Daemon Containers](#daemon-containers)
-- [Sidecars](#sidecars)
-- [Hardwired Artifacts](#hardwired-artifacts)
-- [Kubernetes Resources](#kubernetes-resources)
-- [Docker-in-Docker Using Sidecars](#docker-in-docker-using-sidecars)
-- [Custom Template Variable Reference](#custom-template-variable-reference)
-- [Continuous Integration Example](#continuous-integration-example)
+1. [Argo CLI](#argo-cli)
+1. [Hello World!](#hello-world)
+1. [Parameters](#parameters)
+1. [Steps](#steps)
+1. [DAG](#dag)
+1. [Artifacts](#artifacts)
+1. [The Structure of Workflow Specs](#the-structure-of-workflow-specs)
+1. [Secrets](#secrets)
+1. [Scripts & Results](#scripts--results)
+1. [Output Parameters](#output-parameters)
+1. [Loops](#loops)
+1. [Conditionals](#conditionals)
+1. [Retrying Failed or Errored Steps](#retrying-failed-or-errored-steps)
+1. [Recursion](#recursion)
+1. [Exit Handlers](#exit-handlers)
+1. [Timeouts](#timeouts)
+1. [Volumes](#volumes)
+1. [Suspending](#suspending)
+1. [Daemon Containers](#daemon-containers)
+1. [Sidecars](#sidecars)
+1. [Hardwired Artifacts](#hardwired-artifacts)
+1. [Kubernetes Resources](#kubernetes-resources)
+1. [Docker-in-Docker Using Sidecars](#docker-in-docker-using-sidecars)
+1. [Custom Template Variable Reference](#custom-template-variable-reference)
+1. [Continuous Integration Example](#continuous-integration-example)
 
 ## Argo CLI
 
 In case you want to follow along with this walkthrough, here's a quick overview of the most useful argo command line interface (CLI) commands.
-
-[Install Argo here](https://github.com/argoproj/argo/blob/master/demo.md)
 
 ```sh
 argo submit hello-world.yaml    # submit a workflow spec to Kubernetes
@@ -66,12 +66,10 @@ kubectl delete wf hello-world-xxx
 
 Let's start by creating a very simple workflow template to echo "hello world" using the docker/whalesay container image from DockerHub.
 
-<img src="whalesay.png" width="600">
-
 You can run this directly from your shell with a simple docker command:
 
 ```sh
-bash% docker run docker/whalesay cowsay "hello world"
+$ docker run docker/whalesay cowsay "hello world"
  _____________
 < hello world >
  -------------
@@ -319,7 +317,7 @@ The [FailFast](./dag-disable-failFast.yaml) flag default is `true`,  if set to `
 
 **Note:**
 You will need to configure an artifact repository to run this example.
-[Configuring an artifact repository here](https://github.com/argoproj/argo/blob/master/ARTIFACT_REPO.md).
+[Configuring an artifact repository here](configure-artifact-repository.md).
 
 When running workflows, it is very common to have steps that generate or consume artifacts. Often, the output artifacts of one step may be used as input artifacts to a subsequent step.
 
@@ -753,6 +751,41 @@ spec:
       args: ["echo \"it was tails\""]
 ```
 
+## Retrying Failed or Errored Steps
+
+You can specify a `retryStrategy` that will dictate how failed or errored steps are retried:
+
+```yaml
+# This example demonstrates the use of retry back offs
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: retry-backoff-
+spec:
+  entrypoint: retry-backoff
+  templates:
+  - name: retry-backoff
+    retryStrategy:
+      limit: 10
+      retryOn: "Always"
+      backoff:
+        duration: 1         # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+        factor: 2
+        maxDuration: "1m"   # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+    container:
+      image: python:alpine3.6
+      command: ["python", -c]
+      # fail with a 66% probability
+      args: ["import random; import sys; exit_code = random.choice([0, 1, 1]); sys.exit(exit_code)"]
+```
+
+* `limit` is the maximum number of times the container will be retried.
+* `retryOn` specifies if a container will be retried on failure, error, or both. "Always" retries on both errors and failures. Also available: "OnFailure" (default), "OnError"
+* `backoff` is an exponential backoff
+
+Providing an empty `retryStrategy` (i.e. `retryStrategy: {}`) will cause a container to retry until completion.
+
+
 ## Recursion
 
 Templates can recursively invoke each other! In this variation of the above coin-flip template, we continue to flip coins until it comes up heads.
@@ -1008,6 +1041,55 @@ spec:
       - name: workdir
         mountPath: /mnt/vol
 ```
+
+## Suspending
+
+Workflows can be suspended by
+
+```sh
+argo suspend WORKFLOW
+```
+
+Or by specifying a `suspend` step on the workflow:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: suspend-template-
+spec:
+  entrypoint: suspend
+  templates:
+  - name: suspend
+    steps:
+    - - name: build
+        template: whalesay
+    - - name: approve
+        template: approve
+    - - name: delay
+        template: delay
+    - - name: release
+        template: whalesay
+
+  - name: approve
+    suspend: {}
+
+  - name: delay
+    suspend:
+      duration: 20    # Default unit is seconds. Could also be a Duration, e.g.: "2m", "6h", "1d"
+
+  - name: whalesay
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]
+```
+
+Once suspended, a Workflow will not schedule any new steps until it is resumed. It can be resumed manually by
+```sh
+argo resume WORKFLOW
+```
+Or automatically with a `duration` limit as the example above.
 
 ## Daemon Containers
 

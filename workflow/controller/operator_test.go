@@ -318,6 +318,93 @@ func TestProcessNodesNoRetryWithError(t *testing.T) {
 	assert.Equal(t, wfv1.NodeError, n.Phase)
 }
 
+func TestAssessNodeStatus(t *testing.T) {
+	daemoned := true
+	tests := []struct {
+		name string
+		pod  *apiv1.Pod
+		node *wfv1.NodeStatus
+		want wfv1.NodePhase
+	}{{
+		name: "pod pending",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodPending,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodePending,
+	}, {
+		name: "pod succeeded",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodSucceeded,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeSucceeded,
+	}, {
+		name: "pod failed - daemoned",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{Daemoned: &daemoned},
+		want: wfv1.NodeSucceeded,
+	}, {
+		name: "pod failed - not daemoned",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Message: "failed for some reason",
+				Phase:   apiv1.PodFailed,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod termination",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{DeletionTimestamp: &metav1.Time{Time: time.Now()}},
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeFailed,
+	}, {
+		name: "pod running",
+		pod: &apiv1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					common.AnnotationKeyTemplate: "{}",
+				},
+			},
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodRunning,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeRunning,
+	}, {
+		name: "default",
+		pod: &apiv1.Pod{
+			Status: apiv1.PodStatus{
+				Phase: apiv1.PodUnknown,
+			},
+		},
+		node: &wfv1.NodeStatus{},
+		want: wfv1.NodeError,
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := assessNodeStatus(test.pod, test.node)
+			assert.Equal(t, test.want, got.Phase)
+		})
+	}
+}
+
 var workflowParallelismLimit = `
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
@@ -1845,4 +1932,121 @@ func TestWithParamAsJsonList(t *testing.T) {
 	pods, err := controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, len(pods.Items))
+}
+
+var testTemplateScopeWorkflowYaml = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-template-scope
+spec:
+  entrypoint: entry
+  templates:
+  - name: entry
+    templateRef:
+      name: test-template-scope-1
+      template: steps
+`
+
+var testTemplateScopeWorkflowTemplateYaml1 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-template-scope-1
+spec:
+  templates:
+  - name: steps
+    steps:
+    - - name: hello
+        template: hello
+      - name: other-wftmpl
+        templateRef:
+          name: test-template-scope-2
+          template: steps
+  - name: hello
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        print("hello world")
+`
+
+var testTemplateScopeWorkflowTemplateYaml2 = `
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: test-template-scope-2
+spec:
+  templates:
+  - name: steps
+    steps:
+    - - name: hello
+        template: hello
+  - name: hello
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        print("hello world")
+`
+
+func TestTemplateScope(t *testing.T) {
+	controller := newController()
+	wfcset := controller.wfclientset.ArgoprojV1alpha1().Workflows("")
+	wfctmplset := controller.wfclientset.ArgoprojV1alpha1().WorkflowTemplates("")
+
+	wf := unmarshalWF(testTemplateScopeWorkflowYaml)
+	_, err := wfcset.Create(wf)
+	assert.NoError(t, err)
+	wftmpl := unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml1)
+	_, err = wfctmplset.Create(wftmpl)
+	assert.NoError(t, err)
+	wftmpl = unmarshalWFTmpl(testTemplateScopeWorkflowTemplateYaml2)
+	_, err = wfctmplset.Create(wftmpl)
+	assert.NoError(t, err)
+
+	woc := newWorkflowOperationCtx(wf, controller)
+	woc.operate()
+
+	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
+	assert.NoError(t, err)
+
+	node := findNodeByName(wf.Status.Nodes, "test-template-scope")
+	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope") {
+		assert.Equal(t, "", node.TemplateScope)
+	}
+
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
+	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0]") {
+		assert.Equal(t, "", node.TemplateScope)
+	}
+
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].hello")
+	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0].hello") {
+		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
+	}
+
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl")
+	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl") {
+		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
+	}
+
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
+	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
+		assert.Equal(t, "", node.TemplateScope)
+	}
+
+	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
+	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0].hello") {
+		assert.Equal(t, "test-template-scope-2", node.TemplateScope)
+	}
+}
+
+func findNodeByName(nodes map[string]wfv1.NodeStatus, name string) *wfv1.NodeStatus {
+	for _, node := range nodes {
+		if node.Name == name {
+			return &node
+		}
+	}
+	return nil
 }

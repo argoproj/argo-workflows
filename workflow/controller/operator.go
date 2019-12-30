@@ -797,29 +797,35 @@ func assessNodeStatus(pod *apiv1.Pod, node *wfv1.NodeStatus) *wfv1.NodeStatus {
 		}
 		newDaemonStatus = pointer.BoolPtr(false)
 	case apiv1.PodRunning:
-		newPhase = wfv1.NodeRunning
-		tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
-		if !ok {
-			log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
-			return nil
-		}
-		var tmpl wfv1.Template
-		err := json.Unmarshal([]byte(tmplStr), &tmpl)
-		if err != nil {
-			log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
-			return nil
-		}
-		if tmpl.Daemon != nil && *tmpl.Daemon {
-			// pod is running and template is marked daemon. check if everything is ready
-			for _, ctrStatus := range pod.Status.ContainerStatuses {
-				if !ctrStatus.Ready {
-					return nil
-				}
-			}
-			// proceed to mark node status as running (and daemoned)
+		if pod.DeletionTimestamp != nil {
+			// pod is being terminated
+			newPhase = wfv1.NodeFailed
+			message = "pod termination"
+		} else {
 			newPhase = wfv1.NodeRunning
-			newDaemonStatus = pointer.BoolPtr(true)
-			log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+			tmplStr, ok := pod.Annotations[common.AnnotationKeyTemplate]
+			if !ok {
+				log.Warnf("%s missing template annotation", pod.ObjectMeta.Name)
+				return nil
+			}
+			var tmpl wfv1.Template
+			err := json.Unmarshal([]byte(tmplStr), &tmpl)
+			if err != nil {
+				log.Warnf("%s template annotation unreadable: %v", pod.ObjectMeta.Name, err)
+				return nil
+			}
+			if tmpl.Daemon != nil && *tmpl.Daemon {
+				// pod is running and template is marked daemon. check if everything is ready
+				for _, ctrStatus := range pod.Status.ContainerStatuses {
+					if !ctrStatus.Ready {
+						return nil
+					}
+				}
+				// proceed to mark node status as running (and daemoned)
+				newPhase = wfv1.NodeRunning
+				newDaemonStatus = pointer.BoolPtr(true)
+				log.Infof("Processing ready daemon pod: %v", pod.ObjectMeta.SelfLink)
+			}
 		}
 	default:
 		newPhase = wfv1.NodeError
@@ -1203,6 +1209,9 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		return node, ErrDeadlineExceeded
 	}
 
+	// Set templateScope from which the template resolution starts.
+	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	newTmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(orgTmpl)
 	if err != nil {
 		return woc.initializeNodeOrMarkError(node, nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, err), err
@@ -1235,7 +1244,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 		retryParentNode := node
 		if retryParentNode == nil {
 			woc.log.Debugf("Inject a retry node for node %s", retryNodeName)
-			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+			retryParentNode = woc.initializeExecutableNode(retryNodeName, wfv1.NodeTypeRetry, templateScope, processedTmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
 		}
 		processedRetryParentNode, continueExecution, err := woc.processNodeRetries(retryParentNode, *processedTmpl.RetryStrategy)
 		if err != nil {
@@ -1288,7 +1297,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 			err := errors.InternalErrorf("Template '%s' has unknown node type", processedTmpl.Name)
 			return woc.initializeNode(nodeName, wfv1.NodeTypeSkipped, orgTmpl, boundaryID, wfv1.NodeError, err.Error()), err
 		}
-		node = woc.initializeExecutableNode(nodeName, nodeType, newTmplCtx, processedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
+		node = woc.initializeExecutableNode(nodeName, nodeType, templateScope, processedTmpl, orgTmpl, boundaryID, wfv1.NodePending)
 	}
 
 	switch processedTmpl.GetType() {
@@ -1404,7 +1413,7 @@ func (woc *wfOperationCtx) markWorkflowError(err error, markCompleted bool) {
 var stepsOrDagSeparator = regexp.MustCompile(`^(\[\d+\])?\.`)
 
 // initializeExecutableNode initializes a node and stores the template.
-func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, tmplCtx *templateresolution.Context, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
+func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wfv1.NodeType, templateScope string, executeTmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string, phase wfv1.NodePhase, messages ...string) *wfv1.NodeStatus {
 	node := woc.initializeNode(nodeName, nodeType, orgTmpl, boundaryID, phase)
 
 	// Set the input values to the node.
@@ -1412,7 +1421,7 @@ func (woc *wfOperationCtx) initializeExecutableNode(nodeName string, nodeType wf
 		node.Inputs = executeTmpl.Inputs.DeepCopy()
 	}
 
-	node.TemplateScope = tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	node.TemplateScope = templateScope
 
 	// Update the node
 	woc.wf.Status.Nodes[node.ID] = *node
