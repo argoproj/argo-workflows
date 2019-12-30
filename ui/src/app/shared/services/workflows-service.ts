@@ -27,7 +27,7 @@ export class WorkflowsService {
                 url = `${url}?${phases}`;
             } else {
                 const workflow = filter as {namespace: string; name: string};
-                url = `${url}?namespace=${workflow.namespace}&name=${workflow.name}`;
+                url = `/workflows/${workflow.namespace}/${workflow.name}/watch`;
             }
         }
         return requests
@@ -42,7 +42,7 @@ export class WorkflowsService {
     }
 
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {
-        return requests.loadEventSource(`/logs/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${container}`).map(line => {
+        return requests.loadEventSource(`/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}`).map(line => {
             return line ? line + '\n' : line;
         });
     }

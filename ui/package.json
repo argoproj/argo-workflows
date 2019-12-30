@@ -23,6 +23,7 @@
         "classnames": "^2.2.5",
         "dagre": "^0.8.2",
         "deep-equal": "^1.0.1",
+        "event-source-polyfill": "^1.0.11",
         "express": "^4.16.2",
         "express-winston": "^3.0.0",
         "foundation-sites": "^6.4.3",

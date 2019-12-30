@@ -16,158 +16,6 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/stream/workflows/{namespace}/{workflowName}/watch": {
-      "get": {
-        "summary": "Watch returns stream of application change events.",
-        "operationId": "WatchWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "$ref": "#/x-stream-definitions/v1alpha1Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "workflowName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "getOptions.resourceVersion",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflow/{namespace}/{workflowName}/{podName}/log": {
-      "get": {
-        "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
-        "operationId": "PodLogs",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "$ref": "#/x-stream-definitions/workflowLogEntry"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "workflowName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "podName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "container",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "logOptions.container",
-            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "logOptions.follow",
-            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.previous",
-            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.sinceSeconds",
-            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.sinceTime.seconds",
-            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.sinceTime.nanos",
-            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int32"
-          },
-          {
-            "name": "logOptions.timestamps",
-            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "logOptions.tailLines",
-            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "logOptions.limitBytes",
-            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
     "/api/v1/workflows/{namespace}": {
       "get": {
         "operationId": "ListWorkflows",
@@ -610,6 +458,152 @@
             "schema": {
               "$ref": "#/definitions/workflowWorkflowUpdateRequest"
             }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{namespace}/{workflowName}/watch": {
+      "get": {
+        "summary": "Watch returns stream of application change events.",
+        "operationId": "WatchWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "workflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "getOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/{namespace}/{workflowName}/{podName}/log": {
+      "get": {
+        "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
+        "operationId": "PodLogs",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/workflowLogEntry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "workflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "podName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "logOptions.container",
+            "description": "The container for which to stream logs. Defaults to only container if there is one container in the pod.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "logOptions.follow",
+            "description": "Follow the log stream of the pod. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.previous",
+            "description": "Return previous terminated container logs. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.sinceSeconds",
+            "description": "A relative time in seconds before the current time from which to show logs. If this value\nprecedes the time a pod was started, only logs since the pod start will be returned.\nIf this value is in the future, no logs will be returned.\nOnly one of sinceSeconds or sinceTime may be specified.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.sinceTime.seconds",
+            "description": "Represents seconds of UTC time since Unix epoch\n1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n9999-12-31T23:59:59Z inclusive.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.sinceTime.nanos",
+            "description": "Non-negative fractions of a second at nanosecond resolution. Negative\nsecond values with fractions must still have non-negative nanos values\nthat count forward in time. Must be from 0 to 999,999,999\ninclusive. This field may be limited in precision depending on context.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "logOptions.timestamps",
+            "description": "If true, add an RFC3339 or RFC3339Nano timestamp at the beginning of every line\nof log output. Defaults to false.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "logOptions.tailLines",
+            "description": "If set, the number of lines from the end of the logs to show. If not specified,\nlogs are shown from the creation of the container or sinceSeconds or sinceTime\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "logOptions.limitBytes",
+            "description": "If set, the number of bytes to read from the server before terminating the\nlog output. This may not display a complete final line of logging, and may return\nslightly more or slightly less than the specified limit.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
