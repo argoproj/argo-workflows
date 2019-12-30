@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -43,7 +43,6 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 		}
 		return nil, nil, status.Error(codes.Unauthenticated, "Authorization header not found")
 	}
-	// Format is `Bearer base64(~/.kube/config)'
 	token := strings.TrimPrefix(authorization[0], "Bearer ")
 	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
 
@@ -53,20 +52,28 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 
 	var restConfig rest.Config
 	err = json.Unmarshal(restConfigBytes, &restConfig)
-
 	if err != nil {
 		return nil, nil, err
 	}
-	wfClientset, err := versioned.NewForConfig(&restConfig)
 
+	if s.enableClientAuth {
+		// we want to prevent people using in-cluster set-up
+		if restConfig.BearerTokenFile != "" || restConfig.CAFile != "" || restConfig.CertFile != "" || restConfig.KeyFile != "" {
+			return nil, nil, fmt.Errorf("illegal bearer token")
+		}
+		host := strings.SplitN(restConfig.Host, ":", 2)[0]
+		if host == "localhost" || net.ParseIP(host).IsLoopback() {
+			return nil, nil, fmt.Errorf("illegal bearer token")
+		}
+	}
+
+	wfClientset, err := versioned.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 	}
 	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
-		log.Errorf("Failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 	}
 	return wfClientset, clientset, nil
 }
