@@ -35,8 +35,8 @@ export const Login = () => (
                             const config = JSON.parse(event.target.value);
                             const restConfig = JSON.stringify({
                                 host: config.clusters[0].cluster.server,
-                                certData: config.clusters[0].cluster['certificate-authority-data'],
-                                caData: config.users[0].user['client-certificate-data'],
+                                caData: config.clusters[0].cluster['certificate-authority-data'],
+                                certData: config.users[0].user['client-certificate-data'],
                                 keyData: config.users[0].user['client-key-data']
                             });
                             (document.getElementById('restConfig') as HTMLInputElement).value = restConfig;
