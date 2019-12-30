@@ -8,14 +8,14 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
+            - vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
             - vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v2-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v -vendor-only
       - save_cache:
           name: Save vendor cache
-          key: vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
   install_golang:
