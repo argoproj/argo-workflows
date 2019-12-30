@@ -56,11 +56,7 @@ builder-image:
 
 ui/node_modules: ui/package.json ui/yarn.lock
 ifeq ($(STATIC),true)
-ifneq ($(YARN),)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
-else
-	docker run --rm -w /ud -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 install --frozen-lockfile --ignore-optional --non-interactive
-endif
 else
 	mkdir -p ui/node_modules
 endif
@@ -68,18 +64,16 @@ endif
 
 ui/dist/app: ui/node_modules ui/src
 ifeq ($(STATIC),true)
-ifneq ($(YARN),)
 	yarn --cwd ui build
-else
-	docker run --rm -w /ui -v `pwd`:/wd/ui --entrypoint /usr/local/bin/yarn node:11.15.0 build
-endif
 else
 	mkdir -p ui/dist/app
 endif
 	touch ui/dist/app
 
-cmd/server/static/files.go: ui/dist/app
+$(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles
+
+cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
 .PHONY: cli
