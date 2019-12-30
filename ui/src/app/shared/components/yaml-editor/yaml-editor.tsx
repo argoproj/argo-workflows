@@ -6,7 +6,6 @@ import * as React from 'react';
 import {Consumer} from '../../context';
 import {MonacoEditor} from '../monaco-editor';
 
-// const jsonMergePatch = require('json-merge-patch');
 require('./yaml-editor.scss');
 
 const placeholderWorkflow: string = `apiVersion: argoproj.io/v1alpha1
@@ -23,16 +22,14 @@ spec:
       args: ["hello world"]
 `;
 
-export class YamlEditor<T> extends React.Component<
-    {
-        input?: T;
-        hideModeButtons?: boolean;
-        initialEditMode?: boolean;
-        onSave: (wf: string) => void;
-        onCancel?: () => any;
-        minHeight?: number;
-    }
-> {
+export class YamlEditor<T> extends React.Component<{
+    input?: T;
+    hideModeButtons?: boolean;
+    initialEditMode?: boolean;
+    onSave: (wf: string) => void;
+    onCancel?: () => any;
+    minHeight?: number;
+}> {
     private model: monacoEditor.editor.ITextModel;
 
     constructor(props: any) {
@@ -48,38 +45,27 @@ export class YamlEditor<T> extends React.Component<
             <div className='yaml-editor'>
                 {!props.hideModeButtons && (
                     <div className='yaml-editor__buttons'>
-                            <Consumer>
-                                {ctx => (
-                                    <React.Fragment>
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const rawWf = jsYaml.load(this.model.getLinesContent().join('\n'));
-                                                    this.props.onSave(JSON.stringify(rawWf || {}));
-                                                } catch (e) {
-                                                    ctx.notifications.show({
-                                                        content: <ErrorNotification title='Unable to submit workflow' e={e} />,
-                                                        type: NotificationType.Error
-                                                    });
-                                                }
-                                            }}
-                                            className='argo-button argo-button--base'>
-                                            Submit
-                                        </button>{' '}
-                                        {/*<button*/}
-                                        {/*    onClick={() => {*/}
-                                        {/*        this.model.setValue(jsYaml.safeDump(props.input));*/}
-                                        {/*        this.setState({editing: !this.state.editing});*/}
-                                        {/*        if (props.onCancel) {*/}
-                                        {/*            props.onCancel();*/}
-                                        {/*        }*/}
-                                        {/*    }}*/}
-                                        {/*    className='argo-button argo-button--base-o'>*/}
-                                        {/*    Cancel*/}
-                                        {/*</button>*/}
-                                    </React.Fragment>
-                                )}
-                            </Consumer>
+                        <Consumer>
+                            {ctx => (
+                                <React.Fragment>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const rawWf = jsYaml.load(this.model.getLinesContent().join('\n'));
+                                                this.props.onSave(JSON.stringify(rawWf || {}));
+                                            } catch (e) {
+                                                ctx.notifications.show({
+                                                    content: <ErrorNotification title='Unable to submit workflow' e={e} />,
+                                                    type: NotificationType.Error
+                                                });
+                                            }
+                                        }}
+                                        className='argo-button argo-button--base'>
+                                        Submit
+                                    </button>
+                                </React.Fragment>
+                            )}
+                        </Consumer>
                     </div>
                 )}
                 <MonacoEditor

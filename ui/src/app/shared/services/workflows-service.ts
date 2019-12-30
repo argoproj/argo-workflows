@@ -85,8 +85,8 @@ export class WorkflowsService {
         return requests
             .post(`/workflows/${namespace}`)
             .send({
-                namespace: namespace,
-                workflow: workflow
+                namespace,
+                workflow
             })
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);

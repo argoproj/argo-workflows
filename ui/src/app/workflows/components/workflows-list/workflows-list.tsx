@@ -11,7 +11,7 @@ import {services} from '../../../shared/services';
 
 import {WorkflowListItem} from '..';
 import {Query} from '../../../shared/components/query';
-import { YamlEditor } from '../../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 
 require('./workflows-list.scss');
 
@@ -165,10 +165,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 )}
                             </DataLoader>
                         </div>
-                        <SlidingPanel
-                            isShown={!!this.wfInput}
-                            onClose={() => ctx.navigation.goto('.', {new: null})}
-                        >
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             Submit Workflow
                             <YamlEditor
                                 minHeight={800}
@@ -176,7 +173,9 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 onCancel={() => alert('Cancel')}
                                 onSave={rawWf => {
                                     // TODO(simon): Remove hardwired 'argo' namespace
-                                    services.workflows.create(JSON.parse(rawWf), 'argo').then()
+                                    services.workflows
+                                        .create(JSON.parse(rawWf), 'argo')
+                                        .then()
                                         .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
                                 }}
                             />
