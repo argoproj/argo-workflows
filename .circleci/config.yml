@@ -106,8 +106,8 @@ jobs:
           name: Create KUBECONFIG
           command: |
             mkdir -p ~/.kube
-            cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start STATIC=false
+            cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
+      - run: make start STATIC=false
       - run:
           name: Follow logs, to help diagnose failures
           command: |

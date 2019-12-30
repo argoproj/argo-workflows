@@ -47,7 +47,7 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
 
 	if err != nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "Invalid token found in Authorization header %s: %v", token, err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "Invalid token found in Authorization header %s: %v", token, err)
 	}
 
 	var restConfig rest.Config
@@ -59,21 +59,21 @@ func (s *Server) GetWFClient(ctx context.Context) (versioned.Interface, kubernet
 	if s.enableClientAuth {
 		// we want to prevent people using in-cluster set-up
 		if restConfig.BearerTokenFile != "" || restConfig.CAFile != "" || restConfig.CertFile != "" || restConfig.KeyFile != "" {
-			return nil, nil, fmt.Errorf("illegal bearer token")
+			return nil, nil, status.Errorf(codes.Unauthenticated, "illegal bearer token")
 		}
 		host := strings.SplitN(restConfig.Host, ":", 2)[0]
 		if host == "localhost" || net.ParseIP(host).IsLoopback() {
-			return nil, nil, fmt.Errorf("illegal bearer token")
+			return nil, nil, status.Errorf(codes.Unauthenticated, "illegal bearer token")
 		}
 	}
 
 	wfClientset, err := versioned.NewForConfig(&restConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 	}
 	clientset, err := kubernetes.NewForConfig(&restConfig)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 	}
 	return wfClientset, clientset, nil
 }

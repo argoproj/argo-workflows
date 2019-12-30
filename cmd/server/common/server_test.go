@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes/fake"
 
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
@@ -43,7 +45,8 @@ func TestServer_GetWFClient(t *testing.T) {
 			t.Run(text, func(t *testing.T) {
 				ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte(text))))
 				_, _, err := s.GetWFClient(ctx)
-				assert.EqualError(t, err, "illegal bearer token")
+				assert.Error(t, err)
+				assert.Equal(t, codes.Unauthenticated, status.Code(err))
 			})
 		}
 	})

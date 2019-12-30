@@ -4,50 +4,60 @@ import * as React from 'react';
 require('./login.scss');
 
 const getToken = () => localStorage.getItem('token');
-const maybeLoggedIn = () => getToken() !== null;
-const logout = () => localStorage.removeItem('token');
-const login = (token: string) => localStorage.setItem('token', token);
+const maybeLoggedIn = () => !!getToken();
+const logout = () => {
+    localStorage.removeItem('token');
+    document.location.reload(true);
+};
+const login = (token: string) => {
+    localStorage.setItem('token', token);
+    document.location.href = '/workflows';
+};
 export const Login = () => (
     /* tslint:disable:max-line-length */
-    <Page title='Login'>
+    <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='row'>
             <div className='columns large-12 medium-12'>
-                <h1>Login</h1>
                 <p>Get your config using:</p>
                 <div>
-                    <code>kubectl config view --minify --raw</code>
+                    <code>kubectl config view --minify --raw -o json</code>
                 </div>
+                <p>Replace "localhost" or "12.0.0.1" with your hostname and paste below.</p>
                 <p>
-                    Extract the fields you need by following <a href='https://github.com/kubernetes/client-go/blob/master/tools/clientcmd/client_config.go#L127'>this code</a>,
-                    e.g.:
+                    <label>Kubeconfig</label>
                 </p>
                 <div>
-                    <code>
-                        {JSON.stringify(
-                            {
-                                Host: 'https://10.96.0.1:443',
-                                BearerTokenFile: '/var/run/secrets/kubernetes.io/serviceaccount/token',
-                                CAFile: '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
-                            },
-                            null,
-                            '  '
-                        )}
-                    </code>
+                    <textarea
+                        id='kubeconfig'
+                        cols={100}
+                        rows={10}
+                        onChange={event => {
+                            const config = JSON.parse(event.target.value);
+                            const restConfig = JSON.stringify({
+                                host: config.clusters[0].cluster.server,
+                                certData: config.clusters[0].cluster['certificate-authority-data'],
+                                caData: config.users[0].user['client-certificate-data'],
+                                keyData: config.users[0].user['client-key-data']
+                            });
+                            (document.getElementById('restConfig') as HTMLInputElement).value = restConfig;
+                            (document.getElementById('token') as HTMLInputElement).value = btoa(restConfig);
+                        }}
+                    />
                 </div>
                 <p>
-                    Pipe via <code>base64</code>, e.g.:
+                    <label>REST Config</label>
                 </p>
                 <div>
-                    <code>
-                        eyJIb3N0IjoiaHR0cHM6Ly8xMC45Ni4wLjE6NDQzIiwiQVBJUGF0aCI6IiIsIkFjY2VwdENvbnRlbnRUeXBlcyI6IiIsIkNvbnRlbnRUeXBlIjoiIiwiR3JvdXBWZXJzaW9uIjpudWxsLCJOZWdvdGlhdGVkU2VyaWFsaXplciI6bnVsbCwiVXNlcm5hbWUiOiIiLCJQYXNzd29yZCI6IiIsIkJlYXJlclRva2VuIjoiIiwiQmVhcmVyVG9rZW5GaWxlIjoiL3Zhci9ydW4vc2VjcmV0cy9rdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3Rva2VuIiwiSW1wZXJzb25hdGUiOnsiVXNlck5hbWUiOiIiLCJHcm91cHMiOm51bGwsIkV4dHJhIjpudWxsfSwiQXV0aFByb3ZpZGVyIjpudWxsLCJJbnNlY3VyZSI6ZmFsc2UsIlNlcnZlck5hbWUiOiIiLCJDZXJ0RmlsZSI6IiIsIktleUZpbGUiOiIiLCJDQUZpbGUiOiIvdmFyL3J1bi9zZWNyZXRzL2t1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvY2EuY3J0IiwiQ2VydERhdGEiOm51bGwsIktleURhdGEiOm51bGwsIkNBRGF0YSI6bnVsbCwiVXNlckFnZW50IjoiIiwiUVBTIjowLCJCdXJzdCI6MCwiUmF0ZUxpbWl0ZXIiOm51bGwsIlRpbWVvdXQiOjB9
-                    </code>
+                    <textarea id='restConfig' cols={100} rows={5} defaultValue='' />
                 </div>
-                <p>Then paste below:</p>
+                <p>
+                    <label>Bearer Token</label>
+                </p>
                 <div>
-                    <textarea id='token' cols={100} rows={10} defaultValue={getToken()} />
+                    <textarea id='token' cols={100} rows={5} defaultValue={getToken()} />
                 </div>
                 <div>
-                    {maybeLoggedIn && (
+                    {maybeLoggedIn() && (
                         <button className='argo-button argo-button--base-o' onClick={() => logout()}>
                             Logout
                         </button>
