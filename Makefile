@@ -254,7 +254,7 @@ start:
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 	# Update the config.
-	./hack/update-in-cluster-config.sh
+	./hack/update-e2e-kubeconfig.sh
 
 .PHONY: down
 down:
