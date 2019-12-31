@@ -264,7 +264,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		assert.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		if assert.Equal(t, 200, resp.StatusCode) {
-			assert.Equal(t, resp.Header.Get("Content-Type"), "application/json")
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream");
 			s := bufio.NewScanner(resp.Body)
 			type Event struct {
 				Result wfv1.Workflow
@@ -291,7 +291,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		assert.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		if assert.Equal(t, 200, resp.StatusCode) {
-			assert.Equal(t, resp.Header.Get("Content-Type"), "application/json")
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 			s := bufio.NewScanner(resp.Body)
 			type Event struct {
 				Result serverworkflow.LogEntry
