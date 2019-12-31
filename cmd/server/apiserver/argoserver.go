@@ -172,8 +172,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	muxOption := runtime.WithForwardResponseOption(as.translateGrpcCookieHeader)
-	gwmux := runtime.NewServeMux(gwMuxOpts, muxOption)
+	gwCookieOpts := runtime.WithForwardResponseOption(as.translateGrpcCookieHeader)
+	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
@@ -193,11 +193,8 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	}
 }
 
+// TranslateGrpcCookieHeader conditionally sets a cookie on the response.
 func (as *argoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
-	if resp == nil {
-		// hack
-		w.Header().Set("Content-Type", "text/event-stream")
-	}
 	return nil
 }
 

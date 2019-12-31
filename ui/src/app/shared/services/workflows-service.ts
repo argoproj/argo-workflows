@@ -42,13 +42,9 @@ export class WorkflowsService {
     }
 
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {
-        return requests
-            .loadEventSource(
-                `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}&logOptions.tailLines=3&logOptions.follow=true`
-            )
-            .map(line => {
-                return line ? line + '\n' : line;
-            });
+        return requests.loadEventSource(`/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}`).map(line => {
+            return line ? line + '\n' : line;
+        });
     }
 
     public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string) {
