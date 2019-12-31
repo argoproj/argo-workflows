@@ -2,12 +2,10 @@ package workflow
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -134,36 +132,6 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 	}
 
 	return wf, nil
-}
-
-func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *WorkflowGetRequest, ws WorkflowService_WatchWorkflowServer) error {
-	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfReq.WorkflowName)).String()}
-	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Watch(opts)
-	if err != nil {
-		return err
-	}
-
-	done := make(chan bool)
-	go func() {
-		for next := range wfs.ResultChan() {
-			a := *next.Object.(*v1alpha1.Workflow)
-			err = ws.Send(&a)
-			if err != nil {
-				log.Warnf("Unable to send stream message: %v", err)
-				break
-			}
-		}
-		done <- true
-	}()
-
-	select {
-	case <-ws.Context().Done():
-		wfs.Stop()
-	case <-done:
-		wfs.Stop()
-	}
-
-	return nil
 }
 
 func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {

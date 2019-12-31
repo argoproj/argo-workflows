@@ -1,14 +1,18 @@
 package e2e
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/jinzhu/copier"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -252,7 +256,60 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 		Expect().
 		Status(200).
 		Body().
-		Contains("hello")
+		Contains("🐙 Hello Argo!")
+}
+
+// do some basic testing on the stream methods
+func (s *ArgoServerSuite) TestWorkflowStream() {
+
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow()
+
+	// use the watch to make sure that the workflow has succeeded
+	s.Run("Watch", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+			s := bufio.NewScanner(resp.Body)
+			for s.Scan() {
+				line := s.Text()
+				if strings.Contains(line, "Succeeded") {
+					break
+				}
+			}
+		}
+	})
+
+	// then,  lets check the logs
+	s.Run("PodLogs", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+			s := bufio.NewScanner(resp.Body)
+			for s.Scan() {
+				line:=s.Text()
+				if strings.Contains(line, "🐙 Hello Argo!") {
+					break
+				}
+			}
+		}
+	})
 }
 
 func (s *ArgoServerSuite) TestWorkflowHistory() {

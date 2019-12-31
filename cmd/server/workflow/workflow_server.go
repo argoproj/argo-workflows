@@ -5,6 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
@@ -133,6 +134,44 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, wfReq *WorkflowListR
 	return wfList, nil
 }
 
+func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowService_WatchWorkflowsServer) error {
+	wfClient, _, err := s.GetWFClient(ws.Context())
+	if err != nil {
+		return err
+	}
+	opts := metav1.ListOptions{}
+	if req.ListOptions != nil {
+		opts = *req.ListOptions
+	}
+	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(opts)
+	if err != nil {
+		return err
+	}
+
+	done := make(chan bool)
+	go func() {
+		for next := range wfs.ResultChan() {
+			wf := *next.Object.(*v1alpha1.Workflow)
+			log.WithFields(log.Fields{"type": next.Type, "workflowName": wf.Name}).Debug("Event")
+			err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: &wf})
+			if err != nil {
+				log.Warnf("Unable to send stream message: %v", err)
+				break
+			}
+		}
+		done <- true
+	}()
+
+	select {
+	case <-ws.Context().Done():
+		wfs.Stop()
+	case <-done:
+		wfs.Stop()
+	}
+
+	return nil
+}
+
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, wfReq *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient, _, err := s.GetWFClient(ctx)
 	if err != nil {
@@ -220,19 +259,13 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, wfReq *WorkflowCreate
 	return wfReq.Workflow, nil
 }
 
-func (s *workflowServer) WatchWorkflow(wfReq *WorkflowGetRequest, ws WorkflowService_WatchWorkflowServer) error {
-	wfClient, _, err := s.GetWFClient(ws.Context())
-	if err != nil {
-		return err
-	}
-	return s.wfKubeService.WatchWorkflow(wfClient, wfReq, ws)
-}
-
 func (s *workflowServer) PodLogs(wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
 	_, kubeClient, err := s.GetWFClient(log.Context())
 	if err != nil {
 		return err
 	}
+
+	log.Context()
 
 	return s.wfKubeService.PodLogs(kubeClient, wfReq, log)
 }
