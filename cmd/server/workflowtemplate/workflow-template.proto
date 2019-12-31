@@ -65,7 +65,10 @@ service WorkflowTemplateService {
     }
 
     rpc UpdateWorkflowTemplate (WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
-        option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}/{templateName}";
+        option (google.api.http) = {
+            put: "/api/v1/workflowtemplates/{namespace}/{templateName}"
+            body: "*"
+        };
     }
 
     rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {

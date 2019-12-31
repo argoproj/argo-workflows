@@ -1,5 +1,6 @@
 import * as models from '../../../models';
 import requests from './requests';
+import {WorkflowTemplate} from "../../../models";
 
 export class WorkflowTemplateService {
     public list(namespace: string) {
@@ -9,11 +10,22 @@ export class WorkflowTemplateService {
             .then(list => list.items || []);
     }
 
-    public get(name: string, namespace: string) {
+    public update(template: models.WorkflowTemplate, templateName: string, namespace: string): Promise<WorkflowTemplate> {
+        return requests
+            .put(`/workflowtemplates/${namespace}/${templateName}`)
+            .send({
+                templateName,
+                namespace,
+                template
+            })
+            .then(res => res.body as models.WorkflowTemplate);
+    }
+
+    public get(name: string, namespace: string): Promise<WorkflowTemplate> {
         return requests.get(`/workflowtemplates/${namespace}/${name}`).then(res => res.body as models.WorkflowTemplate);
     }
 
-    public delete(name: string, namespace: string) {
+    public delete(name: string, namespace: string): Promise<WorkflowTemplate> {
         return requests.delete(`/workflowtemplates/${namespace}/${name}`).then(res => res.body as models.WorkflowTemplate);
     }
 }

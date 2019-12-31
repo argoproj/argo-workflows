@@ -5,6 +5,7 @@ import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
+import {WorkflowTemplateSummaryPanel} from "../workflow-template-summary-panel";
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -39,13 +40,19 @@ export class WorkflowTemplateDetails extends React.Component<RouteComponentProps
                     breadcrumbs: [
                         {
                             title: 'Workflow Template',
-                            path: uiUrl('workflow-template')
+                            path: uiUrl('templates')
                         },
                         {title: this.namespace + '/' + this.name}
                     ]
                 }}>
-                {this.name}
-                <DataLoader load={() => services.workflowTemplate.get(this.name, this.namespace)}>{wfTmpl => wfTmpl.metadata.name}</DataLoader>
+                <DataLoader load={() => services.workflowTemplate.get(this.name, this.namespace)}>
+                    {wfTmpl =>
+                    <div className='argo-container'>
+                        <div className='workflow-details__content'>
+                            <WorkflowTemplateSummaryPanel workflowTemplate={wfTmpl} />
+                        </div>
+                    </div>
+                }</DataLoader>
             </Page>
         );
     }

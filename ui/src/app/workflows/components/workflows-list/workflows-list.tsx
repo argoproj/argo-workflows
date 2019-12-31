@@ -170,7 +170,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                             <YamlEditor
                                 minHeight={800}
                                 initialEditMode={true}
-                                onCancel={() => alert('Cancel')}
+                                submitMode={true}
                                 onSave={rawWf => {
                                     // TODO(simon): Remove hardwired 'argo' namespace
                                     services.workflows
