@@ -13,7 +13,7 @@ const WorkflowHistoryTableName = "argo_workflow_history"
 
 type WorkflowHistoryRepository interface {
 	AddWorkflowHistory(wf *wfv1.Workflow) error
-	ListWorkflowHistory(limit, offset int) ([]wfv1.Workflow, error)
+	ListWorkflowHistory(namespace string, limit, offset int) ([]wfv1.Workflow, error)
 	GetWorkflowHistory(namespace string, uid string) (*wfv1.Workflow, error)
 	DeleteWorkflowHistory(namespace string, uid string) error
 }
@@ -39,15 +39,24 @@ func (r *workflowHistoryRepository) AddWorkflowHistory(wf *wfv1.Workflow) error 
 	return err
 }
 
-func (r *workflowHistoryRepository) ListWorkflowHistory(limit int, offset int) ([]wfv1.Workflow, error) {
+func (r *workflowHistoryRepository) ListWorkflowHistory(namespace string, limit int, offset int) ([]wfv1.Workflow, error) {
 	var wfDBs []WorkflowDB
 	err := r.Collection(WorkflowHistoryTableName).
 		Find().
+		Where(namespaceEqual(namespace)).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
 		All(&wfDBs)
 	return wfDB2wf(wfDBs), err
+}
+
+func namespaceEqual(namespace string) db.Cond {
+	if namespace == "" {
+		return db.Cond{}
+	} else {
+		return db.Cond{"namespace": namespace}
+	}
 }
 
 func (r *workflowHistoryRepository) GetWorkflowHistory(namespace string, uid string) (*wfv1.Workflow, error) {

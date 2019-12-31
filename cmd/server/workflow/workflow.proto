@@ -43,16 +43,15 @@ message WorkflowLogRequest {
     string workflowName = 1;
     string namespace = 2;
     string podName = 3;
-    string container = 4;
-    k8s.io.api.core.v1.PodLogOptions logOptions = 5;
+    k8s.io.api.core.v1.PodLogOptions logOptions = 4;
 }
-
 
 message WorkflowDeleteRequest {
     string workflowName = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
+
 message WorkflowDeleteResponse {
     string workflowName = 1;
     string status = 2;
@@ -127,11 +126,11 @@ service WorkflowService {
 
     // PodLogs returns stream of log entries for the specified pod. Pod
     rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflow/{namespace}/{workflowName}/{podName}/log";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}/{podName}/log";
     }
 
     // Watch returns stream of application change events.
     rpc WatchWorkflow (WorkflowGetRequest) returns (stream github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
-        option (google.api.http).get = "/api/v1/stream/workflows/{namespace}/{workflowName}/watch";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}/watch";
     }
 }

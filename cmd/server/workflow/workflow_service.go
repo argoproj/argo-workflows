@@ -2,11 +2,12 @@ package workflow
 
 import (
 	"bufio"
+	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -28,8 +29,8 @@ func (s *kubeService) Create(wfClient versioned.Interface, namespace string, wf 
 	return createdWf, nil
 }
 
-func (s *kubeService) Get(wfClient versioned.Interface, namespace string, workflowName string, getOption *v1.GetOptions) (*v1alpha1.Workflow, error) {
-	wfGetOption := v1.GetOptions{}
+func (s *kubeService) Get(wfClient versioned.Interface, namespace string, workflowName string, getOption *metav1.GetOptions) (*v1alpha1.Workflow, error) {
+	wfGetOption := metav1.GetOptions{}
 	if getOption != nil {
 		wfGetOption = *getOption
 	}
@@ -41,7 +42,7 @@ func (s *kubeService) Get(wfClient versioned.Interface, namespace string, workfl
 }
 
 func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
-	var listOption = v1.ListOptions{}
+	var listOption = metav1.ListOptions{}
 	if wfReq.ListOptions != nil {
 		listOption = *wfReq.ListOptions
 	}
@@ -53,7 +54,7 @@ func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq
 }
 
 func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfReq *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
-	err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Delete(wfReq.WorkflowName, &v1.DeleteOptions{})
+	err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Delete(wfReq.WorkflowName, &metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfR
 }
 
 func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +75,7 @@ func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.
 }
 
 func (s *kubeService) Resubmit(wfClient versioned.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (s *kubeService) Resume(wfClient versioned.Interface, namespace string, wfR
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (s *kubeService) Suspend(wfClient versioned.Interface, namespace string, wf
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +128,7 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, v1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,8 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 }
 
 func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *WorkflowGetRequest, ws WorkflowService_WatchWorkflowServer) error {
-	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Watch(v1.ListOptions{})
+	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfReq.WorkflowName)).String()}
+	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(wfReq.Namespace).Watch(opts)
 	if err != nil {
 		return err
 	}
@@ -145,12 +147,10 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 	go func() {
 		for next := range wfs.ResultChan() {
 			a := *next.Object.(*v1alpha1.Workflow)
-			if wfReq.WorkflowName == "" || wfReq.WorkflowName == a.Name {
-				err = ws.Send(&a)
-				if err != nil {
-					log.Warnf("Unable to send stream message: %v", err)
-					break
-				}
+			err = ws.Send(&a)
+			if err != nil {
+				log.Warnf("Unable to send stream message: %v", err)
+				break
 			}
 		}
 		done <- true
@@ -167,14 +167,7 @@ func (s *kubeService) WatchWorkflow(wfClient versioned.Interface, wfReq *Workflo
 }
 
 func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
-	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, &corev1.PodLogOptions{
-		Container:    wfReq.Container,
-		Follow:       wfReq.LogOptions.Follow,
-		Timestamps:   true,
-		SinceSeconds: wfReq.LogOptions.SinceSeconds,
-		SinceTime:    wfReq.LogOptions.SinceTime,
-		TailLines:    wfReq.LogOptions.TailLines,
-	}).Stream()
+	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, wfReq.LogOptions).Stream()
 
 	if err == nil {
 		scanner := bufio.NewScanner(stream)
@@ -183,7 +176,7 @@ func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLo
 			parts := strings.Split(line, " ")
 			//logTime, err := time.Parse(time.RFC3339, parts[0])
 			byt := []byte(parts[0])
-			var logTime v1.Time
+			var logTime metav1.Time
 			err := logTime.UnmarshalText(byt)
 			if err == nil {
 				lines := strings.Join(parts[1:], " ")

@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow-history": {
+    "/api/v1/workflow-history/{namespace}": {
       "get": {
         "operationId": "ListWorkflowHistory",
         "responses": {
@@ -27,6 +27,12 @@
           }
         },
         "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
           {
             "name": "listOptions.labelSelector",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",

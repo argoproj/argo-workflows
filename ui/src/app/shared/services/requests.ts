@@ -1,23 +1,11 @@
-import * as _superagent from 'superagent';
-
-const superagentPromise = require('superagent-promise');
+// @ts-ignore
+import {EventSourcePolyfill} from 'event-source-polyfill';
 import {Observable, Observer} from 'rxjs';
-
+import * as _superagent from 'superagent';
 import {SuperAgentRequest} from 'superagent';
 import {apiUrl} from '../base';
 
-type Callback = (data: any) => void;
-
-declare class EventSource {
-    public onopen: Callback;
-    public onmessage: Callback;
-    public onerror: Callback;
-    public readyState: number;
-
-    constructor(url: string);
-
-    public close(): void;
-}
+const superagentPromise = require('superagent-promise');
 
 enum ReadyState {
     CONNECTING = 0,
@@ -26,8 +14,10 @@ enum ReadyState {
     DONE = 4
 }
 
+const getToken = () => localStorage.getItem('token');
+
 const auth = (req: SuperAgentRequest) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     return (token !== null ? req.auth(token, {type: 'bearer'}) : req).on('error', handle);
 };
 
@@ -62,9 +52,16 @@ export default {
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
-            const eventSource = new EventSource(apiUrl(url));
+            const token = getToken();
+            const headers: any = {};
+            if (token !== null) {
+                headers.Authorization = `Bearer ${getToken()}`;
+            }
+            const eventSource = new EventSourcePolyfill(apiUrl(url), {
+                headers
+            });
             let opened = false;
-            eventSource.onopen = msg => {
+            eventSource.onopen = (msg: any) => {
                 if (!opened) {
                     opened = true;
                 } else if (!allowAutoRetry) {
@@ -72,8 +69,8 @@ export default {
                     observer.complete();
                 }
             };
-            eventSource.onmessage = msg => observer.next(msg.data);
-            eventSource.onerror = e => () => {
+            eventSource.onmessage = (msg: any) => observer.next(msg.data);
+            eventSource.onerror = (e: any) => () => {
                 if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
                     observer.complete();
                 } else {
