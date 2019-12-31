@@ -10,3 +10,4 @@ spec:
     - name: run-workflow
       container:
         image: docker/whalesay:latest
+        command: [cowsay, hello]

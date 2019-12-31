@@ -417,6 +417,17 @@ func (tmpl *Template) HasPodSpecPatch() bool {
 	return tmpl.PodSpecPatch != ""
 }
 
+type Artifacts []Artifact
+
+func (a Artifacts) GetArtifactByName(name string) *Artifact {
+	for _, art := range a {
+		if art.Name == name {
+			return &art
+		}
+	}
+	return nil
+}
+
 // Inputs are the mechanism for passing parameters, artifacts, volumes from one template to another
 type Inputs struct {
 	// Parameters are a list of parameters passed as inputs
@@ -427,7 +438,7 @@ type Inputs struct {
 	// Artifact are a list of artifacts passed as inputs
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,opt,name=artifacts"`
 }
 
 // Pod metdata
@@ -562,7 +573,7 @@ type Outputs struct {
 	// Artifacts holds the list of output artifacts produced by a step
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 
 	// Result holds the result (stdout) of a script template
 	Result *string `json:"result,omitempty" protobuf:"bytes,3,opt,name=result"`
@@ -676,7 +687,7 @@ type Arguments struct {
 	// Artifacts is the list of artifacts to pass to the template or workflow
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Artifacts []Artifact `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
+	Artifacts Artifacts `json:"artifacts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,2,rep,name=artifacts"`
 }
 
 var _ ArgumentsProvider = &Arguments{}
@@ -1224,12 +1235,7 @@ type SuspendTemplate struct {
 
 // GetArtifactByName returns an input artifact by its name
 func (in *Inputs) GetArtifactByName(name string) *Artifact {
-	for _, art := range in.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return in.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName returns an input parameter by its name
@@ -1267,14 +1273,13 @@ func (out *Outputs) HasOutputs() bool {
 	return false
 }
 
+func (out *Outputs) GetArtifactByName(name string) *Artifact {
+	return out.Artifacts.GetArtifactByName(name)
+}
+
 // GetArtifactByName retrieves an artifact by its name
 func (args *Arguments) GetArtifactByName(name string) *Artifact {
-	for _, art := range args.Artifacts {
-		if art.Name == name {
-			return &art
-		}
-	}
-	return nil
+	return args.Artifacts.GetArtifactByName(name)
 }
 
 // GetParameterByName retrieves a parameter by its name

@@ -34,12 +34,6 @@ import (
 	"github.com/argoproj/argo/util/archive"
 	"github.com/argoproj/argo/util/retry"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
-	"github.com/argoproj/argo/workflow/artifacts/artifactory"
-	"github.com/argoproj/argo/workflow/artifacts/git"
-	"github.com/argoproj/argo/workflow/artifacts/hdfs"
-	"github.com/argoproj/argo/workflow/artifacts/http"
-	"github.com/argoproj/argo/workflow/artifacts/raw"
-	"github.com/argoproj/argo/workflow/artifacts/s3"
 	"github.com/argoproj/argo/workflow/common"
 )
 
@@ -50,8 +44,6 @@ const (
 
 // WorkflowExecutor is program which runs as the init/wait container
 type WorkflowExecutor struct {
-	common.ResourceInterface
-
 	PodName            string
 	Template           wfv1.Template
 	ClientSet          kubernetes.Interface
@@ -139,7 +131,7 @@ func (we *WorkflowExecutor) LoadArtifacts() error {
 				return errors.New("required artifact %s not supplied", art.Name)
 			}
 		}
-		artDriver, err := we.InitDriver(art)
+		artDriver, err := we.InitDriver(&art)
 		if err != nil {
 			return err
 		}
@@ -281,7 +273,7 @@ func (we *WorkflowExecutor) saveArtifact(mainCtrID string, art *wfv1.Artifact) e
 		}
 	}
 
-	artDriver, err := we.InitDriver(*art)
+	artDriver, err := we.InitDriver(art)
 	if err != nil {
 		return err
 	}
@@ -497,7 +489,7 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	} else {
 		return nil, errors.Errorf(errors.CodeBadRequest, "Unable to determine path to store %s. Archive location provided no information", art.Name)
 	}
-	artDriver, err := we.InitDriver(art)
+	artDriver, err := we.InitDriver(&art)
 	if err != nil {
 		return nil, err
 	}
@@ -509,9 +501,13 @@ func (we *WorkflowExecutor) SaveLogs() (*wfv1.Artifact, error) {
 	return &art, nil
 }
 
-// GetSecretFromVolMount will retrieve the Secrets from VolumeMount
-func (we *WorkflowExecutor) GetSecretFromVolMount(accessKeyName string, accessKey string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
+// GetSecret will retrieve the Secrets from VolumeMount
+func (we *WorkflowExecutor) GetSecret(accessKeyName string, accessKey string) (string, error) {
+	file, err := ioutil.ReadFile(filepath.Join(common.SecretVolMountPath, accessKeyName, accessKey))
+	if err != nil {
+		return "", err
+	}
+	return string(file), nil
 }
 
 // saveLogToFile saves the entire log output of a container to a local file
@@ -534,89 +530,12 @@ func (we *WorkflowExecutor) saveLogToFile(mainCtrID, path string) error {
 }
 
 // InitDriver initializes an instance of an artifact driver
-func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriver, error) {
-	if art.S3 != nil {
-		var accessKey string
-		var secretKey string
-
-		if art.S3.AccessKeySecret.Name != "" {
-			accessKeyBytes, err := we.GetSecretFromVolMount(art.S3.AccessKeySecret.Name, art.S3.AccessKeySecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			accessKey = string(accessKeyBytes)
-			secretKeyBytes, err := we.GetSecretFromVolMount(art.S3.SecretKeySecret.Name, art.S3.SecretKeySecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			secretKey = string(secretKeyBytes)
-		}
-
-		driver := s3.S3ArtifactDriver{
-			Endpoint:  art.S3.Endpoint,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
-			Secure:    art.S3.Insecure == nil || !*art.S3.Insecure,
-			Region:    art.S3.Region,
-			RoleARN:   art.S3.RoleARN,
-		}
-		return &driver, nil
+func (we *WorkflowExecutor) InitDriver(art *wfv1.Artifact) (artifact.ArtifactDriver, error) {
+	driver, err := artifact.NewDriver(art, we)
+	if err == artifact.ErrUnsupportedDriver {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
 	}
-	if art.HTTP != nil {
-		return &http.HTTPArtifactDriver{}, nil
-	}
-	if art.Git != nil {
-		gitDriver := git.GitArtifactDriver{
-			InsecureIgnoreHostKey: art.Git.InsecureIgnoreHostKey,
-		}
-		if art.Git.UsernameSecret != nil {
-			usernameBytes, err := we.GetSecretFromVolMount(art.Git.UsernameSecret.Name, art.Git.UsernameSecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			gitDriver.Username = string(usernameBytes)
-		}
-		if art.Git.PasswordSecret != nil {
-			passwordBytes, err := we.GetSecretFromVolMount(art.Git.PasswordSecret.Name, art.Git.PasswordSecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			gitDriver.Password = string(passwordBytes)
-		}
-		if art.Git.SSHPrivateKeySecret != nil {
-			sshPrivateKeyBytes, err := we.GetSecretFromVolMount(art.Git.SSHPrivateKeySecret.Name, art.Git.SSHPrivateKeySecret.Key)
-			if err != nil {
-				return nil, err
-			}
-			gitDriver.SSHPrivateKey = string(sshPrivateKeyBytes)
-		}
-
-		return &gitDriver, nil
-	}
-	if art.Artifactory != nil {
-		usernameBytes, err := we.GetSecretFromVolMount(art.Artifactory.UsernameSecret.Name, art.Artifactory.UsernameSecret.Key)
-		if err != nil {
-			return nil, err
-		}
-		passwordBytes, err := we.GetSecretFromVolMount(art.Artifactory.PasswordSecret.Name, art.Artifactory.PasswordSecret.Key)
-		if err != nil {
-			return nil, err
-		}
-		driver := artifactory.ArtifactoryArtifactDriver{
-			Username: string(usernameBytes),
-			Password: string(passwordBytes),
-		}
-		return &driver, nil
-
-	}
-	if art.HDFS != nil {
-		return hdfs.CreateDriver(we, art.HDFS)
-	}
-	if art.Raw != nil {
-		return &raw.RawArtifactDriver{}, nil
-	}
-
-	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)
+	return driver, err
 }
 
 // getPod is a wrapper around the pod interface to get the current pod from kube API server
@@ -641,13 +560,9 @@ func (we *WorkflowExecutor) getPod() (*apiv1.Pod, error) {
 	return pod, nil
 }
 
-// GetNamespace returns the namespace
-func (we *WorkflowExecutor) GetNamespace() string {
-	return we.Namespace
-}
-
 // GetConfigMapKey retrieves a configmap value and memoizes the result
-func (we *WorkflowExecutor) GetConfigMapKey(namespace, name, key string) (string, error) {
+func (we *WorkflowExecutor) GetConfigMapKey(name, key string) (string, error) {
+	namespace := we.Namespace
 	cachedKey := fmt.Sprintf("%s/%s/%s", namespace, name, key)
 	if val, ok := we.memoizedConfigMaps[cachedKey]; ok {
 		return val, nil

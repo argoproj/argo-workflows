@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	golang_proto "github.com/golang/protobuf/proto"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -21,6 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/cmd/server/artifacts"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
@@ -172,13 +172,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	// time.Time, but does not support custom UnmarshalJSON() and MarshalJSON() methods. Therefore
 	// we use our own Marshaler
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
-	gwCookieOpts := runtime.WithForwardResponseOption(as.translateGrpcCookieHeader)
-	gwmux := runtime.NewServeMux(gwMuxOpts, gwCookieOpts)
+	gwmux := runtime.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
-	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
 	mux.HandleFunc("/", as.serverStaticFile)
 	return &httpServer
 }
@@ -191,11 +189,6 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 	if err != nil {
 		panic(err)
 	}
-}
-
-// TranslateGrpcCookieHeader conditionally sets a cookie on the response.
-func (as *argoServer) translateGrpcCookieHeader(ctx context.Context, w http.ResponseWriter, resp golang_proto.Message) error {
-	return nil
 }
 
 // ResyncConfig reloads the controller config from the configmap
@@ -237,11 +230,17 @@ func (as *argoServer) checkServeErr(name string, err error) {
 		log.Infof("graceful shutdown %s", name)
 	}
 }
-
 func (as *argoServer) serverStaticFile(w http.ResponseWriter, r *http.Request) {
+
+	if strings.HasPrefix(r.URL.Path, "/artifacts") {
+		artifacts.NewArtifactServer(as.kubeClientset, as.wfClientSet).DownloadArtifact(w, r)
+		return
+	}
+
 	// this hack allows us to server the routes (e.g. /workflows) with the index file
 	if !strings.Contains(r.URL.Path, ".") {
 		r.URL.Path = "index.html"
 	}
+	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
 	static.ServeHTTP(w, r)
 }

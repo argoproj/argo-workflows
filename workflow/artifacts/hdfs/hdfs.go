@@ -12,7 +12,7 @@ import (
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/util"
-	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/artifacts/resource"
 )
 
 // ArtifactDriver is a driver for HDFS
@@ -72,25 +72,23 @@ func ValidateArtifact(errPrefix string, art *wfv1.HDFSArtifact) error {
 }
 
 // CreateDriver constructs ArtifactDriver
-func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
+func CreateDriver(ci resource.Interface, art *wfv1.HDFSArtifact) (*ArtifactDriver, error) {
 	var krbConfig string
 	var krbOptions *KrbOptions
 	var err error
 
-	namespace := ci.GetNamespace()
-
 	if art.KrbConfigConfigMap != nil && art.KrbConfigConfigMap.Name != "" {
-		krbConfig, err = ci.GetConfigMapKey(namespace, art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
+		krbConfig, err = ci.GetConfigMapKey(art.KrbConfigConfigMap.Name, art.KrbConfigConfigMap.Key)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if art.KrbCCacheSecret != nil && art.KrbCCacheSecret.Name != "" {
-		bytes, err := ci.GetSecretFromVolMount(art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
+		bytes, err := ci.GetSecret(art.KrbCCacheSecret.Name, art.KrbCCacheSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		ccache, err := credentials.ParseCCache(bytes)
+		ccache, err := credentials.ParseCCache([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}
@@ -103,11 +101,11 @@ func CreateDriver(ci common.ResourceInterface, art *wfv1.HDFSArtifact) (*Artifac
 		}
 	}
 	if art.KrbKeytabSecret != nil && art.KrbKeytabSecret.Name != "" {
-		bytes, err := ci.GetSecretFromVolMount(art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
+		bytes, err := ci.GetSecret(art.KrbKeytabSecret.Name, art.KrbKeytabSecret.Key)
 		if err != nil {
 			return nil, err
 		}
-		ktb, err := keytab.Parse(bytes)
+		ktb, err := keytab.Parse([]byte(bytes))
 		if err != nil {
 			return nil, err
 		}

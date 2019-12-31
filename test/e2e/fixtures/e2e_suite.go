@@ -121,6 +121,8 @@ func (s *E2ESuite) printDiagnostics() {
 
 func (s *E2ESuite) printWorkflowDiagnostics(wf wfv1.Workflow) {
 	logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "workflow": wf.Name})
+	logCtx.Info("Workflow metadata:")
+	printJSON(wf.ObjectMeta)
 	logCtx.Info("Workflow status:")
 	printJSON(wf.Status)
 	// print logs

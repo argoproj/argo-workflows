@@ -136,10 +136,3 @@ type ExecutionControl struct {
 	// IncludeScriptOutput is containing flag to include script output
 	IncludeScriptOutput bool `json:"includeScriptOutput,omitempty"`
 }
-
-type ResourceInterface interface {
-	GetNamespace() string
-	GetSecrets(namespace, name, key string) ([]byte, error)
-	GetSecretFromVolMount(name, key string) ([]byte, error)
-	GetConfigMapKey(namespace, name, key string) (string, error)
-}
