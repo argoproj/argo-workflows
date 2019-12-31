@@ -71,6 +71,9 @@ else
 endif
 	touch ui/dist/app
 
+vendor: Gopkg.toml
+	dep ensure -v -vendor-only
+
 $(GOPATH)/bin/staticfiles:
 	go get bou.ke/staticfiles
 
