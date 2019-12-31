@@ -152,7 +152,7 @@ ifeq ($(DOCKER_PUSH),true)
 endif
 
 .PHONY: argo-server
-argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin
+argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin dist/argo-server-windows
 
 .PHONY: executor
 executor:
