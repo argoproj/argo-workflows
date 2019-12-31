@@ -20,6 +20,18 @@ export class WorkflowsService {
             .then(list => (list.items || []).map(this.populateDefaultFields));
     }
 
+    public watchWorkflow(name: string, namespace: string): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
+        return requests
+            .loadEventSource(`/stream/workflows/${namespace}/${name}/watch`)
+            .repeat()
+            .retry()
+            .map(data => JSON.parse(data) as models.kubernetes.WatchEvent<models.Workflow>)
+            .map(watchEvent => {
+                watchEvent.object = this.populateDefaultFields(watchEvent.object);
+                return watchEvent;
+            });
+    }
+
     public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
         let url = '/workflows/live';
         if (filter) {
