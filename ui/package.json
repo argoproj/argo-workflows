@@ -13,7 +13,7 @@
         "test": "mocha --require ts-node/register ./src/app/**/*.spec.ts"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.8.1",
+        "@fortawesome/fontawesome-free": "^5.12.0",
         "@tippy.js/react": "^2.1.2",
         "@types/js-yaml": "^3.12.1",
         "@types/react-form": "^2.16.1",
