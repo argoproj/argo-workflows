@@ -9,7 +9,6 @@ commands:
           name: Restore vendor cache
           keys:
             - vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v3-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: dep ensure -v -vendor-only
@@ -44,8 +43,6 @@ commands:
           keys:
             - go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v2-master-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v1-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:
     steps:
       - run:

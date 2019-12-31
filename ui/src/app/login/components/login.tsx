@@ -3,14 +3,20 @@ import * as React from 'react';
 
 require('./login.scss');
 
-const getToken = () => localStorage.getItem('token');
+const getToken = () => {
+    const match = document.cookie.match(/Authorization=Bearer ([^ ]*)/);
+    if (match && match.length >= 2) {
+        return match[1];
+    }
+    return null;
+};
 const maybeLoggedIn = () => !!getToken();
 const logout = () => {
-    localStorage.removeItem('token');
+    document.cookie = 'Authorization=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     document.location.reload(true);
 };
 const login = (token: string) => {
-    localStorage.setItem('token', token);
+    document.cookie = 'Authorization=Bearer ' + token + '; path=/;';
     document.location.href = '/workflows';
 };
 export const Login = () => (

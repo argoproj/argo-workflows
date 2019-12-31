@@ -30,7 +30,7 @@ func NewWorkflowHistoryServer(wfClientset versioned.Interface, kubeClientset kub
 func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
-		options = &metav1.ListOptions{Limit: 100}
+		options = &metav1.ListOptions{}
 	}
 	if options.Continue == "" {
 		options.Continue = "0"
@@ -40,7 +40,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
-	allItems, err := w.repo.ListWorkflowHistory(limit, offset)
+	allItems, err := w.repo.ListWorkflowHistory(req.Namespace, limit, offset)
 	if err != nil {
 		return nil, err
 	}

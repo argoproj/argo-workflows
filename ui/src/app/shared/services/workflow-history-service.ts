@@ -4,7 +4,7 @@ import requests from './requests';
 export class WorkflowHistoryService {
     public list() {
         return requests
-            .get(`/workflow-history`)
+            .get(`/workflow-history/`)
             .then(res => res.body as models.WorkflowList)
             .then(list => list.items || []);
     }

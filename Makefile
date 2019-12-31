@@ -8,11 +8,10 @@ BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
-# Do we have yarn installed locally? If so, use it. It is much faster.
-YARN                   = $(shell which yarn)
 
 # docker image publishing options
 DOCKER_PUSH           ?= false
+DOCKER_BUILDKIT       = 1
 IMAGE_TAG             ?= latest
 # perform static compilation
 STATIC_BUILD          ?= true
@@ -45,6 +44,8 @@ endif
 ifdef IMAGE_NAMESPACE
 IMAGE_PREFIX = ${IMAGE_NAMESPACE}/
 endif
+
+ARGO_SERVER_PKGS := $(shell go list  -f '{{ join .Deps "\n" }}'  ./cmd/server/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 
 # Build the project
 .PHONY: all
@@ -123,43 +124,32 @@ else
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
 
-.PHONY: argo-server
-argo-server: cmd/server/static/files.go
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server ./cmd/server
-
-.PHONY: argo-server-image
-argo-server-image: cmd/server/static/files.go
-ifeq ($(DEV_IMAGE), true)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argo-server ./cmd/server
-	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server-dev .
-	rm -f argo-server
-else
-	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) --target argo-server .
-endif
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) ; fi
-
-.PHONY: argo-server-linux-amd64
-argo-server-linux-amd64:
+dist/argo-server-linux-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
 
-.PHONY: argo-server-linux-ppc64le
-argo-server-linux-ppc64le:
+dist/argo-server-linux-ppc64le: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
 
-.PHONY: argo-server-linux-s390x
-argo-server-linux-s390x:
+dist/argo-server-linux-s390x: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
 
-.PHONY: argo-server-linux
-argo-server-linux: argo-server-linux-amd64 argo-server-linux-ppc64le argo-server-linux-s390x
-
-.PHONY: argo-server-darwin
-argo-server-darwin:
+dist/argo-server-darwin: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
 
-.PHONY: argo-server-windows
-argo-server-windows:
+dist/argo-server-windows: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
+
+.PHONY: argo-server-image
+argo-server-image: dist/argo-server-linux-amd64
+	cp dist/argo-server-linux-amd64 argo-server
+	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server .
+	rm -f argo-server
+ifeq ($(DOCKER_PUSH),true)
+ 	docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG)
+endif
+
+.PHONY: argo-server
+argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin
 
 .PHONY: executor
 executor:
@@ -195,6 +185,9 @@ endif
 .PHONY: lint
 lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
+ifeq ($(STATIC),true)
+	yarn --cwd ui lint
+endif
 
 .PHONY: test
 test: cmd/server/static/files.go

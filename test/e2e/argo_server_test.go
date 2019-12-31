@@ -1,24 +1,31 @@
 package e2e
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/jinzhu/copier"
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/clientcmd"
 
+	serverworkflow "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
 )
+
+const baseUrl = "http://localhost:2746/api/v1"
 
 // ensure basic HTTP functionality works,
 // testing behaviour really is a non-goal
@@ -57,7 +64,7 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
-			BaseURL:  "http://localhost:2746/api/v1",
+			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
 				httpexpect.NewDebugPrinter(t, true),
@@ -106,6 +113,14 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 		Status(200)
 }
 
+func (s *ArgoServerSuite) Run(name string, f func(t *testing.T)) {
+	t := s.T()
+	if t.Failed() {
+		t.SkipNow()
+	}
+	t.Run(name, f)
+}
+
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 	s.e(s.T()).POST("/workflows/argo").
 		WithQuery("createOptions.dryRun", "[All]").
@@ -135,7 +150,7 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 }
 
 func (s *ArgoServerSuite) TestWorkflows() {
-	s.T().Run("Create", func(t *testing.T) {
+	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/workflows/argo").
 			WithBytes([]byte(`{
   "workflow": {
@@ -163,9 +178,8 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Expect().
 			Status(200)
 	})
-
-	s.T().Run("List", func(t *testing.T) {
-		s.e(t).GET("/workflows/argo").
+	s.Run("List", func(t *testing.T) {
+		s.e(t).GET("/workflows/").
 			Expect().
 			Status(200).
 			JSON().
@@ -175,13 +189,13 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Equal(1)
 	})
 
-	s.T().Run("Get", func(t *testing.T) {
+	s.Run("Get", func(t *testing.T) {
 		s.e(t).GET("/workflows/argo/test").
 			Expect().
 			Status(200)
 	})
 
-	s.T().Run("Suspend", func(t *testing.T) {
+	s.Run("Suspend", func(t *testing.T) {
 		s.e(t).PUT("/workflows/argo/test/suspend").
 			Expect().
 			Status(200)
@@ -194,7 +208,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Equal(true)
 	})
 
-	s.T().Run("Resume", func(t *testing.T) {
+	s.Run("Resume", func(t *testing.T) {
 		s.e(t).PUT("/workflows/argo/test/resume").
 			Expect().
 			Status(200)
@@ -208,7 +222,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			NotContainsKey("suspend")
 	})
 
-	s.T().Run("Terminate", func(t *testing.T) {
+	s.Run("Terminate", func(t *testing.T) {
 		s.e(t).PUT("/workflows/argo/test/terminate").
 			Expect().
 			Status(200)
@@ -224,10 +238,71 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Equal("terminated")
 	})
 
-	s.T().Run("Delete", func(t *testing.T) {
+	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/workflows/argo/test").
 			Expect().
 			Status(200)
+	})
+}
+
+// do some basic testing on the stream methods
+func (s *ArgoServerSuite) TestWorkflowStream() {
+
+	s.Given().
+		Workflow("@smoke/basic.yaml").
+		When().
+		SubmitWorkflow()
+
+	// use the watch to make sure that the workflow has succeeded
+	s.Run("Watch", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"/workflows/argo/basic/watch", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream");
+			s := bufio.NewScanner(resp.Body)
+			type Event struct {
+				Result wfv1.Workflow
+			}
+			for s.Scan() {
+				wf := &Event{}
+				err := json.Unmarshal(s.Bytes(), wf)
+				assert.NoError(t, err)
+				if wf.Result.Status.Phase == wfv1.NodeSucceeded {
+					break
+				}
+			}
+		}
+	})
+
+	// then,  lets check the logs
+	s.Run("PodLogs", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"/workflows/argo/basic/basic/log?logOptions.container=main&logOptions.tailLines=3", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+			s := bufio.NewScanner(resp.Body)
+			type Event struct {
+				Result serverworkflow.LogEntry
+			}
+			for s.Scan() {
+				wf := &Event{}
+				err := json.Unmarshal(s.Bytes(), wf)
+				assert.NoError(t, err)
+				log.Info(wf.Result.Content)
+			}
+		}
 	})
 }
 
@@ -239,7 +314,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second).
 		Then().
-		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *v1alpha1.WorkflowStatus) {
+		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
 	s.Given().
@@ -248,8 +323,8 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		SubmitWorkflow().
 		WaitForWorkflow(15 * time.Second)
 
-	s.T().Run("List", func(t *testing.T) {
-		s.e(t).GET("/workflow-history").
+	s.Run("List", func(t *testing.T) {
+		s.e(t).GET("/workflow-history/").
 			Expect().
 			Status(200).
 			JSON().
@@ -258,7 +333,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Length().
 			Equal(2)
 
-		j := s.e(t).GET("/workflow-history").
+		j := s.e(t).GET("/workflow-history/").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -274,7 +349,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Equal("1")
 	})
 
-	s.T().Run("Get", func(t *testing.T) {
+	s.Run("Get", func(t *testing.T) {
 		s.e(t).GET("/workflow-history/argo/not-found").
 			Expect().
 			Status(404)
@@ -286,7 +361,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Equal("basic")
 	})
 
-	s.T().Run("Resubmit", func(t *testing.T) {
+	s.Run("Resubmit", func(t *testing.T) {
 		s.e(t).PUT("/workflow-history/argo/{uid}/resubmit", uid).
 			Expect().
 			Status(200)
@@ -300,7 +375,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Length().
 			Equal(3)
 	})
-	s.T().Run("Delete", func(t *testing.T) {
+	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/workflow-history/argo/{uid}", uid).
 			Expect().
 			Status(200)
@@ -311,7 +386,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 }
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
-	s.T().Run("Create", func(t *testing.T) {
+	s.Run("Create", func(t *testing.T) {
 		s.e(t).POST("/workflowtemplates/argo").
 			WithBytes([]byte(`{
   "template": {
@@ -339,7 +414,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Status(200)
 	})
 
-	s.T().Run("List", func(t *testing.T) {
+	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/workflowtemplates/argo").
 			Expect().
 			Status(200).
@@ -350,13 +425,13 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Equal(1)
 	})
 
-	s.T().Run("Get", func(t *testing.T) {
+	s.Run("Get", func(t *testing.T) {
 		s.e(t).GET("/workflowtemplates/argo/test").
 			Expect().
 			Status(200)
 	})
 
-	s.T().Run("Delete", func(t *testing.T) {
+	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/workflowtemplates/argo/test").
 			Expect().
 			Status(200)

@@ -1,0 +1,3 @@
+FROM scratch
+COPY argo-server /bin/
+ENTRYPOINT [ "argo-server" ]

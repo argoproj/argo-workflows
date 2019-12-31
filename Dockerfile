@@ -32,15 +32,6 @@ RUN wget https://github.com/golang/dep/releases/download/v${DEP_VERSION}/dep-lin
 ENV GOLANGCI_LINT_VERSION=1.16.0
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v$GOLANGCI_LINT_VERSION/install.sh| sh -s -- -b $(go env GOPATH)/bin v$GOLANGCI_LINT_VERSION
 
-# Install gometalinter
-# Keep gometalinter to avoid CI failures during the linter migration.
-# We can remove it after enough time has passed.
-ENV GOMETALINTER_VERSION=2.0.12
-RUN curl -sLo- https://github.com/alecthomas/gometalinter/releases/download/v${GOMETALINTER_VERSION}/gometalinter-${GOMETALINTER_VERSION}-linux-amd64.tar.gz | \
-    tar -xzC "$GOPATH/bin" --exclude COPYING --exclude README.md --strip-components 1 -f- && \
-    ln -s $GOPATH/bin/gometalinter $GOPATH/bin/gometalinter.v2
-
-
 ####################################################################################################
 # argoexec-base
 # Used as the base for both the release and development version of argoexec
@@ -101,10 +92,3 @@ FROM scratch as argocli
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
 
-
-####################################################################################################
-# argo-server
-####################################################################################################
-FROM scratch as argo-server
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-server /bin/argo-server
-ENTRYPOINT [ "argo-server" ]
