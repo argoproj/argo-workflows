@@ -50,8 +50,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                             <DataLoader
                                 input={this.phases}
                                 load={phases => {
-                                    // TODO: Remove hardwired 'argo' namespace
-                                    return Observable.fromPromise(services.workflows.list(phases, 'argo')).flatMap(workflows =>
+                                    return Observable.fromPromise(services.workflows.list(phases, '')).flatMap(workflows =>
                                         Observable.merge(
                                             Observable.from([workflows]),
                                             services.workflows

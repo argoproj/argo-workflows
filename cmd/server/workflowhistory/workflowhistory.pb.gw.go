@@ -29,12 +29,30 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
 var (
-	filter_WorkflowHistoryService_ListWorkflowHistory_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	filter_WorkflowHistoryService_ListWorkflowHistory_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_WorkflowHistoryService_ListWorkflowHistory_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowHistoryServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowHistoryListRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -51,6 +69,24 @@ func request_WorkflowHistoryService_ListWorkflowHistory_0(ctx context.Context, m
 func local_request_WorkflowHistoryService_ListWorkflowHistory_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowHistoryServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowHistoryListRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_WorkflowHistoryService_ListWorkflowHistory_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -515,7 +551,7 @@ func RegisterWorkflowHistoryServiceHandlerClient(ctx context.Context, mux *runti
 }
 
 var (
-	pattern_WorkflowHistoryService_ListWorkflowHistory_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "workflow-history"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowHistoryService_ListWorkflowHistory_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflow-history", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_WorkflowHistoryService_GetWorkflowHistory_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-history", "namespace", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
 

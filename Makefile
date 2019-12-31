@@ -136,9 +136,8 @@ dist/argo-server-linux-s390x: vendor cmd/server/static/files.go $(ARGO_SERVER_PK
 dist/argo-server-darwin: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
 
-# TODO
-# dist/argo-server-windows: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-#	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
+dist/argo-server-windows: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
@@ -186,6 +185,9 @@ endif
 .PHONY: lint
 lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
+ifeq ($(STATIC),true)
+	yarn --cwd ui lint
+endif
 
 .PHONY: test
 test: cmd/server/static/files.go

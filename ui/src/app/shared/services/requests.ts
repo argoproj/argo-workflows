@@ -53,7 +53,7 @@ export default {
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
         return Observable.create((observer: Observer<any>) => {
             const token = getToken();
-            const headers: any = {Accept: 'text/event-stream'};
+            const headers: any = {};
             if (token !== null) {
                 headers.Authorization = `Bearer ${getToken()}`;
             }

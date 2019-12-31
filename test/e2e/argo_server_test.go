@@ -179,7 +179,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Status(200)
 	})
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/workflows/argo").
+		s.e(t).GET("/workflows/").
 			Expect().
 			Status(200).
 			JSON().
@@ -264,6 +264,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		assert.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "application/json")
 			s := bufio.NewScanner(resp.Body)
 			type Event struct {
 				Result wfv1.Workflow
@@ -290,6 +291,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		assert.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		if assert.Equal(t, 200, resp.StatusCode) {
+			assert.Equal(t, resp.Header.Get("Content-Type"), "application/json")
 			s := bufio.NewScanner(resp.Body)
 			type Event struct {
 				Result serverworkflow.LogEntry
@@ -322,7 +324,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		WaitForWorkflow(15 * time.Second)
 
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/workflow-history").
+		s.e(t).GET("/workflow-history/").
 			Expect().
 			Status(200).
 			JSON().
@@ -331,7 +333,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Length().
 			Equal(2)
 
-		j := s.e(t).GET("/workflow-history").
+		j := s.e(t).GET("/workflow-history/").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
