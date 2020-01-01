@@ -2,6 +2,7 @@ import {Observable} from 'rxjs';
 
 import * as models from '../../../models';
 import requests from './requests';
+import {WorkflowDeleteResponse} from './responses';
 
 export class WorkflowsService {
     public get(namespace: string, name: string): Promise<models.Workflow> {
@@ -17,6 +18,18 @@ export class WorkflowsService {
             .query({phase: phases})
             .then(res => res.body as models.WorkflowList)
             .then(list => (list.items || []).map(this.populateDefaultFields));
+    }
+
+    public watchWorkflow(name: string, namespace: string): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
+        return requests
+            .loadEventSource(`/stream/workflows/${namespace}/${name}/watch`)
+            .repeat()
+            .retry()
+            .map(data => JSON.parse(data) as models.kubernetes.WatchEvent<models.Workflow>)
+            .map(watchEvent => {
+                watchEvent.object = this.populateDefaultFields(watchEvent.object);
+                return watchEvent;
+            });
     }
 
     public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
@@ -39,6 +52,56 @@ export class WorkflowsService {
                 watchEvent.object = this.populateDefaultFields(watchEvent.object);
                 return watchEvent;
             });
+    }
+
+    public retry(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/retry`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public resubmit(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/resubmit`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public suspend(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/suspend`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public resume(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/resume`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public terminate(workflowName: string, namespace: string): Promise<models.Workflow> {
+        return requests
+            .put(`/workflows/${namespace}/${workflowName}/terminate`)
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
+    }
+
+    public delete(workflowName: string, namespace: string): Promise<WorkflowDeleteResponse> {
+        return requests.delete(`/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
+    }
+
+    public create(workflow: models.Workflow, namespace: string): Promise<models.Workflow> {
+        return requests
+            .post(`/workflows/${namespace}`)
+            .send({
+                namespace,
+                workflow
+            })
+            .then(res => res.body as models.Workflow)
+            .then(this.populateDefaultFields);
     }
 
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {

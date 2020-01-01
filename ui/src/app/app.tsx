@@ -10,9 +10,11 @@ import {AppContext, ContextApis, Provider} from './shared/context';
 import help from './help';
 import login from './login';
 import workflowHistory from './workflow-history';
+import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const workflowsUrl = uiUrl('workflows');
+const workflowTemplatesUrl = uiUrl('templates');
 const workflowHistoryUrl = uiUrl('workflow-history');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
@@ -21,6 +23,7 @@ const routes: {
     [path: string]: {component: React.ComponentType<RouteComponentProps<any>>};
 } = {
     [workflowsUrl]: {component: workflows.component},
+    [workflowTemplatesUrl]: {component: workflowTemplates.component},
     [workflowHistoryUrl]: {component: workflowHistory.component},
     [helpUrl]: {component: help.component},
     [loginUrl]: {component: login.component}
@@ -35,6 +38,11 @@ const navItems = [
         title: 'Timeline',
         path: workflowsUrl,
         iconClassName: 'argo-icon-timeline'
+    },
+    {
+        title: 'Templates',
+        path: workflowTemplatesUrl,
+        iconClassName: 'fa fa-clone'
     },
     {
         title: 'History',

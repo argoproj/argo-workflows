@@ -3,17 +3,25 @@ import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
 
-import {DataLoader, MockupList, Page, TopBarFilter} from 'argo-ui';
+import {Autocomplete, DataLoader, MockupList, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {AppContext, Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-// import {Autocomplete} from '../../../shared/components/autocomplete/autocomplete';
 import {WorkflowListItem} from '..';
 import {Query} from '../../../shared/components/query';
+import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 
 require('./workflows-list.scss');
+
+function tryJsonParse(input: string) {
+    try {
+        return (input && JSON.parse(input)) || null;
+    } catch {
+        return null;
+    }
+}
 
 export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
     public static contextTypes = {
@@ -23,6 +31,11 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
 
     private get phases() {
         return new URLSearchParams(this.props.location.search).getAll('phase');
+    }
+
+    private get wfInput() {
+        const query = new URLSearchParams(this.props.location.search);
+        return tryJsonParse(query.get('new'));
     }
 
     public render() {
@@ -44,13 +57,23 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                         title='Workflows'
                         toolbar={{
                             filter,
-                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}]
+                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Submit New Workflow',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            }
                         }}>
                         <div className='workflows-list'>
                             <DataLoader
                                 input={this.phases}
                                 load={phases => {
-                                    return Observable.fromPromise(services.workflows.list(phases, '')).flatMap(workflows =>
+                                    // TODO(simon): Remove hardwired 'argo' namespace
+                                    return Observable.fromPromise(services.workflows.list(phases, 'argo')).flatMap(workflows =>
                                         Observable.merge(
                                             Observable.from([workflows]),
                                             services.workflows
@@ -95,34 +118,34 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                                                     }}
                                                                 />
                                                             )}
-                                                            {/*<Autocomplete*/}
-                                                            {/*    filterSuggestions={true}*/}
-                                                            {/*    renderInput={inputProps => (*/}
-                                                            {/*        <input*/}
-                                                            {/*            {...inputProps}*/}
-                                                            {/*            onFocus={e => {*/}
-                                                            {/*                e.target.select();*/}
-                                                            {/*                if (inputProps.onFocus) {*/}
-                                                            {/*                    inputProps.onFocus(e);*/}
-                                                            {/*                }*/}
-                                                            {/*            }}*/}
-                                                            {/*            className='argo-field'*/}
-                                                            {/*        />*/}
-                                                            {/*    )}*/}
-                                                            {/*    renderItem={item => (*/}
-                                                            {/*        <React.Fragment>*/}
-                                                            {/*            <i className='icon argo-icon-workflow' /> {item.label}*/}
-                                                            {/*        </React.Fragment>*/}
-                                                            {/*    )}*/}
-                                                            {/*    onSelect={val => {*/}
-                                                            {/*        ctx.navigation.goto(`./${val}`);*/}
-                                                            {/*    }}*/}
-                                                            {/*    onChange={e => {*/}
-                                                            {/*        ctx.navigation.goto('.', {search: e.target.value}, {replace: true});*/}
-                                                            {/*    }}*/}
-                                                            {/*    value={q.get('search') || ''}*/}
-                                                            {/*    items={workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}*/}
-                                                            {/*/>*/}
+                                                            <Autocomplete
+                                                                filterSuggestions={true}
+                                                                renderInput={inputProps => (
+                                                                    <input
+                                                                        {...inputProps}
+                                                                        onFocus={e => {
+                                                                            e.target.select();
+                                                                            if (inputProps.onFocus) {
+                                                                                inputProps.onFocus(e);
+                                                                            }
+                                                                        }}
+                                                                        className='argo-field'
+                                                                    />
+                                                                )}
+                                                                renderItem={item => (
+                                                                    <React.Fragment>
+                                                                        <i className='icon argo-icon-workflow' /> {item.label}
+                                                                    </React.Fragment>
+                                                                )}
+                                                                onSelect={val => {
+                                                                    ctx.navigation.goto(`./${val}`);
+                                                                }}
+                                                                onChange={e => {
+                                                                    ctx.navigation.goto('.', {search: e.target.value}, {replace: true});
+                                                                }}
+                                                                value={q.get('search') || ''}
+                                                                items={workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}
+                                                            />
                                                         </div>
                                                     )}
                                                 </Query>
@@ -154,6 +177,21 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 )}
                             </DataLoader>
                         </div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            Submit Workflow
+                            <YamlEditor
+                                minHeight={800}
+                                initialEditMode={true}
+                                submitMode={true}
+                                onSave={rawWf => {
+                                    // TODO(simon): Remove hardwired 'argo' namespace
+                                    services.workflows
+                                        .create(JSON.parse(rawWf), 'argo')
+                                        .then()
+                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                }}
+                            />
+                        </SlidingPanel>
                     </Page>
                 )}
             </Consumer>

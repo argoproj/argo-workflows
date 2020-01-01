@@ -132,6 +132,13 @@
         &--skipped {
             background-color: $argo-color-gray-4;
         }
+        &--suspended {
+            background-color: $argo-color-gray-4;
+            &::after {
+                @include fa-icon;
+                content: fa-content($fa-var-pause);
+            }
+        }
     }
 
     &__node-title {

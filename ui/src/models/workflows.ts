@@ -594,7 +594,7 @@ export function compareWorkflows(first: Workflow, second: Workflow) {
     return moment(jStart).diff(iStart);
 }
 
-export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup';
+export type NodeType = 'Pod' | 'Steps' | 'StepGroup' | 'DAG' | 'Retry' | 'Skipped' | 'TaskGroup' | 'Suspend';
 
 export interface NodeStatus {
     /**
@@ -722,7 +722,7 @@ export interface WorkflowStatus {
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
      */
-    phase: string;
+    phase: NodePhase;
     startedAt: kubernetes.Time;
     finishedAt: kubernetes.Time;
     /**
@@ -816,6 +816,11 @@ export interface WorkflowSpec {
      * Volumes is a list of volumes that can be mounted by containers in a workflow.
      */
     volumes?: kubernetes.Volume[];
+
+    /**
+     * Suspend will suspend the workflow and prevent execution of any future steps in the workflow
+     */
+    suspend?: boolean;
 }
 
 export interface DAGTemplate {
