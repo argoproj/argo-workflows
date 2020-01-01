@@ -9,22 +9,19 @@ import (
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/cmd/server/common"
+	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/util"
 )
 
 type workflowHistoryServer struct {
-	*common.Server
 	repo sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(wfClientset versioned.Interface, kubeClientset kubernetes.Interface, namespace string, enableClientAuth bool, repo sqldb.WorkflowHistoryRepository) *workflowHistoryServer {
-	return &workflowHistoryServer{repo: repo, Server: common.NewServer(enableClientAuth, namespace, wfClientset, kubeClientset)}
+func NewWorkflowHistoryServer(repo sqldb.WorkflowHistoryRepository) *workflowHistoryServer {
+	return &workflowHistoryServer{repo: repo}
 }
 
 func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
@@ -63,10 +60,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 }
 
 func (w *workflowHistoryServer) isAllowed(ctx context.Context, wf *wfv1.Workflow, verb string) (bool, error) {
-	_, kubeClientset, err := w.GetWFClient(ctx)
-	if err != nil {
-		return false, err
-	}
+	kubeClientset := auth.GetKubeClient(ctx)
 	review, err := kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
 		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
@@ -112,10 +106,7 @@ func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	wfClient, _, err := w.GetWFClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+	wfClient := auth.GetWfClient(ctx)
 	wf, err = util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, wf.Namespace, wf, &util.SubmitOpts{})
 	if err != nil {
 		return nil, err

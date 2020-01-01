@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	v1alpha "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
@@ -348,7 +349,7 @@ const workflow = `
 }
 `
 
-func getWorkflowServer() *workflowServer {
+func getWorkflowServer() (*workflowServer, context.Context) {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
@@ -356,37 +357,38 @@ func getWorkflowServer() *workflowServer {
 	_ = json.Unmarshal([]byte(wf3), &wfObj3)
 	_ = json.Unmarshal([]byte(wf4), &wfObj4)
 	_ = json.Unmarshal([]byte(wf5), &wfObj5)
+	server := NewWorkflowServer(nil)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
-	server := NewWorkflowServer("Default", wfClientset, kubeClientSet, false, nil)
-	return server
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
+	return server, ctx
 }
 
-func getWorkflow(server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
+func getWorkflow(ctx context.Context, server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
 
 	req := WorkflowGetRequest{
 		WorkflowName: wfName,
 		Namespace:    namespace,
 	}
 
-	return server.GetWorkflow(context.TODO(), &req)
+	return server.GetWorkflow(ctx, &req)
 }
 
-func getWorkflowList(server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error) {
+func getWorkflowList(ctx context.Context, server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error) {
 	req := WorkflowListRequest{
 		Namespace: namespace,
 	}
-	return server.ListWorkflows(context.TODO(), &req)
+	return server.ListWorkflows(ctx, &req)
 
 }
 
 func TestCreateWorkflow(t *testing.T) {
 
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 	var req WorkflowCreateRequest
 	_ = json.Unmarshal([]byte(workflow), &req)
 
-	wf, err := server.CreateWorkflow(context.TODO(), &req)
+	wf, err := server.CreateWorkflow(ctx, &req)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
@@ -395,22 +397,22 @@ func TestCreateWorkflow(t *testing.T) {
 
 func TestGetWorkflowWithFound(t *testing.T) {
 
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wf, err := getWorkflow(server, "workflows", "hello-world-b6h5m")
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-b6h5m")
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
 
-	wf, err = getWorkflow(server, "test", "hello-world-b6h5m-test")
+	wf, err = getWorkflow(ctx, server, "test", "hello-world-b6h5m-test")
 	assert.NotNil(t, wf)
 	assert.Nil(t, err)
 }
 
 func TestGetWorkflowWithNotFound(t *testing.T) {
 
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wf, err := getWorkflow(server, "test", "NotFound")
+	wf, err := getWorkflow(ctx, server, "test", "NotFound")
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 
@@ -418,14 +420,14 @@ func TestGetWorkflowWithNotFound(t *testing.T) {
 
 func TestListWorkflow(t *testing.T) {
 
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wfl, err := getWorkflowList(server, "workflows")
+	wfl, err := getWorkflowList(ctx, server, "workflows")
 	assert.NotNil(t, wfl)
 	assert.Equal(t, 3, len(wfl.Items))
 	assert.Nil(t, err)
 
-	wfl, err = getWorkflowList(server, "test")
+	wfl, err = getWorkflowList(ctx, server, "test")
 	assert.NotNil(t, wfl)
 	assert.Equal(t, 2, len(wfl.Items))
 	assert.Nil(t, err)
@@ -433,23 +435,23 @@ func TestListWorkflow(t *testing.T) {
 
 func TestDeleteWorkflow(t *testing.T) {
 
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wf, err := getWorkflow(server, "workflows", "hello-world-b6h5m")
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-b6h5m")
 	assert.Nil(t, err)
 	delReq := WorkflowDeleteRequest{
 		WorkflowName: wf.Name,
 		Namespace:    wf.Namespace,
 	}
 
-	delRsp, err := server.DeleteWorkflow(context.TODO(), &delReq)
+	delRsp, err := server.DeleteWorkflow(ctx, &delReq)
 
 	assert.NotNil(t, delRsp)
 	assert.Equal(t, wf.Name, delRsp.WorkflowName)
 	assert.Equal(t, "Deleted", delRsp.Status)
 	assert.Nil(t, err)
 
-	wfl, err := getWorkflowList(server, "workflows")
+	wfl, err := getWorkflowList(ctx, server, "workflows")
 	assert.NotNil(t, wf)
 	assert.Equal(t, 2, len(wfl.Items))
 	assert.Nil(t, err)
@@ -457,20 +459,20 @@ func TestDeleteWorkflow(t *testing.T) {
 }
 
 func TestSuspendResumeWorkflow(t *testing.T) {
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wf, err := getWorkflow(server, "workflows", "hello-world-9tql2-run")
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	assert.Nil(t, err)
 	rsmWfReq := WorkflowUpdateRequest{
 		WorkflowName: wf.Name,
 		Namespace:    wf.Namespace,
 	}
-	wf, err = server.SuspendWorkflow(context.TODO(), &rsmWfReq)
+	wf, err = server.SuspendWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, true, *wf.Spec.Suspend)
 	assert.Nil(t, err)
 
-	wf, err = server.ResumeWorkflow(context.TODO(), &rsmWfReq)
+	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 
 	assert.NotNil(t, wf)
 	assert.Nil(t, wf.Spec.Suspend)
@@ -478,30 +480,30 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 }
 
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
 	rsmWfReq := WorkflowUpdateRequest{
 		WorkflowName: "hello-world-9tql2-not",
 		Namespace:    "workflows",
 	}
-	wf, err := server.SuspendWorkflow(context.TODO(), &rsmWfReq)
+	wf, err := server.SuspendWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
-	wf, err = server.ResumeWorkflow(context.TODO(), &rsmWfReq)
+	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }
 
 func TestTerminateWorkflow(t *testing.T) {
-	server := getWorkflowServer()
+	server, ctx := getWorkflowServer()
 
-	wf, err := getWorkflow(server, "workflows", "hello-world-9tql2-run")
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	assert.Nil(t, err)
 	rsmWfReq := WorkflowUpdateRequest{
 		WorkflowName: wf.Name,
 		Namespace:    wf.Namespace,
 	}
-	wf, err = server.TerminateWorkflow(context.TODO(), &rsmWfReq)
+	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, int64(0), *wf.Spec.ActiveDeadlineSeconds)
 	assert.Nil(t, err)
@@ -510,7 +512,7 @@ func TestTerminateWorkflow(t *testing.T) {
 		WorkflowName: "hello-world-9tql2-not",
 		Namespace:    "workflows",
 	}
-	wf, err = server.TerminateWorkflow(context.TODO(), &rsmWfReq)
+	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
 }

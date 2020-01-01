@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/server/artifacts"
+	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowhistory"
@@ -105,6 +106,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 func (as *argoServer) newGRPCServer() *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
+	authenticator := auth.NewAuthN(as.enableClientAuth, as.wfClientSet, as.kubeClientset)
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -115,10 +117,12 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
+			authenticator.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
+			authenticator.StreamServerInterceptor(),
 		)),
 	}
 
@@ -138,11 +142,11 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
 		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
 	}
-	workflowServer := workflow.NewWorkflowServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth, wfDBServer)
+	workflowServer := workflow.NewWorkflowServer(wfDBServer)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(as.wfClientSet, as.kubeClientset, as.namespace, as.enableClientAuth, wfHistoryRepository)
+	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(wfHistoryRepository)
 	workflowhistory.RegisterWorkflowHistoryServiceServer(grpcServer, workflowHistoryServer)
-	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer(as.namespace, as.wfClientSet, as.kubeClientset, as.enableClientAuth)
+	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer()
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
 	return grpcServer
@@ -233,6 +237,7 @@ func (as *argoServer) checkServeErr(name string, err error) {
 func (as *argoServer) serverStaticFile(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasPrefix(r.URL.Path, "/artifacts") {
+		// TODO - auth
 		artifacts.NewArtifactServer(as.kubeClientset, as.wfClientSet).DownloadArtifact(w, r)
 		return
 	}

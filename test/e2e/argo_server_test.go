@@ -60,6 +60,14 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.bearerToken = base64.StdEncoding.EncodeToString(jsonConfig)
 }
 
+func (s *ArgoServerSuite) Run(name string, f func(t *testing.T)) {
+	t := s.T()
+	if t.Failed() {
+		t.SkipNow()
+	}
+	t.Run(name, f)
+}
+
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
@@ -110,14 +118,6 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 }`))).
 		Expect().
 		Status(200)
-}
-
-func (s *ArgoServerSuite) Run(name string, f func(t *testing.T)) {
-	t := s.T()
-	if t.Failed() {
-		t.SkipNow()
-	}
-	t.Run(name, f)
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
@@ -303,7 +303,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
 			s := bufio.NewScanner(resp.Body)
 			for s.Scan() {
-				line:=s.Text()
+				line := s.Text()
 				if strings.Contains(line, "🐙 Hello Argo!") {
 					break
 				}

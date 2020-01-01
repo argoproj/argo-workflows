@@ -14,18 +14,17 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
 
+	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/persist/sqldb/mocks"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
-
-
 func Test_workflowHistoryServer(t *testing.T) {
 	repo := &mocks.WorkflowHistoryRepository{}
 	kubeClient := &kubefake.Clientset{}
 	wfClient := &argofake.Clientset{}
-	w := NewWorkflowHistoryServer(wfClient, kubeClient, "", false, repo)
+	w := NewWorkflowHistoryServer(repo)
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
@@ -50,21 +49,22 @@ func Test_workflowHistoryServer(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
-	repo.On("DeleteWorkflowHistory", "my-ns", "my-uid").Return( nil)
+	repo.On("DeleteWorkflowHistory", "my-ns", "my-uid").Return(nil)
 
+	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListWorkflowHistory", func(t *testing.T) {
 		allowed = false
-		history, err := w.ListWorkflowHistory(context.TODO(), &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		history, err := w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, history.Items, 0)
 		}
 		allowed = true
-		history, err = w.ListWorkflowHistory(context.TODO(), &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		history, err = w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, history.Items, 1)
 			assert.Equal(t, "1", history.Continue)
 		}
-		history, err = w.ListWorkflowHistory(context.TODO(), &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
+		history, err = w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
 		if assert.NoError(t, err) {
 			assert.Len(t, history.Items, 0)
 			assert.Empty(t, history.Continue)
@@ -72,30 +72,30 @@ func Test_workflowHistoryServer(t *testing.T) {
 	})
 	t.Run("GetWorkflowHistory", func(t *testing.T) {
 		allowed = false
-		_, err := w.GetWorkflowHistory(context.TODO(), &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = w.GetWorkflowHistory(context.TODO(), &WorkflowHistoryGetRequest{})
+		_, err = w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
-		wf, err := w.GetWorkflowHistory(context.TODO(), &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
 	t.Run("ResubmitWorkflowHistory", func(t *testing.T) {
 		allowed = false
-		wf, err := w.ResubmitWorkflowHistory(context.TODO(), &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err := w.ResubmitWorkflowHistory(ctx, &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		wf, err = w.ResubmitWorkflowHistory(context.TODO(), &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err = w.ResubmitWorkflowHistory(ctx, &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.Equal(t, "my-name-resubmitted", wf.Name)
 	})
 	t.Run("DeleteWorkflowHistory", func(t *testing.T) {
 		allowed = false
-		_, err := w.DeleteWorkflowHistory(context.TODO(), &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.DeleteWorkflowHistory(ctx, &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = w.DeleteWorkflowHistory(context.TODO(), &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err = w.DeleteWorkflowHistory(ctx, &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 	})
 }
