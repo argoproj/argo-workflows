@@ -37,7 +37,7 @@ const navItems = [
     {
         title: 'Timeline',
         path: workflowsUrl,
-        iconClassName: 'argo-icon-timeline'
+        iconClassName: 'fa fa-stream'
     },
     {
         title: 'Templates',
@@ -52,7 +52,7 @@ const navItems = [
     {
         title: 'Help',
         path: helpUrl,
-        iconClassName: 'argo-icon-docs'
+        iconClassName: 'fa fa-question-circle'
     }
 ];
 

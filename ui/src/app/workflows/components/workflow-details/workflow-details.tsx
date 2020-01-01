@@ -355,7 +355,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
         try {
             this.ensureUnsubscribed();
             const workflowUpdates = Observable.from([await services.workflows.get(namespace, name)]).merge(
-                services.workflows.watchWorkflow(name, namespace).map(changeEvent => changeEvent.object)
+                services.workflows.watch({name, namespace}).map(changeEvent => changeEvent.object)
             );
             this.changesSubscription = workflowUpdates.subscribe(workflow => {
                 this.setState({workflow});
