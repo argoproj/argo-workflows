@@ -38,7 +38,7 @@ import (
 type argoServer struct {
 	namespace     string
 	kubeClientset *kubernetes.Clientset
-	authenticator auth.AuthN
+	authenticator auth.Gatekeeper
 	configName    string
 	stopCh        chan struct{}
 }
@@ -55,7 +55,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
 		namespace:     opts.Namespace,
 		kubeClientset: opts.KubeClientset,
-		authenticator: auth.NewAuthN(opts.EnableClientAuth, opts.WfClientSet, opts.KubeClientset),
+		authenticator: auth.NewGatekeeper(opts.EnableClientAuth, opts.WfClientSet, opts.KubeClientset),
 		configName:    opts.ConfigName,
 	}
 }
@@ -68,13 +68,30 @@ var backoff = wait.Backoff{
 }
 
 func (as *argoServer) Run(ctx context.Context, port int) {
-	grpcServer := as.newGRPCServer()
-	httpServer := as.newHTTPServer(ctx, port)
+
+	configMap, err := as.RsyncConfig(as.namespace, as.kubeClientset)
+	if err != nil {
+		// TODO: this currently returns an error every time
+		log.Errorf("Error marshalling config map: %s", err)
+	}
+	var wfDBServer *workflow.DBService
+	var wfHistoryRepository sqldb.WorkflowHistoryRepository = sqldb.NullWorkflowHistoryRepository
+	if configMap.Persistence != nil {
+		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
+		if err != nil {
+			log.Fatal(err)
+		}
+		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
+		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
+	}
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, wfDBServer)
+	grpcServer := as.newGRPCServer(wfDBServer, wfHistoryRepository)
+	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
 	var conn net.Listener
 	var listerErr error
-	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 		if listerErr != nil {
 			log.Warnf("failed to listen: %v", listerErr)
@@ -100,7 +117,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer() *grpc.Server {
+func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfHistoryRepository sqldb.WorkflowHistoryRepository) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -123,21 +140,6 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	configMap, err := as.RsyncConfig(as.namespace, as.kubeClientset)
-	if err != nil {
-		// TODO: this currently returns an error every time
-		log.Errorf("Error marshalling config map: %s", err)
-	}
-	var wfDBServer *workflow.DBService
-	var wfHistoryRepository sqldb.WorkflowHistoryRepository = sqldb.NullWorkflowHistoryRepository
-	if configMap.Persistence != nil {
-		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
-		if err != nil {
-			log.Fatal(err)
-		}
-		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
-		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
-	}
 	workflowServer := workflow.NewWorkflowServer(wfDBServer)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(wfHistoryRepository)
@@ -150,7 +152,7 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
 
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
@@ -177,7 +179,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
-	mux.HandleFunc("/artifacts/", artifacts.NewArtifactServer(as.authenticator).ServeArtifacts)
+	mux.HandleFunc("/artifacts/", artifactServer.ServeArtifacts)
 	mux.HandleFunc("/", static.ServerFiles)
 	return &httpServer
 }

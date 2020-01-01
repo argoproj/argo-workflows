@@ -48,7 +48,7 @@ export class WorkflowsService {
     }
 
     public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string) {
-        return `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}`;
+        return `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
     }
 
     private populateDefaultFields(workflow: models.Workflow): models.Workflow {

@@ -26,8 +26,8 @@ export class WorkflowHistoryList extends React.Component<RouteComponentProps<any
                             <div className='row'>
                                 <div className='columns small-12 xxlarge-2'>
                                     {workflows.length === 0 && (
-                                        <div>
-                                            <h3>History Empty</h3>
+                                        <div className='white-box'>
+                                            <h4>No workflow history</h4>
                                             <p>To record history:</p>
                                             <ul>
                                                 <li>Enabled history in configuration.</li>

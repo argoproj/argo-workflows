@@ -253,6 +253,7 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 		WaitForWorkflow(15 * time.Second)
 
 	s.e(s.T()).GET("/artifacts/argo/basic/basic/main-logs").
+		WithQuery("Authorization", s.bearerToken).
 		Expect().
 		Status(200).
 		Body().

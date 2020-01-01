@@ -7,7 +7,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
@@ -43,13 +42,13 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	}
 	allowedItems := make([]wfv1.Workflow, 0)
 	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
-	for _, item := range allItems {
-		allowed, err := w.isAllowed(ctx, &item, "get")
+	for _, wf := range allItems {
+		allowed, err := auth.CanI(ctx, "get", "workflow", req.Namespace, wf.Name)
 		if err != nil {
 			return nil, err
 		}
 		if allowed {
-			allowedItems = append(allowedItems, item)
+			allowedItems = append(allowedItems, wf)
 		}
 	}
 	meta := metav1.ListMeta{}
@@ -57,26 +56,6 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 		meta.Continue = fmt.Sprintf("%v", offset+limit)
 	}
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
-}
-
-func (w *workflowHistoryServer) isAllowed(ctx context.Context, wf *wfv1.Workflow, verb string) (bool, error) {
-	kubeClientset := auth.GetKubeClient(ctx)
-	review, err := kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
-		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
-			ResourceAttributes: &authorizationv1.ResourceAttributes{
-				Namespace: wf.Namespace,
-				Verb:      verb,
-				Group:     wf.GroupVersionKind().Group,
-				Version:   wf.GroupVersionKind().Version,
-				Resource:  "workflows",
-				Name:      wf.Name,
-			},
-		},
-	})
-	if err != nil {
-		return false, err
-	}
-	return review.Status.Allowed, nil
 }
 
 func (w *workflowHistoryServer) GetWorkflowHistory(ctx context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
@@ -87,7 +66,7 @@ func (w *workflowHistoryServer) GetWorkflowHistory(ctx context.Context, req *Wor
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := w.isAllowed(ctx, wf, "get")
+	allowed, err := auth.CanI(ctx, "get", "workflow", req.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +98,7 @@ func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := w.isAllowed(ctx, wf, "delete")
+	allowed, err := auth.CanI(ctx, "delete", "workflow", req.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}

@@ -80,65 +80,77 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 }}
                                 loadingRenderer={() => <MockupList height={150} marginTop={30} />}>
                                 {(workflows: models.Workflow[]) => (
-                                    <div className='row'>
-                                        <div className='columns small-12 xxlarge-2'>
-                                            <Query>
-                                                {q => (
-                                                    <div className='workflows-list__search'>
-                                                        <i className='fa fa-search' />
-                                                        {q.get('search') && (
-                                                            <i
-                                                                className='fa fa-times'
-                                                                onClick={() => {
-                                                                    ctx.navigation.goto('.', {search: null}, {replace: true});
-                                                                }}
-                                                            />
-                                                        )}
-                                                        {/*<Autocomplete*/}
-                                                        {/*    filterSuggestions={true}*/}
-                                                        {/*    renderInput={inputProps => (*/}
-                                                        {/*        <input*/}
-                                                        {/*            {...inputProps}*/}
-                                                        {/*            onFocus={e => {*/}
-                                                        {/*                e.target.select();*/}
-                                                        {/*                if (inputProps.onFocus) {*/}
-                                                        {/*                    inputProps.onFocus(e);*/}
-                                                        {/*                }*/}
-                                                        {/*            }}*/}
-                                                        {/*            className='argo-field'*/}
-                                                        {/*        />*/}
-                                                        {/*    )}*/}
-                                                        {/*    renderItem={item => (*/}
-                                                        {/*        <React.Fragment>*/}
-                                                        {/*            <i className='icon argo-icon-workflow' /> {item.label}*/}
-                                                        {/*        </React.Fragment>*/}
-                                                        {/*    )}*/}
-                                                        {/*    onSelect={val => {*/}
-                                                        {/*        ctx.navigation.goto(`./${val}`);*/}
-                                                        {/*    }}*/}
-                                                        {/*    onChange={e => {*/}
-                                                        {/*        ctx.navigation.goto('.', {search: e.target.value}, {replace: true});*/}
-                                                        {/*    }}*/}
-                                                        {/*    value={q.get('search') || ''}*/}
-                                                        {/*    items={workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}*/}
-                                                        {/*/>*/}
-                                                    </div>
-                                                )}
-                                            </Query>
-                                        </div>
-
-                                        <div className='stream'>
-                                            <div className='columns small-12 xxlarge-10'>
-                                                {workflows.map(workflow => (
-                                                    <div key={workflow.metadata.name}>
-                                                        <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                                            <WorkflowListItem workflow={workflow} history={false} />
-                                                        </Link>
-                                                    </div>
-                                                ))}
+                                    <React.Fragment>
+                                        <div className='row'>
+                                            <div className='columns small-12 xxlarge-2'>
+                                                <Query>
+                                                    {q => (
+                                                        <div className='workflows-list__search'>
+                                                            <i className='fa fa-search' />
+                                                            {q.get('search') && (
+                                                                <i
+                                                                    className='fa fa-times'
+                                                                    onClick={() => {
+                                                                        ctx.navigation.goto('.', {search: null}, {replace: true});
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {/*<Autocomplete*/}
+                                                            {/*    filterSuggestions={true}*/}
+                                                            {/*    renderInput={inputProps => (*/}
+                                                            {/*        <input*/}
+                                                            {/*            {...inputProps}*/}
+                                                            {/*            onFocus={e => {*/}
+                                                            {/*                e.target.select();*/}
+                                                            {/*                if (inputProps.onFocus) {*/}
+                                                            {/*                    inputProps.onFocus(e);*/}
+                                                            {/*                }*/}
+                                                            {/*            }}*/}
+                                                            {/*            className='argo-field'*/}
+                                                            {/*        />*/}
+                                                            {/*    )}*/}
+                                                            {/*    renderItem={item => (*/}
+                                                            {/*        <React.Fragment>*/}
+                                                            {/*            <i className='icon argo-icon-workflow' /> {item.label}*/}
+                                                            {/*        </React.Fragment>*/}
+                                                            {/*    )}*/}
+                                                            {/*    onSelect={val => {*/}
+                                                            {/*        ctx.navigation.goto(`./${val}`);*/}
+                                                            {/*    }}*/}
+                                                            {/*    onChange={e => {*/}
+                                                            {/*        ctx.navigation.goto('.', {search: e.target.value}, {replace: true});*/}
+                                                            {/*    }}*/}
+                                                            {/*    value={q.get('search') || ''}*/}
+                                                            {/*    items={workflows.map(wf => wf.metadata.namespace + '/' + wf.metadata.name)}*/}
+                                                            {/*/>*/}
+                                                        </div>
+                                                    )}
+                                                </Query>
                                             </div>
                                         </div>
-                                    </div>
+                                        {workflows.length === 0 && (
+                                            <div className='row'>
+                                                <div className='columns small-12 xxlarge-10'>
+                                                    <div className='white-box'>
+                                                        <h4>No workflows</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className='row'>
+                                            <div className='stream'>
+                                                <div className='columns small-12 xxlarge-10'>
+                                                    {workflows.map(workflow => (
+                                                        <div key={workflow.metadata.name}>
+                                                            <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
+                                                                <WorkflowListItem workflow={workflow} history={false} />
+                                                            </Link>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </React.Fragment>
                                 )}
                             </DataLoader>
                         </div>

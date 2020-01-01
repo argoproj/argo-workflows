@@ -2,31 +2,36 @@ package artifacts
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
+	"github.com/argoproj/argo/cmd/server/workflow"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
 type ArtifactServer struct {
-	authN auth.AuthN
+	authN       auth.Gatekeeper
+	wfDBService *workflow.DBService
 }
 
-func NewArtifactServer(authN auth.AuthN) *ArtifactServer {
-	return &ArtifactServer{authN}
+func NewArtifactServer(authN auth.Gatekeeper, wfDBService *workflow.DBService) *ArtifactServer {
+	return &ArtifactServer{authN, wfDBService}
 }
 
 func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) {
 
-	ctx, err := a.authN.Context(r.Context())
+	// TODO - we should not put the token in the URL - OSWAP obvs
+	authHeader := r.URL.Query().Get("Authorization")
+	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"grpcgateway-authorization": []string{authHeader}})
+	ctx, err := a.authN.Context(ctx)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(err.Error()))
@@ -40,7 +45,7 @@ func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) 
 	nodeId := path[4]
 	artifactName := path[5]
 
-	data, err := getArtifact(ctx, namespace, workflowName, nodeId, artifactName)
+	data, err := a.getArtifact(ctx, namespace, workflowName, nodeId, artifactName)
 	if err != nil {
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
@@ -55,7 +60,7 @@ func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func getArtifact(ctx context.Context, namespace, workflowName, nodeId, artifactName string) ([]byte, error) {
+func (a *ArtifactServer) getArtifact(ctx context.Context, namespace, workflowName, nodeId, artifactName string) ([]byte, error) {
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 
@@ -69,9 +74,12 @@ func getArtifact(ctx context.Context, namespace, workflowName, nodeId, artifactN
 	if err != nil {
 		return nil, err
 	}
-	// TODO - offload node status
 	if wf.Status.OffloadNodeStatus {
-		return nil, fmt.Errorf("not supported - yet")
+		offloadedWf, err := a.wfDBService.Get(workflowName, namespace)
+		if err != nil {
+			return nil, err
+		}
+		wf.Status.Nodes = offloadedWf.Status.Nodes
 	}
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {

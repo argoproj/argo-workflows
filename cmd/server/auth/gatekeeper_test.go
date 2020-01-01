@@ -18,21 +18,23 @@ func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := &fake.Clientset{}
 	t.Run("DisableClientAuth", func(t *testing.T) {
-		s := NewAuthN(false, wfClient, kubeClient)
+		s := NewGatekeeper(false, wfClient, kubeClient)
 		ctx, err := authAndHandle(s, context.TODO())
-		assert.NoError(t, err)
-		assert.Equal(t, wfClient, GetWfClient(*ctx))
-		assert.Equal(t, kubeClient, GetKubeClient(*ctx))
+		if assert.NoError(t, err) {
+			assert.Equal(t, wfClient, GetWfClient(*ctx))
+			assert.Equal(t, kubeClient, GetKubeClient(*ctx))
+		}
 	})
 	t.Run("ClientAuth", func(t *testing.T) {
-		s := NewAuthN(true, wfClient, kubeClient)
+		s := NewGatekeeper(true, wfClient, kubeClient)
 		ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("{}")))))
-		assert.NoError(t, err)
-		assert.NotEqual(t, wfClient, GetWfClient(*ctx))
-		assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
+		if assert.NoError(t, err) {
+			assert.NotEqual(t, wfClient, GetWfClient(*ctx))
+			assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
+		}
 	})
 	t.Run("Localhost", func(t *testing.T) {
-		 s := NewAuthN(true, wfClient, kubeClient)
+		 s := NewGatekeeper(true, wfClient, kubeClient)
 		for _, text := range []string{
 			`{"caFile": "anything"}`,
 			`{"certFile": "anything"}`,
@@ -50,7 +52,7 @@ func TestServer_GetWFClient(t *testing.T) {
 	})
 }
 
-func authAndHandle(s AuthN, ctx context.Context) (*context.Context, error) {
+func authAndHandle(s Gatekeeper, ctx context.Context) (*context.Context, error) {
 	var usedCtx *context.Context
 	_, err := s.UnaryServerInterceptor()(ctx, nil, nil, func(ctx context.Context, req interface{}) (i interface{}, err error) {
 		usedCtx = &ctx

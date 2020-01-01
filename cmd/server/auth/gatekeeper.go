@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -25,18 +26,18 @@ const (
 	KubeKey ContextKey = "kubernetes.Interface"
 )
 
-type AuthN struct {
+type Gatekeeper struct {
 	enableClientAuth bool
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
 }
 
-func NewAuthN(enableClientAuth bool, wfClient versioned.Interface, kubeClient kubernetes.Interface) AuthN {
-	return AuthN{enableClientAuth, wfClient, kubeClient}
+func NewGatekeeper(enableClientAuth bool, wfClient versioned.Interface, kubeClient kubernetes.Interface) Gatekeeper {
+	return Gatekeeper{enableClientAuth, wfClient, kubeClient}
 }
 
-func (s *AuthN) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		ctx, err = s.Context(ctx)
 		if err != nil {
@@ -46,7 +47,7 @@ func (s *AuthN) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func (s *AuthN) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (s *Gatekeeper) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx, err := s.Context(ss.Context())
 		if err != nil {
@@ -58,7 +59,7 @@ func (s *AuthN) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	}
 }
 
-func (s *AuthN) Context(ctx context.Context) (context.Context, error) {
+func (s *Gatekeeper) Context(ctx context.Context) (context.Context, error) {
 	wfClient, kubeClient, err := s.getClients(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +75,26 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 
-func (s AuthN) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
+func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {
+	kubeClientset := GetKubeClient(ctx)
+	review, err := kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
+		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace: namespace,
+				Verb:      verb,
+				Group:     "argoproj.io",
+				Resource:  resource,
+				Name:      name,
+			},
+		},
+	})
+	if err != nil {
+		return false, err
+	}
+	return review.Status.Allowed, nil
+}
+
+func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		if !s.enableClientAuth {
