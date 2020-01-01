@@ -1,6 +1,8 @@
 package artifacts
 
 import (
+	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -8,23 +10,29 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/cmd/server/auth"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
 type ArtifactServer struct {
-	kubeClientset kubernetes.Interface
-	wfClientSet   versioned.Interface
+	authN auth.AuthN
 }
 
-func NewArtifactServer(kubeClientset kubernetes.Interface, wfClientSet versioned.Interface) *ArtifactServer {
-	return &ArtifactServer{kubeClientset, wfClientSet}
+func NewArtifactServer(authN auth.AuthN) *ArtifactServer {
+	return &ArtifactServer{authN}
 }
 
-func (a *ArtifactServer) DownloadArtifact(w http.ResponseWriter, r *http.Request) {
+func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) {
+
+	ctx, err := a.authN.Context(r.Context())
+	if err != nil {
+		w.WriteHeader(401)
+		_, _ = w.Write([]byte(err.Error()))
+		return
+	}
+
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	namespace := path[2]
@@ -32,7 +40,7 @@ func (a *ArtifactServer) DownloadArtifact(w http.ResponseWriter, r *http.Request
 	nodeId := path[4]
 	artifactName := path[5]
 
-	data, err := a.getArtifact(namespace, workflowName, nodeId, artifactName)
+	data, err := getArtifact(ctx, namespace, workflowName, nodeId, artifactName)
 	if err != nil {
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
@@ -47,11 +55,13 @@ func (a *ArtifactServer) DownloadArtifact(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (a *ArtifactServer) getArtifact(namespace, workflowName, nodeId, artifactName string) ([]byte, error) {
+func getArtifact(ctx context.Context, namespace, workflowName, nodeId, artifactName string) ([]byte, error) {
+	wfClient := auth.GetWfClient(ctx)
+	kubeClient := auth.GetKubeClient(ctx)
 
 	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	wf, err := a.wfClientSet.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +70,15 @@ func (a *ArtifactServer) getArtifact(namespace, workflowName, nodeId, artifactNa
 		return nil, err
 	}
 	// TODO - offload node status
+	if wf.Status.OffloadNodeStatus {
+		return nil, fmt.Errorf("not supported - yet")
+	}
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {
 		return nil, err
 	}
 
-	driver, err := artifact.NewDriver(art, resources{a.kubeClientset, namespace})
+	driver, err := artifact.NewDriver(art, resources{kubeClient, namespace})
 	if err != nil {
 		return nil, err
 	}

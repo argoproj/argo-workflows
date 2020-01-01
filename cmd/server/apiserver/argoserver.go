@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -37,12 +36,11 @@ import (
 )
 
 type argoServer struct {
-	namespace        string
-	kubeClientset    *kubernetes.Clientset
-	wfClientSet      *versioned.Clientset
-	enableClientAuth bool
-	configName       string
-	stopCh           chan struct{}
+	namespace     string
+	kubeClientset *kubernetes.Clientset
+	authenticator auth.AuthN
+	configName    string
+	stopCh        chan struct{}
 }
 
 type ArgoServerOpts struct {
@@ -55,11 +53,10 @@ type ArgoServerOpts struct {
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
-		namespace:        opts.Namespace,
-		wfClientSet:      opts.WfClientSet,
-		kubeClientset:    opts.KubeClientset,
-		enableClientAuth: opts.EnableClientAuth,
-		configName:       opts.ConfigName,
+		namespace:     opts.Namespace,
+		kubeClientset: opts.KubeClientset,
+		authenticator: auth.NewAuthN(opts.EnableClientAuth, opts.WfClientSet, opts.KubeClientset),
+		configName:    opts.ConfigName,
 	}
 }
 
@@ -106,7 +103,6 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 func (as *argoServer) newGRPCServer() *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
-	authenticator := auth.NewAuthN(as.enableClientAuth, as.wfClientSet, as.kubeClientset)
 	sOpts := []grpc.ServerOption{
 		// Set both the send and receive the bytes limit to be 100MB
 		// The proper way to achieve high performance is to have pagination
@@ -117,17 +113,17 @@ func (as *argoServer) newGRPCServer() *grpc.Server {
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
-			authenticator.UnaryServerInterceptor(),
+			as.authenticator.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
-			authenticator.StreamServerInterceptor(),
+			as.authenticator.StreamServerInterceptor(),
 		)),
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	configMap, err := as.RsyncConfig(as.namespace, as.wfClientSet, as.kubeClientset)
+	configMap, err := as.RsyncConfig(as.namespace, as.kubeClientset)
 	if err != nil {
 		// TODO: this currently returns an error every time
 		log.Errorf("Error marshalling config map: %s", err)
@@ -181,7 +177,8 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int) *http.Server 
 	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
-	mux.HandleFunc("/", as.serverStaticFile)
+	mux.HandleFunc("/artifacts/", artifacts.NewArtifactServer(as.authenticator).ServeArtifacts)
+	mux.HandleFunc("/", static.ServerFiles)
 	return &httpServer
 }
 
@@ -196,7 +193,7 @@ func mustRegisterGWHandler(register registerFunc, ctx context.Context, mux *runt
 }
 
 // ResyncConfig reloads the controller config from the configmap
-func (as *argoServer) RsyncConfig(namespace string, wfClientset *versioned.Clientset, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
+func (as *argoServer) RsyncConfig(namespace string, kubeClientSet *kubernetes.Clientset) (*config.WorkflowControllerConfig, error) {
 	cmClient := kubeClientSet.CoreV1().ConfigMaps(namespace)
 	cm, err := cmClient.Get("workflow-controller-configmap", metav1.GetOptions{})
 	if err != nil {
@@ -233,19 +230,4 @@ func (as *argoServer) checkServeErr(name string, err error) {
 	} else {
 		log.Infof("graceful shutdown %s", name)
 	}
-}
-func (as *argoServer) serverStaticFile(w http.ResponseWriter, r *http.Request) {
-
-	if strings.HasPrefix(r.URL.Path, "/artifacts") {
-		// TODO - auth
-		artifacts.NewArtifactServer(as.kubeClientset, as.wfClientSet).DownloadArtifact(w, r)
-		return
-	}
-
-	// this hack allows us to server the routes (e.g. /workflows) with the index file
-	if !strings.Contains(r.URL.Path, ".") {
-		r.URL.Path = "index.html"
-	}
-	// in my IDE (IntelliJ) the next line is red for some reason - but this is fine
-	static.ServeHTTP(w, r)
 }

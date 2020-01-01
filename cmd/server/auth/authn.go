@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net"
 	"strings"
 
@@ -37,26 +36,34 @@ func NewAuthN(enableClientAuth bool, wfClient versioned.Interface, kubeClient ku
 	return AuthN{enableClientAuth, wfClient, kubeClient}
 }
 
-func (s AuthN) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (s *AuthN) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		wfClient, kubeClient, err := s.getClients(ctx)
+		ctx, err = s.Context(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return handler(context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), req)
+		return handler(ctx, req)
 	}
 }
 
-func (s AuthN) StreamServerInterceptor() grpc.StreamServerInterceptor {
+func (s *AuthN) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		wfClient, kubeClient, err := s.getClients(ss.Context())
+		ctx, err := s.Context(ss.Context())
 		if err != nil {
 			return err
 		}
 		wrapped := grpc_middleware.WrapServerStream(ss)
-		wrapped.WrappedContext = context.WithValue(context.WithValue(ss.Context(), WfKey, wfClient), KubeKey, kubeClient)
+		wrapped.WrappedContext = ctx
 		return handler(srv, wrapped)
 	}
+}
+
+func (s *AuthN) Context(ctx context.Context) (context.Context, error) {
+	wfClient, kubeClient, err := s.getClients(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return context.WithValue(context.WithValue(ctx, WfKey, wfClient), KubeKey, kubeClient), nil
 }
 
 func GetWfClient(ctx context.Context) versioned.Interface {
@@ -73,7 +80,7 @@ func (s AuthN) getClients(ctx context.Context) (versioned.Interface, kubernetes.
 		if !s.enableClientAuth {
 			return s.wfClient, s.kubeClient, nil
 		}
-		return nil, nil, fmt.Errorf("unable to get metadata from incoming context")
+		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
 	authorization := md.Get("grpcgateway-authorization")
 	if len(authorization) == 0 {

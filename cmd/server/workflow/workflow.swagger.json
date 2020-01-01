@@ -551,7 +551,6 @@
     },
     "/api/v1/workflows/{namespace}/{workflowName}/{podName}/log": {
       "get": {
-        "summary": "PodLogs returns stream of log entries for the specified pod. Pod",
         "operationId": "PodLogs",
         "responses": {
           "200": {

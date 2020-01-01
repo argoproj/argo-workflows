@@ -758,7 +758,6 @@ type WorkflowServiceClient interface {
 	SuspendWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
 	TerminateWorkflow(ctx context.Context, in *WorkflowUpdateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
 	LintWorkflow(ctx context.Context, in *WorkflowCreateRequest, opts ...grpc.CallOption) (*v1alpha1.Workflow, error)
-	// PodLogs returns stream of log entries for the specified pod. Pod
 	PodLogs(ctx context.Context, in *WorkflowLogRequest, opts ...grpc.CallOption) (WorkflowService_PodLogsClient, error)
 }
 
@@ -937,7 +936,6 @@ type WorkflowServiceServer interface {
 	SuspendWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
 	TerminateWorkflow(context.Context, *WorkflowUpdateRequest) (*v1alpha1.Workflow, error)
 	LintWorkflow(context.Context, *WorkflowCreateRequest) (*v1alpha1.Workflow, error)
-	// PodLogs returns stream of log entries for the specified pod. Pod
 	PodLogs(*WorkflowLogRequest, WorkflowService_PodLogsServer) error
 }
 
