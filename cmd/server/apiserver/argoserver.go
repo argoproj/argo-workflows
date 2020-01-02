@@ -76,7 +76,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	}
 	var wfDBServer *workflow.DBService
 	var wfHistoryRepository sqldb.WorkflowHistoryRepository = sqldb.NullWorkflowHistoryRepository
-	if configMap.Persistence != nil {
+	if configMap != nil && configMap.Persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
 		if err != nil {
 			log.Fatal(err)
