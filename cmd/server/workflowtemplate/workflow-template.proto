@@ -37,6 +37,12 @@ message WorkflowTemplateUpdateRequest {
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
 }
 
+message WorkflowTemplateSpecUpdateRequest {
+    string templateName = 1;
+    string namespace = 2;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec templateSpec = 3;
+}
+
 message WorkflowTemplateDeleteRequest {
     string templateName = 1;
     string namespace = 2;
@@ -67,6 +73,13 @@ service WorkflowTemplateService {
     rpc UpdateWorkflowTemplate (WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
             put: "/api/v1/workflowtemplates/{namespace}/{templateName}"
+            body: "*"
+        };
+    }
+
+    rpc UpdateWorkflowTemplateSpec (WorkflowTemplateSpecUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec) {
+        option (google.api.http) = {
+            put: "/api/v1/workflowtemplates/{namespace}/{templateName}/spec"
             body: "*"
         };
     }

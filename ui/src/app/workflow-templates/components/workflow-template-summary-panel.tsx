@@ -4,6 +4,8 @@ import {WorkflowTemplate} from '../../../models';
 import {YamlEditor} from '../../shared/components/yaml-editor/yaml-editor';
 import {services} from '../../shared/services';
 
+const jsonMergePatch = require('json-merge-patch');
+
 export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowTemplate}) => {
     const attributes = [
         {title: 'Name', value: props.workflowTemplate.metadata.name},
@@ -30,7 +32,14 @@ export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowT
                         submitMode={false}
                         input={props.workflowTemplate}
                         onSave={wfTmpl => {
-                            services.workflowTemplate.update(JSON.parse(wfTmpl), props.workflowTemplate.metadata.name, props.workflowTemplate.metadata.namespace).then();
+                            const patch = jsonMergePatch.generate(props.workflowTemplate, wfTmpl);
+
+                            const spec = JSON.parse(JSON.stringify(props.workflowTemplate));
+                            return services.workflowTemplate.update(
+                                jsonMergePatch.apply(spec, JSON.parse(patch)),
+                                props.workflowTemplate.metadata.name,
+                                props.workflowTemplate.metadata.namespace,
+                            );
                         }}
                     />
                 </div>

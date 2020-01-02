@@ -31,6 +31,7 @@
         "foundation-sites": "^6.4.3",
         "history": "^4.7.2",
         "js-yaml": "^3.13.1",
+        "json-merge-patch": "^0.2.3",
         "json-stream": "^1.0.0",
         "kubernetes-client": "3.17.1",
         "moment": "^2.20.1",

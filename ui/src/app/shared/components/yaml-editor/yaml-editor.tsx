@@ -59,7 +59,11 @@ export class YamlEditor<T> extends React.Component<
                                             onClick={async () => {
                                                 try {
                                                     const rawWf = jsYaml.load(this.model.getLinesContent().join('\n'));
-                                                    this.props.onSave(JSON.stringify(rawWf || {}));
+                                                    const res: any = await this.props.onSave(JSON.stringify(rawWf || {}));
+                                                    console.log("SIMON RES", res);
+                                                    if (res !== null) {
+                                                        this.setState({editing: false});
+                                                    }
                                                 } catch (e) {
                                                     ctx.notifications.show({
                                                         content: <ErrorNotification title='Unable to submit workflow' e={e} />,
