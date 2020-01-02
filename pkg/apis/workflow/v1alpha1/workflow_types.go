@@ -109,9 +109,9 @@ var _ TemplateStorage = &Workflow{}
 
 // TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
 type TTLStrategy struct {
-	SecondsAfterCompleted *int32 `json:"secondsAfterCompleted:,omitempty" protobuf:"bytes,1,opt,name=SecondsAfterCompleted:"`
-	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess:,omitempty" protobuf:"bytes,1,opt,name=SecondsAfterSuccess:"`
-	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,2,opt,name=SecondsAfterFailed"`
+	SecondsAfterCompleted *int32 `json:"secondsAfterCompleted:,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompleted:"`
+	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess:,omitempty" protobuf:"bytes,1,opt,name=secondsAfterSuccess:"`
+	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,2,opt,name=secondsAfterFailed"`
 }
 
 // WorkflowSpec is the specification of a Workflow.
