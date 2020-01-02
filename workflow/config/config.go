@@ -91,6 +91,10 @@ type ArtifactRepository struct {
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 }
 
+func (a *ArtifactRepository) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
 type PersistConfig struct {
 	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
 	ConnectionPool    *ConnectionPool   `json:"connectionPool"`

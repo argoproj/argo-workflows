@@ -164,6 +164,39 @@ verify-codegen:
 manifests:
 	./hack/update-manifests.sh
 
+.PHONY: start-e2e
+start-e2e:
+	kubectl create ns argo || true
+	# Install the standard Argo.
+	kubectl -n argo apply --wait --force -f manifests/install.yaml
+	# Ensure that we use the image we're about to create.
+	kubectl -n argo scale deployment/workflow-controller --replicas 0
+	# Change to use a "e2e" tag.
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
+	# Install MinIO and set-up config-map.
+	kubectl -n argo apply --wait --force -f test/e2e/manifests
+	# Build controller and executor images.
+	make controller-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
+	# Scale up.
+	kubectl -n argo scale deployment/workflow-controller --replicas 1
+	# Wait for pods to be ready.
+	kubectl -n argo wait --for=condition=Ready pod --all -l app=workflow-controller
+	kubectl -n argo wait --for=condition=Ready pod --all -l app=minio --timeout=1m
+	# Switch to "argo" ns.
+	kubectl config set-context --current --namespace=argo
+	# Pull whalesay. This is used a lot in the tests, so good to have it ready now.
+	docker pull docker/whalesay:latest
+
+.PHONY: logs-e2e
+logs-e2e:
+	kubectl -n argo get pods -l app=workflow-controller -o name | xargs kubectl -n argo logs -f
+
+.PHONY: test-e2e
+test-e2e:
+	go test -v -count 1 -p 1 ./test/e2e
+
 .PHONY: clean
 clean:
 	-rm -rf ${CURRENT_DIR}/dist

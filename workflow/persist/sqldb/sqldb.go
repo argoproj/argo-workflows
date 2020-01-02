@@ -108,7 +108,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 }
 
-// CreatePostGresDBSession creates Mysql DB session
+// CreateMySQLDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, mysqlConfig *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if mysqlConfig.TableName == "" {
