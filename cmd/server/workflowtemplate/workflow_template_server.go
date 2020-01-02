@@ -3,6 +3,7 @@ package workflowtemplate
 import (
 	"context"
 	"fmt"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -148,4 +149,3 @@ func (wts *WorkflowTemplateServer) updateWorkflowTemplate(ctx context.Context, n
 	}
 	return nil, status.Errorf(codes.Internal, "Failed to update application. Too many conflicts")
 }
-

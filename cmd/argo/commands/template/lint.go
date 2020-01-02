@@ -2,8 +2,9 @@ package template
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"os"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
