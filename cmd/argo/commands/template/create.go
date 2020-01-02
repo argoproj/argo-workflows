@@ -7,6 +7,8 @@ import (
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -62,17 +64,31 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 		os.Exit(1)
 	}
 
+	var created *wfv1.WorkflowTemplate
+
 	for _, wftmpl := range workflowTemplates {
-		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
-		err := validate.ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
-		if err != nil {
-			log.Fatalf("Failed to create workflow template: %v", err)
+
+		if client.ArgoServer != "" {
+			ns, _, _ := client.Config.Namespace()
+			wftmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
+				Namespace: ns,
+				Template:  &wftmpl,
+			}
+			conn := client.GetClientConn()
+			wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+			created, err = wftmplApiClient.CreateWorkflowTemplate(ctx, &wftmplReq)
+		} else {
+			wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
+			err := validate.ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
+			if err != nil {
+				log.Fatalf("Failed to create workflow template: %v", err)
+			}
+			wftmplClient := defaultWFTmplClient
+			if wftmpl.Namespace != "" {
+				wftmplClient = InitWorkflowTemplateClient(wftmpl.Namespace)
+			}
+			created, err = wftmplClient.Create(&wftmpl)
 		}
-		wftmplClient := defaultWFTmplClient
-		if wftmpl.Namespace != "" {
-			wftmplClient = InitWorkflowTemplateClient(wftmpl.Namespace)
-		}
-		created, err := wftmplClient.Create(&wftmpl)
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}

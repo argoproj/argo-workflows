@@ -161,7 +161,7 @@ func SubmitWorkflows(filePaths []string, submitOpts *util.SubmitOpts, cliOpts *c
 	if client.ArgoServer != "" {
 		conn := client.GetClientConn()
 		defer conn.Close()
-		apiGRPCClient, ctx = GetApiServerGRPCClient(conn)
+		apiGRPCClient, ctx = GetWFApiServerGRPCClient(conn)
 		errors.CheckError(err)
 	}
 

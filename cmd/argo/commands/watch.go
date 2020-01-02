@@ -35,7 +35,7 @@ func NewWatchCommand() *cobra.Command {
 func apiServerWatchWorkflow(wfName string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
-	apiClient, ctx := GetApiServerGRPCClient(conn)
+	apiClient, ctx := GetWFApiServerGRPCClient(conn)
 	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", wfName))
 	wfReq := workflow.WatchWorkflowsRequest{
 		Namespace: namespace,

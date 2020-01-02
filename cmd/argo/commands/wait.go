@@ -46,7 +46,7 @@ func WaitWorkflows(workflowNames []string, ignoreNotFound, quiet bool) {
 	if client.ArgoServer != "" {
 		conn := client.GetClientConn()
 		defer conn.Close()
-		apiClient, ctx = GetApiServerGRPCClient(conn)
+		apiClient, ctx = GetWFApiServerGRPCClient(conn)
 	} else {
 		InitWorkflowClient()
 	}

@@ -38,7 +38,7 @@ func NewResubmitCommand() *cobra.Command {
 			if client.ArgoServer != "" {
 				conn := client.GetClientConn()
 				defer conn.Close()
-				apiGRPCClient, ctx := GetApiServerGRPCClient(conn)
+				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				errors.CheckError(err)
 				wfReq := workflow.WorkflowGetRequest{
 					Namespace:    namespace,

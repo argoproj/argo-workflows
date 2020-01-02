@@ -83,7 +83,7 @@ func NewLintCommand() *cobra.Command {
 
 func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(arg)
-	grpcClient, ctx := GetApiServerGRPCClient(conn)
+	grpcClient, ctx := GetWFApiServerGRPCClient(conn)
 	ns, _, _ := client.Config.Namespace()
 	var wfs []v1alpha1.Workflow
 	var err error

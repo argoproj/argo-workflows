@@ -1,6 +1,8 @@
 package template
 
 import (
+	"context"
+	"google.golang.org/grpc"
 	"log"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -12,6 +14,7 @@ import (
 	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/templateresolution"
+	wftmplApiServer"github.com/argoproj/argo/cmd/server/workflowtemplate"
 )
 
 // Global variables
@@ -74,3 +77,8 @@ func (c LazyWorkflowTemplateGetter) Get(name string) (*wfv1.WorkflowTemplate, er
 }
 
 var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplateGetter{}
+
+
+func GetWFtmplApiServerGRPCClient(conn *grpc.ClientConn) (wftmplApiServer.WorkflowTemplateServiceClient, context.Context) {
+	return wftmplApiServer.NewWorkflowTemplateServiceClient(conn), client.ContextWithAuthorization()
+}
