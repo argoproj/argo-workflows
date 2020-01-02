@@ -35,6 +35,7 @@ export class WorkflowHistoryList extends React.Component<RouteComponentProps<any
                                             </ul>
                                         </div>
                                     )}
+                                    common.go
                                     {workflows.map(workflow => (
                                         <div key={workflow.metadata.uid}>
                                             <Link to={uiUrl(`workflow-history/${workflow.metadata.namespace}/${workflow.metadata.uid}`)}>

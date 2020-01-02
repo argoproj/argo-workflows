@@ -38,7 +38,7 @@ export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowT
                             return services.workflowTemplate.update(
                                 jsonMergePatch.apply(spec, JSON.parse(patch)),
                                 props.workflowTemplate.metadata.name,
-                                props.workflowTemplate.metadata.namespace,
+                                props.workflowTemplate.metadata.namespace
                             );
                         }}
                     />

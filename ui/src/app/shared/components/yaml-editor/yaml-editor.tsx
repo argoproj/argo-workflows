@@ -60,7 +60,6 @@ export class YamlEditor<T> extends React.Component<
                                                 try {
                                                     const rawWf = jsYaml.load(this.model.getLinesContent().join('\n'));
                                                     const res: any = await this.props.onSave(JSON.stringify(rawWf || {}));
-                                                    console.log("SIMON RES", res);
                                                     if (res !== null) {
                                                         this.setState({editing: false});
                                                     }
