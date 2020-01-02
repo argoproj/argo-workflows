@@ -117,7 +117,7 @@ const wftStr3 = `
 }
 `
 
-func getWorkflowTemplateServer() (*WorkflowTemplateServer, context.Context) {
+func getWorkflowTemplateServer() (WorkflowTemplateServiceServer, context.Context) {
 	var wftObj1, wftObj2 v1alpha1.WorkflowTemplate
 	_ = json.Unmarshal([]byte(wftStr2), &wftObj1)
 	_ = json.Unmarshal([]byte(wftStr3), &wftObj2)

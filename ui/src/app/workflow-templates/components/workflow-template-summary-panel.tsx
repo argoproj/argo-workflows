@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
+import {Timestamp} from '../../shared/components/timestamp';
 import {YamlEditor} from '../../shared/components/yaml-editor/yaml-editor';
 import {services} from '../../shared/services';
 
@@ -10,7 +11,7 @@ export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowT
     const attributes = [
         {title: 'Name', value: props.workflowTemplate.metadata.name},
         {title: 'Namespace', value: props.workflowTemplate.metadata.namespace},
-        {title: 'Created At', value: props.workflowTemplate.metadata.creationTimestamp}
+        {title: 'Created At', value: <Timestamp date={props.workflowTemplate.metadata.creationTimestamp} />}
     ];
     return (
         <div>

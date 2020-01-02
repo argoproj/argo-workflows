@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
+import {Timestamp} from '../../../shared/components/timestamp';
 import {WorkflowSteps} from '../workflow-steps/workflow-steps';
 
 require('./workflow-list-item.scss');
@@ -20,7 +21,10 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                 <div className='workflow-list-item__status-icon'>
                     <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))} aria-hidden='true' />
                 </div>
-                <div className='workflow-list-item__status-message'>{props.workflow.metadata.creationTimestamp}</div>
+                <div className='workflow-list-item__status-message'>
+                    {' '}
+                    <Timestamp date={props.workflow.metadata.creationTimestamp} />
+                </div>
             </div>
         </div>
 
@@ -49,7 +53,9 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                         </div>
                         <div className='workflow-list-item__content-details-row row'>
                             <div className='columns large-4'>CREATED AT:</div>
-                            <div className='columns large-8'>{props.workflow.metadata.creationTimestamp}</div>
+                            <div className='columns large-8'>
+                                <Timestamp date={props.workflow.metadata.creationTimestamp} />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Timestamp} from '../../../shared/components/timestamp';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -17,7 +18,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
-    onShowContainerLogs?: (nodeId: string, container: string) => any;
+    onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
 }
 
@@ -47,9 +48,16 @@ export const WorkflowNodeSummary = (props: Props) => {
                 </span>
             )
         },
-        ...(props.node.message ? [{title: 'MESSAGE', value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>}] : []),
-        {title: 'START TIME', value: props.node.startedAt},
-        {title: 'END TIME', value: props.node.finishedAt || '-'},
+        ...(props.node.message
+            ? [
+                  {
+                      title: 'MESSAGE',
+                      value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>
+                  }
+              ]
+            : []),
+        {title: 'START TIME', value: <Timestamp date={props.node.startedAt} />},
+        {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
             value: (
@@ -67,7 +75,7 @@ export const WorkflowNodeSummary = (props: Props) => {
                 <button className='argo-button argo-button--base-o' onClick={() => props.onShowYaml && props.onShowYaml(props.node.id)}>
                     YAML
                 </button>{' '}
-                {template && (template.container || template.script) && props.onShowContainerLogs && (
+                {template && (template.container || template.script) && (
                     <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.node.id, 'main')}>
                         LOGS
                     </button>
@@ -115,20 +123,24 @@ export const WorkflowNodeContainer = (props: {
     const attributes = [
         {title: 'NAME', value: container.name || 'main'},
         {title: 'IMAGE', value: container.image},
-        {title: 'COMMAND', value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>},
+        {
+            title: 'COMMAND',
+            value: <span className='workflow-node-info__multi-line'>{(container.command || []).join(' ')}</span>
+        },
         container.source
             ? {title: 'SOURCE', value: <span className='workflow-node-info__multi-line'>{container.source}</span>}
-            : {title: 'ARGS', value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>}
+            : {
+                  title: 'ARGS',
+                  value: <span className='workflow-node-info__multi-line'>{(container.args || []).join(' ')}</span>
+              }
     ];
     return (
         <div className='white-box'>
             <div className='white-box__details'>{<AttributeRows attributes={attributes} />}</div>
             <div>
-                {props.onShowContainerLogs && (
-                    <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
-                        LOGS
-                    </button>
-                )}
+                <button className='argo-button argo-button--base-o' onClick={() => props.onShowContainerLogs && props.onShowContainerLogs(props.nodeId, container.name)}>
+                    LOGS
+                </button>
             </div>
         </div>
     );

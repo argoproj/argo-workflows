@@ -349,7 +349,7 @@ const workflow = `
 }
 `
 
-func getWorkflowServer() (*workflowServer, context.Context) {
+func getWorkflowServer() (WorkflowServiceServer, context.Context) {
 
 	var wfObj1, wfObj2, wfObj3, wfObj4, wfObj5 v1alpha1.Workflow
 	_ = json.Unmarshal([]byte(wf1), &wfObj1)
@@ -364,7 +364,7 @@ func getWorkflowServer() (*workflowServer, context.Context) {
 	return server, ctx
 }
 
-func getWorkflow(ctx context.Context, server *workflowServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
+func getWorkflow(ctx context.Context, server WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
 
 	req := WorkflowGetRequest{
 		WorkflowName: wfName,
@@ -374,7 +374,7 @@ func getWorkflow(ctx context.Context, server *workflowServer, namespace string, 
 	return server.GetWorkflow(ctx, &req)
 }
 
-func getWorkflowList(ctx context.Context, server *workflowServer, namespace string) (*v1alpha1.WorkflowList, error) {
+func getWorkflowList(ctx context.Context, server WorkflowServiceServer, namespace string) (*v1alpha1.WorkflowList, error) {
 	req := WorkflowListRequest{
 		Namespace: namespace,
 	}
@@ -515,4 +515,17 @@ func TestTerminateWorkflow(t *testing.T) {
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
+}
+
+
+func TestResubmitWorkflow(t *testing.T) {
+	server, ctx := getWorkflowServer()
+
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
+	assert.Nil(t, err)
+	rsmWfReq := WorkflowUpdateRequest{
+		WorkflowName: wf.Name,
+		Namespace:    wf.Namespace,
+	}
+	wf, err = server.ResubmitWorkflow(ctx, &rsmWfReq)
 }

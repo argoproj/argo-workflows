@@ -192,6 +192,9 @@ func (s *ArgoServerSuite) TestWorkflows() {
 		s.e(t).GET("/api/v1/workflows/argo/test").
 			Expect().
 			Status(200)
+		s.e(t).GET("/api/v1/workflows/argo/not-found").
+			Expect().
+			Status(404)
 	})
 
 	s.Run("Suspend", func(t *testing.T) {
@@ -241,6 +244,9 @@ func (s *ArgoServerSuite) TestWorkflows() {
 		s.e(t).DELETE("/api/v1/workflows/argo/test").
 			Expect().
 			Status(200)
+		s.e(t).DELETE("/api/v1/workflows/argo/not-found").
+			Expect().
+			Status(404)
 	})
 }
 
@@ -298,17 +304,31 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
 		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		if assert.Equal(t, 200, resp.StatusCode) {
-			assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
-			s := bufio.NewScanner(resp.Body)
-			for s.Scan() {
-				line := s.Text()
-				if strings.Contains(line, "🐙 Hello Argo!") {
-					break
+		if assert.NoError(t, err) {
+			defer func() { _ = resp.Body.Close() }()
+			if assert.Equal(t, 200, resp.StatusCode) {
+				assert.Equal(t, resp.Header.Get("Content-Type"), "text/event-stream")
+				s := bufio.NewScanner(resp.Body)
+				for s.Scan() {
+					line := s.Text()
+					if strings.Contains(line, "🐙 Hello Argo!") {
+						break
+					}
 				}
 			}
+		}
+	})
+
+	s.Run("PodLogsNotFound", func(t *testing.T) {
+		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflows/argo/basic/not-found/log?logOptions.container=not-found", nil)
+		assert.NoError(t, err)
+		req.Header.Set("Accept", "text/event-stream")
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Close = true
+		resp, err := http.DefaultClient.Do(req)
+		if assert.NoError(t, err) {
+			defer func() { _ = resp.Body.Close() }()
+			assert.Equal(t, 404, resp.StatusCode)
 		}
 	})
 }

@@ -84,7 +84,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 				break
 			}
 			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
-			time.Sleep(1 * time.Second)
+			time.Sleep(3 * time.Second)
 		}
 	}
 	// create database collection
