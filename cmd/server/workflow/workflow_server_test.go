@@ -517,7 +517,6 @@ func TestTerminateWorkflow(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-
 func TestResubmitWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 
@@ -528,4 +527,5 @@ func TestResubmitWorkflow(t *testing.T) {
 		Namespace:    wf.Namespace,
 	}
 	wf, err = server.ResubmitWorkflow(ctx, &rsmWfReq)
+	assert.NotNil(t, wf)
 }
