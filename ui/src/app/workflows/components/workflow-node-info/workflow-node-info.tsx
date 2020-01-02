@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import * as React from 'react';
 
 import * as models from '../../../../models';
+import {Timestamp} from '../../../shared/components/timestamp';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -48,8 +49,8 @@ export const WorkflowNodeSummary = (props: Props) => {
             )
         },
         ...(props.node.message ? [{title: 'MESSAGE', value: <span className='workflow-node-info__multi-line'>{props.node.message}</span>}] : []),
-        {title: 'START TIME', value: props.node.startedAt},
-        {title: 'END TIME', value: props.node.finishedAt || '-'},
+        {title: 'START TIME', value: <Timestamp date={props.node.startedAt} />},
+        {title: 'END TIME', value: <Timestamp date={props.node.finishedAt} />},
         {
             title: 'DURATION',
             value: (

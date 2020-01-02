@@ -28,14 +28,12 @@ export class WorkflowHistoryList extends React.Component<RouteComponentProps<any
                                     {workflows.length === 0 && (
                                         <div className='white-box'>
                                             <h4>No workflow history</h4>
-                                            <p>To record history:</p>
-                                            <ul>
-                                                <li>Enabled history in configuration.</li>
-                                                <li>Submit a workflow.</li>
-                                            </ul>
+                                            <p>To record history you must enabled history in configuration.</p>
                                         </div>
                                     )}
-                                    common.go
+                                    <p>
+                                        <i className='fa fa-info-circle' /> Workflow history entries are created when a workflow completes.
+                                    </p>
                                     {workflows.map(workflow => (
                                         <div key={workflow.metadata.uid}>
                                             <Link to={uiUrl(`workflow-history/${workflow.metadata.namespace}/${workflow.metadata.uid}`)}>
