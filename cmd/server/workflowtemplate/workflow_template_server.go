@@ -15,7 +15,7 @@ import (
 type WorkflowTemplateServer struct {
 }
 
-func NewWorkflowTemplateServer() *WorkflowTemplateServer {
+func NewWorkflowTemplateServer() WorkflowTemplateServiceServer {
 	return &WorkflowTemplateServer{}
 }
 

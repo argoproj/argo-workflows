@@ -21,7 +21,7 @@ type workflowServer struct {
 	wfKubeService *kubeService
 }
 
-func NewWorkflowServer(wfDBService *DBService) *workflowServer {
+func NewWorkflowServer(wfDBService *DBService) WorkflowServiceServer {
 	return &workflowServer{
 		wfDBService: wfDBService,
 	}

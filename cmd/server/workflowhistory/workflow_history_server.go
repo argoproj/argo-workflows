@@ -19,7 +19,7 @@ type workflowHistoryServer struct {
 	repo sqldb.WorkflowHistoryRepository
 }
 
-func NewWorkflowHistoryServer(repo sqldb.WorkflowHistoryRepository) *workflowHistoryServer {
+func NewWorkflowHistoryServer(repo sqldb.WorkflowHistoryRepository) WorkflowHistoryServiceServer {
 	return &workflowHistoryServer{repo: repo}
 }
 
