@@ -83,7 +83,7 @@ func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
 	return &wftmpl
 }
 
-// makePodsRunning acts like a pod controller and simulates the transition of pods transitioning into a running state
+// makePodsPhase acts like a pod controller and simulates the transition of pods transitioning into a specified state
 func makePodsPhase(t *testing.T, phase apiv1.PodPhase, kubeclientset kubernetes.Interface, namespace string) {
 	podcs := kubeclientset.CoreV1().Pods(namespace)
 	pods, err := podcs.List(metav1.ListOptions{})
