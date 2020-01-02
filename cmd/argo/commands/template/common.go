@@ -1,12 +1,12 @@
 package template
 
 import (
-	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"log"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -17,7 +17,6 @@ import (
 // Global variables
 var (
 	restConfig   *rest.Config
-	clientConfig clientcmd.ClientConfig
 	clientset    *kubernetes.Clientset
 	wfClientset  *versioned.Clientset
 	wftmplClient v1alpha1.WorkflowTemplateInterface
