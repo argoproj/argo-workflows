@@ -83,7 +83,7 @@ func (s *kubeService) Resubmit(wfClient versioned.Interface, namespace string, w
 		return nil, err
 	}
 
-	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfClient, namespace, newWF, nil)
+	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfClient, namespace, newWF, &util.SubmitOpts{})
 	if err != nil {
 		return nil, err
 	}
