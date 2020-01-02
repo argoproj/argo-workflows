@@ -20,7 +20,8 @@ export class WorkflowTemplateList extends React.Component<RouteComponentProps<an
                     breadcrumbs: [{title: 'Templates', path: uiUrl('templates')}]
                 }}>
                 <div className='workflow-template-list'>
-                    <DataLoader load={() => services.workflowTemplate.list('')} loadingRenderer={() => <MockupList height={150} marginTop={30} />}>
+                    {/*TODO(simon): remove hardwired 'argo' namespace*/}
+                    <DataLoader load={() => services.workflowTemplate.list('argo')} loadingRenderer={() => <MockupList height={150} marginTop={30} />}>
                         {(workflowTemplates: models.WorkflowTemplate[]) => (
                             <div className='row'>
                                 <div className='columns small-12 xxlarge-2'>
