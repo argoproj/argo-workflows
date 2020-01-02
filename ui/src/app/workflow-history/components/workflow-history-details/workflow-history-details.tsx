@@ -1,5 +1,5 @@
 import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
-import {AppContext} from 'argo-ui/src/index';
+import {AppContext, LogsViewer} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
@@ -43,6 +43,14 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
 
     private set nodeId(nodeId) {
         this.setParam('nodeId', nodeId);
+    }
+
+    private get container() {
+        return this.getParam('container') || 'main';
+    }
+
+    private set container(container) {
+        this.setParam('container', container);
     }
 
     private get sidePanel() {
@@ -125,13 +133,31 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                 <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
                                                     <i className='argo-icon-close' />
                                                 </button>
-                                                <WorkflowNodeInfo node={this.node(wf)} workflow={wf} onShowYaml={() => (this.sidePanel = 'yaml')} />
+                                                <WorkflowNodeInfo
+                                                    node={this.node(wf)}
+                                                    workflow={wf}
+                                                    onShowYaml={() => (this.sidePanel = 'yaml')}
+                                                    onShowContainerLogs={(nodeId, container) => {
+                                                        this.sidePanel = 'logs';
+                                                        this.container = container;
+                                                    }}
+                                                />
                                             </div>
                                         )}
                                     </div>
                                 )}
                                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
-                                    <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />
+                                    {this.sidePanel === 'yaml' ? (
+                                        <LogsViewer
+                                            source={{
+                                                key: this.nodeId,
+                                                loadLogs: () => services.workflows.getContainerLogs(wf, this.nodeId, this.container),
+                                                shouldRepeat: () => false
+                                            }}
+                                        />
+                                    ) : (
+                                        <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />
+                                    )}
                                 </SlidingPanel>
                             </div>
                         </React.Fragment>

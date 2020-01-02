@@ -130,11 +130,13 @@ func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfHistoryRep
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_logrus.UnaryServerInterceptor(serverLog),
 			grpcutil.PanicLoggerUnaryServerInterceptor(serverLog),
+			grpcutil.ErrorTranslationUnaryServerInterceptor,
 			as.authenticator.UnaryServerInterceptor(),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_logrus.StreamServerInterceptor(serverLog),
 			grpcutil.PanicLoggerStreamServerInterceptor(serverLog),
+			grpcutil.ErrorTranslationStreamServerInterceptor,
 			as.authenticator.StreamServerInterceptor(),
 		)),
 	}

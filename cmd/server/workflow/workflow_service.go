@@ -137,28 +137,31 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
 	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, wfReq.LogOptions).Stream()
 
-	if err == nil {
-		scanner := bufio.NewScanner(stream)
-		for scanner.Scan() {
-			line := scanner.Text()
-			parts := strings.Split(line, " ")
-			//logTime, err := time.Parse(time.RFC3339, parts[0])
-			byt := []byte(parts[0])
-			var logTime metav1.Time
-			err := logTime.UnmarshalText(byt)
-			if err == nil {
-				lines := strings.Join(parts[1:], " ")
-				for _, line := range strings.Split(lines, "\r") {
-					if line != "" {
-						cnt := LogEntry{Content: line, TimeStamp: &logTime}
-						_ = log.Send(&cnt)
-					}
+	if err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(stream)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, " ")
+		//logTime, err := time.Parse(time.RFC3339, parts[0])
+		byt := []byte(parts[0])
+		var logTime metav1.Time
+		err := logTime.UnmarshalText(byt)
+		if err == nil {
+			lines := strings.Join(parts[1:], " ")
+			for _, line := range strings.Split(lines, "\r") {
+				if line != "" {
+					cnt := LogEntry{Content: line, TimeStamp: &logTime}
+					_ = log.Send(&cnt)
 				}
-			} else {
-				cnt := LogEntry{Content: line, TimeStamp: &logTime}
-				_ = log.Send(&cnt)
 			}
+		} else {
+			cnt := LogEntry{Content: line, TimeStamp: &logTime}
+			_ = log.Send(&cnt)
 		}
 	}
-	return err
+
+	return nil
 }
