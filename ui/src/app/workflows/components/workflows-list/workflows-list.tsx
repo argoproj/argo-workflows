@@ -185,7 +185,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 submitMode={true}
                                 onSave={rawWf => {
                                     // TODO(simon): Remove hardwired 'argo' namespace
-                                    services.workflows
+                                    return services.workflows
                                         .create(JSON.parse(rawWf), 'argo')
                                         .then()
                                         .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
