@@ -2,7 +2,7 @@
 
 # Argoproj - Get stuff done with Kubernetes
 
-![Argo Image](argo.png)
+![Argo Image](docs/assets/argo.png)
 
 ## Quickstart
 ```bash
@@ -47,9 +47,9 @@ Argo Workflows is an open source container-native workflow engine for orchestrat
 * Argo Workflows puts a cloud-scale supercomputer at your fingertips!
 
 ## Documentation
-* [Get started here](demo.md)
+* [Get started here](docs/getting-started.md)
 * [How to write Argo Workflow specs](examples/README.md)
-* [How to configure your artifact repository](ARTIFACT_REPO.md)
+* [How to configure your artifact repository](docs/configure-artifact-repository.md)
 
 ## Features
 * DAG or Steps based declaration of workflows
@@ -82,8 +82,10 @@ Currently **officially** using Argo:
 1. [Admiralty](https://admiralty.io/)
 1. [Adobe](https://www.adobe.com/)
 1. [Alibaba Cloud](https://www.alibabacloud.com/about)
+1. [BioBox Analytics](https://biobox.io)
 1. [BlackRock](https://www.blackrock.com/)
 1. [Canva](https://www.canva.com/)
+1. [CCRi](https://www.ccri.com/)
 1. [Codec](https://www.codec.ai/)
 1. [Commodus Tech](https://www.commodus.tech)
 1. [CoreFiling](https://www.corefiling.com/)
@@ -92,11 +94,14 @@ Currently **officially** using Argo:
 1. [Datadog](https://www.datadoghq.com/)
 1. [DataStax](https://www.datastax.com/)
 1. [Equinor](https://www.equinor.com/)
+1. [Fairwinds](https://fairwinds.com/)
 1. [Gardener](https://gardener.cloud/)
 1. [Gladly](https://gladly.com/)
 1. [GitHub](https://github.com/)
 1. [Google](https://www.google.com/intl/en/about/our-company/)
+1. [HOVER](https://hover.to)
 1. [IBM](https://ibm.com)
+1. [InsideBoard](https://www.insideboard.com)
 1. [Interline Technologies](https://www.interline.io/blog/scaling-openstreetmap-data-workflows/)
 1. [Intuit](https://www.intuit.com/)
 1. [Karius](https://www.kariusdx.com/)
@@ -109,14 +114,14 @@ Currently **officially** using Argo:
 1. [OVH](https://www.ovh.com/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
+1. [Red Hat](https://www.redhat.com/en)
 1. [SAP Fieldglass](https://www.fieldglass.com/)
 1. [SAP Hybris](https://cx.sap.com/)
+1. [Sidecar Technologies](https://hello.getsidecar.com/)
 1. [Styra](https://www.styra.com/)
 1. [Threekit](https://www.threekit.com/)
 1. [Tiger Analytics](https://www.tigeranalytics.com/)
-
-
-
+1. [Wavefront](https://www.wavefront.com/)
 
 ## Community Blogs and Presentations
 * [Argo Ansible role: Provisioning Argo Workflows on OpenShift](https://medium.com/@marekermk/provisioning-argo-on-openshift-with-ansible-and-kustomize-340a1fda8b50)

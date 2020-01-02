@@ -628,12 +628,6 @@ func (step *WorkflowStep) IsResolvable() bool {
 	return true
 }
 
-//// Item expands a single workflow step into multiple parallel steps
-//// The value of Item can be a map, string, bool, or number
-//type Item struct {
-//	Value interface{} `json:"value,omitempty"`
-//}
-
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
 	// Count is number of elements in the sequence (default: 0). Not to be used with end
@@ -701,6 +695,17 @@ type Arguments struct {
 
 var _ ArgumentsProvider = &Arguments{}
 
+type Nodes map[string]NodeStatus
+
+func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	for _, i := range n {
+		if i.DisplayName == name {
+			return &i
+		}
+	}
+	return nil
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -730,7 +735,7 @@ type WorkflowStatus struct {
 	CompressedNodes string `json:"compressedNodes,omitempty" protobuf:"bytes,5,opt,name=compressedNodes"`
 
 	// Nodes is a mapping between a node ID and the node's status.
-	Nodes map[string]NodeStatus `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
+	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
@@ -944,14 +949,6 @@ type S3Artifact struct {
 	// Key is the key in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
-
-//func (s *S3Artifact) String() string {
-//	protocol := "https"
-//	if s.Insecure != nil && *s.Insecure {
-//		protocol = "http"
-//	}
-//	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
-//}
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Bucket != ""

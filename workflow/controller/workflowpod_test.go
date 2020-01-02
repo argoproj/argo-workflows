@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"testing"
 
 	"github.com/argoproj/argo/test/util"
@@ -390,6 +391,27 @@ func TestConditionalNoAddArchiveLocation(t *testing.T) {
 	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
 	assert.NoError(t, err)
 	assert.Nil(t, tmpl.ArchiveLocation)
+}
+
+// TestConditionalNoAddArchiveLocation verifies we do  add archive location if it is needed for logs
+func TestConditionalAddArchiveLocationArchiveLogs(t *testing.T) {
+	woc := newWoc()
+	woc.artifactRepository.S3 = &config.S3ArtifactRepository{
+		S3Bucket: wfv1.S3Bucket{
+			Bucket: "foo",
+		},
+		KeyFormat: "path/in/bucket",
+	}
+	woc.artifactRepository.ArchiveLogs = pointer.BoolPtr(true)
+	woc.operate()
+	pods, err := woc.controller.kubeclientset.CoreV1().Pods("").List(metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, pods.Items, 1)
+	pod := pods.Items[0]
+	var tmpl wfv1.Template
+	err = json.Unmarshal([]byte(pod.Annotations[common.AnnotationKeyTemplate]), &tmpl)
+	assert.NoError(t, err)
+	assert.NotNil(t, tmpl.ArchiveLocation)
 }
 
 // TestConditionalNoAddArchiveLocation verifies we add archive location when it is needed
