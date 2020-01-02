@@ -1,6 +1,7 @@
 package template
 
 import (
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"log"
 
 	"k8s.io/client-go/kubernetes"
@@ -28,7 +29,7 @@ func initKubeClient() *kubernetes.Clientset {
 		return clientset
 	}
 	var err error
-	restConfig, err = clientConfig.ClientConfig()
+	restConfig, err = client.Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,7 +52,7 @@ func InitWorkflowTemplateClient(ns ...string) v1alpha1.WorkflowTemplateInterface
 	if len(ns) > 0 {
 		namespace = ns[0]
 	} else {
-		namespace, _, err = clientConfig.Namespace()
+		namespace, _, err = client.Config.Namespace()
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -2,6 +2,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -24,7 +25,7 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			namespace, _, err := clientConfig.Namespace()
+			namespace, _, err := client.Config.Namespace()
 			if err != nil {
 				log.Fatal(err)
 			}
