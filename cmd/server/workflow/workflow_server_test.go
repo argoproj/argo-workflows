@@ -3,10 +3,14 @@ package workflow
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/fake"
+	ktesting "k8s.io/client-go/testing"
 
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -360,8 +364,19 @@ func getWorkflowServer() (WorkflowServiceServer, context.Context) {
 	server := NewWorkflowServer(nil)
 	kubeClientSet := fake.NewSimpleClientset()
 	wfClientset := v1alpha.NewSimpleClientset(&wfObj1, &wfObj2, &wfObj3, &wfObj4, &wfObj5)
+	wfClientset.PrependReactor("create", "workflows", generateNameReactor)
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClientset), auth.KubeKey, kubeClientSet)
 	return server, ctx
+}
+
+// generateNameReactor implements the logic required for the GenerateName field to work when using
+// the fake client. Add it with client.PrependReactor to your fake client.
+func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+	wf := action.(ktesting.CreateAction).GetObject().(*v1alpha1.Workflow)
+	if wf.Name == "" && wf.GenerateName != "" {
+		wf.Name = fmt.Sprintf("%s%s", wf.GenerateName, rand.String(5))
+	}
+	return false, nil, nil
 }
 
 func getWorkflow(ctx context.Context, server WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
@@ -518,12 +533,9 @@ func TestTerminateWorkflow(t *testing.T) {
 }
 
 func TestResubmitWorkflow(t *testing.T) {
-	// TODO @bala to maybe fix?
-	t.SkipNow()
 
 	server, ctx := getWorkflowServer()
-
-	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
+	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2")
 	assert.Nil(t, err)
 	wf, err = server.ResubmitWorkflow(ctx, &WorkflowUpdateRequest{
 		WorkflowName: wf.Name,
