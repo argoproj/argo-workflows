@@ -1,0 +1,45 @@
+syntax = "proto3";
+option go_package = "github.com/argoproj/argo/cmd/server/workflowarchive";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1/generated.proto";
+import "k8s.io/api/core/v1/generated.proto";
+
+message ListArchivedWorkflowsRequest {
+    string namespace = 1;
+    k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
+}
+message GetArchivedWorkflowRequest {
+    string namespace = 1;
+    string uid = 2;
+}
+message ResubmitArchivedWorkflowRequest {
+    string namespace = 1;
+    string uid = 2;
+}
+message DeleteArchivedWorkflowRequest {
+    string namespace = 1;
+    string uid = 2;
+}
+message ArchivedWorkflowDeletedResponse {
+}
+
+service ArchivedWorkflowService {
+    rpc ListArchivedWorkflows (ListArchivedWorkflowsRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
+        option (google.api.http).get = "/api/v1/archived-workflows/{namespace}";
+    }
+    rpc GetArchivedWorkflow (GetArchivedWorkflowRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http).get = "/api/v1/archived-workflows/{namespace}/{uid}";
+    }
+    rpc ResubmitArchivedWorkflow (ResubmitArchivedWorkflowRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+        option (google.api.http) = {
+			put: "/api/v1/archived-workflows/{namespace}/{uid}/resubmit"
+			body: "*"
+		};
+    }
+    rpc DeleteArchivedWorkflow (DeleteArchivedWorkflowRequest) returns (ArchivedWorkflowDeletedResponse) {
+        option (google.api.http).delete = "/api/v1/archived-workflows/{namespace}/{uid}";
+    }
+}

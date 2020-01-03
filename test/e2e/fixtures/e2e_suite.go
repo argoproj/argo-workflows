@@ -98,7 +98,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.DeleteFrom("argo_workflow_history").Exec()
+	_, err = db.DeleteFrom("argo_archived_workflows").Exec()
 	if err != nil {
 		panic(err)
 	}

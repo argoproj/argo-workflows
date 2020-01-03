@@ -1,4 +1,4 @@
-package history
+package archive
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/cmd/server/workflowarchive"
 )
 
 func NewDeleteCommand() *cobra.Command {
@@ -23,15 +23,15 @@ func NewDeleteCommand() *cobra.Command {
 			uid := args[1]
 			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
-			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
-			_, err := wfHistoryClient.DeleteWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryDeleteRequest{
+			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
+			_, err := client.DeleteArchivedWorkflow(ctx, &workflowarchive.DeleteArchivedWorkflowRequest{
 				Namespace: namespace,
 				Uid:       uid,
 			})
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Workflow history '%s' deleted\n", uid)
+			fmt.Printf("Archived workflow '%s' deleted\n", uid)
 		},
 	}
 	return command

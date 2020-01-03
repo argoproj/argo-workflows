@@ -194,7 +194,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                                                     workflow={this.state.workflow}
                                                     onShowContainerLogs={(nodeId, container) => this.openContainerLogsPanel(nodeId, container)}
                                                     onShowYaml={nodeId => this.openNodeYaml(nodeId)}
-                                                    historical={false}
+                                                    archived={false}
                                                 />
                                             )}
                                         </div>
@@ -204,7 +204,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
-                                    <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} historical={false} />
+                                    <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} archived={false} />
                                 )}
                                 {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
                             </SlidingPanel>
@@ -334,7 +334,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                         </React.Fragment>
                     )}
                     <h6>Artifacts</h6>
-                    <WorkflowArtifacts workflow={this.state.workflow} historical={false} />
+                    <WorkflowArtifacts workflow={this.state.workflow} archived={false} />
                 </div>
             </div>
         );

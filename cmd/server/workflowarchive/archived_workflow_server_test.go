@@ -1,4 +1,4 @@
-package workflowhistory
+package workflowarchive
 
 import (
 	"context"
@@ -20,11 +20,11 @@ import (
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
-func Test_workflowHistoryServer(t *testing.T) {
-	repo := &mocks.WorkflowHistoryRepository{}
+func Test_achivedWorkflowServer(t *testing.T) {
+	repo := &mocks.WorkflowArchive{}
 	kubeClient := &kubefake.Clientset{}
 	wfClient := &argofake.Clientset{}
-	w := NewWorkflowHistoryServer(repo)
+	w := NewWorkflowArchiveServer(repo)
 	allowed := true
 	kubeClient.AddReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &authorizationv1.SelfSubjectAccessReview{
@@ -32,10 +32,10 @@ func Test_workflowHistoryServer(t *testing.T) {
 		}, nil
 	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflowHistory", "", 1, 0).Return([]wfv1.Workflow{{}}, nil)
-	repo.On("ListWorkflowHistory", "", 1, 1).Return([]wfv1.Workflow{}, nil)
-	repo.On("GetWorkflowHistory", "", "").Return(nil, nil)
-	repo.On("GetWorkflowHistory", "my-ns", "my-uid").Return(&wfv1.Workflow{
+	repo.On("ListWorkflows", "", 1, 0).Return([]wfv1.Workflow{{}}, nil)
+	repo.On("ListWorkflows", "", 1, 1).Return([]wfv1.Workflow{}, nil)
+	repo.On("GetWorkflow", "", "").Return(nil, nil)
+	repo.On("GetWorkflow", "my-ns", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
@@ -49,53 +49,53 @@ func Test_workflowHistoryServer(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
-	repo.On("DeleteWorkflowHistory", "my-ns", "my-uid").Return(nil)
+	repo.On("DeleteWorkflow", "my-ns", "my-uid").Return(nil)
 
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
-	t.Run("ListWorkflowHistory", func(t *testing.T) {
+	t.Run("ListArchivedWorkflows", func(t *testing.T) {
 		allowed = false
-		history, err := w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		resp, err := w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
-			assert.Len(t, history.Items, 0)
+			assert.Len(t, resp.Items, 0)
 		}
 		allowed = true
-		history, err = w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
+		resp, err = w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Limit: 1}})
 		if assert.NoError(t, err) {
-			assert.Len(t, history.Items, 1)
-			assert.Equal(t, "1", history.Continue)
+			assert.Len(t, resp.Items, 1)
+			assert.Equal(t, "1", resp.Continue)
 		}
-		history, err = w.ListWorkflowHistory(ctx, &WorkflowHistoryListRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
+		resp, err = w.ListArchivedWorkflows(ctx, &ListArchivedWorkflowsRequest{ListOptions: &metav1.ListOptions{Continue: "1", Limit: 1}})
 		if assert.NoError(t, err) {
-			assert.Len(t, history.Items, 0)
-			assert.Empty(t, history.Continue)
+			assert.Len(t, resp.Items, 0)
+			assert.Empty(t, resp.Continue)
 		}
 	})
-	t.Run("GetWorkflowHistory", func(t *testing.T) {
+	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{})
+		_, err = w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
-		wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
-	t.Run("ResubmitWorkflowHistory", func(t *testing.T) {
+	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		wf, err := w.ResubmitWorkflowHistory(ctx, &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err := w.ResubmitArchivedWorkflow(ctx, &ResubmitArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		wf, err = w.ResubmitWorkflowHistory(ctx, &WorkflowHistoryUpdateRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err = w.ResubmitArchivedWorkflow(ctx, &ResubmitArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.Equal(t, "my-name-resubmitted", wf.Name)
 	})
-	t.Run("DeleteWorkflowHistory", func(t *testing.T) {
+	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := w.DeleteWorkflowHistory(ctx, &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = w.DeleteWorkflowHistory(ctx, &WorkflowHistoryDeleteRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err = w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
 		assert.NoError(t, err)
 	})
 }

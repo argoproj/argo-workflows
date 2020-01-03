@@ -124,29 +124,16 @@ This tutorial uses Minio for the sake of portability.
 
 Install Minio:
 ```sh
-helm install argo-artifacts stable/minio \
-  --set service.type=LoadBalancer \
-  --set defaultBucket.enabled=true \
-  --set defaultBucket.name=my-bucket \
-  --set persistence.enabled=false \
-  --set fullnameOverride=argo-artifacts
+kubectl -n argo apply -f manifests/extras/minio
 ```
 
 Login to the Minio UI using a web browser (port 9000) after exposing obtaining the external IP using `kubectl`.
+
 ```sh
-kubectl -n argo get service argo-artifacts -o wide
-```
-On Minikube:
-```sh
-minikube -n argo service --url argo-artifacts
+kubectl -n argo port-forward pod/minio 9000:9000
 ```
 
-NOTE: When minio is installed via Helm, it uses the following hard-wired default credentials,
-which you will use to login to the UI:
-* AccessKey: `AKIAIOSFODNN7EXAMPLE`
-* SecretKey: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
-
-Create a bucket named `my-bucket` from the Minio UI.
+Login using admin/password.
 
 ## 6. Reconfigure the workflow controller to use the Minio artifact repository
 
@@ -154,9 +141,11 @@ Edit the `workflow-controller` `ConfigMap` to reference the service name (`argo-
 secret (`argo-artifacts`) created by the Helm install:
 
 Edit the `workflow-controller` `ConfigMap`:
+
 ```sh
 kubectl edit cm -n argo workflow-controller-configmap
 ```
+
 Add the following:
 ```yaml
 data:
@@ -184,6 +173,7 @@ installed in a different namespace then you will need to create a copy of its se
 namespace you use for Workflows.
 
 ## 7. Run a workflow which uses artifacts
+
 ```sh
 argo submit https://raw.githubusercontent.com/argoproj/argo/master/examples/artifact-passing.yaml
 ```
@@ -210,7 +200,9 @@ Then visit: http://127.0.0.1:8001/api/v1/namespaces/argo/services/argo-ui/proxy/
 NOTE: artifact download and webconsole is not supported using this method
 
 ### Method 3: Expose a LoadBalancer
+
 Update the argo-ui service to be of type `LoadBalancer`.
+
 ```
 kubectl patch svc argo-ui -n argo -p '{"spec": {"type": "LoadBalancer"}}'
 ```
@@ -229,10 +221,13 @@ minikube service -n argo --url argo-ui
 
 ### 9. Access The Argo Server
 
+> v2.4 and after
+
 The Argo Server provide API access to Argo Workflows. This is scaled to zero by default.  
 
 ```
 kubectl -n argo scale deployment/argo-server --replicas 1
 kubectl -n argo port-forward svc/argo-server 2746:2746
-curl http://127.0.0.1:2746/api/v1/workflows/argo
 ```
+
+You can now access the UI on http://localhost:2746.

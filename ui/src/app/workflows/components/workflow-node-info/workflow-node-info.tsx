@@ -18,7 +18,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
-    historical: boolean;
+    archived: boolean;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
 }
@@ -191,7 +191,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
             props.node.outputs.artifacts &&
             props.node.outputs.artifacts.map(artifact =>
                 Object.assign({}, artifact, {
-                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.historical),
+                    downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, props.node.id, artifact.name, props.archived),
                     stepName: props.node.name,
                     dateCreated: props.node.finishedAt,
                     nodeName: props.node.name
@@ -205,9 +205,9 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                     <div className='columns small-12 text-center'>No data to display</div>
                 </div>
             )}
-            {artifacts.length > 0 && props.historical && (
+            {artifacts.length > 0 && props.archived && (
                 <p>
-                    <i className='fa fa-exclamation-triangle' /> Artifacts for historical workflows maybe be overwritten by a more recent workflow with the same name.
+                    <i className='fa fa-exclamation-triangle' /> Artifacts for archived workflows maybe be overwritten by a more recent workflow with the same name.
                 </p>
             )}
             {artifacts.map(artifact => (

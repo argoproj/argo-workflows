@@ -67,7 +67,7 @@ const config = {
                 'target': isProd ? '' : 'http://localhost:2746',
                 'secure': false,
             },
-            '/historical-artifacts': {
+            '/artifacts-by-uid': {
                 'target': isProd ? '' : 'http://localhost:2746',
                 'secure': false,
             }

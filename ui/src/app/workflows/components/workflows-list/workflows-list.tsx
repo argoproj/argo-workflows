@@ -166,7 +166,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                                     {workflows.map(workflow => (
                                                         <div key={workflow.metadata.name}>
                                                             <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                                                <WorkflowListItem workflow={workflow} history={false} />
+                                                                <WorkflowListItem workflow={workflow} archived={false} />
                                                             </Link>
                                                         </div>
                                                     ))}

@@ -1,4 +1,4 @@
-package history
+package archive
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/cmd/server/workflowarchive"
 )
 
 func NewGetCommand() *cobra.Command {
@@ -29,8 +29,8 @@ func NewGetCommand() *cobra.Command {
 			uid := args[1]
 			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
-			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
-			wf, err := wfHistoryClient.GetWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryGetRequest{
+			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
+			wf, err := client.GetArchivedWorkflow(ctx, &workflowarchive.GetArchivedWorkflowRequest{
 				Namespace: namespace,
 				Uid:       uid,
 			})

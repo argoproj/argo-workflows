@@ -71,7 +71,6 @@ message WorkflowWatchEvent {
 
 message LogEntry {
     string content = 1;
-    k8s.io.apimachinery.pkg.apis.meta.v1.Time timeStamp = 2;
 }
 
 service WorkflowService {

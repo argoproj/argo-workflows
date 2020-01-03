@@ -9,7 +9,7 @@ interface WorkflowLogsViewerProps {
     workflow: models.Workflow;
     nodeId: string;
     container: string;
-    historical: boolean;
+    archived: boolean;
 }
 
 interface WorkflowLogsViewerState {
@@ -26,7 +26,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
     }
 
     public componentDidMount(): void {
-        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.historical).subscribe(
+        services.workflows.getContainerLogs(this.props.workflow, this.props.nodeId, this.props.container, this.props.archived).subscribe(
             log => {
                 if (log) {
                     this.setState(state => {
@@ -53,14 +53,14 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
         return (
             <div className='workflow-logs-viewer'>
                 <h3>Logs</h3>
-                {this.props.historical && (
+                {this.props.archived && (
                     <p>
-                        <i className='fa fa-exclamation-triangle' /> Logs for historical workflows maybe overwritten by more recent workflow with the same name.
+                        <i className='fa fa-exclamation-triangle' /> Logs for archived workflows maybe overwritten by a more recent workflow with the same name.
                     </p>
                 )}
                 <p>
                     <i className='fa fa-box' /> {this.props.nodeId}/{this.props.container}
-                    {this.state.lines.length > 0 && <small className='muted'>{this.state.lines.length} line(s)</small>}
+                    {this.state.lines.length > 0 && <small className='muted'> {this.state.lines.length} line(s)</small>}
                 </p>
                 <div className='white-box'>
                     {this.state.error && (
@@ -75,8 +75,12 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     )}
                     {this.state.lines.length > 0 && (
                         <div className='log-box'>
+                            <i className='fa fa-chevron-down' />
+                            <br />
                             {this.state.lines.join('\n\r')}
-                            <span
+                            <br />
+                            <i
+                                className='fa fa-chevron-up'
                                 ref={el => {
                                     this.logCoda = el;
                                 }}

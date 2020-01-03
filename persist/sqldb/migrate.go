@@ -37,7 +37,7 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 	}
 	log.WithField("schemaVersion", schemaVersion).Info("Migrating database schema")
 
-	// try and make changes idempotent, as it is possible for the change to apply, but the history update to fail
+	// try and make changes idempotent, as it is possible for the change to apply, but the archive update to fail
 	// and therefore try and apply again next try
 	for changeSchemaVersion, change := range []string{
 		`create table if not exists ` + cfg.tableName + ` (
@@ -61,6 +61,7 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
     finishedat timestamp,
     primary key (id, namespace)
 )`,
+		`alter table argo_workflow_history rename to argo_archived_workflows`,
 	} {
 		if changeSchemaVersion > schemaVersion {
 			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change[0:20]}).Info("Applying database change")

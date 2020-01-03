@@ -7,15 +7,15 @@ import {Layout, NavigationManager, Notifications, NotificationsManager, Popup, P
 import {uiUrl} from './shared/base';
 import {AppContext, ContextApis, Provider} from './shared/context';
 
+import archivedWorkflows from './archived-workflows';
 import help from './help';
 import login from './login';
-import workflowHistory from './workflow-history';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('templates');
-const workflowHistoryUrl = uiUrl('workflow-history');
+const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
 const timelineUrl = uiUrl('timeline');
@@ -24,7 +24,7 @@ const routes: {
 } = {
     [workflowsUrl]: {component: workflows.component},
     [workflowTemplatesUrl]: {component: workflowTemplates.component},
-    [workflowHistoryUrl]: {component: workflowHistory.component},
+    [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
     [loginUrl]: {component: login.component}
 };
@@ -45,8 +45,8 @@ const navItems = [
         iconClassName: 'fa fa-clone'
     },
     {
-        title: 'History',
-        path: workflowHistoryUrl,
+        title: 'Archived Workflows',
+        path: archivedWorkflowUrl,
         iconClassName: 'fa fa-history'
     },
     {

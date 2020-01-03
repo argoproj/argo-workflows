@@ -1,12 +1,12 @@
-package history
+package archive
 
 import (
 	"github.com/spf13/cobra"
 )
 
-func NewHistoryCommand() *cobra.Command {
+func NewArchiveCommand() *cobra.Command {
 	var command = &cobra.Command{
-		Use: "history",
+		Use: "archive",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.HelpFunc()(cmd, args)
 		},

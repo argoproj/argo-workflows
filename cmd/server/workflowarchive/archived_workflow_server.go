@@ -1,4 +1,4 @@
-package workflowhistory
+package workflowarchive
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 	"github.com/argoproj/argo/workflow/util"
 )
 
-type workflowHistoryServer struct {
-	repo sqldb.WorkflowHistoryRepository
+type archivedWorkflowServer struct {
+	repo sqldb.WorkflowArchive
 }
 
-func NewWorkflowHistoryServer(repo sqldb.WorkflowHistoryRepository) WorkflowHistoryServiceServer {
-	return &workflowHistoryServer{repo: repo}
+func NewWorkflowArchiveServer(repo sqldb.WorkflowArchive) ArchivedWorkflowServiceServer {
+	return &archivedWorkflowServer{repo: repo}
 }
 
-func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *WorkflowHistoryListRequest) (*wfv1.WorkflowList, error) {
+func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req *ListArchivedWorkflowsRequest) (*wfv1.WorkflowList, error) {
 	options := req.ListOptions
 	if options == nil {
 		options = &metav1.ListOptions{}
@@ -37,7 +37,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
-	allItems, err := w.repo.ListWorkflowHistory(req.Namespace, limit, offset)
+	allItems, err := w.repo.ListWorkflows(req.Namespace, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +60,8 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
 }
 
-func (w *workflowHistoryServer) GetWorkflowHistory(ctx context.Context, req *WorkflowHistoryGetRequest) (*wfv1.Workflow, error) {
-	wf, err := w.repo.GetWorkflowHistory(req.Namespace, req.Uid)
+func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+	wf, err := w.repo.GetWorkflow(req.Namespace, req.Uid)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +78,8 @@ func (w *workflowHistoryServer) GetWorkflowHistory(ctx context.Context, req *Wor
 	return wf, err
 }
 
-func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req *WorkflowHistoryUpdateRequest) (*wfv1.Workflow, error) {
-	wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
+func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, req *ResubmitArchivedWorkflowRequest) (*wfv1.Workflow, error) {
+	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: req.Namespace, Uid: req.Uid})
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +95,8 @@ func (w *workflowHistoryServer) ResubmitWorkflowHistory(ctx context.Context, req
 	return wf, nil
 }
 
-func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *WorkflowHistoryDeleteRequest) (*WorkflowHistoryDeleteResponse, error) {
-	wf, err := w.GetWorkflowHistory(ctx, &WorkflowHistoryGetRequest{Namespace: req.Namespace, Uid: req.Uid})
+func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error) {
+	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: req.Namespace, Uid: req.Uid})
 	if err != nil {
 		return nil, err
 	}
@@ -107,9 +107,9 @@ func (w *workflowHistoryServer) DeleteWorkflowHistory(ctx context.Context, req *
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.repo.DeleteWorkflowHistory(req.Namespace, req.Uid)
+	err = w.repo.DeleteWorkflow(req.Namespace, req.Uid)
 	if err != nil {
 		return nil, err
 	}
-	return &WorkflowHistoryDeleteResponse{}, nil
+	return &ArchivedWorkflowDeletedResponse{}, nil
 }

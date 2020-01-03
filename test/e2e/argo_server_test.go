@@ -256,7 +256,7 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 		uid = metadata.UID
 	})
 
-	s.Run("Artifacts", func(t *testing.T) {
+	s.Run("GetArtifact", func(t *testing.T) {
 		s.e(t).GET("/artifacts/argo/basic/basic/main-logs").
 			WithQuery("Authorization", s.bearerToken).
 			Expect().
@@ -265,12 +265,12 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 			Contains("🐙 Hello Argo!")
 	})
 
-	s.Run("HistoricalArtifacts", func(t *testing.T) {
+	s.Run("GetArtifactByUid", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflows/argo/basic").
 			Expect().
 			Status(200)
 
-		s.e(t).GET("/historical-artifacts/argo/{uid}/basic/main-logs", uid).
+		s.e(t).GET("/artifacts-by-uid/argo/{uid}/basic/main-logs", uid).
 			WithQuery("Authorization", s.bearerToken).
 			Expect().
 			Status(200).
@@ -347,7 +347,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 	})
 }
 
-func (s *ArgoServerSuite) TestWorkflowHistory() {
+func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -365,7 +365,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		WaitForWorkflow(15 * time.Second)
 
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-history/").
+		s.e(t).GET("/api/v1/archived-workflows/").
 			Expect().
 			Status(200).
 			JSON().
@@ -374,7 +374,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Length().
 			Equal(2)
 
-		j := s.e(t).GET("/api/v1/workflow-history/").
+		j := s.e(t).GET("/api/v1/archived-workflows/").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -391,10 +391,10 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-history/argo/not-found").
+		s.e(t).GET("/api/v1/archived-workflows/argo/not-found").
 			Expect().
 			Status(404)
-		s.e(t).GET("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).GET("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(200).
 			JSON().
@@ -403,7 +403,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 	})
 
 	s.Run("Resubmit", func(t *testing.T) {
-		s.e(t).PUT("/api/v1/workflow-history/argo/{uid}/resubmit", uid).
+		s.e(t).PUT("/api/v1/archived-workflows/argo/{uid}/resubmit", uid).
 			Expect().
 			Status(200)
 
@@ -417,10 +417,10 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Equal(3)
 	})
 	s.Run("Delete", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(200)
-		s.e(t).DELETE("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(404)
 	})

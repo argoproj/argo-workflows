@@ -58,17 +58,17 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer          cache.SharedIndexInformer
-	wftmplInformer      wfextvv1alpha1.WorkflowTemplateInformer
-	podInformer         cache.SharedIndexInformer
-	wfQueue             workqueue.RateLimitingInterface
-	podQueue            workqueue.RateLimitingInterface
-	completedPods       chan string
-	gcPods              chan string // pods to be deleted depend on GC strategy
-	throttler           Throttler
-	session             sqlbuilder.Database
-	wfDBctx             sqldb.DBRepository
-	wfHistoryRepository sqldb.WorkflowHistoryRepository
+	wfInformer     cache.SharedIndexInformer
+	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer    cache.SharedIndexInformer
+	wfQueue        workqueue.RateLimitingInterface
+	podQueue       workqueue.RateLimitingInterface
+	completedPods  chan string
+	gcPods         chan string // pods to be deleted depend on GC strategy
+	throttler      Throttler
+	session        sqlbuilder.Database
+	wfDBctx        sqldb.DBRepository
+	wfArchive      sqldb.WorkflowArchive
 }
 
 const (

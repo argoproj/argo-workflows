@@ -6,7 +6,7 @@ import {services} from '../../shared/services';
 
 interface Props {
     workflow: models.Workflow;
-    historical: boolean;
+    archived: boolean;
 }
 
 export const WorkflowArtifacts = (props: Props) => {
@@ -19,7 +19,7 @@ export const WorkflowArtifacts = (props: Props) => {
                 const items = nodeOutputs.artifacts || [];
                 return items.map(item =>
                     Object.assign({}, item, {
-                        downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.historical),
+                        downloadUrl: services.workflows.getArtifactDownloadUrl(props.workflow, node.id, item.name, props.archived),
                         stepName: node.name,
                         dateCreated: node.finishedAt,
                         nodeName

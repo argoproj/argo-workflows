@@ -20,7 +20,7 @@ import {
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<any>, any> {
+export class ArchivedWorkflowDetails extends React.Component<RouteComponentProps<any>, any> {
     public static contextTypes = {
         router: PropTypes.object,
         apis: PropTypes.object
@@ -72,19 +72,19 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                             {
                                 title: 'Resubmit',
                                 iconClassName: 'fa fa-redo',
-                                action: () => this.resubmitWorkflowHistory()
+                                action: () => this.resubmitArchivedWorkflow()
                             },
                             {
                                 title: 'Delete',
                                 iconClassName: 'fa fa-trash',
-                                action: () => this.deleteWorkflowHistory()
+                                action: () => this.deleteArchivedWorkflow()
                             }
                         ]
                     },
                     breadcrumbs: [
                         {
-                            title: 'Workflow History',
-                            path: uiUrl('workflow-history')
+                            title: 'Archived Workflows',
+                            path: uiUrl('achived-workflows')
                         },
                         {title: this.namespace + '/' + this.uid}
                     ],
@@ -103,7 +103,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                     )
                 }}>
                 <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
-                    <DataLoader load={() => services.workflowHistory.get(this.namespace, this.uid)}>
+                    <DataLoader load={() => services.archivedWorkflows.get(this.namespace, this.uid)}>
                         {wf => (
                             <React.Fragment>
                                 {this.tab === 'summary' ? (
@@ -117,7 +117,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                 </React.Fragment>
                                             )}
                                             <h6>Artifacts</h6>
-                                            <WorkflowArtifacts workflow={wf} historical={true} />
+                                            <WorkflowArtifacts workflow={wf} archived={true} />
                                         </div>
                                     </div>
                                 ) : (
@@ -150,7 +150,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                             container
                                                         })
                                                     }
-                                                    historical={true}
+                                                    archived={true}
                                                 />
                                             </div>
                                         )}
@@ -158,7 +158,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                 )}
                                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />}
-                                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={wf} nodeId={this.nodeId} container={this.container} historical={true} />}
+                                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={wf} nodeId={this.nodeId} container={this.container} archived={true} />}
                                 </SlidingPanel>
                             </React.Fragment>
                         )}
@@ -190,15 +190,15 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
         return this.nodeId && wf.status.nodes[this.nodeId];
     }
 
-    private resubmitWorkflowHistory() {
-        if (!confirm('Are you sure you want to re-submit this workflow history?')) {
+    private resubmitArchivedWorkflow() {
+        if (!confirm('Are you sure you want to re-submit this archived workflow?')) {
             return;
         }
-        services.workflowHistory
+        services.archivedWorkflows
             .resubmit(this.namespace, this.uid)
             .catch(e => {
                 this.appContext.apis.notifications.show({
-                    content: 'Failed to resubmit workflow history ' + e,
+                    content: 'Failed to resubmit workflow ' + e,
                     type: NotificationType.Error
                 });
             })
@@ -207,20 +207,20 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
             });
     }
 
-    private deleteWorkflowHistory() {
-        if (!confirm('Are you sure you want to delete this workflow history?\nThere is no undo.')) {
+    private deleteArchivedWorkflow() {
+        if (!confirm('Are you sure you want to delete this archived workflow?\nThere is no undo.')) {
             return;
         }
-        services.workflowHistory
+        services.archivedWorkflows
             .delete(this.namespace, this.uid)
             .catch(e => {
                 this.appContext.apis.notifications.show({
-                    content: 'Failed to delete workflow history ' + e,
+                    content: 'Failed to delete archived workflow ' + e,
                     type: NotificationType.Error
                 });
             })
             .then(() => {
-                document.location.href = '/workflow-history';
+                document.location.href = '/archived-workflows';
             });
     }
 

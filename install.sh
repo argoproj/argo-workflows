@@ -101,7 +101,7 @@ $([[ ${INSTALL_MYSQL} -eq 1 ]] || [[ ${INSTALL_POSTGRES} -eq 1 ]] && cat <<PERSI
         maxIdleConns: 100
         maxOpenConns: 0
       nodeStatusOffLoad: true
-      history: true
+      archive: true
 $([[ ${INSTALL_POSTGRES} -eq 1 ]] && cat <<POSTGRES
       postgresql:
         host: postgres
