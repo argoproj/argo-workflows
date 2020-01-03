@@ -1,6 +1,5 @@
 import {Observable, Observer} from 'rxjs';
 
-import {of} from 'rxjs/observable/of';
 import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import requests from './requests';
@@ -103,16 +102,14 @@ export class WorkflowsService {
                 .then(resp => {
                     resp.text.split('\n').forEach(line => observer.next(line));
                 })
-                .catch(observer.error);
+                .catch(err => observer.error(err));
             // tslint:disable-next-line
             return () => {
             };
         });
         return requests.loadEventSource(`/api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}`).pipe(
             map(line => JSON.parse(line).result.content),
-            catchError(() => logsFromArtifacts),
-            map(line => line + '\n'),
-            catchError(err => of('❌ Failed to get logs: ' + (err.message || err.statusText)))
+            catchError(() => logsFromArtifacts)
         );
     }
 

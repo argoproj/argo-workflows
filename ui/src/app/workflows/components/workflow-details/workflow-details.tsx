@@ -10,15 +10,7 @@ import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {
-    WorkflowArtifacts,
-    WorkflowDag,
-    WorkflowLogsViewer,
-    WorkflowNodeInfo,
-    WorkflowSummaryPanel,
-    WorkflowTimeline,
-    WorkflowYamlViewer
-} from '..';
+import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 
@@ -211,15 +203,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
-                                    <WorkflowLogsViewer
-                                        nodeId={this.sidePanel.nodeId}
-                                        container={this.sidePanel.container}
-                                        source={{
-                                            key: this.sidePanel.nodeId,
-                                            loadLogs: () => services.workflows.getContainerLogs(this.state.workflow, this.sidePanel.nodeId, this.sidePanel.container),
-                                            shouldRepeat: () => this.state.workflow.status.nodes[this.sidePanel.nodeId].phase === 'Running'
-                                        }}
-                                    />
+                                    <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.sidePanel.nodeId} container={this.sidePanel.container} />
                                 )}
                                 {this.sidePanel && this.sidePanel.type === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={selectedNode} />}
                             </SlidingPanel>

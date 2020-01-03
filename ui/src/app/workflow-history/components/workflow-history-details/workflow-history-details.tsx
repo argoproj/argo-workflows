@@ -93,34 +93,27 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                             <a className={classNames({actve: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
-                            <a className={classNames({active: this.tab === 'timeline'})}
-                               onClick={() => (this.tab = 'timeline')}>
-                                <i className='fa argo-icon-timeline'/>
+                            <a className={classNames({active: this.tab === 'timeline'})} onClick={() => (this.tab = 'timeline')}>
+                                <i className='fa argo-icon-timeline' />
                             </a>
-                            <a className={classNames({active: this.tab === 'workflow'})}
-                               onClick={() => (this.tab = 'workflow')}>
-                                <i className='fa argo-icon-workflow'/>
+                            <a className={classNames({active: this.tab === 'workflow'})} onClick={() => (this.tab = 'workflow')}>
+                                <i className='fa argo-icon-workflow' />
                             </a>
                         </div>
                     )
                 }}>
-                <p style={{padding: 5}}>
-                    <i className='fa fa-exclamation-triangle'/> Logs and artifacts for historical workflows can be
-                    overwritten by more recent workflow execution.
-                </p>
-                <div
-                    className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
+                <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
                     <DataLoader load={() => services.workflowHistory.get(this.namespace, this.uid)}>
                         {wf => (
                             <React.Fragment>
                                 {this.tab === 'summary' ? (
                                     <div className='argo-container'>
                                         <div className='workflow-details__content'>
-                                            <WorkflowSummaryPanel workflow={wf}/>
+                                            <WorkflowSummaryPanel workflow={wf} />
                                             {wf.spec.arguments && wf.spec.arguments.parameters && (
                                                 <React.Fragment>
                                                     <h6>Parameters</h6>
-                                                    <WorkflowParametersPanel parameters={wf.spec.arguments.parameters}/>
+                                                    <WorkflowParametersPanel parameters={wf.spec.arguments.parameters} />
                                                 </React.Fragment>
                                             )}
                                             <h6>Artifacts</h6>
@@ -138,9 +131,8 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                         </div>
                                         {this.nodeId && (
                                             <div className='workflow-details__step-info'>
-                                                <button className='workflow-details__step-info-close'
-                                                        onClick={() => (this.nodeId = null)}>
-                                                    <i className='argo-icon-close'/>
+                                                <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
+                                                    <i className='argo-icon-close' />
                                                 </button>
                                                 <WorkflowNodeInfo
                                                     node={this.node(wf)}
@@ -158,23 +150,30 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                             container
                                                         })
                                                     }
+                                                    artifactsMessage={
+                                                        <p>
+                                                            <i className='fa fa-exclamation-triangle' /> Artifacts for historical workflows maybe be overwritten by a more recent
+                                                            workflow with the same name.
+                                                        </p>
+                                                    }
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 )}
                                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
-                                    {this.sidePanel === 'yaml' &&
-                                    <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)}/>}
+                                    {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />}
                                     {this.sidePanel === 'logs' && (
                                         <WorkflowLogsViewer
+                                            workflow={wf}
                                             nodeId={this.nodeId}
                                             container={this.container}
-                                            source={{
-                                                key: this.nodeId,
-                                                loadLogs: () => services.workflows.getContainerLogs(wf, this.nodeId, this.container),
-                                                shouldRepeat: () => false
-                                            }}
+                                            message={
+                                                <p>
+                                                    <i className='fa fa-exclamation-triangle' /> Logs for historical workflows maybe overwritten by more recent workflow with the
+                                                    same name.
+                                                </p>
+                                            }
                                         />
                                     )}
                                 </SlidingPanel>

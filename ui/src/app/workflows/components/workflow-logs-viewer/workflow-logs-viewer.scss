@@ -1,0 +1,8 @@
+.workflow-logs-viewer {
+    .log-box {
+        white-space: pre;
+        font-family: monospace;
+        overflow:  scroll;
+        max-height: 500px;
+    }
+}

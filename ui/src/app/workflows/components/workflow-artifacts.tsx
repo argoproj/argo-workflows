@@ -44,7 +44,7 @@ export const WorkflowArtifacts = (props: Props) => {
                             <span>
                                 <a href={artifact.downloadUrl}>
                                     {' '}
-                                    <i className='icon argo-icon-artifact'/>
+                                    <i className='icon argo-icon-artifact' />
                                 </a>{' '}
                                 {artifact.name}
                             </span>
@@ -52,7 +52,7 @@ export const WorkflowArtifacts = (props: Props) => {
                         <div className='columns small-4'>{artifact.stepName}</div>
                         <div className='columns small-3'>{artifact.path}</div>
                         <div className='columns small-3'>
-                            <Timestamp date={artifact.dateCreated}/>
+                            <Timestamp date={artifact.dateCreated} />
                         </div>
                     </div>
                 ))}

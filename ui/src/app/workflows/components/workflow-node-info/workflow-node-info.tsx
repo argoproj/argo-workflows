@@ -18,6 +18,7 @@ function nodeDuration(node: models.NodeStatus, now: moment.Moment) {
 interface Props {
     node: models.NodeStatus;
     workflow: models.Workflow;
+    artifactsMessage?: React.ReactElement;
     onShowContainerLogs: (nodeId: string, container: string) => any;
     onShowYaml?: (nodeId: string) => any;
 }
@@ -204,12 +205,13 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                     <div className='columns small-12 text-center'>No data to display</div>
                 </div>
             )}
+            {artifacts.length > 0 && props.artifactsMessage}
             {artifacts.map(artifact => (
                 <div className='row' key={artifact.name}>
                     <div className='columns small-1'>
                         <a href={artifact.downloadUrl}>
                             {' '}
-                            <i className='icon argo-icon-artifact'/>
+                            <i className='icon argo-icon-artifact' />
                         </a>
                     </div>
                     <div className='columns small-11'>
@@ -222,7 +224,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                                 {artifact.path}
                             </span>
                             <span title={artifact.dateCreated.toString()} className='muted'>
-                                <Timestamp date={artifact.dateCreated}/>
+                                <Timestamp date={artifact.dateCreated} />
                             </span>
                         </div>
                     </div>
