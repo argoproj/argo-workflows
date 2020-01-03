@@ -85,8 +85,9 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
 	}
 	artifactServer := artifacts.NewArtifactServer(as.authenticator, wfDBServer)
+	historicalArtifactServer := artifacts.NewHistoricalArtifactServer(as.authenticator, wfHistoryRepository)
 	grpcServer := as.newGRPCServer(wfDBServer, wfHistoryRepository)
-	httpServer := as.newHTTPServer(ctx, port, artifactServer)
+	httpServer := as.newHTTPServer(ctx, port, artifactServer, historicalArtifactServer)
 
 	// Start listener
 	var conn net.Listener
@@ -154,7 +155,7 @@ func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfHistoryRep
 
 // newHTTPServer returns the HTTP server to serve HTTP/HTTPS requests. This is implemented
 // using grpc-gateway as a proxy to the gRPC server.
-func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer) *http.Server {
+func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServer *artifacts.ArtifactServer, historicalArtifactServer *artifacts.HistoricalArtifactServer) *http.Server {
 
 	endpoint := fmt.Sprintf("localhost:%d", port)
 
@@ -182,6 +183,7 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.ServeArtifacts)
+	mux.HandleFunc("/historical-artifacts/", historicalArtifactServer.ServeArtifacts)
 	mux.HandleFunc("/", static.ServerFiles)
 	return &httpServer
 }

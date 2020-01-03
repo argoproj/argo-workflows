@@ -245,18 +245,39 @@ func (s *ArgoServerSuite) TestWorkflows() {
 
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestWorkflowArtifact() {
+	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second)
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+		uid = metadata.UID
+	})
 
-	s.e(s.T()).GET("/artifacts/argo/basic/basic/main-logs").
-		WithQuery("Authorization", s.bearerToken).
-		Expect().
-		Status(200).
-		Body().
-		Contains("🐙 Hello Argo!")
+	s.Run("Artifacts", func(t *testing.T) {
+		s.e(t).GET("/artifacts/argo/basic/basic/main-logs").
+			WithQuery("Authorization", s.bearerToken).
+			Expect().
+			Status(200).
+			Body().
+			Contains("🐙 Hello Argo!")
+	})
+
+	s.Run("HistoricalArtifacts", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/workflows/argo/basic").
+			Expect().
+			Status(200)
+
+		s.e(t).GET("/historical-artifacts/argo/{uid}/basic/main-logs", uid).
+			WithQuery("Authorization", s.bearerToken).
+			Expect().
+			Status(200).
+			Body().
+			Contains("🐙 Hello Argo!")
+	})
+
 }
 
 // do some basic testing on the stream methods

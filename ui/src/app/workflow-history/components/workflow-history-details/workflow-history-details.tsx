@@ -117,7 +117,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                 </React.Fragment>
                                             )}
                                             <h6>Artifacts</h6>
-                                            <WorkflowArtifacts workflow={wf} />
+                                            <WorkflowArtifacts workflow={wf} historical={true} />
                                         </div>
                                     </div>
                                 ) : (
@@ -150,12 +150,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                                             container
                                                         })
                                                     }
-                                                    artifactsMessage={
-                                                        <p>
-                                                            <i className='fa fa-exclamation-triangle' /> Artifacts for historical workflows maybe be overwritten by a more recent
-                                                            workflow with the same name.
-                                                        </p>
-                                                    }
+                                                    historical={true}
                                                 />
                                             </div>
                                         )}
@@ -163,19 +158,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                 )}
                                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />}
-                                    {this.sidePanel === 'logs' && (
-                                        <WorkflowLogsViewer
-                                            workflow={wf}
-                                            nodeId={this.nodeId}
-                                            container={this.container}
-                                            message={
-                                                <p>
-                                                    <i className='fa fa-exclamation-triangle' /> Logs for historical workflows maybe overwritten by more recent workflow with the
-                                                    same name.
-                                                </p>
-                                            }
-                                        />
-                                    )}
+                                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={wf} nodeId={this.nodeId} container={this.container} historical={true} />}
                                 </SlidingPanel>
                             </React.Fragment>
                         )}

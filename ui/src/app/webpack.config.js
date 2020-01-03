@@ -66,6 +66,10 @@ const config = {
             '/artifacts': {
                 'target': isProd ? '' : 'http://localhost:2746',
                 'secure': false,
+            },
+            '/historical-artifacts': {
+                'target': isProd ? '' : 'http://localhost:2746',
+                'secure': false,
             }
         }
     }

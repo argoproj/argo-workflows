@@ -93,12 +93,12 @@ export class WorkflowsService {
             .then(this.populateDefaultFields);
     }
 
-    public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {
+    public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string, historical: boolean): Observable<string> {
         // we firstly try to get the logs from the API,
         // but if that fails, then we try and get them from the artifacts
         const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
             requests
-                .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs'))
+                .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs', historical))
                 .then(resp => {
                     resp.text.split('\n').forEach(line => observer.next(line));
                 })
@@ -113,8 +113,12 @@ export class WorkflowsService {
         );
     }
 
-    public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string) {
-        return `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
+    public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string, historical: boolean) {
+        return historical
+            ? `/historical-artifacts/${workflow.metadata.namespace}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem(
+                  'token'
+              )}`
+            : `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
     }
 
     private populateDefaultFields(workflow: models.Workflow): models.Workflow {
