@@ -690,7 +690,7 @@ func CastToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 	newObjectMeta.GenerateName = cronWf.Name + "-"
 
 	newObjectMeta.Labels = make(map[string]string)
-	newObjectMeta.Labels[LabelCronWorkflow] = "true"
+	newObjectMeta.Labels[LabelCronWorkflow] = cronWf.Name
 
 	wf := &wfv1.Workflow{
 		TypeMeta:   newTypeMeta,

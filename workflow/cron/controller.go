@@ -65,7 +65,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, WfInformerListOptionsFunc)
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
@@ -263,9 +263,9 @@ func (cc *Controller) addWorkflowInformerHandler() {
 	)
 }
 
-func wfInformerListOptionsFunc(options *v1.ListOptions) {
+func WfInformerListOptionsFunc(options *v1.ListOptions) {
 	options.FieldSelector = fields.Everything().String()
-	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Equals, []string{"true"})
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Exists, []string{})
 	if err != nil {
 		panic(err)
 	}

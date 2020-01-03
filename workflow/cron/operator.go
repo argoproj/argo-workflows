@@ -37,11 +37,11 @@ func newCronWfOperationCtx(cronWorkflow *v1alpha1.CronWorkflow, wfClientset vers
 func (woc *cronWfOperationCtx) Run() {
 	log.Infof("Running %s", woc.name)
 
-	ok, err := woc.enforceRuntimePolicy()
+	proceed, err := woc.enforceRuntimePolicy()
 	if err != nil {
 		log.Errorf("Concurrency policy error: %s", err)
 		return
-	} else if !ok {
+	} else if !proceed {
 		return
 	}
 
@@ -176,7 +176,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	listOptions := &v1.ListOptions{}
-	wfInformerListOptionsFunc(listOptions)
+	WfInformerListOptionsFunc(listOptions)
 	wfList, err := woc.wfClient.List(*listOptions)
 	if err != nil {
 		log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)
@@ -186,6 +186,9 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	var successfulWorkflows []v1alpha1.Workflow
 	var failedWorkflows []v1alpha1.Workflow
 	for _, wf := range wfList.Items {
+		if wf.Labels[common.LabelCronWorkflow] != woc.cronWf.Name {
+			continue
+		}
 		if wf.Status.Completed() {
 			if wf.Status.Successful() {
 				successfulWorkflows = append(successfulWorkflows, wf)
