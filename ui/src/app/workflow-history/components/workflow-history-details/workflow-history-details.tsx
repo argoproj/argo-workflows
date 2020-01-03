@@ -1,5 +1,5 @@
 import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
-import {AppContext, LogsViewer} from 'argo-ui/src/index';
+import {AppContext} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
@@ -7,11 +7,16 @@ import {RouteComponentProps} from 'react-router';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
-import {WorkflowDag, WorkflowTimeline, WorkflowYamlViewer} from '../../../workflows/components';
-import {WorkflowArtifacts} from '../../../workflows/components/workflow-artifacts';
-import {WorkflowNodeInfo} from '../../../workflows/components/workflow-node-info/workflow-node-info';
-import {WorkflowParametersPanel} from '../../../workflows/components/workflow-parameters-panel';
-import {WorkflowSummaryPanel} from '../../../workflows/components/workflow-summary-panel';
+import {
+    WorkflowArtifacts,
+    WorkflowDag,
+    WorkflowLogsViewer,
+    WorkflowNodeInfo,
+    WorkflowParametersPanel,
+    WorkflowSummaryPanel,
+    WorkflowTimeline,
+    WorkflowYamlViewer
+} from '../../../workflows/components';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -34,7 +39,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
     }
 
     private set tab(tab) {
-        this.setParam('tab', tab);
+        this.setParams({tab});
     }
 
     private get nodeId() {
@@ -42,15 +47,11 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
     }
 
     private set nodeId(nodeId) {
-        this.setParam('nodeId', nodeId);
+        this.setParams({nodeId});
     }
 
     private get container() {
         return this.getParam('container') || 'main';
-    }
-
-    private set container(container) {
-        this.setParam('container', container);
     }
 
     private get sidePanel() {
@@ -58,7 +59,7 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
     }
 
     private set sidePanel(sidePanel) {
-        this.setParam('sidePanel', sidePanel);
+        this.setParams({sidePanel});
     }
 
     public render() {
@@ -92,27 +93,34 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                             <a className={classNames({actve: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
-                            <a className={classNames({active: this.tab === 'timeline'})} onClick={() => (this.tab = 'timeline')}>
-                                <i className='fa argo-icon-timeline' />
+                            <a className={classNames({active: this.tab === 'timeline'})}
+                               onClick={() => (this.tab = 'timeline')}>
+                                <i className='fa argo-icon-timeline'/>
                             </a>
-                            <a className={classNames({active: this.tab === 'workflow'})} onClick={() => (this.tab = 'workflow')}>
-                                <i className='fa argo-icon-workflow' />
+                            <a className={classNames({active: this.tab === 'workflow'})}
+                               onClick={() => (this.tab = 'workflow')}>
+                                <i className='fa argo-icon-workflow'/>
                             </a>
                         </div>
                     )
                 }}>
-                <DataLoader load={() => services.workflowHistory.get(this.namespace, this.uid)}>
-                    {wf => (
-                        <React.Fragment>
-                            <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
+                <p style={{padding: 5}}>
+                    <i className='fa fa-exclamation-triangle'/> Logs and artifacts for historical workflows can be
+                    overwritten by more recent workflow execution.
+                </p>
+                <div
+                    className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
+                    <DataLoader load={() => services.workflowHistory.get(this.namespace, this.uid)}>
+                        {wf => (
+                            <React.Fragment>
                                 {this.tab === 'summary' ? (
                                     <div className='argo-container'>
                                         <div className='workflow-details__content'>
-                                            <WorkflowSummaryPanel workflow={wf} />
+                                            <WorkflowSummaryPanel workflow={wf}/>
                                             {wf.spec.arguments && wf.spec.arguments.parameters && (
                                                 <React.Fragment>
                                                     <h6>Parameters</h6>
-                                                    <WorkflowParametersPanel parameters={wf.spec.arguments.parameters} />
+                                                    <WorkflowParametersPanel parameters={wf.spec.arguments.parameters}/>
                                                 </React.Fragment>
                                             )}
                                             <h6>Artifacts</h6>
@@ -130,39 +138,50 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
                                         </div>
                                         {this.nodeId && (
                                             <div className='workflow-details__step-info'>
-                                                <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
-                                                    <i className='argo-icon-close' />
+                                                <button className='workflow-details__step-info-close'
+                                                        onClick={() => (this.nodeId = null)}>
+                                                    <i className='argo-icon-close'/>
                                                 </button>
                                                 <WorkflowNodeInfo
                                                     node={this.node(wf)}
                                                     workflow={wf}
-                                                    onShowYaml={() => (this.sidePanel = 'yaml')}
-                                                    onShowContainerLogs={(nodeId, container) => {
-                                                        this.sidePanel = 'logs';
-                                                        this.container = container;
-                                                    }}
+                                                    onShowYaml={nodeId =>
+                                                        this.setParams({
+                                                            sidePanel: 'yaml',
+                                                            nodeId
+                                                        })
+                                                    }
+                                                    onShowContainerLogs={(nodeId, container) =>
+                                                        this.setParams({
+                                                            sidePanel: 'logs',
+                                                            nodeId,
+                                                            container
+                                                        })
+                                                    }
                                                 />
                                             </div>
                                         )}
                                     </div>
                                 )}
                                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
-                                    {this.sidePanel === 'yaml' ? (
-                                        <LogsViewer
+                                    {this.sidePanel === 'yaml' &&
+                                    <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)}/>}
+                                    {this.sidePanel === 'logs' && (
+                                        <WorkflowLogsViewer
+                                            nodeId={this.nodeId}
+                                            container={this.container}
                                             source={{
                                                 key: this.nodeId,
                                                 loadLogs: () => services.workflows.getContainerLogs(wf, this.nodeId, this.container),
                                                 shouldRepeat: () => false
                                             }}
                                         />
-                                    ) : (
-                                        <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />
                                     )}
                                 </SlidingPanel>
-                            </div>
-                        </React.Fragment>
-                    )}
-                </DataLoader>
+                            </React.Fragment>
+                        )}
+                    </DataLoader>
+                </div>
             </Page>
         );
     }
@@ -171,13 +190,17 @@ export class WorkflowHistoryDetails extends React.Component<RouteComponentProps<
         return new URLSearchParams(this.appContext.router.route.location.search).get(name);
     }
 
-    private setParam(name: string, value: string) {
+    // this allows us to set-multiple parameters at once
+    private setParams(newParams: any) {
         const params = new URLSearchParams(this.appContext.router.route.location.search);
-        if (value !== null) {
-            params.set(name, value);
-        } else {
-            params.delete(name);
-        }
+        Object.keys(newParams).forEach(name => {
+            const value = newParams[name];
+            if (value !== null) {
+                params.set(name, value);
+            } else {
+                params.delete(name);
+            }
+        });
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 

@@ -130,11 +130,11 @@ func NewListCommand() *cobra.Command {
 				}
 			}
 
-			var workflows []wfv1.Workflow
+			var workflows wfv1.Workflows
 			if listArgs.since == "" {
 				workflows = tmpWorkFlowsSelected
 			} else {
-				workflows = make([]wfv1.Workflow, 0)
+				workflows = make(wfv1.Workflows, 0)
 				minTime, err := argotime.ParseSince(listArgs.since)
 				if err != nil {
 					log.Fatal(err)
@@ -145,7 +145,7 @@ func NewListCommand() *cobra.Command {
 					}
 				}
 			}
-			sort.Sort(ByFinishedAt(workflows))
+			sort.Sort(workflows)
 
 			switch listArgs.output {
 			case "", "wide":
@@ -249,28 +249,6 @@ func parameterString(params []wfv1.Parameter) string {
 		}
 	}
 	return strings.Join(pStrs, ",")
-}
-
-// ByFinishedAt is a sort interface which sorts running jobs earlier before considering FinishedAt
-type ByFinishedAt []wfv1.Workflow
-
-func (f ByFinishedAt) Len() int      { return len(f) }
-func (f ByFinishedAt) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
-func (f ByFinishedAt) Less(i, j int) bool {
-	iStart := f[i].ObjectMeta.CreationTimestamp
-	iFinish := f[i].Status.FinishedAt
-	jStart := f[j].ObjectMeta.CreationTimestamp
-	jFinish := f[j].Status.FinishedAt
-	if iFinish.IsZero() && jFinish.IsZero() {
-		return !iStart.Before(&jStart)
-	}
-	if iFinish.IsZero() && !jFinish.IsZero() {
-		return true
-	}
-	if !iFinish.IsZero() && jFinish.IsZero() {
-		return false
-	}
-	return jFinish.Before(&iFinish)
 }
 
 // workflowStatus returns a human readable inferred workflow status based on workflow phase and conditions

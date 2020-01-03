@@ -3,7 +3,6 @@ import {EventSourcePolyfill} from 'event-source-polyfill';
 import {Observable, Observer} from 'rxjs';
 import * as _superagent from 'superagent';
 import {SuperAgentRequest} from 'superagent';
-import {apiUrl} from '../base';
 
 const superagentPromise = require('superagent-promise');
 
@@ -31,23 +30,23 @@ const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, 
 
 export default {
     get(url: string) {
-        return auth(superagent.get(apiUrl(url)));
+        return auth(superagent.get(url));
     },
 
     post(url: string) {
-        return auth(superagent.post(apiUrl(url)));
+        return auth(superagent.post(url));
     },
 
     put(url: string) {
-        return auth(superagent.put(apiUrl(url)));
+        return auth(superagent.put(url));
     },
 
     patch(url: string) {
-        return auth(superagent.patch(apiUrl(url)));
+        return auth(superagent.patch(url));
     },
 
     delete(url: string) {
-        return auth(superagent.del(apiUrl(url)));
+        return auth(superagent.del(url));
     },
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {
@@ -57,9 +56,7 @@ export default {
             if (token !== null) {
                 headers.Authorization = `Bearer ${getToken()}`;
             }
-            const eventSource = new EventSourcePolyfill(apiUrl(url), {
-                headers
-            });
+            const eventSource = new EventSourcePolyfill(url, {headers});
             let opened = false;
             eventSource.onopen = (msg: any) => {
                 if (!opened) {
@@ -70,7 +67,7 @@ export default {
                 }
             };
             eventSource.onmessage = (msg: any) => observer.next(msg.data);
-            eventSource.onerror = (e: any) => () => {
+            eventSource.onerror = (e: any) => {
                 if (e.eventPhase === ReadyState.CLOSED || eventSource.readyState === ReadyState.CONNECTING) {
                     observer.complete();
                 } else {

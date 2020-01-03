@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"bufio"
+	"sort"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -48,6 +49,7 @@ func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(wfList.Items)
 	return wfList, nil
 }
 

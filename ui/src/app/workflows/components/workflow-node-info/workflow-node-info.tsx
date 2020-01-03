@@ -205,11 +205,11 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                 </div>
             )}
             {artifacts.map(artifact => (
-                <div className='row' key={artifact.path}>
+                <div className='row' key={artifact.name}>
                     <div className='columns small-1'>
                         <a href={artifact.downloadUrl}>
                             {' '}
-                            <i className='icon argo-icon-artifact' />
+                            <i className='icon argo-icon-artifact'/>
                         </a>
                     </div>
                     <div className='columns small-11'>
@@ -222,7 +222,7 @@ export const WorkflowNodeArtifacts = (props: Props) => {
                                 {artifact.path}
                             </span>
                             <span title={artifact.dateCreated.toString()} className='muted'>
-                                {artifact.dateCreated}
+                                <Timestamp date={artifact.dateCreated}/>
                             </span>
                         </div>
                     </div>

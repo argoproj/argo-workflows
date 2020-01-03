@@ -17,7 +17,6 @@ API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Template,Steps
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Template,Tolerations
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,Template,Volumes
-API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,WorkflowList,Items
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,WorkflowSpec,HostAliases
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,WorkflowSpec,ImagePullSecrets
 API rule violation: list_type_missing,github.com/argoproj/argo/pkg/apis/workflow/v1alpha1,WorkflowSpec,Templates

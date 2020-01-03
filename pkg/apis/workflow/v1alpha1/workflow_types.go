@@ -96,12 +96,34 @@ type Workflow struct {
 	Status            WorkflowStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
+// Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
+type Workflows []Workflow
+
+func (f Workflows) Len() int      { return len(f) }
+func (f Workflows) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
+func (f Workflows) Less(i, j int) bool {
+	iStart := f[i].ObjectMeta.CreationTimestamp
+	iFinish := f[i].Status.FinishedAt
+	jStart := f[j].ObjectMeta.CreationTimestamp
+	jFinish := f[j].Status.FinishedAt
+	if iFinish.IsZero() && jFinish.IsZero() {
+		return !iStart.Before(&jStart)
+	}
+	if iFinish.IsZero() && !jFinish.IsZero() {
+		return true
+	}
+	if !iFinish.IsZero() && jFinish.IsZero() {
+		return false
+	}
+	return jFinish.Before(&iFinish)
+}
+
 // WorkflowList is list of Workflow resources
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type WorkflowList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
-	Items           []Workflow `json:"items" protobuf:"bytes,2,opt,name=items"`
+	Items           Workflows `json:"items" protobuf:"bytes,2,opt,name=items"`
 }
 
 var _ TemplateGetter = &Workflow{}

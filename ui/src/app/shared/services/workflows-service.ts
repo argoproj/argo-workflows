@@ -1,5 +1,7 @@
-import {Observable} from 'rxjs';
+import {Observable, Observer} from 'rxjs';
 
+import {of} from 'rxjs/observable/of';
+import {catchError, map} from 'rxjs/operators';
 import * as models from '../../../models';
 import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
@@ -7,21 +9,21 @@ import {WorkflowDeleteResponse} from './responses';
 export class WorkflowsService {
     public get(namespace: string, name: string): Promise<models.Workflow> {
         return requests
-            .get(`/workflows/${namespace}/${name}`)
+            .get(`/api/v1/workflows/${namespace}/${name}`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public list(phases: string[], namespace: string): Promise<models.Workflow[]> {
         return requests
-            .get(`/workflows/${namespace}`)
+            .get(`/api/v1/workflows/${namespace}`)
             .query({phase: phases})
             .then(res => res.body as models.WorkflowList)
             .then(list => (list.items || []).map(this.populateDefaultFields));
     }
 
     public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
-        let url = '/workflow-events/';
+        let url = '/api/v1/workflow-events/';
         if (filter) {
             if (filter instanceof Array) {
                 const phases = (filter as Array<string>).map(phase => `listOptions.fieldSelector=status.phase=${phase}`).join('&');
@@ -44,46 +46,46 @@ export class WorkflowsService {
 
     public retry(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/workflows/${namespace}/${workflowName}/retry`)
+            .put(`/api/v1/workflows/${namespace}/${workflowName}/retry`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public resubmit(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/workflows/${namespace}/${workflowName}/resubmit`)
+            .put(`/api/v1/workflows/${namespace}/${workflowName}/resubmit`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public suspend(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/workflows/${namespace}/${workflowName}/suspend`)
+            .put(`/api/v1/workflows/${namespace}/${workflowName}/suspend`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public resume(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/workflows/${namespace}/${workflowName}/resume`)
+            .put(`/api/v1/workflows/${namespace}/${workflowName}/resume`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public terminate(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/workflows/${namespace}/${workflowName}/terminate`)
+            .put(`/api/v1/workflows/${namespace}/${workflowName}/terminate`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public delete(workflowName: string, namespace: string): Promise<WorkflowDeleteResponse> {
-        return requests.delete(`/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
+        return requests.delete(`/api/v1/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
     public create(workflow: models.Workflow, namespace: string): Promise<models.Workflow> {
         return requests
-            .post(`/workflows/${namespace}`)
+            .post(`/api/v1/workflows/${namespace}`)
             .send({
                 namespace,
                 workflow
@@ -93,9 +95,25 @@ export class WorkflowsService {
     }
 
     public getContainerLogs(workflow: models.Workflow, nodeId: string, container: string): Observable<string> {
-        return requests
-            .loadEventSource(`/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}`)
-            .map(line => JSON.parse(line).result.content + '\n');
+        // we firstly try to get the logs from the API,
+        // but if that fails, then we try and get them from the artifacts
+        const logsFromArtifacts: Observable<string> = Observable.create((observer: Observer<string>) => {
+            requests
+                .get(this.getArtifactDownloadUrl(workflow, nodeId, container + '-logs'))
+                .then(resp => {
+                    resp.text.split('\n').forEach(line => observer.next(line));
+                })
+                .catch(observer.error);
+            // tslint:disable-next-line
+            return () => {
+            };
+        });
+        return requests.loadEventSource(`/api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log?logOptions.container=${container}`).pipe(
+            map(line => JSON.parse(line).result.content),
+            catchError(() => logsFromArtifacts),
+            map(line => line + '\n'),
+            catchError(err => of('❌ Failed to get logs: ' + (err.message || err.statusText)))
+        );
     }
 
     public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string) {

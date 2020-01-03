@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import * as models from '../../../models';
+import {Timestamp} from '../../shared/components/timestamp';
 import {services} from '../../shared/services';
 
 interface Props {
@@ -43,14 +44,16 @@ export const WorkflowArtifacts = (props: Props) => {
                             <span>
                                 <a href={artifact.downloadUrl}>
                                     {' '}
-                                    <i className='icon argo-icon-artifact' />
+                                    <i className='icon argo-icon-artifact'/>
                                 </a>{' '}
                                 {artifact.name}
                             </span>
                         </div>
                         <div className='columns small-4'>{artifact.stepName}</div>
                         <div className='columns small-3'>{artifact.path}</div>
-                        <div className='columns small-3'>{artifact.dateCreated}</div>
+                        <div className='columns small-3'>
+                            <Timestamp date={artifact.dateCreated}/>
+                        </div>
                     </div>
                 ))}
             </div>

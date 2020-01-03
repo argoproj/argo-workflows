@@ -3,6 +3,7 @@ package workflowhistory
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"google.golang.org/grpc/codes"
@@ -40,7 +41,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	if err != nil {
 		return nil, err
 	}
-	allowedItems := make([]wfv1.Workflow, 0)
+	allowedItems := make(wfv1.Workflows, 0)
 	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
 	for _, wf := range allItems {
 		allowed, err := auth.CanI(ctx, "get", "workflow", req.Namespace, wf.Name)
@@ -55,6 +56,7 @@ func (w *workflowHistoryServer) ListWorkflowHistory(ctx context.Context, req *Wo
 	if len(allowedItems) >= limit {
 		meta.Continue = fmt.Sprintf("%v", offset+limit)
 	}
+	sort.Sort(allowedItems)
 	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
 }
 

@@ -25,6 +25,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
 
     public render() {
         const contents: JSX.Element[] = [];
+        contents.push(<h3 key='title'>YAML</h3>);
         if (this.props.selectedNode) {
             const parentNode = this.props.workflow.status.nodes[this.props.selectedNode.boundaryID];
             if (parentNode) {
@@ -39,9 +40,10 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                     parentTemplateStr = this.highlightStep(parentTemplate, nodeName, parentTemplateStr);
                 }
                 contents.push(
-                    <div className='workflow-yaml-section'>
+                    <div className='workflow-yaml-section' key='parent-node'>
                         <h4>Parent Node</h4>
-                        <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(parentTemplateStr)}} />
+                        <div className='yaml-box'
+                             dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(parentTemplateStr)}}/>
                     </div>
                 );
             }
@@ -49,9 +51,10 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             const template = Utils.getResolvedTemplates(this.props.workflow, this.props.selectedNode);
             const templateStr = yaml.stringify(template, 4, 1);
             contents.push(
-                <div className='workflow-yaml-section'>
+                <div className='workflow-yaml-section' key='current-node'>
                     <h4>Current Node</h4>
-                    <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templateStr)}} />
+                    <div className='yaml-box'
+                         dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templateStr)}}/>
                 </div>
             );
         }
@@ -61,7 +64,9 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             contents.push(
                 <SlideContents
                     title={'Templates'}
-                    contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templatesStr)}} />}
+                    key='templates'
+                    contents={<div className='yaml-box'
+                                   dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templatesStr)}}/>}
                     className='workflow-yaml-section'
                 />
             );
@@ -72,7 +77,9 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             contents.push(
                 <SlideContents
                     title={'Stored Templates'}
-                    contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}} />}
+                    key='stored-templates'
+                    contents={<div className='yaml-box'
+                                   dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}}/>}
                     className='workflow-yaml-section'
                 />
             );

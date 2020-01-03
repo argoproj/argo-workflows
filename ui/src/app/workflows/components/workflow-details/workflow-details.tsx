@@ -1,4 +1,4 @@
-import {AppContext, LogsViewer, NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {AppContext, NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
@@ -6,25 +6,28 @@ import {RouteComponentProps} from 'react-router';
 import {Observable, Subscription} from 'rxjs';
 
 import * as models from '../../../../models';
+import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {NodePhase} from '../../../../models';
+import {
+    WorkflowArtifacts,
+    WorkflowDag,
+    WorkflowLogsViewer,
+    WorkflowNodeInfo,
+    WorkflowSummaryPanel,
+    WorkflowTimeline,
+    WorkflowYamlViewer
+} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
-import {WorkflowArtifacts} from '../workflow-artifacts';
-import {WorkflowDag} from '../workflow-dag/workflow-dag';
-import {WorkflowNodeInfo} from '../workflow-node-info/workflow-node-info';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
-import {WorkflowSummaryPanel} from '../workflow-summary-panel';
-import {WorkflowTimeline} from '../workflow-timeline/workflow-timeline';
-import {WorkflowYamlViewer} from '../workflow-yaml-viewer/workflow-yaml-viewer';
 
 require('./workflow-details.scss');
 
 function parseSidePanelParam(param: string) {
     const [type, nodeId, container] = (param || '').split(':');
     if (type === 'logs' || type === 'yaml') {
-        return {type, nodeId, container};
+        return {type, nodeId, container: container || 'main'};
     }
     return null;
 }
@@ -114,7 +117,13 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                     <Page
                         title={'Workflow Details'}
                         toolbar={{
-                            breadcrumbs: [{title: 'Workflows', path: uiUrl('workflows')}, {title: this.props.match.params.name}],
+                            breadcrumbs: [
+                                {
+                                    title: 'Workflows',
+                                    path: uiUrl('workflows')
+                                },
+                                {title: this.props.match.params.name}
+                            ],
                             actionMenu: {
                                 items: [
                                     {
@@ -202,10 +211,12 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
                         {this.state.workflow && (
                             <SlidingPanel isShown={this.selectedNodeId && !!this.sidePanel} onClose={() => this.closeSidePanel()}>
                                 {this.sidePanel && this.sidePanel.type === 'logs' && (
-                                    <LogsViewer
+                                    <WorkflowLogsViewer
+                                        nodeId={this.sidePanel.nodeId}
+                                        container={this.sidePanel.container}
                                         source={{
                                             key: this.sidePanel.nodeId,
-                                            loadLogs: () => services.workflows.getContainerLogs(this.state.workflow, this.sidePanel.nodeId, this.sidePanel.container || 'main'),
+                                            loadLogs: () => services.workflows.getContainerLogs(this.state.workflow, this.sidePanel.nodeId, this.sidePanel.container),
                                             shouldRepeat: () => this.state.workflow.status.nodes[this.sidePanel.nodeId].phase === 'Running'
                                         }}
                                     />
