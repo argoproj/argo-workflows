@@ -178,8 +178,8 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:      s.T(),
-		client: s.client,
+		t:          s.T(),
+		client:     s.client,
 		cronClient: s.cronClient,
 	}
 }

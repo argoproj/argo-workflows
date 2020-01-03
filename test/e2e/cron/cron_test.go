@@ -29,7 +29,7 @@ func (s *CronSuite) TestBasic() {
 		Wait(1 * time.Minute).
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
-			assert.True(t, cronWf.LastScheduledTime.Time.After(time.Now().Add(-1 * time.Minute)))
+			assert.True(t, cronWf.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -43,6 +43,7 @@ func (s *CronSuite) TestBasicForbid() {
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
 			assert.Equal(t, 1, len(cronWf.Active))
+			assert.True(t, cronWf.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -69,6 +70,7 @@ func (s *CronSuite) TestBasicReplace() {
 		Then().
 		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
 			assert.Equal(t, 1, len(cronWf.Active))
+			assert.True(t, cronWf.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -80,11 +82,11 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 		CronWorkflow("@testdata/always-succeed-1.yaml").
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute).
+		Wait(2*time.Minute).
 		Then().
 		ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			assert.Equal(t, 1, len(wfList.Items))
-			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1 * time.Minute)))
+			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -96,11 +98,11 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 		CronWorkflow("@testdata/always-fail-1.yaml").
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute).
+		Wait(2*time.Minute).
 		Then().
 		ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			assert.Equal(t, 1, len(wfList.Items))
-			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1 * time.Minute)))
+			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -112,11 +114,11 @@ func (s *CronSuite) TestFailedJobHistoryLimitConcurrent() {
 		CronWorkflow("@testdata/always-fail-2.yaml").
 		When().
 		CreateCronWorkflow().
-		Wait(2 * time.Minute).
+		Wait(2*time.Minute).
 		Then().
 		ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
 			assert.Equal(t, 1, len(wfList.Items))
-			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1 * time.Minute)))
+			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -135,9 +137,9 @@ func TestCronSuite(t *testing.T) {
 	_, _, sec := time.Now().Clock()
 	var toWait time.Duration
 	if sec <= 30 {
-		toWait = time.Duration(30 - sec) * time.Second
+		toWait = time.Duration(30-sec) * time.Second
 	} else {
-		toWait = time.Duration(90 - sec) * time.Second
+		toWait = time.Duration(90-sec) * time.Second
 	}
 	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
 	time.Sleep(toWait)
