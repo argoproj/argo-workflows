@@ -64,9 +64,8 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 		os.Exit(1)
 	}
 
-	var created *wfv1.WorkflowTemplate
-
 	for _, wftmpl := range workflowTemplates {
+		var created *wfv1.WorkflowTemplate
 
 		if client.ArgoServer != "" {
 			ns, _, _ := client.Config.Namespace()
@@ -79,7 +78,7 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 			created, err = wftmplApiClient.CreateWorkflowTemplate(ctx, &wftmplReq)
 		} else {
 			wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
-			err := validate.ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
+			err = validate.ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
 			if err != nil {
 				log.Fatalf("Failed to create workflow template: %v", err)
 			}

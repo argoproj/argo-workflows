@@ -3,12 +3,14 @@ package commands
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
-	"github.com/argoproj/pkg/errors"
 	"log"
 	"os"
 	"time"
+
+	"github.com/argoproj/pkg/errors"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
 
 	argotime "github.com/argoproj/pkg/time"
 	"github.com/spf13/cobra"
@@ -37,7 +39,7 @@ func NewDeleteCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			if client.ArgoServer != "" {
 				apiServerDeleteWorkflows(all, older, completed, args)
-			}else {
+			} else {
 				wfClient = InitWorkflowClient()
 				if all {
 					deleteWorkflows(metav1.ListOptions{}, nil)
@@ -68,7 +70,7 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames []string){
+func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames []string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
@@ -77,12 +79,12 @@ func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames
 	var delWFNames []string
 	var err error
 	if allWFs {
-		delWFNames, err = getWFList(wfApiClient, ctx, ns,&metav1.ListOptions{}, nil)
+		delWFNames, err = getWFList(wfApiClient, ctx, ns, &metav1.ListOptions{}, nil)
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
-	}else if (older != ""){
+	} else if older != "" {
 		olderTime, err := argotime.ParseSince(older)
 		if err != nil {
 			log.Fatal(err)
@@ -93,31 +95,31 @@ func apiServerDeleteWorkflows(allWFs bool, older string, completed bool, wfNames
 			log.Fatal(err)
 			return
 		}
-	}else if completed {
+	} else if completed {
 		delWFNames, err = getWFList(wfApiClient, ctx, ns, &completedWorkflowListOption, nil)
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
-	}else{
+	} else {
 		delWFNames = wfNames
 	}
-	for _, wfName := range delWFNames{
+	for _, wfName := range delWFNames {
 		apiServerDeleteWorkflow(wfApiClient, ctx, wfName, ns)
 	}
 }
 
-func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns string, opts *metav1.ListOptions, older *time.Time) ([]string, error){
+func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns string, opts *metav1.ListOptions, older *time.Time) ([]string, error) {
 	wfReq := workflow.WorkflowListRequest{
 		ListOptions: opts,
-		Namespace: ns,
+		Namespace:   ns,
 	}
 	wfList, err := client.ListWorkflows(ctx, &wfReq)
 	if err != nil {
 		return nil, err
 	}
 	var wfNames []string
-	for _, wf := range wfList.Items{
+	for _, wf := range wfList.Items {
 		if older != nil {
 			if wf.Status.FinishedAt.IsZero() || wf.Status.FinishedAt.After(*older) {
 				continue
@@ -128,11 +130,10 @@ func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns st
 	return wfNames, nil
 }
 
-
-func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.Context, wfName, ns string){
+func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.Context, wfName, ns string) {
 	wfReq := workflow.WorkflowDeleteRequest{
-		WorkflowName:         wfName,
-		Namespace:            ns,
+		WorkflowName: wfName,
+		Namespace:    ns,
 	}
 
 	msg, err := client.DeleteWorkflow(ctx, &wfReq)
@@ -143,9 +144,6 @@ func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.
 	fmt.Printf("workflow %s deleted\n", msg.WorkflowName)
 
 }
-
-
-
 
 func deleteWorkflow(wfName string) {
 	err := wfClient.Delete(wfName, &metav1.DeleteOptions{})

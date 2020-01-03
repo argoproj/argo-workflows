@@ -144,4 +144,3 @@ var _ templateresolution.WorkflowTemplateNamespacedGetter = &LazyWorkflowTemplat
 func GetWFApiServerGRPCClient(conn *grpc.ClientConn) (wfApiServer.WorkflowServiceClient, context.Context) {
 	return wfApiServer.NewWorkflowServiceClient(conn), client.ContextWithAuthorization()
 }
-

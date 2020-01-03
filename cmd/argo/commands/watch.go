@@ -2,10 +2,11 @@ package commands
 
 import (
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflow"
 	"os"
 	"time"
+
+	"github.com/argoproj/argo/cmd/argo/commands/client"
+	"github.com/argoproj/argo/cmd/server/workflow"
 
 	"github.com/argoproj/pkg/errors"
 	"github.com/spf13/cobra"

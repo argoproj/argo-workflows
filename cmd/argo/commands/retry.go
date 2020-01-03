@@ -7,10 +7,11 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/argoproj/argo/workflow/util"
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflow"
-	"github.com/argoproj/pkg/errors"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 func NewRetryCommand() *cobra.Command {
@@ -28,7 +29,7 @@ func NewRetryCommand() *cobra.Command {
 
 			if client.ArgoServer != "" {
 				apiServerWFRetry(args[0], cliSubmitOpts)
-			}else {
+			} else {
 
 				kubeClient := InitKubeClient()
 				wfClient := InitWorkflowClient()
@@ -51,18 +52,18 @@ func NewRetryCommand() *cobra.Command {
 	return command
 }
 
-func apiServerWFRetry(wfName string, opts cliSubmitOpts){
+func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
 	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
 
 	wfReq := workflow.WorkflowUpdateRequest{
-		WorkflowName:         wfName,
-		Namespace:            ns,
+		WorkflowName: wfName,
+		Namespace:    ns,
 	}
-	wf, err := wfApiClient.RetryWorkflow(ctx,&wfReq)
-	if err != nil{
+	wf, err := wfApiClient.RetryWorkflow(ctx, &wfReq)
+	if err != nil {
 		errors.CheckError(err)
 		return
 	}
