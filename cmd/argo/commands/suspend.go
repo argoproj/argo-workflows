@@ -29,7 +29,6 @@ func NewSuspendCommand() *cobra.Command {
 					wfUptReq := workflow.WorkflowUpdateRequest{
 						WorkflowName: wfName,
 						Namespace:    namespace,
-						Memoized:     false,
 					}
 					wf, err := apiGRPCClient.SuspendWorkflow(ctx, &wfUptReq)
 					if err != nil {

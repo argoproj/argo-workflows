@@ -29,7 +29,6 @@ func NewResumeCommand() *cobra.Command {
 					wfUptReq := workflow.WorkflowUpdateRequest{
 						WorkflowName: wfName,
 						Namespace:    namespace,
-						Memoized:     false,
 					}
 					wf, err := apiGRPCClient.ResumeWorkflow(ctx, &wfUptReq)
 					if err != nil {

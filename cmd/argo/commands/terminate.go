@@ -29,7 +29,6 @@ func NewTerminateCommand() *cobra.Command {
 					wfUptReq := workflow.WorkflowUpdateRequest{
 						WorkflowName: wfName,
 						Namespace:    namespace,
-						Memoized:     false,
 					}
 					wf, err := apiGRPCClient.TerminateWorkflow(ctx, &wfUptReq)
 					errors.CheckError(err)

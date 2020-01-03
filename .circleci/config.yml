@@ -11,12 +11,13 @@ commands:
             - vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
-          command: dep ensure -v -vendor-only
+          command: make vendor
       - save_cache:
           name: Save vendor cache
           key: vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
+          when: always
   install_golang:
     steps:
       - run:
