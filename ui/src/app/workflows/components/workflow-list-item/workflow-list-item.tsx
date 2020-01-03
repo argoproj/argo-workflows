@@ -2,24 +2,24 @@ import * as classNames from 'classnames';
 import * as React from 'react';
 
 import * as models from '../../../../models';
-import { Utils } from '../../../shared/utils';
+import {Utils} from '../../../shared/utils';
 
-import { WorkflowSteps } from '../workflow-steps/workflow-steps';
+import {WorkflowSteps} from '../workflow-steps/workflow-steps';
 
 require('./workflow-list-item.scss');
 
-export interface WorkflowListItemProps { workflow: models.Workflow; }
+export interface WorkflowListItemProps {
+    workflow: models.Workflow;
+}
 
 export const WorkflowListItem = (props: WorkflowListItemProps) => (
     <div className='workflow-list-item'>
         <div className='workflow-list-item__top'>
             <div className='workflow-list-item__status'>
                 <div className='workflow-list-item__status-icon'>
-                    <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))}  aria-hidden='true'/>
+                    <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))} aria-hidden='true' />
                 </div>
-                <div className='workflow-list-item__status-message'>
-                    {props.workflow.metadata.creationTimestamp}
-                </div>
+                <div className='workflow-list-item__status-message'>{props.workflow.metadata.creationTimestamp}</div>
             </div>
         </div>
 
@@ -27,7 +27,7 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
             <div className='row collapse'>
                 <div className='columns medium-7'>
                     <div className='workflow-list-item__content-box'>
-                        <WorkflowSteps workflow={props.workflow}/>
+                        <WorkflowSteps workflow={props.workflow} />
                     </div>
                 </div>
                 <div className='columns medium-5'>

@@ -15,8 +15,8 @@
         "start:ui": "webpack-dev-server --config ./src/app/webpack.config.js",
         "start:api": "TS_NODE_PROJECT=./src/api/tsconfig.json nodemon --nolazy --inspect -r ts-node/register ./src/api/main.ts",
         "lint": "yarn lint:ui && yarn lint:api",
-        "lint:ui": "tslint -p ./src/app",
-        "lint:api": "tslint -p ./src/api",
+        "lint:ui": "tslint --fix -p ./src/app",
+        "lint:api": "tslint --fix -p ./src/api",
         "test": "mocha --require ts-node/register ./src/app/**/*.spec.ts"
     },
     "dependencies": {
@@ -37,6 +37,7 @@
         "json-stream": "^1.0.0",
         "kubernetes-client": "3.17.1",
         "moment": "^2.20.1",
+        "prettier": "^1.19.1",
         "prop-types": "^15.6.0",
         "react": "^16.8.3",
         "react-dom": "^16.8.3",
@@ -48,6 +49,8 @@
         "superagent": "^3.8.2",
         "superagent-promise": "^1.1.0",
         "ts-loader": "^6.0.4",
+        "tslint-config-prettier": "^1.18.0",
+        "tslint-plugin-prettier": "^2.0.1",
         "typescript": "^2.8.3",
         "util.promisify": "^1.0.0",
         "webpack-cli": "^3.3.5",

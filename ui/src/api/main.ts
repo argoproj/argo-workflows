@@ -12,11 +12,11 @@ const port = argv.port || '8001';
 console.log(`start argo-ui on ${argv.ip}:${argv.port}`);
 
 app.create(
-  argv.uiDist || path.join(__dirname, '..', '..', 'dist', 'app'),
-  argv.uiBaseHref || '/',
-  argv.inCluster === 'true',
-  argv.namespace || 'default',
-  argv.forceNamespaceIsolation === 'true',
-  argv.instanceId || undefined,
-  argv.crdVersion || 'v1alpha1',
+    argv.uiDist || path.join(__dirname, '..', '..', 'dist', 'app'),
+    argv.uiBaseHref || '/',
+    argv.inCluster === 'true',
+    argv.namespace || 'default',
+    argv.forceNamespaceIsolation === 'true',
+    argv.instanceId || undefined,
+    argv.crdVersion || 'v1alpha1'
 ).listen(port, ip);

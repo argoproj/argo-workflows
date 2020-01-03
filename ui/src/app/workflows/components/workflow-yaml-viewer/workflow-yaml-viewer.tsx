@@ -1,18 +1,18 @@
-import { SlideContents, Utils as ArgoUtils } from 'argo-ui';
+import {SlideContents, Utils as ArgoUtils} from 'argo-ui';
 import * as React from 'react';
 import * as yaml from 'yamljs';
 
 import * as models from '../../../../models';
-import { Utils } from '../../../shared/utils';
+import {Utils} from '../../../shared/utils';
 
 require('./workflow-yaml-viewer.scss');
 
 export interface WorkflowYamlViewerProps {
-    workflow: models.Workflow; selectedNode: models.NodeStatus;
+    workflow: models.Workflow;
+    selectedNode: models.NodeStatus;
 }
 
 export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps> {
-
     private container: HTMLElement;
 
     public componentDidUpdate() {
@@ -39,10 +39,10 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                     parentTemplateStr = this.highlightStep(parentTemplate, nodeName, parentTemplateStr);
                 }
                 contents.push(
-                <div className='workflow-yaml-section'>
-                    <h4>Parent Node</h4>
-                    <div dangerouslySetInnerHTML={{__html:  this.addCounterToDisplayedFiles(parentTemplateStr)}} />
-                </div>,
+                    <div className='workflow-yaml-section'>
+                        <h4>Parent Node</h4>
+                        <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(parentTemplateStr)}} />
+                    </div>
                 );
             }
 
@@ -51,35 +51,35 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             contents.push(
                 <div className='workflow-yaml-section'>
                     <h4>Current Node</h4>
-                    <div dangerouslySetInnerHTML={{__html:  this.addCounterToDisplayedFiles(templateStr)}} />
-                </div>,
-                );
+                    <div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templateStr)}} />
+                </div>
+            );
         }
         const templates = this.props.workflow.spec.templates;
         if (templates && Object.keys(templates).length) {
             const templatesStr = yaml.stringify(templates, 4, 1);
-            contents.push((
+            contents.push(
                 <SlideContents
                     title={'Templates'}
                     contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(templatesStr)}} />}
                     className='workflow-yaml-section'
                 />
-                ));
+            );
         }
         const storedTemplates = this.props.workflow.status.storedTemplates;
         if (storedTemplates && Object.keys(storedTemplates).length) {
             const storedTemplatesStr = yaml.stringify(storedTemplates, 4, 1);
-            contents.push((
-            <SlideContents
-                title={'Stored Templates'}
-                contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}} />}
-                className='workflow-yaml-section'
-            />
-            ));
+            contents.push(
+                <SlideContents
+                    title={'Stored Templates'}
+                    contents={<div dangerouslySetInnerHTML={{__html: this.addCounterToDisplayedFiles(storedTemplatesStr)}} />}
+                    className='workflow-yaml-section'
+                />
+            );
         }
 
         return (
-            <div className='workflow-yaml-viewer' ref={(container) => this.container = container}>
+            <div className='workflow-yaml-viewer' ref={container => (this.container = container)}>
                 {contents}
             </div>
         );
@@ -87,25 +87,23 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
 
     private addCounterToDisplayedFiles(multilineString: string): string {
         const newMultilineStringWithCounters: string[] = ['<ol>'];
-        multilineString
-            .split('\n')
-            .forEach((item) => {
-                if (item !== '') {
-                    if (item.indexOf('<span>') !== -1) {
-                        item = item.match(/^<span>\s*/)[0] + item.substr(6);
-                        item = `<li class='highlight'>${item}</li>`;
-                    } else {
-                        item = item.match(/^\s*/)[0] + item;
-                        // special treatment to beautify resource templates
-                        if (item.replace(/\s+/g, '').substr(0, 8) === 'manifest') {
-                            this.formatManifest(item, newMultilineStringWithCounters);
-                            return;
-                        }
-                        item = `<li>${item}</li>`;
+        multilineString.split('\n').forEach(item => {
+            if (item !== '') {
+                if (item.indexOf('<span>') !== -1) {
+                    item = item.match(/^<span>\s*/)[0] + item.substr(6);
+                    item = `<li class='highlight'>${item}</li>`;
+                } else {
+                    item = item.match(/^\s*/)[0] + item;
+                    // special treatment to beautify resource templates
+                    if (item.replace(/\s+/g, '').substr(0, 8) === 'manifest') {
+                        this.formatManifest(item, newMultilineStringWithCounters);
+                        return;
                     }
+                    item = `<li>${item}</li>`;
                 }
-                newMultilineStringWithCounters.push(item);
-            });
+            }
+            newMultilineStringWithCounters.push(item);
+        });
         newMultilineStringWithCounters.push('</ol>');
         return newMultilineStringWithCounters.join('\n');
     }
@@ -113,12 +111,10 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
     private highlightStep(template: models.Template, highlightedStepName: string, yamlString: string) {
         let firstLineStepToHighlight: string = null;
         let lastLineStepToHighlight: string = null;
-        const steps: (models.WorkflowStep | models.DAGTask)[] = template.dag && template.dag.tasks || (template.steps || []).reduce((first, second) => first.concat(second), []);
-        const step = steps.find((item) => item.name === highlightedStepName);
+        const steps: (models.WorkflowStep | models.DAGTask)[] = (template.dag && template.dag.tasks) || (template.steps || []).reduce((first, second) => first.concat(second), []);
+        const step = steps.find(item => item.name === highlightedStepName);
         if (step) {
-            const stepLines = yaml
-                .stringify(step, 1, 1)
-                .split('\n');
+            const stepLines = yaml.stringify(step, 1, 1).split('\n');
             firstLineStepToHighlight = `name: ${highlightedStepName}`;
             lastLineStepToHighlight = stepLines[stepLines.length - 2];
         }
@@ -127,21 +123,19 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             let newYamlString = '';
             let isLinePartOfStepToHighlight = false;
 
-            yamlString
-                .split('\n')
-                .forEach((line: string, index) => {
-                    if (line.indexOf(firstLineStepToHighlight) !== -1) {
-                        isLinePartOfStepToHighlight = true;
+            yamlString.split('\n').forEach((line: string, index) => {
+                if (line.indexOf(firstLineStepToHighlight) !== -1) {
+                    isLinePartOfStepToHighlight = true;
+                }
+                if (isLinePartOfStepToHighlight) {
+                    newYamlString = `${newYamlString}<span>${line}</span>\n`;
+                    if (line.indexOf(lastLineStepToHighlight) > -1) {
+                        isLinePartOfStepToHighlight = false;
                     }
-                    if (isLinePartOfStepToHighlight) {
-                        newYamlString = `${newYamlString}<span>${line}</span>\n`;
-                        if (line.indexOf(lastLineStepToHighlight) > -1) {
-                            isLinePartOfStepToHighlight = false;
-                        }
-                    } else {
-                        newYamlString = `${newYamlString}${line}\n`;
-                    }
-                });
+                } else {
+                    newYamlString = `${newYamlString}${line}\n`;
+                }
+            });
 
             yamlString = newYamlString;
         }
@@ -159,8 +153,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 const viewerHighlight = this.container.querySelector('li.highlight') as HTMLElement;
                 if (viewerHighlight) {
                     const parent = ArgoUtils.getScrollParent(viewerHighlight);
-                    ArgoUtils.scrollTo(
-                        parent, viewerHighlight.offsetTop + parent.scrollTop - window.pageYOffset - parent.clientHeight / 2);
+                    ArgoUtils.scrollTo(parent, viewerHighlight.offsetTop + parent.scrollTop - window.pageYOffset - parent.clientHeight / 2);
                 }
             });
         }
@@ -172,8 +165,11 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         item = item.replace(/"/, '');
         item = item.replace(/\\"/g, '"');
         newMultilineStringWithCounters.push(`<li>${item.substr(0, index)}manifest: |`);
-        item.split('\\n').slice(1).slice(0, -1).forEach((line) => {
-            newMultilineStringWithCounters.push(`<li>${item.substr(0, index)}  ${line}</li>`);
-        });
+        item.split('\\n')
+            .slice(1)
+            .slice(0, -1)
+            .forEach(line => {
+                newMultilineStringWithCounters.push(`<li>${item.substr(0, index)}  ${line}</li>`);
+            });
     }
 }

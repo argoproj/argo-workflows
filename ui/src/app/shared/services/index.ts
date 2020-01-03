@@ -1,4 +1,4 @@
-import { WorkflowsService } from './workflows-service';
+import {WorkflowsService} from './workflows-service';
 
 export interface Services {
     workflows: WorkflowsService;
@@ -7,5 +7,5 @@ export interface Services {
 export * from './workflows-service';
 
 export const services: Services = {
-    workflows: new WorkflowsService(),
+    workflows: new WorkflowsService()
 };

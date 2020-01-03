@@ -493,7 +493,7 @@ export interface Template {
     /**
      * NodeSelector is a selector to schedule this step of the workflow to be run on the selected node(s). Overrides the selector set at the workflow level.
      */
-    nodeSelector?: { [key: string]: string; };
+    nodeSelector?: {[key: string]: string};
     /**
      * Outputs describe the parameters and artifacts that this template produces
      */
@@ -719,7 +719,6 @@ export interface TemplateRef {
 }
 
 export interface WorkflowStatus {
-
     /**
      * Phase a simple, high-level summary of where the workflow is in its lifecycle.
      */
@@ -734,7 +733,7 @@ export interface WorkflowStatus {
     /**
      * Nodes is a mapping between a node ID and the node's status.
      */
-    nodes: { [nodeId: string]: NodeStatus };
+    nodes: {[nodeId: string]: NodeStatus};
 
     /**
      * PersistentVolumeClaims tracks all PVCs that were created as part of the workflow.
@@ -795,7 +794,7 @@ export interface WorkflowSpec {
      * NodeSelector is a selector which will result in all pods of the workflow to be scheduled on the selected node(s).
      * This is able to be overridden by a nodeSelector specified in the template.
      */
-    nodeSelector?: { [key: string]: string; };
+    nodeSelector?: {[key: string]: string};
     /**
      * OnExit is a template reference which is invoked at the end of the workflow, irrespective of the success, failure, or error of the primary workflow.
      */
@@ -884,10 +883,10 @@ export interface WorkflowStep {
 export type NodePhase = 'Pending' | 'Running' | 'Succeeded' | 'Skipped' | 'Failed' | 'Error';
 
 export const NODE_PHASE = {
-  PENDING: 'Pending',
-  RUNNING: 'Running',
-  SUCCEEDED: 'Succeeded',
-  SKIPPED: 'Skipped',
-  FAILED: 'Failed',
-  ERROR: 'Error',
+    PENDING: 'Pending',
+    RUNNING: 'Running',
+    SUCCEEDED: 'Succeeded',
+    SKIPPED: 'Skipped',
+    FAILED: 'Failed',
+    ERROR: 'Error'
 };
