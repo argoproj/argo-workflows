@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -101,6 +102,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (s *E2ESuite) Run(name string, f func(t *testing.T)) {
+	t := s.T()
+	if t.Failed() {
+		t.SkipNow()
+	}
+	t.Run(name, f)
 }
 
 func (s *E2ESuite) AfterTest(_, _ string) {

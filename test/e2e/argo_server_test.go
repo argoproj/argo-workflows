@@ -60,14 +60,6 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.bearerToken = base64.StdEncoding.EncodeToString(jsonConfig)
 }
 
-func (s *ArgoServerSuite) Run(name string, f func(t *testing.T)) {
-	t := s.T()
-	if t.Failed() {
-		t.SkipNow()
-	}
-	t.Run(name, f)
-}
-
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
@@ -177,6 +169,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 			Expect().
 			Status(200)
 	})
+
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/").
 			Expect().

@@ -41,12 +41,12 @@ func (s *CLISuite) TestCompletion() {
 }
 
 func (s *CLISuite) TestCore() {
-	s.T().Run("Submit", func(t *testing.T) {
+	s.Run("Submit", func(t *testing.T) {
 		output, err := argo("submit", "smoke/basic.yaml", "--wait")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
-	s.T().Run("Get", func(t *testing.T) {
+	s.Run("Get", func(t *testing.T) {
 		output, err := argo("get", "basic")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
@@ -64,25 +64,25 @@ func (s *CLISuite) TestHistory() {
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
 		})
-	s.T().Run("List", func(t *testing.T) {
+	s.Run("List", func(t *testing.T) {
 		output, err := argo("history", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
 	})
-	s.T().Run("Get", func(t *testing.T) {
+	s.Run("Get", func(t *testing.T) {
 		output, err := argo("history", "get", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
-	s.T().Run("Resubmit", func(t *testing.T) {
+	s.Run("Resubmit", func(t *testing.T) {
 		output, err := argo("history", "resubmit", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Workflow")
 		assert.Contains(t, output, "basic")
 		assert.Contains(t, output, "resubmitted")
 	})
-	s.T().Run("Delete", func(t *testing.T) {
+	s.Run("Delete", func(t *testing.T) {
 		output, err := argo("history", "delete", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Workflow")

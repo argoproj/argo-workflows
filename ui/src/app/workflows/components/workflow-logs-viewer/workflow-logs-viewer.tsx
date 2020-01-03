@@ -66,7 +66,7 @@ export class WorkflowLogsViewer extends React.Component<WorkflowLogsViewerProps,
                     )}
                     {!this.state.error && this.state.lines.length === 0 && (
                         <p>
-                            <i className='fa fa-circle-notch fa-spin' /> Loading...
+                            <i className='fa fa-circle-notch fa-spin' /> Waiting for data...
                         </p>
                     )}
                     {this.state.lines.length > 0 && (
