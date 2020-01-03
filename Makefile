@@ -221,9 +221,7 @@ manifests:
 
 .PHONY: start
 start:
-	kubectl create ns argo || true
-	# Install the standard Argo.
-	kubectl -n argo apply --wait --force -f manifests/install.yaml
+	env INSTALL_CLI=0 DEFAULT_ADMIN_ROLEBINDING=1 INSTALL_MINIO=1 INSTALL_POSTGRES=1 ./install.sh
 	# Scale down in preparation for re-configuration.
 	make down
 	# Change to use a "dev" tag and enable debug logging.
@@ -231,8 +229,6 @@ start:
 	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
 	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
-	# Install MinIO and set-up config-map.
-	kubectl -n argo apply --wait --force -f test/e2e/manifests
 	# Build controller and executor images.
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.

@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: mysql
-  replicas: 0
+  replicas: 1
   template:
     metadata:
       name: mysql
