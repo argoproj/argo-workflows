@@ -176,7 +176,7 @@ func (woc *cronWfOperationCtx) enforceHistoryLimit() {
 	log.Infof("Enforcing history limit for '%s'", woc.cronWf.Name)
 
 	listOptions := &v1.ListOptions{}
-	WfInformerListOptionsFunc(listOptions)
+	wfInformerListOptionsFunc(listOptions)
 	wfList, err := woc.wfClient.List(*listOptions)
 	if err != nil {
 		log.Errorf("Unable to enforce history limit for CronWorkflow '%s': %s", woc.cronWf.Name, err)

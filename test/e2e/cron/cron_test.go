@@ -3,10 +3,15 @@ package cron
 import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
-	"github.com/argoproj/argo/workflow/cron"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/pkg/humanize"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"testing"
 	"time"
 )
@@ -69,7 +74,7 @@ func (s *CronSuite) TestBasicReplace() {
 
 func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 	var listOptions v1.ListOptions
-	cron.WfInformerListOptionsFunc(&listOptions)
+	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
 	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-succeed-1.yaml").
@@ -85,7 +90,7 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 
 func (s *CronSuite) TestFailedJobHistoryLimit() {
 	var listOptions v1.ListOptions
-	cron.WfInformerListOptionsFunc(&listOptions)
+	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
 	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-fail-1.yaml").
@@ -101,7 +106,7 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 
 func (s *CronSuite) TestFailedJobHistoryLimitConcurrent() {
 	var listOptions v1.ListOptions
-	cron.WfInformerListOptionsFunc(&listOptions)
+	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-2")
 	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-fail-2.yaml").
@@ -115,6 +120,26 @@ func (s *CronSuite) TestFailedJobHistoryLimitConcurrent() {
 		})
 }
 
+func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
+	options.FieldSelector = fields.Everything().String()
+	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Equals, []string{cronWfName})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
+	options.LabelSelector = labelSelector.String()
+}
+
 func TestCronSuite(t *testing.T) {
+	// To ensure consistency, always start at the next 30 second mark
+	_, _, sec := time.Now().Clock()
+	var toWait time.Duration
+	if sec <= 30 {
+		toWait = time.Duration(30 - sec) * time.Second
+	} else {
+		toWait = time.Duration(90 - sec) * time.Second
+	}
+	logrus.Infof("Waiting %s to start", humanize.Duration(toWait))
+	time.Sleep(toWait)
 	suite.Run(t, new(CronSuite))
 }
