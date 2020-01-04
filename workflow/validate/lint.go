@@ -79,6 +79,38 @@ func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	return workflows, nil
 }
 
+
+func ParseWfTmplFromFile(filePath string, strict bool) ([]wfv1.WorkflowTemplate, error) {
+	body, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
+	}
+	var workflowTmpls []wfv1.WorkflowTemplate
+	if json.IsJSON(body) {
+		var wfTmpl wfv1.WorkflowTemplate
+		if strict {
+			err = json.UnmarshalStrict(body, &wfTmpl)
+		} else {
+			err = json.Unmarshal(body, &wfTmpl)
+		}
+		if err == nil {
+			workflowTmpls = []wfv1.WorkflowTemplate{wfTmpl}
+		} else {
+			if wfTmpl.Kind != "" && wfTmpl.Kind != workflow.WorkflowTemplateKind {
+				// If we get here, it was a k8s manifest which was not of type 'Workflow'
+				// We ignore these since we only care about validating Workflow manifests.
+				return nil, nil
+			}
+		}
+	} else {
+		workflowTmpls, err = common.SplitWorkflowTemplateYAMLFile(body, strict)
+	}
+	if err != nil {
+		return nil, errors.Errorf(errors.CodeBadRequest, "%s failed to parse: %v", filePath, err)
+	}
+	return workflowTmpls, nil
+}
+
 // LintWorkflowTemplateDir validates all workflow manifests in a directory. Ignores non-workflow template manifests
 func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, dirPath string, strict bool) error {
 	walkFunc := func(path string, info os.FileInfo, err error) error {
