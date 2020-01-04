@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetBearerToken(t *testing.T) {
+	t.SkipNow()
 	config, err := DefaultRestConfig()
 	if assert.NoError(t, err) {
 		token, err := GetBearerToken(config)
