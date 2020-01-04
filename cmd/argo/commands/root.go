@@ -3,8 +3,8 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/argo/commands/history"
 	"github.com/argoproj/argo/cmd/argo/commands/template"
 	"github.com/argoproj/argo/util/cmd"
 )
@@ -35,12 +35,13 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewRetryCommand())
 	command.AddCommand(NewSubmitCommand())
 	command.AddCommand(NewSuspendCommand())
-	command.AddCommand(NewWaitCommand())
+	command.AddCommand(NewTokenCommand())
+	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewWatchCommand())
 	command.AddCommand(NewTerminateCommand())
+	command.AddCommand(archive.NewArchiveCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
-	command.AddCommand(history.NewHistoryCommand())
 	client.AddKubectlFlagsToCmd(command)
 	client.AddArgoServerFlagsToCmd(command)
 	return command

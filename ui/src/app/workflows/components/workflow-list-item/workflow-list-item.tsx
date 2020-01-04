@@ -11,7 +11,7 @@ require('./workflow-list-item.scss');
 
 export interface WorkflowListItemProps {
     workflow: models.Workflow;
-    history: boolean;
+    archived: boolean;
 }
 
 export const WorkflowListItem = (props: WorkflowListItemProps) => (
@@ -41,7 +41,7 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                             <div className='columns large-4'>NAME:</div>
                             <div className='columns large-8'>{props.workflow.metadata.name}</div>
                         </div>
-                        {props.history && (
+                        {props.archived && (
                             <div className='workflow-list-item__content-details-row row'>
                                 <div className='columns large-4'>UID:</div>
                                 <div className='columns large-8'>{props.workflow.metadata.uid}</div>

@@ -4412,9 +4412,6 @@
       "properties": {
         "content": {
           "type": "string"
-        },
-        "timeStamp": {
-          "$ref": "#/definitions/v1Time"
         }
       }
     },

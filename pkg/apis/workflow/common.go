@@ -5,7 +5,6 @@ import (
 
 	"k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/util/flowcontrol"
 )
 
 type ClientConfig struct {
@@ -30,11 +29,6 @@ type ClientConfig struct {
 	// TODO: demonstrate an OAuth2 compatible client.
 	BearerToken string
 
-	// Path to a file containing a BearerToken.
-	// If set, the contents are periodically read.
-	// The last successfully read value takes precedence over BearerToken.
-	BearerTokenFile string
-
 	// Impersonate is the configuration that RESTClient will use for impersonation.
 	Impersonate rest.ImpersonationConfig
 
@@ -53,9 +47,6 @@ type ClientConfig struct {
 	// Maximum burst for throttle.
 	// If it's zero, the created RESTClient will use DefaultBurst: 10.
 	Burst int
-
-	// Rate limiter for limiting connections to the master from this client. If present overwrites QPS/Burst
-	RateLimiter flowcontrol.RateLimiter
 
 	// The maximum length of time to wait before giving up on a server request. A value of zero means no timeout.
 	Timeout time.Duration

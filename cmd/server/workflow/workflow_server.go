@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"bufio"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
@@ -215,6 +216,16 @@ func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRe
 
 func (s *workflowServer) PodLogs(req *WorkflowLogRequest, ws WorkflowService_PodLogsServer) error {
 	kubeClient := auth.GetKubeClient(ws.Context())
-
-	return s.wfKubeService.PodLogs(kubeClient, req, ws)
+	stream, err := kubeClient.CoreV1().Pods(req.Namespace).GetLogs(req.PodName, req.LogOptions).Stream()
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(stream)
+	for scanner.Scan() {
+		err = ws.Send(&LogEntry{Content: scanner.Text()})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -1355,9 +1355,9 @@ func (woc *wfOperationCtx) markWorkflowPhase(phase wfv1.NodePhase, markCompleted
 				woc.wf.ObjectMeta.Labels = make(map[string]string)
 			}
 			woc.wf.ObjectMeta.Labels[common.LabelKeyCompleted] = "true"
-			err := woc.controller.wfHistoryRepository.AddWorkflowHistory(woc.wf)
+			err := woc.controller.wfArchive.ArchiveWorkflow(woc.wf)
 			if err != nil {
-				woc.log.WithField("err", err).Error("Failed to add workflow history")
+				woc.log.WithField("err", err).Error("Failed to archive workflow")
 			}
 			woc.updated = true
 		}

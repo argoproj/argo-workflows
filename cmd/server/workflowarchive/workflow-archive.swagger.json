@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "cmd/server/workflowhistory/workflowhistory.proto",
+    "title": "cmd/server/workflowarchive/workflow-archive.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -15,9 +15,9 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow-history/{namespace}": {
+    "/api/v1/archived-workflows/{namespace}": {
       "get": {
-        "operationId": "ListWorkflowHistory",
+        "operationId": "ListArchivedWorkflows",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -95,13 +95,13 @@
           }
         ],
         "tags": [
-          "WorkflowHistoryService"
+          "ArchivedWorkflowService"
         ]
       }
     },
-    "/api/v1/workflow-history/{namespace}/{uid}": {
+    "/api/v1/archived-workflows/{namespace}/{uid}": {
       "get": {
-        "operationId": "GetWorkflowHistory",
+        "operationId": "GetArchivedWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -125,16 +125,16 @@
           }
         ],
         "tags": [
-          "WorkflowHistoryService"
+          "ArchivedWorkflowService"
         ]
       },
       "delete": {
-        "operationId": "DeleteWorkflowHistory",
+        "operationId": "DeleteArchivedWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/WorkflowHistoryDeleteResponse"
+              "$ref": "#/definitions/ArchivedWorkflowDeletedResponse"
             }
           }
         },
@@ -153,13 +153,13 @@
           }
         ],
         "tags": [
-          "WorkflowHistoryService"
+          "ArchivedWorkflowService"
         ]
       }
     },
-    "/api/v1/workflow-history/{namespace}/{uid}/resubmit": {
+    "/api/v1/archived-workflows/{namespace}/{uid}/resubmit": {
       "put": {
-        "operationId": "ResubmitWorkflowHistory",
+        "operationId": "ResubmitArchivedWorkflow",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -186,21 +186,21 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/WorkflowHistoryUpdateRequest"
+              "$ref": "#/definitions/ResubmitArchivedWorkflowRequest"
             }
           }
         ],
         "tags": [
-          "WorkflowHistoryService"
+          "ArchivedWorkflowService"
         ]
       }
     }
   },
   "definitions": {
-    "WorkflowHistoryDeleteResponse": {
+    "ArchivedWorkflowDeletedResponse": {
       "type": "object"
     },
-    "WorkflowHistoryUpdateRequest": {
+    "ResubmitArchivedWorkflowRequest": {
       "type": "object",
       "properties": {
         "namespace": {

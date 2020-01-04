@@ -2,26 +2,20 @@ package e2e
 
 import (
 	"bufio"
-	"encoding/base64"
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -33,31 +27,13 @@ type ArgoServerSuite struct {
 	bearerToken string
 }
 
-func getClientConfig() *workflow.ClientConfig {
-	bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
-	if err != nil {
-		panic(err)
-	}
-	config, err := clientcmd.NewClientConfigFromBytes(bytes)
-	if err != nil {
-		panic(err)
-	}
-	restConfig, err := config.ClientConfig()
-	if err != nil {
-		panic(err)
-	}
-	var clientConfig workflow.ClientConfig
-	_ = copier.Copy(&clientConfig, restConfig)
-	return &clientConfig
-}
-
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	jsonConfig, err := json.Marshal(getClientConfig())
+	var err error
+	s.bearerToken, err = kubeconfig.GetBearerToken(s.RestConfig)
 	if err != nil {
 		panic(err)
 	}
-	s.bearerToken = base64.StdEncoding.EncodeToString(jsonConfig)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
@@ -245,18 +221,39 @@ func (s *ArgoServerSuite) TestWorkflows() {
 
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestWorkflowArtifact() {
+	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second)
+		WaitForWorkflow(15 * time.Second).
+		Then().
+		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
+			uid = metadata.UID
+		})
 
-	s.e(s.T()).GET("/artifacts/argo/basic/basic/main-logs").
-		WithQuery("Authorization", s.bearerToken).
-		Expect().
-		Status(200).
-		Body().
-		Contains("🐙 Hello Argo!")
+	s.Run("GetArtifact", func(t *testing.T) {
+		s.e(t).GET("/artifacts/argo/basic/basic/main-logs").
+			WithQuery("Authorization", s.bearerToken).
+			Expect().
+			Status(200).
+			Body().
+			Contains("🐙 Hello Argo!")
+	})
+
+	s.Run("GetArtifactByUid", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/workflows/argo/basic").
+			Expect().
+			Status(200)
+
+		s.e(t).GET("/artifacts-by-uid/argo/{uid}/basic/main-logs", uid).
+			WithQuery("Authorization", s.bearerToken).
+			Expect().
+			Status(200).
+			Body().
+			Contains("🐙 Hello Argo!")
+	})
+
 }
 
 // do some basic testing on the stream methods
@@ -326,7 +323,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 	})
 }
 
-func (s *ArgoServerSuite) TestWorkflowHistory() {
+func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -344,7 +341,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 		WaitForWorkflow(15 * time.Second)
 
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-history/").
+		s.e(t).GET("/api/v1/archived-workflows/").
 			Expect().
 			Status(200).
 			JSON().
@@ -353,7 +350,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Length().
 			Equal(2)
 
-		j := s.e(t).GET("/api/v1/workflow-history/").
+		j := s.e(t).GET("/api/v1/archived-workflows/").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -370,10 +367,10 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflow-history/argo/not-found").
+		s.e(t).GET("/api/v1/archived-workflows/argo/not-found").
 			Expect().
 			Status(404)
-		s.e(t).GET("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).GET("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(200).
 			JSON().
@@ -382,7 +379,7 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 	})
 
 	s.Run("Resubmit", func(t *testing.T) {
-		s.e(t).PUT("/api/v1/workflow-history/argo/{uid}/resubmit", uid).
+		s.e(t).PUT("/api/v1/archived-workflows/argo/{uid}/resubmit", uid).
 			Expect().
 			Status(200)
 
@@ -396,10 +393,10 @@ func (s *ArgoServerSuite) TestWorkflowHistory() {
 			Equal(3)
 	})
 	s.Run("Delete", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(200)
-		s.e(t).DELETE("/api/v1/workflow-history/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().
 			Status(404)
 	})

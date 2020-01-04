@@ -484,14 +484,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:79b12149793d2879561af016d7464964890951e2685aae24a72f91690aa3cd53"
-  name = "github.com/jinzhu/copier"
-  packages = ["."]
-  pruneopts = ""
-  revision = "b57f9002281ac48ed8cbc489b1e91121e1a0824c"
-
-[[projects]]
   digest = "1:13fe471d0ed891e8544eddfeeb0471fd3c9f2015609a1c000aefdedf52a19d40"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -1362,6 +1354,7 @@
     "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
+    "pkg/util/rand",
     "pkg/util/remotecommand",
     "pkg/util/runtime",
     "pkg/util/sets",
@@ -1645,7 +1638,6 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus",
     "github.com/grpc-ecosystem/grpc-gateway/runtime",
     "github.com/grpc-ecosystem/grpc-gateway/utilities",
-    "github.com/jinzhu/copier",
     "github.com/mitchellh/go-ps",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
@@ -1691,6 +1683,7 @@
     "k8s.io/apimachinery/pkg/selection",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/clock",
+    "k8s.io/apimachinery/pkg/util/rand",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/validation",

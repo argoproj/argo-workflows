@@ -23,7 +23,7 @@ import (
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
-	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/cmd/server/workflowarchive"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	"github.com/argoproj/argo/errors"
 	"github.com/argoproj/argo/persist/sqldb"
@@ -75,17 +75,17 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		log.Errorf("Error marshalling config map: %s", err)
 	}
 	var wfDBServer *workflow.DBService
-	var wfHistoryRepository sqldb.WorkflowHistoryRepository = sqldb.NullWorkflowHistoryRepository
+	var wfArchive sqldb.WorkflowArchive = sqldb.NullWorkflowAchive
 	if configMap != nil && configMap.Persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
 		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
-		wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
+		wfArchive = sqldb.NewWorkflowArchive(session)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, wfDBServer)
-	grpcServer := as.newGRPCServer(wfDBServer, wfHistoryRepository)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, wfDBServer, wfArchive)
+	grpcServer := as.newGRPCServer(wfDBServer, wfArchive)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -117,7 +117,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfHistoryRepository sqldb.WorkflowHistoryRepository) *grpc.Server {
+func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -144,8 +144,8 @@ func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfHistoryRep
 	grpcServer := grpc.NewServer(sOpts...)
 	workflowServer := workflow.NewWorkflowServer(wfDBServer)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	workflowHistoryServer := workflowhistory.NewWorkflowHistoryServer(wfHistoryRepository)
-	workflowhistory.RegisterWorkflowHistoryServiceServer(grpcServer, workflowHistoryServer)
+	archivedWorkflowServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
+	workflowarchive.RegisterArchivedWorkflowServiceServer(grpcServer, archivedWorkflowServer)
 	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer()
 	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
 
@@ -178,10 +178,11 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowhistory.RegisterWorkflowHistoryServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowarchive.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
-	mux.HandleFunc("/artifacts/", artifactServer.ServeArtifacts)
+	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
+	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)
 	mux.HandleFunc("/", static.ServerFiles)
 	return &httpServer
 }

@@ -2,17 +2,22 @@ package artifacts
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/cmd/server/workflow"
+	"github.com/argoproj/argo/persist/sqldb"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
 	"github.com/argoproj/argo/workflow/packer"
 )
@@ -20,24 +25,21 @@ import (
 type ArtifactServer struct {
 	authN       auth.Gatekeeper
 	wfDBService *workflow.DBService
+	wfArchive   sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, wfDBService *workflow.DBService) *ArtifactServer {
-	return &ArtifactServer{authN, wfDBService}
+func NewArtifactServer(authN auth.Gatekeeper, wfDBService *workflow.DBService, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{authN, wfDBService, wfArchive}
 }
 
-func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) {
+func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 
-	// TODO - we should not put the token in the URL - OSWAP obvs
-	authHeader := r.URL.Query().Get("Authorization")
-	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"grpcgateway-authorization": []string{authHeader}})
-	ctx, err := a.authN.Context(ctx)
+	ctx, err := a.gateKeeping(r)
 	if err != nil {
 		w.WriteHeader(401)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
-
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
 	namespace := path[2]
@@ -45,14 +47,61 @@ func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) 
 	nodeId := path[4]
 	artifactName := path[5]
 
-	data, err := a.getArtifact(ctx, namespace, workflowName, nodeId, artifactName)
+	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
+
+	wf, err := a.getWorkflow(ctx, namespace, workflowName)
 	if err != nil {
-		w.WriteHeader(500)
+		a.serverInternalError(err, w)
+		return
+	}
+
+	data, err := a.getArtifact(ctx, wf, namespace, nodeId, artifactName)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+	a.ok(w, data)
+}
+func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request) {
+
+	ctx, err := a.gateKeeping(r)
+	if err != nil {
+		w.WriteHeader(401)
 		_, _ = w.Write([]byte(err.Error()))
 		return
 	}
+	path := strings.SplitN(r.URL.Path, "/", 6)
+
+	namespace := path[2]
+	uid := path[3]
+	nodeId := path[4]
+	artifactName := path[5]
+
+	log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
+
+	wf, err := a.getWorkflowByUID(ctx, namespace, uid)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+
+	data, err := a.getArtifact(ctx, wf, namespace, nodeId, artifactName)
+	if err != nil {
+		a.serverInternalError(err, w)
+		return
+	}
+	a.ok(w, data)
+}
+func (a *ArtifactServer) gateKeeping(r *http.Request) (context.Context, error) {
+	// TODO - we should not put the token in the URL - OSWAP obvs
+	authHeader := r.URL.Query().Get("Authorization")
+	ctx := metadata.NewIncomingContext(r.Context(), metadata.MD{"grpcgateway-authorization": []string{authHeader}})
+	return a.authN.Context(ctx)
+}
+
+func (a *ArtifactServer) ok(w http.ResponseWriter, data []byte) {
 	w.WriteHeader(200)
-	_, err = w.Write(data)
+	_, err := w.Write(data)
 	if err != nil {
 		w.WriteHeader(500)
 		_, _ = w.Write([]byte(err.Error()))
@@ -60,30 +109,17 @@ func (a *ArtifactServer) ServeArtifacts(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (a *ArtifactServer) getArtifact(ctx context.Context, namespace, workflowName, nodeId, artifactName string) ([]byte, error) {
-	wfClient := auth.GetWfClient(ctx)
+func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
+	w.WriteHeader(500)
+	_, _ = w.Write([]byte(err.Error()))
+}
+
+func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, namespace, nodeId, artifactName string) ([]byte, error) {
 	kubeClient := auth.GetKubeClient(ctx)
 
-	log.WithFields(log.Fields{"namespace": namespace, "workflowName": workflowName, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
-
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	err = packer.DecompressWorkflow(wf)
-	if err != nil {
-		return nil, err
-	}
-	if wf.Status.OffloadNodeStatus {
-		offloadedWf, err := a.wfDBService.Get(workflowName, namespace)
-		if err != nil {
-			return nil, err
-		}
-		wf.Status.Nodes = offloadedWf.Status.Nodes
-	}
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
 	if art == nil {
-		return nil, err
+		return nil, fmt.Errorf("artifact not found")
 	}
 
 	driver, err := artifact.NewDriver(art, resources{kubeClient, namespace})
@@ -111,4 +147,39 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, namespace, workflowNam
 	log.WithFields(log.Fields{"size": len(file)}).Debug("Artifact file size")
 
 	return file, nil
+}
+
+func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, workflowName string) (*wfv1.Workflow, error) {
+	wfClient := auth.GetWfClient(ctx)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(workflowName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		return nil, err
+	}
+	if wf.Status.OffloadNodeStatus {
+		offloadedWf, err := a.wfDBService.Get(workflowName, namespace)
+		if err != nil {
+			return nil, err
+		}
+		wf.Status.Nodes = offloadedWf.Status.Nodes
+	}
+	return wf, nil
+}
+
+func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, namespace string, uid string) (*wfv1.Workflow, error) {
+	wf, err := a.wfArchive.GetWorkflow(namespace, uid)
+	if err != nil {
+		return nil, err
+	}
+	allowed, err := auth.CanI(ctx, "get", "workflows", namespace, wf.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, status.Error(codes.PermissionDenied, "permission denied")
+	}
+	return wf, nil
 }

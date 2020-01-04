@@ -1,4 +1,4 @@
-package history
+package archive
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
-	"github.com/argoproj/argo/cmd/server/workflowhistory"
+	"github.com/argoproj/argo/cmd/server/workflowarchive"
 )
 
 func NewResubmitCommand() *cobra.Command {
@@ -23,15 +23,15 @@ func NewResubmitCommand() *cobra.Command {
 			uid := args[1]
 			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
-			wfHistoryClient := workflowhistory.NewWorkflowHistoryServiceClient(conn)
-			wf, err := wfHistoryClient.ResubmitWorkflowHistory(ctx, &workflowhistory.WorkflowHistoryUpdateRequest{
+			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
+			wf, err := client.ResubmitArchivedWorkflow(ctx, &workflowarchive.ResubmitArchivedWorkflowRequest{
 				Namespace: namespace,
 				Uid:       uid,
 			})
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Workflow history '%s' resubmitted\n", wf.Name)
+			fmt.Printf("Archived workflow '%s' resubmitted\n", wf.Name)
 		},
 	}
 	return command

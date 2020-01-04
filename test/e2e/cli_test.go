@@ -53,7 +53,7 @@ func (s *CLISuite) TestCore() {
 	})
 }
 
-func (s *CLISuite) TestHistory() {
+func (s *CLISuite) TestArchive() {
 	var uid types.UID
 	s.Given().
 		Workflow("@smoke/basic.yaml").
@@ -65,27 +65,27 @@ func (s *CLISuite) TestHistory() {
 			uid = metadata.UID
 		})
 	s.Run("List", func(t *testing.T) {
-		output, err := argo("history", "list")
+		output, err := argo("archive", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
 	})
 	s.Run("Get", func(t *testing.T) {
-		output, err := argo("history", "get", fixtures.Namespace, string(uid))
+		output, err := argo("archive", "get", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
 	s.Run("Resubmit", func(t *testing.T) {
-		output, err := argo("history", "resubmit", fixtures.Namespace, string(uid))
+		output, err := argo("archive", "resubmit", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
-		assert.Contains(t, output, "Workflow")
+		assert.Contains(t, output, "Archived workflow")
 		assert.Contains(t, output, "basic")
 		assert.Contains(t, output, "resubmitted")
 	})
 	s.Run("Delete", func(t *testing.T) {
-		output, err := argo("history", "delete", fixtures.Namespace, string(uid))
+		output, err := argo("archive", "delete", fixtures.Namespace, string(uid))
 		assert.NoError(t, err)
-		assert.Contains(t, output, "Workflow")
+		assert.Contains(t, output, "Archived workflow")
 		assert.Contains(t, output, "deleted")
 	})
 }

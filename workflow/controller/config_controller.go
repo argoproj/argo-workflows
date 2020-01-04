@@ -55,7 +55,7 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		}
 		wfc.session = nil
 		wfc.wfDBctx = nil
-		wfc.wfHistoryRepository = sqldb.NullWorkflowHistoryRepository
+		wfc.wfArchive = sqldb.NullWorkflowAchive
 	}
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
@@ -67,11 +67,11 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		log.Info("Persistence Session created successfully")
 		wfc.session = session
 		wfc.wfDBctx = sqldb.NewWorkflowDBContext(tableName, persistence.NodeStatusOffload, session)
-		if persistence.History {
-			wfc.wfHistoryRepository = sqldb.NewWorkflowHistoryRepository(session)
-			log.Info("Workflow history is enabled")
+		if persistence.Archive {
+			wfc.wfArchive = sqldb.NewWorkflowArchive(session)
+			log.Info("Workflow archiving is enabled")
 		} else {
-			log.Info("Workflow history is disabled")
+			log.Info("Workflow archiving is disabled")
 		}
 	} else {
 		log.Info("Persistence configuration disabled")

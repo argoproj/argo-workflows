@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"net"
 	"strings"
 
@@ -14,9 +12,9 @@ import (
 	"google.golang.org/grpc/status"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 type ContextKey string
@@ -110,18 +108,10 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		return nil, nil, status.Error(codes.Unauthenticated, "Authorization header not found")
 	}
 	token := strings.TrimPrefix(authorization[0], "Bearer ")
-	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
-
+	restConfig, err := kubeconfig.GetRestConfig(token)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "Invalid token found in Authorization header %s: %v", token, err)
 	}
-
-	var restConfig rest.Config
-	err = json.Unmarshal(restConfigBytes, &restConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	if s.enableClientAuth {
 		// we want to prevent people using in-cluster set-up
 		if restConfig.BearerTokenFile != "" || restConfig.CAFile != "" || restConfig.CertFile != "" || restConfig.KeyFile != "" {
@@ -133,11 +123,11 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 		}
 	}
 
-	wfClient, err := versioned.NewForConfig(&restConfig)
+	wfClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
 	}
-	kubeClient, err := kubernetes.NewForConfig(&restConfig)
+	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
 	}

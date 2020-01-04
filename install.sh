@@ -9,45 +9,54 @@ set -eu -o pipefail
 
 VERSION=${VERSION:-latest}
 INSTALL_CLI=${INSTALL_CLI:-1}
-INSTALL_MINIO=${INSTALL_MINIO:-0}
+INSTALL_MINIO=${INSTALL_MINIO:-1}
 INSTALL_MYSQL=${INSTALL_MYSQL:-0}
 INSTALL_POSTGRES=${INSTALL_POSTGRES:-0}
-DEFAULT_ADMIN_ROLEBINDING=${DEFAULT_ADMIN_ROLEBINDING:-0}
+INSTALL_DEFAULT_ADMIN_ROLEBINDING=${INSTALL_DEFAULT_ADMIN_ROLEBINDING:-1}
 
-if [[ "$(pwd)" = "$HOME/go/src/github.com/argoproj/argo" ]]; then
-    VERSION="dev"
-fi
+# If VERSION=dev we'll assume we're in the checkout code and install that version.
+# If VERSION=latest we'll download the latest stable version.
+# Otherwise we assume it is a branch name.
 
 # Inspired by https://raw.githubusercontent.com/rancher/k3s/master/install.sh
 
-GITHUB_URL=https://github.com/argoproj/argo/releases
+GITHUB_URL=https://github.com/argoproj/argo
 
 info() {
     echo '[INFO] ' "$@"
 }
 
 if [[ ${VERSION} = 'latest' ]]; then
-    VERSION=$(curl -w '%{url_effective}' -I -L -s -S ${GITHUB_URL}/latest -o /dev/null | sed -e 's|.*/||')
+    VERSION=v$(curl -w '%{url_effective}' -I -L -s -S ${GITHUB_URL}/releases/latest -o /dev/null | sed -e 's|.*/||')
 fi
 
 info "Installing $VERSION"
-if [[ ${INSTALL_CLI} -eq 1 ]]; then
-    info "Creating installing CLI"
-    curl -sL -o /usr/local/bin/argo ${GITHUB_URL}/download/v${VERSION}/argo-$(uname | tr '[A-Z]' '[a-z'])-amd64
-    chmod +x /usr/local/bin/argo
+
+if [[ ${VERSION}  != "dev" ]]; then
+    cd $(mktemp -d)
+    curl -sL -o argo-${VERSION}.zip https://github.com/argoproj/argo/archive/${VERSION}.zip
+    unzip -q argo-${VERSION}.zip
+    cd argo-${VERSION}
 fi
 
-info "Creating argo namespace if not exists"
+if [[ ${INSTALL_CLI} -eq 1 ]]; then
+    info "Installing CLI"
+    if [[ ${VERSION} = 'dev' ]]; then
+        make cli
+        cp dist/argo /usr/local/bin/argo
+    else
+        curl -sL -o /usr/local/bin/argo ${GITHUB_URL}/releases/download/${VERSION}/argo-$(uname | tr '[A-Z]' '[a-z'])-amd64
+        chmod +x /usr/local/bin/argo
+    fi
+fi
+
+info "Creating 'argo' namespace"
 kubectl get ns argo || kubectl create ns argo
 
 info "Installing base manifests"
-if [[ ${VERSION} = 'dev' ]]; then
-    kubectl -n argo apply -f manifests/install.yaml
-else
-    kubectl -n argo apply -f https://raw.githubusercontent.com/argoproj/argo/v${VERSION}/manifests/install.yaml
-fi
+kubectl -n argo apply -f manifests/install.yaml
 
-if [[ ${DEFAULT_ADMIN_ROLEBINDING} -eq 1 ]]; then
+if [[ ${INSTALL_DEFAULT_ADMIN_ROLEBINDING} -eq 1 ]]; then
     kubectl -n argo apply -f manifests/extras/default-admin-rolebinding.yaml
 fi
 
@@ -101,7 +110,7 @@ $([[ ${INSTALL_MYSQL} -eq 1 ]] || [[ ${INSTALL_POSTGRES} -eq 1 ]] && cat <<PERSI
         maxIdleConns: 100
         maxOpenConns: 0
       nodeStatusOffLoad: true
-      history: true
+      archive: true
 $([[ ${INSTALL_POSTGRES} -eq 1 ]] && cat <<POSTGRES
       postgresql:
         host: postgres

@@ -13,13 +13,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 	"upper.io/db.v3/postgresql"
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo/util/kubeconfig"
 	"github.com/argoproj/argo/workflow/packer"
 )
 
@@ -36,6 +37,7 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
+	RestConfig *rest.Config
 	wfClient   v1alpha1.WorkflowInterface
 	KubeClient kubernetes.Interface
 }
@@ -48,11 +50,12 @@ func (s *E2ESuite) SetupSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
-	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	var err error
+	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
 		panic(err)
 	}
-	s.KubeClient, err = kubernetes.NewForConfig(config)
+	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +101,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = db.DeleteFrom("argo_workflow_history").Exec()
+	_, err = db.DeleteFrom("argo_archived_workflows").Exec()
 	if err != nil {
 		panic(err)
 	}

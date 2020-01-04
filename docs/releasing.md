@@ -4,47 +4,53 @@
 
 2. Update VERSION with new tag
 
+```bash
+export VERSION=vX.Y.Z
+```
+
 3. Update codegen, manifests with new tag
 
 ```bash
-make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
+make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=$VERSION
 ```
 
 4. Commit VERSION and manifest changes
 
 ```bash
 git add .
-git commit -m "Update version to vX.Y.Z"
+git commit -m "Update version to $VERSION"
 ```
 
-5. git tag the release
+5. Tag the release
 
 ```bash
 git tag vX.Y.Z
 ```
 
-6. Build both the controller and UI release
+6. Build both the release
 
 In argo repo:
+
 ```bash
-make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=vX.Y.Z
+make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=$VERSION
 ```
 
 8. If successful, publish the release:
+
 ```bash
-export ARGO_RELEASE=vX.Y.Z
-docker push argoproj/workflow-controller:${ARGO_RELEASE}
-docker push argoproj/argoexec:${ARGO_RELEASE}
-docker push argoproj/argocli:${ARGO_RELEASE}
-docker push argoproj/argoui:${ARGO_RELEASE}
+docker push argoproj/workflow-controller:${VERSION}
+docker push argoproj/argoexec:${VERSION}
+docker push argoproj/argocli:${VERSION}
+docker push argoproj/argo-server:${VERSION}
 ```
 
 9. Push commits and tags to git. Run the following in the argo repos:
 
-In argo repo:
+In Argo repo:
+
 ```bash
 git push upstream
-git push upstream ${ARGO_RELEASE}
+git push upstream ${VERSION}
 git tag stable
 git push upstream stable
 ```
