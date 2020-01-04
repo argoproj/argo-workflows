@@ -36,7 +36,6 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 	return restConfig, nil
 }
 
-
 // convert the REST config into a bearer token
 func GetBearerToken(in *restclient.Config) (string, error) {
 	if in.ExecProvider != nil {
