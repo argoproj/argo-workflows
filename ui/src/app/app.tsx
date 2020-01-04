@@ -50,6 +50,11 @@ const navItems = [
         iconClassName: 'fa fa-history'
     },
     {
+        title: 'Login',
+        path: loginUrl,
+        iconClassName: 'fa fa-user-circle'
+    },
+    {
         title: 'Help',
         path: helpUrl,
         iconClassName: 'fa fa-question-circle'

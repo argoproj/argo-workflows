@@ -14,21 +14,20 @@ const login = (token: string) => {
     document.location.href = '/workflows';
 };
 export const Login = () => (
-    /* tslint:disable:max-line-length */
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
             <p>
-                Get your config using <code>argo token</code>.
+                Get your config using <code>argo token</code> and paste in this box.
             </p>
             <textarea id='token' cols={100} rows={10} defaultValue={getToken()} />
             <div>
                 {maybeLoggedIn() && (
                     <button className='argo-button argo-button--base-o' onClick={() => logout()}>
-                        Logout
+                        <i className='fa fa-lock' /> Logout
                     </button>
                 )}
                 <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>
-                    Login
+                    <i className='fa fa-lock-open' /> Login
                 </button>
             </div>
         </div>

@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"bufio"
 	"sort"
 
 	log "github.com/sirupsen/logrus"
@@ -133,19 +132,4 @@ func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, 
 	}
 
 	return wf, nil
-}
-
-func (s *kubeService) PodLogs(kubeClient kubernetes.Interface, wfReq *WorkflowLogRequest, log WorkflowService_PodLogsServer) error {
-	stream, err := kubeClient.CoreV1().Pods(wfReq.Namespace).GetLogs(wfReq.PodName, wfReq.LogOptions).Stream()
-
-	if err != nil {
-		return err
-	}
-
-	scanner := bufio.NewScanner(stream)
-	for scanner.Scan() {
-		_ = log.Send(&LogEntry{Content: scanner.Text()})
-	}
-
-	return nil
 }
