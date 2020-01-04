@@ -2,26 +2,20 @@ package e2e
 
 import (
 	"bufio"
-	"encoding/base64"
-	"encoding/json"
-	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jinzhu/copier"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/argoproj/argo/pkg/apis/workflow"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 const baseUrl = "http://localhost:2746"
@@ -33,31 +27,13 @@ type ArgoServerSuite struct {
 	bearerToken string
 }
 
-func getClientConfig() *workflow.ClientConfig {
-	bytes, err := ioutil.ReadFile(filepath.Join("kubeconfig"))
-	if err != nil {
-		panic(err)
-	}
-	config, err := clientcmd.NewClientConfigFromBytes(bytes)
-	if err != nil {
-		panic(err)
-	}
-	restConfig, err := config.ClientConfig()
-	if err != nil {
-		panic(err)
-	}
-	var clientConfig workflow.ClientConfig
-	_ = copier.Copy(&clientConfig, restConfig)
-	return &clientConfig
-}
-
 func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	s.E2ESuite.BeforeTest(suiteName, testName)
-	jsonConfig, err := json.Marshal(getClientConfig())
+	var err error
+	s.bearerToken, err = kubeconfig.GetBearerToken(s.RestConfig)
 	if err != nil {
 		panic(err)
 	}
-	s.bearerToken = base64.StdEncoding.EncodeToString(jsonConfig)
 }
 
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
@@ -253,8 +229,8 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 		WaitForWorkflow(15 * time.Second).
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
-		uid = metadata.UID
-	})
+			uid = metadata.UID
+		})
 
 	s.Run("GetArtifact", func(t *testing.T) {
 		s.e(t).GET("/artifacts/argo/basic/basic/main-logs").

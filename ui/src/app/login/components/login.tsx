@@ -16,56 +16,20 @@ const login = (token: string) => {
 export const Login = () => (
     /* tslint:disable:max-line-length */
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
-        <div className='row'>
-            <div className='columns large-12 medium-12'>
-                <p>Get your config using:</p>
-                <div>
-                    <code>kubectl config view --minify --raw -o json</code>
-                </div>
-                <p>Replace "localhost" or "12.0.0.1" with your hostname and paste below.</p>
-                <p>
-                    <label>Kubeconfig</label>
-                </p>
-                <div>
-                    <textarea
-                        id='kubeconfig'
-                        cols={100}
-                        rows={10}
-                        onChange={event => {
-                            const config = JSON.parse(event.target.value);
-                            const restConfig = JSON.stringify({
-                                host: config.clusters[0].cluster.server,
-                                caData: config.clusters[0].cluster['certificate-authority-data'],
-                                certData: config.users[0].user['client-certificate-data'],
-                                keyData: config.users[0].user['client-key-data']
-                            });
-                            (document.getElementById('restConfig') as HTMLInputElement).value = restConfig;
-                            (document.getElementById('token') as HTMLInputElement).value = btoa(restConfig);
-                        }}
-                    />
-                </div>
-                <p>
-                    <label>REST Config</label>
-                </p>
-                <div>
-                    <textarea id='restConfig' cols={100} rows={5} defaultValue='' />
-                </div>
-                <p>
-                    <label>Bearer Token</label>
-                </p>
-                <div>
-                    <textarea id='token' cols={100} rows={5} defaultValue={getToken()} />
-                </div>
-                <div>
-                    {maybeLoggedIn() && (
-                        <button className='argo-button argo-button--base-o' onClick={() => logout()}>
-                            Logout
-                        </button>
-                    )}
-                    <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>
-                        Login
+        <div className='argo-container'>
+            <p>
+                Get your config using <code>argo token</code>.
+            </p>
+            <textarea id='token' cols={100} rows={10} defaultValue={getToken()} />
+            <div>
+                {maybeLoggedIn() && (
+                    <button className='argo-button argo-button--base-o' onClick={() => logout()}>
+                        Logout
                     </button>
-                </div>
+                )}
+                <button className='argo-button argo-button--base-o' onClick={() => login((document.getElementById('token') as HTMLInputElement).value)}>
+                    Login
+                </button>
             </div>
         </div>
     </Page>

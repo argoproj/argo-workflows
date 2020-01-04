@@ -221,7 +221,7 @@ manifests:
 
 .PHONY: start
 start:
-	env INSTALL_CLI=0 DEFAULT_ADMIN_ROLEBINDING=1 INSTALL_MINIO=1 INSTALL_POSTGRES=1 ./install.sh
+	env INSTALL_CLI=0 INSTALL_POSTGRES=1 VERSION=dev ./install.sh
 	# Scale down in preparation for re-configuration.
 	make down
 	# Change to use a "dev" tag and enable debug logging.
@@ -239,8 +239,6 @@ start:
 	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
-	# Update the config.
-	./hack/update-e2e-kubeconfig.sh
 
 .PHONY: down
 down:
