@@ -13,11 +13,11 @@ commands:
           keys:
             - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
-          name: Ensure dependencies
-          command: make vendor
-      - run:
           name: List dir
           command: ls -lh
+      - run:
+          name: Ensure dependencies
+          command: make vendor
       - save_cache:
           name: Save vendor cache
           key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
