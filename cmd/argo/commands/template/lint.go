@@ -38,8 +38,10 @@ func NewLintCommand() *cobra.Command {
 			if client.ArgoServer != "" {
 				conn := client.GetClientConn()
 				defer conn.Close()
-				ServerSideLint(args, conn, strict)
-
+				err := ServerSideLint(args, conn, strict)
+				if err != nil {
+					log.Fatal(err)
+				}
 			} else {
 				wftmplGetter := &LazyWorkflowTemplateGetter{}
 				validateDir := cmdutil.MustIsDir(args[0])
@@ -86,8 +88,6 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 	grpcClient, ctx := GetWFtmplApiServerGRPCClient(conn)
 	ns, _, _ := client.Config.Namespace()
-	var wfTmpls []v1alpha1.WorkflowTemplate
-	var err error
 
 	if validateDir {
 		if len(args) > 1 {
@@ -104,7 +104,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 			default:
 				return nil
 			}
-			wfTmpls, err = validate.ParseWfTmplFromFile(path, strict)
+			wfTmpls, err := validate.ParseWfTmplFromFile(path, strict)
 			if err != nil {
 				log.Error(err)
 			}
@@ -131,7 +131,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 			}
 		}
 	}
-	return err
+	return nil
 }
 
 func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl v1alpha1.WorkflowTemplate, ns string) error {

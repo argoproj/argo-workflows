@@ -79,7 +79,6 @@ func ParseWfFromFile(filePath string, strict bool) ([]wfv1.Workflow, error) {
 	return workflows, nil
 }
 
-
 func ParseWfTmplFromFile(filePath string, strict bool) ([]wfv1.WorkflowTemplate, error) {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {

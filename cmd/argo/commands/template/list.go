@@ -11,10 +11,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type listFlags struct {
@@ -33,12 +33,12 @@ func NewListCommand() *cobra.Command {
 			var ns string
 			if listArgs.allNamespaces {
 				ns = apiv1.NamespaceAll
-			}else{
-				ns,_,_ =  client.Config.Namespace()
+			} else {
+				ns, _, _ = client.Config.Namespace()
 			}
 			var wftmplList *wfv1.WorkflowTemplateList
 			var err error
-			if client.ArgoServer != ""{
+			if client.ArgoServer != "" {
 				wftmplReq := workflowtemplate.WorkflowTemplateListRequest{
 					Namespace: ns,
 				}
@@ -49,7 +49,7 @@ func NewListCommand() *cobra.Command {
 					log.Fatal(err)
 				}
 
-			}else {
+			} else {
 
 				var wftmplClient v1alpha1.WorkflowTemplateInterface
 				if listArgs.allNamespaces {

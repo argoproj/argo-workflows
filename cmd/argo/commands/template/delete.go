@@ -3,12 +3,14 @@ package template
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+
+	"github.com/argoproj/pkg/errors"
+
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
 	v1alpha12 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/pkg/errors"
-	"log"
-	"os"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,8 +29,8 @@ func NewDeleteCommand() *cobra.Command {
 		Short: "delete a workflow template",
 		Run: func(cmd *cobra.Command, args []string) {
 			if client.ArgoServer != "" {
-				apiServerDeleteWorkflowTemplates(all,args)
-			}else {
+				apiServerDeleteWorkflowTemplates(all, args)
+			} else {
 				wftmplClient := InitWorkflowTemplateClient()
 				if all {
 					deleteWorkflowTemplates(wftmplClient, metav1.ListOptions{})
@@ -49,8 +51,7 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-
-func apiServerDeleteWorkflowTemplates(allWFs bool,  wfTmplNames []string ){
+func apiServerDeleteWorkflowTemplates(allWFs bool, wfTmplNames []string) {
 	conn := client.GetClientConn()
 	defer conn.Close()
 	ns, _, _ := client.Config.Namespace()
@@ -67,23 +68,23 @@ func apiServerDeleteWorkflowTemplates(allWFs bool,  wfTmplNames []string ){
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, wfTmpl := range wftmplList.Items{
+		for _, wfTmpl := range wftmplList.Items {
 			delWFTmplNames = append(delWFTmplNames, wfTmpl.Name)
 		}
 
-	}else{
+	} else {
 		delWFTmplNames = wfTmplNames
 	}
-	for _, wfTmplNames := range delWFTmplNames{
+	for _, wfTmplNames := range delWFTmplNames {
 		apiServerdeleteWorkflowTemplate(wftmplApiClient, ctx, ns, wfTmplNames)
 	}
 
 }
 
-func apiServerdeleteWorkflowTemplate(client workflowtemplate.WorkflowTemplateServiceClient, ctx context.Context, ns, wftmplName string){
+func apiServerdeleteWorkflowTemplate(client workflowtemplate.WorkflowTemplateServiceClient, ctx context.Context, ns, wftmplName string) {
 	wfReq := workflowtemplate.WorkflowTemplateDeleteRequest{
-		TemplateName:         wftmplName,
-		Namespace:            ns,
+		TemplateName: wftmplName,
+		Namespace:    ns,
 	}
 	resp, err := client.DeleteWorkflowTemplate(ctx, &wfReq)
 	if err != nil {
