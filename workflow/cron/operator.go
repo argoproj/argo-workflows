@@ -81,7 +81,7 @@ func getWorkflowObjectReference(wf *v1alpha1.Workflow, runWf *v1alpha1.Workflow)
 func (woc *cronWfOperationCtx) persistUpdate() error {
 	_, err := woc.cronWfIf.Update(woc.cronWf)
 	if err != nil {
-		return fmt.Errorf("failed to update CronWorkflow: %w", err)
+		return fmt.Errorf("failed to update CronWorkflow: %s", err)
 	}
 	return nil
 }

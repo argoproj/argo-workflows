@@ -139,7 +139,7 @@ endif
 
 .PHONY: test
 test:
-	go test -covermode=count -coverprofile=coverage.out ./...
+	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 
 .PHONY: cover
 cover:
