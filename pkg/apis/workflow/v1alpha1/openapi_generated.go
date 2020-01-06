@@ -1694,6 +1694,13 @@ func schema_pkg_apis_workflow_v1alpha1_ResourceTemplate(ref common.ReferenceCall
 							Format:      "",
 						},
 					},
+					"ignoreNotFound": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IgnoreNotFound tells kubectl not to return an error if the resource is not found. It defaults to false",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"action", "manifest"},
 			},

@@ -898,6 +898,10 @@
           "description": "FailureCondition is a label selector expression which describes the conditions of the k8s resource in which the step was considered failed",
           "type": "string"
         },
+        "ignoreNotFound": {
+          "description": "IgnoreNotFound tells kubectl not to return an error if the resource is not found. It defaults to false",
+          "type": "boolean"
+        },
         "manifest": {
           "description": "Manifest contains the kubernetes manifest",
           "type": "string"
@@ -913,10 +917,6 @@
         "successCondition": {
           "description": "SuccessCondition is a label selector expression which describes the conditions of the k8s resource in which it is acceptable to proceed to the following step",
           "type": "string"
-        },
-        "ignoreNotFound": {
-          "description": "IgnoreNotFound tells kubectl not to return an error if the resource is not found. It defaults to false",
-          "type": "boolean"
         }
       }
     },
