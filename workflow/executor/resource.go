@@ -50,7 +50,9 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (st
 		args = append(args, string(buff))
 	}
 
-	if we.Template.Resource.IgnoreNotFound {
+	// We limit this option to commands that will correctly parse the provided flag
+	ignoreNotFound := we.Template.Resource.IgnoreNotFound && (action == "delete" || action == "get")
+	if ignoreNotFound {
 		args = append(args, "--ignore-not-found")
 	}
 
@@ -69,7 +71,7 @@ func (we *WorkflowExecutor) ExecResource(action string, manifestPath string) (st
 	if action == "delete" {
 		return "", "", nil
 	}
-	if we.Template.Resource.IgnoreNotFound && len(out) == 0 {
+	if ignoreNotFound && len(out) == 0 {
 		return "", "", nil
 	}
 	obj := unstructured.Unstructured{}
