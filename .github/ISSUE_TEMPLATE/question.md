@@ -5,6 +5,8 @@ title: ''
 labels: 'question'
 assignees: ''
 ---
+<!-- Also consider asking your question on our Slack channel. See the README for more info! -->
+
 # Summary
 
 What do you want to know about this project?
