@@ -48,9 +48,9 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
     workflow text,
     startedat timestamp,
     finishedat timestamp,
-    primary key (id, namespace)
+	primary key (id, namespace),
+	constraint idx_name unique(name)
 )`,
-		`create unique index if not exists idx_name on ` + cfg.tableName + ` (name)`,
 		`create table if not exists argo_workflow_history (
     id varchar(128) ,
     name varchar(256),
