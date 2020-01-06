@@ -274,7 +274,7 @@ func (we *WorkflowExecutor) SaveResourceParameters(resourceNamespace string, res
 		if param.ValueFrom == nil {
 			continue
 		}
-		if we.Template.Resource.IgnoreNotFound && resourceName == "" {
+		if ignoreNotFound && resourceName == "" {
 			// Resource wasn't found, so we populate result with sentinel value
 			output := "<NOT_FOUND>"
 			we.Template.Outputs.Parameters[i].Value = &output
