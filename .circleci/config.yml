@@ -8,14 +8,13 @@ commands:
       - restore_cache:
           name: Restore vendor cache
           keys:
-            - vendor-v5-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
-            - vendor-v4-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+            - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
           name: Ensure dependencies
           command: make vendor
       - save_cache:
           name: Save vendor cache
-          key: vendor-v5-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
+          key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - vendor
           when: always
@@ -32,7 +31,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v3-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
@@ -42,10 +41,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
-            - go-v3-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v3-master-{{ .Environment.CIRCLE_JOB }}
-            - go-v2-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
-            - go-v2-master-{{ .Environment.CIRCLE_JOB }}
+            - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:
     steps:
       - run:
