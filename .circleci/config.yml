@@ -17,7 +17,8 @@ commands:
           command: ls -lh
       - run:
           name: Ensure dependencies
-          command: make vendor
+          command: |
+            [[ ! -e vendor ]] && make vendor
       - save_cache:
           name: Save vendor cache
           key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
