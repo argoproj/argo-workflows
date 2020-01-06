@@ -910,7 +910,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
+      args: ["cowsay \"{{inputs.parameters.message}}\""]
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
