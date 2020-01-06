@@ -5,20 +5,15 @@ commands:
       - run:
           name: Install Dep v0.5.3
           command: DEP_RELEASE_TAG=v0.5.3 curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-      - run:
-          name: List dir
-          command: ls -lh
       - restore_cache:
           name: Restore vendor cache
           keys:
             - vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
       - run:
-          name: List dir
-          command: ls -lh
-      - run:
           name: Ensure dependencies
           command: |
-            [[ -e vendor ]] || make vendor
+            # dep ensure takes 5m, but is only needed if not cached
+            [[ -e vendor ]] || make vendor && touch vendor
       - save_cache:
           name: Save vendor cache
           key: vendor-v6-{{ checksum "Gopkg.lock" }}-{{ .Environment.CIRCLE_JOB }}
