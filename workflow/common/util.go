@@ -680,7 +680,7 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
 	}
 }
 
-func CastToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
+func ConvertToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
 	newTypeMeta := metav1.TypeMeta{
 		Kind:       workflow.WorkflowKind,
 		APIVersion: cronWf.TypeMeta.APIVersion,
