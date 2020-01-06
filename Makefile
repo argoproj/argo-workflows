@@ -268,7 +268,7 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -v -count 1 -p 1 ./test/e2e
+	go test -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: clean
 clean:

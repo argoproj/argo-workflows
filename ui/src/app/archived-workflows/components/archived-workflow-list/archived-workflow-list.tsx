@@ -16,7 +16,7 @@ export class ArchivedWorkflowList extends React.Component<RouteComponentProps<an
     public render() {
         return (
             <Page
-                title='Archived Workflows'
+                title='rchived Workflows'
                 toolbar={{
                     breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflow')}]
                 }}>
@@ -24,6 +24,7 @@ export class ArchivedWorkflowList extends React.Component<RouteComponentProps<an
                     {(workflows: models.Workflow[]) => (
                         <div className='row'>
                             <div className='columns small-12 xxlarge-2'>
+                                <p><span style={{backgroundColor: 'red', color: 'white'}}> BETA </span></p>
                                 {workflows.length === 0 && (
                                     <div className='white-box'>
                                         <h4>No archived workflows</h4>
@@ -31,7 +32,7 @@ export class ArchivedWorkflowList extends React.Component<RouteComponentProps<an
                                     </div>
                                 )}
                                 <p>
-                                    <i className='fa fa-info-circle' /> Records are created when a workflow completes.
+                                    <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes.
                                 </p>
                                 {workflows.map(workflow => (
                                     <div key={workflow.metadata.uid}>
