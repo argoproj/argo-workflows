@@ -18,3 +18,5 @@ Some use-case specific documentation is available:
 * [Workflow Executors](workflow-executors.md)
 * [Workflow Variables](variables.md)
 * [Service Account](service-accounts.md)
+* [Offloading Large Workflows](offloading-large-workflows.md)
+* [Workflow Archive](workflow-archive.md)
