@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
 	"testing"
@@ -96,7 +95,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// delete all cron workflows
-	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: "argo-e2e"})
 	if err != nil {
 		panic(err)
 	}
