@@ -3,6 +3,7 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
@@ -35,6 +36,7 @@ func init() {
 type E2ESuite struct {
 	suite.Suite
 	client     v1alpha1.WorkflowInterface
+	cronClient v1alpha1.CronWorkflowInterface
 	kubeClient kubernetes.Interface
 }
 
@@ -55,6 +57,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		panic(err)
 	}
 	s.client = commands.InitWorkflowClient()
+	s.cronClient = cron.InitCronWorkflowClient()
 	// delete all workflows
 	list, err := s.client.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -78,6 +81,19 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 			}
 			logCtx.WithField("num", len(pods.Items)).Info("Waiting for workflow pods to go away")
 			time.Sleep(1 * time.Second)
+		}
+	}
+	// delete all cron workflows
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
+		panic(err)
+	}
+	for _, cronWf := range cronList.Items {
+		logCtx := log.WithFields(log.Fields{"test": s.T().Name(), "cron workflow": cronWf.Name})
+		logCtx.Infof("Deleting cron workflow")
+		err = s.cronClient.Delete(cronWf.Name, nil)
+		if err != nil {
+			panic(err)
 		}
 	}
 }
@@ -162,7 +178,8 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:      s.T(),
-		client: s.client,
+		t:          s.T(),
+		client:     s.client,
+		cronClient: s.cronClient,
 	}
 }
