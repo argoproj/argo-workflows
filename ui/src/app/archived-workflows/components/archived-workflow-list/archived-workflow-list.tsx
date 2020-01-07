@@ -13,6 +13,7 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
 interface State {
+    continue: string;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -20,13 +21,13 @@ interface State {
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {continue: ''};
     }
 
     public componentDidMount(): void {
         services.archivedWorkflows
-            .list()
-            .then(workflows => this.setState({workflows}))
+            .list(this.state.continue)
+            .then(list => this.setState({continue: list.metadata.continue, workflows: list.items}))
             .catch(error => this.setState({error}));
     }
 
@@ -110,6 +111,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                 </Link>
                             ))}
                         </div>
+                        <p>
+                            {this.state.continue !== '' && (
+                                <button className='argo-button argo-button--base-o' onClick={() => this.componentDidMount()}>
+                                    <i className='fa fa-chevron-right' /> Continue: {this.state.continue}
+                                </button>
+                            )}
+                        </p>
                         <p>
                             <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.
                         </p>

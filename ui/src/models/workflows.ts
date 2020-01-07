@@ -749,6 +749,10 @@ export interface WorkflowStatus {
     storedTemplates: {[name: string]: Template};
 }
 
+interface ListMeta {
+    continue?: string;
+}
+
 /**
  * WorkflowList is list of Workflow resources
  */
@@ -764,7 +768,7 @@ export interface WorkflowList {
      * Servers may infer this from the endpoint the client submits requests to.
      */
     kind?: string;
-    metadata: kubernetes.ListMeta;
+    metadata: ListMeta;
 }
 
 /**

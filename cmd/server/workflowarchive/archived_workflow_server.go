@@ -33,15 +33,20 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		options.Continue = "0"
 	}
 	limit := int(options.Limit)
+	if limit == 0 {
+		limit = 10
+	}
 	offset, err := strconv.Atoi(options.Continue)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
+	if offset < 0 {
+		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
+	}
 	items := make(wfv1.Workflows, 0)
 	authorizer := auth.NewAuthorizer(ctx)
-	// keep trying until we have enough items
-	unlimited := limit == 0
-	for len(items) < limit || unlimited {
+	// keep trying until we have enough
+	for len(items) < limit {
 		moreItems, err := w.repo.ListWorkflows(req.Namespace, limit, offset)
 		if err != nil {
 			return nil, err
@@ -55,7 +60,7 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 				items = append(items, wf)
 			}
 		}
-		if len(moreItems) < limit || unlimited {
+		if len(moreItems) < limit {
 			break
 		}
 		offset = offset + limit
