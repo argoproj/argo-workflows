@@ -50,11 +50,13 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.templates === undefined) {
             return <MockupList />;
         }
+        const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-templates.md'>Learn more</a>;
         if (this.state.templates.length === 0) {
             return (
                 <div className='white-box'>
                     <h4>No workflow templates</h4>
                     <p>You can create new templates using the CLI.</p>
+                    <p>{learnMore}.</p>
                 </div>
             );
         }
@@ -93,6 +95,9 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         ))}
                     </div>
                 )}
+                <p>
+                    <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
+                </p>
             </>
         );
     }

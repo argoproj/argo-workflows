@@ -1,4 +1,6 @@
-# Quick Start)
+# Quick Start
+
+If you want more detailed instructions try the [getting started guide](getting-started.md).
 
 ## Requirements
 
@@ -9,7 +11,7 @@
 Run the following to download and install Argo into the "argo" namespace:
 
 ```
-curl -sfL http://bit.ly/get-argo | sh -
+curl -sfL https://github.com/argoproj/argo/blob/master/install.sh | sh -
 ```
 
 To access the UI, set-up a port-forward

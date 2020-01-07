@@ -51,11 +51,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.workflows === undefined) {
             return <MockupList height={150} marginTop={30} />;
         }
+        const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-archive.md'>Learn more</a>;
         if (this.state.workflows.length === 0) {
             return (
                 <div className='white-box'>
                     <h4>No archived workflows</h4>
-                    <p>To record entries you must enabled archiving in configuration.</p>
+                    <p>To add entries to the archive you must enabled archiving in configuration. Records are the created in the archive on workflow completion </p>
+                    <p>{learnMore}.</p>
                 </div>
             );
         }
@@ -87,7 +89,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             </div>
                         ))}
                         <p>
-                            <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes.
+                            <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.
                         </p>
                     </>
                 )}

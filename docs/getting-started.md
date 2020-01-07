@@ -4,6 +4,8 @@ To see how Argo works, you can run examples of simple workflows and workflows th
 For the latter, you'll set up an artifact repository for storing the artifacts that are passed in
 the workflows. Here are the requirements and steps to run the workflows.
 
+Alternatively, you might like the [quick start](quick-start.md).
+
 ## 0. Requirements
 * Kubernetes 1.9 or later
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)

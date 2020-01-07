@@ -103,7 +103,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             )
             .catch(e => {
                 this.appContext.apis.notifications.show({
-                    content: 'Failed to submit workflow template ' + e,
+                    content: 'Failed to submit template ' + e,
                     type: NotificationType.Error
                 });
             })
