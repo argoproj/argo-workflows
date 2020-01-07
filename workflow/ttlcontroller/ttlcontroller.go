@@ -199,16 +199,24 @@ func (c *Controller) deleteWorkflow(key string) error {
 
 func (c *Controller) ttlExpired(wf *wfv1.Workflow) bool {
 	// We don't care about the Workflows that are going to be deleted, or the ones that don't need clean up.
-	if wf.DeletionTimestamp != nil || wf.Spec.TTLSecondsAfterFinished == nil || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return false
 	}
 	now := c.clock.Now()
-	expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLSecondsAfterFinished))
-	return now.After(expiry)
+	if wf.Status.Failed() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterFailed != nil {
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailed))
+		return now.After(expiry)
+	} else if wf.Status.Successful() && wf.Spec.TTLStrategy != nil && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess))
+		return now.After(expiry)
+	} else {
+		expiry := wf.Status.FinishedAt.Add(time.Second * time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompleted))
+		return now.After(expiry)
+	}
 }
 
 func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) {
-	if wf.DeletionTimestamp != nil || wf.Spec.TTLSecondsAfterFinished == nil || wf.Status.FinishedAt.IsZero() {
+	if wf.DeletionTimestamp != nil || wf.Spec.TTLStrategy == nil || wf.Status.FinishedAt.IsZero() {
 		return nil, nil
 	}
 	sinceUTC := since.UTC()
@@ -216,7 +224,19 @@ func timeLeft(wf *wfv1.Workflow, since *time.Time) (*time.Duration, *time.Time) 
 	if finishAtUTC.After(sinceUTC) {
 		log.Infof("Warning: Found Workflow %s/%s finished in the future. This is likely due to time skew in the cluster. Workflow cleanup will be deferred.", wf.Namespace, wf.Name)
 	}
-	expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLSecondsAfterFinished) * time.Second)
-	remaining := expireAtUTC.Sub(sinceUTC)
-	return &remaining, &expireAtUTC
+	if wf.Status.Failed() && wf.Spec.TTLStrategy.SecondsAfterFailed != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterFailed) * time.Second)
+		remaining := expireAtUTC.Sub(sinceUTC)
+		return &remaining, &expireAtUTC
+	} else if wf.Status.Successful() && wf.Spec.TTLStrategy.SecondsAfterSuccess != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterSuccess) * time.Second)
+		remaining := expireAtUTC.Sub(sinceUTC)
+		return &remaining, &expireAtUTC
+	} else if wf.Spec.TTLStrategy.SecondsAfterCompleted != nil {
+		expireAtUTC := finishAtUTC.Add(time.Duration(*wf.Spec.TTLStrategy.SecondsAfterCompleted) * time.Second)
+		remaining := expireAtUTC.Sub(sinceUTC)
+		return &remaining, &expireAtUTC
+	} else {
+		return nil, nil
+	}
 }
