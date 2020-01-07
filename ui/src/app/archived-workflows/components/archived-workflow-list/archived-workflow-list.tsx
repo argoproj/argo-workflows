@@ -5,6 +5,7 @@ import {Link, RouteComponentProps} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
 import {WorkflowListItem} from '../../../workflows/components';
 
@@ -59,17 +60,19 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             );
         }
 
-        const workflows = this.state.workflows.filter(workflow => workflow.metadata.name.indexOf(this.search) >= 0);
+        const filter = searchToMetadataFilter(this.search);
+        const workflows = this.state.workflows.filter(w => filter(w.metadata));
         return (
             <>
                 <p>
                     <i className='fa fa-search' />
                     <input
-                        className={'argo-field'}
+                        className='argo-field'
                         defaultValue={this.search}
                         onChange={e => {
                             this.search = e.target.value;
                         }}
+                        placeholder='e.g. name:hello-world namespace:argo'
                     />
                 </p>
                 {workflows.length === 0 ? (

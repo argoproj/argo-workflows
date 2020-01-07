@@ -174,7 +174,7 @@ dist/executor-base-image:
 # NOTE: have to output ouside of dist directory since dist is under .dockerignore
 .PHONY: executor-image
 ifeq ($(DEV_IMAGE), true)
-executor-image: executor-base-image
+executor-image: dist/executor-base-image
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
 	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec

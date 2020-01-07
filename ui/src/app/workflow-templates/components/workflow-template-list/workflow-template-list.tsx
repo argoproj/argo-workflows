@@ -5,6 +5,7 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
 
 require('./workflow-template-list.scss');
@@ -57,7 +58,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
             );
         }
-        const templates = this.state.templates.filter(tmpl => tmpl.metadata.name.indexOf(this.search) >= 0);
+        const filter = searchToMetadataFilter(this.search);
+        const templates = this.state.templates.filter(tmpl => filter(tmpl.metadata));
         return (
             <>
                 <p>
@@ -68,6 +70,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                         onChange={e => {
                             this.search = e.target.value;
                         }}
+                        placeholder='e.g. name:hello-world namespace:argo'
                     />
                 </p>
                 {templates.length === 0 ? (

@@ -47,7 +47,7 @@ const navItems = [
     {
         title: 'Archived Workflows',
         path: archivedWorkflowUrl,
-        iconClassName: 'fa fa-history'
+        iconClassName: 'fa fa-archive'
     },
     {
         title: 'Login',

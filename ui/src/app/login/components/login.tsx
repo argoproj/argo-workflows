@@ -11,7 +11,7 @@ const logout = () => {
 };
 const login = (token: string) => {
     localStorage.setItem('token', token);
-    document.location.href = '/workflows';
+    document.location.href = '/';
 };
 export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
@@ -20,7 +20,7 @@ export const Login = () => (
                 <i className='fa fa-info-circle' /> You appear to be logged {maybeLoggedIn() ? 'in' : 'out'}.
             </p>
             <p>
-                Get your config using <code>argo token</code> and paste in this box.
+                Get your token using <code>argo token</code> and paste in this box.
             </p>
             <textarea id='token' cols={100} rows={20} defaultValue={getToken()} />
             <div>
