@@ -21,7 +21,6 @@ type CronSuite struct {
 }
 
 func (s *CronSuite) TestBasic() {
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/basic.yaml").
 		When().
@@ -34,7 +33,6 @@ func (s *CronSuite) TestBasic() {
 }
 
 func (s *CronSuite) TestBasicForbid() {
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/basic-forbid.yaml").
 		When().
@@ -48,7 +46,6 @@ func (s *CronSuite) TestBasicForbid() {
 }
 
 func (s *CronSuite) TestBasicAllow() {
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/basic-allow.yaml").
 		When().
@@ -61,7 +58,6 @@ func (s *CronSuite) TestBasicAllow() {
 }
 
 func (s *CronSuite) TestBasicReplace() {
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/basic-replace.yaml").
 		When().
@@ -77,7 +73,6 @@ func (s *CronSuite) TestBasicReplace() {
 func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-succeed-1")
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-succeed-1.yaml").
 		When().
@@ -93,7 +88,6 @@ func (s *CronSuite) TestSuccessfulJobHistoryLimit() {
 func (s *CronSuite) TestFailedJobHistoryLimit() {
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-1")
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-fail-1.yaml").
 		When().
@@ -109,7 +103,6 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 func (s *CronSuite) TestFailedJobHistoryLimitConcurrent() {
 	var listOptions v1.ListOptions
 	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-2")
-	s.T().Parallel()
 	s.Given().
 		CronWorkflow("@testdata/always-fail-2.yaml").
 		When().
