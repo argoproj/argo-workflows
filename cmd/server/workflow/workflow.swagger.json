@@ -5,10 +5,6 @@
     "description": "Workflow Service API performs CRUD actions against application resources",
     "version": "version not set"
   },
-  "schemes": [
-    "http",
-    "https"
-  ],
   "consumes": [
     "application/json"
   ],
@@ -3902,6 +3898,24 @@
       },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
     },
+    "v1alpha1TTLStrategy": {
+      "type": "object",
+      "properties": {
+        "secondsAfterCompleted": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterSuccess": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailed": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
+    },
     "v1alpha1TarStrategy": {
       "type": "object",
       "title": "TarStrategy will tar and gzip the file or directory when saving"
@@ -4259,7 +4273,11 @@
         "ttlSecondsAfterFinished": {
           "type": "integer",
           "format": "int32",
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes."
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead."
+        },
+        "ttlStrategy": {
+          "$ref": "#/definitions/v1alpha1TTLStrategy",
+          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
         },
         "activeDeadlineSeconds": {
           "type": "string",

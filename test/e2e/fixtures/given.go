@@ -12,9 +12,11 @@ import (
 )
 
 type Given struct {
-	t      *testing.T
-	client v1alpha1.WorkflowInterface
-	wf     *wfv1.Workflow
+	t          *testing.T
+	client     v1alpha1.WorkflowInterface
+	cronClient v1alpha1.CronWorkflowInterface
+	wf         *wfv1.Workflow
+	cronWf     *wfv1.CronWorkflow
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -54,10 +56,51 @@ func (g *Given) Workflow(text string) *Given {
 	}
 	return g
 }
+
+func (g *Given) CronWorkflow(text string) *Given {
+	var file string
+	if strings.HasPrefix(text, "@") {
+		file = strings.TrimPrefix(text, "@")
+	} else {
+		f, err := ioutil.TempFile("", "argo_e2e")
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		_, err = f.Write([]byte(text))
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		err = f.Close()
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		file = f.Name()
+	}
+	// read the file in
+	{
+		file, err := ioutil.ReadFile(file)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		g.cronWf = &wfv1.CronWorkflow{}
+		err = yaml.Unmarshal(file, g.cronWf)
+		if err != nil {
+			g.t.Fatal(err)
+		}
+		if g.cronWf.GetLabels() == nil {
+			g.cronWf.SetLabels(map[string]string{})
+		}
+		g.cronWf.GetLabels()[label] = "true"
+	}
+	return g
+}
+
 func (g *Given) When() *When {
 	return &When{
-		t:      g.t,
-		wf:     g.wf,
-		client: g.client,
+		t:          g.t,
+		wf:         g.wf,
+		cronWf:     g.cronWf,
+		client:     g.client,
+		cronClient: g.cronClient,
 	}
 }

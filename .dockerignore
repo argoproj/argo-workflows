@@ -8,3 +8,4 @@ cmd
 dist
 ui
 vendor
+ui/node_modules

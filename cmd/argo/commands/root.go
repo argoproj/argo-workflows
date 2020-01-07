@@ -2,6 +2,8 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
+	"os"
 
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/client"
@@ -42,7 +44,9 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(archive.NewArchiveCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
+	command.AddCommand(cron.NewCronWorkflowCommand())
 	client.AddKubectlFlagsToCmd(command)
 	client.AddArgoServerFlagsToCmd(command)
+	addKubectlFlagsToCmd(command)
 	return command
 }
