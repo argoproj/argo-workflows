@@ -215,42 +215,42 @@ type WorkflowSpec struct {
 	// deleted after the time to live expires. If this field is unset,
 	// the controller config map will hold the default values
 	// Update
-	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,19,opt,name=ttlStrategy"`
+	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,28,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
 	// terminate a Running workflow
-	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,20,opt,name=activeDeadlineSeconds"`
+	ActiveDeadlineSeconds *int64 `json:"activeDeadlineSeconds,omitempty" protobuf:"bytes,19,opt,name=activeDeadlineSeconds"`
 
 	// Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first.
-	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,21,opt,name=priority"`
+	Priority *int32 `json:"priority,omitempty" protobuf:"bytes,20,opt,name=priority"`
 
 	// Set scheduler name for all pods.
 	// Will be overridden if container/script template's scheduler name is set.
 	// Default scheduler will be used if neither specified.
 	// +optional
-	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,22,opt,name=schedulerName"`
+	SchedulerName string `json:"schedulerName,omitempty" protobuf:"bytes,21,opt,name=schedulerName"`
 
 	// PodGC describes the strategy to use when to deleting completed pods
-	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,23,opt,name=podGC"`
+	PodGC *PodGC `json:"podGC,omitempty" protobuf:"bytes,22,opt,name=podGC"`
 
 	// PriorityClassName to apply to workflow pods.
-	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,24,opt,name=podPriorityClassName"`
+	PodPriorityClassName string `json:"podPriorityClassName,omitempty" protobuf:"bytes,23,opt,name=podPriorityClassName"`
 
 	// Priority to apply to workflow pods.
-	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,25,opt,name=podPriority"`
+	PodPriority *int32 `json:"podPriority,omitempty" protobuf:"bytes,24,opt,name=podPriority"`
 
 	// +patchStrategy=merge
 	// +patchMergeKey=ip
-	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,26,opt,name=hostAliases"`
+	HostAliases []apiv1.HostAlias `json:"hostAliases,omitempty" patchStrategy:"merge" patchMergeKey:"ip" protobuf:"bytes,25,opt,name=hostAliases"`
 
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optiona
-	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,27,opt,name=securityContext"`
+	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,26,opt,name=securityContext"`
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
 	// container fields which are not strings (e.g. resource limits).
-	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,28,opt,name=podSpecPatch"`
+	PodSpecPatch string `json:"podSpecPatch,omitempty" protobuf:"bytes,27,opt,name=podSpecPatch"`
 }
 
 type ParallelSteps struct {
