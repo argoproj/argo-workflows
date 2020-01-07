@@ -22,6 +22,10 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryAuth":       schema_pkg_apis_workflow_v1alpha1_ArtifactoryAuth(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Backoff":               schema_pkg_apis_workflow_v1alpha1_Backoff(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn":            schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow":          schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowList":      schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec":      schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus":    schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTask":               schema_pkg_apis_workflow_v1alpha1_DAGTask(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.DAGTemplate":           schema_pkg_apis_workflow_v1alpha1_DAGTemplate(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ExecutorConfig":        schema_pkg_apis_workflow_v1alpha1_ExecutorConfig(ref),
@@ -446,6 +450,194 @@ func schema_pkg_apis_workflow_v1alpha1_ContinueOn(ref common.ReferenceCallback) 
 				},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CronWorkflow(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CronWorkflow is the definition of a scheduled workflow resource",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus"),
+						},
+					},
+				},
+				Required: []string{"spec", "status"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowSpec", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflowStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CronWorkflowList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "CronWorkflowList is list of CronWorkflow resources",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"metadata", "items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.CronWorkflow", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"workflowSpec": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkflowSpec is the spec of the workflow to be run",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"),
+						},
+					},
+					"schedule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Schedule is a schedule to run the Workflow in Cron format",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"concurrencyPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"suspend": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Suspend is a flag that will stop new CronWorkflows from running if set to true",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"startingDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
+					"successfulJobsHistoryLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"failedJobsHistoryLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"schedule"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.WorkflowSpec"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_CronWorkflowStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"active": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Active is a list of active workflows stemming from this CronWorkflow",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("k8s.io/api/core/v1.ObjectReference"),
+									},
+								},
+							},
+						},
+					},
+					"lastScheduledTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastScheduleTime is the last time the CronWorkflow was scheduled",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

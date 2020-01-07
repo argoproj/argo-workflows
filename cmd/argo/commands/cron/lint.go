@@ -1,4 +1,4 @@
-package commands
+package cron
 
 import (
 	"fmt"
@@ -17,14 +17,18 @@ func NewLintCommand() *cobra.Command {
 	)
 	var command = &cobra.Command{
 		Use:   "lint (DIRECTORY | FILE1 FILE2 FILE3...)",
-		Short: "validate a file or directory of workflow manifests",
+		Short: "validate a file or directory of cron workflow manifests",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
 
-			var err error
+			namespace, _, err := clientConfig.Namespace()
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			wftmplGetter := &LazyWorkflowTemplateGetter{}
 			validateDir := cmdutil.MustIsDir(args[0])
 			if validateDir {
@@ -32,8 +36,8 @@ func NewLintCommand() *cobra.Command {
 					fmt.Printf("Validation of a single directory supported")
 					os.Exit(1)
 				}
-				fmt.Printf("Verifying all workflow manifests in directory: %s\n", args[0])
-				err = validate.LintWorkflowDir(wftmplGetter, args[0], strict)
+				fmt.Printf("Verifying all cron workflow manifests in directory: %s\n", args[0])
+				err = validate.LintCronWorkflowDir(wftmplGetter, namespace, args[0], strict)
 			} else {
 				yamlFiles := make([]string, 0)
 				for _, filePath := range args {
@@ -44,7 +48,7 @@ func NewLintCommand() *cobra.Command {
 					yamlFiles = append(yamlFiles, filePath)
 				}
 				for _, yamlFile := range yamlFiles {
-					err = validate.LintWorkflowFile(wftmplGetter, yamlFile, strict)
+					err = validate.LintCronWorkflowFile(wftmplGetter, namespace, yamlFile, strict)
 					if err != nil {
 						break
 					}
@@ -53,7 +57,7 @@ func NewLintCommand() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Workflow manifests validated\n")
+			fmt.Printf("CronWorkflow manifests validated\n")
 		},
 	}
 	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
