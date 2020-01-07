@@ -8,23 +8,10 @@ import {MonacoEditor} from '../monaco-editor';
 
 require('./yaml-editor.scss');
 
-const placeholderWorkflow: string = `apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
-  generateName: hello-world-
-spec:
-  entrypoint: whalesay
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`;
-
 export class YamlEditor<T> extends React.Component<
     {
         input?: T;
+        placeHolder?: string;
         hideModeButtons?: boolean;
         initialEditMode?: boolean;
         onSave: (wf: string) => void;
@@ -45,7 +32,7 @@ export class YamlEditor<T> extends React.Component<
 
     public render() {
         const props = this.props;
-        const yaml = props.input ? jsYaml.safeDump(props.input) : placeholderWorkflow;
+        const yaml = props.input ? jsYaml.safeDump(props.input) : props.placeHolder;
 
         return (
             <div className='yaml-editor'>

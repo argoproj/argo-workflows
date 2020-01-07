@@ -60,7 +60,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                     breadcrumbs: [
                         {
                             title: 'Workflow Template',
-                            path: uiUrl('/workflow-templates')
+                            path: uiUrl('workflow-templates')
                         },
                         {title: this.namespace + '/' + this.name}
                     ]

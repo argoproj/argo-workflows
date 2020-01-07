@@ -12,16 +12,23 @@ import {services} from '../../../shared/services';
 import {WorkflowListItem} from '..';
 import {Query} from '../../../shared/components/query';
 import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
+import { Utils } from '../../../shared/utils';
 
 require('./workflows-list.scss');
 
-function tryJsonParse(input: string) {
-    try {
-        return (input && JSON.parse(input)) || null;
-    } catch {
-        return null;
-    }
-}
+const placeholderWorkflow: string = `apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`;
 
 export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
     public static contextTypes = {
@@ -35,7 +42,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
 
     private get wfInput() {
         const query = new URLSearchParams(this.props.location.search);
-        return tryJsonParse(query.get('new'));
+        return Utils.tryJsonParse(query.get('new'));
     }
 
     public render() {
@@ -180,6 +187,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
+                                placeHolder={placeholderWorkflow}
                                 onSave={rawWf => {
                                     // TODO(simon): Remove hardwired 'argo' namespace
                                     return services.workflows

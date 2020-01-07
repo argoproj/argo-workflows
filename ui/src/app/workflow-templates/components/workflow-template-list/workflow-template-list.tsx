@@ -1,4 +1,4 @@
-import {Page} from 'argo-ui';
+import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -8,8 +8,24 @@ import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
+import {Consumer} from '../../../shared/context';
+import {YamlEditor} from "../../../shared/components/yaml-editor/yaml-editor";
+import { Utils } from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
+
+const placeholderWorkflowTemplate: string = `apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  generateName: hello-world
+spec:
+  templates:
+  - name: whalesay
+    container:
+      image: docker/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]
+`;
 
 interface State {
     templates?: models.WorkflowTemplate[];
@@ -19,6 +35,11 @@ interface State {
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get search() {
         return this.queryParam('search') || '';
+    }
+
+    private get wfInput() {
+        const query = new URLSearchParams(this.props.location.search);
+        return Utils.tryJsonParse(query.get('new'));
     }
 
     private set search(search) {
@@ -42,13 +63,42 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
             throw this.state.error;
         }
         return (
-            <Page
-                title='Workflow Templates'
-                toolbar={{
-                    breadcrumbs: [{title: 'Workflow Templates', path: uiUrl('workflow-templates')}]
-                }}>
-                <div className='argo-container'>{this.renderTemplates()}</div>
-            </Page>
+            <Consumer>
+                {ctx => (
+                    <Page
+                        title='Workflow Templates'
+                        toolbar={{
+                            breadcrumbs: [{title: 'Workflow Templates', path: uiUrl('workflow-templates')}],
+                            actionMenu: {
+                                items: [
+                                    {
+                                        title: 'Create New Workflow Template',
+                                        iconClassName: 'fa fa-plus',
+                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                    }
+                                ]
+                            }
+                        }}>
+                        <div className='argo-container'>{this.renderTemplates()}</div>
+                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
+                            Create Workflow Template
+                            <YamlEditor
+                                minHeight={800}
+                                initialEditMode={true}
+                                submitMode={true}
+                                placeHolder={placeholderWorkflowTemplate}
+                                onSave={rawWf => {
+                                    // TODO(simon): Remove hardwired 'argo' namespace
+                                    return services.workflowTemplate
+                                        .create(JSON.parse(rawWf), 'argo')
+                                        .then()
+                                        .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                }}
+                            />
+                        </SlidingPanel>
+                    </Page>
+                )}
+            </Consumer>
         );
     }
 
@@ -62,7 +112,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
             return (
                 <div className='white-box'>
                     <h4>No workflow templates</h4>
-                    <p>You can create new templates using the CLI.</p>
+                    <p>You can create new templates here or using the CLI.</p>
                     <p>{learnMore}.</p>
                 </div>
             );
