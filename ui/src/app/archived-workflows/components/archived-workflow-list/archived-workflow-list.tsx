@@ -13,30 +13,27 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
 interface State {
+    namespace: string;
     continue: string;
     workflows?: Workflow[];
     error?: Error;
 }
 
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
-    constructor(props: RouteComponentProps<any>, context: any) {
-        super(props, context);
-        this.state = {continue: ''};
-    }
-
-    public componentDidMount(): void {
-        services.archivedWorkflows
-            .list(this.state.continue)
-            .then(list => this.setState({continue: list.metadata.continue, workflows: list.items}))
-            .catch(error => this.setState({error}));
-    }
-
     private get search() {
         return this.queryParam('search') || '';
     }
 
     private set search(search) {
         this.setQueryParams({search});
+    }
+    constructor(props: RouteComponentProps<any>, context: any) {
+        super(props, context);
+        this.state = {namespace: '', continue: ''};
+    }
+
+    public componentDidMount(): void {
+        this.loadArchivedWorkflows();
     }
 
     public render() {
@@ -55,6 +52,13 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
             </Page>
         );
+    }
+
+    private loadArchivedWorkflows() {
+        services.archivedWorkflows
+            .list(this.state.namespace, this.state.continue)
+            .then(list => this.setState({continue: list.metadata.continue, workflows: list.items}))
+            .catch(error => this.setState({error}));
     }
 
     private renderWorkflows() {
@@ -113,8 +117,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         </div>
                         <p>
                             {this.state.continue !== '' && (
-                                <button className='argo-button argo-button--base-o' onClick={() => this.componentDidMount()}>
-                                    <i className='fa fa-chevron-right' /> Continue: {this.state.continue}
+                                <button className='argo-button argo-button--base-o' onClick={() => this.loadArchivedWorkflows()}>
+                                    Continue: {this.state.continue} <i className='fa fa-chevron-right' />
                                 </button>
                             )}
                         </p>

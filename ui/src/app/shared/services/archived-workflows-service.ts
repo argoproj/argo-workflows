@@ -2,8 +2,8 @@ import * as models from '../../../models';
 import requests from './requests';
 
 export class ArchivedWorkflowsService {
-    public list(continueArg: string) {
-        return requests.get(`api/v1/archived-workflows/?listOptions.continue=${continueArg}`).then(res => res.body as models.WorkflowList);
+    public list(namespace: string, continueArg: string) {
+        return requests.get(`api/v1/archived-workflows/${namespace}?listOptions.continue=${continueArg}`).then(res => res.body as models.WorkflowList);
     }
 
     public get(namespace: string, uid: string): Promise<models.Workflow> {
