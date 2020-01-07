@@ -2,8 +2,33 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  name: cronworkflows.argoproj.io
+spec:
+  group: argoproj.io
+  names:
+    kind: CronWorkflow
+    plural: cronworkflows
+    shortNames:
+    - cronwf
+    - cwf
+  scope: Namespaced
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
   name: workflows.argoproj.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.phase
+    description: Status of the workflow
+    name: Status
+    type: string
+  - JSONPath: .status.startedAt
+    description: When the workflow was started
+    format: date-time
+    name: Age
+    type: date
   group: argoproj.io
   names:
     kind: Workflow
@@ -63,6 +88,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete
@@ -87,6 +114,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - create
   - delete
@@ -111,6 +140,8 @@ rules:
   - workflows/finalizers
   - workflowtemplates
   - workflowtemplates/finalizers
+  - cronworkflows
+  - cronworkflows/finalizers
   verbs:
   - get
   - list
@@ -161,6 +192,7 @@ rules:
   - update
   - patch
   - delete
+  - create
 - apiGroups:
   - argoproj.io
   resources:
@@ -177,6 +209,18 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - argoproj.io
+  resources:
+  - cronworkflows
+  - cronworkflows/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -204,6 +248,7 @@ rules:
   resources:
   - workflows
   - workflowtemplates
+  - cronworkflows
   verbs:
   - get
   - list

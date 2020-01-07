@@ -60,6 +60,6 @@ func NewLintCommand() *cobra.Command {
 			fmt.Printf("Workflow manifests validated\n")
 		},
 	}
-	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validatation")
+	command.Flags().BoolVar(&strict, "strict", true, "perform strict workflow validation")
 	return command
 }
