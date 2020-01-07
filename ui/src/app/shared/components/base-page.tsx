@@ -9,12 +9,12 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
         apis: PropTypes.object
     };
 
-    public getParam(name: string) {
+    public queryParam(name: string) {
         return new URLSearchParams(this.appContext.router.route.location.search).get(name);
     }
 
     // this allows us to set-multiple parameters at once
-    public setParams(newParams: any) {
+    public setQueryParams(newParams: any) {
         const params = new URLSearchParams(this.appContext.router.route.location.search);
         Object.keys(newParams).forEach(name => {
             const value = newParams[name];
@@ -27,7 +27,7 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
     }
 
-    get appContext() {
+    protected get appContext() {
         return this.context as AppContext;
     }
 }

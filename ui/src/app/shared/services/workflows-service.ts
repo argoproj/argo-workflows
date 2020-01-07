@@ -127,7 +127,7 @@ export class WorkflowsService {
     }
 
     private populateDefaultFields(workflow: models.Workflow): models.Workflow {
-        workflow = {status: {nodes: {}}, ...workflow};
+        workflow = {status: {nodes: {}}, ...workflow} as models.Workflow;
         workflow.status.nodes = workflow.status.nodes || {};
         return workflow;
     }

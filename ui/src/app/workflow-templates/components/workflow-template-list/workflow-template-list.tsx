@@ -15,16 +15,13 @@ interface State {
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get search() {
-        return this.getParam('search') || '';
+        return this.queryParam('search') || '';
     }
 
     private set search(search) {
-        this.setParams({search});
+        this.setQueryParams({search});
     }
 
-    private get templates() {
-        return this.state.templates.filter(tmpl => tmpl.metadata.name.indexOf(this.search) >= 0);
-    }
     constructor(props: any) {
         super(props);
         this.state = {};
@@ -43,17 +40,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                 toolbar={{
                     breadcrumbs: [{title: 'Workflow Templates', path: uiUrl('workflow-templates')}]
                 }}>
-                <div className='argo-container'>
-                    <i className='fa fa-search' />
-                    <input
-                        className={'argo-field'}
-                        defaultValue={this.search}
-                        onChange={e => {
-                            this.search = e.target.value;
-                        }}
-                    />
-                    {this.renderTemplates()}
-                </div>
+                <div className='argo-container'>{this.renderTemplates()}</div>
             </Page>
         );
     }
@@ -62,27 +49,48 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         if (this.state.templates === undefined) {
             return <MockupList />;
         }
-        const templates = this.templates;
-        if (templates.length === 0) {
-            return <p>No workflow templates</p>;
-        }
-        return (
-            <div className={'argo-table-list'}>
-                <div className='row argo-table-list__head'>
-                    <div className='columns small-4'>NAME</div>
-                    <div className='columns small-4'>NAMESPACE</div>
-                    <div className='columns small-4'>CREATED</div>
+        if (this.state.templates.length === 0) {
+            return (
+                <div className='white-box'>
+                    <h4>No workflow templates</h4>
+                    <p>You can create new templates using the CLI.</p>
                 </div>
-                {templates.map(t => (
-                    <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                        <div className='columns small-4'>{t.metadata.name}</div>
-                        <div className='columns small-4'>{t.metadata.namespace}</div>
-                        <div className='columns small-4'>
-                            <Timestamp date={t.metadata.creationTimestamp} />
+            );
+        }
+        const templates = this.state.templates.filter(tmpl => tmpl.metadata.name.indexOf(this.search) >= 0);
+        return (
+            <>
+                <p>
+                    <i className='fa fa-search' />
+                    <input
+                        className='argo-field'
+                        defaultValue={this.search}
+                        onChange={e => {
+                            this.search = e.target.value;
+                        }}
+                    />
+                </p>
+                {templates.length === 0 ? (
+                    <p>No workflow templates found</p>
+                ) : (
+                    <div className={'argo-table-list'}>
+                        <div className='row argo-table-list__head'>
+                            <div className='columns small-4'>NAME</div>
+                            <div className='columns small-4'>NAMESPACE</div>
+                            <div className='columns small-4'>CREATED</div>
                         </div>
-                    </Link>
-                ))}
-            </div>
+                        {templates.map(t => (
+                            <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
+                                <div className='columns small-4'>{t.metadata.name}</div>
+                                <div className='columns small-4'>{t.metadata.namespace}</div>
+                                <div className='columns small-4'>
+                                    <Timestamp date={t.metadata.creationTimestamp} />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </>
         );
     }
 }

@@ -216,6 +216,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     }
 
     private deleteWorkflow(ctx: ContextApis) {
+        if (!confirm('Are you sure you want to delete this workflow?\nThere is no undo.')) {
+            return;
+        }
         services.workflows
             .delete(this.props.match.params.name, this.props.match.params.namespace)
             .then(wfDeleteRes => ctx.navigation.goto(`/workflows/`))
@@ -228,6 +231,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     }
 
     private terminateWorkflow(ctx: ContextApis) {
+        if (!confirm('Are you sure you want to terminate this workflow?')) {
+            return;
+        }
         services.workflows
             .terminate(this.props.match.params.name, this.props.match.params.namespace)
             .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
@@ -264,6 +270,9 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     }
 
     private resubmitWorkflow(ctx: ContextApis) {
+        if (!confirm('Are you sure you want to re-submit this workflow?')) {
+            return;
+        }
         services.workflows
             .resubmit(this.props.match.params.name, this.props.match.params.namespace)
             .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))

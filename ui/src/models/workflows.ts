@@ -572,7 +572,7 @@ export interface Workflow {
     kind?: string;
     metadata: kubernetes.ObjectMeta;
     spec: WorkflowSpec;
-    status: WorkflowStatus;
+    status?: WorkflowStatus;
 }
 
 export function compareWorkflows(first: Workflow, second: Workflow) {

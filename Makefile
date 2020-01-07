@@ -159,7 +159,6 @@ executor:
 	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
 
 # To speed up local dev, we only create this when a marker file does not exist.
-executor-base-image: dist/executor-base-image
 dist/executor-base-image:
 	docker build -t argoexec-base --target argoexec-base .
 	mkdir -p dist
@@ -221,7 +220,7 @@ manifests:
 
 .PHONY: start
 start:
-	env INSTALL_CLI=0 INSTALL_POSTGRES=1 VERSION=dev ./install.sh
+	env INSTALL_CLI=0 VERSION=dev ./install.sh
 	# Scale down in preparation for re-configuration.
 	make down
 	# Change to use a "dev" tag and enable debug logging.

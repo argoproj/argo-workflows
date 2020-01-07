@@ -2,7 +2,7 @@ import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
-import * as models from '../../../../models';
+import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {services} from '../../../shared/services';
@@ -29,31 +29,31 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     private get tab() {
-        return this.getParam('tab') || 'workflow';
+        return this.queryParam('tab') || 'workflow';
     }
 
     private set tab(tab) {
-        this.setParams({tab});
+        this.setQueryParams({tab});
     }
 
     private get nodeId() {
-        return this.getParam('nodeId');
+        return this.queryParam('nodeId');
     }
 
     private set nodeId(nodeId) {
-        this.setParams({nodeId});
+        this.setQueryParams({nodeId});
     }
 
     private get container() {
-        return this.getParam('container') || 'main';
+        return this.queryParam('container') || 'main';
     }
 
     private get sidePanel() {
-        return this.getParam('sidePanel');
+        return this.queryParam('sidePanel');
     }
 
     private set sidePanel(sidePanel) {
-        this.setParams({sidePanel});
+        this.setQueryParams({sidePanel});
     }
 
     public render() {
@@ -78,7 +78,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     breadcrumbs: [
                         {
                             title: 'Archived Workflows',
-                            path: uiUrl('achived-workflows')
+                            path: uiUrl('archived-workflows')
                         },
                         {title: this.namespace + '/' + this.uid}
                     ],
@@ -132,13 +132,13 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                                     node={this.node(wf)}
                                                     workflow={wf}
                                                     onShowYaml={nodeId =>
-                                                        this.setParams({
+                                                        this.setQueryParams({
                                                             sidePanel: 'yaml',
                                                             nodeId
                                                         })
                                                     }
                                                     onShowContainerLogs={(nodeId, container) =>
-                                                        this.setParams({
+                                                        this.setQueryParams({
                                                             sidePanel: 'logs',
                                                             nodeId,
                                                             container
@@ -162,7 +162,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         );
     }
 
-    private node(wf: models.Workflow) {
+    private node(wf: Workflow) {
         return this.nodeId && wf.status.nodes[this.nodeId];
     }
 
@@ -178,7 +178,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     type: NotificationType.Error
                 });
             })
-            .then((wf: models.Workflow) => {
+            .then((wf: Workflow) => {
                 document.location.href = `/workflows/${wf.metadata.namespace}/${wf.metadata.name}`;
             });
     }
