@@ -3,7 +3,7 @@ import * as React from 'react';
 import {Page} from '../../../../node_modules/argo-ui';
 
 interface State {
-    error?: Error;
+    error?: Error & {response?: any};
     errorInfo?: ErrorInfo;
 }
 
@@ -11,6 +11,7 @@ export class ErrorBoundary extends React.Component<any, State> {
     public static getDerivedStateFromError(error: Error) {
         return {error};
     }
+
     constructor(props: any) {
         super(props);
         this.state = {};
@@ -31,6 +32,22 @@ export class ErrorBoundary extends React.Component<any, State> {
                             </h3>
                             <h5>Document</h5>
                             <p>{document.location.href}</p>
+                            <>
+                                {this.state.error.response.req && (
+                                    <>
+                                        <h5>Request</h5>
+                                        <pre>
+                                            {this.state.error.response.req.method} {this.state.error.response.req.url}
+                                        </pre>
+                                    </>
+                                )}
+                                {this.state.error.response.body && (
+                                    <>
+                                        <h5>Response</h5>
+                                        <pre>{JSON.stringify(this.state.error.response.body, null, 2)}</pre>
+                                    </>
+                                )}
+                            </>
                             <h5>Stack Trace</h5>
                             <pre>{this.state.error.stack}</pre>
                             {this.state.errorInfo && (

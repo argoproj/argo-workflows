@@ -1,9 +1,13 @@
 import {NotificationType, Page} from 'argo-ui';
+import {SlidingPanel} from 'argo-ui/src/index';
+import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Workflow, WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
+import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
@@ -11,6 +15,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     template?: WorkflowTemplate;
+    workflow?: Workflow;
     error?: Error;
 }
 
@@ -48,7 +53,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                             {
                                 title: 'Submit',
                                 iconClassName: 'fa fa-plus',
-                                action: () => this.submitWorkflowTemplate()
+                                action: () => this.openSubmissionPanel()
                             },
                             {
                                 title: 'Delete',
@@ -66,10 +71,33 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                     ]
                 }}>
                 <div className='argo-container'>
-                    <div className='workflow-details__content'>{this.state.template && <WorkflowTemplateSummaryPanel workflowTemplate={this.state.template} />}</div>
+                    <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
                 </div>
+                <SlidingPanel isShown={!!this.state.workflow} onClose={() => this.setState({workflow: null})}>
+                    Submit Workflow
+                    <YamlEditor
+                        minHeight={800}
+                        initialEditMode={true}
+                        submitMode={true}
+                        placeHolder={jsYaml.dump(this.state.workflow)}
+                        onSave={yaml => {
+                            const editedWorkflow = jsYaml.load(yaml) as Workflow;
+                            return services.workflows
+                                .create(editedWorkflow, editedWorkflow.metadata.namespace)
+                                .then(workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))
+                                .catch(error => this.setState({error}));
+                        }}
+                    />
+                </SlidingPanel>
             </Page>
         );
+    }
+
+    private renderWorkflowTemplate() {
+        if (!this.state.template) {
+            return <Loading />;
+        }
+        return <WorkflowTemplateSummaryPanel workflowTemplate={this.state.template} />;
     }
 
     private deleteWorkflowTemplate() {
@@ -89,33 +117,18 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
             });
     }
 
-    private submitWorkflowTemplate() {
-        const entrypoint = this.state.template.spec.templates[0].name;
-        if (!confirm(`Are you sure you want to submit this workflow template?\nEntry-point "${entrypoint}"`)) {
-            return;
-        }
-        services.workflows
-            .create(
-                {
-                    metadata: {
-                        generateName: this.state.template.metadata.name,
-                        namespace: this.state.template.metadata.namespace
-                    },
-                    spec: {
-                        entrypoint,
-                        templates: this.state.template.spec.templates
-                    }
+    private openSubmissionPanel() {
+        this.setState({
+            workflow: {
+                metadata: {
+                    generateName: this.state.template.metadata.name,
+                    namespace: this.state.template.metadata.namespace
                 },
-                this.namespace
-            )
-            .catch(e => {
-                this.appContext.apis.notifications.show({
-                    content: 'Failed to submit template ' + e,
-                    type: NotificationType.Error
-                });
-            })
-            .then((workflow: Workflow) => {
-                document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`;
-            });
+                spec: {
+                    entrypoint: this.state.template.spec.templates[0].name,
+                    templates: this.state.template.spec.templates
+                }
+            }
+        });
     }
 }
