@@ -1,6 +1,5 @@
 import {SlideContents, Utils as ArgoUtils} from 'argo-ui';
 import * as React from 'react';
-import * as yaml from 'yamljs';
 
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
