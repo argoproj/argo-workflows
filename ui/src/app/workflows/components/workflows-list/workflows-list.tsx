@@ -1,4 +1,3 @@
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Observable} from 'rxjs';
@@ -6,10 +5,11 @@ import {Observable} from 'rxjs';
 import {Autocomplete, DataLoader, MockupList, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
-import {AppContext, Consumer} from '../../../shared/context';
+import {Consumer} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
 import {WorkflowListItem} from '..';
+import {BasePage} from '../../../shared/components/base-page';
 import {Query} from '../../../shared/components/query';
 import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {Utils} from '../../../shared/utils';
@@ -30,19 +30,13 @@ spec:
       args: ["hello world"]
 `;
 
-export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
-
+export class WorkflowsList extends BasePage<RouteComponentProps<any>, any> {
     private get phases() {
-        return new URLSearchParams(this.props.location.search).getAll('phase');
+        return this.queryParams('phase');
     }
 
     private get wfInput() {
-        const query = new URLSearchParams(this.props.location.search);
-        return Utils.tryJsonParse(query.get('new'));
+        return Utils.tryJsonParse(this.queryParam('new'));
     }
 
     public render() {
@@ -75,7 +69,7 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                 ]
                             }
                         }}>
-                        <div className='workflows-list'>
+                        <div>
                             <DataLoader
                                 input={this.phases}
                                 load={phases => {
@@ -117,10 +111,10 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                     ) : (
                                         <>
                                             <div className='row'>
-                                                <div className='columns small-12 xxlarge-2'>
+                                                <div className='columns small-12 xxlarge-12'>
                                                     <Query>
                                                         {q => (
-                                                            <div className='workflows-list__search'>
+                                                            <div>
                                                                 <i className='fa fa-search' />
                                                                 {q.get('search') && (
                                                                     <i
@@ -164,16 +158,14 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                                                 </div>
                                             </div>
                                             <div className='row'>
-                                                <div className='stream'>
-                                                    <div className='columns small-12 xxlarge-10'>
-                                                        {workflows.map(workflow => (
-                                                            <div key={workflow.metadata.name}>
-                                                                <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
-                                                                    <WorkflowListItem workflow={workflow} archived={false} />
-                                                                </Link>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                <div className='columns small-12 xxlarge-12'>
+                                                    {workflows.map(workflow => (
+                                                        <div key={workflow.metadata.name}>
+                                                            <Link to={uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}>
+                                                                <WorkflowListItem workflow={workflow} archived={false} />
+                                                            </Link>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </>
@@ -201,9 +193,5 @@ export class WorkflowsList extends React.Component<RouteComponentProps<any>> {
                 )}
             </Consumer>
         );
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }

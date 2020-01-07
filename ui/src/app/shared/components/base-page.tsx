@@ -13,6 +13,10 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
         return new URLSearchParams(this.appContext.router.route.location.search).get(name);
     }
 
+    public queryParams(name: string) {
+        return new URLSearchParams(this.appContext.router.route.location.search).getAll(name);
+    }
+
     // this allows us to set-multiple parameters at once
     public setQueryParams(newParams: any) {
         const params = new URLSearchParams(this.appContext.router.route.location.search);

@@ -79,7 +79,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 ]
                             }
                         }}>
-                        <div className='argo-container'>{this.renderTemplates()}</div>
+                        {this.renderTemplates()}
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             Create Workflow Template
                             <YamlEditor
@@ -119,42 +119,44 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         const filter = searchToMetadataFilter(this.search);
         const templates = this.state.templates.filter(tmpl => filter(tmpl.metadata));
         return (
-            <>
-                <p>
-                    <i className='fa fa-search' />
-                    <input
-                        className='argo-field'
-                        defaultValue={this.search}
-                        onChange={e => {
-                            this.search = e.target.value;
-                        }}
-                        placeholder='e.g. name:hello-world namespace:argo'
-                    />
-                </p>
-                {templates.length === 0 ? (
-                    <p>No workflow templates found</p>
-                ) : (
-                    <div className={'argo-table-list'}>
-                        <div className='row argo-table-list__head'>
-                            <div className='columns small-4'>NAME</div>
-                            <div className='columns small-4'>NAMESPACE</div>
-                            <div className='columns small-4'>CREATED</div>
+            <div className='row'>
+                <div className='columns small-12 xxlarge-2'>
+                    <p>
+                        <i className='fa fa-search' />
+                        <input
+                            className='argo-field'
+                            defaultValue={this.search}
+                            onChange={e => {
+                                this.search = e.target.value;
+                            }}
+                            placeholder='e.g. name:hello-world namespace:argo'
+                        />
+                    </p>
+                    {templates.length === 0 ? (
+                        <p>No workflow templates found</p>
+                    ) : (
+                        <div className='argo-table-list'>
+                            <div className='row argo-table-list__head'>
+                                <div className='columns small-4'>NAME</div>
+                                <div className='columns small-4'>NAMESPACE</div>
+                                <div className='columns small-4'>CREATED</div>
+                            </div>
+                            {templates.map(t => (
+                                <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
+                                    <div className='columns small-4'>{t.metadata.name}</div>
+                                    <div className='columns small-4'>{t.metadata.namespace}</div>
+                                    <div className='columns small-4'>
+                                        <Timestamp date={t.metadata.creationTimestamp} />
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
-                        {templates.map(t => (
-                            <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                                <div className='columns small-4'>{t.metadata.name}</div>
-                                <div className='columns small-4'>{t.metadata.namespace}</div>
-                                <div className='columns small-4'>
-                                    <Timestamp date={t.metadata.creationTimestamp} />
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-                <p>
-                    <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
-                </p>
-            </>
+                    )}
+                    <p>
+                        <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
+                    </p>
+                </div>
+            </div>
         );
     }
 }
