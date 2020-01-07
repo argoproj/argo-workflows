@@ -1,14 +1,16 @@
 import {Page} from 'argo-ui';
 
+import * as classNames from 'classnames';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {Timestamp} from '../../../shared/components/timestamp';
 import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
-import {WorkflowListItem} from '../../../workflows/components';
+import {Utils} from '../../../shared/utils';
 
 interface State {
     workflows?: Workflow[];
@@ -88,13 +90,26 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                     <p>No archived workflows found</p>
                 ) : (
                     <>
-                        {workflows.map(workflow => (
-                            <div key={workflow.metadata.uid}>
-                                <Link to={uiUrl(`archived-workflows/${workflow.metadata.namespace}/${workflow.metadata.uid}`)}>
-                                    <WorkflowListItem workflow={workflow} archived={true} />
-                                </Link>
+                        <div className='argo-table-list'>
+                            <div className='row argo-table-list__head'>
+                                <div className='columns small-1' />
+                                <div className='columns small-5'>NAME</div>
+                                <div className='columns small-3'>NAMESPACE</div>
+                                <div className='columns small-3'>CREATED</div>
                             </div>
-                        ))}
+                            {workflows.map(w => (
+                                <Link className='row argo-table-list__row' key={w.metadata.name} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
+                                    <div className='columns small-1'>
+                                        <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
+                                    </div>
+                                    <div className='columns small-5'>{w.metadata.name}</div>
+                                    <div className='columns small-3'>{w.metadata.namespace}</div>
+                                    <div className='columns small-3'>
+                                        <Timestamp date={w.metadata.creationTimestamp} />
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
                         <p>
                             <i className='fa fa-info-circle' /> Records are created in the archive when a workflow completes. {learnMore}.
                         </p>

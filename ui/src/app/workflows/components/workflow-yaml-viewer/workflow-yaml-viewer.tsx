@@ -1,6 +1,7 @@
 import {SlideContents, Utils as ArgoUtils} from 'argo-ui';
 import * as React from 'react';
 
+import * as jsYaml from 'js-yaml';
 import * as models from '../../../../models';
 import {Utils} from '../../../shared/utils';
 
@@ -34,7 +35,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
                 if (this.props.selectedNode) {
                     nodeName = this.normalizeNodeName(this.props.selectedNode.displayName || this.props.selectedNode.name);
                 }
-                let parentTemplateStr = yaml.stringify(parentTemplate, 4, 1);
+                let parentTemplateStr = jsYaml.dump(parentTemplate);
                 if (nodeName) {
                     parentTemplateStr = this.highlightStep(parentTemplate, nodeName, parentTemplateStr);
                 }
@@ -47,7 +48,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
             }
 
             const template = Utils.getResolvedTemplates(this.props.workflow, this.props.selectedNode);
-            const templateStr = yaml.stringify(template, 4, 1);
+            const templateStr = jsYaml.dump(template);
             contents.push(
                 <div className='workflow-yaml-section' key='current-node'>
                     <h4>Current Node</h4>
@@ -57,7 +58,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         }
         const templates = this.props.workflow.spec.templates;
         if (templates && Object.keys(templates).length) {
-            const templatesStr = yaml.stringify(templates, 4, 1);
+            const templatesStr = jsYaml.dump(templates);
             contents.push(
                 <SlideContents
                     title={'Templates'}
@@ -69,7 +70,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         }
         const storedTemplates = this.props.workflow.status.storedTemplates;
         if (storedTemplates && Object.keys(storedTemplates).length) {
-            const storedTemplatesStr = yaml.stringify(storedTemplates, 4, 1);
+            const storedTemplatesStr = jsYaml.dump(storedTemplates);
             contents.push(
                 <SlideContents
                     title={'Stored Templates'}
@@ -116,7 +117,7 @@ export class WorkflowYamlViewer extends React.Component<WorkflowYamlViewerProps>
         const steps: (models.WorkflowStep | models.DAGTask)[] = (template.dag && template.dag.tasks) || (template.steps || []).reduce((first, second) => first.concat(second), []);
         const step = steps.find(item => item.name === highlightedStepName);
         if (step) {
-            const stepLines = yaml.stringify(step, 1, 1).split('\n');
+            const stepLines = jsYaml.dump(step).split('\n');
             firstLineStepToHighlight = `name: ${highlightedStepName}`;
             lastLineStepToHighlight = stepLines[stepLines.length - 2];
         }

@@ -6,3 +6,7 @@ function baseUrl(): string {
 export function uiUrl(uiPath: string): string {
     return baseUrl() + uiPath;
 }
+
+export function apiUrl(apiPath: string): string {
+    return `${baseUrl()}${apiPath}`;
+}

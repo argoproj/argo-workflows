@@ -3,6 +3,8 @@ package sqldb
 import (
 	"encoding/json"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -40,15 +42,35 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 }
 
 func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) ([]wfv1.Workflow, error) {
-	var wfDBs []WorkflowDB
+	var wfMDs []WorkflowMetadata
 	err := r.Collection(tableName).
 		Find().
 		Where(namespaceEqual(namespace)).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
-		All(&wfDBs)
-	return wfDB2wf(wfDBs), err
+		All(&wfMDs)
+
+	if err != nil {
+		return nil, err
+	}
+	wfs := make([]wfv1.Workflow, len(wfMDs))
+	for i, wf := range wfMDs {
+		wfs[i] = wfv1.Workflow{
+			ObjectMeta: v1.ObjectMeta{
+				Name:              wf.Name,
+				Namespace:         wf.Namespace,
+				UID:               types.UID(wf.Id),
+				CreationTimestamp: v1.Time{Time: wf.StartedAt},
+			},
+			Status: wfv1.WorkflowStatus{
+				Phase:      wf.Phase,
+				StartedAt:  v1.Time{Time: wf.StartedAt},
+				FinishedAt: v1.Time{Time: wf.FinishedAt},
+			},
+		}
+	}
+	return wfs, nil
 }
 
 func namespaceEqual(namespace string) db.Cond {

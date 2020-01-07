@@ -3,6 +3,7 @@ import {EventSourcePolyfill} from 'event-source-polyfill';
 import {Observable, Observer} from 'rxjs';
 import * as _superagent from 'superagent';
 import {SuperAgentRequest} from 'superagent';
+import {apiUrl} from '../base';
 
 const superagentPromise = require('superagent-promise');
 
@@ -30,23 +31,23 @@ const superagent: _superagent.SuperAgentStatic = superagentPromise(_superagent, 
 
 export default {
     get(url: string) {
-        return auth(superagent.get(url));
+        return auth(superagent.get(apiUrl(url)));
     },
 
     post(url: string) {
-        return auth(superagent.post(url));
+        return auth(superagent.post(apiUrl(url)));
     },
 
     put(url: string) {
-        return auth(superagent.put(url));
+        return auth(superagent.put(apiUrl(url)));
     },
 
     patch(url: string) {
-        return auth(superagent.patch(url));
+        return auth(superagent.patch(apiUrl(url)));
     },
 
     delete(url: string) {
-        return auth(superagent.del(url));
+        return auth(superagent.del(apiUrl(url)));
     },
 
     loadEventSource(url: string, allowAutoRetry = false): Observable<string> {

@@ -41,14 +41,18 @@ type DBRepository interface {
 	QueryWithPagination(condition db.Cond, pageSize uint, lastID string, orderBy ...interface{}) (*wfv1.WorkflowList, error)
 }
 
-type WorkflowDB struct {
+type WorkflowMetadata struct {
 	Id         string         `db:"id"`
 	Name       string         `db:"name"`
 	Phase      wfv1.NodePhase `db:"phase"`
 	Namespace  string         `db:"namespace"`
-	Workflow   string         `db:"workflow"`
 	StartedAt  time.Time      `db:"startedat"`
 	FinishedAt time.Time      `db:"finishedat"`
+}
+
+type WorkflowDB struct {
+	WorkflowMetadata
+	Workflow string `db:"workflow"`
 }
 
 func convert(wf *wfv1.Workflow) (*WorkflowDB, error) {
@@ -66,13 +70,15 @@ func convert(wf *wfv1.Workflow) (*WorkflowDB, error) {
 	}
 
 	return &WorkflowDB{
-		Id:         string(wf.UID),
-		Name:       wf.Name,
-		Namespace:  wf.Namespace,
-		Workflow:   string(jsonWf),
-		Phase:      wf.Status.Phase,
-		StartedAt:  startT,
-		FinishedAt: endT,
+		WorkflowMetadata: WorkflowMetadata{
+			Id:         string(wf.UID),
+			Name:       wf.Name,
+			Namespace:  wf.Namespace,
+			Phase:      wf.Status.Phase,
+			StartedAt:  startT,
+			FinishedAt: endT,
+		},
+		Workflow: string(jsonWf),
 	}, nil
 }
 
