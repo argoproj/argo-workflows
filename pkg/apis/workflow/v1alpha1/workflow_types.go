@@ -215,7 +215,7 @@ type WorkflowSpec struct {
 	// deleted after the time to live expires. If this field is unset,
 	// the controller config map will hold the default values
 	// Update
-	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,28,opt,name=ttlStrategy"`
+	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
