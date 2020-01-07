@@ -1,12 +1,21 @@
 # This example shows the ability to automatically delete workflows after a specified time period
 # after the workflow completes. The ttlSecondsAfterFinished indicates the duration in seconds, after
 # a workflow finishes, in which the workflow (and its pods) will be deleted.
+# This example shows the ability to automatically delete workflows after a specified time period
+# after the workflow completes. The ttlSecondsAfterFinished indicates the duration in seconds, after
+# a workflow finishes, in which the workflow (and its pods) will be deleted.
+# The TTLStrategy sets the strategy for how long workflows that are successful or completed should live. 
+# The former ttlSecondsAfterFinished will be despatched and will be replaced with SecondsAfterCompleted. 
+# However the user now also have the possibility to set a seperataion between workflows that were succesfull or failed
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: gc-ttl-
 spec:
-  ttlSecondsAfterFinished: 10
+  TTLStrategy: 
+    secondsAfterCompleted: 10 # Used to replace ttlSecondsAfterFinished which will be Despatched
+    secondsAfterSuccess: 5 # The time to live after success
+    secondsAfterFailed: 5 # The time to live after failure
   entrypoint: whalesay
   templates:
   - name: whalesay
@@ -14,3 +23,4 @@ spec:
       image: docker/whalesay:latest
       command: [cowsay]
       args: ["hello world"]
+
