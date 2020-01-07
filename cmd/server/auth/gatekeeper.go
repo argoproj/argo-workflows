@@ -93,11 +93,13 @@ func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, er
 }
 
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
+
+	if !s.enableClientAuth {
+		return s.wfClient, s.kubeClient, nil
+	}
+
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		if !s.enableClientAuth {
-			return s.wfClient, s.kubeClient, nil
-		}
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
 	}
 	authorization := md.Get("grpcgateway-authorization")
