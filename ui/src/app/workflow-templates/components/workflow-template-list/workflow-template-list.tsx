@@ -6,11 +6,11 @@ import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {Timestamp} from '../../../shared/components/timestamp';
+import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
+import {Consumer} from '../../../shared/context';
 import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
-import {Consumer} from '../../../shared/context';
-import {YamlEditor} from "../../../shared/components/yaml-editor/yaml-editor";
-import { Utils } from '../../../shared/utils';
+import {Utils} from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
 
@@ -37,13 +37,13 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         return this.queryParam('search') || '';
     }
 
+    private set search(search) {
+        this.setQueryParams({search});
+    }
+
     private get wfInput() {
         const query = new URLSearchParams(this.props.location.search);
         return Utils.tryJsonParse(query.get('new'));
-    }
-
-    private set search(search) {
-        this.setQueryParams({search});
     }
 
     constructor(props: any) {
@@ -91,8 +91,8 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                     // TODO(simon): Remove hardwired 'argo' namespace
                                     return services.workflowTemplate
                                         .create(JSON.parse(rawWf), 'argo')
-                                        .then()
-                                        .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`));
+                                        .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                        .catch(error => this.setState({error}));
                                 }}
                             />
                         </SlidingPanel>

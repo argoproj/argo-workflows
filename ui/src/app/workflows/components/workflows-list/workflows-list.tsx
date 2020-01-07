@@ -12,7 +12,7 @@ import {services} from '../../../shared/services';
 import {WorkflowListItem} from '..';
 import {Query} from '../../../shared/components/query';
 import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
-import { Utils } from '../../../shared/utils';
+import {Utils} from '../../../shared/utils';
 
 require('./workflows-list.scss');
 
