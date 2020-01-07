@@ -40,6 +40,12 @@ func (s *CLISuite) TestCompletion() {
 	s.Assert().Contains(output, "bash completion for argo")
 }
 
+func (s *CLISuite) TestToken() {
+	output, err := argo("token")
+	s.Assert().NoError(err)
+	s.Assert().NotEmpty(output)
+}
+
 func (s *CLISuite) TestCore() {
 	s.Run("Submit", func(t *testing.T) {
 		output, err := argo("submit", "smoke/basic.yaml", "--wait")

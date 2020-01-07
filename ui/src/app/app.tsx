@@ -14,7 +14,7 @@ import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const workflowsUrl = uiUrl('workflows');
-const workflowTemplatesUrl = uiUrl('templates');
+const workflowTemplatesUrl = uiUrl('workflow-templates');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
@@ -40,7 +40,7 @@ const navItems = [
         iconClassName: 'fa fa-stream'
     },
     {
-        title: 'Templates',
+        title: 'Workflow Templates',
         path: workflowTemplatesUrl,
         iconClassName: 'fa fa-clone'
     },

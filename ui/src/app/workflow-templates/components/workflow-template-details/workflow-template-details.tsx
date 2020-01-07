@@ -1,20 +1,14 @@
 import {DataLoader, NotificationType, Page} from 'argo-ui';
-import {AppContext} from 'argo-ui/src/index';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {uiUrl} from '../../../shared/base';
+import {BasePage} from '../../../shared/components/base-page';
 import {services} from '../../../shared/services';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export class WorkflowTemplateDetails extends React.Component<RouteComponentProps<any>, any> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
-
+export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, any> {
     private get namespace() {
         return this.props.match.params.namespace;
     }
@@ -71,11 +65,7 @@ export class WorkflowTemplateDetails extends React.Component<RouteComponentProps
                 });
             })
             .then(() => {
-                document.location.href = '/templates';
+                document.location.href = '/workflow-templates';
             });
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }

@@ -1,11 +1,10 @@
 import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
-import {AppContext} from 'argo-ui/src/index';
 import * as classNames from 'classnames';
-import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
+import {BasePage} from '../../../shared/components/base-page';
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
@@ -20,12 +19,7 @@ import {
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export class ArchivedWorkflowDetails extends React.Component<RouteComponentProps<any>, any> {
-    public static contextTypes = {
-        router: PropTypes.object,
-        apis: PropTypes.object
-    };
-
+export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, any> {
     private get namespace() {
         return this.props.match.params.namespace;
     }
@@ -168,24 +162,6 @@ export class ArchivedWorkflowDetails extends React.Component<RouteComponentProps
         );
     }
 
-    private getParam(name: string) {
-        return new URLSearchParams(this.appContext.router.route.location.search).get(name);
-    }
-
-    // this allows us to set-multiple parameters at once
-    private setParams(newParams: any) {
-        const params = new URLSearchParams(this.appContext.router.route.location.search);
-        Object.keys(newParams).forEach(name => {
-            const value = newParams[name];
-            if (value !== null) {
-                params.set(name, value);
-            } else {
-                params.delete(name);
-            }
-        });
-        this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
-    }
-
     private node(wf: models.Workflow) {
         return this.nodeId && wf.status.nodes[this.nodeId];
     }
@@ -222,9 +198,5 @@ export class ArchivedWorkflowDetails extends React.Component<RouteComponentProps
             .then(() => {
                 document.location.href = '/archived-workflows';
             });
-    }
-
-    private get appContext(): AppContext {
-        return this.context as AppContext;
     }
 }

@@ -149,7 +149,6 @@ kind: Deployment
 metadata:
   name: argo-server
 spec:
-  replicas: 0
   selector:
     matchLabels:
       app: argo-server

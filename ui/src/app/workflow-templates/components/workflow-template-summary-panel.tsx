@@ -11,7 +11,7 @@ export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowT
     const attributes = [
         {title: 'Name', value: props.workflowTemplate.metadata.name},
         {title: 'Namespace', value: props.workflowTemplate.metadata.namespace},
-        {title: 'Created At', value: <Timestamp date={props.workflowTemplate.metadata.creationTimestamp} />}
+        {title: 'Created', value: <Timestamp date={props.workflowTemplate.metadata.creationTimestamp} />}
     ];
     return (
         <div>

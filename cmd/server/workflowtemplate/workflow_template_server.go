@@ -3,6 +3,7 @@ package workflowtemplate
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,13 +27,13 @@ func NewWorkflowTemplateServer() WorkflowTemplateServiceServer {
 func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	if wftmplReq.Template == nil {
-		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
+		return nil, fmt.Errorf("workflow template was not found in the request body")
 	}
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace))
 
 	err := validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create workflow template: %v", err)
+		return nil, fmt.Errorf("failed to create workflow template: %v", err)
 	}
 
 	return wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Create(wftmplReq.Template)
@@ -57,6 +58,8 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wf
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Sort(wfList.Items)
 
 	return wfList, nil
 }

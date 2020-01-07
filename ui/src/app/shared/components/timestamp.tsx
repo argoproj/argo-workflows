@@ -7,9 +7,9 @@ export const Timestamp = ({date}: {date: string | number}) => {
             {date === null ? (
                 '-'
             ) : (
-                <React.Fragment>
-                    <Moment fromNow={true}>{date}</Moment> (<Moment local={true}>{date}</Moment>)
-                </React.Fragment>
+                <Moment fromNow={true} withTitle={true}>
+                    {date}
+                </Moment>
             )}
         </span>
     );

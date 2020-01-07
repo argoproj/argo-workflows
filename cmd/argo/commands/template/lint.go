@@ -95,6 +95,9 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 			os.Exit(1)
 		}
 		walkFunc := func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
 			if info == nil || info.IsDir() {
 				return nil
 			}
@@ -109,12 +112,12 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 				log.Error(err)
 			}
 			for _, wfTmpl := range wfTmpls {
-				err = ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
+				err := ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
 				if err != nil {
 					log.Error(err)
 				}
 			}
-			return err
+			return nil
 		}
 		return filepath.Walk(args[0], walkFunc)
 	} else {
@@ -124,7 +127,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 				log.Error(err)
 			}
 			for _, wfTmpl := range wfTmpls {
-				err = ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
+				err := ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
 				if err != nil {
 					log.Error(err)
 				}

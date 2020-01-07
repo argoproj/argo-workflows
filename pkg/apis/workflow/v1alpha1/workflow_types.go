@@ -99,13 +99,13 @@ type Workflow struct {
 // Workflows is a sort interface which sorts running jobs earlier before considering FinishedAt
 type Workflows []Workflow
 
-func (f Workflows) Len() int      { return len(f) }
-func (f Workflows) Swap(i, j int) { f[i], f[j] = f[j], f[i] }
-func (f Workflows) Less(i, j int) bool {
-	iStart := f[i].ObjectMeta.CreationTimestamp
-	iFinish := f[i].Status.FinishedAt
-	jStart := f[j].ObjectMeta.CreationTimestamp
-	jFinish := f[j].Status.FinishedAt
+func (w Workflows) Len() int      { return len(w) }
+func (w Workflows) Swap(i, j int) { w[i], w[j] = w[j], w[i] }
+func (w Workflows) Less(i, j int) bool {
+	iStart := w[i].ObjectMeta.CreationTimestamp
+	iFinish := w[i].Status.FinishedAt
+	jStart := w[j].ObjectMeta.CreationTimestamp
+	jFinish := w[j].Status.FinishedAt
 	if iFinish.IsZero() && jFinish.IsZero() {
 		return !iStart.Before(&jStart)
 	}

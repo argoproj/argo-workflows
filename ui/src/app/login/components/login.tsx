@@ -17,7 +17,7 @@ export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
             <p>
-                <i className='fa fa-info-circle'/> You appear to be logged  {maybeLoggedIn() ? 'in' : 'out'}.
+                <i className='fa fa-info-circle' /> You appear to be logged {maybeLoggedIn() ? 'in' : 'out'}.
             </p>
             <p>
                 Get your config using <code>argo token</code> and paste in this box.

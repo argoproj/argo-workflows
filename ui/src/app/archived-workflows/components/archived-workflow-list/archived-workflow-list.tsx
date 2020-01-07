@@ -2,7 +2,6 @@ import {DataLoader, MockupList, Page} from 'argo-ui';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 import {WorkflowListItem} from '../../../workflows/components';
@@ -16,15 +15,14 @@ export class ArchivedWorkflowList extends React.Component<RouteComponentProps<an
     public render() {
         return (
             <Page
-                title='rchived Workflows'
+                title='Archived Workflows'
                 toolbar={{
                     breadcrumbs: [{title: 'Archived Workflows', path: uiUrl('archived-workflow')}]
                 }}>
                 <DataLoader load={() => services.archivedWorkflows.list()} loadingRenderer={() => <MockupList height={150} marginTop={30} />}>
-                    {(workflows: models.Workflow[]) => (
+                    {workflows => (
                         <div className='row'>
                             <div className='columns small-12 xxlarge-2'>
-                                <p><span style={{backgroundColor: 'red', color: 'white'}}> BETA </span></p>
                                 {workflows.length === 0 && (
                                     <div className='white-box'>
                                         <h4>No archived workflows</h4>

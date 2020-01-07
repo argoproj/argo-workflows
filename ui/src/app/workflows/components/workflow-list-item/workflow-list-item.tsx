@@ -52,7 +52,7 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                             <div className='columns large-8'>{props.workflow.metadata.namespace}</div>
                         </div>
                         <div className='workflow-list-item__content-details-row row'>
-                            <div className='columns large-4'>CREATED AT:</div>
+                            <div className='columns large-4'>CREATED:</div>
                             <div className='columns large-8'>
                                 <Timestamp date={props.workflow.metadata.creationTimestamp} />
                             </div>
