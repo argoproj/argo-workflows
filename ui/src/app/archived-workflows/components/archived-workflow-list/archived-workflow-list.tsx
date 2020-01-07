@@ -1,16 +1,18 @@
-import {MockupList, Page} from 'argo-ui';
+import {Page} from 'argo-ui';
 
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
 import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
 import {WorkflowListItem} from '../../../workflows/components';
 
 interface State {
     workflows?: Workflow[];
+    error?: Error;
 }
 
 export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, State> {
@@ -20,9 +22,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public componentDidMount(): void {
-        services.archivedWorkflows.list().then(workflows => {
-            this.setState({workflows});
-        });
+        services.archivedWorkflows
+            .list()
+            .then(workflows => this.setState({workflows}))
+            .catch(error => this.setState({error}));
     }
 
     private get search() {
@@ -34,6 +37,10 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     public render() {
+        if (this.state.error) {
+            throw this.state.error;
+        }
+
         return (
             <Page
                 title='Archived Workflows'
@@ -48,8 +55,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private renderWorkflows() {
-        if (this.state.workflows === undefined) {
-            return <MockupList height={150} marginTop={30} />;
+        if (!this.state.workflows) {
+            return <Loading />;
         }
         const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-archive.md'>Learn more</a>;
         if (this.state.workflows.length === 0) {

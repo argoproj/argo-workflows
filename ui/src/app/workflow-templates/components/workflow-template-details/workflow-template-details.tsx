@@ -11,6 +11,7 @@ require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
     template?: WorkflowTemplate;
+    error?: Error;
 }
 
 export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, State> {
@@ -28,10 +29,16 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
     }
 
     public componentDidMount(): void {
-        services.workflowTemplate.get(this.name, this.namespace).then(template => this.setState({template}));
+        services.workflowTemplate
+            .get(this.name, this.namespace)
+            .then(template => this.setState({template}))
+            .catch(error => this.setState({error}));
     }
 
     public render() {
+        if (this.state.error !== undefined) {
+            throw this.state.error;
+        }
         return (
             <Page
                 title='Workflow Template Details'
