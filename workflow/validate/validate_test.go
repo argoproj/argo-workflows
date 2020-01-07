@@ -1214,6 +1214,8 @@ spec:
         - false
         - string
         - 1.2
+        - os: "debian"
+          version: "9.0"
 
   - name: whalesay
     inputs:
