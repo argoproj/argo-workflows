@@ -100,21 +100,6 @@ func (s *CronSuite) TestFailedJobHistoryLimit() {
 		})
 }
 
-func (s *CronSuite) TestFailedJobHistoryLimitConcurrent() {
-	var listOptions v1.ListOptions
-	wfInformerListOptionsFunc(&listOptions, "test-cron-wf-fail-2")
-	s.Given().
-		CronWorkflow("@testdata/always-fail-2.yaml").
-		When().
-		CreateCronWorkflow().
-		Wait(2*time.Minute).
-		Then().
-		ExpectWorkflowList(listOptions, func(t *testing.T, wfList *wfv1.WorkflowList) {
-			assert.Equal(t, 1, len(wfList.Items))
-			assert.True(t, wfList.Items[0].Status.FinishedAt.Time.After(time.Now().Add(-1*time.Minute)))
-		})
-}
-
 func wfInformerListOptionsFunc(options *v1.ListOptions, cronWfName string) {
 	options.FieldSelector = fields.Everything().String()
 	isCronWorkflowChildReq, err := labels.NewRequirement(common.LabelCronWorkflow, selection.Equals, []string{cronWfName})
