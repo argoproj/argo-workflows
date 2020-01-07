@@ -176,10 +176,8 @@ func TestWorkflowTemplateServer_DeleteWorkflowTemplate(t *testing.T) {
 		Namespace:    "default",
 		TemplateName: "workflow-template-whalesay-template2",
 	}
-	wftRsp, err := server.DeleteWorkflowTemplate(ctx, &wftReq)
-
-	assert.Equal(t, "Deleted", wftRsp.Status)
-	assert.Nil(t, err)
+	_, err := server.DeleteWorkflowTemplate(ctx, &wftReq)
+	assert.NoError(t, err)
 
 }
 
@@ -196,7 +194,7 @@ func TestWorkflowTemplateServer_UpdateWorkflowTemplate(t *testing.T) {
 	}
 	wftRsp, err := server.UpdateWorkflowTemplate(ctx, &wftReq)
 
-	assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
-	assert.Nil(t, err)
-
+	if assert.NoError(t, err) {
+		assert.Equal(t, "alpine:latest", wftRsp.Spec.Templates[0].Container.Image)
+	}
 }

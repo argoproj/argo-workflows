@@ -2,12 +2,8 @@ package cron
 
 import (
 	"context"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/pkg/client/informers/externalversions"
-	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/common"
-	"github.com/argoproj/argo/workflow/util"
+	"time"
+
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +15,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"time"
+
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/informers/externalversions"
+	extv1alpha1 "github.com/argoproj/argo/pkg/client/informers/externalversions/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/util"
 )
 
 // Controller is a controller for cron workflows

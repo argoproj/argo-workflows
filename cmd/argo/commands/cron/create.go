@@ -1,9 +1,10 @@
 package cron
 
 import (
-	"github.com/argoproj/argo/workflow/templateresolution"
 	"log"
 	"os"
+
+	"github.com/argoproj/argo/workflow/templateresolution"
 
 	"github.com/argoproj/pkg/json"
 	"github.com/spf13/cobra"

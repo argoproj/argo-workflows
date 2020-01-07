@@ -192,7 +192,7 @@ ifeq ($(STATIC),true)
 endif
 
 .PHONY: test
-test:
+test: cmd/server/static/files.go vendor
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 
 .PHONY: cover

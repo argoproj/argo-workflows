@@ -56,7 +56,7 @@ func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfR
 	if err != nil {
 		return nil, err
 	}
-	return &WorkflowDeleteResponse{WorkflowName: wfReq.WorkflowName, Status: "Deleted"}, nil
+	return &WorkflowDeleteResponse{}, nil
 }
 
 func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {

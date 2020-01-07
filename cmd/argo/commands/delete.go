@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
-
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflow"
 
@@ -136,12 +134,12 @@ func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.
 		Namespace:    ns,
 	}
 
-	msg, err := client.DeleteWorkflow(ctx, &wfReq)
+	_, err := client.DeleteWorkflow(ctx, &wfReq)
 	if err != nil {
-		errors.CheckError(err)
+		log.Fatal(err)
 		return
 	}
-	fmt.Printf("workflow %s deleted\n", msg.WorkflowName)
+	fmt.Printf("workflow %s deleted\n", wfName)
 
 }
 

@@ -59,7 +59,6 @@
         "winston": "^3.1.0",
         "ws": "^4.0.0",
         "xterm": "2.4.0",
-        "yamljs": "^0.3.0",
         "yargs": "^11.0.0"
     },
     "devDependencies": {
@@ -84,7 +83,6 @@
         "@types/storybook__react": "^3.0.7",
         "@types/superagent": "^3.5.7",
         "@types/ws": "^4.0.0",
-        "@types/yamljs": "^0.2.30",
         "babel-core": "^6.26.0",
         "chai": "^4.1.2",
         "copy-webpack-plugin": "^4.3.1",

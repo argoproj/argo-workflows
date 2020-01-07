@@ -84,5 +84,13 @@ export const Utils = {
             resolvedTemplate = Object.assign({}, resolvedTemplate, tmpl);
         });
         return resolvedTemplate;
+    },
+
+    tryJsonParse(input: string) {
+        try {
+            return (input && JSON.parse(input)) || null;
+        } catch {
+            return null;
+        }
     }
 };

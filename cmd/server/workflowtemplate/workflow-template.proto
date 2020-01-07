@@ -49,48 +49,46 @@ message WorkflowTemplateDeleteRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
 message WorkflowDeleteResponse {
-    string templateName  = 1;
-    string status = 2;
 }
 
 
 service WorkflowTemplateService {
     rpc CreateWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
-			post: "/api/v1/workflowtemplates/{namespace}"
+			post: "/api/v1/workflow-templates/{namespace}"
 			body: "*"
 		};
     }
 
     rpc GetWorkflowTemplate (WorkflowTemplateGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
-        option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}/{templateName}";
+        option (google.api.http).get = "/api/v1/workflow-templates/{namespace}/{templateName}";
     }
 
     rpc ListWorkflowTemplates (WorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
-        option (google.api.http).get = "/api/v1/workflowtemplates/{namespace}";
+        option (google.api.http).get = "/api/v1/workflow-templates/{namespace}";
     }
 
     rpc UpdateWorkflowTemplate (WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
-            put: "/api/v1/workflowtemplates/{namespace}/{templateName}"
+            put: "/api/v1/workflow-templates/{namespace}/{templateName}"
             body: "*"
         };
     }
 
     rpc UpdateWorkflowTemplateSpec (WorkflowTemplateSpecUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateSpec) {
         option (google.api.http) = {
-            put: "/api/v1/workflowtemplates/{namespace}/{templateName}/spec"
+            put: "/api/v1/workflow-templates/{namespace}/{templateName}/spec"
             body: "*"
         };
     }
 
     rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
-        option (google.api.http).delete = "/api/v1/workflowtemplates/{namespace}/{templateName}";
+        option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{templateName}";
     }
 
     rpc LintWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
-			post: "/api/v1/workflowtemplates/{namespace}/lint"
+			post: "/api/v1/workflow-templates/{namespace}/lint"
 			body: "*"
 		};
     }

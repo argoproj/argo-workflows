@@ -86,11 +86,11 @@ func apiServerdeleteWorkflowTemplate(client workflowtemplate.WorkflowTemplateSer
 		TemplateName: wftmplName,
 		Namespace:    ns,
 	}
-	resp, err := client.DeleteWorkflowTemplate(ctx, &wfReq)
+	_, err := client.DeleteWorkflowTemplate(ctx, &wfReq)
 	if err != nil {
 		errors.CheckError(err)
 	}
-	fmt.Printf("WorkflowTemplate '%s' deleted\n", resp.TemplateName)
+	fmt.Printf("WorkflowTemplate '%s' deleted\n", wftmplName)
 }
 
 func deleteWorkflowTemplate(wftmplClient v1alpha1.WorkflowTemplateInterface, wftmplName string) {

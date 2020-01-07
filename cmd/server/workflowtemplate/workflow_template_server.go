@@ -72,10 +72,7 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, w
 		return nil, err
 	}
 
-	return &WorkflowDeleteResponse{
-		TemplateName: wftmplReq.TemplateName,
-		Status:       "Deleted",
-	}, nil
+	return &WorkflowDeleteResponse{}, nil
 }
 
 func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {

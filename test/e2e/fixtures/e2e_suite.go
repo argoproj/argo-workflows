@@ -3,11 +3,12 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -28,6 +29,7 @@ import (
 var kubeConfig = os.Getenv("KUBECONFIG")
 
 const Namespace = "argo"
+const label = "argo-e2e"
 
 func init() {
 	if kubeConfig == "" {
@@ -64,7 +66,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	s.wfClient = commands.InitWorkflowClient()
 	s.cronClient = cron.InitCronWorkflowClient()
 	// delete all workflows
-	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: "argo-e2e"})
+	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
@@ -95,7 +97,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		}
 	}
 	// delete all cron workflows
-	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: "argo-e2e"})
+	cronList, err := s.cronClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		panic(err)
 	}
@@ -217,8 +219,8 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 
 func (s *E2ESuite) Given() *Given {
 	return &Given{
-		t:      s.T(),
-		client: s.wfClient,
+		t:          s.T(),
+		client:     s.wfClient,
 		cronClient: s.cronClient,
 	}
 }

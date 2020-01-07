@@ -461,16 +461,13 @@ func TestDeleteWorkflow(t *testing.T) {
 
 	delRsp, err := server.DeleteWorkflow(ctx, &delReq)
 
+	assert.NoError(t, err)
 	assert.NotNil(t, delRsp)
-	assert.Equal(t, wf.Name, delRsp.WorkflowName)
-	assert.Equal(t, "Deleted", delRsp.Status)
-	assert.Nil(t, err)
 
 	wfl, err := getWorkflowList(ctx, server, "workflows")
-	assert.NotNil(t, wf)
-	assert.Equal(t, 2, len(wfl.Items))
-	assert.Nil(t, err)
-
+	if assert.NoError(t, err) {
+		assert.Len(t, wfl.Items, 2)
+	}
 }
 
 func TestSuspendResumeWorkflow(t *testing.T) {

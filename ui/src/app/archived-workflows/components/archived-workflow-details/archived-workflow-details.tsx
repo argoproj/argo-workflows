@@ -1,10 +1,11 @@
-import {DataLoader, NotificationType, Page, SlidingPanel} from 'argo-ui';
+import {NotificationType, Page, SlidingPanel} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
+import {Loading} from '../../../shared/components/loading';
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
@@ -19,7 +20,12 @@ import {
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
-export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, any> {
+interface State {
+    workflow?: Workflow;
+    error?: Error;
+}
+
+export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
         return this.props.match.params.namespace;
     }
@@ -56,10 +62,25 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
         this.setQueryParams({sidePanel});
     }
 
+    constructor(props: RouteComponentProps<any>, context: any) {
+        super(props, context);
+        this.state = {};
+    }
+
+    public componentDidMount(): void {
+        services.archivedWorkflows
+            .get(this.namespace, this.uid)
+            .then(workflow => this.setState({workflow}))
+            .catch(error => this.setState({error}));
+    }
+
     public render() {
+        if (this.state.error) {
+            throw this.state.error;
+        }
         return (
             <Page
-                title='Workflow History Details'
+                title='Archived Workflow Details'
                 toolbar={{
                     actionMenu: {
                         items: [
@@ -78,13 +99,13 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     breadcrumbs: [
                         {
                             title: 'Archived Workflows',
-                            path: uiUrl('archived-workflows')
+                            path: uiUrl('archived-workflows/')
                         },
                         {title: this.namespace + '/' + this.uid}
                     ],
                     tools: (
                         <div className='workflow-details__topbar-buttons'>
-                            <a className={classNames({actve: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
+                            <a className={classNames({active: this.tab === 'summary'})} onClick={() => (this.tab = 'summary')}>
                                 <i className='fa fa-columns' />
                             </a>
                             <a className={classNames({active: this.tab === 'timeline'})} onClick={() => (this.tab = 'timeline')}>
@@ -96,74 +117,77 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                         </div>
                     )
                 }}>
-                <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>
-                    <DataLoader load={() => services.archivedWorkflows.get(this.namespace, this.uid)}>
-                        {wf => (
-                            <React.Fragment>
-                                {this.tab === 'summary' ? (
-                                    <div className='argo-container'>
-                                        <div className='workflow-details__content'>
-                                            <WorkflowSummaryPanel workflow={wf} />
-                                            {wf.spec.arguments && wf.spec.arguments.parameters && (
-                                                <React.Fragment>
-                                                    <h6>Parameters</h6>
-                                                    <WorkflowParametersPanel parameters={wf.spec.arguments.parameters} />
-                                                </React.Fragment>
-                                            )}
-                                            <h6>Artifacts</h6>
-                                            <WorkflowArtifacts workflow={wf} archived={true} />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div className='workflow-details__graph-container'>
-                                            {this.tab === 'workflow' ? (
-                                                <WorkflowDag workflow={wf} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
-                                            ) : (
-                                                <WorkflowTimeline workflow={wf} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
-                                            )}
-                                        </div>
-                                        {this.nodeId && (
-                                            <div className='workflow-details__step-info'>
-                                                <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
-                                                    <i className='argo-icon-close' />
-                                                </button>
-                                                <WorkflowNodeInfo
-                                                    node={this.node(wf)}
-                                                    workflow={wf}
-                                                    onShowYaml={nodeId =>
-                                                        this.setQueryParams({
-                                                            sidePanel: 'yaml',
-                                                            nodeId
-                                                        })
-                                                    }
-                                                    onShowContainerLogs={(nodeId, container) =>
-                                                        this.setQueryParams({
-                                                            sidePanel: 'logs',
-                                                            nodeId,
-                                                            container
-                                                        })
-                                                    }
-                                                    archived={true}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
-                                    {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={wf} selectedNode={this.node(wf)} />}
-                                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={wf} nodeId={this.nodeId} container={this.container} archived={true} />}
-                                </SlidingPanel>
-                            </React.Fragment>
-                        )}
-                    </DataLoader>
-                </div>
+                <div className={classNames('workflow-details', {'workflow-details--step-node-expanded': !!this.nodeId})}>{this.renderArchivedWorkflowDetails()}</div>
             </Page>
         );
     }
 
-    private node(wf: Workflow) {
-        return this.nodeId && wf.status.nodes[this.nodeId];
+    private renderArchivedWorkflowDetails() {
+        if (!this.state.workflow) {
+            return <Loading />;
+        }
+        return (
+            <>
+                {this.tab === 'summary' ? (
+                    <div className='argo-container'>
+                        <div className='workflow-details__content'>
+                            <WorkflowSummaryPanel workflow={this.state.workflow} />
+                            {this.state.workflow.spec.arguments && this.state.workflow.spec.arguments.parameters && (
+                                <React.Fragment>
+                                    <h6>Parameters</h6>
+                                    <WorkflowParametersPanel parameters={this.state.workflow.spec.arguments.parameters} />
+                                </React.Fragment>
+                            )}
+                            <h6>Artifacts</h6>
+                            <WorkflowArtifacts workflow={this.state.workflow} archived={true} />
+                        </div>
+                    </div>
+                ) : (
+                    <div>
+                        <div className='workflow-details__graph-container'>
+                            {this.tab === 'workflow' ? (
+                                <WorkflowDag workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
+                            ) : (
+                                <WorkflowTimeline workflow={this.state.workflow} selectedNodeId={this.nodeId} nodeClicked={node => (this.nodeId = node.id)} />
+                            )}
+                        </div>
+                        {this.nodeId && (
+                            <div className='workflow-details__step-info'>
+                                <button className='workflow-details__step-info-close' onClick={() => (this.nodeId = null)}>
+                                    <i className='argo-icon-close' />
+                                </button>
+                                <WorkflowNodeInfo
+                                    node={this.node}
+                                    workflow={this.state.workflow}
+                                    onShowYaml={nodeId =>
+                                        this.setQueryParams({
+                                            sidePanel: 'yaml',
+                                            nodeId
+                                        })
+                                    }
+                                    onShowContainerLogs={(nodeId, container) =>
+                                        this.setQueryParams({
+                                            sidePanel: 'logs',
+                                            nodeId,
+                                            container
+                                        })
+                                    }
+                                    archived={true}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+                <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
+                    {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
+                    {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
+                </SlidingPanel>
+            </>
+        );
+    }
+
+    private get node() {
+        return this.nodeId && this.state.workflow.status.nodes[this.nodeId];
     }
 
     private resubmitArchivedWorkflow() {

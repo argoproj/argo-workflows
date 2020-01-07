@@ -53,8 +53,6 @@ message WorkflowDeleteRequest {
 }
 
 message WorkflowDeleteResponse {
-    string workflowName = 1;
-    string status = 2;
 }
 
 message WatchWorkflowsRequest {

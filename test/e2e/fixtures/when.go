@@ -2,9 +2,10 @@ package fixtures
 
 import (
 	"fmt"
-	"github.com/argoproj/pkg/humanize"
 	"testing"
 	"time"
+
+	"github.com/argoproj/pkg/humanize"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
