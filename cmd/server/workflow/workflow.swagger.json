@@ -5,6 +5,10 @@
     "description": "Workflow Service API performs CRUD actions against application resources",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
@@ -4455,15 +4459,7 @@
       }
     },
     "workflowWorkflowDeleteResponse": {
-      "type": "object",
-      "properties": {
-        "workflowName": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "workflowWorkflowUpdateRequest": {
       "type": "object",

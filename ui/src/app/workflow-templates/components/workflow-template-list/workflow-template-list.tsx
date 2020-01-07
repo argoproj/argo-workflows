@@ -104,10 +104,9 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     private renderTemplates() {
         if (!this.state.templates) {
-            return <Loading/>;
+            return <Loading />;
         }
-        const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-templates.md'>Learn
-            more</a>;
+        const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-templates.md'>Learn more</a>;
         if (this.state.templates.length === 0) {
             return (
                 <div className='white-box'>
@@ -122,7 +121,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         return (
             <>
                 <p>
-                    <i className='fa fa-search'/>
+                    <i className='fa fa-search' />
                     <input
                         className='argo-field'
                         defaultValue={this.search}
@@ -142,20 +141,18 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                             <div className='columns small-4'>CREATED</div>
                         </div>
                         {templates.map(t => (
-                            <Link className='row argo-table-list__row' key={t.metadata.name}
-                                  to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
+                            <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
                                 <div className='columns small-4'>{t.metadata.name}</div>
                                 <div className='columns small-4'>{t.metadata.namespace}</div>
                                 <div className='columns small-4'>
-                                    <Timestamp date={t.metadata.creationTimestamp}/>
+                                    <Timestamp date={t.metadata.creationTimestamp} />
                                 </div>
                             </Link>
                         ))}
                     </div>
                 )}
                 <p>
-                    <i className='fa fa-info-circle'/> Workflow templates are reusable templates you can create new
-                    workflows from. {learnMore}.
+                    <i className='fa fa-info-circle' /> Workflow templates are reusable templates you can create new workflows from. {learnMore}.
                 </p>
             </>
         );

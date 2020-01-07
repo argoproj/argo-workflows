@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"github.com/spf13/cobra"
+
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
 
 	"github.com/argoproj/argo/cmd/argo/commands/archive"
 	"github.com/argoproj/argo/cmd/argo/commands/client"

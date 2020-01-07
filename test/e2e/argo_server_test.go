@@ -404,7 +404,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
 	s.Run("Create", func(t *testing.T) {
-		s.e(t).POST("/api/v1/workflowtemplates/argo").
+		s.e(t).POST("/api/v1/workflow-templates/argo").
 			WithBytes([]byte(`{
   "template": {
     "metadata": {
@@ -432,7 +432,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflowtemplates/argo").
+		s.e(t).GET("/api/v1/workflow-templates/argo").
 			Expect().
 			Status(200).
 			JSON().
@@ -443,13 +443,13 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/workflowtemplates/argo/test").
+		s.e(t).GET("/api/v1/workflow-templates/argo/test").
 			Expect().
 			Status(200)
 	})
 
 	s.Run("Delete", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/workflowtemplates/argo/test").
+		s.e(t).DELETE("/api/v1/workflow-templates/argo/test").
 			Expect().
 			Status(200)
 	})

@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/golang/protobuf/descriptor"
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/utilities"
@@ -23,13 +22,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Suppress "imported and not used" errors
 var _ codes.Code
 var _ io.Reader
 var _ status.Status
 var _ = runtime.String
 var _ = utilities.NewDoubleArray
-var _ = descriptor.ForMessage
 
 func request_WorkflowTemplateService_CreateWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowTemplateServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq WorkflowTemplateCreateRequest
@@ -936,19 +933,19 @@ func RegisterWorkflowTemplateServiceHandlerClient(ctx context.Context, mux *runt
 }
 
 var (
-	pattern_WorkflowTemplateService_CreateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflowtemplates", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_CreateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflow-templates", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_GetWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflowtemplates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_GetWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-templates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_ListWorkflowTemplates_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflowtemplates", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_ListWorkflowTemplates_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflow-templates", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_UpdateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflowtemplates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_UpdateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-templates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_UpdateWorkflowTemplateSpec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "workflowtemplates", "namespace", "templateName", "spec"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_UpdateWorkflowTemplateSpec_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"api", "v1", "workflow-templates", "namespace", "templateName", "spec"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_DeleteWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflowtemplates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_DeleteWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-templates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_LintWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflowtemplates", "namespace", "lint"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_LintWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflow-templates", "namespace", "lint"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

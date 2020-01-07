@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/argoproj/argo/workflow/cron"
 	"os"
 	"time"
+
+	"github.com/argoproj/argo/workflow/cron"
 
 	"github.com/argoproj/pkg/cli"
 	kubecli "github.com/argoproj/pkg/kube/cli"

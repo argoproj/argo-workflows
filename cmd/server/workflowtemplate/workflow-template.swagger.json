@@ -5,6 +5,10 @@
     "description": "Workflow Service API performs CRUD actions against application resources",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
@@ -12,7 +16,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflowtemplates/{namespace}": {
+    "/api/v1/workflow-templates/{namespace}": {
       "get": {
         "operationId": "ListWorkflowTemplates",
         "responses": {
@@ -126,7 +130,7 @@
         ]
       }
     },
-    "/api/v1/workflowtemplates/{namespace}/lint": {
+    "/api/v1/workflow-templates/{namespace}/lint": {
       "post": {
         "operationId": "LintWorkflowTemplate",
         "responses": {
@@ -158,7 +162,7 @@
         ]
       }
     },
-    "/api/v1/workflowtemplates/{namespace}/{templateName}": {
+    "/api/v1/workflow-templates/{namespace}/{templateName}": {
       "get": {
         "operationId": "GetWorkflowTemplate",
         "responses": {
@@ -307,7 +311,7 @@
         ]
       }
     },
-    "/api/v1/workflowtemplates/{namespace}/{templateName}/spec": {
+    "/api/v1/workflow-templates/{namespace}/{templateName}/spec": {
       "put": {
         "operationId": "UpdateWorkflowTemplateSpec",
         "responses": {
@@ -3630,15 +3634,7 @@
       "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate."
     },
     "workflowtemplateWorkflowDeleteResponse": {
-      "type": "object",
-      "properties": {
-        "templateName": {
-          "type": "string"
-        },
-        "status": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "workflowtemplateWorkflowTemplateCreateRequest": {
       "type": "object",

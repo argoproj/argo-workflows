@@ -39,6 +39,9 @@ export class ErrorBoundary extends React.Component<any, State> {
                                     <pre>{this.state.errorInfo.componentStack}</pre>
                                 </>
                             )}
+                            <p>
+                                <i className='fa fa-info-circle' /> Reload this page to dismiss this error.
+                            </p>
                         </div>
                     </div>
                 </Page>
