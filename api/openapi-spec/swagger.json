@@ -1188,6 +1188,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.TTLStrategy": {
+      "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
+      "type": "object",
+      "properties": {
+        "secondsAfterCompleted": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailed": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterSuccess": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "description": "TarStrategy will tar and gzip the file or directory when saving",
       "type": "object"
@@ -1735,9 +1753,13 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.",
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
           "type": "integer",
           "format": "int32"
+        },
+        "ttlStrategy": {
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values Update",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",

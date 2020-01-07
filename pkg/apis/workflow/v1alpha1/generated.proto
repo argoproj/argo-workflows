@@ -618,6 +618,15 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+message TTLStrategy {
+  optional int32 secondsAfterCompleted = 1;
+
+  optional int32 secondsAfterSuccess = 2;
+
+  optional int32 secondsAfterFailed = 3;
+}
+
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
 }
@@ -901,7 +910,15 @@ message WorkflowSpec {
   // deleted after ttlSecondsAfterFinished expires. If this field is unset,
   // ttlSecondsAfterFinished will not expire. If this field is set to zero,
   // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+  // DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
   optional int32 ttlSecondsAfterFinished = 18;
+
+  // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+  // Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+  // deleted after the time to live expires. If this field is unset,
+  // the controller config map will hold the default values
+  // Update
+  optional TTLStrategy ttlStrategy = 30;
 
   // Optional duration in seconds relative to the workflow start time which the workflow is
   // allowed to run before the controller terminates the workflow. A value of zero is used to
