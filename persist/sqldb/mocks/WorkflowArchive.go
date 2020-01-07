@@ -65,15 +65,15 @@ func (_m *WorkflowArchive) GetWorkflow(namespace string, uid string) (*v1alpha1.
 }
 
 // ListWorkflows provides a mock function with given fields: namespace, limit, offset
-func (_m *WorkflowArchive) ListWorkflows(namespace string, limit int, offset int) ([]v1alpha1.Workflow, error) {
+func (_m *WorkflowArchive) ListWorkflows(namespace string, limit int, offset int) (v1alpha1.Workflows, error) {
 	ret := _m.Called(namespace, limit, offset)
 
-	var r0 []v1alpha1.Workflow
-	if rf, ok := ret.Get(0).(func(string, int, int) []v1alpha1.Workflow); ok {
+	var r0 v1alpha1.Workflows
+	if rf, ok := ret.Get(0).(func(string, int, int) v1alpha1.Workflows); ok {
 		r0 = rf(namespace, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]v1alpha1.Workflow)
+			r0 = ret.Get(0).(v1alpha1.Workflows)
 		}
 	}
 

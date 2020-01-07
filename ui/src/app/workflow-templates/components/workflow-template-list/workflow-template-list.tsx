@@ -137,15 +137,19 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                     ) : (
                         <div className='argo-table-list'>
                             <div className='row argo-table-list__head'>
-                                <div className='columns small-4'>NAME</div>
-                                <div className='columns small-4'>NAMESPACE</div>
-                                <div className='columns small-4'>CREATED</div>
+                                <div className='columns small-1' />
+                                <div className='columns small-5'>NAME</div>
+                                <div className='columns small-3'>NAMESPACE</div>
+                                <div className='columns small-3'>CREATED</div>
                             </div>
                             {templates.map(t => (
                                 <Link className='row argo-table-list__row' key={t.metadata.name} to={uiUrl(`workflow-templates/${t.metadata.namespace}/${t.metadata.name}`)}>
-                                    <div className='columns small-4'>{t.metadata.name}</div>
-                                    <div className='columns small-4'>{t.metadata.namespace}</div>
-                                    <div className='columns small-4'>
+                                    <div className='columns small-1'>
+                                        <i className='fa fa-clone' />
+                                    </div>
+                                    <div className='columns small-5'>{t.metadata.name}</div>
+                                    <div className='columns small-3'>{t.metadata.namespace}</div>
+                                    <div className='columns small-3'>
                                         <Timestamp date={t.metadata.creationTimestamp} />
                                     </div>
                                 </Link>

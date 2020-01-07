@@ -20,7 +20,7 @@ import (
 	argofake "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
-func Test_achivedWorkflowServer(t *testing.T) {
+func Test_archivedWorkflowServer(t *testing.T) {
 	repo := &mocks.WorkflowArchive{}
 	kubeClient := &kubefake.Clientset{}
 	wfClient := &argofake.Clientset{}
@@ -31,9 +31,20 @@ func Test_achivedWorkflowServer(t *testing.T) {
 			Status: authorizationv1.SubjectAccessReviewStatus{Allowed: allowed},
 		}, nil
 	})
+	kubeClient.AddReactor("create", "selfsubjectrulesreviews", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		var rules []authorizationv1.ResourceRule
+		if allowed {
+			rules = append(rules, authorizationv1.ResourceRule{})
+		}
+		return true, &authorizationv1.SelfSubjectRulesReview{
+			Status: authorizationv1.SubjectRulesReviewStatus{
+				ResourceRules: rules,
+			},
+		}, nil
+	})
 	// two pages of results for limit 1
-	repo.On("ListWorkflows", "", 1, 0).Return([]wfv1.Workflow{{}}, nil)
-	repo.On("ListWorkflows", "", 1, 1).Return([]wfv1.Workflow{}, nil)
+	repo.On("ListWorkflows", "", 1, 0).Return(wfv1.Workflows{{}}, nil)
+	repo.On("ListWorkflows", "", 1, 1).Return(wfv1.Workflows{}, nil)
 	repo.On("GetWorkflow", "", "").Return(nil, nil)
 	repo.On("GetWorkflow", "my-ns", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},

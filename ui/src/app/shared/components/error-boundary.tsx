@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<any, State> {
                     <div className='argo-container'>
                         <div className=' white-box'>
                             <h3>
-                                <i className='fa fa-times-circle status-icon--failed' /> {this.state.error.message}
+                                <i className='fa fa-skull fa-spin status-icon--failed' /> {this.state.error.message}
                             </h3>
                             <p>
                                 <i className='fa fa-info-circle' /> Reload this page to dismiss this error message.

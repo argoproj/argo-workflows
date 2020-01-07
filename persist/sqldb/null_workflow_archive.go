@@ -15,8 +15,8 @@ func (r *nullWorkflowAchieve) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowAchieve) ListWorkflows(string, int, int) ([]wfv1.Workflow, error) {
-	return []wfv1.Workflow{}, nil
+func (r *nullWorkflowAchieve) ListWorkflows(string, int, int) (wfv1.Workflows, error) {
+	return wfv1.Workflows{}, nil
 }
 
 func (r *nullWorkflowAchieve) GetWorkflow(string, string) (*wfv1.Workflow, error) {

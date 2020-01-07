@@ -65,7 +65,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             return (
                 <div className='white-box'>
                     <h4>No archived workflows</h4>
-                    <p>To add entries to the archive you must enabled archiving in configuration. Records are the created in the archive on workflow completion </p>
+                    <p>To add entries to the archive you must enabled archiving in configuration. Records are the created in the archive on workflow completion.</p>
                     <p>{learnMore}.</p>
                 </div>
             );
@@ -98,7 +98,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                                 <div className='columns small-3'>CREATED</div>
                             </div>
                             {workflows.map(w => (
-                                <Link className='row argo-table-list__row' key={w.metadata.name} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
+                                <Link className='row argo-table-list__row' key={w.metadata.name} to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
                                     <div className='columns small-1'>
                                         <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                                     </div>
