@@ -20,6 +20,7 @@
         "@types/react-form": "^2.16.1",
         "@types/react-helmet": "^5.0.8",
         "@types/react-monaco-editor": "^0.16.0",
+        "@types/yamljs": "^0.2.30",
         "argo-ui": "https://github.com/argoproj/argo-ui.git",
         "aws-sdk": "^2.188.0",
         "body-parser": "^1.18.2",

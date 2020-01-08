@@ -8,35 +8,30 @@ import {WorkflowDeleteResponse} from './responses';
 export class WorkflowsService {
     public get(namespace: string, name: string): Promise<models.Workflow> {
         return requests
-            .get(`/api/v1/workflows/${namespace}/${name}`)
+            .get(`api/v1/workflows/${namespace}/${name}`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public list(phases: string[], namespace: string): Promise<models.Workflow[]> {
         return requests
-            .get(`/api/v1/workflows/${namespace}`)
-            .query({phase: phases})
+            .get(`api/v1/workflows/${namespace}`)
             .then(res => res.body as models.WorkflowList)
-            .then(list => (list.items || []).map(this.populateDefaultFields));
+            .then()
+            .then(list => (list.items || []).map(this.populateDefaultFields).filter(wf => phases.length === 0 || phases.includes(wf.status.phase)));
     }
 
-    public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
-        let url = '/api/v1/workflow-events/';
-        if (filter) {
-            if (filter instanceof Array) {
-                const phases = (filter as Array<string>).map(phase => `listOptions.fieldSelector=status.phase=${phase}`).join('&');
-                url = `${url}?${phases}`;
-            } else {
-                const workflow = filter as {namespace: string; name: string};
-                url = `${url}${workflow.namespace}?listOptions.fieldSelector=metadata.name=${workflow.name}`;
-            }
+    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>}): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
+        const queryParams: string[] = [];
+        if (filter.name) {
+            queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
         }
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${queryParams.join('&')}`;
+
         return requests
             .loadEventSource(url)
-            .repeat()
-            .retry()
             .map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<models.Workflow>)
+            .filter(wf => filter.phases === undefined || filter.phases.includes(wf.object.status.phase))
             .map(watchEvent => {
                 watchEvent.object = this.populateDefaultFields(watchEvent.object);
                 return watchEvent;
@@ -45,50 +40,47 @@ export class WorkflowsService {
 
     public retry(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/api/v1/workflows/${namespace}/${workflowName}/retry`)
+            .put(`api/v1/workflows/${namespace}/${workflowName}/retry`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public resubmit(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/api/v1/workflows/${namespace}/${workflowName}/resubmit`)
+            .put(`api/v1/workflows/${namespace}/${workflowName}/resubmit`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public suspend(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/api/v1/workflows/${namespace}/${workflowName}/suspend`)
+            .put(`api/v1/workflows/${namespace}/${workflowName}/suspend`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public resume(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/api/v1/workflows/${namespace}/${workflowName}/resume`)
+            .put(`api/v1/workflows/${namespace}/${workflowName}/resume`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public terminate(workflowName: string, namespace: string): Promise<models.Workflow> {
         return requests
-            .put(`/api/v1/workflows/${namespace}/${workflowName}/terminate`)
+            .put(`api/v1/workflows/${namespace}/${workflowName}/terminate`)
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
 
     public delete(workflowName: string, namespace: string): Promise<WorkflowDeleteResponse> {
-        return requests.delete(`/api/v1/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
+        return requests.delete(`api/v1/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
-    public create(workflow: models.Workflow, namespace: string): Promise<models.Workflow> {
+    public create(workflow: models.Workflow): Promise<models.Workflow> {
         return requests
-            .post(`/api/v1/workflows/${namespace}`)
-            .send({
-                namespace,
-                workflow
-            })
+            .post(`api/v1/workflows`)
+            .send({workflow})
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }
@@ -109,7 +101,7 @@ export class WorkflowsService {
         });
         return requests
             .loadEventSource(
-                `/api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` +
+                `api/v1/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/log` +
                     `?logOptions.container=${container}&logOptions.tailLines=20&logOptions.follow=true&logOptions.timestamps=true`
             )
             .pipe(

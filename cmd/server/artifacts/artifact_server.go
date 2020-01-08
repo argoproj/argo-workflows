@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
-	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	artifact "github.com/argoproj/argo/workflow/artifacts"
@@ -23,13 +22,13 @@ import (
 )
 
 type ArtifactServer struct {
-	authN       auth.Gatekeeper
-	wfDBService *workflow.DBService
-	wfArchive   sqldb.WorkflowArchive
+	authN           auth.Gatekeeper
+	nodeOffloadRepo sqldb.OffloadNodeStatusRepo
+	wfArchive       sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, wfDBService *workflow.DBService, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, wfDBService, wfArchive}
+func NewArtifactServer(authN auth.Gatekeeper, nodeOffloadRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{authN, nodeOffloadRepo, wfArchive}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +159,7 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 		return nil, err
 	}
 	if wf.Status.OffloadNodeStatus {
-		offloadedWf, err := a.wfDBService.Get(workflowName, namespace)
+		offloadedWf, err := a.nodeOffloadRepo.Get(workflowName, namespace)
 		if err != nil {
 			return nil, err
 		}

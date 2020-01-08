@@ -6,23 +6,23 @@ import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
-var NullWorkflowAchive = &nullWorkflowAchieve{}
+var NullWorkflowArchive = &nullWorkflowArchive{}
 
-type nullWorkflowAchieve struct {
+type nullWorkflowArchive struct {
 }
 
-func (r *nullWorkflowAchieve) ArchiveWorkflow(*wfv1.Workflow) error {
+func (r *nullWorkflowArchive) ArchiveWorkflow(*wfv1.Workflow) error {
 	return nil
 }
 
-func (r *nullWorkflowAchieve) ListWorkflows(string, int, int) ([]wfv1.Workflow, error) {
-	return []wfv1.Workflow{}, nil
+func (r *nullWorkflowArchive) ListWorkflows(string, int, int) (wfv1.Workflows, error) {
+	return wfv1.Workflows{}, nil
 }
 
-func (r *nullWorkflowAchieve) GetWorkflow(string, string) (*wfv1.Workflow, error) {
+func (r *nullWorkflowArchive) GetWorkflow(string, string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }
 
-func (r *nullWorkflowAchieve) DeleteWorkflow(namespace string, uid string) error {
+func (r *nullWorkflowArchive) DeleteWorkflow(string, string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
 }

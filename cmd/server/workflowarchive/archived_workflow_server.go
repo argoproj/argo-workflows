@@ -33,31 +33,44 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 		options.Continue = "0"
 	}
 	limit := int(options.Limit)
+	if limit == 0 {
+		limit = 10
+	}
 	offset, err := strconv.Atoi(options.Continue)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must be int")
 	}
-	allItems, err := w.repo.ListWorkflows(req.Namespace, limit, offset)
-	if err != nil {
-		return nil, err
+	if offset < 0 {
+		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
-	allowedItems := make(wfv1.Workflows, 0)
-	// TODO this loop Hibernates 1+N and is likely to very slow for large requests, needs testing
-	for _, wf := range allItems {
-		allowed, err := auth.CanI(ctx, "get", "workflow", req.Namespace, wf.Name)
+	items := make(wfv1.Workflows, 0)
+	authorizer := auth.NewAuthorizer(ctx)
+	// keep trying until we have enough
+	for len(items) < limit {
+		moreItems, err := w.repo.ListWorkflows(req.Namespace, limit, offset)
 		if err != nil {
 			return nil, err
 		}
-		if allowed {
-			allowedItems = append(allowedItems, wf)
+		for _, wf := range moreItems {
+			allowed, err := authorizer.CanI("get", "workflow", wf.Namespace, wf.Name)
+			if err != nil {
+				return nil, err
+			}
+			if allowed {
+				items = append(items, wf)
+			}
 		}
+		if len(moreItems) < limit {
+			break
+		}
+		offset = offset + limit
 	}
 	meta := metav1.ListMeta{}
-	if len(allowedItems) >= limit {
-		meta.Continue = fmt.Sprintf("%v", offset+limit)
+	if len(items) >= limit {
+		meta.Continue = fmt.Sprintf("%v", offset)
 	}
-	sort.Sort(allowedItems)
-	return &wfv1.WorkflowList{ListMeta: meta, Items: allowedItems}, nil
+	sort.Sort(items)
+	return &wfv1.WorkflowList{ListMeta: meta, Items: items}, nil
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {

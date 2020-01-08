@@ -356,7 +356,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	nodes := wf.Status.Nodes
 	err := packer.CompressWorkflow(wf)
 	if packer.IsTooLargeError(err) {
-		wf.Status.OffloadNodeStatus = woc.controller.wfDBctx != nil && woc.controller.wfDBctx.IsNodeStatusOffload()
+		wf.Status.OffloadNodeStatus = woc.controller.offloadNodeStatusRepo.IsEnabled()
 	} else if err != nil {
 		woc.log.Warnf("Error compressing workflow: %v", err)
 		woc.markWorkflowFailed(err.Error())
@@ -386,7 +386,7 @@ func (woc *wfOperationCtx) persistUpdates() {
 	wf.Status.Nodes = nodes
 	wf.Status.CompressedNodes = ""
 	if wf.Status.OffloadNodeStatus {
-		err = woc.controller.wfDBctx.Save(wf)
+		err = woc.controller.offloadNodeStatusRepo.Save(wf)
 		if err != nil {
 			woc.log.Warnf("Error in persisting workflow : %v %s", err, apierr.ReasonForError(err))
 			woc.markWorkflowFailed(err.Error())

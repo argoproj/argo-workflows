@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
@@ -71,25 +70,6 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
-}
-
-func CanI(ctx context.Context, verb, resource, namespace, name string) (bool, error) {
-	kubeClientset := GetKubeClient(ctx)
-	review, err := kubeClientset.AuthorizationV1().SelfSubjectAccessReviews().Create(&authorizationv1.SelfSubjectAccessReview{
-		Spec: authorizationv1.SelfSubjectAccessReviewSpec{
-			ResourceAttributes: &authorizationv1.ResourceAttributes{
-				Namespace: namespace,
-				Verb:      verb,
-				Group:     "argoproj.io",
-				Resource:  resource,
-				Name:      name,
-			},
-		},
-	})
-	if err != nil {
-		return false, err
-	}
-	return review.Status.Allowed, nil
 }
 
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {

@@ -65,25 +65,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a7f619ffc7b99687f9444bd0a07509fec8ae708a7175d234878129896c0918a8"
-  name = "github.com/alecthomas/template"
-  packages = [
-    ".",
-    "parse",
-  ]
-  pruneopts = ""
-  revision = "fb15b899a75114aa79cc930e33c46b577cc664b1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:9d943843b71c5d44f184893fcdbe419bf639fee8647ceeca4c7d4fd95923721c"
-  name = "github.com/alecthomas/units"
-  packages = ["."]
-  pruneopts = ""
-  revision = "f65c72e2690dc4b403c8bd637baf4611cd4c069b"
-
-[[projects]]
-  branch = "master"
   digest = "1:91c041d6454dbb9cfa1b3e024da74f93ef8de6c7e7ab822ef75ff961419e7490"
   name = "github.com/argoproj/pkg"
   packages = [
@@ -663,7 +644,6 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
-    "log",
     "model",
   ]
   pruneopts = ""
@@ -979,8 +959,6 @@
     "cpu",
     "unix",
     "windows",
-    "windows/registry",
-    "windows/svc/eventlog",
   ]
   pruneopts = ""
   revision = "548cf772de5052aa878ccb47cdeb7d262b75c8ec"
@@ -1128,14 +1106,6 @@
   pruneopts = ""
   revision = "f5b0812e6fe574d90da76b205e9eb51f6ddb1919"
   version = "v1.26.0"
-
-[[projects]]
-  digest = "1:15d017551627c8bb091bde628215b2861bed128855343fdd570c62d08871f6e1"
-  name = "gopkg.in/alecthomas/kingpin.v2"
-  packages = ["."]
-  pruneopts = ""
-  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
-  version = "v2.2.6"
 
 [[projects]]
   digest = "1:3c15270c5b4d083739d3ae1b5cf4955915c915748a2616ce5566e0be9b5cccd2"
@@ -1666,6 +1636,7 @@
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/sortkeys",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/descriptor",
     "github.com/golang/protobuf/proto",
     "github.com/gorilla/websocket",
     "github.com/grpc-ecosystem/go-grpc-middleware",
@@ -1676,7 +1647,6 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
-    "github.com/prometheus/common/log",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
     "github.com/soheilhy/cmux",

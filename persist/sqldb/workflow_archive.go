@@ -1,8 +1,6 @@
 package sqldb
 
 import (
-	"encoding/json"
-
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -13,7 +11,7 @@ const tableName = "argo_archived_workflows"
 
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
-	ListWorkflows(namespace string, limit, offset int) ([]wfv1.Workflow, error)
+	ListWorkflows(namespace string, limit, offset int) (wfv1.Workflows, error)
 	GetWorkflow(namespace string, uid string) (*wfv1.Workflow, error)
 	DeleteWorkflow(namespace string, uid string) error
 }
@@ -31,7 +29,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	wfDB, err := convert(wf)
+	wfDB, err := toRecord(wf)
 	if err != nil {
 		return err
 	}
@@ -39,16 +37,21 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	return err
 }
 
-func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) ([]wfv1.Workflow, error) {
-	var wfDBs []WorkflowDB
-	err := r.Collection(tableName).
-		Find().
+func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int) (wfv1.Workflows, error) {
+	var wfMDs []WorkflowMetadata
+	err := r.
+		Select("name", "namespace", "id", "phase", "startedat", "finishedat").
+		From(tableName).
 		Where(namespaceEqual(namespace)).
 		OrderBy("-startedat").
 		Limit(limit).
 		Offset(offset).
-		All(&wfDBs)
-	return wfDB2wf(wfDBs), err
+		All(&wfMDs)
+	if err != nil {
+		return nil, err
+	}
+	wfs := toSlimWorkflows(wfMDs)
+	return wfs, nil
 }
 
 func namespaceEqual(namespace string) db.Cond {
@@ -71,17 +74,12 @@ func (r *workflowArchive) GetWorkflow(namespace string, uid string) (*wfv1.Workf
 	if !exists {
 		return nil, nil
 	}
-	wfDB := &WorkflowDB{}
-	err = rs.One(wfDB)
+	workflow := &WorkflowOnlyRecord{}
+	err = rs.One(workflow)
 	if err != nil {
 		return nil, err
 	}
-	wf := &wfv1.Workflow{}
-	err = json.Unmarshal([]byte(wfDB.Workflow), wf)
-	if err != nil {
-		return nil, err
-	}
-	return wf, nil
+	return toWorkflow(workflow)
 }
 
 func (r *workflowArchive) DeleteWorkflow(namespace string, uid string) error {

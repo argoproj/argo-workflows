@@ -8,14 +8,16 @@ import {uiUrl} from './shared/base';
 import {AppContext, ContextApis, Provider} from './shared/context';
 
 import archivedWorkflows from './archived-workflows';
+import cronWorkflows from './cron-workflows';
 import help from './help';
 import login from './login';
-import {ErrorBoundary} from './shared/components/error-boundary';
+import ErrorBoundary from './shared/components/error-boundary';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
 const workflowsUrl = uiUrl('workflows');
 const workflowTemplatesUrl = uiUrl('workflow-templates');
+const cronWorkflowUrl = uiUrl('cron-workflows');
 const archivedWorkflowUrl = uiUrl('archived-workflows');
 const helpUrl = uiUrl('help');
 const loginUrl = uiUrl('login');
@@ -25,6 +27,7 @@ const routes: {
 } = {
     [workflowsUrl]: {component: workflows.component},
     [workflowTemplatesUrl]: {component: workflowTemplates.component},
+    [cronWorkflowUrl]: {component: cronWorkflows.component},
     [archivedWorkflowUrl]: {component: archivedWorkflows.component},
     [helpUrl]: {component: help.component},
     [loginUrl]: {component: login.component}
@@ -44,6 +47,11 @@ const navItems = [
         title: 'Workflow Templates',
         path: workflowTemplatesUrl,
         iconClassName: 'fa fa-clone'
+    },
+    {
+        title: 'Cron Workflows',
+        path: cronWorkflowUrl,
+        iconClassName: 'fa fa-calendar'
     },
     {
         title: 'Archived Workflows',
@@ -114,15 +122,15 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
                                 }
                             }
                         />
-                        <Layout navItems={navItems}>
-                            <ErrorBoundary>
+                        <ErrorBoundary>
+                            <Layout navItems={navItems}>
                                 <Notifications notifications={this.notificationsManager.notifications} />
                                 {Object.keys(routes).map(path => {
                                     const route = routes[path];
                                     return <Route key={path} path={path} component={route.component} />;
                                 })}
-                            </ErrorBoundary>
-                        </Layout>
+                            </Layout>
+                        </ErrorBoundary>
                     </Switch>
                 </Router>
             </Provider>

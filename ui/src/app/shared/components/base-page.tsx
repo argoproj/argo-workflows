@@ -10,16 +10,20 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
     };
 
     public queryParam(name: string) {
-        return new URLSearchParams(this.appContext.router.route.location.search).get(name);
+        return this.params.get(name);
+    }
+
+    private get params() {
+        return new URLSearchParams(this.appContext.router.route.location.search);
     }
 
     public queryParams(name: string) {
-        return new URLSearchParams(this.appContext.router.route.location.search).getAll(name);
+        return this.params.getAll(name);
     }
 
     // this allows us to set-multiple parameters at once
     public setQueryParams(newParams: any) {
-        const params = new URLSearchParams(this.appContext.router.route.location.search);
+        const params = this.params;
         Object.keys(newParams).forEach(name => {
             const value = newParams[name];
             if (value !== null) {
@@ -28,7 +32,20 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
                 params.delete(name);
             }
         });
+        this.pushParams(params);
+    }
+
+    // this allows us to set-multiple parameters at once
+    public appendQueryParams(newParams: {name: string; value: string}[]) {
+        const params = this.params;
+        newParams.forEach(param => params.delete(param.name));
+        newParams.forEach(param => params.append(param.name, param.value));
+        this.pushParams(params);
+    }
+
+    private pushParams(params: URLSearchParams) {
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
+        setTimeout(() => this.componentDidMount(), 300);
     }
 
     protected get appContext() {
