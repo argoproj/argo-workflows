@@ -63,7 +63,16 @@ func (s *CLISuite) TestCron() {
 	s.Run("List", func(t *testing.T) {
 		output, err := argo("cron", "list")
 		assert.NoError(t, err)
-		assert.Contains(t, output, "NAME   AGE   LAST RUN   SCHEDULE   SUSPENDED")
+		assert.Contains(t, output, "NAME")
+		assert.Contains(t, output, "AGE")
+		assert.Contains(t, output, "LAST RUN")
+		assert.Contains(t, output, "SCHEDULE")
+		assert.Contains(t, output, "SUSPENDED")
+	})
+	s.Run("Get", func(t *testing.T) {
+		output, err := argo("cron", "get", "not-found")
+		assert.EqualError(t, err, "exit status 1")
+		assert.Contains(t, output, `"not-found" not found`)
 	})
 }
 

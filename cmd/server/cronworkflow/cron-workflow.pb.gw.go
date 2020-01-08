@@ -29,10 +29,10 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
 var (
-	filter_CronWorkflowService_ListWorkflowTemplates_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_CronWorkflowService_ListCronWorkflows_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_CronWorkflowService_ListWorkflowTemplates_0(ctx context.Context, marshaler runtime.Marshaler, client CronWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_CronWorkflowService_ListCronWorkflows_0(ctx context.Context, marshaler runtime.Marshaler, client CronWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListCronWorkflowsRequest
 	var metadata runtime.ServerMetadata
 
@@ -57,16 +57,16 @@ func request_CronWorkflowService_ListWorkflowTemplates_0(ctx context.Context, ma
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_ListWorkflowTemplates_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_ListCronWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListWorkflowTemplates(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListCronWorkflows(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_CronWorkflowService_ListWorkflowTemplates_0(ctx context.Context, marshaler runtime.Marshaler, server CronWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_CronWorkflowService_ListCronWorkflows_0(ctx context.Context, marshaler runtime.Marshaler, server CronWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListCronWorkflowsRequest
 	var metadata runtime.ServerMetadata
 
@@ -88,11 +88,102 @@ func local_request_CronWorkflowService_ListWorkflowTemplates_0(ctx context.Conte
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
-	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_CronWorkflowService_ListWorkflowTemplates_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_CronWorkflowService_ListCronWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListWorkflowTemplates(ctx, &protoReq)
+	msg, err := server.ListCronWorkflows(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+var (
+	filter_CronWorkflowService_GetCronWorkflow_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0, "cronWorkflowName": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+)
+
+func request_CronWorkflowService_GetCronWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, client CronWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetCronWorkflowRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+
+	val, ok = pathParams["cronWorkflowName"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cronWorkflowName")
+	}
+
+	protoReq.CronWorkflowName, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cronWorkflowName", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_CronWorkflowService_GetCronWorkflow_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.GetCronWorkflow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_CronWorkflowService_GetCronWorkflow_0(ctx context.Context, marshaler runtime.Marshaler, server CronWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetCronWorkflowRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+
+	val, ok = pathParams["cronWorkflowName"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "cronWorkflowName")
+	}
+
+	protoReq.CronWorkflowName, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "cronWorkflowName", err)
+	}
+
+	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_CronWorkflowService_GetCronWorkflow_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.GetCronWorkflow(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -102,7 +193,7 @@ func local_request_CronWorkflowService_ListWorkflowTemplates_0(ctx context.Conte
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 func RegisterCronWorkflowServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server CronWorkflowServiceServer) error {
 
-	mux.Handle("GET", pattern_CronWorkflowService_ListWorkflowTemplates_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_CronWorkflowService_ListCronWorkflows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -111,14 +202,34 @@ func RegisterCronWorkflowServiceHandlerServer(ctx context.Context, mux *runtime.
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_CronWorkflowService_ListWorkflowTemplates_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_CronWorkflowService_ListCronWorkflows_0(rctx, inboundMarshaler, server, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_CronWorkflowService_ListWorkflowTemplates_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_CronWorkflowService_ListCronWorkflows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_CronWorkflowService_GetCronWorkflow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_CronWorkflowService_GetCronWorkflow_0(rctx, inboundMarshaler, server, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CronWorkflowService_GetCronWorkflow_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -163,7 +274,7 @@ func RegisterCronWorkflowServiceHandler(ctx context.Context, mux *runtime.ServeM
 // "CronWorkflowServiceClient" to call the correct interceptors.
 func RegisterCronWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client CronWorkflowServiceClient) error {
 
-	mux.Handle("GET", pattern_CronWorkflowService_ListWorkflowTemplates_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_CronWorkflowService_ListCronWorkflows_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -172,14 +283,34 @@ func RegisterCronWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_CronWorkflowService_ListWorkflowTemplates_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_CronWorkflowService_ListCronWorkflows_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_CronWorkflowService_ListWorkflowTemplates_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_CronWorkflowService_ListCronWorkflows_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_CronWorkflowService_GetCronWorkflow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_CronWorkflowService_GetCronWorkflow_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_CronWorkflowService_GetCronWorkflow_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -187,9 +318,13 @@ func RegisterCronWorkflowServiceHandlerClient(ctx context.Context, mux *runtime.
 }
 
 var (
-	pattern_CronWorkflowService_ListWorkflowTemplates_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "cron-workflows", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_CronWorkflowService_ListCronWorkflows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "cron-workflows", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+
+	pattern_CronWorkflowService_GetCronWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "cron-workflows", "namespace", "cronWorkflowName"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
-	forward_CronWorkflowService_ListWorkflowTemplates_0 = runtime.ForwardResponseMessage
+	forward_CronWorkflowService_ListCronWorkflows_0 = runtime.ForwardResponseMessage
+
+	forward_CronWorkflowService_GetCronWorkflow_0 = runtime.ForwardResponseMessage
 )

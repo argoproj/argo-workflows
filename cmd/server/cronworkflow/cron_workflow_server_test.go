@@ -14,15 +14,21 @@ import (
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
 	wfClientset := wftFake.NewSimpleClientset(&wfv1.CronWorkflow{
-		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns"},
+		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns", Name: "my-name"},
 	})
 	server := NewCronWorkflowServer()
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
-	t.Run("ListWorkflowTemplates", func(t *testing.T) {
-		templates, err := server.ListWorkflowTemplates(ctx, &ListCronWorkflowsRequest{Namespace: "my-ns"})
+	t.Run("ListCronWorkflows", func(t *testing.T) {
+		cronWfs, err := server.ListCronWorkflows(ctx, &ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {
-			assert.Len(t, templates.Items, 1)
+			assert.Len(t, cronWfs.Items, 1)
+		}
+	})
+	t.Run("GetCronWorkflow", func(t *testing.T) {
+		cronWf, err := server.GetCronWorkflow(ctx, &GetCronWorkflowRequest{Namespace: "my-ns", CronWorkflowName: "my-name"})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cronWf, 1)
 		}
 	})
 }

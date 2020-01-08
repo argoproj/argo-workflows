@@ -222,13 +222,34 @@ func (s *ArgoServerSuite) TestWorkflows() {
 }
 
 func (s *ArgoServerSuite) TestCronWorkflows() {
+	// TODO create a cron wf using API here
+	s.Given().
+		CronWorkflow("@cron/testdata/basic.yaml").
+		When().
+		CreateCronWorkflow()
+
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/cron-workflows/").
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.items").
-			Null()
+			Array().
+			Length().
+			Equal(1)
+	})
+
+	s.Run("Get", func(t *testing.T) {
+		s.e(t).GET("/api/v1/cron-workflows/argo/not-found").
+			Expect().
+			Status(404)
+		s.e(t).GET("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			Equal("test-cron-wf-basic")
+
 	})
 }
 

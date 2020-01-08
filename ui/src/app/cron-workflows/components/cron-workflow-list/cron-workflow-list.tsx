@@ -132,7 +132,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-3'>CREATED</div>
                         </div>
                         {this.state.cronWorkflows.map(w => (
-                            <Link className='row argo-table-list__row' key={w.metadata.name} to={uiUrl(`workflow-templates/${w.metadata.namespace}/${w.metadata.name}`)}>
+                            <Link className='row argo-table-list__row' key={`${w.metadata.namespace}/${w.metadata.name}`} to={uiUrl(`cron-workflows/${w.metadata.namespace}/${w.metadata.name}`)}>
                                 <div className='columns small-1'>
                                     <i className='fa fa-clock' />
                                 </div>
