@@ -10,7 +10,7 @@ import {AppContext, ContextApis, Provider} from './shared/context';
 import archivedWorkflows from './archived-workflows';
 import help from './help';
 import login from './login';
-import {ErrorBoundary} from './shared/components/error-boundary';
+import ErrorBoundary from './shared/components/error-boundary';
 import workflowTemplates from './workflow-templates';
 import workflows from './workflows';
 
@@ -114,15 +114,15 @@ export class App extends React.Component<{}, {popupProps: PopupProps}> {
                                 }
                             }
                         />
-                        <Layout navItems={navItems}>
-                            <ErrorBoundary>
+                        <ErrorBoundary>
+                            <Layout navItems={navItems}>
                                 <Notifications notifications={this.notificationsManager.notifications} />
                                 {Object.keys(routes).map(path => {
                                     const route = routes[path];
                                     return <Route key={path} path={path} component={route.component} />;
                                 })}
-                            </ErrorBoundary>
-                        </Layout>
+                            </Layout>
+                        </ErrorBoundary>
                     </Switch>
                 </Router>
             </Provider>

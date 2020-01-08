@@ -31,7 +31,7 @@ export class WorkflowTemplateService {
 
     public create(template: models.WorkflowTemplate, namespace: string): Promise<models.WorkflowTemplate> {
         return requests
-            .post(`api/v1/workflowtemplates/${namespace}`)
+            .post(`api/v1/workflow-templates/${namespace}`)
             .send({
                 namespace,
                 template

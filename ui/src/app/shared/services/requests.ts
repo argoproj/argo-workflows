@@ -3,7 +3,7 @@ import {EventSourcePolyfill} from 'event-source-polyfill';
 import {Observable, Observer} from 'rxjs';
 import * as _superagent from 'superagent';
 import {SuperAgentRequest} from 'superagent';
-import {apiUrl} from '../base';
+import {apiUrl, uiUrl} from '../base';
 
 const superagentPromise = require('superagent-promise');
 
@@ -23,7 +23,7 @@ const auth = (req: SuperAgentRequest) => {
 
 const handle = (err: any) => {
     if (err.status === 401) {
-        document.location.href = '/login';
+        document.location.href = uiUrl('login');
     }
 };
 

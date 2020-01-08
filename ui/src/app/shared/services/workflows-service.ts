@@ -30,8 +30,6 @@ export class WorkflowsService {
 
         return requests
             .loadEventSource(url)
-            .repeat()
-            .retry()
             .map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<models.Workflow>)
             .filter(wf => filter.phases === undefined || filter.phases.includes(wf.object.status.phase))
             .map(watchEvent => {
