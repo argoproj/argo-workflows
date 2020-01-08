@@ -16,27 +16,24 @@ export class WorkflowsService {
     public list(phases: string[], namespace: string): Promise<models.Workflow[]> {
         return requests
             .get(`api/v1/workflows/${namespace}`)
-            .query({phase: phases})
             .then(res => res.body as models.WorkflowList)
-            .then(list => (list.items || []).map(this.populateDefaultFields));
+            .then()
+            .then(list => (list.items || []).map(this.populateDefaultFields).filter(wf => phases.length === 0 || phases.includes(wf.status.phase)));
     }
 
-    public watch(filter?: {namespace: string; name: string} | Array<string>): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
-        let url = 'api/v1/workflow-events/';
-        if (filter) {
-            if (filter instanceof Array) {
-                const phases = (filter as Array<string>).map(phase => `listOptions.fieldSelector=status.phase=${phase}`).join('&');
-                url = `${url}?${phases}`;
-            } else {
-                const workflow = filter as {namespace: string; name: string};
-                url = `${url}${workflow.namespace}?listOptions.fieldSelector=metadata.name=${workflow.name}`;
-            }
+    public watch(filter: {namespace?: string; name?: string; phases?: Array<string>}): Observable<models.kubernetes.WatchEvent<models.Workflow>> {
+        const queryParams: string[] = [];
+        if (filter.name) {
+            queryParams.push(`listOptions.fieldSelector=metadata.name=${filter.name}`);
         }
+        const url = `api/v1/workflow-events/${filter.namespace || ''}?${queryParams.join('&')}`;
+
         return requests
             .loadEventSource(url)
             .repeat()
             .retry()
             .map(data => JSON.parse(data).result as models.kubernetes.WatchEvent<models.Workflow>)
+            .filter(wf => filter.phases === undefined || filter.phases.includes(wf.object.status.phase))
             .map(watchEvent => {
                 watchEvent.object = this.populateDefaultFields(watchEvent.object);
                 return watchEvent;
