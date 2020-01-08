@@ -148,7 +148,7 @@ argo-server-image: dist/argo-server-linux-amd64
 	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server .
 	rm -f argo-server
 ifeq ($(DOCKER_PUSH),true)
- 	docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG)
+	docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG)
 endif
 
 .PHONY: argo-server
