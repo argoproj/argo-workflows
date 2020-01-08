@@ -12,7 +12,7 @@ import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
-require('./workflow-template-list.scss');
+require('./cron-workflow-list.scss');
 
 const placeholderCronWorkflow: string = `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
