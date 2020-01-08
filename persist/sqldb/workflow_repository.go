@@ -31,7 +31,7 @@ func NewWorkflowDBContext(tableName string, nodeStatusOffload bool, session sqlb
 	}
 }
 
-	type DBRepository interface {
+type DBRepository interface {
 	Save(wf *wfv1.Workflow) error
 	Get(uid string) (*wfv1.Workflow, error)
 	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)

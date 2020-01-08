@@ -15,7 +15,7 @@ import {Utils} from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
 
-const placeholderWorkflowTemplate = (namespace:string) => `apiVersion: argoproj.io/v1alpha1
+const placeholderWorkflowTemplate = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   generateName: hello-world

@@ -20,7 +20,7 @@ import {Utils} from '../../../shared/utils';
 
 require('./workflows-list.scss');
 
-const placeholderWorkflow = (namespace:string) =>  `apiVersion: argoproj.io/v1alpha1
+const placeholderWorkflow = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
@@ -117,7 +117,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderWorkflow(this.namespace || "default")}
+                                placeHolder={placeholderWorkflow(this.namespace || 'default')}
                                 onSave={rawWf => {
                                     return services.workflows
                                         .create(JSON.parse(rawWf))
