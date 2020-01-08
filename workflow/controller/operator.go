@@ -1284,13 +1284,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeSteps:
-		node, err = woc.executeSteps(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeSteps(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
-		node, err = woc.executeScript(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeScript(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeResource:
 		node, err = woc.executeResource(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeDAG:
-		node, err = woc.executeDAG(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeDAG(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	default:
@@ -1650,7 +1650,10 @@ func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
 	return nodeName
 }
 
-func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+	// The template scope of this script.
+	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return node, nil
