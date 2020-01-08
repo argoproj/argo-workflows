@@ -213,7 +213,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	// Create a starting template context.
-	tmplCtx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+	tmplCtx := woc.createTemplateContext()
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
@@ -2139,4 +2139,9 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	}
 	woc.volumes = newVolumes
 	return nil
+}
+
+// createTemplateContext creates a new template context.
+func (woc *wfOperationCtx) createTemplateContext() *templateresolution.Context {
+	return templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
 }
