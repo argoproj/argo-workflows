@@ -201,8 +201,11 @@ func (d *dagContext) hasMoreRetries(node *wfv1.NodeStatus) bool {
 	return true
 }
 
-func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
-	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+	node := woc.getNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	}
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -238,11 +241,11 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	dagPhase := dagCtx.assessDAGPhase(targetTasks, woc.wf.Status.Nodes)
 	switch dagPhase {
 	case wfv1.NodeRunning:
-		return nil
+		return node, nil
 	case wfv1.NodeError, wfv1.NodeFailed:
 		woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 		_ = woc.markNodePhase(nodeName, dagPhase)
-		return nil
+		return node, nil
 	}
 
 	// set outputs from tasks in order for DAG templates to support outputs
@@ -260,7 +263,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	}
 	outputs, err := getTemplateOutputsFromScope(tmpl, &scope)
 	if err != nil {
-		return err
+		return node, err
 	}
 	if outputs != nil {
 		node = woc.getNodeByName(nodeName)
@@ -271,7 +274,7 @@ func (woc *wfOperationCtx) executeDAG(nodeName string, tmplCtx *templateresoluti
 	woc.updateOutboundNodesForTargetTasks(dagCtx, targetTasks, nodeName)
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return nil
+	return node, nil
 }
 
 func (woc *wfOperationCtx) updateOutboundNodesForTargetTasks(dagCtx *dagContext, targetTasks []string, nodeName string) {
