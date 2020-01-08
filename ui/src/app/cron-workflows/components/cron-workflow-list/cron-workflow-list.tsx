@@ -18,7 +18,7 @@ require('./cron-workflow-list.scss');
 const placeholderCronWorkflow = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  generateName: hello-world-
+  name: hello-world
   namespace: ${namespace}
 spec:
   schedule: "* * * * *"

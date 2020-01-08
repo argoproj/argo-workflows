@@ -22,7 +22,6 @@ export const WorkflowListItem = (props: WorkflowListItemProps) => (
                     <i className={classNames('fa', Utils.statusIconClasses(props.workflow.status.phase))} aria-hidden='true' />
                 </div>
                 <div className='workflow-list-item__status-message'>
-                    {' '}
                     <Timestamp date={props.workflow.metadata.creationTimestamp} />
                 </div>
             </div>
