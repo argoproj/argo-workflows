@@ -1636,6 +1636,7 @@
     "github.com/gogo/protobuf/proto",
     "github.com/gogo/protobuf/sortkeys",
     "github.com/golang/glog",
+    "github.com/golang/protobuf/descriptor",
     "github.com/golang/protobuf/proto",
     "github.com/gorilla/websocket",
     "github.com/grpc-ecosystem/go-grpc-middleware",

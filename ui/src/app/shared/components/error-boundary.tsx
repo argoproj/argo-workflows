@@ -2,14 +2,12 @@ import {ErrorInfo} from 'react';
 import * as React from 'react';
 import {ErrorPanel} from './error-panel';
 
-import {withRouter} from 'react-router';
-
 interface State {
     error?: Error & {response?: any};
     errorInfo?: ErrorInfo;
 }
 
-class ErrorBoundary extends React.Component<any, State> {
+export default class ErrorBoundary extends React.Component<any, State> {
     public static getDerivedStateFromError(error: Error) {
         return {error};
     }
@@ -35,5 +33,3 @@ class ErrorBoundary extends React.Component<any, State> {
         return this.props.children;
     }
 }
-
-export default withRouter(ErrorBoundary);
