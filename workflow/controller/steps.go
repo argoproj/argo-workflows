@@ -44,10 +44,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}
 	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
 
+	// The template scope of this step.
+	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
 		if woc.getNodeByName(sgNodeName) == nil {
-			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
+			_ = woc.initializeNode(sgNodeName, wfv1.NodeTypeStepGroup, templateScope, tmpl, stepsCtx.boundaryID, wfv1.NodeRunning)
 		} else {
 			_ = woc.markNodePhase(sgNodeName, wfv1.NodeRunning)
 		}
@@ -189,6 +192,9 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 	// Maps nodes to their steps
 	nodeSteps := make(map[string]wfv1.WorkflowStep)
 
+	// The template scope of this step group.
+	templateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+
 	// Kick off all parallel steps in the group
 	for _, step := range stepGroup {
 		childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
@@ -196,7 +202,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 		// Check the step's when clause to decide if it should execute
 		proceed, err := shouldExecute(step.When)
 		if err != nil {
-			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
+			woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, templateScope, &step, stepsCtx.boundaryID, wfv1.NodeError, err.Error())
 			woc.addChildNode(sgNodeName, childNodeName)
 			woc.markNodeError(childNodeName, err)
 			return woc.markNodeError(sgNodeName, err)
@@ -205,7 +211,7 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 			if woc.getNodeByName(childNodeName) == nil {
 				skipReason := fmt.Sprintf("when '%s' evaluated false", step.When)
 				woc.log.Infof("Skipping %s: %s", childNodeName, skipReason)
-				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
+				woc.initializeNode(childNodeName, wfv1.NodeTypeSkipped, templateScope, &step, stepsCtx.boundaryID, wfv1.NodeSkipped, skipReason)
 				woc.addChildNode(sgNodeName, childNodeName)
 			}
 			continue
