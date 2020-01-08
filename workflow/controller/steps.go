@@ -45,7 +45,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	woc.addOutputsToScope("workflow", woc.wf.Status.Outputs, stepsCtx.scope)
 
 	// The template scope of this step.
-	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
+	templateScope := stepsCtx.tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
 
 	for i, stepGroup := range tmpl.Steps {
 		sgNodeName := fmt.Sprintf("%s[%d]", nodeName, i)
