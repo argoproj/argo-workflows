@@ -2,9 +2,9 @@ import * as models from '../../../models';
 import requests from './requests';
 
 export class WorkflowTemplateService {
-    public create(template: models.WorkflowTemplate) {
+    public create(template: models.WorkflowTemplate, namespace: string) {
         return requests
-            .post(`api/v1/workflow-templates`)
+            .post(`api/v1/workflow-templates/${namespace}`)
             .send({template})
             .then(res => res.body as models.WorkflowTemplate);
     }

@@ -6,9 +6,9 @@ import requests from './requests';
 import {WorkflowDeleteResponse} from './responses';
 
 export class WorkflowsService {
-    public create(workflow: models.Workflow) {
+    public create(workflow: models.Workflow, namespace: string) {
         return requests
-            .post(`api/v1/workflows`)
+            .post(`api/v1/workflows/${namespace}`)
             .send({workflow})
             .then(res => res.body as models.Workflow);
     }

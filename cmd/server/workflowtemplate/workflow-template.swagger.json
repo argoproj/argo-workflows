@@ -16,58 +16,6 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow-templates": {
-      "post": {
-        "operationId": "CreateWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateCreateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
-    "/api/v1/workflow-templates/lint": {
-      "post": {
-        "operationId": "LintWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateLintRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
     "/api/v1/workflow-templates/{namespace}": {
       "get": {
         "operationId": "ListWorkflowTemplates",
@@ -145,6 +93,68 @@
             "in": "query",
             "required": false,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "WorkflowTemplateService"
+        ]
+      },
+      "post": {
+        "operationId": "CreateWorkflowTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowtemplateWorkflowTemplateCreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowTemplateService"
+        ]
+      }
+    },
+    "/api/v1/workflow-templates/{namespace}/lint": {
+      "post": {
+        "operationId": "LintWorkflowTemplate",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowtemplateWorkflowTemplateCreateRequest"
+            }
           }
         ],
         "tags": [
@@ -3629,19 +3639,14 @@
     "workflowtemplateWorkflowTemplateCreateRequest": {
       "type": "object",
       "properties": {
+        "namespace": {
+          "type": "string"
+        },
         "template": {
           "$ref": "#/definitions/v1alpha1WorkflowTemplate"
         },
         "createOptions": {
           "$ref": "#/definitions/v1CreateOptions"
-        }
-      }
-    },
-    "workflowtemplateWorkflowTemplateLintRequest": {
-      "type": "object",
-      "properties": {
-        "template": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplate"
         }
       }
     },

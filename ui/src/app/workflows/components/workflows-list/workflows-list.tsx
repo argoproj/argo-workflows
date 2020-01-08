@@ -32,7 +32,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [cowsay]
-      args: ["hello world"]
+      args: ['hello world']
 `;
 
 interface State {
@@ -144,8 +144,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 submitMode={true}
                                 placeHolder={placeholderWorkflow(this.namespace || 'default')}
                                 onSave={rawWf => {
+                                    const workflow = JSON.parse(rawWf) as Workflow;
                                     return services.workflows
-                                        .create(JSON.parse(rawWf))
+                                        .create(workflow, workflow.metadata.namespace)
                                         .then()
                                         .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
                                 }}

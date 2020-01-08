@@ -66,7 +66,7 @@ func NewLintCommand() *cobra.Command {
 						yamlFiles = append(yamlFiles, filePath)
 					}
 					for _, yamlFile := range yamlFiles {
-						err = validate.LintWorkflowTemplateFile(wftmplGetter, yamlFile, strict)
+						err = validate.LintWorkflowTemplateFile(wftmplGetter, namespace, yamlFile, strict)
 						if err != nil {
 							break
 						}
@@ -87,6 +87,7 @@ func NewLintCommand() *cobra.Command {
 func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(args[0])
 	grpcClient, ctx := GetWFtmplApiServerGRPCClient(conn)
+	ns, _, _ := client.Config.Namespace()
 
 	if validateDir {
 		if len(args) > 1 {
@@ -111,7 +112,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 				log.Error(err)
 			}
 			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, grpcClient, wfTmpl)
+				err := ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
 				if err != nil {
 					log.Error(err)
 				}
@@ -126,7 +127,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 				log.Error(err)
 			}
 			for _, wfTmpl := range wfTmpls {
-				err := ServerLintValidation(ctx, grpcClient, wfTmpl)
+				err := ServerLintValidation(ctx, grpcClient, wfTmpl, ns)
 				if err != nil {
 					log.Error(err)
 				}
@@ -136,7 +137,11 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 	return nil
 }
 
-func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl v1alpha1.WorkflowTemplate) error {
-	_, err := client.LintWorkflowTemplate(ctx, &workflowtemplate.WorkflowTemplateLintRequest{Template: &wfTmpl})
+func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl v1alpha1.WorkflowTemplate, ns string) error {
+	wfTmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
+		Namespace: ns,
+		Template:  &wfTmpl,
+	}
+	_, err := client.LintWorkflowTemplate(ctx, &wfTmplReq)
 	return err
 }

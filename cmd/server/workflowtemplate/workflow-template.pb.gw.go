@@ -40,6 +40,24 @@ func request_WorkflowTemplateService_CreateWorkflowTemplate_0(ctx context.Contex
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
+	}
+
 	msg, err := client.CreateWorkflowTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -55,6 +73,24 @@ func local_request_WorkflowTemplateService_CreateWorkflowTemplate_0(ctx context.
 	}
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
 	msg, err := server.CreateWorkflowTemplate(ctx, &protoReq)
@@ -498,7 +534,7 @@ func local_request_WorkflowTemplateService_DeleteWorkflowTemplate_0(ctx context.
 }
 
 func request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, client WorkflowTemplateServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowTemplateLintRequest
+	var protoReq WorkflowTemplateCreateRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -507,6 +543,24 @@ func request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context,
 	}
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
 	msg, err := client.LintWorkflowTemplate(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -515,7 +569,7 @@ func request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context,
 }
 
 func local_request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Context, marshaler runtime.Marshaler, server WorkflowTemplateServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq WorkflowTemplateLintRequest
+	var protoReq WorkflowTemplateCreateRequest
 	var metadata runtime.ServerMetadata
 
 	newReader, berr := utilities.IOReaderFactory(req.Body)
@@ -524,6 +578,24 @@ func local_request_WorkflowTemplateService_LintWorkflowTemplate_0(ctx context.Co
 	}
 	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["namespace"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
+	}
+
+	protoReq.Namespace, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
 	}
 
 	msg, err := server.LintWorkflowTemplate(ctx, &protoReq)
@@ -861,7 +933,7 @@ func RegisterWorkflowTemplateServiceHandlerClient(ctx context.Context, mux *runt
 }
 
 var (
-	pattern_WorkflowTemplateService_CreateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "workflow-templates"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_CreateWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "workflow-templates", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
 
 	pattern_WorkflowTemplateService_GetWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-templates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
 
@@ -873,7 +945,7 @@ var (
 
 	pattern_WorkflowTemplateService_DeleteWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "workflow-templates", "namespace", "templateName"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_WorkflowTemplateService_LintWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"api", "v1", "workflow-templates", "lint"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_WorkflowTemplateService_LintWorkflowTemplate_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "workflow-templates", "namespace", "lint"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
