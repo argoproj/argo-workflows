@@ -91,6 +91,10 @@ type ArtifactRepository struct {
 	HDFS *HDFSArtifactRepository `json:"hdfs,omitempty"`
 }
 
+func (a *ArtifactRepository) IsArchiveLogs() bool {
+	return a != nil && a.ArchiveLogs != nil && *a.ArchiveLogs
+}
+
 type PersistConfig struct {
 	NodeStatusOffload bool              `json:"nodeStatusOffLoad"`
 	ConnectionPool    *ConnectionPool   `json:"connectionPool"`
@@ -108,6 +112,7 @@ type PostgreSQLConfig struct {
 	TableName      string                  `json:"tableName"`
 	UsernameSecret apiv1.SecretKeySelector `json:"userNameSecret"`
 	PasswordSecret apiv1.SecretKeySelector `json:"passwordSecret"`
+	SSL            bool                    `json:"ssl,omitempty"`
 }
 
 type MySQLConfig struct {

@@ -9,6 +9,7 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -62,7 +63,8 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	}
 
 	for _, wftmpl := range workflowTemplates {
-		err := validate.ValidateWorkflowTemplate(wfClientset, namespace, &wftmpl)
+		wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wftmplClient)
+		err := validate.ValidateWorkflowTemplate(wftmplGetter, &wftmpl)
 		if err != nil {
 			log.Fatalf("Failed to create workflow template: %v", err)
 		}

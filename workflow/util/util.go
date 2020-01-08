@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ import (
 	"github.com/argoproj/argo/util/retry"
 	unstructutil "github.com/argoproj/argo/util/unstructured"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/validate"
 )
 
@@ -55,10 +57,11 @@ func NewWorkflowInformer(cfg *rest.Config, ns string, resyncPeriod time.Duration
 	if err != nil {
 		panic(err)
 	}
+
 	resource := schema.GroupVersionResource{
 		Group:    workflow.Group,
 		Version:  "v1alpha1",
-		Resource: "workflows",
+		Resource: workflow.WorkflowPlural,
 	}
 	informer := unstructutil.NewFilteredUnstructuredInformer(
 		resource,
@@ -120,6 +123,14 @@ func NewWorkflowLister(informer cache.SharedIndexInformer) WorkflowLister {
 func FromUnstructured(un *unstructured.Unstructured) (*wfv1.Workflow, error) {
 	var wf wfv1.Workflow
 	err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &wf)
+	if wf.Spec.TTLSecondsAfterFinished != nil {
+		if wf.Spec.TTLStrategy == nil {
+			ttlstrategy := wfv1.TTLStrategy{SecondsAfterCompleted: wf.Spec.TTLSecondsAfterFinished}
+			wf.Spec.TTLStrategy = &ttlstrategy
+		} else if wf.Spec.TTLStrategy.SecondsAfterCompleted == nil {
+			wf.Spec.TTLStrategy.SecondsAfterCompleted = wf.Spec.TTLSecondsAfterFinished
+		}
+	}
 	return &wf, err
 }
 
@@ -219,7 +230,12 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 			}
 
 			for k, v := range yamlParams {
-				value := fmt.Sprintf("%s", v)
+				// We get quoted strings from the yaml file.
+				value, err := strconv.Unquote(string(v))
+				if err != nil {
+					// the string is already clean.
+					value = string(v)
+				}
 				param := wfv1.Parameter{
 					Name:  k,
 					Value: &value,
@@ -252,7 +268,8 @@ func SubmitWorkflow(wfIf v1alpha1.WorkflowInterface, wfClientset wfclientset.Int
 		wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *opts.OwnerReference))
 	}
 
-	err := validate.ValidateWorkflow(wfClientset, namespace, wf, validate.ValidateOpts{})
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace))
+	err := validate.ValidateWorkflow(wftmplGetter, wf, validate.ValidateOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +533,7 @@ func RetryWorkflow(kubeClient kubernetes.Interface, wfClient v1alpha1.WorkflowIn
 			// do not add this status to the node. pretend as if this node never existed.
 		default:
 			// Do not allow retry of workflows with pods in Running/Pending phase
-			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node, node.Phase)
+			return nil, errors.InternalErrorf("Workflow cannot be retried with node %s in %s phase", node.Name, node.Phase)
 		}
 		if node.Type == wfv1.NodeTypePod {
 			log.Infof("Deleting pod: %s", node.ID)

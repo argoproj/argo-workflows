@@ -85,6 +85,14 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 		Host:     postgresConfig.Host + ":" + postgresConfig.Port,
 		Database: postgresConfig.Database,
 	}
+
+	if postgresConfig.SSL {
+		options := map[string]string{
+			"sslmode": "true",
+		}
+		settings.Options = options
+	}
+
 	session, err := postgresql.Open(settings)
 
 	if err != nil {
@@ -100,7 +108,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 
 }
 
-// CreatePostGresDBSession creates Mysql DB session
+// CreateMySQLDBSession creates Mysql DB session
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, mysqlConfig *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if mysqlConfig.TableName == "" {

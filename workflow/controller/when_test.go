@@ -25,7 +25,7 @@ func TestShouldExecute(t *testing.T) {
 	}
 	for _, trueExp := range trueExpressions {
 		res, err := shouldExecute(trueExp)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.True(t, res)
 	}
 
@@ -47,7 +47,7 @@ func TestShouldExecute(t *testing.T) {
 	}
 	for _, falseExp := range falseExpressions {
 		res, err := shouldExecute(falseExp)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.False(t, res)
 	}
 }

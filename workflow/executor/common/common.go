@@ -43,7 +43,9 @@ func WaitForTermination(c KubernetesClientInterface, containerID string, timeout
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	if timeout == 0 {
-		timer.Stop()
+		if !timer.Stop() {
+			<-timer.C
+		}
 	} else {
 		defer timer.Stop()
 	}

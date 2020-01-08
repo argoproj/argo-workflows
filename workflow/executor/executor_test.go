@@ -45,7 +45,7 @@ func TestSaveParameters(t *testing.T) {
 	}
 	mockRuntimeExecutor.On("GetFileContents", fakeContainerID, "/path").Return("has a newline\n", nil)
 	err := we.SaveParameters()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, *we.Template.Outputs.Parameters[0].Value, "has a newline")
 }
 

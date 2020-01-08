@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
 	"os"
 
 	"github.com/argoproj/argo/cmd/argo/commands/template"
@@ -40,6 +41,7 @@ func NewCommand() *cobra.Command {
 	command.AddCommand(NewTerminateCommand())
 	command.AddCommand(cmd.NewVersionCmd(CLIName))
 	command.AddCommand(template.NewTemplateCommand())
+	command.AddCommand(cron.NewCronWorkflowCommand())
 
 	addKubectlFlagsToCmd(command)
 	return command

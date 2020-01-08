@@ -106,16 +106,16 @@ func TestGetTaskAncestryForGlobalArtifacts(t *testing.T) {
 	ctx := &testContext{
 		status: map[string]*wfv1.NodeStatus{
 			"task1": {
-				FinishedAt: v1.Time{time.Now().Add(1 * time.Minute)},
+				FinishedAt: v1.Time{Time: time.Now().Add(1 * time.Minute)},
 			},
 			"task2": {
-				FinishedAt: v1.Time{time.Now().Add(3 * time.Minute)},
+				FinishedAt: v1.Time{Time: time.Now().Add(3 * time.Minute)},
 			},
 			"task3": {
-				FinishedAt: v1.Time{time.Now().Add(2 * time.Minute)},
+				FinishedAt: v1.Time{Time: time.Now().Add(2 * time.Minute)},
 			},
 			"task4": {
-				FinishedAt: v1.Time{time.Now().Add(4 * time.Minute)},
+				FinishedAt: v1.Time{Time: time.Now().Add(4 * time.Minute)},
 			},
 		},
 	}

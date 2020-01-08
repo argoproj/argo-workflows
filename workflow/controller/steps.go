@@ -25,8 +25,11 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
-	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+	node := woc.getNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	}
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -74,10 +77,12 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 			}
 		}
-		sgNode := woc.executeStepGroup(stepGroup, sgNodeName, &stepsCtx)
+
+		sgNode := woc.executeStepGroup(stepGroup.Steps, sgNodeName, &stepsCtx)
+
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
-			return nil
+			return node, nil
 		}
 
 		if !sgNode.Successful() {
@@ -85,11 +90,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
-			return nil
+			return node, nil
 		}
 
 		// Add all outputs of each step in the group to the scope
-		for _, step := range stepGroup {
+		for _, step := range stepGroup.Steps {
 			childNodeName := fmt.Sprintf("%s.%s", sgNodeName, step.Name)
 			childNode := woc.getNodeByName(childNodeName)
 			prefix := fmt.Sprintf("steps.%s", step.Name)
@@ -104,13 +109,13 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 				}
 				if len(childNodes) > 0 {
 					// Expanded child nodes should be created from the same template.
-					tmpl := woc.wf.GetStoredOrLocalTemplate(&childNodes[0])
-					if tmpl == nil {
-						return errors.InternalErrorf("Template of step node '%s' not found (inferred from %s)", childNodeName, childNodes[0].Name)
-					}
-					err := woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
+					_, tmpl, err := woc.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
-						return err
+						return node, err
+					}
+					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
+					if err != nil {
+						return node, err
 					}
 				} else {
 					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
@@ -124,7 +129,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
-		return err
+		return node, err
 	}
 	if outputs != nil {
 		node := woc.getNodeByName(nodeName)
@@ -133,7 +138,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	}
 
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return nil
+	return node, nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
@@ -255,6 +260,9 @@ func shouldExecute(when string) (bool, error) {
 	}
 	expression, err := govaluate.NewEvaluableExpression(when)
 	if err != nil {
+		if strings.Contains(err.Error(), "Invalid token") {
+			return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v (hint: try wrapping the affected expression in quotes (\"))", when, err)
+		}
 		return false, errors.Errorf(errors.CodeBadRequest, "Invalid 'when' expression '%s': %v", when, err)
 	}
 	// The following loop converts govaluate variables (which we don't use), into strings. This

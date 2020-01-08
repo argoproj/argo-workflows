@@ -3,6 +3,7 @@ package validate
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/robfig/cron"
 	"io"
 	"reflect"
 	"regexp"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/argoproj/argo/errors"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	wfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/workflow/artifacts/hdfs"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -48,11 +48,11 @@ type templateValidationCtx struct {
 	wf *wfv1.Workflow
 }
 
-func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
+func newTemplateValidationCtx(wf *wfv1.Workflow, opts ValidateOpts) *templateValidationCtx {
 	globalParams := make(map[string]string)
-	globalParams[common.GlobalVarWorkflowName] = placeholderValue
-	globalParams[common.GlobalVarWorkflowNamespace] = placeholderValue
-	globalParams[common.GlobalVarWorkflowUID] = placeholderValue
+	globalParams[common.GlobalVarWorkflowName] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowNamespace] = placeholderGenerator.NextPlaceholder()
+	globalParams[common.GlobalVarWorkflowUID] = placeholderGenerator.NextPlaceholder()
 	return &templateValidationCtx{
 		ValidateOpts: opts,
 		globalParams: globalParams,
@@ -62,19 +62,20 @@ func newTemplateValidationCtx(wfClientset wfclientset.Interface, namespace strin
 }
 
 const (
-	// placeholderValue is an arbitrary string to perform mock substitution of variables
-	placeholderValue = "placeholder"
-
 	// anyItemMagicValue is a magic value set in addItemsToScope() and checked in
 	// resolveAllVariables() to determine if any {{item.name}} can be accepted during
 	// variable resolution (to support withParam)
 	anyItemMagicValue = "item.*"
 )
 
+var (
+	placeholderGenerator = common.NewPlaceholderGenerator()
+)
+
 type FakeArguments struct{}
 
 func (args *FakeArguments) GetParameterByName(name string) *wfv1.Parameter {
-	s := placeholderValue
+	s := placeholderGenerator.NextPlaceholder()
 	return &wfv1.Parameter{Name: name, Value: &s}
 }
 
@@ -85,13 +86,9 @@ func (args *FakeArguments) GetArtifactByName(name string) *wfv1.Artifact {
 var _ wfv1.ArgumentsProvider = &FakeArguments{}
 
 // ValidateWorkflow accepts a workflow and performs validation against it.
-func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *wfv1.Workflow, opts ValidateOpts) error {
-	if wf.Namespace != "" {
-		namespace = wf.Namespace
-	}
-
-	ctx := newTemplateValidationCtx(wfClientset, namespace, wf, opts)
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wf)
+func ValidateWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wf *wfv1.Workflow, opts ValidateOpts) error {
+	ctx := newTemplateValidationCtx(wf, opts)
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wf, wf)
 
 	err := validateWorkflowFieldNames(wf.Spec.Templates)
 	if err != nil {
@@ -112,16 +109,16 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 			if param.Value != nil {
 				ctx.globalParams["workflow.parameters."+param.Name] = *param.Value
 			} else {
-				ctx.globalParams["workflow.parameters."+param.Name] = placeholderValue
+				ctx.globalParams["workflow.parameters."+param.Name] = placeholderGenerator.NextPlaceholder()
 			}
 		}
 	}
 
 	for k := range wf.ObjectMeta.Annotations {
-		ctx.globalParams["workflow.annotations."+k] = placeholderValue
+		ctx.globalParams["workflow.annotations."+k] = placeholderGenerator.NextPlaceholder()
 	}
 	for k := range wf.ObjectMeta.Labels {
-		ctx.globalParams["workflow.labels."+k] = placeholderValue
+		ctx.globalParams["workflow.labels."+k] = placeholderGenerator.NextPlaceholder()
 	}
 
 	if wf.Spec.Priority != nil {
@@ -137,7 +134,7 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 	}
 	if wf.Spec.OnExit != "" {
 		// now when validating onExit, {{workflow.status}} is now available as a global
-		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderValue
+		ctx.globalParams[common.GlobalVarWorkflowStatus] = placeholderGenerator.NextPlaceholder()
 		_, err = ctx.validateTemplateHolder(&wfv1.Template{Template: wf.Spec.OnExit}, tmplCtx, &wf.Spec.Arguments, map[string]interface{}{})
 		if err != nil {
 			return err
@@ -163,12 +160,9 @@ func ValidateWorkflow(wfClientset wfclientset.Interface, namespace string, wf *w
 }
 
 // ValidateWorkflow accepts a workflow template and performs validation against it.
-func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace string, wftmpl *wfv1.WorkflowTemplate) error {
-	if wftmpl.Namespace != "" {
-		namespace = wftmpl.Namespace
-	}
-	ctx := newTemplateValidationCtx(wfClientset, namespace, nil, ValidateOpts{})
-	tmplCtx := templateresolution.NewContextFromClientset(wfClientset.ArgoprojV1alpha1().WorkflowTemplates(namespace), wftmpl)
+func ValidateWorkflowTemplate(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, wftmpl *wfv1.WorkflowTemplate) error {
+	ctx := newTemplateValidationCtx(nil, ValidateOpts{})
+	tmplCtx := templateresolution.NewContext(wftmplGetter, wftmpl, nil)
 
 	// Check if all templates can be resolved.
 	for _, template := range wftmpl.Spec.Templates {
@@ -176,6 +170,34 @@ func ValidateWorkflowTemplate(wfClientset wfclientset.Interface, namespace strin
 		if err != nil {
 			return errors.Errorf(errors.CodeBadRequest, "templates.%s %s", template.Name, err.Error())
 		}
+	}
+	return nil
+}
+
+// ValidateCronWorkflow validates a CronWorkflow
+func ValidateCronWorkflow(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, cronWf *wfv1.CronWorkflow) error {
+	if _, err := cron.ParseStandard(cronWf.Spec.Schedule); err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cron schedule is malformed: %s", err)
+	}
+
+	switch cronWf.Spec.ConcurrencyPolicy {
+	case wfv1.AllowConcurrent, wfv1.ForbidConcurrent, wfv1.ReplaceConcurrent, "":
+		// Do nothing
+	default:
+		return errors.Errorf(errors.CodeBadRequest, "'%s' is not a valid concurrencyPolicy", cronWf.Spec.ConcurrencyPolicy)
+	}
+
+	if cronWf.Spec.StartingDeadlineSeconds != nil && *cronWf.Spec.StartingDeadlineSeconds < 0 {
+		return errors.Errorf(errors.CodeBadRequest, "startingDeadlineSeconds must be positive")
+	}
+
+	wf, err := common.ConvertToWorkflow(cronWf)
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot convert to Workflow: %s", err)
+	}
+	err = ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+	if err != nil {
+		return errors.Errorf(errors.CodeBadRequest, "cannot validate Workflow: %s", err)
 	}
 	return nil
 }
@@ -203,8 +225,8 @@ func (ctx *templateValidationCtx) validateTemplate(tmpl *wfv1.Template, tmplCtx 
 	}
 	localParams := make(map[string]string)
 	if tmpl.IsPodType() {
-		localParams[common.LocalVarPodName] = placeholderValue
-		scope[common.LocalVarPodName] = placeholderValue
+		localParams[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
+		scope[common.LocalVarPodName] = placeholderGenerator.NextPlaceholder()
 	}
 	if tmpl.IsLeaf() {
 		for _, art := range tmpl.Outputs.Artifacts {
@@ -289,7 +311,7 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 		}
 	}
 
-	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder, args, ctx.globalParams, map[string]string{}, true)
+	tmplCtx, resolvedTmpl, err := tmplCtx.ResolveTemplate(tmplHolder)
 	if err != nil {
 		if argoerr, ok := err.(errors.ArgoError); ok && argoerr.Code() == errors.CodeNotFound {
 			if tmplRef != nil {
@@ -299,6 +321,16 @@ func (ctx *templateValidationCtx) validateTemplateHolder(tmplHolder wfv1.Templat
 			return nil, errors.InternalWrapError(err)
 		}
 		return nil, err
+	}
+
+	// Validate retryStrategy
+	if resolvedTmpl.RetryStrategy != nil {
+		switch resolvedTmpl.RetryStrategy.RetryPolicy {
+		case wfv1.RetryPolicyAlways, wfv1.RetryPolicyOnError, wfv1.RetryPolicyOnFailure, "":
+			// Passes validation
+		default:
+			return nil, fmt.Errorf("%s is not a valid RetryPolicy", resolvedTmpl.RetryStrategy.RetryPolicy)
+		}
 	}
 
 	return resolvedTmpl, ctx.validateTemplate(resolvedTmpl, tmplCtx, args, extraScope)
@@ -543,7 +575,7 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 	stepNames := make(map[string]bool)
 	resolvedTemplates := make(map[string]*wfv1.Template)
 	for i, stepGroup := range tmpl.Steps {
-		for _, step := range stepGroup {
+		for _, step := range stepGroup.Steps {
 			if step.Name == "" {
 				return errors.Errorf(errors.CodeBadRequest, "templates.%s.steps[%d].name is required", tmpl.Name, i)
 			}
@@ -579,7 +611,8 @@ func (ctx *templateValidationCtx) validateSteps(scope map[string]interface{}, tm
 			}
 			resolvedTemplates[step.Name] = resolvedTmpl
 		}
-		for i, step := range stepGroup {
+
+		for _, step := range stepGroup.Steps {
 			aggregate := len(step.WithItems) > 0 || step.WithParam != ""
 			resolvedTmpl := resolvedTemplates[step.Name]
 			ctx.addOutputsToScope(resolvedTmpl, fmt.Sprintf("steps.%s", step.Name), scope, aggregate, false)
@@ -610,11 +643,12 @@ func addItemsToScope(prefix string, withItems []wfv1.Item, withParam string, wit
 	}
 	if len(withItems) > 0 {
 		for i := range withItems {
-			switch val := withItems[i].Value.(type) {
-			case string, int, int32, int64, float32, float64, bool:
+			val := withItems[i]
+			switch val.Type {
+			case wfv1.String, wfv1.Number, wfv1.Bool:
 				scope["item"] = true
-			case map[string]interface{}:
-				for itemKey := range val {
+			case wfv1.Map:
+				for itemKey := range val.MapVal {
 					scope[fmt.Sprintf("item.%s", itemKey)] = true
 				}
 			default:
@@ -647,7 +681,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if param.GlobalName != "" && !isParameter(param.GlobalName) {
 			globalParamName := fmt.Sprintf("workflow.outputs.parameters.%s", param.GlobalName)
 			scope[globalParamName] = true
-			ctx.globalParams[globalParamName] = placeholderValue
+			ctx.globalParams[globalParamName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	for _, art := range tmpl.Outputs.Artifacts {
@@ -655,7 +689,7 @@ func (ctx *templateValidationCtx) addOutputsToScope(tmpl *wfv1.Template, prefix 
 		if art.GlobalName != "" && !isParameter(art.GlobalName) {
 			globalArtName := fmt.Sprintf("workflow.outputs.artifacts.%s", art.GlobalName)
 			scope[globalArtName] = true
-			ctx.globalParams[globalArtName] = placeholderValue
+			ctx.globalParams[globalArtName] = placeholderGenerator.NextPlaceholder()
 		}
 	}
 	if aggregate {

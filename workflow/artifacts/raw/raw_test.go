@@ -20,7 +20,7 @@ func TestLoad(t *testing.T) {
 
 	content := "time: " + string(time.Now().UnixNano())
 	lf, err := ioutil.TempFile("", LoadFileName)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	defer os.Remove(lf.Name())
 
 	art := &wfv1.Artifact{}
@@ -28,10 +28,11 @@ func TestLoad(t *testing.T) {
 		Data: content,
 	}
 	driver := &raw.RawArtifactDriver{}
-	driver.Load(art, lf.Name())
+	err = driver.Load(art, lf.Name())
+	assert.NoError(t, err)
 
 	dat, err := ioutil.ReadFile(lf.Name())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, content, string(dat))
 
 }

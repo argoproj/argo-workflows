@@ -531,13 +531,73 @@ func SplitWorkflowTemplateYAMLFile(body []byte, strict bool) ([]wfv1.WorkflowTem
 	return manifests, nil
 }
 
+// SplitCronWorkflowYAMLFile is a helper to split a body into multiple workflow template objects
+func SplitCronWorkflowYAMLFile(body []byte, strict bool) ([]wfv1.CronWorkflow, error) {
+	manifestsStrings := yamlSeparator.Split(string(body), -1)
+	manifests := make([]wfv1.CronWorkflow, 0)
+	for _, manifestStr := range manifestsStrings {
+		if strings.TrimSpace(manifestStr) == "" {
+			continue
+		}
+		var cronWf wfv1.CronWorkflow
+		var opts []yaml.JSONOpt
+		if strict {
+			opts = append(opts, yaml.DisallowUnknownFields) // nolint
+		}
+		err := yaml.Unmarshal([]byte(manifestStr), &cronWf, opts...)
+		if cronWf.Kind != "" && cronWf.Kind != workflow.CronWorkflowKind {
+			log.Warnf("%s is not a cron workflow", cronWf.Kind)
+			// If we get here, it was a k8s manifest which was not of type 'CronWorkflow'
+			// We ignore these since we only care about CronWorkflow manifests.
+			continue
+		}
+		if err != nil {
+			return nil, errors.New(errors.CodeBadRequest, err.Error())
+		}
+		manifests = append(manifests, cronWf)
+	}
+	return manifests, nil
+}
+
 // MergeReferredTemplate merges a referred template to the receiver template.
 func MergeReferredTemplate(tmpl *wfv1.Template, referred *wfv1.Template) (*wfv1.Template, error) {
 	// Copy the referred template to deep copy template types.
 	newTmpl := referred.DeepCopy()
 
 	newTmpl.Name = tmpl.Name
-	newTmpl.Outputs = *tmpl.Outputs.DeepCopy()
+
+	if len(tmpl.Inputs.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Inputs.Parameters))
+		copy(parameters, tmpl.Inputs.Parameters)
+		newTmpl.Inputs.Parameters = parameters
+	}
+	if len(tmpl.Inputs.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Inputs.Artifacts))
+		copy(artifacts, tmpl.Inputs.Artifacts)
+		newTmpl.Inputs.Artifacts = artifacts
+	}
+
+	if len(tmpl.Outputs.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Outputs.Parameters))
+		copy(parameters, tmpl.Outputs.Parameters)
+		newTmpl.Outputs.Parameters = parameters
+	}
+	if len(tmpl.Outputs.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Outputs.Artifacts))
+		copy(artifacts, tmpl.Outputs.Artifacts)
+		newTmpl.Outputs.Artifacts = artifacts
+	}
+
+	if len(tmpl.Arguments.Parameters) > 0 {
+		parameters := make([]wfv1.Parameter, len(tmpl.Arguments.Parameters))
+		copy(parameters, tmpl.Arguments.Parameters)
+		newTmpl.Arguments.Parameters = parameters
+	}
+	if len(tmpl.Arguments.Artifacts) > 0 {
+		artifacts := make([]wfv1.Artifact, len(tmpl.Arguments.Artifacts))
+		copy(artifacts, tmpl.Arguments.Artifacts)
+		newTmpl.Arguments.Artifacts = artifacts
+	}
 
 	if len(tmpl.NodeSelector) > 0 {
 		m := make(map[string]string, len(tmpl.NodeSelector))
@@ -618,4 +678,25 @@ func GetTemplateHolderString(tmplHolder wfv1.TemplateHolder) string {
 	} else {
 		return fmt.Sprintf("%T (%s)", tmplHolder, tmplName)
 	}
+}
+
+func ConvertToWorkflow(cronWf *wfv1.CronWorkflow) (*wfv1.Workflow, error) {
+	newTypeMeta := metav1.TypeMeta{
+		Kind:       workflow.WorkflowKind,
+		APIVersion: cronWf.TypeMeta.APIVersion,
+	}
+
+	newObjectMeta := metav1.ObjectMeta{}
+	newObjectMeta.GenerateName = cronWf.Name + "-"
+
+	newObjectMeta.Labels = make(map[string]string)
+	newObjectMeta.Labels[LabelCronWorkflow] = cronWf.Name
+
+	wf := &wfv1.Workflow{
+		TypeMeta:   newTypeMeta,
+		ObjectMeta: newObjectMeta,
+		Spec:       cronWf.Spec.WorkflowSpec,
+	}
+	wf.SetOwnerReferences(append(wf.GetOwnerReferences(), *metav1.NewControllerRef(cronWf, wfv1.SchemeGroupVersion.WithKind(workflow.CronWorkflowKind))))
+	return wf, nil
 }

@@ -22,7 +22,7 @@ The following variables are made available to reference various metadata of a wo
 | Variable | Description|
 |----------|------------|
 | `tasks.<TASKNAME>.ip` | IP address of a previous daemon container task |
-| `tasks.<STEPNAME>.status` | Phase status of any previous task step |
+| `tasks.<TASKNAME>.status` | Phase status of any previous task step |
 | `tasks.<TASKNAME>.outputs.result` | Output result of any previous script task |
 | `tasks.<TASKNAME>.outputs.parameters.<NAME>` | Output parameter of any previous task |
 | `tasks.<TASKNAME>.outputs.artifacts.<NAME>` | Output artifact of any previous task |

@@ -5,12 +5,12 @@ package v1alpha1
 import (
 	v1alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/scheme"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
 type ArgoprojV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	CronWorkflowsGetter
 	WorkflowsGetter
 	WorkflowTemplatesGetter
 }
@@ -18,6 +18,10 @@ type ArgoprojV1alpha1Interface interface {
 // ArgoprojV1alpha1Client is used to interact with features provided by the argoproj.io group.
 type ArgoprojV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *ArgoprojV1alpha1Client) CronWorkflows(namespace string) CronWorkflowInterface {
+	return newCronWorkflows(c, namespace)
 }
 
 func (c *ArgoprojV1alpha1Client) Workflows(namespace string) WorkflowInterface {
@@ -60,7 +64,7 @@ func setConfigDefaults(config *rest.Config) error {
 	gv := v1alpha1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()
