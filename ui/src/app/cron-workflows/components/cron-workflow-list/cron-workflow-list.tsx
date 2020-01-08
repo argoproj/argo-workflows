@@ -14,19 +14,21 @@ import {Utils} from '../../../shared/utils';
 
 require('./cron-workflow-list.scss');
 
-const placeholderCronWorkflow: string = `apiVersion: argoproj.io/v1alpha1
+const placeholderCronWorkflow = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  generateName: hello-world
+  generateName: hello-world-
+  namespace: ${namespace}
 spec:
-  schedule: * * * * *
+  schedule: "* * * * *"
   workflowSpec:
-      templates:
+    entrypoint: whalesay
+    templates:
       - name: whalesay
         container:
           image: docker/whalesay:latest
           command: [cowsay]
-          args: ["hello world"]
+          args: ["⏰ hello world"]
 `;
 
 interface State {
@@ -88,7 +90,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderCronWorkflow}
+                                placeHolder={placeholderCronWorkflow('default')}
                                 onSave={rawWf => {
                                     // TODO(simon): Remove hardwired 'argo' namespace
                                     return services.cronWorkflows
@@ -112,8 +114,8 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         if (this.state.cronWorkflows.length === 0) {
             return (
                 <div className='white-box'>
-                    <h4>No Cron Workflows</h4>
-                    <p>You can create new templates here or using the CLI.</p>
+                    <h4>No cron workflows</h4>
+                    <p>You can create new cron workflows here or using the CLI.</p>
                     <p>{learnMore}.</p>
                 </div>
             );
@@ -157,7 +159,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                     </div>
                 )}
                 <p>
-                    <i className='fa fa-info-circle' /> Cron Workflows are Workflows that run on a preset schedule. {learnMore}.
+                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. {learnMore}.
                 </p>
             </>
         );

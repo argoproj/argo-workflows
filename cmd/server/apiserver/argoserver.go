@@ -21,6 +21,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/server/artifacts"
 	"github.com/argoproj/argo/cmd/server/auth"
+	"github.com/argoproj/argo/cmd/server/cronworkflow"
 	"github.com/argoproj/argo/cmd/server/static"
 	"github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/cmd/server/workflowarchive"
@@ -119,7 +120,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(dbRepository sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
+func (as *argoServer) newGRPCServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -144,12 +145,10 @@ func (as *argoServer) newGRPCServer(dbRepository sqldb.OffloadNodeStatusRepo, wf
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	workflowServer := workflow.NewWorkflowServer(dbRepository)
-	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
-	archivedWorkflowServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
-	workflowarchive.RegisterArchivedWorkflowServiceServer(grpcServer, archivedWorkflowServer)
-	workflowTemplateServer := workflowtemplate.NewWorkflowTemplateServer()
-	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowTemplateServer)
+	workflow.RegisterWorkflowServiceServer(grpcServer, workflow.NewWorkflowServer(offloadNodeStatusRepo))
+	workflowtemplate.RegisterWorkflowTemplateServiceServer(grpcServer, workflowtemplate.NewWorkflowTemplateServer())
+	cronworkflow.RegisterCronWorkflowServiceServer(grpcServer, cronworkflow.NewCronWorkflowServer())
+	workflowarchive.RegisterArchivedWorkflowServiceServer(grpcServer, workflowarchive.NewWorkflowArchiveServer(wfArchive))
 
 	return grpcServer
 }
@@ -180,8 +179,9 @@ func (as *argoServer) newHTTPServer(ctx context.Context, port int, artifactServe
 	gwMuxOpts := runtime.WithMarshalerOption(runtime.MIMEWildcard, new(json.JSONMarshaler))
 	gwmux := runtime.NewServeMux(gwMuxOpts)
 	mustRegisterGWHandler(workflow.RegisterWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
-	mustRegisterGWHandler(workflowarchive.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mustRegisterGWHandler(workflowtemplate.RegisterWorkflowTemplateServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(cronworkflow.RegisterCronWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
+	mustRegisterGWHandler(workflowarchive.RegisterArchivedWorkflowServiceHandlerFromEndpoint, ctx, gwmux, endpoint, dialOpts)
 	mux.Handle("/api/", gwmux)
 	mux.HandleFunc("/artifacts/", artifactServer.GetArtifact)
 	mux.HandleFunc("/artifacts-by-uid/", artifactServer.GetArtifactByUID)

@@ -4,6 +4,10 @@
     "title": "cmd/server/workflowarchive/workflow-archive.proto",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
@@ -130,7 +134,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/ArchivedWorkflowDeletedResponse"
+              "$ref": "#/definitions/workflowarchiveArchivedWorkflowDeletedResponse"
             }
           }
         },
@@ -182,7 +186,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/ResubmitArchivedWorkflowRequest"
+              "$ref": "#/definitions/workflowarchiveResubmitArchivedWorkflowRequest"
             }
           }
         ],
@@ -193,20 +197,6 @@
     }
   },
   "definitions": {
-    "ArchivedWorkflowDeletedResponse": {
-      "type": "object"
-    },
-    "ResubmitArchivedWorkflowRequest": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "uid": {
-          "type": "string"
-        }
-      }
-    },
     "intstrIntOrString": {
       "type": "object",
       "properties": {
@@ -3824,6 +3814,20 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
+    },
+    "workflowarchiveArchivedWorkflowDeletedResponse": {
+      "type": "object"
+    },
+    "workflowarchiveResubmitArchivedWorkflowRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        }
+      }
     },
     "workflowv1alpha1NodeStatus": {
       "type": "object",

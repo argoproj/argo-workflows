@@ -19,5 +19,6 @@ Some use-case specific documentation is available:
 * [Workflow Variables](variables.md)
 * [Service Account](service-accounts.md)
 * [Workflow Templates](workflow-templates.md)
+* [Cron Workflows](cron-workflows.md)
 * [Offloading Large Workflows](offloading-large-workflows.md)
 * [Workflow Archive](workflow-archive.md)

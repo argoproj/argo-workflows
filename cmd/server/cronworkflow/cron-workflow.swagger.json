@@ -1,8 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Workflow Service",
-    "description": "Workflow Service API performs CRUD actions against application resources",
+    "title": "cmd/server/cronworkflow/cron-workflow.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -16,66 +15,14 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/workflow-templates": {
-      "post": {
-        "operationId": "CreateWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateCreateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
-    "/api/v1/workflow-templates/lint": {
-      "post": {
-        "operationId": "LintWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateLintRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
-    "/api/v1/workflow-templates/{namespace}": {
+    "/api/v1/cron-workflows/{namespace}": {
       "get": {
         "operationId": "ListWorkflowTemplates",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplateList"
+              "$ref": "#/definitions/v1alpha1CronWorkflowList"
             }
           }
         },
@@ -148,213 +95,12 @@
           }
         ],
         "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
-    "/api/v1/workflow-templates/{namespace}/{templateName}": {
-      "get": {
-        "operationId": "GetWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "getOptions.resourceVersion",
-            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      },
-      "delete": {
-        "operationId": "DeleteWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowDeleteResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "deleteOptions.gracePeriodSeconds",
-            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
-          },
-          {
-            "name": "deleteOptions.preconditions.uid",
-            "description": "Specifies the target UID.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "deleteOptions.preconditions.resourceVersion",
-            "description": "Specifies the target ResourceVersion\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "deleteOptions.orphanDependents",
-            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "deleteOptions.propagationPolicy",
-            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "deleteOptions.dryRun",
-            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
-            "in": "query",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "collectionFormat": "multi"
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      },
-      "put": {
-        "operationId": "UpdateWorkflowTemplate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateUpdateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
-    },
-    "/api/v1/workflow-templates/{namespace}/{templateName}/spec": {
-      "put": {
-        "operationId": "UpdateWorkflowTemplateSpec",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplateSpec"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateSpecUpdateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
+          "CronWorkflowService"
         ]
       }
     }
   },
   "definitions": {
-    "apismetav1Preconditions": {
-      "type": "object",
-      "properties": {
-        "uid": {
-          "type": "string",
-          "title": "Specifies the target UID.\n+optional"
-        },
-        "resourceVersion": {
-          "type": "string",
-          "title": "Specifies the target ResourceVersion\n+optional"
-        }
-      },
-      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
-    },
     "intstrIntOrString": {
       "type": "object",
       "properties": {
@@ -808,54 +554,6 @@
       },
       "description": "ContainerPort represents a network port in a single container."
     },
-    "v1CreateOptions": {
-      "type": "object",
-      "properties": {
-        "dryRun": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
-        },
-        "fieldManager": {
-          "type": "string",
-          "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
-        }
-      },
-      "description": "CreateOptions may be provided when creating an API object."
-    },
-    "v1DeleteOptions": {
-      "type": "object",
-      "properties": {
-        "gracePeriodSeconds": {
-          "type": "string",
-          "format": "int64",
-          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
-        },
-        "preconditions": {
-          "$ref": "#/definitions/apismetav1Preconditions",
-          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional"
-        },
-        "orphanDependents": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
-        },
-        "propagationPolicy": {
-          "type": "string",
-          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
-        },
-        "dryRun": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
-        }
-      },
-      "description": "DeleteOptions may be provided when deleting an API object."
-    },
     "v1DownwardAPIProjection": {
       "type": "object",
       "properties": {
@@ -1107,16 +805,6 @@
         }
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
-    },
-    "v1GetOptions": {
-      "type": "object",
-      "properties": {
-        "resourceVersion": {
-          "type": "string",
-          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv."
-        }
-      },
-      "description": "GetOptions is the standard query options to the standard REST get call."
     },
     "v1GitRepoVolumeSource": {
       "type": "object",
@@ -1674,6 +1362,40 @@
       },
       "description": "ObjectMeta is metadata that all persisted resources must have, which includes all objects\nusers must create."
     },
+    "v1ObjectReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "title": "Kind of the referent.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\n+optional"
+        },
+        "namespace": {
+          "type": "string",
+          "title": "Namespace of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/\n+optional"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names\n+optional"
+        },
+        "uid": {
+          "type": "string",
+          "title": "UID of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids\n+optional"
+        },
+        "apiVersion": {
+          "type": "string",
+          "title": "API version of the referent.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "Specific resourceVersion to which this reference is made, if any.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency\n+optional"
+        },
+        "fieldPath": {
+          "type": "string",
+          "title": "If referring to a piece of an object instead of an entire object, this string\nshould contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].\nFor example, if the object reference is to a container within a pod, this would take on a value like:\n\"spec.containers{name}\" (where \"name\" refers to the name of the container that triggered\nthe event) or if no container name is specified \"spec.containers[2]\" (container with\nindex 2 in this pod). This syntax is chosen only to have some well-defined way of\nreferencing a part of an object.\nTODO: this design is not final and this field is subject to change in the future.\n+optional"
+        }
+      },
+      "title": "ObjectReference contains enough information to let you inspect or modify the referred object.\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
     "v1OwnerReference": {
       "type": "object",
       "properties": {
@@ -1705,6 +1427,120 @@
         }
       },
       "description": "OwnerReference contains enough information to let you identify an owning\nobject. An owning object must be in the same namespace as the dependent, or\nbe cluster-scoped, so there is no namespace field."
+    },
+    "v1PersistentVolumeClaim": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta",
+          "title": "Standard object's metadata.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1PersistentVolumeClaimSpec",
+          "title": "Spec defines the desired characteristics of a volume requested by a pod author.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
+        },
+        "status": {
+          "$ref": "#/definitions/v1PersistentVolumeClaimStatus",
+          "title": "Status represents the current information/status of a persistent volume claim.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional"
+        }
+      },
+      "title": "PersistentVolumeClaim is a user's request for and claim to a persistent volume"
+    },
+    "v1PersistentVolumeClaimCondition": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "lastProbeTime": {
+          "$ref": "#/definitions/v1Time",
+          "title": "Last time we probed the condition.\n+optional"
+        },
+        "lastTransitionTime": {
+          "$ref": "#/definitions/v1Time",
+          "title": "Last time the condition transitioned from one status to another.\n+optional"
+        },
+        "reason": {
+          "type": "string",
+          "title": "Unique, this should be a short, machine understandable string that gives the reason\nfor condition's last transition. If it reports \"ResizeStarted\" that means the underlying\npersistent volume is being resized.\n+optional"
+        },
+        "message": {
+          "type": "string",
+          "title": "Human-readable message indicating details about last transition.\n+optional"
+        }
+      },
+      "title": "PersistentVolumeClaimCondition contails details about state of pvc"
+    },
+    "v1PersistentVolumeClaimSpec": {
+      "type": "object",
+      "properties": {
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "AccessModes contains the desired access modes the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1\n+optional"
+        },
+        "selector": {
+          "$ref": "#/definitions/v1LabelSelector",
+          "title": "A label query over volumes to consider for binding.\n+optional"
+        },
+        "resources": {
+          "$ref": "#/definitions/v1ResourceRequirements",
+          "title": "Resources represents the minimum resources the volume should have.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources\n+optional"
+        },
+        "volumeName": {
+          "type": "string",
+          "title": "VolumeName is the binding reference to the PersistentVolume backing this claim.\n+optional"
+        },
+        "storageClassName": {
+          "type": "string",
+          "title": "Name of the StorageClass required by the claim.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1\n+optional"
+        },
+        "volumeMode": {
+          "type": "string",
+          "title": "volumeMode defines what type of volume is required by the claim.\nValue of Filesystem is implied when not included in claim spec.\nThis is a beta feature.\n+optional"
+        },
+        "dataSource": {
+          "$ref": "#/definitions/v1TypedLocalObjectReference",
+          "title": "This field requires the VolumeSnapshotDataSource alpha feature gate to be\nenabled and currently VolumeSnapshot is the only supported data source.\nIf the provisioner can support VolumeSnapshot data source, it will create\na new volume and data will be restored to the volume at the same time.\nIf the provisioner does not support VolumeSnapshot data source, volume will\nnot be created and the failure will be reported as an event.\nIn the future, we plan to support more data source types and the behavior\nof the provisioner may change.\n+optional"
+        }
+      },
+      "title": "PersistentVolumeClaimSpec describes the common attributes of storage devices\nand allows a Source for provider-specific attributes"
+    },
+    "v1PersistentVolumeClaimStatus": {
+      "type": "object",
+      "properties": {
+        "phase": {
+          "type": "string",
+          "title": "Phase represents the current phase of PersistentVolumeClaim.\n+optional"
+        },
+        "accessModes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "AccessModes contains the actual access modes the volume backing the PVC has.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1\n+optional"
+        },
+        "capacity": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/resourceQuantity"
+          },
+          "title": "Represents the actual resources of the underlying volume.\n+optional"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1PersistentVolumeClaimCondition"
+          },
+          "title": "Current Condition of persistent volume claim. If underlying persistent volume is being\nresized then the Condition will be set to 'ResizeStarted'.\n+optional\n+patchMergeKey=type\n+patchStrategy=merge"
+        }
+      },
+      "description": "PersistentVolumeClaimStatus is the current status of a persistent volume claim."
     },
     "v1PersistentVolumeClaimVolumeSource": {
       "type": "object",
@@ -1795,6 +1631,47 @@
         }
       },
       "description": "Pod anti affinity is a group of inter pod anti affinity scheduling rules."
+    },
+    "v1PodDNSConfig": {
+      "type": "object",
+      "properties": {
+        "nameservers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A list of DNS name server IP addresses.\nThis will be appended to the base nameservers generated from DNSPolicy.\nDuplicated nameservers will be removed.\n+optional"
+        },
+        "searches": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A list of DNS search domains for host-name lookup.\nThis will be appended to the base search paths generated from DNSPolicy.\nDuplicated search paths will be removed.\n+optional"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1PodDNSConfigOption"
+          },
+          "title": "A list of DNS resolver options.\nThis will be merged with the base options generated from DNSPolicy.\nDuplicated entries will be removed. Resolution options given in Options\nwill override those that appear in the base DNSPolicy.\n+optional"
+        }
+      },
+      "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy."
+    },
+    "v1PodDNSConfigOption": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Required."
+        },
+        "value": {
+          "type": "string",
+          "title": "+optional"
+        }
+      },
+      "description": "PodDNSConfigOption defines DNS resolver options of a pod."
     },
     "v1PodSecurityContext": {
       "type": "object",
@@ -2365,6 +2242,24 @@
       },
       "description": "The pod this Toleration is attached to tolerates any taint that matches\nthe triple \u003ckey,value,effect\u003e using the matching operator \u003coperator\u003e."
     },
+    "v1TypedLocalObjectReference": {
+      "type": "object",
+      "properties": {
+        "apiGroup": {
+          "type": "string",
+          "title": "APIGroup is the group for the resource being referenced.\nIf APIGroup is not specified, the specified Kind must be in the core API group.\nFor any other third-party types, APIGroup is required.\n+optional"
+        },
+        "kind": {
+          "type": "string",
+          "title": "Kind is the type of resource being referenced"
+        },
+        "name": {
+          "type": "string",
+          "title": "Name is the name of resource being referenced"
+        }
+      },
+      "description": "TypedLocalObjectReference contains enough information to let you locate the\ntyped referenced object inside the same namespace."
+    },
     "v1Volume": {
       "type": "object",
       "properties": {
@@ -2726,6 +2621,17 @@
       },
       "description": "ArtifactLocation describes a location for a single or multiple artifacts.\nIt is used as single artifact in the context of inputs/outputs (e.g. outputs.artifacts.artname).\nIt is also used to describe the location of multiple artifacts such as the archive location\nof a single workflow step, which the executor will use as a default location to store its files."
     },
+    "v1alpha1ArtifactRepositoryRef": {
+      "type": "object",
+      "properties": {
+        "configMap": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
     "v1alpha1ArtifactoryArtifact": {
       "type": "object",
       "properties": {
@@ -2783,6 +2689,89 @@
         }
       },
       "description": "ContinueOn defines if a workflow should continue even if a task or step fails/errors.\nIt can be specified if the workflow should continue when the pod errors, fails or both."
+    },
+    "v1alpha1CronWorkflow": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1alpha1CronWorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/v1alpha1CronWorkflowStatus"
+        }
+      },
+      "title": "CronWorkflow is the definition of a scheduled workflow resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
+    "v1alpha1CronWorkflowList": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "$ref": "#/definitions/v1ListMeta"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1CronWorkflow"
+          }
+        }
+      },
+      "title": "CronWorkflowList is list of CronWorkflow resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
+    },
+    "v1alpha1CronWorkflowSpec": {
+      "type": "object",
+      "properties": {
+        "workflowSpec": {
+          "$ref": "#/definitions/v1alpha1WorkflowSpec",
+          "title": "WorkflowSpec is the spec of the workflow to be run"
+        },
+        "schedule": {
+          "type": "string",
+          "title": "Schedule is a schedule to run the Workflow in Cron format"
+        },
+        "concurrencyPolicy": {
+          "type": "string",
+          "title": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used"
+        },
+        "suspend": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Suspend is a flag that will stop new CronWorkflows from running if set to true"
+        },
+        "startingDeadlineSeconds": {
+          "type": "string",
+          "format": "int64",
+          "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its\noriginal scheduled time if it is missed."
+        },
+        "successfulJobsHistoryLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time"
+        },
+        "failedJobsHistoryLimit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time"
+        }
+      }
+    },
+    "v1alpha1CronWorkflowStatus": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1ObjectReference"
+          },
+          "title": "Active is a list of active workflows stemming from this CronWorkflow"
+        },
+        "lastScheduledTime": {
+          "$ref": "#/definitions/v1Time",
+          "title": "LastScheduleTime is the last time the CronWorkflow was scheduled"
+        }
+      }
     },
     "v1alpha1DAGTask": {
       "type": "object",
@@ -3158,6 +3147,15 @@
       },
       "title": "Parameter indicate a passed string parameter to a service template with an optional default value"
     },
+    "v1alpha1PodGC": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string"
+        }
+      },
+      "title": "PodGC describes how to delete completed pods as they complete"
+    },
     "v1alpha1RawArtifact": {
       "type": "object",
       "properties": {
@@ -3310,6 +3308,24 @@
         }
       },
       "title": "SuspendTemplate is a template subtype to suspend a workflow at a predetermined point in time"
+    },
+    "v1alpha1TTLStrategy": {
+      "type": "object",
+      "properties": {
+        "secondsAfterCompleted": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterSuccess": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailed": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed"
     },
     "v1alpha1TarStrategy": {
       "type": "object",
@@ -3534,6 +3550,161 @@
       },
       "title": "ValueFrom describes a location in which to obtain the value to a parameter"
     },
+    "v1alpha1WorkflowSpec": {
+      "type": "object",
+      "properties": {
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1alpha1Template"
+          },
+          "title": "Templates is a list of workflow templates used in a workflow\n+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "entrypoint": {
+          "type": "string",
+          "title": "Entrypoint is a template reference to the starting point of the workflow"
+        },
+        "arguments": {
+          "$ref": "#/definitions/v1alpha1Arguments",
+          "title": "Arguments contain the parameters and artifacts sent to the workflow entrypoint\nParameters are referencable globally using the 'workflow' variable prefix.\ne.g. {{workflow.parameters.myparam}}"
+        },
+        "serviceAccountName": {
+          "type": "string",
+          "description": "ServiceAccountName is the name of the ServiceAccount to run all pods of the workflow as."
+        },
+        "automountServiceAccountToken": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted in pods.\nServiceAccountName of ExecutorConfig must be specified if this value is false."
+        },
+        "executor": {
+          "$ref": "#/definitions/v1alpha1ExecutorConfig",
+          "description": "Executor holds configurations of executor containers of the workflow."
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Volume"
+          },
+          "title": "Volumes is a list of volumes that can be mounted by containers in a workflow.\n+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "volumeClaimTemplates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1PersistentVolumeClaim"
+          },
+          "title": "VolumeClaimTemplates is a list of claims that containers are allowed to reference.\nThe Workflow controller will create the claims at the beginning of the workflow\nand delete the claims upon completion of the workflow\n+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "parallelism": {
+          "type": "string",
+          "format": "int64",
+          "title": "Parallelism limits the max total parallel pods that can execute at the same time in a workflow"
+        },
+        "artifactRepositoryRef": {
+          "$ref": "#/definitions/v1alpha1ArtifactRepositoryRef",
+          "description": "ArtifactRepositoryRef specifies the configMap name and key containing the artifact repository config."
+        },
+        "suspend": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Suspend will suspend the workflow and prevent execution of any future steps in the workflow"
+        },
+        "nodeSelector": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "NodeSelector is a selector which will result in all pods of the workflow\nto be scheduled on the selected node(s). This is able to be overridden by\na nodeSelector specified in the template."
+        },
+        "affinity": {
+          "$ref": "#/definitions/v1Affinity",
+          "title": "Affinity sets the scheduling constraints for all pods in the workflow.\nCan be overridden by an affinity specified in the template"
+        },
+        "tolerations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1Toleration"
+          },
+          "title": "Tolerations to apply to workflow pods.\n+patchStrategy=merge\n+patchMergeKey=key"
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1LocalObjectReference"
+          },
+          "title": "ImagePullSecrets is a list of references to secrets in the same namespace to use for pulling any images\nin pods that reference this ServiceAccount. ImagePullSecrets are distinct from Secrets because Secrets\ncan be mounted in the pod, but ImagePullSecrets are only accessed by the kubelet.\nMore info: https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod\n+patchStrategy=merge\n+patchMergeKey=name"
+        },
+        "hostNetwork": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Host networking requested for this workflow pod. Default to false."
+        },
+        "dnsPolicy": {
+          "type": "string",
+          "description": "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'."
+        },
+        "dnsConfig": {
+          "$ref": "#/definitions/v1PodDNSConfig",
+          "description": "PodDNSConfig defines the DNS parameters of a pod in addition to\nthose generated from DNSPolicy."
+        },
+        "onExit": {
+          "type": "string",
+          "description": "OnExit is a template reference which is invoked at the end of the\nworkflow, irrespective of the success, failure, or error of the\nprimary workflow."
+        },
+        "ttlSecondsAfterFinished": {
+          "type": "integer",
+          "format": "int32",
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution\n(Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be\ndeleted after ttlSecondsAfterFinished expires. If this field is unset,\nttlSecondsAfterFinished will not expire. If this field is set to zero,\nttlSecondsAfterFinished expires immediately after the Workflow finishes.\nDEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead."
+        },
+        "ttlStrategy": {
+          "$ref": "#/definitions/v1alpha1TTLStrategy",
+          "title": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it\nSucceeded or Failed. If this struct is set, once the Workflow finishes, it will be\ndeleted after the time to live expires. If this field is unset,\nthe controller config map will hold the default values\nUpdate"
+        },
+        "activeDeadlineSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "Optional duration in seconds relative to the workflow start time which the workflow is\nallowed to run before the controller terminates the workflow. A value of zero is used to\nterminate a Running workflow"
+        },
+        "priority": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Priority is used if controller is configured to process limited number of workflows in parallel. Workflows with higher priority are processed first."
+        },
+        "schedulerName": {
+          "type": "string",
+          "title": "Set scheduler name for all pods.\nWill be overridden if container/script template's scheduler name is set.\nDefault scheduler will be used if neither specified.\n+optional"
+        },
+        "podGC": {
+          "$ref": "#/definitions/v1alpha1PodGC",
+          "title": "PodGC describes the strategy to use when to deleting completed pods"
+        },
+        "podPriorityClassName": {
+          "type": "string",
+          "description": "PriorityClassName to apply to workflow pods."
+        },
+        "podPriority": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Priority to apply to workflow pods."
+        },
+        "hostAliases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v1HostAlias"
+          },
+          "title": "+patchStrategy=merge\n+patchMergeKey=ip"
+        },
+        "securityContext": {
+          "$ref": "#/definitions/v1PodSecurityContext",
+          "title": "SecurityContext holds pod-level security attributes and common container settings.\nOptional: Defaults to empty.  See type description for default values of each field.\n+optional"
+        },
+        "podSpecPatch": {
+          "type": "string",
+          "description": "PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of\ncontainer fields which are not strings (e.g. resource limits)."
+        }
+      },
+      "description": "WorkflowSpec is the specification of a Workflow."
+    },
     "v1alpha1WorkflowStep": {
       "type": "object",
       "properties": {
@@ -3578,100 +3749,6 @@
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"
-    },
-    "v1alpha1WorkflowTemplate": {
-      "type": "object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/v1ObjectMeta"
-        },
-        "spec": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplateSpec"
-        }
-      },
-      "title": "WorkflowTemplate is the definition of a workflow template resource\n+genclient\n+genclient:noStatus\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
-    },
-    "v1alpha1WorkflowTemplateList": {
-      "type": "object",
-      "properties": {
-        "metadata": {
-          "$ref": "#/definitions/v1ListMeta"
-        },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-          }
-        }
-      },
-      "title": "WorkflowTemplateList is list of WorkflowTemplate resources\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object"
-    },
-    "v1alpha1WorkflowTemplateSpec": {
-      "type": "object",
-      "properties": {
-        "templates": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/v1alpha1Template"
-          },
-          "description": "Templates is a list of workflow templates."
-        },
-        "arguments": {
-          "$ref": "#/definitions/v1alpha1Arguments",
-          "description": "Arguments hold arguments to the template."
-        }
-      },
-      "description": "WorkflowTemplateSpec is a spec of WorkflowTemplate."
-    },
-    "workflowtemplateWorkflowDeleteResponse": {
-      "type": "object"
-    },
-    "workflowtemplateWorkflowTemplateCreateRequest": {
-      "type": "object",
-      "properties": {
-        "template": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-        },
-        "createOptions": {
-          "$ref": "#/definitions/v1CreateOptions"
-        }
-      }
-    },
-    "workflowtemplateWorkflowTemplateLintRequest": {
-      "type": "object",
-      "properties": {
-        "template": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-        }
-      }
-    },
-    "workflowtemplateWorkflowTemplateSpecUpdateRequest": {
-      "type": "object",
-      "properties": {
-        "templateName": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "templateSpec": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplateSpec"
-        }
-      }
-    },
-    "workflowtemplateWorkflowTemplateUpdateRequest": {
-      "type": "object",
-      "properties": {
-        "templateName": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "template": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplate"
-        }
-      }
     }
   }
 }

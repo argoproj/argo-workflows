@@ -46,7 +46,7 @@ func (s *CLISuite) TestToken() {
 	s.Assert().NotEmpty(output)
 }
 
-func (s *CLISuite) TestCore() {
+func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func(t *testing.T) {
 		output, err := argo("submit", "smoke/basic.yaml", "--wait")
 		assert.NoError(t, err)
@@ -56,6 +56,14 @@ func (s *CLISuite) TestCore() {
 		output, err := argo("get", "basic")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
+	})
+}
+
+func (s *CLISuite) TestCron() {
+	s.Run("List", func(t *testing.T) {
+		output, err := argo("cron", "list")
+		assert.NoError(t, err)
+		assert.Contains(t, output, "NAME   AGE   LAST RUN   SCHEDULE   SUSPENDED")
 	})
 }
 

@@ -221,6 +221,17 @@ func (s *ArgoServerSuite) TestWorkflows() {
 	})
 }
 
+func (s *ArgoServerSuite) TestCronWorkflows() {
+	s.Run("List", func(t *testing.T) {
+		s.e(t).GET("/api/v1/cron-workflows/").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Null()
+	})
+}
+
 // make sure we can download an artifact
 func (s *ArgoServerSuite) TestWorkflowArtifact() {
 	var uid types.UID
