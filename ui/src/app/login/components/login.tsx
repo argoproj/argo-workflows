@@ -17,7 +17,8 @@ export const Login = () => (
     <Page title='Login' toolbar={{breadcrumbs: [{title: 'Login'}]}}>
         <div className='argo-container'>
             <p>
-                <i className='fa fa-info-circle' /> You appear to be logged {maybeLoggedIn() ? 'in' : 'out'}.
+                <i className='fa fa-info-circle' /> You appear to be logged {maybeLoggedIn() ? 'in' : 'out'}. It may not be necessary to login to use Argo, it depends on how it is
+                configured.
             </p>
             <p>
                 Get your token using <code>argo token</code> and paste in this box.

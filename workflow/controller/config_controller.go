@@ -53,10 +53,10 @@ func (wfc *WorkflowController) updateConfig(cm *apiv1.ConfigMap) error {
 		if err != nil {
 			return err
 		}
-		wfc.session = nil
-		wfc.wfDBctx = nil
-		wfc.wfArchive = sqldb.NullWorkflowAchive
 	}
+	wfc.session = nil
+	wfc.wfDBctx = nil
+	wfc.wfArchive = sqldb.NullWorkflowAchive
 	persistence := wfc.Config.Persistence
 	if persistence != nil {
 		log.Info("Persistence configuration enabled")

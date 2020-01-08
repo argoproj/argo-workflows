@@ -136,10 +136,10 @@ dist/argo-server-linux-ppc64le: vendor cmd/server/static/files.go $(ARGO_SERVER_
 dist/argo-server-linux-s390x: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
 
-dist/argo-server-darwin: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-darwin-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
 
-dist/argo-server-windows: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
+dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: argo-server-image
@@ -152,7 +152,7 @@ ifeq ($(DOCKER_PUSH),true)
 endif
 
 .PHONY: argo-server
-argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin dist/argo-server-windows
+argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64
 
 .PHONY: executor
 executor:

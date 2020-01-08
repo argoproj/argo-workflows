@@ -89,9 +89,9 @@ kubectl -n argo apply -f - <<EOF
 apiVersion: v1
 data:
   config: |
+$([[ ${INSTALL_MINIO} -eq 1 ]] && cat <<MINO
     artifactRepository:
       archiveLogs: true
-$([[ ${INSTALL_MINIO} -eq 1 ]] && cat <<MINO
       s3:
         bucket: my-bucket
         endpoint: minio:9000
