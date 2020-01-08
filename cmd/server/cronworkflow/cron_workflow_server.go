@@ -2,7 +2,6 @@ package cronworkflow
 
 import (
 	"context"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
@@ -22,4 +21,8 @@ func (c *cronWorkflowServiceServer) ListWorkflowTemplates(ctx context.Context, r
 		options = req.ListOptions
 	}
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(*options)
+}
+
+func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *v1alpha1.CronWorkflow) (*v1alpha1.CronWorkflow, error) {
+	return  auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req)
 }

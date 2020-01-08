@@ -4,10 +4,6 @@
     "title": "cmd/server/cronworkflow/cron-workflow.proto",
     "version": "version not set"
   },
-  "schemes": [
-    "http",
-    "https"
-  ],
   "consumes": [
     "application/json"
   ],
@@ -92,6 +88,32 @@
             "in": "query",
             "required": false,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
+      }
+    },
+    "/api/v1/cronworkflows": {
+      "post": {
+        "operationId": "CreateCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
           }
         ],
         "tags": [
