@@ -11,7 +11,7 @@ var ExplosiveOffloadNodeStatusRepo = &explosiveOffloadNodeStatusRepo{}
 type explosiveOffloadNodeStatusRepo struct {
 }
 
-func (n *explosiveOffloadNodeStatusRepo) IsNodeStatusOffload() bool {
+func (n *explosiveOffloadNodeStatusRepo) IsEnabled() bool {
 	return false
 }
 

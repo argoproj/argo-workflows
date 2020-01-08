@@ -62,12 +62,11 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
     primary key (id, namespace)
 )`,
 		`alter table argo_workflow_history rename to argo_archived_workflows`,
-		`drop index idx_name on ` + cfg.tableName,
-		`alter table ` + cfg.tableName + ` drop primary key`,
-		`alter table ` + cfg.tableName + ` add primary key(name, namespace)`,
+		`drop index idx_name`,
+		`create unique index idx_name on ` + cfg.tableName + `(name, namespace)`,
 	} {
 		if changeSchemaVersion > schemaVersion {
-			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change[0:20]}).Info("Applying database change")
+			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change}).Info("Applying database change")
 			_, err := session.Exec(change)
 			if err != nil {
 				return err

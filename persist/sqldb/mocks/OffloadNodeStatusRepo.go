@@ -48,8 +48,8 @@ func (_m *OffloadNodeStatusRepo) Get(name string, namespace string) (*v1alpha1.W
 	return r0, r1
 }
 
-// IsNodeStatusOffload provides a mock function with given fields:
-func (_m *OffloadNodeStatusRepo) IsNodeStatusOffload() bool {
+// IsEnabled provides a mock function with given fields:
+func (_m *OffloadNodeStatusRepo) IsEnabled() bool {
 	ret := _m.Called()
 
 	var r0 bool

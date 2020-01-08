@@ -17,7 +17,7 @@ type OffloadNodeStatusRepo interface {
 	Get(name, namespace string) (*wfv1.Workflow, error)
 	List(namespace string) (wfv1.Workflows, error)
 	Delete(name, namespace string) error
-	IsNodeStatusOffload() bool
+	IsEnabled() bool
 }
 
 func NewOffloadNodeStatusRepo(tableName string, session sqlbuilder.Database) OffloadNodeStatusRepo {
@@ -29,7 +29,7 @@ type nodeOffloadRepo struct {
 	session   sqlbuilder.Database
 }
 
-func (wdc *nodeOffloadRepo) IsNodeStatusOffload() bool {
+func (wdc *nodeOffloadRepo) IsEnabled() bool {
 	return true
 }
 

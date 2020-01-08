@@ -58,17 +58,17 @@ type WorkflowController struct {
 	wfclientset   wfclientset.Interface
 
 	// datastructures to support the processing of workflows and workflow pods
-	wfInformer     cache.SharedIndexInformer
-	wftmplInformer wfextvv1alpha1.WorkflowTemplateInformer
-	podInformer    cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	podQueue       workqueue.RateLimitingInterface
-	completedPods  chan string
-	gcPods         chan string // pods to be deleted depend on GC strategy
-	throttler      Throttler
-	session        sqlbuilder.Database
-	wfDBctx        sqldb.OffloadNodeStatusRepo
-	wfArchive      sqldb.WorkflowArchive
+	wfInformer            cache.SharedIndexInformer
+	wftmplInformer        wfextvv1alpha1.WorkflowTemplateInformer
+	podInformer           cache.SharedIndexInformer
+	wfQueue               workqueue.RateLimitingInterface
+	podQueue              workqueue.RateLimitingInterface
+	completedPods         chan string
+	gcPods                chan string // pods to be deleted depend on GC strategy
+	throttler             Throttler
+	session               sqlbuilder.Database
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	wfArchive             sqldb.WorkflowArchive
 }
 
 const (
@@ -285,7 +285,7 @@ func (wfc *WorkflowController) processNextItem() bool {
 
 	// Loading running workflow from persistence storage if nodeStatusOffload enabled
 	if wf.Status.OffloadNodeStatus {
-		wfDB, err := wfc.wfDBctx.Get(wf.Name, wf.Namespace)
+		wfDB, err := wfc.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
 		if err != nil {
 			log.Warnf("DB get operation failed. %v", err)
 		}

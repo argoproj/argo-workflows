@@ -18,7 +18,7 @@ import (
 func getMockDBCtx(expectedResullt interface{}, largeWfSupport bool) *mocks.OffloadNodeStatusRepo {
 	mockDBRepo := &mocks.OffloadNodeStatusRepo{}
 	mockDBRepo.On("Save", mock.Anything).Return(expectedResullt)
-	mockDBRepo.On("IsNodeStatusOffload").Return(largeWfSupport)
+	mockDBRepo.On("IsEnabled").Return(largeWfSupport)
 	return mockDBRepo
 }
 
@@ -52,7 +52,7 @@ func TestPersistWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false)
+	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(fmt.Errorf("not found")), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -71,7 +71,7 @@ func TestPersistErrorWithoutLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), false)
+	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), false)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -90,7 +90,7 @@ func TestPersistWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(nil, true)
+	controller.offloadNodeStatusRepo = getMockDBCtx(nil, true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
@@ -114,7 +114,7 @@ func TestPersistErrorWithLargeWfSupport(t *testing.T) {
 	wf := unmarshalWF(helloWorldWfPersist)
 	wf, err := wfcset.Create(wf)
 	assert.NoError(t, err)
-	controller.wfDBctx = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), true)
+	controller.offloadNodeStatusRepo = getMockDBCtx(sqldb.DBUpdateNoRowFoundError(errors.New("23324", "test")), true)
 	woc := newWorkflowOperationCtx(wf, controller)
 	woc.operate()
 	wf, err = wfcset.Get(wf.Name, metav1.GetOptions{})
