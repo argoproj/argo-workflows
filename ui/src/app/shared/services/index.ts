@@ -1,7 +1,7 @@
 import {ArchivedWorkflowsService} from './archived-workflows-service';
+import {CronWorkflowService} from './cron-workflow-service';
 import {WorkflowTemplateService} from './workflow-template-service';
 import {WorkflowsService} from './workflows-service';
-import {CronWorkflowService} from "./cron-workflow-service";
 
 export interface Services {
     workflows: WorkflowsService;

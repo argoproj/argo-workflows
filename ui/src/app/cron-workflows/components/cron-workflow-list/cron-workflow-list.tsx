@@ -56,7 +56,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
     public componentDidMount(): void {
         services.cronWorkflows
             .list('')
-            .then(cronWorkflows => this.setState({cronWorkflows: cronWorkflows}))
+            .then(cronWorkflows => this.setState({cronWorkflows}))
             .catch(error => this.setState({error}));
     }
 
@@ -143,7 +143,10 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                             <div className='columns small-4'>CREATED</div>
                         </div>
                         {cronWorkflows.map(cronWf => (
-                            <Link className='row argo-table-list__row' key={cronWf.metadata.name} to={uiUrl(`workflow-templates/${cronWf.metadata.namespace}/${cronWf.metadata.name}`)}>
+                            <Link
+                                className='row argo-table-list__row'
+                                key={cronWf.metadata.name}
+                                to={uiUrl(`workflow-templates/${cronWf.metadata.namespace}/${cronWf.metadata.name}`)}>
                                 <div className='columns small-4'>{cronWf.metadata.name}</div>
                                 <div className='columns small-4'>{cronWf.metadata.namespace}</div>
                                 <div className='columns small-4'>

@@ -14,6 +14,7 @@ import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
 interface State {
+    continue: string;
     workflows?: Workflow[];
     error?: Error;
 }
@@ -37,11 +38,16 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
 
     constructor(props: RouteComponentProps<any>, context: any) {
         super(props, context);
-        this.state = {};
+        this.state = {continue: ''};
     }
 
     public componentDidMount(): void {
-        this.loadArchivedWorkflows(this.namespace, this.continue);
+        services.archivedWorkflows
+            .list(this.namespace, this.continue)
+            .then(list => {
+                this.setState({workflows: list.items || [], continue: list.metadata.continue || ''});
+            })
+            .catch(error => this.setState({error}));
     }
 
     public render() {
@@ -60,7 +66,6 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                             value={this.namespace}
                             onChange={namespace => {
                                 this.namespace = namespace;
-                                this.loadArchivedWorkflows(namespace, '');
                             }}
                         />
                     ]
@@ -71,19 +76,8 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
             </Page>
         );
     }
-
-    private loadArchivedWorkflows(namespace: string, continueArg: string) {
-        services.archivedWorkflows
-            .list(namespace, continueArg)
-            .then(list => {
-                this.continue = list.metadata.continue || '';
-                this.setState({workflows: list.items || []});
-            })
-            .catch(error => this.setState({error}));
-    }
-
     private renderWorkflows() {
-        if (!!!this.state.workflows) {
+        if (!this.state.workflows) {
             return <Loading />;
         }
         const learnMore = <a href='https://github.com/argoproj/argo/blob/apiserverimpl/docs/workflow-archive.md'>Learn more</a>;
@@ -126,14 +120,14 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <button
                             className='argo-button argo-button--base-o'
                             onClick={() => {
-                                this.loadArchivedWorkflows(this.namespace, '');
+                                this.continue = '';
                             }}>
                             <i className='fa fa-chevron-left' /> Start
                         </button>
                     )}
                     {this.continue !== '' && (
-                        <button className='argo-button argo-button--base-o' onClick={() => this.loadArchivedWorkflows(this.namespace, this.continue)}>
-                            Next: {this.continue} <i className='fa fa-chevron-right' />
+                        <button className='argo-button argo-button--base-o' onClick={() => (this.continue = this.state.continue)}>
+                            Next: {this.state.continue} <i className='fa fa-chevron-right' />
                         </button>
                     )}
                 </p>

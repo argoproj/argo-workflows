@@ -44,17 +44,19 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
     }
 
     private get wfInput() {
-        const query = new URLSearchParams(this.props.location.search);
-        return Utils.tryJsonParse(query.get('new'));
+        return Utils.tryJsonParse(this.queryParam('new'));
     }
 
-    constructor(props: any) {
-        super(props);
+    constructor(props: RouteComponentProps<any>, context: any) {
+        super(props, context);
         this.state = {};
     }
 
     public componentDidMount(): void {
-        this.loadWorkflowTemplates(this.namespace);
+        services.workflowTemplate
+            .list(this.namespace)
+            .then(templates => this.setState({templates}))
+            .catch(error => this.setState({error}));
     }
 
     public render() {
@@ -77,16 +79,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                     }
                                 ]
                             },
-                            tools: [
-                                <NamespaceFilter
-                                    key='namespace-filter'
-                                    value={this.namespace}
-                                    onChange={namespace => {
-                                        this.loadWorkflowTemplates(namespace);
-                                        this.namespace = namespace;
-                                    }}
-                                />
-                            ]
+                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
                         {this.renderTemplates()}
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
@@ -109,16 +102,6 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
             </Consumer>
         );
     }
-
-    private loadWorkflowTemplates(namespace: string) {
-        services.workflowTemplate
-            .list(namespace)
-            .then(templates => {
-                this.setState({templates});
-            })
-            .catch(error => this.setState({error}));
-    }
-
     private renderTemplates() {
         if (!this.state.templates) {
             return <Loading />;

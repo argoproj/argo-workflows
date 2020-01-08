@@ -32,7 +32,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     public componentDidMount(): void {
         services.cronWorkflows
             .get(this.name, this.namespace)
-            .then(cronWf => this.setState({cronWf: cronWf}))
+            .then(cronWf => this.setState({cronWf}))
             .catch(error => this.setState({error}));
     }
 
