@@ -2018,7 +2018,7 @@ func TestTemplateScope(t *testing.T) {
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-templte-scope[0]") {
-		assert.Equal(t, "", node.TemplateScope)
+		assert.Equal(t, "test-template-scope-1", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].hello")
@@ -2033,7 +2033,7 @@ func TestTemplateScope(t *testing.T) {
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0]")
 	if assert.NotNil(t, node, "Node %s not found", "test-template-scope[0].other-wftmpl[0]") {
-		assert.Equal(t, "", node.TemplateScope)
+		assert.Equal(t, "test-template-scope-2", node.TemplateScope)
 	}
 
 	node = findNodeByName(wf.Status.Nodes, "test-template-scope[0].other-wftmpl[0].hello")
