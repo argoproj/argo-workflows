@@ -5,10 +5,10 @@ import * as models from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
 import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {Consumer} from '../../../shared/context';
-import {searchToMetadataFilter} from '../../../shared/filter';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
 
@@ -28,7 +28,7 @@ spec:
         container:
           image: docker/whalesay:latest
           command: [cowsay]
-          args: ["⏰ hello world"]
+          args: ["🕓 hello world"]
 `;
 
 interface State {
@@ -37,12 +37,12 @@ interface State {
 }
 
 export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> {
-    private get search() {
-        return this.queryParam('search') || '';
+    private get namespace() {
+        return this.queryParam('namespace') || '';
     }
 
-    private set search(search) {
-        this.setQueryParams({search});
+    private set namespace(namespace) {
+        this.setQueryParams({namespace});
     }
 
     private get wfInput() {
@@ -57,7 +57,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
 
     public componentDidMount(): void {
         services.cronWorkflows
-            .list('')
+            .list(this.namespace)
             .then(cronWorkflows => this.setState({cronWorkflows}))
             .catch(error => this.setState({error}));
     }
@@ -81,20 +81,20 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                         action: () => ctx.navigation.goto('.', {new: '{}'})
                                     }
                                 ]
-                            }
+                            },
+                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
-                        <div className='argo-container'>{this.renderTemplates()}</div>
+                        {this.renderCronWorkflows()}
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
                             Create Cron Workflow
                             <YamlEditor
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderCronWorkflow('default')}
+                                placeHolder={placeholderCronWorkflow(this.namespace || 'default')}
                                 onSave={rawWf => {
-                                    // TODO(simon): Remove hardwired 'argo' namespace
                                     return services.cronWorkflows
-                                        .create(JSON.parse(rawWf), 'argo')
+                                        .create(JSON.parse(rawWf))
                                         .then(cronWf => ctx.navigation.goto(`/cron-workflows/${cronWf.metadata.namespace}/${cronWf.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}
@@ -106,7 +106,7 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         );
     }
 
-    private renderTemplates() {
+    private renderCronWorkflows() {
         if (!this.state.cronWorkflows) {
             return <Loading />;
         }
@@ -120,48 +120,37 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                 </div>
             );
         }
-        const filter = searchToMetadataFilter(this.search);
-        const cronWorkflows = this.state.cronWorkflows.filter(tmpl => filter(tmpl.metadata));
         return (
-            <>
-                <p>
-                    <i className='fa fa-search' />
-                    <input
-                        className='argo-field'
-                        defaultValue={this.search}
-                        onChange={e => {
-                            this.search = e.target.value;
-                        }}
-                        placeholder='e.g. name:hello-world namespace:argo'
-                    />
-                </p>
-                {cronWorkflows.length === 0 ? (
-                    <p>No cron workflows found</p>
-                ) : (
-                    <div className={'argo-table-list'}>
+            <div className='row'>
+                <div className='columns small-12 xxlarge-2'>
+                    <div className='argo-table-list'>
                         <div className='row argo-table-list__head'>
-                            <div className='columns small-4'>NAME</div>
-                            <div className='columns small-4'>NAMESPACE</div>
-                            <div className='columns small-4'>CREATED</div>
+                            <div className='columns small-1' />
+                            <div className='columns small-3'>NAME</div>
+                            <div className='columns small-3'>NAMESPACE</div>
+                            <div className='columns small-2'>SCHEDULE</div>
+                            <div className='columns small-3'>CREATED</div>
                         </div>
-                        {cronWorkflows.map(cronWf => (
-                            <Link
-                                className='row argo-table-list__row'
-                                key={cronWf.metadata.name}
-                                to={uiUrl(`workflow-templates/${cronWf.metadata.namespace}/${cronWf.metadata.name}`)}>
-                                <div className='columns small-4'>{cronWf.metadata.name}</div>
-                                <div className='columns small-4'>{cronWf.metadata.namespace}</div>
-                                <div className='columns small-4'>
-                                    <Timestamp date={cronWf.metadata.creationTimestamp} />
+                        {this.state.cronWorkflows.map(w => (
+                            <Link className='row argo-table-list__row' key={w.metadata.name} to={uiUrl(`workflow-templates/${w.metadata.namespace}/${w.metadata.name}`)}>
+                                <div className='columns small-1'>
+                                    <i className='fa fa-clock' />
+                                </div>
+                                <div className='columns small-3'>{w.metadata.name}</div>
+                                <div className='columns small-3'>{w.metadata.namespace}</div>
+                                <div className='columns small-2'>{w.spec.schedule}</div>
+                                <div className='columns small-3'>
+                                    <Timestamp date={w.metadata.creationTimestamp} />
                                 </div>
                             </Link>
                         ))}
                     </div>
-                )}
-                <p>
-                    <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. {learnMore}.
-                </p>
-            </>
+
+                    <p>
+                        <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. {learnMore}.
+                    </p>
+                </div>
+            </div>
         );
     }
 }

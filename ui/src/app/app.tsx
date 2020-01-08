@@ -51,7 +51,7 @@ const navItems = [
     {
         title: 'Cron Workflows',
         path: cronWorkflowUrl,
-        iconClassName: 'fa fa-calendar'
+        iconClassName: 'fa fa-clock'
     },
     {
         title: 'Archived Workflows',

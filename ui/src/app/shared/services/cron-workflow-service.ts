@@ -1,16 +1,15 @@
-import * as models from '../../../models';
-import {CronWorkflow} from '../../../models';
+import {CronWorkflow, CronWorkflowList} from '../../../models';
 import requests from './requests';
 
 export class CronWorkflowService {
     public list(namespace: string) {
         return requests
             .get(`api/v1/cron-workflows/${namespace}`)
-            .then(res => res.body as models.CronWorkflowList)
+            .then(res => res.body as CronWorkflowList)
             .then(list => list.items || []);
     }
 
-    public update(template: models.CronWorkflow, templateName: string, namespace: string): Promise<CronWorkflow> {
+    public update(template: CronWorkflow, templateName: string, namespace: string): Promise<CronWorkflow> {
         return requests
             .put(`api/v1/cron-workflows/${namespace}/${templateName}`)
             .send({
@@ -18,24 +17,21 @@ export class CronWorkflowService {
                 namespace,
                 template
             })
-            .then(res => res.body as models.CronWorkflow);
+            .then(res => res.body as CronWorkflow);
     }
 
     public get(name: string, namespace: string): Promise<CronWorkflow> {
-        return requests.get(`api/v1/cron-workflows/${namespace}/${name}`).then(res => res.body as models.CronWorkflow);
+        return requests.get(`api/v1/cron-workflows/${namespace}/${name}`).then(res => res.body as CronWorkflow);
     }
 
     public delete(name: string, namespace: string): Promise<CronWorkflow> {
-        return requests.delete(`api/v1/cron-workflows/${namespace}/${name}`).then(res => res.body as models.CronWorkflow);
+        return requests.delete(`api/v1/cron-workflows/${namespace}/${name}`).then(res => res.body as CronWorkflow);
     }
 
-    public create(template: models.CronWorkflow, namespace: string): Promise<models.CronWorkflow> {
+    public create(template: CronWorkflow): Promise<CronWorkflow> {
         return requests
             .post(`api/v1/cron-workflows`)
-            .send({
-                template,
-                namespace
-            })
-            .then(res => res.body as models.CronWorkflow);
+            .send({template})
+            .then(res => res.body as CronWorkflow);
     }
 }
