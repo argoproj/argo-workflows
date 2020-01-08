@@ -62,7 +62,7 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 }
 
 func (s *ArgoServerSuite) TestLintWorkflow() {
-	s.e(s.T()).POST("/api/v1/workflows/argo/lint").
+	s.e(s.T()).POST("/api/v1/workflows/lint").
 		WithBytes([]byte((`{
   "workflow": {
     "metadata": {
@@ -89,11 +89,12 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
 }
 
 func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
-	s.e(s.T()).POST("/api/v1/workflows/argo").
+	s.e(s.T()).POST("/api/v1/workflows").
 		WithQuery("createOptions.dryRun", "[All]").
 		WithBytes([]byte(`{
   "workflow": {
     "metadata": {
+      "namespace": "argo",
       "name": "test",
       "labels": {
          "argo-e2e": "true"
@@ -118,11 +119,12 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
 
 func (s *ArgoServerSuite) TestWorkflows() {
 	s.Run("Create", func(t *testing.T) {
-		s.e(t).POST("/api/v1/workflows/argo").
+		s.e(t).POST("/api/v1/workflows").
 			WithBytes([]byte(`{
   "workflow": {
     "metadata": {
       "name": "test",
+      "namespace": "argo",
       "labels": {
          "argo-e2e": "true"
       }
@@ -402,13 +404,40 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	})
 }
 
+func (s *ArgoServerSuite) TestLintWorkflowTemplate() {
+	s.e(s.T()).POST("/api/v1/workflow-templates/lint").
+		WithBytes([]byte((`{
+  "template": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "image": "docker/whalesay:latest"
+          }
+        }
+      ]
+    }
+  }
+}`))).
+		Expect().
+		Status(200)
+}
+
 func (s *ArgoServerSuite) TestWorkflowTemplates() {
 	s.Run("Create", func(t *testing.T) {
-		s.e(t).POST("/api/v1/workflow-templates/argo").
+		s.e(t).POST("/api/v1/workflow-templates").
 			WithBytes([]byte(`{
   "template": {
     "metadata": {
       "name": "test",
+      "namespace": "argo",
       "labels": {
          "argo-e2e": "true"
       }

@@ -35,10 +35,6 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 		return nil, fmt.Errorf("workflow body not specified")
 	}
 
-	if req.Workflow.Namespace == "" {
-		req.Workflow.Namespace = req.Namespace
-	}
-
 	if req.InstanceID != "" {
 		labels := req.Workflow.GetLabels()
 		if labels == nil {
@@ -48,7 +44,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 		req.Workflow.SetLabels(labels)
 	}
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Workflow.Namespace))
 
 	err := validate.ValidateWorkflow(wftmplGetter, req.Workflow, validate.ValidateOpts{})
 	if err != nil {
@@ -59,7 +55,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 		return util.CreateServerDryRun(req.Workflow, wfClient)
 	}
 
-	wf, err := s.wfKubeService.Create(wfClient, req.Namespace, req.Workflow)
+	wf, err := s.wfKubeService.Create(wfClient, req.Workflow.Namespace, req.Workflow)
 
 	if err != nil {
 		log.Errorf("Create request is failed. Error: %s", err)
@@ -201,10 +197,10 @@ func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowUpd
 	return s.wfKubeService.Terminate(wfClient, req.Namespace, req)
 }
 
-func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowLintRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Workflow.Namespace))
 
 	err := validate.ValidateWorkflow(wftmplGetter, req.Workflow, validate.ValidateOpts{})
 	if err != nil {

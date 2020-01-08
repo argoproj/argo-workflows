@@ -31,10 +31,9 @@ func NewWorkflowDBContext(tableName string, nodeStatusOffload bool, session sqlb
 	}
 }
 
-type DBRepository interface {
+	type DBRepository interface {
 	Save(wf *wfv1.Workflow) error
 	Get(uid string) (*wfv1.Workflow, error)
-	List(orderBy string) (*wfv1.WorkflowList, error)
 	Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error)
 	Delete(condition db.Cond) error
 	IsNodeStatusOffload() bool
@@ -198,21 +197,6 @@ func (wdc *WorkflowDBContext) Get(uid string) (*wfv1.Workflow, error) {
 	}
 
 	return nil, DBOperationError(fmt.Errorf("not workflows"))
-}
-
-func (wdc *WorkflowDBContext) List(orderBy string) (*wfv1.WorkflowList, error) {
-	if wdc.Session == nil {
-		return nil, DBInvalidSession(fmt.Errorf("session nil"))
-	}
-
-	wfs, err := wdc.Query(nil, orderBy)
-	if err != nil {
-		return nil, err
-	}
-
-	return &wfv1.WorkflowList{
-		Items: wfs,
-	}, nil
 }
 
 func (wdc *WorkflowDBContext) Query(condition db.Cond, orderBy ...interface{}) ([]wfv1.Workflow, error) {

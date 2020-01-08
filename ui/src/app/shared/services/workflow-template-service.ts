@@ -29,13 +29,10 @@ export class WorkflowTemplateService {
         return requests.delete(`api/v1/workflow-templates/${namespace}/${name}`).then(res => res.body as models.WorkflowTemplate);
     }
 
-    public create(template: models.WorkflowTemplate, namespace: string): Promise<models.WorkflowTemplate> {
+    public create(template: models.WorkflowTemplate): Promise<models.WorkflowTemplate> {
         return requests
-            .post(`api/v1/workflow-templates/${namespace}`)
-            .send({
-                namespace,
-                template
-            })
+            .post(`api/v1/workflow-templates`)
+            .send({template})
             .then(res => res.body as models.WorkflowTemplate);
     }
 }

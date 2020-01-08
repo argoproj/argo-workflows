@@ -2,7 +2,6 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
-import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -16,10 +15,11 @@ import {Utils} from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
 
-const placeholderWorkflowTemplate: string = `apiVersion: argoproj.io/v1alpha1
+const placeholderWorkflowTemplate = (namespace:string) => `apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   generateName: hello-world
+  namespace: ${namespace}
 spec:
   templates:
   - name: whalesay
@@ -95,11 +95,10 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderWorkflowTemplate}
+                                placeHolder={placeholderWorkflowTemplate(this.namespace || 'default')}
                                 onSave={rawWf => {
-                                    const template = JSON.parse(rawWf) as WorkflowTemplate;
                                     return services.workflowTemplate
-                                        .create(template, template.metadata.namespace)
+                                        .create(JSON.parse(rawWf))
                                         .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}

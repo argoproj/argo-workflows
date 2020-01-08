@@ -77,13 +77,10 @@ export class WorkflowsService {
         return requests.delete(`api/v1/workflows/${namespace}/${workflowName}`).then(res => res.body as WorkflowDeleteResponse);
     }
 
-    public create(workflow: models.Workflow, namespace: string): Promise<models.Workflow> {
+    public create(workflow: models.Workflow): Promise<models.Workflow> {
         return requests
-            .post(`api/v1/workflows/${namespace}`)
-            .send({
-                namespace,
-                workflow
-            })
+            .post(`api/v1/workflows`)
+            .send({workflow})
             .then(res => res.body as models.Workflow)
             .then(this.populateDefaultFields);
     }

@@ -5,10 +5,6 @@
     "description": "Workflow Service API performs CRUD actions against application resources",
     "version": "version not set"
   },
-  "schemes": [
-    "http",
-    "https"
-  ],
   "consumes": [
     "application/json"
   ],
@@ -100,6 +96,58 @@
         ]
       }
     },
+    "/api/v1/workflows": {
+      "post": {
+        "operationId": "CreateWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowCreateRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
+    "/api/v1/workflows/lint": {
+      "post": {
+        "operationId": "LintWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1Workflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/workflowWorkflowLintRequest"
+            }
+          }
+        ],
+        "tags": [
+          "WorkflowService"
+        ]
+      }
+    },
     "/api/v1/workflows/{namespace}": {
       "get": {
         "operationId": "ListWorkflows",
@@ -177,68 +225,6 @@
             "in": "query",
             "required": false,
             "type": "string"
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      },
-      "post": {
-        "operationId": "CreateWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowService"
-        ]
-      }
-    },
-    "/api/v1/workflows/{namespace}/lint": {
-      "post": {
-        "operationId": "LintWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowWorkflowCreateRequest"
-            }
           }
         ],
         "tags": [
@@ -4440,9 +4426,6 @@
     "workflowWorkflowCreateRequest": {
       "type": "object",
       "properties": {
-        "namespace": {
-          "type": "string"
-        },
         "workflow": {
           "$ref": "#/definitions/v1alpha1Workflow"
         },
@@ -4460,6 +4443,14 @@
     },
     "workflowWorkflowDeleteResponse": {
       "type": "object"
+    },
+    "workflowWorkflowLintRequest": {
+      "type": "object",
+      "properties": {
+        "workflow": {
+          "$ref": "#/definitions/v1alpha1Workflow"
+        }
+      }
     },
     "workflowWorkflowUpdateRequest": {
       "type": "object",

@@ -20,10 +20,11 @@ import {Utils} from '../../../shared/utils';
 
 require('./workflows-list.scss');
 
-const placeholderWorkflow: string = `apiVersion: argoproj.io/v1alpha1
+const placeholderWorkflow = (namespace:string) =>  `apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: hello-world-
+  namespace: ${namespace}
 spec:
   entrypoint: whalesay
   templates:
@@ -116,11 +117,10 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderWorkflow}
+                                placeHolder={placeholderWorkflow(this.namespace || "default")}
                                 onSave={rawWf => {
-                                    // TODO(simon): Remove hardwired 'argo' namespace
                                     return services.workflows
-                                        .create(JSON.parse(rawWf), 'argo')
+                                        .create(JSON.parse(rawWf))
                                         .then()
                                         .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`));
                                 }}

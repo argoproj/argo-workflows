@@ -63,29 +63,6 @@ func (_m *DBRepository) IsNodeStatusOffload() bool {
 	return r0
 }
 
-// List provides a mock function with given fields: orderBy
-func (_m *DBRepository) List(orderBy string) (*v1alpha1.WorkflowList, error) {
-	ret := _m.Called(orderBy)
-
-	var r0 *v1alpha1.WorkflowList
-	if rf, ok := ret.Get(0).(func(string) *v1alpha1.WorkflowList); ok {
-		r0 = rf(orderBy)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.WorkflowList)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(orderBy)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Query provides a mock function with given fields: condition, orderBy
 func (_m *DBRepository) Query(condition db.Cond, orderBy ...interface{}) ([]v1alpha1.Workflow, error) {
 	var _ca []interface{}

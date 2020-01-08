@@ -122,14 +122,14 @@ func LintWorkflowTemplateDir(wftmplGetter templateresolution.WorkflowTemplateNam
 		default:
 			return nil
 		}
-		return LintWorkflowTemplateFile(wftmplGetter, namespace, path, strict)
+		return LintWorkflowTemplateFile(wftmplGetter, path, strict)
 	}
 	return filepath.Walk(dirPath, walkFunc)
 }
 
 // LintWorkflowTemplateFile lints a json file, or multiple workflow template manifest in a single yaml file. Ignores
 // non-workflow template manifests
-func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, namespace, filePath string, strict bool) error {
+func LintWorkflowTemplateFile(wftmplGetter templateresolution.WorkflowTemplateNamespacedGetter, filePath string, strict bool) error {
 	body, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return errors.Errorf(errors.CodeBadRequest, "Can't read from file: %s, err: %v", filePath, err)
