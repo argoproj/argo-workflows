@@ -222,11 +222,13 @@ func (s *ArgoServerSuite) TestWorkflows() {
 }
 
 func (s *ArgoServerSuite) TestCronWorkflows() {
-	// TODO create a cron wf using API here
-	s.Given().
-		CronWorkflow("@cron/testdata/basic.yaml").
-		When().
-		CreateCronWorkflow()
+	s.Run("Create", func(t *testing.T) {
+		// TODO create a cron wf using API here
+		s.Given().
+			CronWorkflow("@cron/testdata/basic.yaml").
+			When().
+			CreateCronWorkflow()
+	})
 
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/cron-workflows/").
@@ -250,6 +252,12 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 			Path("$.metadata.name").
 			Equal("test-cron-wf-basic")
 
+	})
+
+	s.Run("Delete", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+			Expect().
+			Status(200)
 	})
 }
 

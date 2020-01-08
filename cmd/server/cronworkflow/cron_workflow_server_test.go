@@ -19,6 +19,7 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 	server := NewCronWorkflowServer()
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
+	// TODO - CreateCronWorkflow - which should replace the arg to NewSimpleClientset
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {
@@ -30,5 +31,10 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.NotNil(t, cronWf, 1)
 		}
+	})
+	// TODO - UpdateCronWorkflow
+	t.Run("DeleteCronWorkflow", func(t *testing.T) {
+		_, err := server.DeleteCronWorkflow(ctx, &DeleteCronWorkflowRequest{CronWorkflowName: "my-name", Namespace: "my-ns"})
+		assert.NoError(t, err)
 	})
 }

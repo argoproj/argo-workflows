@@ -18,6 +18,13 @@ message GetCronWorkflowRequest {
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
 }
+message DeleteCronWorkflowRequest {
+    string cronWorkflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
+}
+message CronWorkflowDeletedResponse {
+}
 
 service CronWorkflowService {
     rpc ListCronWorkflows (ListCronWorkflowsRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowList) {
@@ -28,4 +35,10 @@ service CronWorkflowService {
         option (google.api.http).get = "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}";
     }
 
+    rpc DeleteCronWorkflow (DeleteCronWorkflowRequest) returns (CronWorkflowDeletedResponse) {
+        option (google.api.http).delete = "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}";
+    }
+
+    // TODO - CreateCronWorkflow
+    // TODO - UpdateCronWorkflow
 }
