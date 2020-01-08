@@ -2,6 +2,7 @@ import {Page, SlidingPanel} from 'argo-ui';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
+import {WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -90,8 +91,9 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                 submitMode={true}
                                 placeHolder={placeholderWorkflowTemplate(this.namespace || 'default')}
                                 onSave={rawWf => {
+                                    const template = JSON.parse(rawWf) as WorkflowTemplate;
                                     return services.workflowTemplate
-                                        .create(JSON.parse(rawWf))
+                                        .create(template, template.metadata.namespace)
                                         .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}
@@ -102,6 +104,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
             </Consumer>
         );
     }
+
     private renderTemplates() {
         if (!this.state.templates) {
             return <Loading />;

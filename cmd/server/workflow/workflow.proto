@@ -15,10 +15,11 @@ package workflow;
 
 
 message WorkflowCreateRequest {
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 1;
-    string instanceID = 2;
-    bool serverDryRun = 3;
-    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 4;
+    string namespace = 1;
+    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 2;
+    string instanceID = 3;
+    bool serverDryRun = 4;
+    k8s.io.apimachinery.pkg.apis.meta.v1.CreateOptions createOptions = 5;
 }
 
 message WorkflowGetRequest {
@@ -66,11 +67,6 @@ message WorkflowWatchEvent {
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow object = 2;
 }
 
-message WorkflowLintRequest {
-    github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow workflow = 1;
-}
-
-
 message LogEntry {
     string content = 1;
 }
@@ -78,7 +74,7 @@ message LogEntry {
 service WorkflowService {
     rpc CreateWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			post: "/api/v1/workflows"
+			post: "/api/v1/workflows/{namespace}"
 			body: "*"
 		};
     }
@@ -134,9 +130,9 @@ service WorkflowService {
 		};
     }
 
-    rpc LintWorkflow (WorkflowLintRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc LintWorkflow (WorkflowCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			post: "/api/v1/workflows/lint"
+			post: "/api/v1/workflows/{namespace}/lint"
 			body: "*"
 		};
     }

@@ -81,8 +81,9 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                         submitMode={true}
                         placeHolder={jsYaml.dump(this.state.workflow)}
                         onSave={yaml => {
+                            const editedWorkflow = jsYaml.load(yaml) as Workflow;
                             return services.workflows
-                                .create(jsYaml.load(yaml))
+                                .create(editedWorkflow, editedWorkflow.metadata.namespace)
                                 .then(workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))
                                 .catch(error => this.setState({error}));
                         }}

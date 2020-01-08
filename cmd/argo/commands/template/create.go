@@ -67,8 +67,10 @@ func CreateWorkflowTemplates(filePaths []string, cliOpts *cliCreateOpts) {
 	for _, wftmpl := range workflowTemplates {
 		var created *wfv1.WorkflowTemplate
 		if client.ArgoServer != "" {
+			ns, _, _ := client.Config.Namespace()
 			wftmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
-				Template: &wftmpl,
+				Namespace: ns,
+				Template:  &wftmpl,
 			}
 			conn := client.GetClientConn()
 			wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)

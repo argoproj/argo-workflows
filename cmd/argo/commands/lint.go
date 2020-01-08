@@ -84,6 +84,7 @@ func NewLintCommand() *cobra.Command {
 func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 	validateDir := cmdutil.MustIsDir(arg)
 	grpcClient, ctx := GetWFApiServerGRPCClient(conn)
+	ns, _, _ := client.Config.Namespace()
 	var wfs []v1alpha1.Workflow
 	var err error
 
@@ -103,7 +104,7 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 				return err1
 			}
 			for _, wf := range wfs {
-				err = ServerLintValidation(ctx, grpcClient, wf)
+				err = ServerLintValidation(ctx, grpcClient, wf, ns)
 				if err != nil {
 					log.Errorf("Validation Error in %s :%v", path, err)
 				}
@@ -119,7 +120,7 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 		return err
 	}
 	for _, wf := range wfs {
-		err = ServerLintValidation(ctx, grpcClient, wf)
+		err = ServerLintValidation(ctx, grpcClient, wf, ns)
 		if err != nil {
 			log.Error(err)
 		}
@@ -127,7 +128,11 @@ func ServerSideLint(arg string, conn *grpc.ClientConn, strict bool) error {
 	return err
 }
 
-func ServerLintValidation(ctx context.Context, client apiServer.WorkflowServiceClient, wf v1alpha1.Workflow) error {
-	_, err := client.LintWorkflow(ctx, &apiServer.WorkflowLintRequest{Workflow: &wf})
+func ServerLintValidation(ctx context.Context, client apiServer.WorkflowServiceClient, wf v1alpha1.Workflow, ns string) error {
+	wfReq := apiServer.WorkflowCreateRequest{
+		Namespace: ns,
+		Workflow:  &wf,
+	}
+	_, err := client.LintWorkflow(ctx, &wfReq)
 	return err
 }

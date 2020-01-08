@@ -8,5 +8,11 @@ import (
 )
 
 func SubmitWorkflowToAPIServer(apiGRPCClient apiwf.WorkflowServiceClient, ctx context.Context, wf *wfv1.Workflow, dryRun bool) (*wfv1.Workflow, error) {
-	return apiGRPCClient.CreateWorkflow(ctx, &apiwf.WorkflowCreateRequest{Workflow: wf, ServerDryRun: dryRun})
+
+	wfReq := apiwf.WorkflowCreateRequest{
+		Namespace:    wf.Namespace,
+		Workflow:     wf,
+		ServerDryRun: dryRun,
+	}
+	return apiGRPCClient.CreateWorkflow(ctx, &wfReq)
 }
