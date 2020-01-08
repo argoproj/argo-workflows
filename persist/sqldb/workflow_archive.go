@@ -1,10 +1,6 @@
 package sqldb
 
 import (
-	"encoding/json"
-
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"upper.io/db.v3"
 	"upper.io/db.v3/lib/sqlbuilder"
 
@@ -33,7 +29,7 @@ func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
 	if err != nil {
 		return err
 	}
-	wfDB, err := convert(wf)
+	wfDB, err := toRecord(wf)
 	if err != nil {
 		return err
 	}
@@ -54,22 +50,7 @@ func (r *workflowArchive) ListWorkflows(namespace string, limit int, offset int)
 	if err != nil {
 		return nil, err
 	}
-	wfs := make(wfv1.Workflows, len(wfMDs))
-	for i, wf := range wfMDs {
-		wfs[i] = wfv1.Workflow{
-			ObjectMeta: v1.ObjectMeta{
-				Name:              wf.Name,
-				Namespace:         wf.Namespace,
-				UID:               types.UID(wf.Id),
-				CreationTimestamp: v1.Time{Time: wf.StartedAt},
-			},
-			Status: wfv1.WorkflowStatus{
-				Phase:      wf.Phase,
-				StartedAt:  v1.Time{Time: wf.StartedAt},
-				FinishedAt: v1.Time{Time: wf.FinishedAt},
-			},
-		}
-	}
+	wfs := toSlimWorkflows(wfMDs)
 	return wfs, nil
 }
 
@@ -93,17 +74,12 @@ func (r *workflowArchive) GetWorkflow(namespace string, uid string) (*wfv1.Workf
 	if !exists {
 		return nil, nil
 	}
-	wfDB := &WorkflowDB{}
-	err = rs.One(wfDB)
+	workflow := &WorkflowOnlyRecord{}
+	err = rs.One(workflow)
 	if err != nil {
 		return nil, err
 	}
-	wf := &wfv1.Workflow{}
-	err = json.Unmarshal([]byte(wfDB.Workflow), wf)
-	if err != nil {
-		return nil, err
-	}
-	return wf, nil
+	return toWorkflow(workflow)
 }
 
 func (r *workflowArchive) DeleteWorkflow(namespace string, uid string) error {

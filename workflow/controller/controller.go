@@ -67,7 +67,7 @@ type WorkflowController struct {
 	gcPods         chan string // pods to be deleted depend on GC strategy
 	throttler      Throttler
 	session        sqlbuilder.Database
-	wfDBctx        sqldb.DBRepository
+	wfDBctx        sqldb.OffloadNodeStatusRepo
 	wfArchive      sqldb.WorkflowArchive
 }
 
@@ -283,15 +283,13 @@ func (wfc *WorkflowController) processNextItem() bool {
 		return true
 	}
 
-	// Loading running workflow from persistence storage if NodeStatusOffload enabled
-	if wfc.wfDBctx != nil && wfc.wfDBctx.IsNodeStatusOffload() {
-		wfDB, err := wfc.wfDBctx.Get(string(wf.UID))
+	// Loading running workflow from persistence storage if nodeStatusOffload enabled
+	if wf.Status.OffloadNodeStatus {
+		wfDB, err := wfc.wfDBctx.Get(wf.Name, wf.Namespace)
 		if err != nil {
 			log.Warnf("DB get operation failed. %v", err)
 		}
-		if wfDB != nil && wfDB.UID != "" {
-			wf = wfDB
-		}
+		wf.Status.Nodes = wfDB.Status.Nodes
 	}
 
 	woc := newWorkflowOperationCtx(wf, wfc)

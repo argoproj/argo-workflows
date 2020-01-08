@@ -74,18 +74,20 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		// TODO: this currently returns an error every time
 		log.Errorf("Error marshalling config map: %s", err)
 	}
-	var wfDBServer *workflow.DBService
-	var wfArchive sqldb.WorkflowArchive = sqldb.NullWorkflowAchive
+	var offloadRepo sqldb.OffloadNodeStatusRepo = sqldb.ExplosiveOffloadNodeStatusRepo
+	var wfArchive sqldb.WorkflowArchive = sqldb.NullWorkflowArchive
 	if configMap != nil && configMap.Persistence != nil {
 		session, tableName, err := sqldb.CreateDBSession(as.kubeClientset, as.namespace, configMap.Persistence)
 		if err != nil {
 			log.Fatal(err)
 		}
-		wfDBServer = workflow.NewDBService(sqldb.NewWorkflowDBContext(tableName, configMap.Persistence.NodeStatusOffload, session))
+		if configMap.Persistence.NodeStatusOffload {
+			offloadRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
+		}
 		wfArchive = sqldb.NewWorkflowArchive(session)
 	}
-	artifactServer := artifacts.NewArtifactServer(as.authenticator, wfDBServer, wfArchive)
-	grpcServer := as.newGRPCServer(wfDBServer, wfArchive)
+	artifactServer := artifacts.NewArtifactServer(as.authenticator, offloadRepo, wfArchive)
+	grpcServer := as.newGRPCServer(offloadRepo, wfArchive)
 	httpServer := as.newHTTPServer(ctx, port, artifactServer)
 
 	// Start listener
@@ -117,7 +119,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	<-as.stopCh
 }
 
-func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfArchive sqldb.WorkflowArchive) *grpc.Server {
+func (as *argoServer) newGRPCServer(dbRepository sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *grpc.Server {
 	serverLog := log.NewEntry(log.StandardLogger())
 
 	sOpts := []grpc.ServerOption{
@@ -142,7 +144,7 @@ func (as *argoServer) newGRPCServer(wfDBServer *workflow.DBService, wfArchive sq
 	}
 
 	grpcServer := grpc.NewServer(sOpts...)
-	workflowServer := workflow.NewWorkflowServer(wfDBServer)
+	workflowServer := workflow.NewWorkflowServer(dbRepository)
 	workflow.RegisterWorkflowServiceServer(grpcServer, workflowServer)
 	archivedWorkflowServer := workflowarchive.NewWorkflowArchiveServer(wfArchive)
 	workflowarchive.RegisterArchivedWorkflowServiceServer(grpcServer, archivedWorkflowServer)

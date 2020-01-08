@@ -12,18 +12,8 @@ import (
 )
 
 const (
-	CodeInvalidDBSession    = "ERR_INVALID_DB_SESSION"
 	CodeDBUpdateRowNotFound = "ERR_DB_UPDATE_ROW_NOT_FOUND"
-	CodeDBOperationError    = "ERR_DB_OPERATION_ERROR"
 )
-
-func DBInvalidSession(err error) error {
-	return errors.Wrap(err, CodeInvalidDBSession, err.Error())
-}
-
-func DBOperationError(err error) error {
-	return errors.Wrap(err, CodeDBOperationError, err.Error())
-}
 
 func DBUpdateNoRowFoundError(err error) error {
 	return errors.Wrap(err, CodeDBUpdateRowNotFound, err.Error())
@@ -48,7 +38,7 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.PostgreSQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("TableName is empty")
+		return nil, "", errors.InternalError("tableName is empty")
 	}
 
 	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)
@@ -96,7 +86,7 @@ func CreatePostGresDBSession(kubectlConfig kubernetes.Interface, namespace strin
 func CreateMySQLDBSession(kubectlConfig kubernetes.Interface, namespace string, cfg *config.MySQLConfig, persistPool *config.ConnectionPool) (sqlbuilder.Database, string, error) {
 
 	if cfg.TableName == "" {
-		return nil, "", errors.InternalError("TableName is empty")
+		return nil, "", errors.InternalError("tableName is empty")
 	}
 
 	userNameByte, err := util.GetSecrets(kubectlConfig, namespace, cfg.UsernameSecret.Name, cfg.UsernameSecret.Key)

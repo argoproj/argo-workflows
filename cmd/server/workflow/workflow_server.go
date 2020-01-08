@@ -7,9 +7,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/argoproj/argo/cmd/server/auth"
+	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
 	"github.com/argoproj/argo/workflow/templateresolution"
@@ -18,13 +18,13 @@ import (
 )
 
 type workflowServer struct {
-	wfDBService   *DBService
+	dbRepository  sqldb.OffloadNodeStatusRepo
 	wfKubeService *kubeService
 }
 
-func NewWorkflowServer(wfDBService *DBService) WorkflowServiceServer {
+func NewWorkflowServer(dbRepository sqldb.OffloadNodeStatusRepo) WorkflowServiceServer {
 	return &workflowServer{
-		wfDBService: wfDBService,
+		dbRepository: dbRepository,
 	}
 }
 
@@ -74,7 +74,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		offloaded, err := s.wfDBService.Get(req.WorkflowName, req.Namespace)
+		offloaded, err := s.dbRepository.Get(req.WorkflowName, req.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -85,6 +85,11 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	return wf, err
 }
 
+type primaryKey struct {
+	name      string
+	namespace string
+}
+
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
@@ -93,18 +98,18 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 		return nil, err
 	}
 
-	if s.wfDBService != nil {
-		offloadedWorkflows, err := s.wfDBService.List(req.Namespace, 0, "")
+	if s.dbRepository != nil {
+		offloadedWorkflows, err := s.dbRepository.List(req.Namespace)
 		if err != nil {
 			return nil, err
 		}
-		status := map[types.UID]v1alpha1.WorkflowStatus{}
-		for _, item := range offloadedWorkflows.Items {
-			status[item.UID] = item.Status
+		status := map[primaryKey]v1alpha1.WorkflowStatus{}
+		for _, wf := range offloadedWorkflows {
+			status[primaryKey{wf.Name, wf.Namespace}] = wf.Status
 		}
 		for _, wf := range wfList.Items {
 			if wf.Status.OffloadNodeStatus {
-				status, ok := status[wf.UID]
+				status, ok := status[primaryKey{wf.Name, wf.Namespace}]
 				if ok {
 					wf.Status.Nodes = status.Nodes
 					wf.Status.CompressedNodes = status.CompressedNodes
@@ -162,7 +167,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		err = s.wfDBService.Delete(req.WorkflowName, req.Namespace)
+		err = s.dbRepository.Delete(req.WorkflowName, req.Namespace)
 		if err != nil {
 			return nil, err
 		}
