@@ -139,7 +139,7 @@ endif
 
 .PHONY: test
 test:
-	go test -covermode=count -coverprofile=coverage.out ./...
+	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 
 .PHONY: cover
 cover:
@@ -195,7 +195,7 @@ logs-e2e:
 
 .PHONY: test-e2e
 test-e2e:
-	go test -v -count 1 -p 1 ./test/e2e
+	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: clean
 clean:

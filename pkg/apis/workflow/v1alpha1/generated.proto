@@ -130,6 +130,58 @@ message ContinueOn {
   optional bool failed = 2;
 }
 
+// CronWorkflow is the definition of a scheduled workflow resource
+// +genclient
+// +genclient:noStatus
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflow {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  optional CronWorkflowSpec spec = 2;
+
+  optional CronWorkflowStatus status = 3;
+}
+
+// CronWorkflowList is list of CronWorkflow resources
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message CronWorkflowList {
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated CronWorkflow items = 2;
+}
+
+message CronWorkflowSpec {
+  // WorkflowSpec is the spec of the workflow to be run
+  optional WorkflowSpec workflowSpec = 1;
+
+  // Schedule is a schedule to run the Workflow in Cron format
+  optional string schedule = 2;
+
+  // ConcurrencyPolicy is the K8s-style concurrency policy that will be used
+  optional string concurrencyPolicy = 3;
+
+  // Suspend is a flag that will stop new CronWorkflows from running if set to true
+  optional bool suspend = 4;
+
+  // StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its
+  // original scheduled time if it is missed.
+  optional int64 startingDeadlineSeconds = 5;
+
+  // SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 successfulJobsHistoryLimit = 6;
+
+  // FailedJobsHistoryLimit is the number of successful jobs to be kept at a time
+  optional int32 failedJobsHistoryLimit = 7;
+}
+
+message CronWorkflowStatus {
+  // Active is a list of active workflows stemming from this CronWorkflow
+  repeated k8s.io.api.core.v1.ObjectReference active = 1;
+
+  // LastScheduleTime is the last time the CronWorkflow was scheduled
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduledTime = 2;
+}
+
 // DAGTask represents a node in the graph during DAG execution
 message DAGTask {
   // Name is the name of the target
@@ -571,6 +623,15 @@ message SuspendTemplate {
   optional string duration = 1;
 }
 
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+message TTLStrategy {
+  optional int32 secondsAfterCompleted = 1;
+
+  optional int32 secondsAfterSuccess = 2;
+
+  optional int32 secondsAfterFailed = 3;
+}
+
 // TarStrategy will tar and gzip the file or directory when saving
 message TarStrategy {
 }
@@ -857,7 +918,15 @@ message WorkflowSpec {
   // deleted after ttlSecondsAfterFinished expires. If this field is unset,
   // ttlSecondsAfterFinished will not expire. If this field is set to zero,
   // ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+  // DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
   optional int32 ttlSecondsAfterFinished = 18;
+
+  // TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+  // Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+  // deleted after the time to live expires. If this field is unset,
+  // the controller config map will hold the default values
+  // Update
+  optional TTLStrategy ttlStrategy = 30;
 
   // Optional duration in seconds relative to the workflow start time which the workflow is
   // allowed to run before the controller terminates the workflow. A value of zero is used to

@@ -897,7 +897,7 @@ spec:
         arguments:
           parameters:
           - name: message
-            value: "{{item.os}} {{item.version}}"
+            value: "{{item.os}} {{item.version}} JSON({{item}})"
         withItems:
         - {os: debian, version: 9.1}
         - {os: debian, version: 9.1}
@@ -910,7 +910,7 @@ spec:
     container:
       image: docker/whalesay:latest
       command: [sh, -c]
-      args: ["cowsay {{inputs.parameters.message}}"]
+      args: ["cowsay \"{{inputs.parameters.message}}\""]
 `
 
 func TestExpandWithItemsMap(t *testing.T) {
@@ -924,6 +924,7 @@ func TestExpandWithItemsMap(t *testing.T) {
 	newSteps, err := woc.expandStep(wf.Spec.Templates[0].Steps[0].Steps[0])
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(newSteps))
+	assert.Equal(t, "debian 9.1 JSON({\"os\":\"debian\",\"version\":9.1})", *newSteps[0].Arguments.Parameters[0].Value)
 }
 
 var suspendTemplate = `
