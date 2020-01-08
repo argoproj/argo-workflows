@@ -34,7 +34,7 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("Localhost", func(t *testing.T) {
-		 s := NewGatekeeper(true, wfClient, kubeClient)
+		s := NewGatekeeper(true, wfClient, kubeClient)
 		for _, text := range []string{
 			`{"caFile": "anything"}`,
 			`{"certFile": "anything"}`,
