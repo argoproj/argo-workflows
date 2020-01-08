@@ -112,7 +112,7 @@ Currently **officially** using Argo:
 1. [Mirantis](https://mirantis.com/)
 1. [NVIDIA](https://www.nvidia.com/)
 1. [OVH](https://www.ovh.com/)
-1. [Peak AI] (https://www.peak.ai/)
+1. [Peak AI](https://www.peak.ai/)
 1. [Preferred Networks](https://www.preferred-networks.jp/en/)
 1. [Quantibio](http://quantibio.com/us/en/)
 1. [Red Hat](https://www.redhat.com/en)
