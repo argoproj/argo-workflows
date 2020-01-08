@@ -523,6 +523,9 @@ type ArtifactLocation struct {
 
 	// Raw contains raw artifact location details
 	Raw *RawArtifact `json:"raw,omitempty"`
+
+	// OSS contains OSS artifact location details
+	OSS *OSSArtifact `json:"s3,omitempty"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1286,7 +1289,8 @@ func (a *Artifact) HasLocation() bool {
 		a.HTTP.HasLocation() ||
 		a.Artifactory.HasLocation() ||
 		a.Raw.HasLocation() ||
-		a.HDFS.HasLocation()
+		a.HDFS.HasLocation() ||
+		a.OSS.HasLocation()
 }
 
 // GetTemplateByName retrieves a defined template by its name
