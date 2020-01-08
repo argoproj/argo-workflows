@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/argoproj/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
@@ -25,9 +25,11 @@ import (
 	"k8s.io/client-go/tools/watch"
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
+	apiv1 "github.com/argoproj/argo/cmd/server/workflow"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	workflowv1 "github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/packer"
+	"github.com/argoproj/pkg/errors"
 )
 
 type logEntry struct {
@@ -49,13 +51,24 @@ func NewLogsCommand() *cobra.Command {
 		Use:   "logs POD/WORKFLOW",
 		Short: "view logs of a workflow",
 		Run: func(cmd *cobra.Command, args []string) {
+			var err error
 			if len(args) == 0 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			conf, err := client.Config.ClientConfig()
-			errors.CheckError(err)
-			printer.kubeClient = kubernetes.NewForConfigOrDie(conf)
+
+			if client.ArgoServer != "" {
+				conn := client.GetClientConn()
+				defer conn.Close()
+				printer.ns, _, _ = client.Config.Namespace()
+				printer.apiClient, printer.ctx = GetWFApiServerGRPCClient(conn)
+				printer.apiServer = true
+
+			} else {
+				conf, err := client.Config.ClientConfig()
+				errors.CheckError(err)
+				printer.kubeClient = kubernetes.NewForConfigOrDie(conf)
+			}
 			if tail > 0 {
 				printer.tail = &tail
 			}
@@ -99,12 +112,26 @@ type logPrinter struct {
 	tail         *int64
 	timestamps   bool
 	kubeClient   kubernetes.Interface
+	apiClient    apiv1.WorkflowServiceClient
+	ctx          context.Context
+	ns           string
+	apiServer    bool
 }
 
 // PrintWorkflowLogs prints logs for all workflow pods
 func (p *logPrinter) PrintWorkflowLogs(workflow string) error {
-	wfClient := InitWorkflowClient()
-	wf, err := wfClient.Get(workflow, metav1.GetOptions{})
+	var wf *v1alpha1.Workflow
+	var err error
+	if p.apiServer {
+		wfReq := apiv1.WorkflowGetRequest{
+			WorkflowName: workflow,
+			Namespace:    p.ns,
+		}
+		wf, err = p.apiClient.GetWorkflow(p.ctx, &wfReq)
+	} else {
+		wfClient := InitWorkflowClient()
+		wf, err = wfClient.Get(workflow, metav1.GetOptions{})
+	}
 	if err != nil {
 		return err
 	}
@@ -157,10 +184,9 @@ func (p *logPrinter) printRecentWorkflowLogs(wf *v1alpha1.Workflow) map[string]*
 		go func() {
 			defer wg.Done()
 			var podLogs []logEntry
-			err := p.getPodLogs(context.Background(), getDisplayName(node), node.ID, wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
+			err = p.getPodLogs(context.Background(), getDisplayName(node), node.ID, wf.Namespace, false, p.tail, p.sinceSeconds, p.sinceTime, func(entry logEntry) {
 				podLogs = append(podLogs, entry)
 			})
-
 			if err != nil {
 				log.Warn(err)
 				return
@@ -225,30 +251,58 @@ func (p *logPrinter) printLiveWorkflowLogs(workflowName string, wfClient workflo
 			}
 		}
 	}
-
+	fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
 	go func() {
 		defer close(logs)
-		fieldSelector := fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", workflowName))
-		listOpts := metav1.ListOptions{FieldSelector: fieldSelector.String()}
-		lw := &cache.ListWatch{
-			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				return wfClient.List(listOpts)
-			},
-			WatchFunc: func(options metav1.ListOptions) (pkgwatch.Interface, error) {
-				return wfClient.Watch(listOpts)
-			},
-		}
-		_, err := watch.UntilWithSync(ctx, lw, &v1alpha1.Workflow{}, nil, func(event pkgwatch.Event) (b bool, e error) {
-			if wf, ok := event.Object.(*v1alpha1.Workflow); ok {
-				if !wf.Status.Completed() {
-					processPods(wf)
-				}
-				return wf.Status.Completed(), nil
+		if p.apiServer {
+			wfReq := apiv1.WatchWorkflowsRequest{
+				Namespace: namespace,
+				ListOptions: &metav1.ListOptions{
+					FieldSelector: fieldSelector.String(),
+				},
 			}
-			return true, nil
-		})
-		if err != nil {
-			log.Fatal(err)
+			stream, err := p.apiClient.WatchWorkflows(ctx, &wfReq)
+			if err != nil {
+				errors.CheckError(err)
+				return
+			}
+			for {
+				event, err := stream.Recv()
+				if err != nil {
+					errors.CheckError(err)
+					break
+				}
+				wf := event.Object
+				if wf != nil && !wf.Status.Completed() {
+					processPods(wf)
+				} else {
+					break
+				}
+			}
+
+		} else {
+
+			listOpts := metav1.ListOptions{FieldSelector: fieldSelector.String()}
+			lw := &cache.ListWatch{
+				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+					return wfClient.List(listOpts)
+				},
+				WatchFunc: func(options metav1.ListOptions) (pkgwatch.Interface, error) {
+					return wfClient.Watch(listOpts)
+				},
+			}
+			_, err := watch.UntilWithSync(ctx, lw, &v1alpha1.Workflow{}, nil, func(event pkgwatch.Event) (b bool, e error) {
+				if wf, ok := event.Object.(*v1alpha1.Workflow); ok {
+					if !wf.Status.Completed() {
+						processPods(wf)
+					}
+					return wf.Status.Completed(), nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}()
 
@@ -314,7 +368,7 @@ func (p *logPrinter) getPodLogs(
 	sinceTime *metav1.Time,
 	callback func(entry logEntry)) error {
 
-	for ctx.Err() == nil {
+	for !p.apiServer && ctx.Err() == nil {
 		hasStarted, err := p.hasContainerStarted(podName, podNamespace, p.container)
 
 		if err != nil {
@@ -330,19 +384,43 @@ func (p *logPrinter) getPodLogs(
 			break
 		}
 	}
-
-	stream, err := p.kubeClient.CoreV1().Pods(podNamespace).GetLogs(podName, &v1.PodLogOptions{
-		Container:    p.container,
-		Follow:       follow,
-		Timestamps:   true,
-		SinceSeconds: sinceSeconds,
-		SinceTime:    sinceTime,
-		TailLines:    tail,
-	}).Stream()
-	if err == nil {
-		scanner := bufio.NewScanner(stream)
-		for scanner.Scan() {
-			line := scanner.Text()
+	var err error
+	if p.apiServer {
+		wfLogReq := apiv1.WorkflowLogRequest{
+			WorkflowName: "*",
+			Namespace:    p.ns,
+			PodName:      podName,
+			LogOptions: &v1.PodLogOptions{
+				Container:    p.container,
+				Follow:       p.follow,
+				Timestamps:   p.timestamps,
+				SinceSeconds: p.sinceSeconds,
+				SinceTime:    p.sinceTime,
+				TailLines:    p.tail,
+			},
+		}
+		var logStream apiv1.WorkflowService_PodLogsClient
+		var err error
+		for {
+			logStream, err = p.apiClient.PodLogs(ctx, &wfLogReq)
+			if err != nil {
+				if strings.ContainsAny(err.Error(), "ContainerCreating") {
+					time.Sleep(1 * time.Second)
+					continue
+				}
+				return err
+			}
+			break
+		}
+		for {
+			event, err := logStream.Recv()
+			if err != nil {
+				if err != io.EOF {
+					errors.CheckError(err)
+				}
+				break
+			}
+			line := event.Content
 			parts := strings.Split(line, " ")
 			logTime, err := time.Parse(time.RFC3339, parts[0])
 			if err == nil {
@@ -363,6 +441,44 @@ func (p *logPrinter) getPodLogs(
 					displayName: displayName,
 					line:        line,
 				})
+			}
+		}
+
+	} else {
+		stream, err := p.kubeClient.CoreV1().Pods(podNamespace).GetLogs(podName, &v1.PodLogOptions{
+			Container:    p.container,
+			Follow:       follow,
+			Timestamps:   true,
+			SinceSeconds: sinceSeconds,
+			SinceTime:    sinceTime,
+			TailLines:    tail,
+		}).Stream()
+
+		if err == nil {
+			scanner := bufio.NewScanner(stream)
+			for scanner.Scan() {
+				line := scanner.Text()
+				parts := strings.Split(line, " ")
+				logTime, err := time.Parse(time.RFC3339, parts[0])
+				if err == nil {
+					lines := strings.Join(parts[1:], " ")
+					for _, line := range strings.Split(lines, "\r") {
+						if line != "" {
+							callback(logEntry{
+								pod:         podName,
+								displayName: displayName,
+								time:        logTime,
+								line:        line,
+							})
+						}
+					}
+				} else {
+					callback(logEntry{
+						pod:         podName,
+						displayName: displayName,
+						line:        line,
+					})
+				}
 			}
 		}
 	}
