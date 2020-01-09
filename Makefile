@@ -286,10 +286,10 @@ endif
 ifeq ($(GIT_BRANCH),master)
 	echo "no release preparation needed for master branch"
 else
-	echo "preparing release $VERSION"
+	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
 	make manifests VERSION=$(VERSION)
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -m "Update manifests to $(VERSION)" ; fi
+	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 ifneq ($(SNAPSHOT),false)
 	git tag $(VERSION)
 endif
