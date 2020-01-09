@@ -5,15 +5,13 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
-
-	"github.com/argoproj/argo/cmd/argo/commands/client"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/argoproj/argo/cmd/argo/commands/client"
 	wftmplApiServer "github.com/argoproj/argo/cmd/server/workflowtemplate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	versioned "github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/templateresolution"
 )

@@ -5,6 +5,7 @@ run:
     - "cmd/server/static/files.go"
     - "pkg/client"
     - "vendor/"
+    - "ui/"
 linters:
   enable:
     - goimports

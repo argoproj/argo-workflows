@@ -16,11 +16,19 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 	cronWf := &wfv1.CronWorkflow{
 		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns", Name: "my-name"},
 	}
-	wfClientset := wftFake.NewSimpleClientset(cronWf)
+	wfClientset := wftFake.NewSimpleClientset()
 	server := NewCronWorkflowServer()
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
-	// TODO - CreateCronWorkflow - which should replace the arg to NewSimpleClientset
+	t.Run("CreateCronWorkflow", func(t *testing.T) {
+		created, err := server.CreateCronWorkflow(ctx, &CreateCronWorkflowRequest{
+			Namespace:    "my-ns",
+			CronWorkflow: cronWf,
+		})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, created)
+		}
+	})
 	t.Run("ListCronWorkflows", func(t *testing.T) {
 		cronWfs, err := server.ListCronWorkflows(ctx, &ListCronWorkflowsRequest{Namespace: "my-ns"})
 		if assert.NoError(t, err) {

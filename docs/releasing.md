@@ -11,7 +11,7 @@ export VERSION=vX.Y.Z
 3. Update codegen, manifests with new tag
 
 ```bash
-make codegen manifests IMAGE_NAMESPACE=argoproj IMAGE_TAG=$VERSION
+make codegen manifests IMAGE_TAG=$VERSION
 ```
 
 4. Commit VERSION and manifest changes
@@ -32,7 +32,7 @@ git tag vX.Y.Z
 In argo repo:
 
 ```bash
-make release IMAGE_NAMESPACE=argoproj IMAGE_TAG=$VERSION
+make release IMAGE_TAG=$VERSION
 ```
 
 8. If successful, publish the release:
