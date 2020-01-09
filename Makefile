@@ -280,7 +280,7 @@ ifeq ($(VERSION),)
 else
 	echo $(VERSION) | cut -c 1- > VERSION
 	make manifests IMAGE_TAG=$(VERSION)
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $VERSION" ; fi
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $(VERSION)" ; fi
 endif
 
 .PHONY: release-precheck
