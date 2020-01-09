@@ -559,10 +559,10 @@ type ArtifactLocation struct {
 	HDFS *HDFSArtifact `json:"hdfs,omitempty" protobuf:"bytes,6,opt,name=hdfs"`
 
 	// Raw contains raw artifact location details
-	Raw *RawArtifact `json:"raw,omitempty"`
+	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
 
 	// OSS contains OSS artifact location details
-	OSS *OSSArtifact `json:"s3,omitempty"`
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,2,opt,name=oss"`
 }
 
 type ArtifactRepositoryRef struct {
@@ -1097,7 +1097,7 @@ type OSSBucket struct {
 	Bucket string `json:"bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
+	AccessKeyID apiv1.SecretKeySelector `json:"accessKeyID"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`

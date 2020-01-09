@@ -1,12 +1,11 @@
 package oss
 
 import (
+	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"time"
-	"github.com/pkg/errors"
-	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 )
 
 // OSSArtifactDriver is a driver for OSS
@@ -18,9 +17,7 @@ type OSSArtifactDriver struct {
 
 func (ossDriver *OSSArtifactDriver) newOSSClient() (aliyunoss.Client, error) {
 	client, err := aliyunoss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+
 	return *client, err
 }
 
@@ -30,7 +27,7 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 		func() (bool, error) {
 			log.Infof("OSS Load path: %s, key: %s", path, inputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
-			if osscli == nil {
+			if err != nil {
 				log.Warnf("Failed to create new OSS client: %v", err)
 				return false, nil
 			}
@@ -54,10 +51,10 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	err := wait.ExponentialBackoff(wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1},
 		func() (bool, error) {
-			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.OSS.Key)
+			log.Infof("OSS Save path: %s, key: %s", path, outputArtifact.OSS.Key)
 			osscli, err := ossDriver.newOSSClient()
 			if err != nil {
-				log.Warnf("Failed to create new S3 client: %v", err)
+				log.Warnf("Failed to create new OSS client: %v", err)
 				return false, nil
 			}
 			bucketName := outputArtifact.OSS.Bucket

@@ -69,3 +69,6 @@ required = [
   name = "upper.io/db.v3"
   version ="3.5.7"
 
+[[constraint]]
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
+  version = "2.0.5"

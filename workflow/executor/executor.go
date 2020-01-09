@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/argoproj/argo/workflow/artifacts/oss"
 	"io"
 	"io/ioutil"
 	"net/url"
@@ -618,6 +619,30 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 	}
 	if art.Raw != nil {
 		return &raw.RawArtifactDriver{}, nil
+	}
+	if art.OSS != nil{
+		var accessKey string
+		var secretKey string
+
+		if art.OSS.AccessKeyID.Name != "" {
+			accessKeyBytes, err := we.GetSecretFromVolMount(art.OSS.AccessKeyID.Name, art.OSS.AccessKeyID.Key)
+			if err != nil {
+				return nil, err
+			}
+			accessKey = string(accessKeyBytes)
+			secretKeyBytes, err := we.GetSecretFromVolMount(art.OSS.SecretKeySecret.Name, art.OSS.SecretKeySecret.Key)
+			if err != nil {
+				return nil, err
+			}
+			secretKey = string(secretKeyBytes)
+		}
+
+		driver := oss.OSSArtifactDriver{
+			Endpoint:  art.OSS.Endpoint,
+			AccessKey: accessKey,
+			SecretKey: secretKey,
+		}
+		return &driver, nil
 	}
 
 	return nil, errors.Errorf(errors.CodeBadRequest, "Unsupported artifact driver for %s", art.Name)

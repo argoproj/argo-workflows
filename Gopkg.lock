@@ -75,6 +75,14 @@
   revision = "f65c72e2690dc4b403c8bd637baf4611cd4c069b"
 
 [[projects]]
+  digest = "1:a9cdd7e5c758fce4c8dffab4ca565b10319a7af667d7f0092f075655a1cdde46"
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
+  packages = ["oss"]
+  pruneopts = ""
+  revision = "5f0bc5af10e8d544ae403bbe4c2e524fc28a5ce2"
+  version = "v2.0.5"
+
+[[projects]]
   branch = "master"
   digest = "1:91c041d6454dbb9cfa1b3e024da74f93ef8de6c7e7ab822ef75ff961419e7490"
   name = "github.com/argoproj/pkg"
@@ -1470,6 +1478,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Knetic/govaluate",
+    "github.com/aliyun/aliyun-oss-go-sdk/oss",
     "github.com/argoproj/pkg/cli",
     "github.com/argoproj/pkg/errors",
     "github.com/argoproj/pkg/exec",
