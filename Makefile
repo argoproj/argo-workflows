@@ -3,16 +3,22 @@ CURRENT_DIR            = $(shell pwd)
 DIST_DIR               = ${CURRENT_DIR}/dist
 ARGO_CLI_NAME          = argo
 
-VERSION                = $(shell cat ${CURRENT_DIR}/VERSION)
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
+GIT_BRANCH             = $(shell git rev-parse --abbrev-ref HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 # docker image publishing options
 DOCKER_PUSH           ?= false
 DOCKER_BUILDKIT       = 1
-IMAGE_TAG             ?= latest
+IMAGE_NAMESPACE       = argoproj
+# version must be  branch name or  vX.Y.Z
+ifeq ($(GIT_BRANCH), master)
+VERSION               ?= latest
+else
+VERSION               ?= $(GIT_BRANCH)
+endif
 # perform static compilation
 STATIC_BUILD          ?= true
 # build development images
@@ -35,16 +41,6 @@ IMAGE_TAG = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
-ifeq (${DOCKER_PUSH}, true)
-ifndef IMAGE_NAMESPACE
-$(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=argoproj))
-endif
-endif
-
-ifdef IMAGE_NAMESPACE
-IMAGE_PREFIX = ${IMAGE_NAMESPACE}/
-endif
-
 ARGO_SERVER_PKGS := $(shell go list  -f '{{ join .Deps "\n" }}'  ./cmd/server/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 
 # Build the project
@@ -53,7 +49,7 @@ all: cli controller-image executor-image argo-server
 
 .PHONY:builder-image
 builder-image:
-	docker build -t $(IMAGE_PREFIX)argo-ci-builder:$(IMAGE_TAG) --target builder .
+	docker build -t $(IMAGE_NAMESPACE)/argo-ci-builder:$(IMAGE_TAG) --target builder .
 
 ui/node_modules: ui/package.json ui/yarn.lock
 ifeq ($(STATIC),true)
@@ -109,8 +105,8 @@ cli-windows:
 
 .PHONY: cli-image
 cli-image:
-	docker build -t $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) --target argocli .
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argocli:$(IMAGE_TAG) ; fi
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) ; fi
 
 .PHONY: controller
 controller:
@@ -120,12 +116,12 @@ controller:
 controller-image:
 ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o workflow-controller ./cmd/workflow-controller
-	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
 endif
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)workflow-controller:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) ; fi
 
 dist/argo-server-linux-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
@@ -145,10 +141,10 @@ dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
 	cp dist/argo-server-linux-amd64 argo-server
-	docker build -t $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server .
+	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server .
 	rm -f argo-server
 ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_PREFIX)argo-server:$(IMAGE_TAG)
+	docker push $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
 endif
 
 .PHONY: argo-server
@@ -176,13 +172,13 @@ dist/executor-base-image:
 ifeq ($(DEV_IMAGE), true)
 executor-image: dist/executor-base-image
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
-	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
 executor-image: executor-base-image
-	docker build -t $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
 endif
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_PREFIX)argoexec:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) ; fi
 
 .PHONY: lint
 lint: cmd/server/static/files.go
@@ -227,7 +223,7 @@ start:
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:dev", "--executor-image-pull-policy", "Never"]}]'
 	# Turn on the workflow complession feature as much as possible, hopefully to shake out some bugs.
 	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--enable-client-auth"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
 	# Build controller and executor images.
 	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
 	# Scale up.
@@ -276,8 +272,17 @@ clean:
 .PHONY: precheckin
 precheckin: test lint verify-codegen
 
+.PHONY: release-prepare
+release-prepare:
+	echo ${$(VERSION):1} > VERSION
+	make manifests IMAGE_TAG=$(VERSION)
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $VERSION" ; fi
+
 .PHONY: release-precheck
 release-precheck: manifests codegen precheckin
+
+.PHONY: pre-commit-check
+pre-commit:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
@@ -290,7 +295,7 @@ release-clis: cli-image
 	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-darwin-amd64 ${DIST_DIR}/argo-darwin-amd64
 	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-windows-amd64 ${DIST_DIR}/argo-windows-amd64
 	docker rm tmp-cli
-	docker create --name tmp-cli $(IMAGE_PREFIX)argocli:$(IMAGE_TAG)
+	docker create --name tmp-cli $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker cp tmp-cli:/bin/argo ${DIST_DIR}/argo-linux-amd64
 	docker rm tmp-cli
 
