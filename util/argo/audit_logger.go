@@ -39,7 +39,7 @@ const (
 	EventReasonWorkflowTimedOut = "WorkflowTimedOut"
 )
 
-func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, logFields map[string]string) {
+func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, info EventInfo, message string, logFields map[string]interface{}) {
 	logCtx := log.WithFields(log.Fields{
 		"type":   info.Type,
 		"reason": info.Reason,
@@ -92,7 +92,7 @@ func (l *AuditLogger) LogWorkflowEvent(workflow *v1alpha1.Workflow, info EventIn
 		ResourceVersion: workflow.ObjectMeta.ResourceVersion,
 		UID:             workflow.ObjectMeta.UID,
 	}
-	l.logEvent(objectMeta, v1alpha1.WorkflowSchemaGroupVersionKind, info, message, map[string]string{})
+	l.logEvent(objectMeta, v1alpha1.WorkflowSchemaGroupVersionKind, info, message, make(map[string]interface{}))
 }
 
 func NewAuditLogger(ns string, kIf kubernetes.Interface, component string) *AuditLogger {
