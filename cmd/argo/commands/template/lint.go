@@ -30,11 +30,6 @@ func NewLintCommand() *cobra.Command {
 				os.Exit(1)
 			}
 
-			namespace, _, err := client.Config.Namespace()
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			if client.ArgoServer != "" {
 				conn := client.GetClientConn()
 				defer conn.Close()
@@ -51,7 +46,7 @@ func NewLintCommand() *cobra.Command {
 						os.Exit(1)
 					}
 					fmt.Printf("Verifying all workflow template manifests in directory: %s\n", args[0])
-					err = validate.LintWorkflowTemplateDir(wftmplGetter, namespace, args[0], strict)
+					err := validate.LintWorkflowTemplateDir(wftmplGetter, args[0], strict)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -66,14 +61,11 @@ func NewLintCommand() *cobra.Command {
 						yamlFiles = append(yamlFiles, filePath)
 					}
 					for _, yamlFile := range yamlFiles {
-						err = validate.LintWorkflowTemplateFile(wftmplGetter, namespace, yamlFile, strict)
+						err := validate.LintWorkflowTemplateFile(wftmplGetter, yamlFile, strict)
 						if err != nil {
-							break
+							log.Fatal(err)
 						}
 					}
-				}
-				if err != nil {
-					log.Fatal(err)
 				}
 				fmt.Printf("Workflow manifests validated\n")
 			}

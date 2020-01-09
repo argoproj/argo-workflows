@@ -191,7 +191,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                                         name: this.state.workflow.metadata.name
                                     },
                                     spec: this.state.workflow.spec
-                                } as Workflow
+                                }
                             }
                             onSaved={workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))}
                             onError={error => this.setState({error})}
