@@ -17,3 +17,4 @@ spec:
           args: [--auth-type, client]
           ports:
             - containerPort: 2746
+          # TODO readinessProbe:
