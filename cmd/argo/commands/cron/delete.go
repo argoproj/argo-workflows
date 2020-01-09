@@ -30,7 +30,7 @@ func NewDeleteCommand() *cobra.Command {
 					os.Exit(1)
 				}
 				for _, wftmplName := range args {
-					deleCronWorkflow(cronWfClient, wftmplName)
+					deleteCronWorkflow(cronWfClient, wftmplName)
 				}
 			}
 		},
@@ -40,7 +40,7 @@ func NewDeleteCommand() *cobra.Command {
 	return command
 }
 
-func deleCronWorkflow(cronWfClient v1alpha1.CronWorkflowInterface, cronWf string) {
+func deleteCronWorkflow(cronWfClient v1alpha1.CronWorkflowInterface, cronWf string) {
 	err := cronWfClient.Delete(cronWf, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Fatal(err)
@@ -54,6 +54,6 @@ func deleteCronWorkflows(cronWfClient v1alpha1.CronWorkflowInterface, options me
 		log.Fatal(err)
 	}
 	for _, cronWf := range cronWfList.Items {
-		deleCronWorkflow(cronWfClient, cronWf.ObjectMeta.Name)
+		deleteCronWorkflow(cronWfClient, cronWf.ObjectMeta.Name)
 	}
 }
