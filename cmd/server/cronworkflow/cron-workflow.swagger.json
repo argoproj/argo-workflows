@@ -97,6 +97,36 @@
         "tags": [
           "CronWorkflowService"
         ]
+      },
+      "post": {
+        "operationId": "CreateCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cronworkflowCreateCronWorkflowRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
       }
     },
     "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}": {
@@ -211,32 +241,6 @@
           "CronWorkflowService"
         ]
       }
-    },
-    "/api/v1/cronworkflows": {
-      "post": {
-        "operationId": "CreateCronWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1CronWorkflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1alpha1CronWorkflow"
-            }
-          }
-        ],
-        "tags": [
-          "CronWorkflowService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -253,6 +257,20 @@
         }
       },
       "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
+    },
+    "cronworkflowCreateCronWorkflowRequest": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string"
+        },
+        "cronWorkflow": {
+          "$ref": "#/definitions/v1alpha1CronWorkflow"
+        },
+        "createOptions": {
+          "$ref": "#/definitions/v1CreateOptions"
+        }
+      }
     },
     "cronworkflowCronWorkflowDeletedResponse": {
       "type": "object"
@@ -709,6 +727,23 @@
         }
       },
       "description": "ContainerPort represents a network port in a single container."
+    },
+    "v1CreateOptions": {
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
+        },
+        "fieldManager": {
+          "type": "string",
+          "title": "fieldManager is a name associated with the actor or entity\nthat is making these changes. The value must be less than or\n128 characters long, and only contain printable characters,\nas defined by https://golang.org/pkg/unicode/#IsPrint.\n+optional"
+        }
+      },
+      "description": "CreateOptions may be provided when creating an API object."
     },
     "v1DeleteOptions": {
       "type": "object",

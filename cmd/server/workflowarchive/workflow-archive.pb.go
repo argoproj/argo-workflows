@@ -32,8 +32,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ListArchivedWorkflowsRequest struct {
-	Namespace            string          `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	ListOptions          *v1.ListOptions `protobuf:"bytes,2,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
+	ListOptions          *v1.ListOptions `protobuf:"bytes,1,opt,name=listOptions,proto3" json:"listOptions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -72,13 +71,6 @@ func (m *ListArchivedWorkflowsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ListArchivedWorkflowsRequest proto.InternalMessageInfo
 
-func (m *ListArchivedWorkflowsRequest) GetNamespace() string {
-	if m != nil {
-		return m.Namespace
-	}
-	return ""
-}
-
 func (m *ListArchivedWorkflowsRequest) GetListOptions() *v1.ListOptions {
 	if m != nil {
 		return m.ListOptions
@@ -87,8 +79,7 @@ func (m *ListArchivedWorkflowsRequest) GetListOptions() *v1.ListOptions {
 }
 
 type GetArchivedWorkflowRequest struct {
-	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Uid                  string   `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -127,13 +118,6 @@ func (m *GetArchivedWorkflowRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetArchivedWorkflowRequest proto.InternalMessageInfo
 
-func (m *GetArchivedWorkflowRequest) GetNamespace() string {
-	if m != nil {
-		return m.Namespace
-	}
-	return ""
-}
-
 func (m *GetArchivedWorkflowRequest) GetUid() string {
 	if m != nil {
 		return m.Uid
@@ -141,64 +125,8 @@ func (m *GetArchivedWorkflowRequest) GetUid() string {
 	return ""
 }
 
-type ResubmitArchivedWorkflowRequest struct {
-	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ResubmitArchivedWorkflowRequest) Reset()         { *m = ResubmitArchivedWorkflowRequest{} }
-func (m *ResubmitArchivedWorkflowRequest) String() string { return proto.CompactTextString(m) }
-func (*ResubmitArchivedWorkflowRequest) ProtoMessage()    {}
-func (*ResubmitArchivedWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_393acb86a8d0f616, []int{2}
-}
-func (m *ResubmitArchivedWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ResubmitArchivedWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ResubmitArchivedWorkflowRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ResubmitArchivedWorkflowRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ResubmitArchivedWorkflowRequest.Merge(m, src)
-}
-func (m *ResubmitArchivedWorkflowRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *ResubmitArchivedWorkflowRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ResubmitArchivedWorkflowRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ResubmitArchivedWorkflowRequest proto.InternalMessageInfo
-
-func (m *ResubmitArchivedWorkflowRequest) GetNamespace() string {
-	if m != nil {
-		return m.Namespace
-	}
-	return ""
-}
-
-func (m *ResubmitArchivedWorkflowRequest) GetUid() string {
-	if m != nil {
-		return m.Uid
-	}
-	return ""
-}
-
 type DeleteArchivedWorkflowRequest struct {
-	Namespace            string   `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Uid                  string   `protobuf:"bytes,2,opt,name=uid,proto3" json:"uid,omitempty"`
+	Uid                  string   `protobuf:"bytes,1,opt,name=uid,proto3" json:"uid,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -208,7 +136,7 @@ func (m *DeleteArchivedWorkflowRequest) Reset()         { *m = DeleteArchivedWor
 func (m *DeleteArchivedWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteArchivedWorkflowRequest) ProtoMessage()    {}
 func (*DeleteArchivedWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_393acb86a8d0f616, []int{3}
+	return fileDescriptor_393acb86a8d0f616, []int{2}
 }
 func (m *DeleteArchivedWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -237,13 +165,6 @@ func (m *DeleteArchivedWorkflowRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DeleteArchivedWorkflowRequest proto.InternalMessageInfo
 
-func (m *DeleteArchivedWorkflowRequest) GetNamespace() string {
-	if m != nil {
-		return m.Namespace
-	}
-	return ""
-}
-
 func (m *DeleteArchivedWorkflowRequest) GetUid() string {
 	if m != nil {
 		return m.Uid
@@ -261,7 +182,7 @@ func (m *ArchivedWorkflowDeletedResponse) Reset()         { *m = ArchivedWorkflo
 func (m *ArchivedWorkflowDeletedResponse) String() string { return proto.CompactTextString(m) }
 func (*ArchivedWorkflowDeletedResponse) ProtoMessage()    {}
 func (*ArchivedWorkflowDeletedResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_393acb86a8d0f616, []int{4}
+	return fileDescriptor_393acb86a8d0f616, []int{3}
 }
 func (m *ArchivedWorkflowDeletedResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -293,7 +214,6 @@ var xxx_messageInfo_ArchivedWorkflowDeletedResponse proto.InternalMessageInfo
 func init() {
 	proto.RegisterType((*ListArchivedWorkflowsRequest)(nil), "workflowarchive.ListArchivedWorkflowsRequest")
 	proto.RegisterType((*GetArchivedWorkflowRequest)(nil), "workflowarchive.GetArchivedWorkflowRequest")
-	proto.RegisterType((*ResubmitArchivedWorkflowRequest)(nil), "workflowarchive.ResubmitArchivedWorkflowRequest")
 	proto.RegisterType((*DeleteArchivedWorkflowRequest)(nil), "workflowarchive.DeleteArchivedWorkflowRequest")
 	proto.RegisterType((*ArchivedWorkflowDeletedResponse)(nil), "workflowarchive.ArchivedWorkflowDeletedResponse")
 }
@@ -303,39 +223,37 @@ func init() {
 }
 
 var fileDescriptor_393acb86a8d0f616 = []byte{
-	// 507 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0xd6, 0x16, 0x84, 0x94, 0xed, 0x01, 0xb4, 0xfc, 0x55, 0x56, 0x48, 0x8b, 0x0f, 0x28, 0x02,
-	0xb2, 0x8b, 0xdb, 0x1e, 0xb8, 0x70, 0x08, 0x20, 0x71, 0x89, 0x54, 0xe1, 0x1e, 0x90, 0xb8, 0x6d,
-	0xec, 0xc1, 0x59, 0x62, 0x7b, 0xcd, 0xee, 0xda, 0x15, 0xaa, 0x7a, 0xe1, 0x0d, 0x10, 0x2f, 0xc2,
-	0x0d, 0x71, 0xe5, 0xc4, 0x11, 0x89, 0x17, 0x40, 0x11, 0x0f, 0x82, 0xbc, 0xb1, 0xeb, 0x2a, 0x4e,
-	0x4a, 0x11, 0xb9, 0x8d, 0x67, 0x67, 0xbe, 0xef, 0x1b, 0xcf, 0xa7, 0xc1, 0x5e, 0x90, 0x84, 0x4c,
-	0x83, 0x2a, 0x40, 0xb1, 0x23, 0xa9, 0xa6, 0x6f, 0x62, 0x79, 0xc4, 0x55, 0x30, 0x11, 0x05, 0x9c,
-	0x7e, 0x0f, 0xaa, 0x04, 0xcd, 0x94, 0x34, 0x92, 0x5c, 0x5d, 0xa8, 0x73, 0x6e, 0x44, 0x32, 0x92,
-	0xf6, 0x8d, 0x95, 0xd1, 0xbc, 0xcc, 0xe9, 0x46, 0x52, 0x46, 0x31, 0x30, 0x9e, 0x09, 0xc6, 0xd3,
-	0x54, 0x1a, 0x6e, 0x84, 0x4c, 0x75, 0xf5, 0xba, 0x3f, 0x7d, 0xac, 0xa9, 0x90, 0xe5, 0x6b, 0xc2,
-	0x83, 0x89, 0x48, 0x41, 0xbd, 0x67, 0xd9, 0x34, 0x2a, 0x13, 0x9a, 0x25, 0x60, 0x38, 0x2b, 0x3c,
-	0x16, 0x41, 0x0a, 0x8a, 0x1b, 0x08, 0xab, 0xae, 0x67, 0x91, 0x30, 0x93, 0x7c, 0x4c, 0x03, 0x99,
-	0x30, 0xae, 0x2c, 0xe9, 0x5b, 0x1b, 0x34, 0xad, 0xb5, 0x38, 0x56, 0x78, 0x3c, 0xce, 0x26, 0xbc,
-	0x0d, 0xe2, 0x36, 0xd4, 0x2c, 0x90, 0x0a, 0x96, 0x10, 0xb9, 0x1f, 0x11, 0xee, 0x8e, 0x84, 0x36,
-	0xc3, 0xf9, 0x88, 0xe1, 0xab, 0x0a, 0x55, 0xfb, 0xf0, 0x2e, 0x07, 0x6d, 0x48, 0x17, 0x77, 0x52,
-	0x9e, 0x80, 0xce, 0x78, 0x00, 0x5b, 0x68, 0x07, 0xf5, 0x3b, 0x7e, 0x93, 0x20, 0x87, 0x78, 0x33,
-	0x16, 0xda, 0x1c, 0x64, 0x76, 0xe4, 0xad, 0x8d, 0x1d, 0xd4, 0xdf, 0xdc, 0xf5, 0xe8, 0x9c, 0x98,
-	0x9e, 0x9d, 0x99, 0x66, 0xd3, 0xa8, 0x4c, 0x68, 0x5a, 0xce, 0x4c, 0x0b, 0x8f, 0x8e, 0x9a, 0x46,
-	0xff, 0x2c, 0x8a, 0x3b, 0xc2, 0xce, 0x0b, 0x68, 0x29, 0xba, 0x98, 0xa0, 0x6b, 0xf8, 0x52, 0x2e,
-	0x42, 0x2b, 0xa4, 0xe3, 0x97, 0xa1, 0xfb, 0x12, 0x6f, 0xfb, 0xa0, 0xf3, 0x71, 0x22, 0xd6, 0x06,
-	0x79, 0x80, 0xef, 0x3c, 0x87, 0x18, 0x0c, 0xac, 0x0b, 0xf0, 0x2e, 0xde, 0x5e, 0x84, 0x9a, 0x13,
-	0x84, 0x3e, 0xe8, 0x4c, 0xa6, 0x1a, 0x76, 0xbf, 0x5d, 0xc6, 0xb7, 0x17, 0x6b, 0x0e, 0x41, 0x15,
-	0x22, 0x00, 0xf2, 0x15, 0xe1, 0x9b, 0x4b, 0x97, 0x48, 0x06, 0x74, 0xc1, 0xc3, 0xf4, 0xbc, 0x65,
-	0x3b, 0x43, 0xda, 0xf8, 0x8e, 0xd6, 0xbe, 0xb3, 0x41, 0xb3, 0xbe, 0x1a, 0x90, 0xd6, 0xbe, 0xa3,
-	0x35, 0x4c, 0x09, 0xed, 0xd2, 0x0f, 0x3f, 0x7f, 0x7f, 0xda, 0xe8, 0x93, 0x7b, 0xd6, 0x76, 0x85,
-	0xc7, 0x2a, 0xe2, 0x70, 0x50, 0x37, 0x6a, 0x76, 0x7c, 0xfa, 0x2f, 0x4e, 0xc8, 0x17, 0x84, 0xaf,
-	0x2f, 0xd9, 0x36, 0x79, 0xd0, 0x52, 0xbe, 0xda, 0x13, 0xce, 0x93, 0xff, 0xd2, 0xed, 0xee, 0x5b,
-	0xcd, 0x94, 0x3c, 0xbc, 0x98, 0x66, 0x76, 0x9c, 0x8b, 0xf0, 0x84, 0x7c, 0x46, 0xf8, 0xd6, 0x72,
-	0x1b, 0x10, 0xda, 0x12, 0x7f, 0xae, 0x5f, 0x9c, 0x47, 0xad, 0xfa, 0xbf, 0xd8, 0xa1, 0x96, 0x7c,
-	0xff, 0x9f, 0x24, 0x3f, 0x1d, 0x7e, 0x9f, 0xf5, 0xd0, 0x8f, 0x59, 0x0f, 0xfd, 0x9a, 0xf5, 0xd0,
-	0xeb, 0xbd, 0x95, 0x47, 0x66, 0xf5, 0xad, 0x1c, 0x5f, 0xb1, 0x77, 0x63, 0xef, 0x4f, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xaa, 0xe7, 0x36, 0x3e, 0x50, 0x05, 0x00, 0x00,
+	// 466 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xcd, 0x8a, 0x13, 0x41,
+	0x10, 0xa6, 0x55, 0x04, 0x7b, 0x0f, 0x4a, 0xfb, 0xcb, 0x10, 0xe3, 0xda, 0xa7, 0x45, 0x49, 0xb5,
+	0xb3, 0xeb, 0xc1, 0x8b, 0x87, 0xa8, 0xe0, 0x65, 0x41, 0xc8, 0x1e, 0x04, 0x6f, 0xbd, 0x33, 0x65,
+	0xa7, 0xcd, 0x64, 0x7a, 0xec, 0xee, 0x4c, 0x10, 0xf1, 0xe2, 0x2b, 0x78, 0xf7, 0xe4, 0x4d, 0x7c,
+	0x0f, 0x8f, 0x82, 0x2f, 0x20, 0xc1, 0x07, 0x91, 0xe9, 0xcc, 0xec, 0x2c, 0x99, 0x64, 0x23, 0xec,
+	0xad, 0x52, 0x3f, 0xdf, 0xf7, 0x55, 0x7d, 0xe9, 0xa1, 0x71, 0x32, 0x4d, 0x85, 0x43, 0x5b, 0xa2,
+	0x15, 0x73, 0x63, 0x27, 0x6f, 0x33, 0x33, 0x97, 0x36, 0x19, 0xeb, 0x12, 0x4f, 0x7e, 0x0f, 0xea,
+	0x04, 0x14, 0xd6, 0x78, 0xc3, 0xae, 0xae, 0xf4, 0x45, 0x37, 0x94, 0x51, 0x26, 0xd4, 0x44, 0x15,
+	0x2d, 0xdb, 0xa2, 0x9e, 0x32, 0x46, 0x65, 0x28, 0x64, 0xa1, 0x85, 0xcc, 0x73, 0xe3, 0xa5, 0xd7,
+	0x26, 0x77, 0x75, 0xf5, 0xf1, 0xe4, 0x89, 0x03, 0x6d, 0xaa, 0xea, 0x54, 0x26, 0x63, 0x9d, 0xa3,
+	0xfd, 0x20, 0x8a, 0x89, 0xaa, 0x12, 0x4e, 0x4c, 0xd1, 0x4b, 0x51, 0xc6, 0x42, 0x61, 0x8e, 0x56,
+	0x7a, 0x4c, 0xeb, 0xa9, 0xe7, 0x4a, 0xfb, 0xf1, 0xec, 0x18, 0x12, 0x33, 0x15, 0xd2, 0x06, 0xd2,
+	0x77, 0x21, 0x68, 0x47, 0x1b, 0x71, 0xa2, 0x8c, 0x65, 0x56, 0x8c, 0x65, 0x17, 0x84, 0xb7, 0xd4,
+	0x22, 0x31, 0x16, 0xd7, 0x10, 0x71, 0x47, 0x7b, 0x87, 0xda, 0xf9, 0xe1, 0x72, 0xc3, 0xf4, 0x75,
+	0x0d, 0xea, 0x46, 0xf8, 0x7e, 0x86, 0xce, 0xb3, 0x23, 0xba, 0x93, 0x69, 0xe7, 0x5f, 0x15, 0x61,
+	0xa7, 0x3b, 0x64, 0x97, 0xec, 0xed, 0xec, 0xc7, 0xb0, 0x44, 0x86, 0xd3, 0x4b, 0x41, 0x31, 0x51,
+	0x55, 0xc2, 0x41, 0xb5, 0x14, 0x94, 0x31, 0x1c, 0xb6, 0x83, 0xa3, 0xd3, 0x28, 0x1c, 0x68, 0xf4,
+	0x12, 0x3b, 0x9c, 0x0d, 0xe5, 0x35, 0x7a, 0x71, 0xa6, 0xd3, 0x40, 0x75, 0x65, 0x54, 0x85, 0x3c,
+	0xa6, 0x77, 0x5f, 0x60, 0x86, 0x1e, 0xff, 0x7f, 0xe4, 0x3e, 0xbd, 0xb7, 0xda, 0xbc, 0x84, 0x48,
+	0x47, 0xe8, 0x0a, 0x93, 0x3b, 0xdc, 0xff, 0x7a, 0x89, 0xde, 0x5e, 0xed, 0x39, 0x42, 0x5b, 0xea,
+	0x04, 0xd9, 0x0f, 0x42, 0x6f, 0xae, 0xbd, 0x0b, 0x1b, 0xc0, 0xca, 0xbf, 0x02, 0xce, 0xba, 0x5f,
+	0x34, 0x84, 0xd6, 0x49, 0x68, 0x9c, 0x0c, 0x41, 0x7b, 0xaf, 0x06, 0x10, 0x1a, 0x27, 0xa1, 0x81,
+	0xa9, 0xa0, 0x39, 0xff, 0xfc, 0xfb, 0xef, 0x97, 0x0b, 0x3d, 0x16, 0x05, 0x23, 0xcb, 0x58, 0xd4,
+	0xc4, 0xe9, 0x60, 0x7e, 0xa2, 0xea, 0x3b, 0xa1, 0xd7, 0xd7, 0x9c, 0x94, 0x3d, 0xec, 0xa8, 0xdd,
+	0x7c, 0xf8, 0xe8, 0xe9, 0xb9, 0xb4, 0xf2, 0xbd, 0xa0, 0x93, 0xb3, 0xdd, 0xcd, 0x3a, 0xc5, 0xc7,
+	0x99, 0x4e, 0x3f, 0xb1, 0x6f, 0x84, 0xde, 0x5a, 0x6f, 0x28, 0x83, 0x8e, 0xe0, 0x33, 0x9d, 0x8f,
+	0x1e, 0x75, 0xfa, 0xb7, 0xd8, 0xde, 0xc8, 0x7c, 0xb0, 0x55, 0xe6, 0xb3, 0xe1, 0xcf, 0x45, 0x9f,
+	0xfc, 0x5a, 0xf4, 0xc9, 0x9f, 0x45, 0x9f, 0xbc, 0x39, 0xd8, 0xf8, 0x24, 0x37, 0x7f, 0x59, 0x8e,
+	0x2f, 0x87, 0x57, 0x76, 0xf0, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x5b, 0x30, 0x9b, 0x6f, 0x7e, 0x04,
+	0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -524,13 +442,6 @@ func (m *ListArchivedWorkflowsRequest) MarshalToSizedBuffer(dAtA []byte) (int, e
 			i = encodeVarintWorkflowArchive(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Namespace) > 0 {
-		i -= len(m.Namespace)
-		copy(dAtA[i:], m.Namespace)
-		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -565,54 +476,6 @@ func (m *GetArchivedWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 		copy(dAtA[i:], m.Uid)
 		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Uid)))
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Namespace) > 0 {
-		i -= len(m.Namespace)
-		copy(dAtA[i:], m.Namespace)
-		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ResubmitArchivedWorkflowRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ResubmitArchivedWorkflowRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ResubmitArchivedWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.XXX_unrecognized != nil {
-		i -= len(m.XXX_unrecognized)
-		copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	if len(m.Uid) > 0 {
-		i -= len(m.Uid)
-		copy(dAtA[i:], m.Uid)
-		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Uid)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Namespace) > 0 {
-		i -= len(m.Namespace)
-		copy(dAtA[i:], m.Namespace)
-		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -646,13 +509,6 @@ func (m *DeleteArchivedWorkflowRequest) MarshalToSizedBuffer(dAtA []byte) (int, 
 		i -= len(m.Uid)
 		copy(dAtA[i:], m.Uid)
 		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Uid)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Namespace) > 0 {
-		i -= len(m.Namespace)
-		copy(dAtA[i:], m.Namespace)
-		i = encodeVarintWorkflowArchive(dAtA, i, uint64(len(m.Namespace)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -703,10 +559,6 @@ func (m *ListArchivedWorkflowsRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Namespace)
-	if l > 0 {
-		n += 1 + l + sovWorkflowArchive(uint64(l))
-	}
 	if m.ListOptions != nil {
 		l = m.ListOptions.Size()
 		n += 1 + l + sovWorkflowArchive(uint64(l))
@@ -723,30 +575,6 @@ func (m *GetArchivedWorkflowRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Namespace)
-	if l > 0 {
-		n += 1 + l + sovWorkflowArchive(uint64(l))
-	}
-	l = len(m.Uid)
-	if l > 0 {
-		n += 1 + l + sovWorkflowArchive(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *ResubmitArchivedWorkflowRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Namespace)
-	if l > 0 {
-		n += 1 + l + sovWorkflowArchive(uint64(l))
-	}
 	l = len(m.Uid)
 	if l > 0 {
 		n += 1 + l + sovWorkflowArchive(uint64(l))
@@ -763,10 +591,6 @@ func (m *DeleteArchivedWorkflowRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Namespace)
-	if l > 0 {
-		n += 1 + l + sovWorkflowArchive(uint64(l))
-	}
 	l = len(m.Uid)
 	if l > 0 {
 		n += 1 + l + sovWorkflowArchive(uint64(l))
@@ -825,38 +649,6 @@ func (m *ListArchivedWorkflowsRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflowArchive
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Namespace = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ListOptions", wireType)
 			}
@@ -948,156 +740,6 @@ func (m *GetArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflowArchive
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Namespace = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflowArchive
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Uid = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipWorkflowArchive(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ResubmitArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowWorkflowArchive
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ResubmitArchivedWorkflowRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ResubmitArchivedWorkflowRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflowArchive
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Namespace = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
 			}
 			var stringLen uint64
@@ -1183,38 +825,6 @@ func (m *DeleteArchivedWorkflowRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Namespace", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWorkflowArchive
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthWorkflowArchive
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Namespace = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Uid", wireType)
 			}

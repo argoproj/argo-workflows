@@ -6,17 +6,17 @@ export interface CronWorkflow {
     kind?: string;
     metadata: kubernetes.ObjectMeta;
     spec: CronWorkflowSpec;
-    status: CronWorkflowStatus;
+    status?: CronWorkflowStatus;
 }
 
 export interface CronWorkflowSpec {
     workflowSpec: WorkflowSpec;
     schedule: string;
-    concurrencyPolicy: string;
-    suspend: boolean;
-    startingDeadlineSeconds: number;
-    successfulJobsHistoryLimit: number;
-    failedJobsHistoryLimit: number;
+    concurrencyPolicy?: string;
+    suspend?: boolean;
+    startingDeadlineSeconds?: number;
+    successfulJobsHistoryLimit?: number;
+    failedJobsHistoryLimit?: number;
 }
 
 export interface CronWorkflowStatus {

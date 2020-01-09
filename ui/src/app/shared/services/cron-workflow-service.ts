@@ -2,9 +2,9 @@ import {CronWorkflow, CronWorkflowList} from '../../../models';
 import requests from './requests';
 
 export class CronWorkflowService {
-    public create(cronWorkflow: CronWorkflow) {
+    public create(cronWorkflow: CronWorkflow, namespace: string) {
         return requests
-            .post(`api/v1/cron-workflows`)
+            .post(`api/v1/cron-workflows/${namespace}`)
             .send({cronWorkflow})
             .then(res => res.body as CronWorkflow);
     }

@@ -54,7 +54,7 @@ func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := a.getArtifact(ctx, wf, namespace, nodeId, artifactName)
+	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
@@ -71,20 +71,19 @@ func (a *ArtifactServer) GetArtifactByUID(w http.ResponseWriter, r *http.Request
 	}
 	path := strings.SplitN(r.URL.Path, "/", 6)
 
-	namespace := path[2]
-	uid := path[3]
-	nodeId := path[4]
-	artifactName := path[5]
+	uid := path[2]
+	nodeId := path[3]
+	artifactName := path[4]
 
-	log.WithFields(log.Fields{"namespace": namespace, "uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
+	log.WithFields(log.Fields{"uid": uid, "nodeId": nodeId, "artifactName": artifactName}).Info("Download artifact")
 
-	wf, err := a.getWorkflowByUID(ctx, namespace, uid)
+	wf, err := a.getWorkflowByUID(ctx, uid)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
 	}
 
-	data, err := a.getArtifact(ctx, wf, namespace, nodeId, artifactName)
+	data, err := a.getArtifact(ctx, wf, nodeId, artifactName)
 	if err != nil {
 		a.serverInternalError(err, w)
 		return
@@ -113,7 +112,7 @@ func (a *ArtifactServer) serverInternalError(err error, w http.ResponseWriter) {
 	_, _ = w.Write([]byte(err.Error()))
 }
 
-func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, namespace, nodeId, artifactName string) ([]byte, error) {
+func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nodeId, artifactName string) ([]byte, error) {
 	kubeClient := auth.GetKubeClient(ctx)
 
 	art := wf.Status.Nodes[nodeId].Outputs.GetArtifactByName(artifactName)
@@ -121,7 +120,7 @@ func (a *ArtifactServer) getArtifact(ctx context.Context, wf *wfv1.Workflow, nam
 		return nil, fmt.Errorf("artifact not found")
 	}
 
-	driver, err := artifact.NewDriver(art, resources{kubeClient, namespace})
+	driver, err := artifact.NewDriver(art, resources{kubeClient, wf.Namespace})
 	if err != nil {
 		return nil, err
 	}
@@ -168,12 +167,12 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 	return wf, nil
 }
 
-func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, namespace string, uid string) (*wfv1.Workflow, error) {
-	wf, err := a.wfArchive.GetWorkflow(namespace, uid)
+func (a *ArtifactServer) getWorkflowByUID(ctx context.Context, uid string) (*wfv1.Workflow, error) {
+	wf, err := a.wfArchive.GetWorkflow(uid)
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflows", namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", "workflows", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}

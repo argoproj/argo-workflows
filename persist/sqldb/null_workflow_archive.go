@@ -19,10 +19,10 @@ func (r *nullWorkflowArchive) ListWorkflows(string, int, int) (wfv1.Workflows, e
 	return wfv1.Workflows{}, nil
 }
 
-func (r *nullWorkflowArchive) GetWorkflow(string, string) (*wfv1.Workflow, error) {
+func (r *nullWorkflowArchive) GetWorkflow(string) (*wfv1.Workflow, error) {
 	return nil, fmt.Errorf("getting archived workflows not supported")
 }
 
-func (r *nullWorkflowArchive) DeleteWorkflow(string, string) error {
+func (r *nullWorkflowArchive) DeleteWorkflow(string) error {
 	return fmt.Errorf("deleting archived workflows not supported")
 }

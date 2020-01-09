@@ -17,7 +17,8 @@ import (
 
 func NewListCommand() *cobra.Command {
 	var (
-		output string
+		output    string
+		namespace string
 	)
 	var command = &cobra.Command{
 		Use: "list",
@@ -26,7 +27,7 @@ func NewListCommand() *cobra.Command {
 			ctx := client.ContextWithAuthorization()
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			resp, err := client.ListArchivedWorkflows(ctx, &workflowarchive.ListArchivedWorkflowsRequest{
-				ListOptions: &metav1.ListOptions{},
+				ListOptions: &metav1.ListOptions{FieldSelector: "metadata.namespace=" + namespace},
 			})
 			if err != nil {
 				log.Fatal(err)
@@ -55,5 +56,6 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
+	command.Flags().StringVar(&namespace, "namespace", "", "The namespace")
 	return command
 }

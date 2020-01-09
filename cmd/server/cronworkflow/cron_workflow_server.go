@@ -16,8 +16,6 @@ func NewCronWorkflowServer() CronWorkflowServiceServer {
 	return &cronWorkflowServiceServer{}
 }
 
-// TODO - CreateCronWorkflow
-
 func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *ListCronWorkflowsRequest) (*v1alpha1.CronWorkflowList, error) {
 	options := metav1.ListOptions{}
 	if req.ListOptions != nil {
@@ -26,8 +24,8 @@ func (c *cronWorkflowServiceServer) ListCronWorkflows(ctx context.Context, req *
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).List(options)
 }
 
-func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *v1alpha1.CronWorkflow) (*v1alpha1.CronWorkflow, error) {
-	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req)
+func (c *cronWorkflowServiceServer) CreateCronWorkflow(ctx context.Context, req *CreateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Create(req.CronWorkflow)
 }
 
 func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *GetCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {

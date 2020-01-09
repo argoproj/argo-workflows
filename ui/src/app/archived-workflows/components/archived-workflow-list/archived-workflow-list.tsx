@@ -100,10 +100,7 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                         <div className='columns small-3'>CREATED</div>
                     </div>
                     {this.state.workflows.map(w => (
-                        <Link
-                            className='row argo-table-list__row'
-                            key={`${w.metadata.namespace}/${w.metadata.uid}`}
-                            to={uiUrl(`archived-workflows/${w.metadata.namespace}/${w.metadata.uid}`)}>
+                        <Link className='row argo-table-list__row' key={`${w.metadata.uid}`} to={uiUrl(`archived-workflows/${w.metadata.uid}`)}>
                             <div className='columns small-1'>
                                 <i className={classNames('fa', Utils.statusIconClasses(w.status.phase))} />
                             </div>

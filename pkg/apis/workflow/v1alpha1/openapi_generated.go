@@ -600,7 +600,7 @@ func schema_pkg_apis_workflow_v1alpha1_CronWorkflowSpec(ref common.ReferenceCall
 						},
 					},
 				},
-				Required: []string{"schedule"},
+				Required: []string{"workflowSpec", "schedule"},
 			},
 		},
 		Dependencies: []string{

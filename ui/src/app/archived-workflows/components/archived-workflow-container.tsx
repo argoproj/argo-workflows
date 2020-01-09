@@ -6,6 +6,6 @@ import {ArchivedWorkflowList} from './archived-workflow-list/archived-workflow-l
 export const ArchivedWorkflowContainer = (props: RouteComponentProps<any>) => (
     <Switch>
         <Route exact={true} path={`${props.match.path}`} component={ArchivedWorkflowList} />
-        <Route exact={true} path={`${props.match.path}/:namespace/:uid`} component={ArchivedWorkflowDetails} />
+        <Route exact={true} path={`${props.match.path}/:uid`} component={ArchivedWorkflowDetails} />
     </Switch>
 );

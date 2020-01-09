@@ -1,7 +1,9 @@
 import {Page, SlidingPanel} from 'argo-ui';
+import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
+import {CronWorkflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
@@ -10,27 +12,10 @@ import {Timestamp} from '../../../shared/components/timestamp';
 import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
+import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
 import {Utils} from '../../../shared/utils';
-
 require('./cron-workflow-list.scss');
-
-const placeholderCronWorkflow = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
-kind: CronWorkflow
-metadata:
-  name: hello-world
-  namespace: ${namespace}
-spec:
-  schedule: "* * * * *"
-  workflowSpec:
-    entrypoint: whalesay
-    templates:
-      - name: whalesay
-        container:
-          image: docker/whalesay:latest
-          command: [cowsay]
-          args: ["🕓 hello world"]
-`;
 
 interface State {
     cronWorkflows?: models.CronWorkflow[];
@@ -92,11 +77,12 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                 minHeight={800}
                                 initialEditMode={true}
                                 submitMode={true}
-                                placeHolder={placeholderCronWorkflow(this.namespace || 'default')}
-                                onSave={rawWf => {
+                                placeHolder={jsYaml.dump(exampleCronWorkflow(this.namespace))}
+                                onSave={value => {
+                                    const req = JSON.parse(value) as CronWorkflow;
                                     return services.cronWorkflows
-                                        .create(JSON.parse(rawWf))
-                                        .then(cronWf => ctx.navigation.goto(`/cron-workflows/${cronWf.metadata.namespace}/${cronWf.metadata.name}`))
+                                        .create(req, req.metadata.namespace)
+                                        .then(res => ctx.navigation.goto(`/cron-workflows/${res.metadata.namespace}/${res.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}
                             />

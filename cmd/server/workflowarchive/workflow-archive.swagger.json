@@ -15,7 +15,7 @@
     "application/json"
   ],
   "paths": {
-    "/api/v1/archived-workflows/{namespace}": {
+    "/api/v1/archived-workflows": {
       "get": {
         "operationId": "ListArchivedWorkflows",
         "responses": {
@@ -27,12 +27,6 @@
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "listOptions.labelSelector",
             "description": "A selector to restrict the list of returned objects by their labels.\nDefaults to everything.\n+optional.",
@@ -99,7 +93,7 @@
         ]
       }
     },
-    "/api/v1/archived-workflows/{namespace}/{uid}": {
+    "/api/v1/archived-workflows/{uid}": {
       "get": {
         "operationId": "GetArchivedWorkflow",
         "responses": {
@@ -111,12 +105,6 @@
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "uid",
             "in": "path",
@@ -139,12 +127,6 @@
           }
         },
         "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
           {
             "name": "uid",
             "in": "path",

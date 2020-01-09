@@ -3,14 +3,16 @@ import requests from './requests';
 
 export class ArchivedWorkflowsService {
     public list(namespace: string, continueArg: string) {
-        return requests.get(`api/v1/archived-workflows/${namespace}?listOptions.continue=${continueArg}`).then(res => res.body as models.WorkflowList);
+        return requests
+            .get(`api/v1/archived-workflows?listOptions.fieldSelector=metadata.namespace=${namespace}&listOptions.continue=${continueArg}`)
+            .then(res => res.body as models.WorkflowList);
     }
 
-    public get(namespace: string, uid: string) {
-        return requests.get(`api/v1/archived-workflows/${namespace}/${uid}`).then(res => res.body as models.Workflow);
+    public get(uid: string) {
+        return requests.get(`api/v1/archived-workflows/${uid}`).then(res => res.body as models.Workflow);
     }
 
-    public delete(namespace: string, uid: string) {
-        return requests.delete(`api/v1/archived-workflows/${namespace}/${uid}`);
+    public delete(uid: string) {
+        return requests.delete(`api/v1/archived-workflows/${uid}`);
     }
 }

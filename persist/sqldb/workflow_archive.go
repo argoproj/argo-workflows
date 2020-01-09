@@ -12,8 +12,8 @@ const tableName = "argo_archived_workflows"
 type WorkflowArchive interface {
 	ArchiveWorkflow(wf *wfv1.Workflow) error
 	ListWorkflows(namespace string, limit, offset int) (wfv1.Workflows, error)
-	GetWorkflow(namespace string, uid string) (*wfv1.Workflow, error)
-	DeleteWorkflow(namespace string, uid string) error
+	GetWorkflow(uid string) (*wfv1.Workflow, error)
+	DeleteWorkflow(uid string) error
 }
 
 type workflowArchive struct {
@@ -25,7 +25,7 @@ func NewWorkflowArchive(database sqlbuilder.Database) WorkflowArchive {
 }
 
 func (r *workflowArchive) ArchiveWorkflow(wf *wfv1.Workflow) error {
-	err := r.DeleteWorkflow(wf.Namespace, string(wf.UID))
+	err := r.DeleteWorkflow(string(wf.UID))
 	if err != nil {
 		return err
 	}
@@ -62,11 +62,10 @@ func namespaceEqual(namespace string) db.Cond {
 	}
 }
 
-func (r *workflowArchive) GetWorkflow(namespace string, uid string) (*wfv1.Workflow, error) {
+func (r *workflowArchive) GetWorkflow(uid string) (*wfv1.Workflow, error) {
 	rs := r.Collection(tableName).
 		Find().
-		Where(db.Cond{"id": uid}).
-		And(db.Cond{"namespace": namespace})
+		Where(db.Cond{"id": uid})
 	exists, err := rs.Exists()
 	if err != nil {
 		return nil, err
@@ -82,10 +81,9 @@ func (r *workflowArchive) GetWorkflow(namespace string, uid string) (*wfv1.Workf
 	return toWorkflow(workflow)
 }
 
-func (r *workflowArchive) DeleteWorkflow(namespace string, uid string) error {
+func (r *workflowArchive) DeleteWorkflow(uid string) error {
 	return r.Collection(tableName).
 		Find().
 		Where(db.Cond{"id": uid}).
-		And(db.Cond{"namespace": namespace}).
 		Delete()
 }

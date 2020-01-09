@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,11 +43,16 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 	if offset < 0 {
 		return nil, status.Error(codes.InvalidArgument, "listOptions.continue must >= 0")
 	}
+	namespace := ""
+	if strings.HasPrefix(options.FieldSelector, "metadata.namespace=") {
+		namespace = strings.TrimPrefix(options.FieldSelector, "metadata.namespace=")
+	}
+
 	items := make(wfv1.Workflows, 0)
 	authorizer := auth.NewAuthorizer(ctx)
 	// keep trying until we have enough
 	for len(items) < limit {
-		moreItems, err := w.repo.ListWorkflows(req.Namespace, limit, offset)
+		moreItems, err := w.repo.ListWorkflows(namespace, limit, offset)
 		if err != nil {
 			return nil, err
 		}
@@ -73,14 +79,14 @@ func (w *archivedWorkflowServer) ListArchivedWorkflows(ctx context.Context, req 
 }
 
 func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *GetArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.repo.GetWorkflow(req.Namespace, req.Uid)
+	wf, err := w.repo.GetWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}
 	if wf == nil {
 		return nil, status.Error(codes.NotFound, "not found")
 	}
-	allowed, err := auth.CanI(ctx, "get", "workflow", req.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "get", "workflow", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -91,18 +97,18 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 }
 
 func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error) {
-	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: req.Namespace, Uid: req.Uid})
+	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: req.Uid})
 	if err != nil {
 		return nil, err
 	}
-	allowed, err := auth.CanI(ctx, "delete", "workflow", req.Namespace, wf.Name)
+	allowed, err := auth.CanI(ctx, "delete", "workflow", wf.Namespace, wf.Name)
 	if err != nil {
 		return nil, err
 	}
 	if !allowed {
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
-	err = w.repo.DeleteWorkflow(req.Namespace, req.Uid)
+	err = w.repo.DeleteWorkflow(req.Uid)
 	if err != nil {
 		return nil, err
 	}

@@ -89,9 +89,7 @@ export class WorkflowsService {
 
     public getArtifactDownloadUrl(workflow: models.Workflow, nodeId: string, artifactName: string, archived: boolean) {
         return archived
-            ? `/artifacts-by-uid/${workflow.metadata.namespace}/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem(
-                  'token'
-              )}`
+            ? `/artifacts-by-uid/${workflow.metadata.uid}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`
             : `/artifacts/${workflow.metadata.namespace}/${workflow.metadata.name}/${nodeId}/${encodeURIComponent(artifactName)}?Authorization=${localStorage.getItem('token')}`;
     }
 }

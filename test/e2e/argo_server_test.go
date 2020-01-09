@@ -222,11 +222,33 @@ func (s *ArgoServerSuite) TestWorkflows() {
 
 func (s *ArgoServerSuite) TestCronWorkflows() {
 	s.Run("Create", func(t *testing.T) {
-		// TODO create a cron wf using API here
-		s.Given().
-			CronWorkflow("@cron/testdata/basic.yaml").
-			When().
-			CreateCronWorkflow()
+		s.e(t).POST("/api/v1/cron-workflows/argo").
+			WithBytes([]byte(`{
+  "cronWorkflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "schedule": "* * * * *",
+      "workflowSpec": {
+        "entrypoint": "whalesay",
+        "templates": [
+          {
+            "name": "whalesay",
+            "container": {
+              "image": "docker/whalesay:latest"
+            }
+          }
+        ]
+      }
+    }
+  }
+}`)).
+			Expect().
+			Status(200)
 	})
 
 	s.Run("List", func(t *testing.T) {
@@ -245,17 +267,17 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 		s.e(t).GET("/api/v1/cron-workflows/argo/not-found").
 			Expect().
 			Status(404)
-		s.e(t).GET("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+		s.e(t).GET("/api/v1/cron-workflows/argo/test").
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.metadata.name").
-			Equal("test-cron-wf-basic")
+			Equal("test")
 
 	})
 
 	s.Run("Delete", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+		s.e(t).DELETE("/api/v1/cron-workflows/argo/test").
 			Expect().
 			Status(200)
 	})
@@ -383,7 +405,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 		WaitForWorkflow(15 * time.Second)
 
 	s.Run("List", func(t *testing.T) {
-		s.e(t).GET("/api/v1/archived-workflows/").
+		s.e(t).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
@@ -393,7 +415,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 			Length().
 			Equal(2)
 
-		j := s.e(t).GET("/api/v1/archived-workflows/").
+		j := s.e(t).GET("/api/v1/archived-workflows").
 			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
@@ -411,10 +433,10 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		s.e(t).GET("/api/v1/archived-workflows/argo/not-found").
+		s.e(t).GET("/api/v1/archived-workflows/not-found").
 			Expect().
 			Status(404)
-		s.e(t).GET("/api/v1/archived-workflows/argo/{uid}", uid).
+		s.e(t).GET("/api/v1/archived-workflows/{uid}", uid).
 			Expect().
 			Status(200).
 			JSON().
@@ -423,10 +445,10 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 	})
 
 	s.Run("Delete", func(t *testing.T) {
-		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/{uid}", uid).
 			Expect().
 			Status(200)
-		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
+		s.e(t).DELETE("/api/v1/archived-workflows/{uid}", uid).
 			Expect().
 			Status(404)
 	})

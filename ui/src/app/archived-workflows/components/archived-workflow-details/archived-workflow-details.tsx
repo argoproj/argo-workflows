@@ -27,10 +27,6 @@ interface State {
 }
 
 export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, State> {
-    private get namespace() {
-        return this.props.match.params.namespace;
-    }
-
     private get uid() {
         return this.props.match.params.uid;
     }
@@ -70,7 +66,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     public componentDidMount(): void {
         services.archivedWorkflows
-            .get(this.namespace, this.uid)
+            .get(this.uid)
             .then(workflow => this.setState({workflow}))
             .catch(error => this.setState({error}));
     }
@@ -102,7 +98,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             title: 'Archived Workflows',
                             path: uiUrl('archived-workflows/')
                         },
-                        {title: this.namespace + '/' + this.uid}
+                        {title: this.uid}
                     ],
                     tools: (
                         <div className='workflow-details__topbar-buttons'>
@@ -184,15 +180,13 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
                     {this.sidePanel === 'resubmit' && (
                         <WorkflowSubmit
-                            placeholder={
-                                {
-                                    metadata: {
-                                        namespace: this.state.workflow.metadata.namespace,
-                                        name: this.state.workflow.metadata.name
-                                    },
-                                    spec: this.state.workflow.spec
-                                }
-                            }
+                            placeholder={{
+                                metadata: {
+                                    namespace: this.state.workflow.metadata.namespace,
+                                    name: this.state.workflow.metadata.name
+                                },
+                                spec: this.state.workflow.spec
+                            }}
                             onSaved={workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))}
                             onError={error => this.setState({error})}
                         />
@@ -211,7 +205,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
             return;
         }
         services.archivedWorkflows
-            .delete(this.namespace, this.uid)
+            .delete(this.uid)
             .catch(e => {
                 this.appContext.apis.notifications.show({
                     content: 'Failed to delete archived workflow ' + e,

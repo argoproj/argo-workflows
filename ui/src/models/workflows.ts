@@ -522,17 +522,17 @@ export interface Template {
     /**
      * DAG template
      */
-    dag: DAGTemplate;
+    dag?: DAGTemplate;
 
     /**
      * Template is the name of the template which is used as the base of this template.
      */
-    template: string;
+    template?: string;
 
     /**
      * TemplateRef is the reference to the template resource which is used as the base of this template.
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 }
 /**
  * ValueFrom describes a location in which to obtain the value to a parameter

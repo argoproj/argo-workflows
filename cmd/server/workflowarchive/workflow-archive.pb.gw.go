@@ -29,30 +29,12 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 
 var (
-	filter_ArchivedWorkflowService_ListArchivedWorkflows_0 = &utilities.DoubleArray{Encoding: map[string]int{"namespace": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_ArchivedWorkflowService_ListArchivedWorkflows_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 )
 
 func request_ArchivedWorkflowService_ListArchivedWorkflows_0(ctx context.Context, marshaler runtime.Marshaler, client ArchivedWorkflowServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListArchivedWorkflowsRequest
 	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -69,24 +51,6 @@ func request_ArchivedWorkflowService_ListArchivedWorkflows_0(ctx context.Context
 func local_request_ArchivedWorkflowService_ListArchivedWorkflows_0(ctx context.Context, marshaler runtime.Marshaler, server ArchivedWorkflowServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListArchivedWorkflowsRequest
 	var metadata runtime.ServerMetadata
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
 
 	if err := runtime.PopulateQueryParameters(&protoReq, req.URL.Query(), filter_ArchivedWorkflowService_ListArchivedWorkflows_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
@@ -107,17 +71,6 @@ func request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Context, 
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
 
 	val, ok = pathParams["uid"]
 	if !ok {
@@ -146,17 +99,6 @@ func local_request_ArchivedWorkflowService_GetArchivedWorkflow_0(ctx context.Con
 		_   = err
 	)
 
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
-
 	val, ok = pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -184,17 +126,6 @@ func request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.Contex
 		_   = err
 	)
 
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
-
 	val, ok = pathParams["uid"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "uid")
@@ -221,17 +152,6 @@ func local_request_ArchivedWorkflowService_DeleteArchivedWorkflow_0(ctx context.
 		err error
 		_   = err
 	)
-
-	val, ok = pathParams["namespace"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "namespace")
-	}
-
-	protoReq.Namespace, err = runtime.String(val)
-
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "namespace", err)
-	}
 
 	val, ok = pathParams["uid"]
 	if !ok {
@@ -419,11 +339,11 @@ func RegisterArchivedWorkflowServiceHandlerClient(ctx context.Context, mux *runt
 }
 
 var (
-	pattern_ArchivedWorkflowService_ListArchivedWorkflows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archived-workflows", "namespace"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_ListArchivedWorkflows_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archived-workflows"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ArchivedWorkflowService_GetArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "archived-workflows", "namespace", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_GetArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archived-workflows", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ArchivedWorkflowService_DeleteArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 1, 0, 4, 1, 5, 4}, []string{"api", "v1", "archived-workflows", "namespace", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_ArchivedWorkflowService_DeleteArchivedWorkflow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archived-workflows", "uid"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (

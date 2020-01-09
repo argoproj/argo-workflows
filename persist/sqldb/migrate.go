@@ -64,6 +64,12 @@ func migrate(cfg migrateCfg, session sqlbuilder.Database) error {
 		`alter table argo_workflow_history rename to argo_archived_workflows`,
 		`drop index idx_name`,
 		`create unique index idx_name on ` + cfg.tableName + `(name, namespace)`,
+		`alter table ` + cfg.tableName + ` drop constraint ` + cfg.tableName + `_pkey`,
+		`alter table ` + cfg.tableName + ` add primary key(name,namespace)`,
+		`drop index idx_name`,
+		// huh - why does the pkey not have the same name as the table - history!
+		`alter table argo_archived_workflows drop constraint argo_workflow_history_pkey`,
+		`alter table argo_archived_workflows add primary key(id)`,
 	} {
 		if changeSchemaVersion > schemaVersion {
 			log.WithFields(log.Fields{"changeSchemaVersion": changeSchemaVersion, "change": change}).Info("Applying database change")

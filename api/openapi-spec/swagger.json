@@ -272,6 +272,7 @@
     "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
       "type": "object",
       "required": [
+        "workflowSpec",
         "schedule"
       ],
       "properties": {

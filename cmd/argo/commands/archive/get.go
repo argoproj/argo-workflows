@@ -19,20 +19,18 @@ func NewGetCommand() *cobra.Command {
 		output string
 	)
 	var command = &cobra.Command{
-		Use: "get NAMESPACE UID",
+		Use: "get UID",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 2 {
+			if len(args) != 1 {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			namespace := args[0]
-			uid := args[1]
+			uid := args[0]
 			conn := client.GetClientConn()
 			ctx := client.ContextWithAuthorization()
 			client := workflowarchive.NewArchivedWorkflowServiceClient(conn)
 			wf, err := client.GetArchivedWorkflow(ctx, &workflowarchive.GetArchivedWorkflowRequest{
-				Namespace: namespace,
-				Uid:       uid,
+				Uid: uid,
 			})
 			if err != nil {
 				log.Fatal(err)

@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import * as models from '../../models';
-import {NODE_PHASE} from '../../models';
+import {NODE_PHASE, Template} from '../../models';
 
 export const Utils = {
     statusIconClasses(status: string): string {
@@ -42,7 +42,7 @@ export const Utils = {
         let tmpTemplate = {
             template: node.templateName,
             templateRef: node.templateRef
-        };
+        } as Template;
         let scope = node.templateScope;
         const referencedTemplates: models.Template[] = [];
         let resolvedTemplate: models.Template;
