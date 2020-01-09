@@ -117,15 +117,11 @@ export class ArchivedWorkflowList extends BasePage<RouteComponentProps<any>, Sta
                 </div>
                 <p>
                     {this.continue !== '' && (
-                        <button
-                            className='argo-button argo-button--base-o'
-                            onClick={() => {
-                                this.continue = '';
-                            }}>
+                        <button className='argo-button argo-button--base-o' onClick={() => (this.continue = '')}>
                             <i className='fa fa-chevron-left' /> Start
                         </button>
                     )}
-                    {this.continue !== '' && (
+                    {this.state.continue !== '' && (
                         <button className='argo-button argo-button--base-o' onClick={() => (this.continue = this.state.continue)}>
                             Next: {this.state.continue} <i className='fa fa-chevron-right' />
                         </button>

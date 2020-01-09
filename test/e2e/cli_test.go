@@ -60,10 +60,45 @@ func (s *CLISuite) TestRoot() {
 }
 
 func (s *CLISuite) TestCron() {
+
+	s.Run("Create", func(t *testing.T) {
+		// TODO create a cron wf using CLI
+		s.Given().
+			CronWorkflow("@cron/testdata/basic.yaml").
+			When().
+			CreateCronWorkflow()
+	})
+
 	s.Run("List", func(t *testing.T) {
 		output, err := argo("cron", "list")
 		assert.NoError(t, err)
-		assert.Contains(t, output, "NAME   AGE   LAST RUN   SCHEDULE   SUSPENDED")
+		assert.Contains(t, output, "NAME")
+		assert.Contains(t, output, "AGE")
+		assert.Contains(t, output, "LAST RUN")
+		assert.Contains(t, output, "SCHEDULE")
+		assert.Contains(t, output, "SUSPENDED")
+	})
+
+	s.Run("Get", func(t *testing.T) {
+		output, err := argo("cron", "get", "not-found")
+		assert.EqualError(t, err, "exit status 1")
+		assert.Contains(t, output, `"not-found" not found`)
+
+		output, err = argo("cron", "get", "test-cron-wf-basic")
+		if assert.NoError(t, err) {
+			assert.Contains(t, output, "Name:")
+			assert.Contains(t, output, "Namespace:")
+			assert.Contains(t, output, "Created:")
+			assert.Contains(t, output, "Schedule:")
+			assert.Contains(t, output, "Suspended:")
+			assert.Contains(t, output, "StartingDeadlineSeconds:")
+			assert.Contains(t, output, "ConcurrencyPolicy:")
+		}
+	})
+
+	s.Run("Delete", func(t *testing.T) {
+		_, err := argo("cron", "delete", "test-cron-wf-basic")
+		assert.NoError(t, err)
 	})
 }
 

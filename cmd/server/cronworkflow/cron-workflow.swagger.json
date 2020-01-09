@@ -4,6 +4,10 @@
     "title": "cmd/server/cronworkflow/cron-workflow.proto",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
@@ -13,7 +17,7 @@
   "paths": {
     "/api/v1/cron-workflows/{namespace}": {
       "get": {
-        "operationId": "ListWorkflowTemplates",
+        "operationId": "ListCronWorkflows",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -95,6 +99,119 @@
         ]
       }
     },
+    "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}": {
+      "get": {
+        "operationId": "GetCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "cronWorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "getOptions.resourceVersion",
+            "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
+      },
+      "delete": {
+        "operationId": "DeleteCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/cronworkflowCronWorkflowDeletedResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "cronWorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.gracePeriodSeconds",
+            "description": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "deleteOptions.preconditions.uid",
+            "description": "Specifies the target UID.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.preconditions.resourceVersion",
+            "description": "Specifies the target ResourceVersion\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.orphanDependents",
+            "description": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "deleteOptions.propagationPolicy",
+            "description": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "deleteOptions.dryRun",
+            "description": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "multi"
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
+      }
+    },
     "/api/v1/cronworkflows": {
       "post": {
         "operationId": "CreateCronWorkflow",
@@ -123,6 +240,23 @@
     }
   },
   "definitions": {
+    "apismetav1Preconditions": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "title": "Specifies the target UID.\n+optional"
+        },
+        "resourceVersion": {
+          "type": "string",
+          "title": "Specifies the target ResourceVersion\n+optional"
+        }
+      },
+      "description": "Preconditions must be fulfilled before an operation (update, delete, etc.) is carried out."
+    },
+    "cronworkflowCronWorkflowDeletedResponse": {
+      "type": "object"
+    },
     "intstrIntOrString": {
       "type": "object",
       "properties": {
@@ -576,6 +710,37 @@
       },
       "description": "ContainerPort represents a network port in a single container."
     },
+    "v1DeleteOptions": {
+      "type": "object",
+      "properties": {
+        "gracePeriodSeconds": {
+          "type": "string",
+          "format": "int64",
+          "title": "The duration in seconds before the object should be deleted. Value must be non-negative integer.\nThe value zero indicates delete immediately. If this value is nil, the default grace period for the\nspecified type will be used.\nDefaults to a per object value if not specified. zero means delete immediately.\n+optional"
+        },
+        "preconditions": {
+          "$ref": "#/definitions/apismetav1Preconditions",
+          "title": "Must be fulfilled before a deletion is carried out. If not possible, a 409 Conflict status will be\nreturned.\n+optional"
+        },
+        "orphanDependents": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7.\nShould the dependent objects be orphaned. If true/false, the \"orphan\"\nfinalizer will be added to/removed from the object's finalizers list.\nEither this field or PropagationPolicy may be set, but not both.\n+optional"
+        },
+        "propagationPolicy": {
+          "type": "string",
+          "title": "Whether and how garbage collection will be performed.\nEither this field or OrphanDependents may be set, but not both.\nThe default policy is decided by the existing finalizer set in the\nmetadata.finalizers and the resource-specific default policy.\nAcceptable values are: 'Orphan' - orphan the dependents; 'Background' -\nallow the garbage collector to delete the dependents in the background;\n'Foreground' - a cascading policy that deletes all dependents in the\nforeground.\n+optional"
+        },
+        "dryRun": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional"
+        }
+      },
+      "description": "DeleteOptions may be provided when deleting an API object."
+    },
     "v1DownwardAPIProjection": {
       "type": "object",
       "properties": {
@@ -827,6 +992,16 @@
         }
       },
       "description": "Represents a Persistent Disk resource in Google Compute Engine.\n\nA GCE PD must exist before mounting to a container. The disk must\nalso be in the same GCE project and zone as the kubelet. A GCE PD\ncan only be mounted as read/write once or read-only many times. GCE\nPDs support ownership management and SELinux relabeling."
+    },
+    "v1GetOptions": {
+      "type": "object",
+      "properties": {
+        "resourceVersion": {
+          "type": "string",
+          "description": "When specified:\n- if unset, then the result is returned from remote storage based on quorum-read flag;\n- if it's 0, then we simply return what we currently have in cache, no guarantee;\n- if set to non zero, then the result is at least as fresh as given rv."
+        }
+      },
+      "description": "GetOptions is the standard query options to the standard REST get call."
     },
     "v1GitRepoVolumeSource": {
       "type": "object",

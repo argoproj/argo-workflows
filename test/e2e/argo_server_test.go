@@ -148,6 +148,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
 
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflows/").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
 			JSON().
@@ -220,13 +221,43 @@ func (s *ArgoServerSuite) TestWorkflows() {
 }
 
 func (s *ArgoServerSuite) TestCronWorkflows() {
+	s.Run("Create", func(t *testing.T) {
+		// TODO create a cron wf using API here
+		s.Given().
+			CronWorkflow("@cron/testdata/basic.yaml").
+			When().
+			CreateCronWorkflow()
+	})
+
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/cron-workflows/").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
 			JSON().
 			Path("$.items").
-			Null()
+			Array().
+			Length().
+			Equal(1)
+	})
+
+	s.Run("Get", func(t *testing.T) {
+		s.e(t).GET("/api/v1/cron-workflows/argo/not-found").
+			Expect().
+			Status(404)
+		s.e(t).GET("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.metadata.name").
+			Equal("test-cron-wf-basic")
+
+	})
+
+	s.Run("Delete", func(t *testing.T) {
+		s.e(t).DELETE("/api/v1/cron-workflows/argo/test-cron-wf-basic").
+			Expect().
+			Status(200)
 	})
 }
 
@@ -353,6 +384,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/archived-workflows/").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
 			JSON().
@@ -362,6 +394,7 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 			Equal(2)
 
 		j := s.e(t).GET("/api/v1/archived-workflows/").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			WithQuery("listOptions.limit", 1).
 			WithQuery("listOptions.offset", 1).
 			Expect().
@@ -444,6 +477,7 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 
 	s.Run("List", func(t *testing.T) {
 		s.e(t).GET("/api/v1/workflow-templates/argo").
+			WithQuery("listOptions.labelSelector", "argo-e2e").
 			Expect().
 			Status(200).
 			JSON().

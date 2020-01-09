@@ -1,14 +1,13 @@
 import {NotificationType, Page} from 'argo-ui';
 import {SlidingPanel} from 'argo-ui/src/index';
-import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import {RouteComponentProps} from 'react-router';
 import {Workflow, WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {services} from '../../../shared/services';
+import WorkflowSubmit from '../../../workflows/components/workflow-submit/workflow-submit';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
@@ -74,19 +73,10 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                     <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
                 </div>
                 <SlidingPanel isShown={!!this.state.workflow} onClose={() => this.setState({workflow: null})}>
-                    Submit Workflow
-                    <YamlEditor
-                        minHeight={800}
-                        initialEditMode={true}
-                        submitMode={true}
-                        placeHolder={jsYaml.dump(this.state.workflow)}
-                        onSave={yaml => {
-                            const editedWorkflow = jsYaml.load(yaml) as Workflow;
-                            return services.workflows
-                                .create(editedWorkflow, editedWorkflow.metadata.namespace)
-                                .then(workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))
-                                .catch(error => this.setState({error}));
-                        }}
+                    <WorkflowSubmit
+                        placeholder={this.state.workflow}
+                        onSaved={workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}
+                        onError={error => this.setState({error})}
                     />
                 </SlidingPanel>
             </Page>

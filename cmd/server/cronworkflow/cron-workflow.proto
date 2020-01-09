@@ -16,6 +16,18 @@ message ListCronWorkflowsRequest {
     string namespace = 1;
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
+message GetCronWorkflowRequest {
+    string cronWorkflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
+}
+message DeleteCronWorkflowRequest {
+    string cronWorkflowName = 1;
+    string namespace = 2;
+    k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
+}
+message CronWorkflowDeletedResponse {
+}
 
 service CronWorkflowService {
     rpc CreateCronWorkflow (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow) {
@@ -25,8 +37,17 @@ service CronWorkflowService {
 		};
     }
 
-    rpc ListWorkflowTemplates (ListCronWorkflowsRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowList) {
+    rpc ListCronWorkflows (ListCronWorkflowsRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflowList) {
         option (google.api.http).get = "/api/v1/cron-workflows/{namespace}";
     }
 
+    rpc GetCronWorkflow (GetCronWorkflowRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.CronWorkflow) {
+        option (google.api.http).get = "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}";
+    }
+
+    rpc DeleteCronWorkflow (DeleteCronWorkflowRequest) returns (CronWorkflowDeletedResponse) {
+        option (google.api.http).delete = "/api/v1/cron-workflows/{namespace}/{cronWorkflowName}";
+    }
+
+    // TODO - UpdateCronWorkflow
 }

@@ -19,7 +19,7 @@ require('./workflow-template-list.scss');
 const placeholderWorkflowTemplate = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  generateName: hello-world
+  name: hello-world
   namespace: ${namespace}
 spec:
   templates:
