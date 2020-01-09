@@ -268,8 +268,7 @@ clean:
 # release
 
 .PHONY: prepare-release
-prepare-release:
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+prepare-release: pre-release
 ifeq ($(VERSION),)
 	echo "unable to prepare release - VERSION undefined"
 	exit 1
@@ -279,19 +278,23 @@ ifeq ($(GIT_BRANCH),master)
 else
 	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
-	make manifests VERSION=$(VERSION)
+	make codegen manifests VERSION=$(VERSION)
 	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-ifneq ($(SNAPSHOT),false)
+	git push $(GIT_BRANCH)
+ifeq ($(SNAPSHOT),true)
 	git tag $(VERSION)
+	git push $(VERSION)
 endif
 endif
 
 .PHONY: pre-release
-pre-release: test lint verify-codegen
+pre-release: test lint codegen manifests
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+ifeq ($(SNAPSHOT),false)
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
+endif
 
 .PHONY: release
 release: pre-release all
