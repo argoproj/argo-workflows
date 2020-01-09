@@ -2,6 +2,8 @@ package e2e
 
 import (
 	"bufio"
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -10,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/gavv/httpexpect.v2"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -59,6 +63,186 @@ func (s *ArgoServerSuite) TestUnauthorized() {
 	s.e(s.T()).GET("/api/v1/workflows/argo").
 		Expect().
 		Status(401)
+}
+
+func (s *ArgoServerSuite) TestPermission() {
+	nsName := fmt.Sprintf("%s-%d", "test-rbac", time.Now().Unix())
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
+	s.Run("Create ns", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().Namespaces().Create(ns)
+		assert.NoError(t, err)
+	})
+	defer func() {
+		// Clean up created namespace
+		s.KubeClient.CoreV1().Namespaces().Delete(nsName, nil)
+	}()
+	forbiddenNsName := fmt.Sprintf("%s-%s", nsName, "fb")
+	forbiddenNs := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: forbiddenNsName}}
+	s.Run("Create forbidden ns", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().Namespaces().Create(forbiddenNs)
+		assert.NoError(t, err)
+	})
+	defer func() {
+		s.KubeClient.CoreV1().Namespaces().Delete(forbiddenNsName, nil)
+	}()
+	// Create serviceaccount in good ns
+	saName := "argotest"
+	sa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: saName}}
+	s.Run("Create service account in good ns", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Create(sa)
+		assert.NoError(t, err)
+	})
+	// Create serviceaccount in forbidden ns
+	forbiddenSaName := "argotest"
+	forbiddenSa := &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: forbiddenSaName}}
+	s.Run("Create service account in forbidden ns", func(t *testing.T) {
+		_, err := s.KubeClient.CoreV1().ServiceAccounts(forbiddenNsName).Create(forbiddenSa)
+		assert.NoError(t, err)
+	})
+
+	// Create RBAC Role in good ns
+	roleName := "argotest-role"
+	role := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{Name: roleName},
+		Rules: []rbacv1.PolicyRule{
+			rbacv1.PolicyRule{
+				APIGroups: []string{"argoproj.io"},
+				Resources: []string{"workflows", "workflowtemplates", "cronworkflows", "workflows/finalizers", "workflowtemplates/finalizers", "cronworkflows/finalizers"},
+				Verbs:     []string{"create", "get", "list", "watch", "update", "patch", "delete"},
+			},
+		},
+	}
+	s.Run("Create Role", func(t *testing.T) {
+		_, err := s.KubeClient.RbacV1().Roles(nsName).Create(role)
+		assert.NoError(t, err)
+	})
+
+	// Create RBAC RoleBinding in good ns
+	roleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{Name: "argotest-role-binding"},
+		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "ServiceAccount", Name: saName}},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     roleName,
+		},
+	}
+	s.Run("Create RoleBinding", func(t *testing.T) {
+		_, err := s.KubeClient.RbacV1().RoleBindings(nsName).Create(roleBinding)
+		assert.NoError(t, err)
+	})
+
+	// Get token of serviceaccount in good ns
+	var goodToken string
+	s.Run("Get good serviceaccount token", func(t *testing.T) {
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(saName, metav1.GetOptions{})
+		assert.NoError(t, err)
+		secretName := sAccount.Secrets[0].Name
+		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
+		assert.NoError(t, err)
+		// Argo server API expects it to be encoded.
+		goodToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+	})
+
+	var forbiddenToken string
+	s.Run("Get forbidden serviceaccount token", func(t *testing.T) {
+		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(forbiddenNsName).Get(forbiddenSaName, metav1.GetOptions{})
+		assert.NoError(t, err)
+		secretName := sAccount.Secrets[0].Name
+		secret, err := s.KubeClient.CoreV1().Secrets(forbiddenNsName).Get(secretName, metav1.GetOptions{})
+		assert.NoError(t, err)
+		// Argo server API expects it to be encoded.
+		forbiddenToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+	})
+
+	token := s.bearerToken
+	defer func() { s.bearerToken = token }()
+
+	// Test creating workflow in good ns
+	s.bearerToken = goodToken
+	s.Run("Create workflow in good ns", func(t *testing.T) {
+		s.bearerToken = goodToken
+		s.e(t).POST("/api/v1/workflows/" + nsName).
+			WithBytes([]byte(`{
+  "workflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "image": "docker/whalesay:latest",
+            "command": ["sh"],
+            "args": ["-c", "sleep 10"]
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(200)
+	})
+
+	// Test list workflows in good ns
+	s.Run("List", func(t *testing.T) {
+		s.bearerToken = goodToken
+		s.e(t).GET("/api/v1/workflows/"+nsName).
+			WithQuery("listOptions.labelSelector", "argo-e2e").
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.items").
+			Array().
+			Length().
+			Equal(1)
+	})
+
+	// Test creating workflow in forbidden ns
+	s.Run("Create workflow in forbidden ns", func(t *testing.T) {
+		s.bearerToken = goodToken
+		s.e(t).POST("/api/v1/workflows/" + forbiddenNsName).
+			WithBytes([]byte(`{
+  "workflow": {
+    "metadata": {
+      "name": "test",
+      "labels": {
+         "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "templates": [
+        {
+          "name": "run-workflow",
+          "container": {
+            "image": "docker/whalesay:latest",
+            "command": ["sh"],
+            "args": ["-c", "sleep 10"]
+          }
+        }
+      ],
+      "entrypoint": "run-workflow"
+    }
+  }
+}`)).
+			Expect().
+			Status(403)
+	})
+
+	// Test list workflows in good ns with forbidden ns token
+	s.bearerToken = forbiddenToken
+	s.Run("List", func(t *testing.T) {
+		s.bearerToken = forbiddenToken
+		s.e(t).GET("/api/v1/workflows/" + nsName).
+			Expect().
+			Status(403)
+	})
 }
 
 func (s *ArgoServerSuite) TestLintWorkflow() {
@@ -282,7 +466,7 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 			WithBytes([]byte(`{"cronWorkflow": {
     "metadata": {
       "name": "test",
-      "resourceVersion": "`+resourceVersion+`",
+      "resourceVersion": "` + resourceVersion + `",
       "labels": {
         "argo-e2e": "true"
       }
