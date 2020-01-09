@@ -14,7 +14,7 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
-import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';

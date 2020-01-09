@@ -1,10 +1,8 @@
 import * as jsYaml from 'js-yaml';
-import * as monacoEditor from 'monaco-editor';
 import * as React from 'react';
 
-import {MonacoEditor} from '../monaco-editor';
-import {YamlViewer} from './yaml-viewer/yaml-viewer';
-
+import {YamlViewer} from './yaml-viewer';
+require('./yaml.scss');
 interface Props<T> {
     title?: string;
     value: T;
@@ -14,19 +12,17 @@ interface Props<T> {
 
 interface State {
     editing: boolean;
+    value: string;
     error?: Error;
 }
 
 export class YamlEditor<T> extends React.Component<Props<T>, State> {
-    private model: monacoEditor.editor.ITextModel;
-
     constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {editing: this.props.editing};
+        this.state = {editing: this.props.editing, value: jsYaml.dump(this.props.value)};
     }
 
     public render() {
-        const text = jsYaml.dump(this.props.value);
         return (
             <>
                 {this.props.title && <h4>{this.props.title}</h4>}
@@ -37,17 +33,15 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
                     </p>
                 )}
                 {this.state.editing ? (
-                    <MonacoEditor
-                        editor={{
-                            input: {text, language: 'yaml'},
-                            options: {readOnly: !this.state.editing, minimap: {enabled: false}},
-                            getApi: api => {
-                                this.model = api.getModel() as monacoEditor.editor.ITextModel;
-                            }
-                        }}
+                    <textarea
+                        className='yaml'
+                        value={this.state.value}
+                        onChange={e => this.setState({value: e.currentTarget.value})}
+                        onFocus={e => (e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px')}
+                        autoFocus={true}
                     />
                 ) : (
-                    <YamlViewer yaml={text} />
+                    <YamlViewer value={this.state.value} />
                 )}
             </>
         );
@@ -71,7 +65,7 @@ export class YamlEditor<T> extends React.Component<Props<T>, State> {
 
     private submit() {
         try {
-            this.props.onSubmit(jsYaml.load(this.model.getLinesContent().join('\n')));
+            this.props.onSubmit(jsYaml.load(this.state.value));
             this.setState({editing: false});
         } catch (error) {
             this.setState({error});

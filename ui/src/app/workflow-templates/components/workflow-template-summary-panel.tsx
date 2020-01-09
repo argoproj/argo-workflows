@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {services} from '../../shared/services';
 
 interface Props {

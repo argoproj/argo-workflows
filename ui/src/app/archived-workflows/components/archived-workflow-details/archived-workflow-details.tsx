@@ -6,7 +6,7 @@ import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
-import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
