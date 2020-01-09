@@ -65,7 +65,6 @@ func NewRootCommand() *cobra.Command {
 				KubeClientset: kubeConfig,
 				RestConfig:    config,
 				AuthType:      authType,
-
 			}
 			err = opts.ValidateOpts()
 			if err != nil {

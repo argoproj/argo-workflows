@@ -70,22 +70,22 @@ var backoff = wait.Backoff{
 	Jitter:   0.1,
 }
 
-func (ao ArgoServerOpts) ValidateOpts() error{
+func (ao ArgoServerOpts) ValidateOpts() error {
 	validate := false
 	for _, item := range []string{
 		auth.Server,
 		auth.Hybrid,
 		auth.Client,
-		}{
+	} {
 		if ao.AuthType == item {
 			validate = true
 			break
 		}
 	}
-	 if !validate {
-	 	return errors.Errorf("","Invalid Auth Type. %s", ao.AuthType)
-	 }
-	 return nil
+	if !validate {
+		return errors.Errorf("", "Invalid Auth Type. %s", ao.AuthType)
+	}
+	return nil
 }
 
 func (as *argoServer) Run(ctx context.Context, port int) {

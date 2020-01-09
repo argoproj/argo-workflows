@@ -66,7 +66,7 @@ jobs:
           command: |
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
-            make test STATIC=false 2>&1 | tee test-results/test.out
+            make test 2>&1 | tee test-results/test.out
       - run:
           name: Verify code generation
           command: make verify-codegen
@@ -106,7 +106,7 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start STATIC=false
+      - run: KUBECONFIG=~/.kube/config make start
       - run:
           name: Follow logs, to help diagnose failures
           command: |

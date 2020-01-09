@@ -25,7 +25,7 @@ const (
 	restKey ContextKey = "rest.config"
 )
 
-const(
+const (
 	Client = "client"
 	Server = "server"
 	Hybrid = "hybrid"
@@ -90,12 +90,12 @@ func (s Gatekeeper) useHybridAuth() bool {
 }
 
 func (s Gatekeeper) useClientAuth(md metadata.MD) (bool, error) {
-	 if s.enableClientAuth == Client && len(md.Get("grpcgateway-authorization")) == 0 {
-	 	return false, status.Error(codes.Unauthenticated, "Auth Token is not found")
-	 }
-	 if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
-	 	return true, nil
-	 }
+	if s.enableClientAuth == Client && len(md.Get("grpcgateway-authorization")) == 0 {
+		return false, status.Error(codes.Unauthenticated, "Auth Token is not found")
+	}
+	if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
+		return true, nil
+	}
 	return true, nil
 }
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
@@ -105,7 +105,7 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		if s.useHybridAuth(){
+		if s.useHybridAuth() {
 			return s.wfClient, s.kubeClient, nil
 		}
 		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
@@ -114,7 +114,7 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "Auth Token is not present in the request: %v", err)
 	}
-	if !useClientAuth{
+	if !useClientAuth {
 		return s.wfClient, s.kubeClient, nil
 	}
 

@@ -1,7 +1,4 @@
 PACKAGE                = github.com/argoproj/argo
-CURRENT_DIR            = $(shell pwd)
-DIST_DIR               = ${CURRENT_DIR}/dist
-ARGO_CLI_NAME          = argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
@@ -13,18 +10,19 @@ GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo
 DOCKER_PUSH           ?= false
 DOCKER_BUILDKIT       = 1
 IMAGE_NAMESPACE       = argoproj
+
 # version must be  branch name or  vX.Y.Z
 ifeq ($(GIT_BRANCH), master)
 VERSION               ?= latest
 else
 VERSION               ?= $(GIT_BRANCH)
 endif
+
 # perform static compilation
 STATIC_BUILD          ?= true
 # build development images
 DEV_IMAGE             ?= false
-# Build static files, disable if you don't need HTML files, e.g. when on CI.
-STATIC                ?= true
+CI                    ?= false
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
@@ -37,10 +35,20 @@ override LDFLAGS += -extldflags "-static"
 endif
 
 ifneq (${GIT_TAG},)
-IMAGE_TAG = ${GIT_TAG}
+VERSION = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
+SNAPSHOT=false
+ifeq ($(VERSION),latest)
+	SNAPSHOT=true
+endif
+ifeq ($(VERSION),$GIT_BRANCH)
+	SNAPSHOT=true
+endif
+
+
+CLI_PKGS := $(shell go list  -f '{{ join .Deps "\n" }}'  ./cmd/argo/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 ARGO_SERVER_PKGS := $(shell go list  -f '{{ join .Deps "\n" }}'  ./cmd/server/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 
 # Build the project
@@ -49,10 +57,10 @@ all: cli controller-image executor-image argo-server
 
 .PHONY:builder-image
 builder-image:
-	docker build -t $(IMAGE_NAMESPACE)/argo-ci-builder:$(IMAGE_TAG) --target builder .
+	docker build -t $(IMAGE_NAMESPACE)/argo-ci-builder:$(VERSION) --target builder .
 
 ui/node_modules: ui/package.json ui/yarn.lock
-ifeq ($(STATIC),true)
+ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
 else
 	mkdir -p ui/node_modules
@@ -60,7 +68,7 @@ endif
 	touch ui/node_modules
 
 ui/dist/app: ui/node_modules ui/src
-ifeq ($(STATIC),true)
+ifeq ($(CI),false)
 	yarn --cwd ui build
 else
 	mkdir -p ui/dist/app
@@ -77,74 +85,71 @@ cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
 .PHONY: cli
-cli:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/${ARGO_CLI_NAME} ./cmd/argo
+cli: dist/argo
 
-.PHONY: cli-linux-amd64
-cli-linux-amd64:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-amd64 ./cmd/argo
+dist/argo: vendor $(CLI_PKGS)
+	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-.PHONY: cli-linux-ppc64le
-cli-linux-ppc64le:
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-ppc64le ./cmd/argo
+dist/argo-linux-amd64: vendor $(CLI_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
 
-.PHONY: cli-linux-s390x
-cli-linux-s390x:
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-linux-s390x ./cmd/argo
+dist/argo-linux-ppc64le: vendor $(CLI_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
 
-.PHONY: cli-linux
-cli-linux: cli-linux-amd64 cli-linux-ppc64le cli-linux-s390x
+dist/argo-linux-s390x: vendor $(CLI_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
 
-.PHONY: cli-darwin
-cli-darwin:
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-darwin-amd64 ./cmd/argo
+dist/argo-darwin-amd64: vendor $(CLI_PKGS)
+	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
 
-.PHONY: cli-windows
-cli-windows:
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-windows-amd64 ./cmd/argo
+dist/argo-windows-amd64: vendor $(CLI_PKGS)
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
 cli-image:
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) ; fi
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION) ; fi
+
+.PHONY: clis
+clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
 
 .PHONY: controller
 controller:
-	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/workflow-controller ./cmd/workflow-controller
+	CGO_ENABLED=0 go build -v -i -ldflags '${LDFLAGS}' -o dist/workflow-controller ./cmd/workflow-controller
 
 .PHONY: controller-image
 controller-image:
 ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o workflow-controller ./cmd/workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) -f Dockerfile.workflow-controller-dev .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) -f Dockerfile.workflow-controller-dev .
 	rm -f workflow-controller
 else
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 endif
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) ; fi
 
 dist/argo-server-linux-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-amd64 ./cmd/server
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-amd64 ./cmd/server
 
 dist/argo-server-linux-ppc64le: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-ppc64le ./cmd/server
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-ppc64le ./cmd/server
 
 dist/argo-server-linux-s390x: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-linux-s390x ./cmd/server
+	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-s390x ./cmd/server
 
 dist/argo-server-darwin-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-darwin-amd64 ./cmd/server
+	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-darwin-amd64 ./cmd/server
 
 dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argo-server-windows-amd64 ./cmd/server
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-windows-amd64 ./cmd/server
 
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
 	cp dist/argo-server-linux-amd64 argo-server
-	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile.argo-server .
+	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile.argo-server .
 	rm -f argo-server
 ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
+	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
 endif
 
 .PHONY: argo-server
@@ -152,7 +157,7 @@ argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/ar
 
 .PHONY: executor
 executor:
-	go build -v -i -ldflags '${LDFLAGS}' -o ${DIST_DIR}/argoexec ./cmd/argoexec
+	go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec ./cmd/argoexec
 
 # To speed up local dev, we only create this when a marker file does not exist.
 dist/executor-base-image:
@@ -172,18 +177,18 @@ dist/executor-base-image:
 ifeq ($(DEV_IMAGE), true)
 executor-image: dist/executor-base-image
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) -f Dockerfile.argoexec-dev .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
 executor-image: executor-base-image
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 endif
-	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) ; fi
+	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION) ; fi
 
 .PHONY: lint
 lint: cmd/server/static/files.go
 	golangci-lint run --fix --verbose --config golangci.yml
-ifeq ($(STATIC),true)
+ifeq ($(CI),false)
 	yarn --cwd ui lint
 endif
 
@@ -200,15 +205,15 @@ codegen:
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/api/openapi-spec/swagger.json
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ./api/openapi-spec/swagger.json
 
 .PHONY: verify-codegen
 verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
-	mkdir -p ${CURRENT_DIR}/dist
-	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ${CURRENT_DIR}/dist/swagger.json
-	diff ${CURRENT_DIR}/dist/swagger.json ${CURRENT_DIR}/api/openapi-spec/swagger.json
+	mkdir -p ./dist
+	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ./dist/swagger.json
+	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
 manifests:
@@ -225,7 +230,7 @@ start:
 	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:dev"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
 	# Build controller and executor images.
-	make controller-image argo-server-image executor-image DEV_IMAGE=true IMAGE_PREFIX=argoproj/ IMAGE_TAG=dev
+	make controller-image argo-server-image executor-image DEV_IMAGE=true VERSION=dev
 	# Scale up.
 	make up
 	# Make the CLI
@@ -274,35 +279,28 @@ precheckin: test lint verify-codegen
 
 .PHONY: release-prepare
 release-prepare:
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 ifeq ($(VERSION),)
-	echo "version undefined"
+	echo "unable to prepare release - VERSION undefined"
 	exit 1
+endif
+ifeq ($(GIT_BRANCH),master)
+	echo "no release preparation needed for master branch"
 else
+	echo "preparing release $VERSION"
 	echo $(VERSION) | cut -c 1- > VERSION
-	make manifests IMAGE_TAG=$(VERSION)
+	make manifests VERSION=$(VERSION)
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $(VERSION)" ; fi
+ifneq ($(SNAPSHOT),false)
+	git tag $(VERSION)
+endif
 endif
 
-.PHONY: release-precheck
-release-precheck: manifests codegen precheckin
-
-.PHONY: pre-commit-check
-pre-commit:
+.PHONY: pre-release-check
+pre-release-check: precheckin
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 
-.PHONY: release-clis
-release-clis: cli-image
-	docker build --iidfile /tmp/argo-cli-build --target argo-build --build-arg MAKE_TARGET="cli-darwin cli-windows" .
-	docker create --name tmp-cli `cat /tmp/argo-cli-build`
-	mkdir -p ${DIST_DIR}
-	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-darwin-amd64 ${DIST_DIR}/argo-darwin-amd64
-	docker cp tmp-cli:/go/src/github.com/argoproj/argo/dist/argo-windows-amd64 ${DIST_DIR}/argo-windows-amd64
-	docker rm tmp-cli
-	docker create --name tmp-cli $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
-	docker cp tmp-cli:/bin/argo ${DIST_DIR}/argo-linux-amd64
-	docker rm tmp-cli
-
 .PHONY: release
-release: release-precheck controller-image executor-image cli-image release-clis
+release: pre-release-check clis controller-image executor-image argo-server
