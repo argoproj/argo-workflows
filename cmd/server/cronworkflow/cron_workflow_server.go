@@ -36,7 +36,13 @@ func (c *cronWorkflowServiceServer) GetCronWorkflow(ctx context.Context, req *Ge
 	return auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Get(req.CronWorkflowName, options)
 }
 
-// TODO - UpdateCronWorkflow
+func (c *cronWorkflowServiceServer) UpdateCronWorkflow(ctx context.Context, req *UpdateCronWorkflowRequest) (*v1alpha1.CronWorkflow, error) {
+	cronWf, err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Update(req.CronWorkflow)
+	if err != nil {
+		return nil, err
+	}
+	return cronWf, nil
+}
 
 func (c *cronWorkflowServiceServer) DeleteCronWorkflow(ctx context.Context, req *DeleteCronWorkflowRequest) (*CronWorkflowDeletedResponse, error) {
 	err := auth.GetWfClient(ctx).ArgoprojV1alpha1().CronWorkflows(req.Namespace).Delete(req.CronWorkflowName, req.DeleteOptions)

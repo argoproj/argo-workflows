@@ -1,99 +1,80 @@
-import {ErrorNotification, NotificationType} from 'argo-ui';
 import * as jsYaml from 'js-yaml';
 import * as monacoEditor from 'monaco-editor';
 import * as React from 'react';
 
-import {Consumer} from '../../context';
 import {MonacoEditor} from '../monaco-editor';
+import {YamlViewer} from './yaml-viewer/yaml-viewer';
 
-require('./yaml-editor.scss');
+interface Props<T> {
+    title?: string;
+    value: T;
+    editing: boolean;
+    onSubmit: (value: T) => void;
+}
 
-export class YamlEditor<T> extends React.Component<
-    {
-        input?: T;
-        placeHolder?: string;
-        hideModeButtons?: boolean;
-        initialEditMode?: boolean;
-        onSave: (wf: string) => void;
-        onCancel?: () => any;
-        minHeight?: number;
-        submitMode: boolean;
-    },
-    {
-        editing: boolean;
-    }
-> {
+interface State {
+    editing: boolean;
+    error?: Error;
+}
+
+export class YamlEditor<T> extends React.Component<Props<T>, State> {
     private model: monacoEditor.editor.ITextModel;
 
-    constructor(props: any) {
+    constructor(props: Readonly<Props<T>>) {
         super(props);
-        this.state = {editing: props.initialEditMode};
+        this.state = {editing: this.props.editing};
     }
 
     public render() {
-        const props = this.props;
-        const yaml = props.input ? jsYaml.safeDump(props.input) : props.placeHolder;
-
+        const text = jsYaml.dump(this.props.value);
         return (
-            <div className='yaml-editor'>
-                {!props.hideModeButtons && (
-                    <div className='yaml-editor__buttons'>
-                        {(this.state.editing && (
-                            <Consumer>
-                                {ctx => (
-                                    <React.Fragment>
-                                        <button
-                                            onClick={async () => {
-                                                try {
-                                                    const rawWf = jsYaml.load(this.model.getLinesContent().join('\n'));
-                                                    const res: any = await this.props.onSave(JSON.stringify(rawWf || {}));
-                                                    if (res !== null) {
-                                                        this.setState({editing: false});
-                                                    }
-                                                } catch (e) {
-                                                    ctx.notifications.show({
-                                                        content: <ErrorNotification title='Unable to submit workflow' e={e} />,
-                                                        type: NotificationType.Error
-                                                    });
-                                                }
-                                            }}
-                                            className='argo-button argo-button--base'>
-                                            {this.props.submitMode ? 'Submit' : 'Save'}
-                                        </button>
-                                        {!this.props.submitMode && (
-                                            <button
-                                                onClick={() => {
-                                                    this.model.setValue(jsYaml.safeDump(props.input));
-                                                    this.setState({editing: !this.state.editing});
-                                                    if (props.onCancel) {
-                                                        props.onCancel();
-                                                    }
-                                                }}
-                                                className='argo-button argo-button--base-o'>
-                                                Cancel
-                                            </button>
-                                        )}
-                                    </React.Fragment>
-                                )}
-                            </Consumer>
-                        )) || (
-                            <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
-                                Edit
-                            </button>
-                        )}
-                    </div>
+            <>
+                {this.props.title && <h4>{this.props.title}</h4>}
+                {this.renderButtons()}
+                {this.state.error && (
+                    <p>
+                        <i className='fa fa-exclamation-triangle status-icon--failed' /> {this.state.error.message}
+                    </p>
                 )}
-                <MonacoEditor
-                    minHeight={props.minHeight}
-                    editor={{
-                        input: {text: yaml, language: 'yaml'},
-                        options: {readOnly: !this.state.editing, minimap: {enabled: false}},
-                        getApi: api => {
-                            this.model = api.getModel() as monacoEditor.editor.ITextModel;
-                        }
-                    }}
-                />
+                {this.state.editing ? (
+                    <MonacoEditor
+                        editor={{
+                            input: {text, language: 'yaml'},
+                            options: {readOnly: !this.state.editing, minimap: {enabled: false}},
+                            getApi: api => {
+                                this.model = api.getModel() as monacoEditor.editor.ITextModel;
+                            }
+                        }}
+                    />
+                ) : (
+                    <YamlViewer yaml={text} />
+                )}
+            </>
+        );
+    }
+
+    private renderButtons() {
+        return (
+            <div>
+                {(this.state.editing && (
+                    <button onClick={() => this.submit()} className='argo-button argo-button--base'>
+                        Submit
+                    </button>
+                )) || (
+                    <button onClick={() => this.setState({editing: true})} className='argo-button argo-button--base'>
+                        Edit
+                    </button>
+                )}
             </div>
         );
+    }
+
+    private submit() {
+        try {
+            this.props.onSubmit(jsYaml.load(this.model.getLinesContent().join('\n')));
+            this.setState({editing: false});
+        } catch (error) {
+            this.setState({error});
+        }
     }
 }

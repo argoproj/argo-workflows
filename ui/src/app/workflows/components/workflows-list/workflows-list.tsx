@@ -14,9 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
+import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
+import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import WorkflowSubmit from '../workflow-submit/workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -122,32 +123,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit
-                                placeholder={
-                                    {
-                                        apiVersion: 'argoproj.io/v1alpha1',
-                                        kind: 'Workflow',
-                                        metadata: {
-                                            generateName: 'hello-world-',
-                                            namespace: this.namespace || 'default'
-                                        },
-                                        spec: {
-                                            entrypoint: 'whalesay',
-                                            templates: [
-                                                {
-                                                    name: 'whalesay',
-                                                    container: {
-                                                        image: 'docker/whalesay:latest',
-                                                        command: ['cowsay'],
-                                                        args: ['hello world']
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    } as Workflow
+                            <YamlEditor
+                                editing={true}
+                                title='Submit New Workflow'
+                                value={exampleWorkflow(this.namespace)}
+                                onSubmit={(value: Workflow) =>
+                                    services.workflows
+                                        .create(value, value.metadata.namespace)
+                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                        .catch(error => this.setState({error}))
                                 }
-                                onSaved={wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}
-                                onError={error => this.setState({error})}
                             />
                         </SlidingPanel>
                     </Page>

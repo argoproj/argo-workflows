@@ -1,5 +1,4 @@
 import {Page, SlidingPanel} from 'argo-ui';
-import * as jsYaml from 'js-yaml';
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
 import * as models from '../../../../models';
@@ -14,7 +13,6 @@ import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
 import {exampleCronWorkflow} from '../../../shared/examples';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
 require('./cron-workflow-list.scss');
 
 interface State {
@@ -31,11 +29,13 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
         this.setQueryParams({namespace});
     }
 
-    private get wfInput() {
-        const query = new URLSearchParams(this.props.location.search);
-        return Utils.tryJsonParse(query.get('new'));
+    private get sidePanel() {
+        return this.queryParam('sidePanel');
     }
 
+    private set sidePanel(sidePanel) {
+        this.setQueryParams({sidePanel});
+    }
     constructor(props: any) {
         super(props);
         this.state = {};
@@ -64,24 +64,23 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                                     {
                                         title: 'Create New Cron Workflow',
                                         iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                        action: () => (this.sidePanel = 'new')
                                     }
                                 ]
                             },
                             tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
-                        {this.renderCronWorkflows()}
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            Create Cron Workflow
+                        <div className='row'>
+                            <div className='columns small-12 xxlarge-2'>{this.renderCronWorkflows()}</div>
+                        </div>
+                        <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <YamlEditor
-                                minHeight={800}
-                                initialEditMode={true}
-                                submitMode={true}
-                                placeHolder={jsYaml.dump(exampleCronWorkflow(this.namespace))}
-                                onSave={value => {
-                                    const req = JSON.parse(value) as CronWorkflow;
+                                title='Create New Cron Workflow'
+                                editing={true}
+                                value={exampleCronWorkflow(this.namespace)}
+                                onSubmit={(value: CronWorkflow) => {
                                     return services.cronWorkflows
-                                        .create(req, req.metadata.namespace)
+                                        .create(value, value.metadata.namespace)
                                         .then(res => ctx.navigation.goto(`/cron-workflows/${res.metadata.namespace}/${res.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}
@@ -133,7 +132,6 @@ export class CronWorkflowList extends BasePage<RouteComponentProps<any>, State> 
                         </Link>
                     ))}
                 </div>
-
                 <p>
                     <i className='fa fa-info-circle' /> Cron workflows are workflows that run on a preset schedule. {learnMore}.
                 </p>

@@ -263,17 +263,50 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
 			Equal(1)
 	})
 
+	var resourceVersion string
 	s.Run("Get", func(t *testing.T) {
 		s.e(t).GET("/api/v1/cron-workflows/argo/not-found").
 			Expect().
 			Status(404)
-		s.e(t).GET("/api/v1/cron-workflows/argo/test").
+		resourceVersion = s.e(t).GET("/api/v1/cron-workflows/argo/test").
 			Expect().
 			Status(200).
 			JSON().
-			Path("$.metadata.name").
-			Equal("test")
+			Path("$.metadata.resourceVersion").
+			String().
+			Raw()
+	})
 
+	s.Run("Update", func(t *testing.T) {
+		s.e(t).PUT("/api/v1/cron-workflows/argo/test").
+			WithBytes([]byte(`{"cronWorkflow": {
+    "metadata": {
+      "name": "test",
+      "resourceVersion": "`+resourceVersion+`",
+      "labels": {
+        "argo-e2e": "true"
+      }
+    },
+    "spec": {
+      "schedule": "1 * * * *",
+      "workflowSpec": {
+        "entrypoint": "whalesay",
+        "templates": [
+          {
+            "name": "whalesay",
+            "container": {
+              "image": "docker/whalesay:latest"
+            }
+          }
+        ]
+      }
+    }
+  }}`)).
+			Expect().
+			Status(200).
+			JSON().
+			Path("$.spec.schedule").
+			Equal("1 * * * *")
 	})
 
 	s.Run("Delete", func(t *testing.T) {

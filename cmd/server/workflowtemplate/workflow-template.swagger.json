@@ -310,44 +310,6 @@
           "WorkflowTemplateService"
         ]
       }
-    },
-    "/api/v1/workflow-templates/{namespace}/{templateName}/spec": {
-      "put": {
-        "operationId": "UpdateWorkflowTemplateSpec",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1WorkflowTemplateSpec"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "templateName",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowtemplateWorkflowTemplateSpecUpdateRequest"
-            }
-          }
-        ],
-        "tags": [
-          "WorkflowTemplateService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -3647,20 +3609,6 @@
         },
         "createOptions": {
           "$ref": "#/definitions/v1CreateOptions"
-        }
-      }
-    },
-    "workflowtemplateWorkflowTemplateSpecUpdateRequest": {
-      "type": "object",
-      "properties": {
-        "templateName": {
-          "type": "string"
-        },
-        "namespace": {
-          "type": "string"
-        },
-        "templateSpec": {
-          "$ref": "#/definitions/v1alpha1WorkflowTemplateSpec"
         }
       }
     },

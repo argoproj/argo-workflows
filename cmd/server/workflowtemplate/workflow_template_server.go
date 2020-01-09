@@ -95,26 +95,6 @@ func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, w
 	return wts.updateWorkflowTemplate(ctx, wftmplReq.Template)
 }
 
-func (wts *WorkflowTemplateServer) UpdateWorkflowTemplateSpec(ctx context.Context, wftmplReq *WorkflowTemplateSpecUpdateRequest) (*v1alpha1.WorkflowTemplateSpec, error) {
-	wfClient := auth.GetWfClient(ctx)
-
-	if wftmplReq.TemplateSpec == nil {
-		return nil, fmt.Errorf("WorkflowTemplate spec is not found in Request body")
-	}
-
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Get(wftmplReq.TemplateName, v1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow template with name '%s': %v", wftmplReq.TemplateName, err)
-	}
-
-	wfTmpl.Spec = *wftmplReq.TemplateSpec
-	newWfTmpl, err := wts.updateWorkflowTemplate(ctx, wfTmpl)
-	if err != nil {
-		return nil, err
-	}
-	return &newWfTmpl.Spec, nil
-}
-
 func (wts *WorkflowTemplateServer) updateWorkflowTemplate(ctx context.Context, newWfTmpl *v1alpha1.WorkflowTemplate) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(newWfTmpl.Namespace))
