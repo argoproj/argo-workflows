@@ -213,7 +213,7 @@ func (woc *wfOperationCtx) operate() {
 	}
 
 	// Create a starting template context.
-	tmplCtx := woc.createTemplateContext()
+	tmplCtx := woc.createTemplateContext("")
 
 	var workflowStatus wfv1.NodePhase
 	var workflowMessage string
@@ -1229,7 +1229,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	}
 
 	// Check if we exceeded template or workflow parallelism and immediately return if we did
-	if err := woc.checkParallelism(processedTmpl, newTmplCtx, node, boundaryID); err != nil {
+	if err := woc.checkParallelism(processedTmpl, node, boundaryID); err != nil {
 		return node, err
 	}
 
@@ -1284,13 +1284,13 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	case wfv1.TemplateTypeContainer:
 		node, err = woc.executeContainer(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeSteps:
-		node, err = woc.executeSteps(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeSteps(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeScript:
-		node, err = woc.executeScript(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeScript(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeResource:
 		node, err = woc.executeResource(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeDAG:
-		node, err = woc.executeDAG(nodeName, newTmplCtx, processedTmpl, orgTmpl, boundaryID)
+		node, err = woc.executeDAG(nodeName, newTmplCtx, templateScope, processedTmpl, orgTmpl, boundaryID)
 	case wfv1.TemplateTypeSuspend:
 		node, err = woc.executeSuspend(nodeName, templateScope, processedTmpl, orgTmpl, boundaryID)
 	default:
@@ -1496,7 +1496,7 @@ func (woc *wfOperationCtx) markNodeError(nodeName string, err error) *wfv1.NodeS
 }
 
 // checkParallelism checks if the given template is able to be executed, considering the current active pods and workflow/template parallelism
-func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, tmplCtx *templateresolution.Context, node *wfv1.NodeStatus, boundaryID string) error {
+func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, node *wfv1.NodeStatus, boundaryID string) error {
 	if woc.wf.Spec.Parallelism != nil && woc.activePods >= *woc.wf.Spec.Parallelism {
 		woc.log.Infof("workflow active pod spec parallelism reached %d/%d", woc.activePods, *woc.wf.Spec.Parallelism)
 		return ErrParallelismReached
@@ -1520,6 +1520,7 @@ func (woc *wfOperationCtx) checkParallelism(tmpl *wfv1.Template, tmplCtx *templa
 			if !ok {
 				return errors.InternalError("boundaryNode not found")
 			}
+			tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
 			_, boundaryTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 			if err != nil {
 				return err
@@ -1650,10 +1651,7 @@ func getStepOrDAGTaskName(nodeName string, hasRetryStrategy bool) string {
 	return nodeName
 }
 
-func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
-	// The template scope of this script.
-	templateScope := tmplCtx.GetCurrentTemplateBase().GetTemplateScope()
-
+func (woc *wfOperationCtx) executeScript(nodeName string, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
 	node := woc.getNodeByName(nodeName)
 	if node != nil {
 		return node, nil
@@ -1662,6 +1660,7 @@ func (woc *wfOperationCtx) executeScript(nodeName string, tmplCtx *templateresol
 
 	includeScriptOutput := false
 	if boundaryNode, ok := woc.wf.Status.Nodes[boundaryID]; ok {
+		tmplCtx := woc.createTemplateContext(boundaryNode.TemplateScope)
 		_, parentTemplate, err := tmplCtx.ResolveTemplate(&boundaryNode)
 		if err != nil {
 			return node, err
@@ -2142,6 +2141,10 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 }
 
 // createTemplateContext creates a new template context.
-func (woc *wfOperationCtx) createTemplateContext() *templateresolution.Context {
-	return templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+func (woc *wfOperationCtx) createTemplateContext(templateScope string) *templateresolution.Context {
+	ctx := templateresolution.NewContext(woc.controller.wftmplInformer.Lister().WorkflowTemplates(woc.wf.Namespace), woc.wf, woc)
+	if templateScope != "" {
+		ctx = ctx.WithLazyWorkflowTemplate(woc.wf.Namespace, templateScope)
+	}
+	return ctx
 }

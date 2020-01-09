@@ -216,10 +216,7 @@ func TestWithTemplateHolder(t *testing.T) {
 	var tmplGetter wfv1.TemplateGetter
 	// Get the template base of existing template name.
 	tmplHolder := wfv1.Template{Template: "whalesay"}
-	newCtx, err := ctx.WithTemplateHolder(&tmplHolder)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
+	newCtx := ctx.WithTemplateHolder(&tmplHolder)
 	tmplGetter, ok := newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
@@ -228,10 +225,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of unexisting template name.
 	tmplHolder = wfv1.Template{Template: "unknown"}
-	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
+	newCtx = ctx.WithTemplateHolder(&tmplHolder)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*wfv1.WorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a WorkflowTemplate")
@@ -240,10 +234,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of existing template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "some-workflow-template", Template: "whalesay"}}
-	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
+	newCtx = ctx.WithTemplateHolder(&tmplHolder)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a lazy WorkflowTemplate")
@@ -252,10 +243,7 @@ func TestWithTemplateHolder(t *testing.T) {
 
 	// Get the template base of unexisting template reference.
 	tmplHolder = wfv1.Template{TemplateRef: &wfv1.TemplateRef{Name: "unknown-workflow-template", Template: "whalesay"}}
-	newCtx, err = ctx.WithTemplateHolder(&tmplHolder)
-	if !assert.NoError(t, err) {
-		t.Fatal(err)
-	}
+	newCtx = ctx.WithTemplateHolder(&tmplHolder)
 	tmplGetter, ok = newCtx.GetCurrentTemplateBase().(*lazyWorkflowTemplate)
 	if !assert.True(t, ok) {
 		t.Fatal("tmplBase is not a lazy WorkflowTemplate")
@@ -404,10 +392,7 @@ func TestOnWorkflowTemplate(t *testing.T) {
 	}
 
 	// Get the template base of existing template name.
-	newCtx, err := ctx.WithLazyWorkflowTemplate("namespace", "another-workflow-template")
-	if err != nil {
-		t.Fatal(err)
-	}
+	newCtx := ctx.WithLazyWorkflowTemplate("namespace", "another-workflow-template")
 	tmpl := newCtx.tmplBase.GetTemplateByName("whalesay")
 	assert.NotNil(t, tmpl)
 }
