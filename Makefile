@@ -24,7 +24,7 @@ STATIC_BUILD          ?= true
 CI                    ?= false
 
 override LDFLAGS += \
-  -X ${PACKAGE}.version=${VERSION} \
+  -X ${PACKAGE}.version=$(VERSION) \
   -X ${PACKAGE}.buildDate=${BUILD_DATE} \
   -X ${PACKAGE}.gitCommit=${GIT_COMMIT} \
   -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
@@ -178,19 +178,19 @@ codegen:
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
-	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ./api/openapi-spec/swagger.json
+	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./api/openapi-spec/swagger.json
 
 .PHONY: verify-codegen
 verify-codegen:
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
 	mkdir -p ./dist
-	go run ./hack/gen-openapi-spec/main.go ${VERSION} > ./dist/swagger.json
+	go run ./hack/gen-openapi-spec/main.go $(VERSION) > ./dist/swagger.json
 	diff ./dist/swagger.json ./api/openapi-spec/swagger.json
 
 .PHONY: manifests
 manifests:
-	./hack/update-manifests.sh
+	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
 
