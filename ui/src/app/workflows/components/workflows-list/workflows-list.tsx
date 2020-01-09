@@ -58,6 +58,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         services.workflows
             .list(this.phases, this.namespace)
             .then(list => list.items)
+            .then(list => list || [])
             .then(workflows => this.setState({workflows}))
             .then(() => {
                 this.subscription = services.workflows
@@ -88,8 +89,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         return caught;
                     })
                     .subscribe(workflows => this.setState({workflows}));
-            })
-            .catch(error => this.setState({error}));
+            });
     }
 
     public componentWillUnmount(): void {
