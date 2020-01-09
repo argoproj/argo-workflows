@@ -274,9 +274,14 @@ precheckin: test lint verify-codegen
 
 .PHONY: release-prepare
 release-prepare:
-	echo ${$(VERSION):1} > VERSION
+ifeq ($(VERSION),)
+	echo "version undefined"
+	exit 1
+else
+	echo $(VERSION) | cut -c 1- > VERSION
 	make manifests IMAGE_TAG=$(VERSION)
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $VERSION" ; fi
+endif
 
 .PHONY: release-precheck
 release-precheck: manifests codegen precheckin
