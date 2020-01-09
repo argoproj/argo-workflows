@@ -1,17 +1,19 @@
 package argo
 
 import (
+	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+
 	log "github.com/sirupsen/logrus"
+
+	"fmt"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"fmt"
 	"time"
-
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 type AuditLogger struct {
