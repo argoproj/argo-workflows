@@ -6,6 +6,7 @@ import {Workflow} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {services} from '../../../shared/services';
 import {
     WorkflowArtifacts,
@@ -17,7 +18,6 @@ import {
     WorkflowTimeline,
     WorkflowYamlViewer
 } from '../../../workflows/components';
-import WorkflowSubmit from '../../../workflows/components/workflow-submit/workflow-submit';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -179,16 +179,22 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
                     {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
                     {this.sidePanel === 'resubmit' && (
-                        <WorkflowSubmit
-                            placeholder={{
+                        <YamlEditor
+                            editing={true}
+                            title='Resubmit Archived Workflow'
+                            value={{
                                 metadata: {
                                     namespace: this.state.workflow.metadata.namespace,
                                     name: this.state.workflow.metadata.name
                                 },
                                 spec: this.state.workflow.spec
                             }}
-                            onSaved={workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))}
-                            onError={error => this.setState({error})}
+                            onSubmit={(value: Workflow) => {
+                                services.workflows
+                                    .create(value, value.metadata.namespace)
+                                    .then(workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)))
+                                    .catch(error => this.setState({error}));
+                            }}
                         />
                     )}
                 </SlidingPanel>

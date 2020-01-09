@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Observable} from 'rxjs';
+import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
@@ -14,9 +14,10 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Query} from '../../../shared/components/query';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
+import {exampleWorkflow} from '../../../shared/examples';
 import {Utils} from '../../../shared/utils';
-import WorkflowSubmit from '../workflow-submit/workflow-submit';
 
 require('./workflows-list.scss');
 
@@ -26,6 +27,8 @@ interface State {
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
+    private subscription: Subscription;
+
     private get namespace() {
         return this.queryParam('namespace') || '';
     }
@@ -52,41 +55,47 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        Observable.fromPromise(services.workflows.list(this.phases, this.namespace).catch(error => this.setState({error})))
-            .flatMap((workflows: Workflow[]) =>
-                Observable.merge(
-                    Observable.from([workflows]),
-                    services.workflows
-                        .watch({namespace: this.namespace, phases: this.phases})
-                        .map(workflowChange => {
-                            const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
-                            if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
-                                return {workflows, updated: false};
+        services.workflows
+            .list(this.phases, this.namespace)
+            .then(list => list.items)
+            .then(workflows => this.setState({workflows}))
+            .then(() => {
+                this.subscription = services.workflows
+                    .watch({namespace: this.namespace, phases: this.phases})
+                    .map(workflowChange => {
+                        const workflows = this.state.workflows;
+                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
+                        if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
+                            return {workflows, updated: false};
+                        }
+                        if (workflowChange.type === 'DELETED') {
+                            if (index > -1) {
+                                workflows.splice(index, 1);
                             }
-                            if (workflowChange.type === 'DELETED') {
-                                if (index > -1) {
-                                    workflows.splice(index, 1);
-                                }
+                        } else {
+                            if (index > -1) {
+                                workflows[index] = workflowChange.object;
                             } else {
-                                if (index > -1) {
-                                    workflows[index] = workflowChange.object;
-                                } else {
-                                    workflows.unshift(workflowChange.object);
-                                }
+                                workflows.unshift(workflowChange.object);
                             }
-                            return {workflows, updated: true};
-                        })
-                        .filter(item => item.updated)
-                        .map(item => item.workflows)
-                        .catch((error, caught) => {
-                            this.setState({error});
-                            return caught;
-                        })
-                )
-            )
-            .subscribe(workflows => {
-                this.setState({workflows});
-            });
+                        }
+                        return {workflows, updated: true};
+                    })
+                    .filter(item => item.updated)
+                    .map(item => item.workflows)
+                    .catch((error, caught) => {
+                        this.setState({error});
+                        return caught;
+                    })
+                    .subscribe(workflows => this.setState({workflows}));
+            })
+            .catch(error => this.setState({error}));
+    }
+
+    public componentWillUnmount(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
     }
 
     public render() {
@@ -122,32 +131,16 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            <WorkflowSubmit
-                                placeholder={
-                                    {
-                                        apiVersion: 'argoproj.io/v1alpha1',
-                                        kind: 'Workflow',
-                                        metadata: {
-                                            generateName: 'hello-world-',
-                                            namespace: this.namespace || 'default'
-                                        },
-                                        spec: {
-                                            entrypoint: 'whalesay',
-                                            templates: [
-                                                {
-                                                    name: 'whalesay',
-                                                    container: {
-                                                        image: 'docker/whalesay:latest',
-                                                        command: ['cowsay'],
-                                                        args: ['hello world']
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    } as Workflow
+                            <YamlEditor
+                                editing={true}
+                                title='Submit New Workflow'
+                                value={exampleWorkflow(this.namespace)}
+                                onSubmit={(value: Workflow) =>
+                                    services.workflows
+                                        .create(value, value.metadata.namespace)
+                                        .then(wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`))
+                                        .catch(error => this.setState({error}))
                                 }
-                                onSaved={wf => ctx.navigation.goto(`/workflows/${wf.metadata.namespace}/${wf.metadata.name}`)}
-                                onError={error => this.setState({error})}
                             />
                         </SlidingPanel>
                     </Page>

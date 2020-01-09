@@ -11,7 +11,7 @@ import {CronWorkflowSummaryPanel} from '../cron-workflow-summary-panel';
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
 interface State {
-    cronWf?: CronWorkflow;
+    cronWorkflow?: CronWorkflow;
     error?: Error;
 }
 
@@ -32,7 +32,7 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     public componentDidMount(): void {
         services.cronWorkflows
             .get(this.name, this.namespace)
-            .then(cronWf => this.setState({cronWf}))
+            .then(cronWf => this.setState({cronWorkflow: cronWf}))
             .catch(error => this.setState({error}));
     }
 
@@ -69,10 +69,12 @@ export class CronWorkflowDetails extends BasePage<RouteComponentProps<any>, Stat
     }
 
     private renderCronWorkflow() {
-        if (!this.state.cronWf) {
+        if (!this.state.cronWorkflow) {
             return <Loading />;
         }
-        return <CronWorkflowSummaryPanel cronWf={this.state.cronWf} />;
+        return (
+            <CronWorkflowSummaryPanel cronWorkflow={this.state.cronWorkflow} onChange={cronWorkflow => this.setState({cronWorkflow})} onError={error => this.setState({error})} />
+        );
     }
 
     private deleteWorkflowTemplate() {

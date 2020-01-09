@@ -6,8 +6,8 @@ import {Workflow, WorkflowTemplate} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {services} from '../../../shared/services';
-import WorkflowSubmit from '../../../workflows/components/workflow-submit/workflow-submit';
 import {WorkflowTemplateSummaryPanel} from '../workflow-template-summary-panel';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
@@ -73,10 +73,16 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
                     <div className='workflow-details__content'>{this.renderWorkflowTemplate()}</div>
                 </div>
                 <SlidingPanel isShown={!!this.state.workflow} onClose={() => this.setState({workflow: null})}>
-                    <WorkflowSubmit
-                        placeholder={this.state.workflow}
-                        onSaved={workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`)}
-                        onError={error => this.setState({error})}
+                    <YamlEditor
+                        editing={true}
+                        title='Submit Workflow'
+                        value={this.state.workflow}
+                        onSubmit={(value: Workflow) => {
+                            services.workflows
+                                .create(value, value.metadata.namespace)
+                                .then(workflow => (document.location.href = `/workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))
+                                .catch(error => this.setState({error}));
+                        }}
                     />
                 </SlidingPanel>
             </Page>
@@ -87,7 +93,7 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         if (!this.state.template) {
             return <Loading />;
         }
-        return <WorkflowTemplateSummaryPanel workflowTemplate={this.state.template} />;
+        return <WorkflowTemplateSummaryPanel template={this.state.template} onChange={template => this.setState({template})} onError={error => this.setState({error})} />;
     }
 
     private deleteWorkflowTemplate() {
@@ -111,12 +117,18 @@ export class WorkflowTemplateDetails extends BasePage<RouteComponentProps<any>, 
         this.setState({
             workflow: {
                 metadata: {
-                    generateName: this.state.template.metadata.name,
+                    generateName: this.state.template.metadata.name + '-',
                     namespace: this.state.template.metadata.namespace
                 },
                 spec: {
                     entrypoint: this.state.template.spec.templates[0].name,
-                    templates: this.state.template.spec.templates
+                    templates: this.state.template.spec.templates.map(t => ({
+                        name: t.name,
+                        templateRef: {
+                            name: this.state.template.metadata.name,
+                            template: t.name
+                        }
+                    }))
                 }
             }
         });

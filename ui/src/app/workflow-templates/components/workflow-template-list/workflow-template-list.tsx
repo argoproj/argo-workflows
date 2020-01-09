@@ -8,27 +8,13 @@ import {BasePage} from '../../../shared/components/base-page';
 import {Loading} from '../../../shared/components/loading';
 import {NamespaceFilter} from '../../../shared/components/namespace-filter';
 import {Timestamp} from '../../../shared/components/timestamp';
-import {YamlEditor} from '../../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../../shared/components/yaml/yaml-editor';
 import {ZeroState} from '../../../shared/components/zero-state';
 import {Consumer} from '../../../shared/context';
+import {exampleWorkflowTemplate} from '../../../shared/examples';
 import {services} from '../../../shared/services';
-import {Utils} from '../../../shared/utils';
 
 require('./workflow-template-list.scss');
-
-const placeholderWorkflowTemplate = (namespace: string) => `apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: hello-world
-  namespace: ${namespace}
-spec:
-  templates:
-  - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [cowsay]
-      args: ["hello world"]
-`;
 
 interface State {
     templates?: models.WorkflowTemplate[];
@@ -44,8 +30,12 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
         this.setQueryParams({namespace});
     }
 
-    private get wfInput() {
-        return Utils.tryJsonParse(this.queryParam('new'));
+    private get sidePanel() {
+        return this.queryParam('sidePanel');
+    }
+
+    private set sidePanel(sidePanel) {
+        this.setQueryParams({sidePanel});
     }
 
     constructor(props: RouteComponentProps<any>, context: any) {
@@ -76,24 +66,21 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
                                     {
                                         title: 'Create New Workflow Template',
                                         iconClassName: 'fa fa-plus',
-                                        action: () => ctx.navigation.goto('.', {new: '{}'})
+                                        action: () => (this.sidePanel = 'new')
                                     }
                                 ]
                             },
                             tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
                         }}>
                         {this.renderTemplates()}
-                        <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
-                            Create Workflow Template
+                        <SlidingPanel isShown={this.sidePanel !== null} onClose={() => (this.sidePanel = null)}>
                             <YamlEditor
-                                minHeight={800}
-                                initialEditMode={true}
-                                submitMode={true}
-                                placeHolder={placeholderWorkflowTemplate(this.namespace || 'default')}
-                                onSave={rawWf => {
-                                    const template = JSON.parse(rawWf) as WorkflowTemplate;
+                                editing={true}
+                                title='Create New Workflow Template'
+                                value={exampleWorkflowTemplate(this.namespace || 'default')}
+                                onSubmit={(value: WorkflowTemplate) => {
                                     return services.workflowTemplate
-                                        .create(template, template.metadata.namespace)
+                                        .create(value, value.metadata.namespace)
                                         .then(wf => ctx.navigation.goto(`/workflow-templates/${wf.metadata.namespace}/${wf.metadata.name}`))
                                         .catch(error => this.setState({error}));
                                 }}

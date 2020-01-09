@@ -240,6 +240,42 @@
         "tags": [
           "CronWorkflowService"
         ]
+      },
+      "put": {
+        "operationId": "UpdateCronWorkflow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1CronWorkflow"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "namespace",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "cronWorkflowName",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/cronworkflowUpdateCronWorkflowRequest"
+            }
+          }
+        ],
+        "tags": [
+          "CronWorkflowService"
+        ]
       }
     }
   },
@@ -274,6 +310,20 @@
     },
     "cronworkflowCronWorkflowDeletedResponse": {
       "type": "object"
+    },
+    "cronworkflowUpdateCronWorkflowRequest": {
+      "type": "object",
+      "properties": {
+        "cronWorkflowName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "cronWorkflow": {
+          "$ref": "#/definitions/v1alpha1CronWorkflow"
+        }
+      }
     },
     "intstrIntOrString": {
       "type": "object",

@@ -45,7 +45,10 @@ export class BasePage<P extends RouteComponentProps<any>, S> extends React.Compo
 
     private pushParams(params: URLSearchParams) {
         this.appContext.router.history.push(`${this.props.match.url}?${params.toString()}`);
-        setTimeout(() => this.componentDidMount(), 300);
+        setTimeout(() => {
+            this.componentWillUnmount();
+            this.componentDidMount();
+        }, 300);
     }
 
     protected get appContext() {

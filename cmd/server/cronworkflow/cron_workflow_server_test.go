@@ -13,9 +13,10 @@ import (
 )
 
 func Test_cronWorkflowServiceServer(t *testing.T) {
-	wfClientset := wftFake.NewSimpleClientset(&wfv1.CronWorkflow{
+	cronWf := &wfv1.CronWorkflow{
 		ObjectMeta: v1.ObjectMeta{Namespace: "my-ns", Name: "my-name"},
-	})
+	}
+	wfClientset := wftFake.NewSimpleClientset(cronWf)
 	server := NewCronWorkflowServer()
 	ctx := context.WithValue(context.TODO(), auth.WfKey, wfClientset)
 
@@ -29,10 +30,15 @@ func Test_cronWorkflowServiceServer(t *testing.T) {
 	t.Run("GetCronWorkflow", func(t *testing.T) {
 		cronWf, err := server.GetCronWorkflow(ctx, &GetCronWorkflowRequest{Namespace: "my-ns", CronWorkflowName: "my-name"})
 		if assert.NoError(t, err) {
-			assert.NotNil(t, cronWf, 1)
+			assert.NotNil(t, cronWf)
 		}
 	})
-	// TODO - UpdateCronWorkflow
+	t.Run("UpdateCronWorkflow", func(t *testing.T) {
+		cronWf, err := server.UpdateCronWorkflow(ctx, &UpdateCronWorkflowRequest{Namespace: "my-ns", CronWorkflowName: "my-name", CronWorkflow: cronWf})
+		if assert.NoError(t, err) {
+			assert.NotNil(t, cronWf)
+		}
+	})
 	t.Run("DeleteCronWorkflow", func(t *testing.T) {
 		_, err := server.DeleteCronWorkflow(ctx, &DeleteCronWorkflowRequest{CronWorkflowName: "my-name", Namespace: "my-ns"})
 		assert.NoError(t, err)

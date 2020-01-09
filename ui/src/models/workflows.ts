@@ -694,12 +694,12 @@ export interface NodeStatus {
      * TemplateRef is the reference to the template resource which this node corresponds to.
      * Not applicable to virtual nodes (e.g. Retry, StepGroup)
      */
-    templateRef: TemplateRef;
+    templateRef?: TemplateRef;
 
     /**
      * TemplateScope is the template scope in which the template of this node was retrieved.
      */
-    templateScope: string;
+    templateScope?: string;
 }
 
 export interface TemplateRef {
@@ -715,7 +715,7 @@ export interface TemplateRef {
      * RuntimeResolution skips validation at creation time.
      * By enabling this option, you can create the referred workflow template before the actual runtime.
      */
-    runtimeResolution: boolean;
+    runtimeResolution?: boolean;
 }
 
 export interface WorkflowStatus {
@@ -749,10 +749,6 @@ export interface WorkflowStatus {
     storedTemplates: {[name: string]: Template};
 }
 
-interface ListMeta {
-    continue?: string;
-}
-
 /**
  * WorkflowList is list of Workflow resources
  */
@@ -768,7 +764,7 @@ export interface WorkflowList {
      * Servers may infer this from the endpoint the client submits requests to.
      */
     kind?: string;
-    metadata: ListMeta;
+    metadata: kubernetes.ListMeta;
 }
 
 /**

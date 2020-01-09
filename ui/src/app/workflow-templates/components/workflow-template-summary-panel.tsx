@@ -2,16 +2,20 @@ import * as React from 'react';
 
 import {WorkflowTemplate} from '../../../models';
 import {Timestamp} from '../../shared/components/timestamp';
-import {YamlEditor} from '../../shared/components/yaml-editor/yaml-editor';
+import {YamlEditor} from '../../shared/components/yaml/yaml-editor';
 import {services} from '../../shared/services';
 
-const jsonMergePatch = require('json-merge-patch');
+interface Props {
+    template: WorkflowTemplate;
+    onChange: (template: WorkflowTemplate) => void;
+    onError: (error: Error) => void;
+}
 
-export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowTemplate}) => {
+export const WorkflowTemplateSummaryPanel = (props: Props) => {
     const attributes = [
-        {title: 'Name', value: props.workflowTemplate.metadata.name},
-        {title: 'Namespace', value: props.workflowTemplate.metadata.namespace},
-        {title: 'Created', value: <Timestamp date={props.workflowTemplate.metadata.creationTimestamp} />}
+        {title: 'Name', value: props.template.metadata.name},
+        {title: 'Namespace', value: props.template.metadata.namespace},
+        {title: 'Created', value: <Timestamp date={props.template.metadata.creationTimestamp} />}
     ];
     return (
         <div>
@@ -29,18 +33,13 @@ export const WorkflowTemplateSummaryPanel = (props: {workflowTemplate: WorkflowT
             <div className='white-box'>
                 <div className='white-box__details'>
                     <YamlEditor
-                        minHeight={800}
-                        submitMode={false}
-                        input={props.workflowTemplate}
-                        onSave={wfTmpl => {
-                            const patch = jsonMergePatch.generate(props.workflowTemplate, wfTmpl);
-
-                            const spec = JSON.parse(JSON.stringify(props.workflowTemplate));
-                            return services.workflowTemplate.update(
-                                jsonMergePatch.apply(spec, JSON.parse(patch)),
-                                props.workflowTemplate.metadata.name,
-                                props.workflowTemplate.metadata.namespace
-                            );
+                        editing={false}
+                        value={props.template}
+                        onSubmit={(value: WorkflowTemplate) => {
+                            return services.workflowTemplate
+                                .update(value, props.template.metadata.name, props.template.metadata.namespace)
+                                .then(workflowTemplate => props.onChange(workflowTemplate))
+                                .catch(err => props.onError(err));
                         }}
                     />
                 </div>
