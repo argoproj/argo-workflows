@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/base64"
-
 	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -30,9 +28,8 @@ const(
 	Server = "server"
 	Hybrid = "hybrid"
 )
-
-const V1_Auth_Token = "v1: "
-
+const V1AuthTokenPrefix = "v1: "
+const BearerPrefix = "Bearer "
 type Gatekeeper struct {
 	enableClientAuth string
 	// global clients, not to be used if there are better ones
@@ -119,16 +116,18 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 
 	authorization := md.Get("grpcgateway-authorization")
-	token := strings.TrimPrefix(authorization[0], "Bearer ")
-	token = strings.TrimPrefix(token, V1_Auth_Token)
-	authToken, err := base64.StdEncoding.DecodeString(token)
+	token := strings.TrimPrefix(authorization[0], BearerPrefix)
+	authToken := strings.TrimPrefix(token, V1AuthTokenPrefix)
+
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "Invalid token found in Authorization header %s: %v", token, err)
 	}
 	var restConfig *rest.Config
+
 	if useClientAuth {
 		restConfig = s.restConfig
 		restConfig.BearerToken = string(authToken)
+		restConfig.BearerTokenFile = ""
 	}
 
 	wfClient, err := versioned.NewForConfig(restConfig)

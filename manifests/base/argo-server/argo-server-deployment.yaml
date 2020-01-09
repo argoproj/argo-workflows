@@ -14,6 +14,6 @@ spec:
       containers:
         - name: argo-server
           image: argoproj/argo-server:latest
-          args: [--enable-client-auth]
+          args: [--enable-auth-type client]
           ports:
             - containerPort: 2746

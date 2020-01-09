@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"github.com/argoproj/argo/cmd/server/auth"
 	"log"
 	"os"
 
@@ -40,10 +41,10 @@ func GetClientConn() *grpc.ClientConn {
 }
 
 func ContextWithAuthorization() context.Context {
-	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", GetBearerToken()))
+	return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", GetV1BearerToken()))
 }
 
-func GetBearerToken() string {
+func GetV1BearerToken() string {
 	restConfig, err := Config.ClientConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -52,5 +53,5 @@ func GetBearerToken() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return token
+	return auth.BearerPrefix + auth.V1AuthTokenPrefix + token
 }
