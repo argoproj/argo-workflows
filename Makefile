@@ -13,9 +13,9 @@ export DOCKER_BUILDKIT = 1
 
 # version must be  branch name or  vX.Y.Z
 ifeq ($(GIT_BRANCH), master)
-VERSION               ?= latest
+VERSION ?= latest
 else
-VERSION               ?= $(GIT_BRANCH)
+VERSION ?= $(GIT_BRANCH)
 endif
 
 # perform static compilation
@@ -45,10 +45,10 @@ ifeq ($(VERSION),$(GIT_BRANCH))
 	SNAPSHOT=true
 endif
 
-ARGOEXEC_PKGS    := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
-ARGO_SERVER_PKGS := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/server/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
-CLI_PKGS         := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argo/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
-CONTROLLER_PKGS  := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
+ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+ARGO_SERVER_PKGS := $(shell echo cmd/server              && go list -f '{{ join .Deps "\n" }}' ./cmd/server/              | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
+CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
 build: clis controller-image executor-image argo-server
@@ -196,9 +196,12 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-.PHONY: start
-start: controller-image argo-server-image executor-image
+.PHONY: install
+install:
 	env INSTALL_CLI=0 VERSION=dev ./install.sh
+
+.PHONY: start
+start: install down controller-image argo-server-image executor-image
 	# Scale down in preparation for re-configuration.
 	make down
 	# Change to use a "dev" tag and enable debug logging.
@@ -264,6 +267,7 @@ ifeq ($(GIT_BRANCH),master)
 else
 	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
+	# TODO - this will result in changes on master we don't want
 	make codegen manifests VERSION=$(VERSION)
 	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"

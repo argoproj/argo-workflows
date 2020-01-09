@@ -278,7 +278,7 @@ spec:
       - args:
         - --auth-type
         - client
-        image: argoproj/argo-server:latest
+        image: argoproj/argo-server:apiserverimpl
         name: argo-server
         ports:
         - containerPort: 2746

@@ -8,7 +8,7 @@ VERSION="${VERSION:-latest}"
 
 cd ${SRCROOT}/manifests/base && kustomize edit set image \
     argoproj/workflow-controller=${IMAGE_NAMESPACE}/workflow-controller:${VERSION} \
-    argoproj/argoui=${IMAGE_NAMESPACE}/argoui:${VERSION}
+    argoproj/argo-server=${IMAGE_NAMESPACE}/argo-server:${VERSION}
 
 echo "${AUTOGENMSG}" > "${SRCROOT}/manifests/install.yaml"
 kustomize build "${SRCROOT}/manifests/cluster-install" >> "${SRCROOT}/manifests/install.yaml"
