@@ -290,7 +290,10 @@ publish:
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push $(GIT_BRANCH) --tags
+	git push $(GIT_BRANCH)
+ifeq ($(SNAPSHOT),false)
+	git push $(VERSION)
+endif
 
 .PHONY: release
 release: pre-release build publish
