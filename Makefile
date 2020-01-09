@@ -7,7 +7,6 @@ GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git 
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
 # docker image publishing options
-DOCKER_PUSH           ?= false
 IMAGE_NAMESPACE       = argoproj
 
 export DOCKER_BUILDKIT = 1
@@ -51,8 +50,8 @@ ARGO_SERVER_PKGS := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/server/|gre
 CLI_PKGS         := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/argo/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 CONTROLLER_PKGS  := $(shell go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/|grep 'argoproj/argo'|grep -v vendor|cut -c 26-)
 
-.PHONY: all
-all: clis controller-image executor-image argo-server
+.PHONY: build
+build: clis controller-image executor-image argo-server
 
 vendor: Gopkg.toml
 	dep ensure -v -vendor-only
@@ -85,9 +84,6 @@ cli-image: dist/argo-linux-amd64
 	cp dist/argo-linux-amd64 argo
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
 	rm -f argo
-ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-endif
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
@@ -102,9 +98,6 @@ controller-image: dist/workflow-controller-linux-amd64
 	cp dist/workflow-controller-linux-amd64 workflow-controller
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 	rm -f workflow-controller
-ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-endif
 
 # argo-server
 
@@ -150,9 +143,6 @@ argo-server-image: dist/argo-server-linux-amd64
 	cp dist/argo-server-linux-amd64 argo-server
 	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
 	rm -f argo-server
-ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
-endif
 
 .PHONY: argo-server
 argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64
@@ -167,9 +157,6 @@ executor-image: dist/argoexec-linux-amd64
 	cp dist/argoexec-linux-amd64 argoexec
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 	rm -f argoexec
-ifeq ($(DOCKER_PUSH),true)
-	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
-endif
 
 # generation
 
@@ -204,7 +191,6 @@ endif
 .PHONY: test
 test: cmd/server/static/files.go vendor
 ifeq ($(CI),false)
-	# coverage prevents test caching
 	go test `go list ./... | grep -v 'test/e2e'`
 else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
@@ -281,20 +267,26 @@ else
 	make codegen manifests VERSION=$(VERSION)
 	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
-	git push $(GIT_BRANCH)
-ifeq ($(SNAPSHOT),true)
-	git tag $(VERSION)
-	git push $(VERSION)
-endif
 endif
 
-.PHONY: pre-release
-pre-release: test lint codegen manifests
+.PHONY: must-be-clean
+must-be-clean:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+
+.PHONY: pre-release
+pre-release: must-be-clean test lint codegen manifests must-be-clean
 ifeq ($(SNAPSHOT),false)
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 endif
 
+.PHONY: publish
+publish:
+	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	git push $(GIT_BRANCH) --tags
+
 .PHONY: release
-release: pre-release all
+release: pre-release build publish
