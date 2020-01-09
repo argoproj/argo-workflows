@@ -6,19 +6,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes/fake"
-
+	"k8s.io/client-go/rest"
+	
 	fakewfclientset "github.com/argoproj/argo/pkg/client/clientset/versioned/fake"
 )
 
 func TestServer_GetWFClient(t *testing.T) {
 	wfClient := &fakewfclientset.Clientset{}
 	kubeClient := &fake.Clientset{}
+	restConfig := &rest.Config{}
+
 	t.Run("DisableClientAuth", func(t *testing.T) {
-		s := NewGatekeeper(false, wfClient, kubeClient)
+		s := NewGatekeeper("server", wfClient, kubeClient, nil)
 		ctx, err := authAndHandle(s, context.TODO())
 		if assert.NoError(t, err) {
 			assert.Equal(t, wfClient, GetWfClient(*ctx))
@@ -26,29 +27,30 @@ func TestServer_GetWFClient(t *testing.T) {
 		}
 	})
 	t.Run("ClientAuth", func(t *testing.T) {
-		s := NewGatekeeper(true, wfClient, kubeClient)
-		ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("{}")))))
+		s := NewGatekeeper("client", wfClient, kubeClient, restConfig)
+		ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("anything")))))
 		if assert.NoError(t, err) {
 			assert.NotEqual(t, wfClient, GetWfClient(*ctx))
 			assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
 		}
 	})
-	t.Run("Localhost", func(t *testing.T) {
-		 s := NewGatekeeper(true, wfClient, kubeClient)
-		for _, text := range []string{
-			`{"caFile": "anything"}`,
-			`{"certFile": "anything"}`,
-			`{"keyFile": "anything"}`,
-			`{"bearerTokenFile": "anything"}`,
-			`{"host": "localhost:443"}`,
-			`{"host": "127.0.0.1:443"}`,
-		} {
-			t.Run(text, func(t *testing.T) {
-				_, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte(text)))))
-				assert.Error(t, err)
-				assert.Equal(t, codes.Unauthenticated, status.Code(err))
-			})
-		}
+	t.Run("HybridAuth", func(t *testing.T) {
+		s := NewGatekeeper("hybrid", wfClient, kubeClient, restConfig)
+		t.Run("clientAuth", func(t *testing.T) {
+			ctx, err := authAndHandle(s, metadata.NewIncomingContext(context.Background(), metadata.Pairs("grpcgateway-authorization", base64.StdEncoding.EncodeToString([]byte("{anything}")))))
+			if assert.NoError(t, err) {
+				assert.NotEqual(t, wfClient, GetWfClient(*ctx))
+				assert.NotEqual(t, kubeClient, GetKubeClient(*ctx))
+			}
+		})
+		t.Run("ServerAuth", func(t *testing.T) {
+			ctx, err := authAndHandle(s, context.TODO())
+			if assert.NoError(t, err) {
+				assert.Equal(t, wfClient, GetWfClient(*ctx))
+				assert.Equal(t, kubeClient, GetKubeClient(*ctx))
+			}
+		})
+
 	})
 }
 

@@ -11,8 +11,6 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/transport"
-
-	"github.com/argoproj/argo/pkg/apis/workflow"
 )
 
 // get the default one from the filesystem
@@ -48,34 +46,34 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		token := req.Header.Get("Authorization")
 		in.BearerToken = strings.TrimPrefix(token, "Bearer ")
 	}
-	tlsClientConfig, err := tlsClientConfig(in)
-	if err != nil {
-		return "", err
-	}
-	clientConfig := &workflow.ClientConfig{
-		Host:    in.Host,
-		APIPath: in.APIPath,
-		ContentConfig: restclient.ContentConfig{
-			AcceptContentTypes: in.ContentConfig.AcceptContentTypes,
-			ContentType:        in.ContentConfig.ContentType,
-			GroupVersion:       in.ContentConfig.GroupVersion,
-		},
-		Username:        in.Username,
-		Password:        in.Password,
-		BearerToken:     in.BearerToken,
-		Impersonate:     in.Impersonate,
-		AuthProvider:    in.AuthProvider,
-		TLSClientConfig: tlsClientConfig,
-		UserAgent:       in.UserAgent,
-		QPS:             in.QPS,
-		Burst:           in.Burst,
-		Timeout:         in.Timeout,
-	}
-	configByte, err := json.Marshal(clientConfig)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(configByte), nil
+	//tlsClientConfig, err := tlsClientConfig(in)
+	//if err != nil {
+	//	return "", err
+	//}
+	//clientConfig := &workflow.ClientConfig{
+	//	Host:    in.Host,
+	//	APIPath: in.APIPath,
+	//	ContentConfig: restclient.ContentConfig{
+	//		AcceptContentTypes: in.ContentConfig.AcceptContentTypes,
+	//		ContentType:        in.ContentConfig.ContentType,
+	//		GroupVersion:       in.ContentConfig.GroupVersion,
+	//	},
+	//	Username:        in.Username,
+	//	Password:        in.Password,
+	//	BearerToken:     in.BearerToken,
+	//	Impersonate:     in.Impersonate,
+	//	AuthProvider:    in.AuthProvider,
+	//	TLSClientConfig: tlsClientConfig,
+	//	UserAgent:       in.UserAgent,
+	//	QPS:             in.QPS,
+	//	Burst:           in.Burst,
+	//	Timeout:         in.Timeout,
+	//}
+	//configByte, err := json.Marshal(clientConfig)
+	//if err != nil {
+	//	return "", err
+	//}
+	return base64.StdEncoding.EncodeToString([]byte(in.BearerToken)), nil
 }
 
 func tlsClientConfig(in *restclient.Config) (restclient.TLSClientConfig, error) {

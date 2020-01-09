@@ -333,7 +333,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
+		req.Header.Set("Authorization", "Bearer v1: "+s.bearerToken)
 		req.Close = true
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)

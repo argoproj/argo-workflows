@@ -2,7 +2,8 @@ package auth
 
 import (
 	"context"
-	"net"
+	"encoding/base64"
+
 	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -11,9 +12,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
-	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 type ContextKey string
@@ -21,17 +22,27 @@ type ContextKey string
 const (
 	WfKey   ContextKey = "versioned.Interface"
 	KubeKey ContextKey = "kubernetes.Interface"
+	restKey ContextKey = "rest.config"
 )
 
+const(
+	Client = "client"
+	Server = "server"
+	Hybrid = "hybrid"
+)
+
+const V1_Auth_Token = "v1: "
+
 type Gatekeeper struct {
-	enableClientAuth bool
+	enableClientAuth string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
+	restConfig *rest.Config
 }
 
-func NewGatekeeper(enableClientAuth bool, wfClient versioned.Interface, kubeClient kubernetes.Interface) Gatekeeper {
-	return Gatekeeper{enableClientAuth, wfClient, kubeClient}
+func NewGatekeeper(enableClientAuth string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config) Gatekeeper {
+	return Gatekeeper{enableClientAuth, wfClient, kubeClient, restConfig}
 }
 
 func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -71,38 +82,53 @@ func GetWfClient(ctx context.Context) versioned.Interface {
 func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
+func (s Gatekeeper) useServerAuth() bool {
+	return s.enableClientAuth == Server
+}
+func (s Gatekeeper) useHybridAuth() bool {
+	return s.enableClientAuth == Hybrid
+}
 
+func (s Gatekeeper) useClientAuth(md metadata.MD) (bool, error) {
+	 if s.enableClientAuth == Client && len(md.Get("grpcgateway-authorization")) == 0 {
+	 	return false, status.Error(codes.Unauthenticated, "Auth Token is not found")
+	 }
+	 if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
+	 	return true, nil
+	 }
+	return true, nil
+}
 func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubernetes.Interface, error) {
 
-	if !s.enableClientAuth {
+	if s.useServerAuth() {
+		return s.wfClient, s.kubeClient, nil
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		if s.useHybridAuth(){
+			return s.wfClient, s.kubeClient, nil
+		}
+		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
+	}
+	useClientAuth, err := s.useClientAuth(md)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "Auth Token is not present in the request: %v", err)
+	}
+	if !useClientAuth{
 		return s.wfClient, s.kubeClient, nil
 	}
 
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, nil, status.Error(codes.Unauthenticated, "unable to get metadata from incoming context")
-	}
 	authorization := md.Get("grpcgateway-authorization")
-	if len(authorization) == 0 {
-		if !s.enableClientAuth {
-			return s.wfClient, s.kubeClient, nil
-		}
-		return nil, nil, status.Error(codes.Unauthenticated, "Authorization header not found")
-	}
 	token := strings.TrimPrefix(authorization[0], "Bearer ")
-	restConfig, err := kubeconfig.GetRestConfig(token)
+	token = strings.TrimPrefix(token, V1_Auth_Token)
+	authToken, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
 		return nil, nil, status.Errorf(codes.Unauthenticated, "Invalid token found in Authorization header %s: %v", token, err)
 	}
-	if s.enableClientAuth {
-		// we want to prevent people using in-cluster set-up
-		if restConfig.BearerTokenFile != "" || restConfig.CAFile != "" || restConfig.CertFile != "" || restConfig.KeyFile != "" {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "illegal bearer token")
-		}
-		host := strings.SplitN(restConfig.Host, ":", 2)[0]
-		if host == "localhost" || net.ParseIP(host).IsLoopback() {
-			return nil, nil, status.Errorf(codes.Unauthenticated, "illegal bearer token")
-		}
+	var restConfig *rest.Config
+	if useClientAuth {
+		restConfig = s.restConfig
+		restConfig.BearerToken = string(authToken)
 	}
 
 	wfClient, err := versioned.NewForConfig(restConfig)

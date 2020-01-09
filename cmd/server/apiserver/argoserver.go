@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/cmd/server/artifacts"
@@ -45,18 +46,19 @@ type argoServer struct {
 }
 
 type ArgoServerOpts struct {
-	Namespace        string
-	KubeClientset    *kubernetes.Clientset
-	WfClientSet      *versioned.Clientset
-	EnableClientAuth bool
-	ConfigName       string
+	Namespace     string
+	KubeClientset *kubernetes.Clientset
+	WfClientSet   *versioned.Clientset
+	RestConfig    *rest.Config
+	AuthType      string
+	ConfigName    string
 }
 
 func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
 		namespace:     opts.Namespace,
 		kubeClientset: opts.KubeClientset,
-		authenticator: auth.NewGatekeeper(opts.EnableClientAuth, opts.WfClientSet, opts.KubeClientset),
+		authenticator: auth.NewGatekeeper(opts.AuthType, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
 		configName:    opts.ConfigName,
 	}
 }
@@ -66,6 +68,24 @@ var backoff = wait.Backoff{
 	Duration: 500 * time.Millisecond,
 	Factor:   1.0,
 	Jitter:   0.1,
+}
+
+func (ao ArgoServerOpts) ValidateOpts() error{
+	validate := false
+	for _, item := range []string{
+		auth.Server,
+		auth.Hybrid,
+		auth.Client,
+		}{
+		if ao.AuthType == item {
+			validate = true
+			break
+		}
+	}
+	 if !validate {
+	 	return errors.Errorf("","Invalid Auth Type. %s", ao.AuthType)
+	 }
+	 return nil
 }
 
 func (as *argoServer) Run(ctx context.Context, port int) {

@@ -27,11 +27,11 @@ const (
 // NewRootCommand returns an new instance of the workflow-controller main entrypoint
 func NewRootCommand() *cobra.Command {
 	var (
-		clientConfig     clientcmd.ClientConfig
-		logLevel         string // --loglevel
-		enableClientAuth bool
-		configMap        string
-		port             int
+		clientConfig clientcmd.ClientConfig
+		logLevel     string // --loglevel
+		authType     string
+		configMap    string
+		port         int
 	)
 
 	var command = cobra.Command{
@@ -60,10 +60,16 @@ func NewRootCommand() *cobra.Command {
 			defer cancel()
 
 			opts := apiserver.ArgoServerOpts{
-				Namespace:        namespace,
-				WfClientSet:      wflientset,
-				KubeClientset:    kubeConfig,
-				EnableClientAuth: enableClientAuth,
+				Namespace:     namespace,
+				WfClientSet:   wflientset,
+				KubeClientset: kubeConfig,
+				RestConfig:    config,
+				AuthType:      authType,
+
+			}
+			err = opts.ValidateOpts()
+			if err != nil {
+				return err
 			}
 			apiServer := apiserver.NewArgoServer(opts)
 
@@ -78,7 +84,7 @@ func NewRootCommand() *cobra.Command {
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().BoolVar(&enableClientAuth, "enable-client-auth", false, "Enable client auth")
+	command.Flags().StringVar(&authType, "enable-auth-type", "server", "Enable authentication Type in Api Server. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	return &command
