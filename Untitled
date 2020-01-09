@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: artifacts-minio
-type: Opaque
-stringData:
-  config.yaml: |-
-    accesskey: AKIAZU5BUD2GBZYRCLPY
-    secretkey: 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
