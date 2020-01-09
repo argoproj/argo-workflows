@@ -310,7 +310,7 @@ func (s *ArgoServerSuite) TestWorkflowArtifact() {
 			Expect().
 			Status(200)
 
-		s.e(t).GET("/artifacts-by-uid/argo/{uid}/basic/main-logs", uid).
+		s.e(t).GET("/artifacts-by-uid/{uid}/basic/main-logs", uid).
 			WithQuery("Authorization", s.bearerToken).
 			Expect().
 			Status(200).

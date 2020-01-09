@@ -45,8 +45,8 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	// two pages of results for limit 1
 	repo.On("ListWorkflows", "", 1, 0).Return(wfv1.Workflows{{}}, nil)
 	repo.On("ListWorkflows", "", 1, 1).Return(wfv1.Workflows{}, nil)
-	repo.On("GetWorkflow", "", "").Return(nil, nil)
-	repo.On("GetWorkflow", "my-ns", "my-uid").Return(&wfv1.Workflow{
+	repo.On("GetWorkflow", "").Return(nil, nil)
+	repo.On("GetWorkflow", "my-uid").Return(&wfv1.Workflow{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-name"},
 		Spec: wfv1.WorkflowSpec{
 			Entrypoint: "my-entrypoint",
@@ -60,7 +60,7 @@ func Test_archivedWorkflowServer(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "my-name-resubmitted"},
 		}, nil
 	})
-	repo.On("DeleteWorkflow", "my-ns", "my-uid").Return(nil)
+	repo.On("DeleteWorkflow",  "my-uid").Return(nil)
 
 	ctx := context.WithValue(context.WithValue(context.TODO(), auth.WfKey, wfClient), auth.KubeKey, kubeClient)
 	t.Run("ListArchivedWorkflows", func(t *testing.T) {
@@ -83,21 +83,21 @@ func Test_archivedWorkflowServer(t *testing.T) {
 	})
 	t.Run("GetArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
 		_, err = w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{})
 		assert.Equal(t, err, status.Error(codes.NotFound, "not found"))
-		wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
+		wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
 	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
 		allowed = false
-		_, err := w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err := w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{ Uid: "my-uid"})
 		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
 		allowed = true
-		_, err = w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
+		_, err = w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Uid: "my-uid"})
 		assert.NoError(t, err)
 	})
 }
