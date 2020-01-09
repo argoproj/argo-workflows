@@ -156,44 +156,6 @@
           "ArchivedWorkflowService"
         ]
       }
-    },
-    "/api/v1/archived-workflows/{namespace}/{uid}/resubmit": {
-      "put": {
-        "operationId": "ResubmitArchivedWorkflow",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1alpha1Workflow"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "namespace",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "uid",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/workflowarchiveResubmitArchivedWorkflowRequest"
-            }
-          }
-        ],
-        "tags": [
-          "ArchivedWorkflowService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -3817,17 +3779,6 @@
     },
     "workflowarchiveArchivedWorkflowDeletedResponse": {
       "type": "object"
-    },
-    "workflowarchiveResubmitArchivedWorkflowRequest": {
-      "type": "object",
-      "properties": {
-        "namespace": {
-          "type": "string"
-        },
-        "uid": {
-          "type": "string"
-        }
-      }
     },
     "workflowv1alpha1NodeStatus": {
       "type": "object",

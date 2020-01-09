@@ -13,7 +13,6 @@ import (
 	"github.com/argoproj/argo/cmd/server/auth"
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
-	"github.com/argoproj/argo/workflow/util"
 )
 
 type archivedWorkflowServer struct {
@@ -89,23 +88,6 @@ func (w *archivedWorkflowServer) GetArchivedWorkflow(ctx context.Context, req *G
 		return nil, status.Error(codes.PermissionDenied, "permission denied")
 	}
 	return wf, err
-}
-
-func (w *archivedWorkflowServer) ResubmitArchivedWorkflow(ctx context.Context, req *ResubmitArchivedWorkflowRequest) (*wfv1.Workflow, error) {
-	wf, err := w.GetArchivedWorkflow(ctx, &GetArchivedWorkflowRequest{Namespace: req.Namespace, Uid: req.Uid})
-	if err != nil {
-		return nil, err
-	}
-	wf, err = util.FormulateResubmitWorkflow(wf, false)
-	if err != nil {
-		return nil, err
-	}
-	wfClient := auth.GetWfClient(ctx)
-	wf, err = util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, wf.Namespace, wf, &util.SubmitOpts{})
-	if err != nil {
-		return nil, err
-	}
-	return wf, nil
 }
 
 func (w *archivedWorkflowServer) DeleteArchivedWorkflow(ctx context.Context, req *DeleteArchivedWorkflowRequest) (*ArchivedWorkflowDeletedResponse, error) {

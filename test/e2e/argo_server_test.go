@@ -422,20 +422,6 @@ func (s *ArgoServerSuite) TestArchivedWorkflow() {
 			Equal("basic")
 	})
 
-	s.Run("Resubmit", func(t *testing.T) {
-		s.e(t).PUT("/api/v1/archived-workflows/argo/{uid}/resubmit", uid).
-			Expect().
-			Status(200)
-
-		s.e(t).GET("/api/v1/workflows/argo").
-			Expect().
-			Status(200).
-			JSON().
-			Path("$.items").
-			Array().
-			Length().
-			Equal(3)
-	})
 	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/archived-workflows/argo/{uid}", uid).
 			Expect().

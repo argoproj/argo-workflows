@@ -17,6 +17,7 @@ import {
     WorkflowTimeline,
     WorkflowYamlViewer
 } from '../../../workflows/components';
+import WorkflowSubmit from '../../../workflows/components/workflow-submit/workflow-submit';
 
 require('../../../workflows/components/workflow-details/workflow-details.scss');
 
@@ -87,7 +88,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                             {
                                 title: 'Resubmit',
                                 iconClassName: 'fa fa-redo',
-                                action: () => this.resubmitArchivedWorkflow()
+                                action: () => (this.sidePanel = 'resubmit')
                             },
                             {
                                 title: 'Delete',
@@ -181,6 +182,21 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 <SlidingPanel isShown={!!this.sidePanel} onClose={() => (this.sidePanel = null)}>
                     {this.sidePanel === 'yaml' && <WorkflowYamlViewer workflow={this.state.workflow} selectedNode={this.node} />}
                     {this.sidePanel === 'logs' && <WorkflowLogsViewer workflow={this.state.workflow} nodeId={this.nodeId} container={this.container} archived={true} />}
+                    {this.sidePanel === 'resubmit' && (
+                        <WorkflowSubmit
+                            placeholder={
+                                {
+                                    metadata: {
+                                        namespace: this.state.workflow.metadata.namespace,
+                                        name: this.state.workflow.metadata.name
+                                    },
+                                    spec: this.state.workflow.spec
+                                } as Workflow
+                            }
+                            onSaved={workflow => (document.location.href = uiUrl(`workflows/${workflow.metadata.namespace}/${workflow.metadata.name}`))}
+                            onError={error => this.setState({error})}
+                        />
+                    )}
                 </SlidingPanel>
             </>
         );
@@ -188,23 +204,6 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
 
     private get node() {
         return this.nodeId && this.state.workflow.status.nodes[this.nodeId];
-    }
-
-    private resubmitArchivedWorkflow() {
-        if (!confirm('Are you sure you want to re-submit this archived workflow?')) {
-            return;
-        }
-        services.archivedWorkflows
-            .resubmit(this.namespace, this.uid)
-            .catch(e => {
-                this.appContext.apis.notifications.show({
-                    content: 'Failed to resubmit workflow ' + e,
-                    type: NotificationType.Error
-                });
-            })
-            .then((wf: Workflow) => {
-                document.location.href = `/workflows/${wf.metadata.namespace}/${wf.metadata.name}`;
-            });
     }
 
     private deleteArchivedWorkflow() {
@@ -220,7 +219,7 @@ export class ArchivedWorkflowDetails extends BasePage<RouteComponentProps<any>, 
                 });
             })
             .then(() => {
-                document.location.href = '/archived-workflows';
+                document.location.href = uiUrl('archived-workflows');
             });
     }
 }

@@ -92,15 +92,6 @@ func Test_archivedWorkflowServer(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, wf)
 	})
-	t.Run("ResubmitArchivedWorkflow", func(t *testing.T) {
-		allowed = false
-		wf, err := w.ResubmitArchivedWorkflow(ctx, &ResubmitArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
-		assert.Equal(t, err, status.Error(codes.PermissionDenied, "permission denied"))
-		allowed = true
-		wf, err = w.ResubmitArchivedWorkflow(ctx, &ResubmitArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
-		assert.NoError(t, err)
-		assert.Equal(t, "my-name-resubmitted", wf.Name)
-	})
 	t.Run("DeleteArchivedWorkflow", func(t *testing.T) {
 		allowed = false
 		_, err := w.DeleteArchivedWorkflow(ctx, &DeleteArchivedWorkflowRequest{Namespace: "my-ns", Uid: "my-uid"})
