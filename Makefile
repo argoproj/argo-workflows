@@ -42,7 +42,7 @@ SNAPSHOT=false
 ifeq ($(VERSION),latest)
 	SNAPSHOT=true
 endif
-ifeq ($(VERSION),$GIT_BRANCH)
+ifeq ($(VERSION),$(GIT_BRANCH))
 	SNAPSHOT=true
 endif
 
