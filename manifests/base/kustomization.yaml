@@ -8,7 +8,7 @@ resources:
 images:
 - name: argoproj/argoui
   newName: argoproj/argoui
-  newTag: apiserverimpl
+  newTag: latest
 - name: argoproj/workflow-controller
   newName: argoproj/workflow-controller
-  newTag: apiserverimpl
+  newTag: latest

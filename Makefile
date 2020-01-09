@@ -174,13 +174,12 @@ dist/executor-base-image:
 # TODO: move these targets to the main Dockerfile once DOCKER_BUILDKIT=1 is more pervasive.
 # NOTE: have to output ouside of dist directory since dist is under .dockerignore
 .PHONY: executor-image
-ifeq ($(DEV_IMAGE), true)
 executor-image: dist/executor-base-image
+ifeq ($(DEV_IMAGE), true)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o argoexec ./cmd/argoexec
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) -f Dockerfile.argoexec-dev .
 	rm -f argoexec
 else
-executor-image: executor-base-image
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 endif
 	@if [ "$(DOCKER_PUSH)" = "true" ] ; then docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION) ; fi
