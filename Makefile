@@ -1,4 +1,4 @@
-PACKAGE                = github.com/argoproj/argo
+PACKAGE                := github.com/argoproj/argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
@@ -289,7 +289,7 @@ else
 	echo "preparing release $VERSION"
 	echo $(VERSION) | cut -c 1- > VERSION
 	make manifests VERSION=$(VERSION)
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -am "Update manifests to $(VERSION)" ; fi
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then git commit -m "Update manifests to $(VERSION)" ; fi
 ifneq ($(SNAPSHOT),false)
 	git tag $(VERSION)
 endif
