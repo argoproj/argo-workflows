@@ -74,4 +74,3 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 	//}
 	return base64.StdEncoding.EncodeToString([]byte(in.BearerToken)), nil
 }
-
