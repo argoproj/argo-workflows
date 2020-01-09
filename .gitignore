@@ -6,6 +6,7 @@ dist/
 # delve debug binaries
 cmd/**/debug
 hack/**/debug
+/argo
 /argoexec
 /argo-server
 debug.test

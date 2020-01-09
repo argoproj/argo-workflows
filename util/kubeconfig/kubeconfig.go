@@ -3,7 +3,6 @@ package kubeconfig
 import (
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -76,34 +75,3 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 	return base64.StdEncoding.EncodeToString([]byte(in.BearerToken)), nil
 }
 
-func tlsClientConfig(in *restclient.Config) (restclient.TLSClientConfig, error) {
-	c := restclient.TLSClientConfig{
-		Insecure:   in.TLSClientConfig.Insecure,
-		ServerName: in.TLSClientConfig.ServerName,
-		CertData:   in.TLSClientConfig.CertData,
-		KeyData:    in.TLSClientConfig.KeyData,
-		CAData:     in.TLSClientConfig.CAData,
-	}
-	if in.TLSClientConfig.CAFile != "" {
-		data, err := ioutil.ReadFile(in.TLSClientConfig.CAFile)
-		if err != nil {
-			return c, err
-		}
-		c.CAData = data
-	}
-	if in.TLSClientConfig.CertFile != "" {
-		data, err := ioutil.ReadFile(in.TLSClientConfig.CertFile)
-		if err != nil {
-			return c, err
-		}
-		c.CertData = data
-	}
-	if in.TLSClientConfig.KeyFile != "" {
-		data, err := ioutil.ReadFile(in.TLSClientConfig.KeyFile)
-		if err != nil {
-			return c, err
-		}
-		c.KeyData = data
-	}
-	return c, nil
-}

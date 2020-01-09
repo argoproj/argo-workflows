@@ -22,7 +22,6 @@ type ContextKey string
 const (
 	WfKey   ContextKey = "versioned.Interface"
 	KubeKey ContextKey = "kubernetes.Interface"
-	restKey ContextKey = "rest.config"
 )
 
 const (
