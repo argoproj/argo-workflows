@@ -27,9 +27,35 @@ func (s *CronSuite) TestBasic() {
 		CreateCronWorkflow().
 		Wait(1 * time.Minute).
 		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
-			assert.True(t, cronWf.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 		})
+}
+
+func (s *CronSuite) TestSuspend() {
+	s.Given().
+		CronWorkflow("@testdata/basic.yaml").
+		When().
+		CreateCronWorkflow().
+		Then().
+		RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string) {
+			assert.Equal(t, "CronWorkflow 'test-cron-wf-basic' suspended", output)
+		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.True(t, cronWf.Spec.Suspend)
+		})
+}
+
+func (s *CronSuite) TestResume() {
+	s.Given().
+		CronWorkflow("@testdata/basic.yaml").
+		When().
+		CreateCronWorkflow().
+		Then().
+		RunCli([]string{"cron", "resume", "test-cron-wf-basic"}, func(t *testing.T, output string) {
+			assert.Equal(t, "CronWorkflow 'test-cron-wf-basic' resumed", output)
+		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+		assert.False(t, cronWf.Spec.Suspend)
+	})
 }
 
 func (s *CronSuite) TestBasicForbid() {
@@ -39,9 +65,9 @@ func (s *CronSuite) TestBasicForbid() {
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
 		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
-			assert.Equal(t, 1, len(cronWf.Active))
-			assert.True(t, cronWf.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.Equal(t, 1, len(cronWf.Status.Active))
+			assert.True(t, cronWf.Status.LastScheduledTime.Time.Before(time.Now().Add(-1*time.Minute)))
 		})
 }
 
@@ -52,8 +78,8 @@ func (s *CronSuite) TestBasicAllow() {
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
 		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
-			assert.Equal(t, 2, len(cronWf.Active))
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.Equal(t, 2, len(cronWf.Status.Active))
 		})
 }
 
@@ -64,9 +90,9 @@ func (s *CronSuite) TestBasicReplace() {
 		CreateCronWorkflow().
 		Wait(2 * time.Minute).
 		Then().
-		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflowStatus) {
-			assert.Equal(t, 1, len(cronWf.Active))
-			assert.True(t, cronWf.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
+		ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
+			assert.Equal(t, 1, len(cronWf.Status.Active))
+			assert.True(t, cronWf.Status.LastScheduledTime.Time.After(time.Now().Add(-1*time.Minute)))
 		})
 }
 
