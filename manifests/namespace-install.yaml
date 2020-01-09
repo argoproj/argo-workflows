@@ -186,7 +186,8 @@ spec:
     spec:
       containers:
       - args:
-        - --enable-client-auth
+        - --auth-type
+          client
         image: argoproj/argo-server:latest
         name: argo-server
         ports:
