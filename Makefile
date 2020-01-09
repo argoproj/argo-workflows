@@ -289,6 +289,7 @@ else
 	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
 	make manifests VERSION=$(VERSION)
+	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 ifneq ($(SNAPSHOT),false)
 	git tag $(VERSION)
