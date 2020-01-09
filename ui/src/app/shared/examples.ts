@@ -2,7 +2,7 @@ import {CronWorkflow, Workflow, WorkflowTemplate} from '../../models';
 
 const randomSillyName = () => {
     const adjectives = ['wonderful', 'fantastic', 'awesome', 'delightful', 'lovely'];
-    const nouns = ['moose', 'python', 'koala', 'dragon', 'octopus'];
+    const nouns = ['rhino', 'python', 'bear', 'dragon', 'octopus', 'tiger'];
     const random = (array: string[]) => array[Math.floor(Math.random() * array.length)];
     return `${random(adjectives)}-${random(nouns)}`;
 };

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {Link, RouteComponentProps} from 'react-router-dom';
-import {Observable} from 'rxjs';
+import {Subscription} from 'rxjs';
 
 import {Autocomplete, Page, SlidingPanel, TopBarFilter} from 'argo-ui';
 import * as models from '../../../../models';
@@ -27,6 +27,8 @@ interface State {
 }
 
 export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
+    private subscription: Subscription;
+
     private get namespace() {
         return this.queryParam('namespace') || '';
     }
@@ -53,41 +55,47 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     }
 
     public componentDidMount(): void {
-        Observable.fromPromise(services.workflows.list(this.phases, this.namespace).catch(error => this.setState({error})))
-            .flatMap((workflows: Workflow[]) =>
-                Observable.merge(
-                    Observable.from([workflows]),
-                    services.workflows
-                        .watch({namespace: this.namespace, phases: this.phases})
-                        .map(workflowChange => {
-                            const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
-                            if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
-                                return {workflows, updated: false};
+        services.workflows
+            .list(this.phases, this.namespace)
+            .then(list => list.items)
+            .then(workflows => this.setState({workflows}))
+            .then(() => {
+                this.subscription = services.workflows
+                    .watch({namespace: this.namespace, phases: this.phases})
+                    .map(workflowChange => {
+                        const workflows = this.state.workflows;
+                        const index = workflows.findIndex(item => item.metadata.name === workflowChange.object.metadata.name);
+                        if (index > -1 && workflowChange.object.metadata.resourceVersion === workflows[index].metadata.resourceVersion) {
+                            return {workflows, updated: false};
+                        }
+                        if (workflowChange.type === 'DELETED') {
+                            if (index > -1) {
+                                workflows.splice(index, 1);
                             }
-                            if (workflowChange.type === 'DELETED') {
-                                if (index > -1) {
-                                    workflows.splice(index, 1);
-                                }
+                        } else {
+                            if (index > -1) {
+                                workflows[index] = workflowChange.object;
                             } else {
-                                if (index > -1) {
-                                    workflows[index] = workflowChange.object;
-                                } else {
-                                    workflows.unshift(workflowChange.object);
-                                }
+                                workflows.unshift(workflowChange.object);
                             }
-                            return {workflows, updated: true};
-                        })
-                        .filter(item => item.updated)
-                        .map(item => item.workflows)
-                        .catch((error, caught) => {
-                            this.setState({error});
-                            return caught;
-                        })
-                )
-            )
-            .subscribe(workflows => {
-                this.setState({workflows});
-            });
+                        }
+                        return {workflows, updated: true};
+                    })
+                    .filter(item => item.updated)
+                    .map(item => item.workflows)
+                    .catch((error, caught) => {
+                        this.setState({error});
+                        return caught;
+                    })
+                    .subscribe(workflows => this.setState({workflows}));
+            })
+            .catch(error => this.setState({error}));
+    }
+
+    public componentWillUnmount(): void {
+        if (this.subscription) {
+            this.subscription.unsubscribe();
+        }
     }
 
     public render() {
