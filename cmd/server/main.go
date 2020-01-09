@@ -83,7 +83,7 @@ func NewRootCommand() *cobra.Command {
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().IntVarP(&port, "port", "p", 2746, "Port to listen on")
-	command.Flags().StringVar(&authType, "enable-auth-type", "server", "Enable authentication Type in Api Server. One of: client|server|hybrid")
+	command.Flags().StringVar(&authType, "auth-type", "server", "Enable authentication Type in Api Server. One of: client|server|hybrid")
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
 	return &command
