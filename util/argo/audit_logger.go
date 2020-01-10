@@ -79,7 +79,7 @@ func (l *AuditLogger) logEvent(objMeta ObjectRef, gvk schema.GroupVersionKind, i
 		Type:           info.Type,
 		Reason:         info.Reason,
 	}
-	logCtx.Info(message)
+	logCtx.WithField("event", event).Debug()
 	_, err := l.kIf.CoreV1().Events(objMeta.Namespace).Create(&event)
 	if err != nil {
 		logCtx.Errorf("Unable to create audit event: %v", err)
