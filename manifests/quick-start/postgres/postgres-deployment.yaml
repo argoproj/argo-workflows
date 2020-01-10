@@ -8,7 +8,6 @@ spec:
   selector:
     matchLabels:
       app: postgres
-  replicas: 1
   template:
     metadata:
       name: postgres

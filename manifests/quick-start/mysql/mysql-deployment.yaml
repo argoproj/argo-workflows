@@ -8,7 +8,6 @@ spec:
   selector:
     matchLabels:
       app: mysql
-  replicas: 1
   template:
     metadata:
       name: mysql
