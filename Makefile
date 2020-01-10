@@ -51,7 +51,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis executor-image controller-image argo-server
+build: clis executor-image controller-image argo-server dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
 	dep ensure -v
@@ -195,6 +195,12 @@ ifeq ($(CI),false)
 else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
+
+dist/install.yaml: manifests
+	kustomize build manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
+
+dist/namespace-install.yaml: manifests
+	kustomize build manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
 
 dist/quick-start-mysql.yaml: manifests
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
