@@ -19,7 +19,7 @@ CRUD operation on custom resource objects.
 ### Golang 
 
 A kubernetes Workflow clientset library is auto-generated under [argoproj/argo/pkg/client](https://github.com/argoproj/argo/tree/master/pkg/client) and can be imported by golang
-applications. See the [golang code example](example-golang/main.go) on how to make use of this client.
+applications. See the [golang code example](../examples/example-golang/main.go) on how to make use of this client.
 
 ### Python
 The python kubernetes client has libraries for interacting with custom objects. See: https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CustomObjectsApi.md

@@ -1214,6 +1214,8 @@ spec:
         - false
         - string
         - 1.2
+        - os: "debian"
+          version: "9.0"
 
   - name: whalesay
     inputs:
@@ -1906,5 +1908,47 @@ func TestAutomountServiceAccountTokenUse(t *testing.T) {
 		wf := unmarshalWf(invalidAutomountServiceAccountTokenUseTmplLevel)
 		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
 		assert.EqualError(t, err, "templates.whalesay.executor.serviceAccountName must not be empty if automountServiceAccountToken is false")
+	}
+}
+
+var templateResolutionWithPlaceholderWorkflow = `
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: template-resolution-with-placeholder-
+spec:
+  entrypoint: template-resolution
+  arguments:
+    parameters:
+    - name: foo
+      value: /mnt/foo
+    - name: bar
+      value: /mnt/bar
+  volumes:
+  - name: workdir
+    emptyDir: {}
+  templates:
+  - name: template-resolution
+    template: multi-volume-mounts
+  - name: multi-volume-mounts
+    inputs:
+      parameters:
+      - name: foo
+      - name: bar
+    container:
+      image: debian:latest
+      volumeMounts:
+      - name: workdir
+        mountPath: "{{inputs.parameters.foo}}"
+      - name: workdir
+        mountPath: "{{inputs.parameters.bar}}"
+`
+
+// TestTemplateResolutionWithPlaceholderWorkflow verifies the placeholder use during a validation process.
+func TestTemplateResolutionWithPlaceholderWorkflow(t *testing.T) {
+	{
+		wf := unmarshalWf(templateResolutionWithPlaceholderWorkflow)
+		err := ValidateWorkflow(wftmplGetter, wf, ValidateOpts{})
+		assert.NoError(t, err)
 	}
 }

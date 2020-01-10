@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -106,6 +107,13 @@ type WorkflowList struct {
 var _ TemplateGetter = &Workflow{}
 var _ TemplateStorage = &Workflow{}
 
+// TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed
+type TTLStrategy struct {
+	SecondsAfterCompleted *int32 `json:"secondsAfterCompleted,omitempty" protobuf:"bytes,1,opt,name=secondsAfterCompleted"`
+	SecondsAfterSuccess   *int32 `json:"secondsAfterSuccess,omitempty" protobuf:"bytes,2,opt,name=secondsAfterSuccess"`
+	SecondsAfterFailed    *int32 `json:"secondsAfterFailed,omitempty" protobuf:"bytes,3,opt,name=secondsAfterFailed"`
+}
+
 // WorkflowSpec is the specification of a Workflow.
 type WorkflowSpec struct {
 	// Templates is a list of workflow templates used in a workflow
@@ -199,7 +207,15 @@ type WorkflowSpec struct {
 	// deleted after ttlSecondsAfterFinished expires. If this field is unset,
 	// ttlSecondsAfterFinished will not expire. If this field is set to zero,
 	// ttlSecondsAfterFinished expires immediately after the Workflow finishes.
+	// DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty" protobuf:"bytes,18,opt,name=ttlSecondsAfterFinished"`
+
+	// TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it
+	// Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be
+	// deleted after the time to live expires. If this field is unset,
+	// the controller config map will hold the default values
+	// Update
+	TTLStrategy *TTLStrategy `json:"ttlStrategy,omitempty" protobuf:"bytes,30,opt,name=ttlStrategy"`
 
 	// Optional duration in seconds relative to the workflow start time which the workflow is
 	// allowed to run before the controller terminates the workflow. A value of zero is used to
@@ -379,7 +395,6 @@ type Template struct {
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
-
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,30,opt,name=securityContext"`
 
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -597,6 +612,11 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,9,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -612,12 +632,6 @@ func (step *WorkflowStep) GetTemplateRef() *TemplateRef {
 func (step *WorkflowStep) IsResolvable() bool {
 	return true
 }
-
-//// Item expands a single workflow step into multiple parallel steps
-//// The value of Item can be a map, string, bool, or number
-//type Item struct {
-//	Value interface{} `json:"value,omitempty"`
-//}
 
 // Sequence expands a workflow step into numeric range
 type Sequence struct {
@@ -686,6 +700,17 @@ type Arguments struct {
 
 var _ ArgumentsProvider = &Arguments{}
 
+type Nodes map[string]NodeStatus
+
+func (n Nodes) FindByDisplayName(name string) *NodeStatus {
+	for _, i := range n {
+		if i.DisplayName == name {
+			return &i
+		}
+	}
+	return nil
+}
+
 // UserContainer is a container specified by a user.
 type UserContainer struct {
 	apiv1.Container `json:",inline" protobuf:"bytes,1,opt,name=container"`
@@ -715,7 +740,7 @@ type WorkflowStatus struct {
 	CompressedNodes string `json:"compressedNodes,omitempty" protobuf:"bytes,5,opt,name=compressedNodes"`
 
 	// Nodes is a mapping between a node ID and the node's status.
-	Nodes map[string]NodeStatus `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
+	Nodes Nodes `json:"nodes,omitempty" protobuf:"bytes,6,rep,name=nodes"`
 
 	// StoredTemplates is a mapping between a template ref and the node's status.
 	StoredTemplates map[string]Template `json:"storedTemplates,omitempty" protobuf:"bytes,9,rep,name=storedTemplates"`
@@ -845,7 +870,7 @@ func isCompletedPhase(phase NodePhase) bool {
 		phase == NodeSkipped
 }
 
-// Remove returns whether or not the workflow has completed execution
+// Completed returns whether or not the workflow has completed execution
 func (ws *WorkflowStatus) Completed() bool {
 	return isCompletedPhase(ws.Phase)
 }
@@ -853,6 +878,11 @@ func (ws *WorkflowStatus) Completed() bool {
 // Successful return whether or not the workflow has succeeded
 func (ws *WorkflowStatus) Successful() bool {
 	return ws.Phase == NodeSucceeded
+}
+
+// Failed return whether or not the workflow has failed
+func (ws *WorkflowStatus) Failed() bool {
+	return ws.Phase == NodeFailed
 }
 
 // Remove returns whether or not the node has completed execution
@@ -924,14 +954,6 @@ type S3Artifact struct {
 	// Key is the key in the bucket where the artifact resides
 	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
 }
-
-//func (s *S3Artifact) String() string {
-//	protocol := "https"
-//	if s.Insecure != nil && *s.Insecure {
-//		protocol = "http"
-//	}
-//	return fmt.Sprintf("%s://%s/%s/%s", protocol, s.Endpoint, s.Bucket, s.Key)
-//}
 
 func (s *S3Artifact) HasLocation() bool {
 	return s != nil && s.Bucket != ""
@@ -1199,6 +1221,11 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,10,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &DAGTask{}

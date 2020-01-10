@@ -1,0 +1,146 @@
+@import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/@fortawesome/fontawesome-free/scss/variables';
+@import 'node_modules/@fortawesome/fontawesome-free/scss/mixins';
+
+.workflow-dag {
+    position: relative;
+
+    &__line {
+        position: absolute;
+        border-top: 1px dashed $argo-color-gray-5;
+    }
+
+    &__edge {
+        .workflow-dag__line {
+            &:last-child:not(.workflow-dag__line--no-arrow) {
+                &:after {
+                        content: '\25BA';
+                        position: absolute;
+                        color: #A3A3A3;
+                        font-size: 12px;
+                        top: -9px;
+                        left: -1px;
+                        transform: rotate(180deg);
+                    }
+                }
+            }
+        }
+
+    &__node {
+        position: absolute;
+        padding-left: 3.5em;
+        box-shadow: 1px 1px 1px $argo-color-gray-4;
+        background-color: white;
+        border-radius: 4px;
+        border: 1px solid transparent;
+        cursor: pointer;
+
+        &.active {
+            border-color: $argo-color-teal-6;
+        }
+
+        &.virtual {
+            background-color: transparent;
+            box-shadow: none;
+            border: none;
+            padding-left: 0;
+
+            &:after {
+                content: '';
+                position: absolute;
+                display: block;
+                border-radius: 10px;
+                width: 20px;
+                height: 20px;
+                left: -10px;
+                top: -10px;
+                border: 1px dashed $argo-color-gray-5;
+            }
+
+            .workflow-dag__node-status, .workflow-dag__node-title {
+                display: none;
+            }
+        }
+        &.virtual.active {
+            &:after {
+                border-color: $argo-color-teal-6;
+            }
+        }
+    }
+
+    &__node.active &__node-status {
+        border: 1px solid $argo-color-teal-6;
+        border-right: none;
+    }
+
+    &__node-status {
+        position: absolute;
+        left: -1px;
+        bottom: -1px;
+        top: -1px;
+        width: 3em;
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+        text-align: center;
+        color: white;
+
+        &--error, &--failed {
+            background-color: $argo-failed-color;
+            &::after {
+                @include fa-icon;
+                content: fa-content($fa-var-times-circle);
+            }
+        }
+
+        &--pending {
+            background-color: $argo-status-warning-color;
+            &::after {
+                @include fa-icon;
+                content: fa-content($fa-var-clock);
+                font-size: 1em;
+                animation-name: spin;
+                animation-duration: 10000ms;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear;
+            }
+        }
+
+        &--running {
+            background-color: $argo-running-color;
+            &::after {
+                @include fa-icon;
+                content: fa-content($fa-var-circle-notch);
+                animation-name: spin;
+                animation-duration: 4000ms;
+                animation-iteration-count: infinite;
+                animation-timing-function: linear;
+            }
+        }
+
+        @keyframes spin {
+            from {transform:rotate(0deg);}
+            to {transform:rotate(360deg);}
+        }
+    
+        &--succeeded {
+            background-color: $argo-success-color;
+            &::after {
+                @include fa-icon;
+                content: fa-content($fa-var-check);
+            }
+        }
+        &--skipped {
+            background-color: $argo-color-gray-4;
+        }
+    }
+
+    &__node-title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    &__line, &__node {
+        transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s;
+    }
+}

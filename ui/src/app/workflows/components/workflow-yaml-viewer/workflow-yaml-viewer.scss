@@ -1,0 +1,44 @@
+@import 'node_modules/argo-ui/src/styles/config';
+
+.workflow-yaml-viewer {
+  font: normal 13px/1.2 'Courier', sans-serif;
+  color: $argo-color-gray-7;
+  overflow-y: scroll;
+
+  .workflow-yaml-section {
+    margin: 0;
+    margin-bottom: 50px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ol {
+    margin: 0;
+    counter-reset: item;
+    list-style-type: none;
+    list-style-position: inside;
+
+    & > li {
+      height: 18px;
+      white-space: pre;
+
+      &.highlight {
+        color: white;
+        background-color: $argo-color-teal-7;
+      }
+
+      &:before {
+        width: 41px;
+        text-align: right;
+        display: inline-block;
+        color: $argo-color-gray-7;
+        background-color: $argo-color-gray-1;
+        content: counter(item);
+        counter-increment: item;
+        padding-right: 10px;
+      }
+    }
+  }
+}

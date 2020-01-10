@@ -72,6 +72,15 @@ func unmarshalWF(yamlStr string) *wfv1.Workflow {
 	return &wf
 }
 
+func unmarshalWFTmpl(yamlStr string) *wfv1.WorkflowTemplate {
+	var wftmpl wfv1.WorkflowTemplate
+	err := yaml.Unmarshal([]byte(yamlStr), &wftmpl)
+	if err != nil {
+		panic(err)
+	}
+	return &wftmpl
+}
+
 // makePodsRunning acts like a pod controller and simulates the transition of pods transitioning into a running state
 func makePodsRunning(t *testing.T, kubeclientset kubernetes.Interface, namespace string) {
 	podcs := kubeclientset.CoreV1().Pods(namespace)

@@ -215,6 +215,115 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.CronWorkflow": {
+      "description": "CronWorkflow is the definition of a scheduled workflow resource",
+      "type": "object",
+      "required": [
+        "spec",
+        "status"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflowStatus"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowList": {
+      "description": "CronWorkflowList is list of CronWorkflow resources",
+      "type": "object",
+      "required": [
+        "metadata",
+        "items"
+      ],
+      "properties": {
+        "apiVersion": {
+          "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.CronWorkflow"
+          }
+        },
+        "kind": {
+          "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowSpec": {
+      "type": "object",
+      "required": [
+        "schedule"
+      ],
+      "properties": {
+        "concurrencyPolicy": {
+          "description": "ConcurrencyPolicy is the K8s-style concurrency policy that will be used",
+          "type": "string"
+        },
+        "failedJobsHistoryLimit": {
+          "description": "FailedJobsHistoryLimit is the number of successful jobs to be kept at a time",
+          "type": "integer",
+          "format": "int32"
+        },
+        "schedule": {
+          "description": "Schedule is a schedule to run the Workflow in Cron format",
+          "type": "string"
+        },
+        "startingDeadlineSeconds": {
+          "description": "StartingDeadlineSeconds is the K8s-style deadline that will limit the time a CronWorkflow will be run after its original scheduled time if it is missed.",
+          "type": "integer",
+          "format": "int64"
+        },
+        "successfulJobsHistoryLimit": {
+          "description": "SuccessfulJobsHistoryLimit is the number of successful jobs to be kept at a time",
+          "type": "integer",
+          "format": "int32"
+        },
+        "suspend": {
+          "description": "Suspend is a flag that will stop new CronWorkflows from running if set to true",
+          "type": "boolean"
+        },
+        "workflowSpec": {
+          "description": "WorkflowSpec is the spec of the workflow to be run",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.WorkflowSpec"
+        }
+      }
+    },
+    "io.argoproj.workflow.v1alpha1.CronWorkflowStatus": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "description": "Active is a list of active workflows stemming from this CronWorkflow",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ObjectReference"
+          }
+        },
+        "lastScheduledTime": {
+          "description": "LastScheduleTime is the last time the CronWorkflow was scheduled",
+          "$ref": "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.DAGTask": {
       "description": "DAGTask represents a node in the graph during DAG execution",
       "type": "object",
@@ -240,6 +349,10 @@
         },
         "name": {
           "description": "Name is the name of the target",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {
@@ -1079,6 +1192,24 @@
         }
       }
     },
+    "io.argoproj.workflow.v1alpha1.TTLStrategy": {
+      "description": "TTLStrategy is the strategy for the time to live depending on if the workflow succeded or failed",
+      "type": "object",
+      "properties": {
+        "secondsAfterCompleted": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterFailed": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "secondsAfterSuccess": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "io.argoproj.workflow.v1alpha1.TarStrategy": {
       "description": "TarStrategy will tar and gzip the file or directory when saving",
       "type": "object"
@@ -1203,6 +1334,7 @@
           "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.ScriptTemplate"
         },
         "securityContext": {
+          "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
           "$ref": "#/definitions/io.k8s.api.core.v1.PodSecurityContext"
         },
         "serviceAccountName": {
@@ -1626,9 +1758,13 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "ttlSecondsAfterFinished": {
-          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes.",
+          "description": "TTLSecondsAfterFinished limits the lifetime of a Workflow that has finished execution (Succeeded, Failed, Error). If this field is set, once the Workflow finishes, it will be deleted after ttlSecondsAfterFinished expires. If this field is unset, ttlSecondsAfterFinished will not expire. If this field is set to zero, ttlSecondsAfterFinished expires immediately after the Workflow finishes. DEPRECATED: Use TTLStrategy.SecondsAfterCompleted instead.",
           "type": "integer",
           "format": "int32"
+        },
+        "ttlStrategy": {
+          "description": "TTLStrategy limits the lifetime of a Workflow that has finished execution depending on if it Succeeded or Failed. If this struct is set, once the Workflow finishes, it will be deleted after the time to live expires. If this field is unset, the controller config map will hold the default values Update",
+          "$ref": "#/definitions/io.argoproj.workflow.v1alpha1.TTLStrategy"
         },
         "volumeClaimTemplates": {
           "description": "VolumeClaimTemplates is a list of claims that containers are allowed to reference. The Workflow controller will create the claims at the beginning of the workflow and delete the claims upon completion of the workflow",
@@ -1715,6 +1851,10 @@
         },
         "name": {
           "description": "Name of the step",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {

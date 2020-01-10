@@ -25,8 +25,11 @@ type stepsContext struct {
 	tmplCtx *templateresolution.Context
 }
 
-func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, tmpl *wfv1.Template, boundaryID string) error {
-	node := woc.markNodePhase(nodeName, wfv1.NodeRunning)
+func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolution.Context, templateScope string, tmpl *wfv1.Template, orgTmpl wfv1.TemplateHolder, boundaryID string) (*wfv1.NodeStatus, error) {
+	node := woc.getNodeByName(nodeName)
+	if node == nil {
+		node = woc.initializeExecutableNode(nodeName, wfv1.NodeTypeSteps, templateScope, tmpl, orgTmpl, boundaryID, wfv1.NodeRunning)
+	}
 
 	defer func() {
 		if woc.wf.Status.Nodes[node.ID].Completed() {
@@ -79,7 +82,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 
 		if !sgNode.Completed() {
 			woc.log.Infof("Workflow step group node %v not yet completed", sgNode)
-			return nil
+			return node, nil
 		}
 
 		if !sgNode.Successful() {
@@ -87,7 +90,7 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 			woc.log.Info(failMessage)
 			woc.updateOutboundNodes(nodeName, tmpl)
 			_ = woc.markNodePhase(nodeName, wfv1.NodeFailed, sgNode.Message)
-			return nil
+			return node, nil
 		}
 
 		// Add all outputs of each step in the group to the scope
@@ -108,11 +111,11 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 					// Expanded child nodes should be created from the same template.
 					_, tmpl, err := woc.tmplCtx.ResolveTemplate(&childNodes[0])
 					if err != nil {
-						return err
+						return node, err
 					}
 					err = woc.processAggregateNodeOutputs(tmpl, stepsCtx.scope, prefix, childNodes)
 					if err != nil {
-						return err
+						return node, err
 					}
 				} else {
 					woc.log.Infof("Step '%s' has no expanded child nodes", childNode)
@@ -126,16 +129,15 @@ func (woc *wfOperationCtx) executeSteps(nodeName string, tmplCtx *templateresolu
 	// If this template has outputs from any of its steps, copy them to this node here
 	outputs, err := getTemplateOutputsFromScope(tmpl, stepsCtx.scope)
 	if err != nil {
-		return err
+		return node, err
 	}
 	if outputs != nil {
 		node := woc.getNodeByName(nodeName)
 		node.Outputs = outputs
 		woc.wf.Status.Nodes[node.ID] = *node
 	}
-
 	_ = woc.markNodePhase(nodeName, wfv1.NodeSucceeded)
-	return nil
+	return node, nil
 }
 
 // updateOutboundNodes set the outbound nodes from the last step group
@@ -231,11 +233,24 @@ func (woc *wfOperationCtx) executeStepGroup(stepGroup []wfv1.WorkflowStep, sgNod
 
 	node = woc.getNodeByName(sgNodeName)
 	// Return if not all children completed
+	completed := true
 	for _, childNodeID := range node.Children {
-		if !woc.wf.Status.Nodes[childNodeID].Completed() {
-			return node
+		childNode := woc.wf.Status.Nodes[childNodeID]
+		step := nodeSteps[childNode.Name]
+		if !childNode.Completed() {
+			completed = false
+		} else {
+			hasOnExitNode, onExitNode, err := woc.runOnExitNode(step.Name, step.OnExit, stepsCtx.boundaryID)
+			if hasOnExitNode && (onExitNode == nil || !onExitNode.Completed() || err != nil) {
+				// The onExit node is either not complete or has errored out, return.
+				completed = false
+			}
 		}
 	}
+	if !completed {
+		return node
+	}
+
 	// All children completed. Determine step group status as a whole
 	for _, childNodeID := range node.Children {
 		childNode := woc.wf.Status.Nodes[childNodeID]
