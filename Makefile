@@ -252,6 +252,10 @@ up:
 pf:
 	./hack/port-forward.sh
 
+.PHONY: pf-bg
+pf-bg:
+	./hack/port-forward.sh &
+
 .PHONY: logs
 logs:
 	kubectl -n argo logs -f -l app --max-log-requests 10
@@ -297,7 +301,7 @@ must-be-clean:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 
 .PHONY: pre-push
-pre-push: must-be-clean test lint codegen manifests must-be-clean start pf smoke test-api test-cli
+pre-push: must-be-clean test lint codegen manifests must-be-clean start pf-bg smoke test-api test-cli
 
 # release
 

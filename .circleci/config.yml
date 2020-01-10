@@ -112,7 +112,7 @@ jobs:
       - run: mkdir dist && KUBECONFIG=~/.kube/config make start
       - run:
           name: Establish port forward
-          command: make pf && wait
+          command: make pf
       - run:
           name: Follow logs, to help diagnose failures
           command: |

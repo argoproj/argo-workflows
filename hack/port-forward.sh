@@ -27,3 +27,5 @@ if [[ "$mysql" != "" ]]; then
   info "MySQL on http://localhost:3306"
   kubectl -n argo port-forward "$mysql" 3306:3306 &
 fi
+
+wait
