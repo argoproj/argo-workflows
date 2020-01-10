@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
+set -x
 
 # Usage:
 #   curl ... | ENV_VAR=... sh -
