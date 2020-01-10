@@ -131,9 +131,6 @@ jobs:
             mkdir -p test-results
             trap 'go-junit-report < test-results/test.out > test-results/junit.xml' EXIT
             make test-e2e 2>&1 | tee test-results/test.out
-      - run:
-          name: Release CLIs
-          command: make cli-darwin cli-windows
       - save_go_cache
       - store_test_results:
           path: test-results
