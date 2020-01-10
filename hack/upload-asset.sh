@@ -18,7 +18,6 @@ echo "uploading $(du -sh "$FILE")"
 
 curl \
     -f \
-    -LJO# \
     --progress-bar \
     -u "$GITHUB_TOKEN:" \
     -H "Content-Type: application/octet-stream" \
