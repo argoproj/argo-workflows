@@ -184,7 +184,7 @@ manifests:
 
 .PHONY: lint
 lint: cmd/server/static/files.go
-	golangci-lint run --fix --verbose --config golangci.yml
+	golangci-lint run --fix --verbose
 ifeq ($(CI),false)
 	yarn --cwd ui lint
 endif

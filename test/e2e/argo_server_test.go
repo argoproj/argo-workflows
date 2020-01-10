@@ -137,12 +137,13 @@ func (s *ArgoServerSuite) TestPermission() {
 	var goodToken string
 	s.Run("Get good serviceaccount token", func(t *testing.T) {
 		sAccount, err := s.KubeClient.CoreV1().ServiceAccounts(nsName).Get(saName, metav1.GetOptions{})
-		assert.NoError(t, err)
-		secretName := sAccount.Secrets[0].Name
-		secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
-		assert.NoError(t, err)
-		// Argo server API expects it to be encoded.
-		goodToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+		if assert.NoError(t, err) {
+			secretName := sAccount.Secrets[0].Name
+			secret, err := s.KubeClient.CoreV1().Secrets(nsName).Get(secretName, metav1.GetOptions{})
+			assert.NoError(t, err)
+			// Argo server API expects it to be encoded.
+			goodToken = base64.StdEncoding.EncodeToString(secret.Data["token"])
+		}
 	})
 
 	var forbiddenToken string
