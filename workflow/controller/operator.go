@@ -1188,6 +1188,7 @@ func (woc *wfOperationCtx) executeTemplate(nodeName string, orgTmpl wfv1.Templat
 	woc.log.Debugf("Evaluating node %s: template: %s, boundaryID: %s", nodeName, common.GetTemplateHolderString(orgTmpl), boundaryID)
 
 	node := woc.getNodeByName(nodeName)
+
 	if node != nil {
 		if node.Completed() {
 			woc.log.Debugf("Node %s already completed", nodeName)
@@ -2137,4 +2138,14 @@ func (woc *wfOperationCtx) substituteParamsInVolumes(params map[string]string) e
 	}
 	woc.volumes = newVolumes
 	return nil
+}
+
+func (woc *wfOperationCtx) runOnExitNode(parentName, templateRef, boundaryID string) (bool, *wfv1.NodeStatus, error) {
+	if templateRef != "" {
+		woc.log.Infof("Running OnExit handler: %s", templateRef)
+		onExitNodeName := parentName + ".onExit"
+		onExitNode, err := woc.executeTemplate(onExitNodeName, &wfv1.Template{Template: templateRef}, woc.tmplCtx, woc.wf.Spec.Arguments, boundaryID)
+		return true, onExitNode, err
+	}
+	return false, nil, nil
 }
