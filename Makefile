@@ -275,8 +275,9 @@ clean:
 
 # pre-push
 
-.git/hooks/pre-push:
+.git/hooks/pre-push: Makefile
 	echo 'make pre-push' > .git/hooks/pre-push
+	chmod +x .git/hooks/pre-push
 
 .PHONY: must-be-clean
 must-be-clean:
