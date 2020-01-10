@@ -91,7 +91,7 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 
 func (s *FunctionalSuite) TestEventOnNodeFail() {
 	s.Given().
-		Workflow("@expectedfailures/pod-termination-failure.yaml").
+		Workflow("@expectedfailures/failed-step-event.yaml").
 		When().
 		SubmitWorkflow().
 		WaitForWorkflow(120 * time.Second).
@@ -99,11 +99,11 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
 			for _, e := range events.Items {
-				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "sleeptest-")
+				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
 				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
 				if isAboutSleepTest && isFailureEvent {
 					found = true
-					assert.True(t, true)
+					assert.Equal(t, "failed with exit code 1", e.Message)
 				}
 			}
 			assert.True(t, found, "event not found")
