@@ -11,6 +11,12 @@ spec:
       labels:
         app: argo-server
     spec:
+      # TODO we need to have a separate service account with
+      # - read the config map
+      # - read the secret
+      # - read/write/delete workflows
+      # - read/write/delete cron workflows
+      # - read/write/delete workflow templates
       serviceAccountName: argo
       containers:
         - name: argo-server
