@@ -302,8 +302,8 @@ endif
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push $(GIT_BRANCH)
 ifeq ($(SNAPSHOT),false)
+	git push
 	git push $(VERSION)
 endif
 
