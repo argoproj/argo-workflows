@@ -17,7 +17,7 @@ func NewTokenCommand() *cobra.Command {
 				cmd.HelpFunc()(cmd, args)
 				os.Exit(1)
 			}
-			fmt.Println(client.GetV1BearerToken())
+			fmt.Println(client.GetBearerToken())
 		},
 	}
 }

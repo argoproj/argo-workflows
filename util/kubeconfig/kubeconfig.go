@@ -1,8 +1,6 @@
 package kubeconfig
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -12,25 +10,13 @@ import (
 	"k8s.io/client-go/transport"
 )
 
+const Prefix = "v1:"
+
 // get the default one from the filesystem
 func DefaultRestConfig() (*restclient.Config, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	config := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{})
 	return config.ClientConfig()
-}
-
-// convert a bearer token into a REST config
-func GetRestConfig(token string) (*restclient.Config, error) {
-	restConfigBytes, err := base64.StdEncoding.DecodeString(token)
-	if err != nil {
-		return nil, err
-	}
-	restConfig := &restclient.Config{}
-	err = json.Unmarshal(restConfigBytes, restConfig)
-	if err != nil {
-		return nil, err
-	}
-	return restConfig, nil
 }
 
 // convert the REST config into a bearer token
@@ -63,5 +49,5 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 		token := req.Header.Get("Authorization")
 		in.BearerToken = strings.TrimPrefix(token, "Bearer ")
 	}
-	return in.BearerToken, nil
+	return Prefix + in.BearerToken, nil
 }

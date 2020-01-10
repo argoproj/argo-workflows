@@ -145,7 +145,7 @@ argo-server-image: dist/argo-server-linux-amd64
 	rm -f argo-server
 
 .PHONY: argo-server
-argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64
+argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64 argo-server-image
 
 # argoexec
 

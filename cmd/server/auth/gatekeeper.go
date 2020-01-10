@@ -13,6 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/argoproj/argo/pkg/client/clientset/versioned"
+	"github.com/argoproj/argo/util/kubeconfig"
 )
 
 type ContextKey string
@@ -27,8 +28,7 @@ const (
 	Server = "server"
 	Hybrid = "hybrid"
 )
-const V1AuthTokenPrefix = "v1: "
-const BearerPrefix = "Bearer "
+
 type Gatekeeper struct {
 	enableClientAuth string
 	// global clients, not to be used if there are better ones
@@ -115,17 +115,13 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 
 	authorization := md.Get("grpcgateway-authorization")
-	token := strings.TrimPrefix(authorization[0], BearerPrefix)
-	authToken := strings.TrimPrefix(token, V1AuthTokenPrefix)
+	token := strings.TrimPrefix(authorization[0], "Bearer "+kubeconfig.Prefix)
 
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "Invalid token found in Authorization header %s: %v", token, err)
-	}
 	var restConfig *rest.Config
 
 	if useClientAuth {
 		restConfig = s.restConfig
-		restConfig.BearerToken = string(authToken)
+		restConfig.BearerToken = token
 		restConfig.BearerTokenFile = ""
 	}
 
