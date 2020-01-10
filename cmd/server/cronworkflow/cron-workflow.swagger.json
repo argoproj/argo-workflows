@@ -4,6 +4,10 @@
     "title": "cmd/server/cronworkflow/cron-workflow.proto",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],

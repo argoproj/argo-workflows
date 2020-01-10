@@ -5,6 +5,10 @@
     "description": "Workflow Service API performs CRUD actions against application resources",
     "version": "version not set"
   },
+  "schemes": [
+    "http",
+    "https"
+  ],
   "consumes": [
     "application/json"
   ],
