@@ -11,3 +11,4 @@ spec:
       container:
         image: docker/whalesay:latest
         command: [cowsay, "🐙 Hello Argo!"]
+        imagePullPolicy: IfNotPresent

@@ -50,10 +50,12 @@ spec:
   - name: whalesay
     container:
       image: docker/whalesay:latest
+      imagePullPolicy: IfNotPresent
 
   - name: whalesplosion
     container:
       image: docker/whalesay:latest
+      imagePullPolicy: IfNotPresent
       command: ["sh", "-c", "sleep 5 ; exit 1"]
 `).
 		When().

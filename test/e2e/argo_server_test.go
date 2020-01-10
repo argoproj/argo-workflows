@@ -222,6 +222,7 @@ func (s *ArgoServerSuite) TestPermission() {
           "name": "run-workflow",
           "container": {
             "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
           }
@@ -260,7 +261,8 @@ func (s *ArgoServerSuite) TestLintWorkflow() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest"
+            "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent"
           }
         }
       ],
@@ -288,7 +290,8 @@ func (s *ArgoServerSuite) TestCreateWorkflowDryRun() {
         {
           "name": "run-workflow",
           "container": {
-            "image": "docker/whalesay:latest"
+            "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent"
           }
         }
       ],
@@ -317,6 +320,7 @@ func (s *ArgoServerSuite) TestWorkflows() {
           "name": "run-workflow",
           "container": {
             "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent",
             "command": ["sh"],
             "args": ["-c", "sleep 10"]
           }
@@ -423,7 +427,8 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
           {
             "name": "whalesay",
             "container": {
-              "image": "docker/whalesay:latest"
+              "image": "docker/whalesay:latest",
+              "imagePullPolicy": "IfNotPresent"
             }
           }
         ]
@@ -479,7 +484,8 @@ func (s *ArgoServerSuite) TestCronWorkflows() {
           {
             "name": "whalesay",
             "container": {
-              "image": "docker/whalesay:latest"
+              "image": "docker/whalesay:latest",
+              "imagePullPolicy": "IfNotPresent"
             }
           }
         ]
@@ -550,7 +556,7 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 		req, err := http.NewRequest("GET", baseUrl+"/api/v1/workflow-events/argo?listOptions.fieldSelector=metadata.name=basic", nil)
 		assert.NoError(t, err)
 		req.Header.Set("Accept", "text/event-stream")
-		req.Header.Set("Authorization", "Bearer v1: "+s.bearerToken)
+		req.Header.Set("Authorization", "Bearer "+s.bearerToken)
 		req.Close = true
 		resp, err := http.DefaultClient.Do(req)
 		assert.NoError(t, err)
@@ -688,7 +694,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
           "name": "run-workflow",
           "container": {
             "name": "",
-            "image": "docker/whalesay:latest"
+            "image": "docker/whalesay:latest",
+            "imagePullPolicy": "IfNotPresent"
           }
         }
       ],

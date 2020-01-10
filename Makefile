@@ -2,7 +2,7 @@ PACKAGE                := github.com/argoproj/argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
-GIT_BRANCH             = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD)
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -51,7 +51,7 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis controller-image executor-image argo-server
+build: clis executor-image controller-image argo-server
 
 vendor: Gopkg.toml
 	dep ensure -v
@@ -98,6 +98,17 @@ controller-image: dist/workflow-controller-linux-amd64
 	cp dist/workflow-controller-linux-amd64 workflow-controller
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 	rm -f workflow-controller
+
+# argoexec
+
+dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
+
+.PHONY: executor-image
+executor-image: dist/argoexec-linux-amd64
+	cp dist/argoexec-linux-amd64 argoexec
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	rm -f argoexec
 
 # argo-server
 
@@ -147,17 +158,6 @@ argo-server-image: dist/argo-server-linux-amd64
 .PHONY: argo-server
 argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64 argo-server-image
 
-# argoexec
-
-dist/argoexec-linux-amd64:
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
-
-.PHONY: executor-image
-executor-image: dist/argoexec-linux-amd64
-	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
-	rm -f argoexec
-
 # generation
 
 .PHONY: codegen
@@ -201,7 +201,7 @@ install:
 	env INSTALL_CLI=0 VERSION=dev ./install.sh
 
 .PHONY: start
-start: install down controller-image argo-server-image executor-image
+start: install down executor-image controller-image argo-server-image
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
 	# TODO Turn on the workflow compression, hopefully to shake out some bugs.
@@ -265,7 +265,7 @@ ifeq ($(GIT_BRANCH),master)
 else
 	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
-	# TODO - this will result in changes on master we don't want
+	# TODO - this will result in changes on master, we don't want that
 	make codegen manifests VERSION=$(VERSION)
 	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
