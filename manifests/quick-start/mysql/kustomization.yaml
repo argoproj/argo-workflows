@@ -8,4 +8,6 @@ resources:
   - argo-mysql-config-secret.yaml
   - mysql-deployment.yaml
   - mysql-service.yaml
-  - workflow-controller-configmap.yaml
+
+patchesStrategicMerge:
+  - overlays/workflow-controller-configmap.yaml

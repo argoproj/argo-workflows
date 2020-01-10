@@ -4,6 +4,3 @@ kind: Kustomization
 bases:
   - ../../namespace-install
   - minio
-
-patchesStrategicMerge:
-  - overlays

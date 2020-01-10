@@ -196,17 +196,32 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
+dist/quick-start-mysql.yaml: manifests
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
+
+.PHONY: install-mysql
+install-mysql: dist/quick-start-mysql.yaml
+	kubectl get ns argo || kubectl create ns argo
+	kubectl -n argo apply -f dist/quick-start-mysql.yaml
+
+dist/quick-start-postgres.yaml: manifests
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
+
+.PHONY: install-postgres
+install-postgres: dist/quick-start-postgres.yaml
+	kubectl get ns argo || kubectl create ns argo
+	kubectl -n argo apply -f dist/quick-start-postgres.yaml
+
 .PHONY: install
-install:
-	env INSTALL_CLI=0 VERSION=dev ./install.sh
+install: install-postgres
 
 .PHONY: start
 start: install down executor-image controller-image argo-server-image
 	# Change to use a "dev" tag and enable debug logging.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
 	# TODO Turn on the workflow compression, hopefully to shake out some bugs.
 	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
 	# Scale up.
 	make up
 	# Make the CLI
