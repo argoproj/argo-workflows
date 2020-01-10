@@ -34,6 +34,7 @@ fi
 info "Installing $VERSION"
 
 if [[ ${VERSION}  != "dev" ]]; then
+    info "Downloading"
     cd $(mktemp -d)
     curl -sL -o argo-${VERSION}.zip https://github.com/argoproj/argo/archive/${VERSION}.zip
     unzip -q argo-${VERSION}.zip
