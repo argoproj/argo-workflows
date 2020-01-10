@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
-set -x
 
 # Usage:
 #   curl ... | ENV_VAR=... sh -
@@ -47,8 +46,8 @@ if [[ ${INSTALL_CLI} -eq 1 ]]; then
         make cli
         cp dist/argo /usr/local/bin/argo
     else
-        curl -sL -o /usr/local/bin/argo ${GITHUB_URL}/releases/download/${VERSION}/argo-$(uname | tr '[A-Z]' '[a-z'])-amd64
-        chmod +x /usr/local/bin/argo
+        curl -fsL -o argo "${GITHUB_URL}/releases/download/${VERSION}/argo-$(uname | tr '[A-Z]' '[a-z]')-amd64"
+        chmod +x argo
     fi
 fi
 
