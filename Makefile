@@ -335,6 +335,10 @@ ifeq ($(GITHUB_TOKEN),)
 	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role"
 	exit 1
 endif
+	./hack/upload-asset.sh $(VERSION) cmd/server/workflow/workflow.swagger.json
+	./hack/upload-asset.sh $(VERSION) cmd/server/cronworkflow/cron-workflow.swagger.json
+	./hack/upload-asset.sh $(VERSION) cmd/server/workflowarchive/workflow-archive.swagger.json
+	./hack/upload-asset.sh $(VERSION) cmd/server/workflowtemplate/workflow-template.swagger.json
 	./hack/upload-asset.sh $(VERSION) dist/install.yaml
 	./hack/upload-asset.sh $(VERSION) dist/namespace-install.yaml
 	./hack/upload-asset.sh $(VERSION) dist/quick-start-postgres.yaml
