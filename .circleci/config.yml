@@ -54,7 +54,7 @@ jobs:
   test:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:201903-01
     steps:
       - restore_go_cache
       - install_golang
@@ -82,7 +82,7 @@ jobs:
   e2e:
     working_directory: /home/circleci/.go_workspace/src/github.com/argoproj/argo
     machine:
-      image: circleci/classic:201808-01
+      image: ubuntu-1604:201903-01
     steps:
       - run:
           name: Install and start K3S v1.0.0
