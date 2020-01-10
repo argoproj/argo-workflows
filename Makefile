@@ -272,6 +272,18 @@ mysql-cli:
 test-e2e:
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
+.PHONY: smoke
+smoke:
+	go test -timeout 5m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+
+.PHONY: test-api
+test-api:
+	go test -timeout 5m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+
+.PHONY: test-cli
+test-cli:
+	go test -timeout 5m -v -count 1 -p 1 -run CliSuite ./test/e2e
+
 # clean
 
 .PHONY: clean
@@ -289,7 +301,7 @@ must-be-clean:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 
 .PHONY: pre-push
-pre-push: must-be-clean test lint codegen manifests must-be-clean
+pre-push: must-be-clean test lint codegen manifests must-be-clean start pf smoke test-api test-cli
 
 # release
 
