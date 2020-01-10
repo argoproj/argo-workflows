@@ -74,7 +74,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	})
 	defer func() {
 		// Clean up created namespace
-		s.KubeClient.CoreV1().Namespaces().Delete(nsName, nil)
+		_ = s.KubeClient.CoreV1().Namespaces().Delete(nsName, nil)
 	}()
 	forbiddenNsName := fmt.Sprintf("%s-%s", nsName, "fb")
 	forbiddenNs := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: forbiddenNsName}}
@@ -83,7 +83,7 @@ func (s *ArgoServerSuite) TestPermission() {
 		assert.NoError(t, err)
 	})
 	defer func() {
-		s.KubeClient.CoreV1().Namespaces().Delete(forbiddenNsName, nil)
+		_ = s.KubeClient.CoreV1().Namespaces().Delete(forbiddenNsName, nil)
 	}()
 	// Create serviceaccount in good ns
 	saName := "argotest"
@@ -105,7 +105,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{Name: roleName},
 		Rules: []rbacv1.PolicyRule{
-			rbacv1.PolicyRule{
+			{
 				APIGroups: []string{"argoproj.io"},
 				Resources: []string{"workflows", "workflowtemplates", "cronworkflows", "workflows/finalizers", "workflowtemplates/finalizers", "cronworkflows/finalizers"},
 				Verbs:     []string{"create", "get", "list", "watch", "update", "patch", "delete"},
@@ -120,7 +120,7 @@ func (s *ArgoServerSuite) TestPermission() {
 	// Create RBAC RoleBinding in good ns
 	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: "argotest-role-binding"},
-		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "ServiceAccount", Name: saName}},
+		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: saName}},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
