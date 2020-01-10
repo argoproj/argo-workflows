@@ -197,13 +197,17 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-dist/install.yaml: manifests
+
+dist:
+	mkdir -p dist
+
+dist/install.yaml: manifests dist
 	cat manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
 
-dist/namespace-install.yaml: manifests
+dist/namespace-install.yaml: manifests dist
 	cat manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
 
-dist/quick-start-mysql.yaml: manifests
+dist/quick-start-mysql.yaml: manifests dist
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
 
 .PHONY: install-mysql
@@ -211,7 +215,7 @@ install-mysql: dist/quick-start-mysql.yaml
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f dist/quick-start-mysql.yaml
 
-dist/quick-start-postgres.yaml: manifests
+dist/quick-start-postgres.yaml: manifests dist
 	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
 
 .PHONY: install-postgres
