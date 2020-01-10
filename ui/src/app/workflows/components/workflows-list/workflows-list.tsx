@@ -89,7 +89,8 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                         return caught;
                     })
                     .subscribe(workflows => this.setState({workflows}));
-            });
+            })
+            .catch(error => this.setState({error}));
     }
 
     public componentWillUnmount(): void {

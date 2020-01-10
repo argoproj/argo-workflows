@@ -1,10 +1,15 @@
-#!/bin/sh -x -e
+#!/usr/bin/env bash
+set -eu -o pipefail
 
 SRCROOT="$( CDPATH='' cd -- "$(dirname "$0")/.." && pwd -P )"
 AUTOGENMSG="# This is an auto-generated file. DO NOT EDIT"
 
 IMAGE_NAMESPACE="${IMAGE_NAMESPACE:-argoproj}"
 VERSION="${VERSION:-latest}"
+
+if [[ $(echo "$VERSION" | cut -c 1-1) != 'v' ]]; then
+  VERSION=latest
+fi
 
 cd ${SRCROOT}/manifests/base && kustomize edit set image \
     argoproj/workflow-controller=${IMAGE_NAMESPACE}/workflow-controller:${VERSION} \

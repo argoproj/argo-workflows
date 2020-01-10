@@ -30,15 +30,15 @@ const (
 )
 
 type Gatekeeper struct {
-	enableClientAuth string
+	authType string
 	// global clients, not to be used if there are better ones
 	wfClient   versioned.Interface
 	kubeClient kubernetes.Interface
 	restConfig *rest.Config
 }
 
-func NewGatekeeper(enableClientAuth string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config) Gatekeeper {
-	return Gatekeeper{enableClientAuth, wfClient, kubeClient, restConfig}
+func NewGatekeeper(authType string, wfClient versioned.Interface, kubeClient kubernetes.Interface, restConfig *rest.Config) Gatekeeper {
+	return Gatekeeper{authType, wfClient, kubeClient, restConfig}
 }
 
 func (s *Gatekeeper) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
@@ -79,14 +79,14 @@ func GetKubeClient(ctx context.Context) kubernetes.Interface {
 	return ctx.Value(KubeKey).(kubernetes.Interface)
 }
 func (s Gatekeeper) useServerAuth() bool {
-	return s.enableClientAuth == Server
+	return s.authType == Server
 }
 func (s Gatekeeper) useHybridAuth() bool {
-	return s.enableClientAuth == Hybrid
+	return s.authType == Hybrid
 }
 
 func (s Gatekeeper) useClientAuth(md metadata.MD) (bool, error) {
-	if s.enableClientAuth == Client && len(md.Get("grpcgateway-authorization")) == 0 {
+	if s.authType == Client && len(md.Get("grpcgateway-authorization")) == 0 {
 		return false, status.Error(codes.Unauthenticated, "Auth Token is not found")
 	}
 	if s.useHybridAuth() && len(md.Get("grpcgateway-authorization")) > 0 {
@@ -108,30 +108,27 @@ func (s Gatekeeper) getClients(ctx context.Context) (versioned.Interface, kubern
 	}
 	useClientAuth, err := s.useClientAuth(md)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "Auth Token is not present in the request: %v", err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "auth token is not present in the request: %v", err)
 	}
 	if !useClientAuth {
 		return s.wfClient, s.kubeClient, nil
 	}
 
 	authorization := md.Get("grpcgateway-authorization")
-	token := strings.TrimPrefix(authorization[0], "Bearer "+kubeconfig.Prefix)
+	token := strings.TrimPrefix(authorization[0], "Bearer ")
 
-	var restConfig *rest.Config
-
-	if useClientAuth {
-		restConfig = s.restConfig
-		restConfig.BearerToken = token
-		restConfig.BearerTokenFile = ""
+	restConfig, err := kubeconfig.GetRestConfig(token)
+	if err != nil {
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failed to create REST config: %v", err)
 	}
 
 	wfClient, err := versioned.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig '%+v': %s", restConfig, err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create wfClientset with ClientConfig: %v", err)
 	}
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig '%+v': %s", restConfig, err)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "failure to create kubeClientset with ClientConfig: %v", err)
 	}
 	return wfClient, kubeClient, nil
 }

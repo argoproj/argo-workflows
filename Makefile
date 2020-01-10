@@ -2,7 +2,7 @@ PACKAGE                := github.com/argoproj/argo
 
 BUILD_DATE             = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 GIT_COMMIT             = $(shell git rev-parse HEAD)
-GIT_BRANCH             = $(shell git rev-parse --abbrev-ref HEAD)
+GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/heads\///')
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
@@ -51,10 +51,10 @@ CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join 
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis controller-image executor-image argo-server
+build: clis executor-image controller-image argo-server dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
-	dep ensure -v -vendor-only
+	dep ensure -v
 
 # cli
 
@@ -98,6 +98,17 @@ controller-image: dist/workflow-controller-linux-amd64
 	cp dist/workflow-controller-linux-amd64 workflow-controller
 	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 	rm -f workflow-controller
+
+# argoexec
+
+dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
+
+.PHONY: executor-image
+executor-image: dist/argoexec-linux-amd64
+	cp dist/argoexec-linux-amd64 argoexec
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	rm -f argoexec
 
 # argo-server
 
@@ -147,17 +158,6 @@ argo-server-image: dist/argo-server-linux-amd64
 .PHONY: argo-server
 argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64 argo-server-image
 
-# argoexec
-
-dist/argoexec-linux-amd64:
-	go build -v -i -ldflags '${LDFLAGS}' -o dist/argoexec-linux-amd64 ./cmd/argoexec
-
-.PHONY: executor-image
-executor-image: dist/argoexec-linux-amd64
-	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
-	rm -f argoexec
-
 # generation
 
 .PHONY: codegen
@@ -196,25 +196,44 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
+dist/install.yaml: manifests
+	cat manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
+
+dist/namespace-install.yaml: manifests
+	cat manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
+
+dist/quick-start-mysql.yaml: manifests
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
+
+.PHONY: install-mysql
+install-mysql: dist/quick-start-mysql.yaml
+	kubectl get ns argo || kubectl create ns argo
+	kubectl -n argo apply -f dist/quick-start-mysql.yaml
+
+dist/quick-start-postgres.yaml: manifests
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
+
+.PHONY: install-postgres
+install-postgres: dist/quick-start-postgres.yaml
+	kubectl get ns argo || kubectl create ns argo
+	kubectl -n argo apply -f dist/quick-start-postgres.yaml
+
 .PHONY: install
-install:
-	env INSTALL_CLI=0 VERSION=dev ./install.sh
+install: install-postgres
 
 .PHONY: start
-start: install down controller-image argo-server-image executor-image
-	# Scale down in preparation for re-configuration.
-	make down
+start: install down executor-image controller-image argo-server-image
 	# Change to use a "dev" tag and enable debug logging.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
 	# TODO Turn on the workflow compression, hopefully to shake out some bugs.
 	# kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/argo-server:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
 	# Scale up.
 	make up
 	# Make the CLI
 	make cli
 	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -267,7 +286,7 @@ ifeq ($(GIT_BRANCH),master)
 else
 	echo "preparing release $(VERSION)"
 	echo $(VERSION) | cut -c 1- > VERSION
-	# TODO - this will result in changes on master we don't want
+	# TODO - this will result in changes on master, we don't want that
 	make codegen manifests VERSION=$(VERSION)
 	# only commit if changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
@@ -286,12 +305,30 @@ endif
 
 .PHONY: publish
 publish:
+ifeq ($(GITHUB_TOKEN),)
+	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role"
+	exit 1
+endif
+	./hack/upload-asset.sh $(VERSION) dist/install.yaml
+	./hack/upload-asset.sh $(VERSION) dist/namespace-install.yaml
+	./hack/upload-asset.sh $(VERSION) dist/quick-start-postgres.yaml
+	./hack/upload-asset.sh $(VERSION) dist/quick-start-mysql.yaml
+	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-s390x
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-darwin-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-ppc64le
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-s390x
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-windows-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
-	git push $(GIT_BRANCH)
 ifeq ($(SNAPSHOT),false)
+	git push
 	git push $(VERSION)
 endif
 

@@ -278,10 +278,11 @@ spec:
       - args:
         - --auth-type
         - client
-        image: argoproj/argo-server:apiserverimpl
+        image: argoproj/argo-server:latest
         name: argo-server
         ports:
         - containerPort: 2746
+      serviceAccountName: argo
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -301,9 +302,9 @@ spec:
         - --configmap
         - workflow-controller-configmap
         - --executor-image
-        - argoproj/argoexec:apiserverimpl
+        - argoproj/argoexec:latest
         command:
         - workflow-controller
-        image: argoproj/workflow-controller:apiserverimpl
+        image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo

@@ -11,6 +11,7 @@ spec:
       labels:
         app: argo-server
     spec:
+      serviceAccountName: argo
       containers:
         - name: argo-server
           image: argoproj/argo-server:latest
