@@ -41,8 +41,8 @@ func (s *CronSuite) TestSuspend() {
 		RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string) {
 			assert.Equal(t, "CronWorkflow 'test-cron-wf-basic' suspended", output)
 		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
-			assert.True(t, cronWf.Spec.Suspend)
-		})
+		assert.True(t, cronWf.Spec.Suspend)
+	})
 }
 
 func (s *CronSuite) TestResume() {

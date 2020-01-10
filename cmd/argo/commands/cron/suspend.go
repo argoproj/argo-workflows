@@ -42,4 +42,3 @@ func suspendCronWorkflow(cronWfClient v1alpha1.CronWorkflowInterface, cronWfName
 	}
 	fmt.Printf("CronWorkflow '%s' suspended\n", newCronWf.Name)
 }
-

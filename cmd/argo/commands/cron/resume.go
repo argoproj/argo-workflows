@@ -43,4 +43,3 @@ func resumeCronWorkflow(cronWfClient v1alpha1.CronWorkflowInterface, cronWfName 
 	}
 	fmt.Printf("CronWorkflow '%s' resumed\n", newCronWf.Name)
 }
-

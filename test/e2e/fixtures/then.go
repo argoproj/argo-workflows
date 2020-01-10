@@ -10,7 +10,6 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-
 	argoexec "github.com/argoproj/pkg/exec"
 )
 
