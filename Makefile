@@ -288,6 +288,8 @@ ifeq ($(GITHUB_TOKEN),)
 	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role"
 	exit 1
 endif
+	./hack/upload-asset.sh $(VERSION) manifests/install.yaml
+	./hack/upload-asset.sh $(VERSION) manifests/namespace-install.yaml
 	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
