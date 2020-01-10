@@ -109,7 +109,7 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make start
+      - run: mkdir dist && KUBECONFIG=~/.kube/config make start
       - run:
           name: Follow logs, to help diagnose failures
           command: |
