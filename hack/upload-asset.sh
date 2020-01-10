@@ -22,4 +22,5 @@ curl \
     -u "$GITHUB_TOKEN:" \
     -H "Content-Type: application/octet-stream" \
     --data-binary @"$FILE" \
-    "$UPLOAD_URL?name=$NAME"
+    "$UPLOAD_URL?name=$NAME" \
+    -o /dev/null
