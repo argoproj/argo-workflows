@@ -54,6 +54,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 build: clis executor-image controller-image argo-server dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
+	rm -Rf .vendor-new
 	dep ensure -v
 
 # cli
