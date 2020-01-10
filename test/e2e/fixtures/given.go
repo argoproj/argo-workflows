@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/client-go/kubernetes"
+
 	"sigs.k8s.io/yaml"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -17,6 +19,7 @@ type Given struct {
 	cronClient v1alpha1.CronWorkflowInterface
 	wf         *wfv1.Workflow
 	cronWf     *wfv1.CronWorkflow
+	kubeClient kubernetes.Interface
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -106,5 +109,6 @@ func (g *Given) When() *When {
 		cronWf:     g.cronWf,
 		client:     g.client,
 		cronClient: g.cronClient,
+		kubeClient: g.kubeClient,
 	}
 }

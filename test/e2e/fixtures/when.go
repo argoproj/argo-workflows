@@ -2,9 +2,11 @@ package fixtures
 
 import (
 	"fmt"
-	"github.com/argoproj/pkg/humanize"
 	"testing"
 	"time"
+
+	"github.com/argoproj/pkg/humanize"
+	"k8s.io/client-go/kubernetes"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +24,7 @@ type When struct {
 	cronClient       v1alpha1.CronWorkflowInterface
 	workflowName     string
 	cronWorkflowName string
+	kubeClient       kubernetes.Interface
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -109,5 +112,6 @@ func (w *When) Then() *Then {
 		cronWorkflowName: w.cronWorkflowName,
 		client:           w.client,
 		cronClient:       w.cronClient,
+		kubeClient:       w.kubeClient,
 	}
 }

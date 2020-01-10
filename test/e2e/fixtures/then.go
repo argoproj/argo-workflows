@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
@@ -16,6 +18,7 @@ type Then struct {
 	cronWorkflowName string
 	client           v1alpha1.WorkflowInterface
 	cronClient       v1alpha1.CronWorkflowInterface
+	kubeClient       kubernetes.Interface
 }
 
 func (t *Then) Expect(block func(*testing.T, *wfv1.WorkflowStatus)) *Then {
@@ -53,5 +56,22 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*te
 	log.WithFields(log.Fields{"test": t.t.Name()}).Info("Got relevant workflows")
 	log.WithFields(log.Fields{"test": t.t.Name()}).Info("Checking expectation")
 	block(t.t, wfList)
+	return t
+}
+
+func (t *Then) ExpectAuditEvents(block func(*testing.T, *apiv1.EventList)) *Then {
+	if t.workflowName == "" {
+		t.t.Fatal("No workflow to test")
+	}
+	log.WithFields(log.Fields{"test": t.t.Name(), "workflow": t.workflowName}).Info("Checking expectation")
+	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	eventList, err := t.kubeClient.CoreV1().Events(wf.ObjectMeta.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		t.t.Fatal(err)
+	}
+	block(t.t, eventList)
 	return t
 }

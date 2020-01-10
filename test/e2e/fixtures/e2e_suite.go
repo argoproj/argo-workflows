@@ -3,11 +3,12 @@ package fixtures
 import (
 	"bufio"
 	"fmt"
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/argoproj/argo/cmd/argo/commands/cron"
+	alpha1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -181,5 +182,6 @@ func (s *E2ESuite) Given() *Given {
 		t:          s.T(),
 		client:     s.client,
 		cronClient: s.cronClient,
+		kubeClient: s.kubeClient,
 	}
 }

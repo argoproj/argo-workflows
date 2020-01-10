@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,9 @@ import (
 
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/test/e2e/fixtures"
+	"github.com/argoproj/argo/util/argo"
+
+	apiv1 "k8s.io/api/core/v1"
 )
 
 type FunctionalSuite struct {
@@ -82,6 +86,27 @@ func (s *FunctionalSuite) TestFastFailOnPodTermination() {
 			nodeStatus := status.Nodes.FindByDisplayName("sleep")
 			assert.Equal(t, wfv1.NodeFailed, nodeStatus.Phase)
 			assert.Equal(t, "pod termination", nodeStatus.Message)
+		})
+}
+
+func (s *FunctionalSuite) TestEventOnNodeFail() {
+	s.Given().
+		Workflow("@expectedfailures/pod-termination-failure.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(120 * time.Second).
+		Then().
+		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+			found := false
+			for _, e := range events.Items {
+				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "sleeptest-")
+				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
+				if isAboutSleepTest && isFailureEvent {
+					found = true
+					assert.True(t, true)
+				}
+			}
+			assert.True(t, found, "event not found")
 		})
 }
 
