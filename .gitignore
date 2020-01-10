@@ -13,4 +13,5 @@ debug.test
 *.iml
 /coverage.out
 .envrc
+/.vendor-new
 /workflow-controller
