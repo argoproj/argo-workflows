@@ -395,7 +395,6 @@ type Template struct {
 	// SecurityContext holds pod-level security attributes and common container settings.
 	// Optional: Defaults to empty.  See type description for default values of each field.
 	// +optional
-
 	SecurityContext *apiv1.PodSecurityContext `json:"securityContext,omitempty" protobuf:"bytes,30,opt,name=securityContext"`
 
 	// PodSpecPatch holds strategic merge patch to apply against the pod spec. Allows parameterization of
@@ -613,6 +612,11 @@ type WorkflowStep struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,9,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &WorkflowStep{}
@@ -1217,6 +1221,11 @@ type DAGTask struct {
 	// ContinueOn makes argo to proceed with the following step even if this step fails.
 	// Errors and Failed states can be specified
 	ContinueOn *ContinueOn `json:"continueOn,omitempty" protobuf:"bytes,10,opt,name=continueOn"`
+
+	// OnExit is a template reference which is invoked at the end of the
+	// template, irrespective of the success, failure, or error of the
+	// primary template.
+	OnExit string `json:"onExit,omitempty" protobuf:"bytes,11,opt,name=onExit"`
 }
 
 var _ TemplateHolder = &DAGTask{}
