@@ -113,6 +113,7 @@ jobs:
       - run:
           name: Establish port forward
           command: make pf
+          background: true
       - run:
           name: Follow logs, to help diagnose failures
           command: |
