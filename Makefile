@@ -300,8 +300,11 @@ clean:
 must-be-clean:
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 
+.PHONY: pre-commit
+pre-commit: test lint codegen manifests start pf-bg smoke test-api test-cli
+
 .PHONY: pre-push
-pre-push: must-be-clean test lint codegen manifests must-be-clean start pf-bg smoke test-api test-cli
+pre-push: must-be-clean pre-commit must-be-clean
 
 # release
 
