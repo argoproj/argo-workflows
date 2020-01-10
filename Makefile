@@ -273,6 +273,18 @@ test-e2e:
 clean:
 	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
+# pre-push
+
+.git/hooks/pre-push:
+	echo 'make pre-push' > .git/hooks/pre-push
+
+.PHONY: must-be-clean
+must-be-clean:
+	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
+
+.PHONY: pre-push
+pre-push: must-be-clean test lint codegen manifests must-be-clean
+
 # release
 
 .PHONY: prepare-release
@@ -292,12 +304,8 @@ else
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 endif
 
-.PHONY: must-be-clean
-must-be-clean:
-	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
-
 .PHONY: pre-release
-pre-release: must-be-clean test lint codegen manifests must-be-clean
+pre-release: pre-push
 ifeq ($(SNAPSHOT),false)
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
