@@ -5,7 +5,7 @@ TAG_NAME=$1
 FILE=$2
 NAME=$(basename "$FILE")
 
-ASSET_URL=$(curl -fs -u"$GITHUB_TOKEN:" https://api.github.com/repos/argoproj/argo/releases | jq -r "map(select(.tag_name==\"$TAG_NAME\")) | .[0] | .assets | map(select(.name=\"$NAME\")) | .[0] | .url")
+ASSET_URL=$(curl -fs -u"$GITHUB_TOKEN:" https://api.github.com/repos/argoproj/argo/releases | jq -r "map(select(.tag_name==\"$TAG_NAME\")) | .[0] | .assets | map(select(.name==\"$NAME\")) | .[0] | .url")
 
 if [ "$ASSET_URL" != "null" ]; then
   echo "deleting $ASSET_URL"
