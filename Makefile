@@ -54,7 +54,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 build: clis controller-image executor-image argo-server
 
 vendor: Gopkg.toml
-	dep ensure -v -vendor-only
+	dep ensure -v
 
 # cli
 
@@ -202,8 +202,6 @@ install:
 
 .PHONY: start
 start: install down controller-image argo-server-image executor-image
-	# Scale down in preparation for re-configuration.
-	make down
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "argoproj/workflow-controller:$(VERSION)"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
 	# TODO Turn on the workflow compression, hopefully to shake out some bugs.
@@ -214,7 +212,7 @@ start: install down controller-image argo-server-image executor-image
 	# Make the CLI
 	make cli
 	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 90s
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
@@ -286,6 +284,20 @@ endif
 
 .PHONY: publish
 publish:
+ifeq ($(GITHUB_TOKEN),)
+	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role"
+	exit 1
+endif
+	./hack/upload-asset.sh $(VERSION) dist/argo-darwin-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
+	./hack/upload-asset.sh $(VERSION) dist/argo-linux-s390x
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-darwin-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-ppc64le
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-s390x
+	./hack/upload-asset.sh $(VERSION) dist/argo-server-windows-amd64
+	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
