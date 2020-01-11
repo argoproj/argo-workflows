@@ -38,7 +38,7 @@ func NewRootCommand() *cobra.Command {
 		glogLevel               int    // --gloglevel
 		workflowWorkers         int    // --workflow-workers
 		podWorkers              int    // --pod-workers
-		namespaceMode           bool   // --namespace-mode
+		namespaced              bool   // --namespaced
 		filteredNamespace       string // --namespace
 	)
 
@@ -78,10 +78,10 @@ func NewRootCommand() *cobra.Command {
 				fmt.Printf("\n------------------------    WARNING    ------------------------\n")
 				fmt.Printf("Namespace installation mode with configmap setting is deprecated, \n")
 				fmt.Printf("it will be removed in next major release. Instead please add \n")
-				fmt.Printf("\"--namespace-mode\" to workflow-controller start args.\n")
+				fmt.Printf("\"--namespaced\" to workflow-controller start args.\n")
 				fmt.Printf("-----------------------------------------------------------------\n\n")
 			} else {
-				if namespaceMode {
+				if namespaced {
 					if len(filteredNamespace) > 0 {
 						wfController.Config.Namespace = filteredNamespace
 					} else {
@@ -116,7 +116,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
-	command.Flags().BoolVar(&namespaceMode, "namespace-mode", false, "run workflow-controller as namespace mode")
+	command.Flags().BoolVar(&namespaced, "namespaced", false, "run workflow-controller as namespace mode")
 	command.Flags().StringVar(&filteredNamespace, "namespace", "", "namespace that workflow-controller listens to, default to the installation namespace")
 	return &command
 }
