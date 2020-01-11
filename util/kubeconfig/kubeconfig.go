@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
@@ -25,23 +23,6 @@ func DefaultRestConfig() (*restclient.Config, error) {
 	return config.ClientConfig()
 }
 
-func parseToken(token string) (int, string, error) {
-	rx := regexp.MustCompile("v([0-9]):(.*)")
-	find := rx.FindStringSubmatch(token)
-	if len(find) == 0 {
-		return 0, "", fmt.Errorf("token version not found")
-	}
-	version, err := strconv.Atoi(find[1])
-	if err != nil {
-		return 0, "", err
-	}
-	return version, find[2], nil
-}
-
-func formatToken(version int, token string) string {
-	return fmt.Sprintf("v%d:%s", version, token)
-}
-
 // convert a bearer token into a REST config
 func GetRestConfig(token string) (*restclient.Config, error) {
 	version, tokenBody, err := parseToken(token)
@@ -49,7 +30,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		return nil, err
 	}
 	switch version {
-	case 0:
+	case tokenVersion0:
 		restConfigBytes, err := base64.StdEncoding.DecodeString(tokenBody)
 		if err != nil {
 			return nil, err
@@ -60,7 +41,7 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 			return nil, err
 		}
 		return restConfig, nil
-	case 1:
+	case tokenVersion1:
 		restConfig, err := DefaultRestConfig()
 		if err != nil {
 			return nil, err
@@ -68,15 +49,27 @@ func GetRestConfig(token string) (*restclient.Config, error) {
 		restConfig.BearerToken = tokenBody
 		restConfig.BearerTokenFile = ""
 		return restConfig, nil
+	case tokenVersion2:
+		value, err := getV2Token()
+		if err != nil {
+			return nil, err
+		}
+		if tokenBody != value {
+			return nil, fmt.Errorf("v2 token invalid")
+		}
+		restConfig, err := DefaultRestConfig()
+		if err != nil {
+			return nil, err
+		}
+		return restConfig, nil
 	}
-	return nil, fmt.Errorf("invalid token version")
+	return nil, fmt.Errorf("invalid token tokenVersion")
 }
 
 // convert the REST config into a bearer token
 func GetBearerToken(in *restclient.Config) (string, error) {
-	version := 0
-	switch version {
-	case 0:
+	switch getDefaultTokenVersion() {
+	case tokenVersion0:
 		tlsClientConfig, err := tlsClientConfig(in)
 		if err != nil {
 			return "", err
@@ -105,7 +98,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			return "", err
 		}
 		return formatToken(0, base64.StdEncoding.EncodeToString(configByte)), nil
-	case 1:
+	case tokenVersion1:
 		if in.ExecProvider != nil {
 			tc, err := in.TransportConfig()
 			if err != nil {
@@ -160,6 +153,8 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			}
 			return "", nil
 		}
+	case tokenVersion2:
+		return getV2Token()
 	}
 	return "", fmt.Errorf("invalid token version")
 }
