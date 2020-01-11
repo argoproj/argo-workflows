@@ -38,6 +38,8 @@ func NewRootCommand() *cobra.Command {
 		glogLevel               int    // --gloglevel
 		workflowWorkers         int    // --workflow-workers
 		podWorkers              int    // --pod-workers
+		namespaceMode           bool   // --namespace-mode
+		filteredNamespace       string // --namespace
 	)
 
 	var command = cobra.Command{
@@ -70,6 +72,24 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			// TODO: following code will be updated in next major release to remove configmap
+			// setting for namespace installation mode.
+			if len(wfController.Config.Namespace) > 0 {
+				fmt.Printf("\n------------------------    WARNING    ------------------------\n")
+				fmt.Printf("Namespace installation mode with configmap setting is deprecated, \n")
+				fmt.Printf("it will be removed in next release. Instead please add \n")
+				fmt.Printf("\"--namespace-mode\" to workflow-controller start args instead.\n")
+				fmt.Printf("-----------------------------------------------------------------\n\n")
+			} else {
+				if namespaceMode {
+					if len(filteredNamespace) > 0 {
+						wfController.Config.Namespace = filteredNamespace
+					} else {
+						wfController.Config.Namespace = namespace
+					}
+				}
+			}
+			//
 
 			cronController := cron.NewCronController(wfclientset, config, namespace)
 
@@ -96,6 +116,8 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
+	command.Flags().BoolVar(&namespaceMode, "namespace-mode", false, "run workflow-controller as namespace mode")
+	command.Flags().StringVar(&filteredNamespace, "namespace", "", "namespace that workflow-controller listens to, default to the installation namespace")
 	return &command
 }
 

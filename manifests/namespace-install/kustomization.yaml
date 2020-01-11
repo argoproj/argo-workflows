@@ -7,5 +7,5 @@ bases:
 - ./argo-ui-rbac
 
 patchesStrategicMerge:
-- ./overlays/workflow-controller-configmap.yaml
 - ./overlays/argo-ui-deployment.yaml
+- ./overlays/workflow-controller-deployment.yaml
