@@ -17,7 +17,6 @@ type OSSArtifactDriver struct {
 
 func (ossDriver *OSSArtifactDriver) newOSSClient() (aliyunoss.Client, error) {
 	client, err := aliyunoss.New(ossDriver.Endpoint, ossDriver.AccessKey, ossDriver.SecretKey)
-
 	return *client, err
 }
 
@@ -43,7 +42,6 @@ func (ossDriver *OSSArtifactDriver) Load(inputArtifact *wfv1.Artifact, path stri
 			}
 			return true, nil
 		})
-
 	return err
 }
 
@@ -70,5 +68,4 @@ func (ossDriver *OSSArtifactDriver) Save(path string, outputArtifact *wfv1.Artif
 			return true, nil
 		})
 	return err
-
 }
