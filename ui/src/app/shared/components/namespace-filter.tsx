@@ -15,7 +15,7 @@ export class NamespaceFilter extends React.Component<Props, State> {
     constructor(props: Readonly<Props>) {
         super(props);
         this.state = {
-            namespace: props.value,
+            namespace: props.value || "",
             namespaces: (localStorage.getItem('namespaces') || '').split(',').filter(ns => ns !== '')
         };
     }

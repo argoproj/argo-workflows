@@ -251,6 +251,8 @@ spec:
         - --auth-type
         - client
         env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         - name: ARGO_NAMESPACE
           valueFrom:
             fieldRef:

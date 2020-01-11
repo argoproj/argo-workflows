@@ -1,5 +1,6 @@
 import {ErrorInfo} from 'react';
 import * as React from 'react';
+import {NamespaceFilter} from './namespace-filter';
 
 interface Props {
     error?: Error & {response?: any};
@@ -34,6 +35,10 @@ export class ErrorPanel extends React.Component<Props> {
                             <h5>Response</h5>
                             <pre>HTTP {this.props.error.response.status}</pre>
                             {this.props.error.response.body && <pre>{JSON.stringify(this.props.error.response.body, null, 2)}</pre>}
+                            {this.props.error.response.status == 403 && <>
+                                <p>You were forbidden, you may only have access to certain namespaces.</p>
+                                <NamespaceFilter value="" onChange={() => document.location.reload()}/>
+                                </>}
                         </>
                     </>
                 )}

@@ -21,6 +21,7 @@ import {Utils} from '../../../shared/utils';
 
 require('./workflows-list.scss');
 
+
 interface State {
     workflows?: Workflow[];
     error?: Error;
@@ -30,12 +31,9 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
     private subscription: Subscription;
 
     private get namespace() {
-        return this.queryParam('namespace') || '';
+        return this.props.match.params.namespace;
     }
 
-    private set namespace(namespace: string) {
-        this.setQueryParams({namespace});
-    }
 
     private get phases() {
         return this.queryParams('phase');
@@ -128,7 +126,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
                                     }
                                 ]
                             },
-                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => (this.namespace = namespace)} />]
+                            tools: [<NamespaceFilter key='namespace-filter' value={this.namespace} onChange={namespace => document.location.href = uiUrl(`workflows/${namespace}`)} />]
                         }}>
                         <div>{this.renderWorkflows(ctx)}</div>
                         <SlidingPanel isShown={!!this.wfInput} onClose={() => ctx.navigation.goto('.', {new: null})}>
