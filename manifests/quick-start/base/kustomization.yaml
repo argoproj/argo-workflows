@@ -5,3 +5,6 @@ bases:
   - ../../namespace-install
   - minio
 
+resources:
+  - workflow-role.yaml
+  - workflow-default-rolebinding.yaml
