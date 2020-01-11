@@ -11,18 +11,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type When struct {
-	t                *testing.T
-	wf               *wfv1.Workflow
-	cronWf           *wfv1.CronWorkflow
-	client           v1alpha1.WorkflowInterface
-	cronClient       v1alpha1.CronWorkflowInterface
-	workflowName     string
-	cronWorkflowName string
+	t                     *testing.T
+	wf                    *wfv1.Workflow
+	cronWf                *wfv1.CronWorkflow
+	client                v1alpha1.WorkflowInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	workflowName          string
+	cronWorkflowName      string
 }
 
 func (w *When) SubmitWorkflow() *When {
@@ -105,10 +107,11 @@ func (w *When) DeleteWorkflow() *When {
 
 func (w *When) Then() *Then {
 	return &Then{
-		t:                w.t,
-		workflowName:     w.workflowName,
-		cronWorkflowName: w.cronWorkflowName,
-		client:           w.client,
-		cronClient:       w.cronClient,
+		t:                     w.t,
+		workflowName:          w.workflowName,
+		cronWorkflowName:      w.cronWorkflowName,
+		client:                w.client,
+		cronClient:            w.cronClient,
+		offloadNodeStatusRepo: w.offloadNodeStatusRepo,
 	}
 }

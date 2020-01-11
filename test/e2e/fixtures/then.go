@@ -6,16 +6,18 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type Then struct {
-	t                *testing.T
-	workflowName     string
-	cronWorkflowName string
-	client           v1alpha1.WorkflowInterface
-	cronClient       v1alpha1.CronWorkflowInterface
+	t                     *testing.T
+	workflowName          string
+	cronWorkflowName      string
+	client                v1alpha1.WorkflowInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
 }
 
 func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus)) *Then {
@@ -26,6 +28,13 @@ func (t *Then) Expect(block func(t *testing.T, metadata *metav1.ObjectMeta, stat
 	wf, err := t.client.Get(t.workflowName, metav1.GetOptions{})
 	if err != nil {
 		t.t.Fatal(err)
+	}
+	if wf.Status.OffloadNodeStatus {
+		offloaded, err := t.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+		if err != nil {
+			t.t.Fatal(err)
+		}
+		wf.Status.Nodes = offloaded.Status.Nodes
 	}
 	block(t.t, &wf.ObjectMeta, &wf.Status)
 	return t
