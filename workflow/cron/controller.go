@@ -280,6 +280,7 @@ func wfInformerListOptionsFunc(options *v1.ListOptions) {
 
 func (cc *Controller) isolatedNamespace() string {
 	if cc.forceNamespaceIsolation {
+		log.Info("ALEX 4")
 		return cc.namespace
 	}
 	return ""

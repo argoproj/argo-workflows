@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/argoproj/argo/workflow/cron"
 
 	"github.com/argoproj/pkg/cli"
@@ -64,8 +62,6 @@ func NewRootCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			log.WithFields(log.Fields{"forceNamespaceIsolation": forceNamespaceIsolation, "namespace": namespace}).Debug()
 
 			kubeclientset := kubernetes.NewForConfigOrDie(config)
 			wfclientset := wfclientset.NewForConfigOrDie(config)
