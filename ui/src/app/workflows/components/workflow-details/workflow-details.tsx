@@ -10,15 +10,7 @@ import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {
-    WorkflowArtifacts,
-    WorkflowDag,
-    WorkflowLogsViewer,
-    WorkflowNodeInfo,
-    WorkflowSummaryPanel,
-    WorkflowTimeline,
-    WorkflowYamlViewer
-} from '..';
+import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 

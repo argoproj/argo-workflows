@@ -67,7 +67,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	defer cc.wfQueue.ShutDown()
 	log.Infof("Starting CronWorkflow controller")
 
-	cc.cronWfInformer = cc.newCronWorkflowInformer()
+	cc.cronWfInformer = externalversions.NewSharedInformerFactoryWithOptions(cc.wfClientset, cronWorkflowResyncPeriod, externalversions.WithNamespace(cc.isolatedNamespace())).Argoproj().V1alpha1().CronWorkflows()
 	cc.addCronWorkflowInformerHandler()
 
 	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.isolatedNamespace(), cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
@@ -213,11 +213,6 @@ func (cc *Controller) processNextWorkflowItem() bool {
 
 	woc.enforceHistoryLimit()
 	return true
-}
-
-func (cc *Controller) newCronWorkflowInformer() extv1alpha1.CronWorkflowInformer {
-	informerFactory := externalversions.NewSharedInformerFactory(cc.wfClientset, cronWorkflowResyncPeriod)
-	return informerFactory.Argoproj().V1alpha1().CronWorkflows()
 }
 
 func (cc *Controller) addCronWorkflowInformerHandler() {

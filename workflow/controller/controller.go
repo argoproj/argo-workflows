@@ -512,13 +512,7 @@ func (wfc *WorkflowController) newPodInformer() cache.SharedIndexInformer {
 }
 
 func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.WorkflowTemplateInformer {
-	var informerFactory wfextv.SharedInformerFactory
-	if wfc.isolatedNamespace() != "" {
-		informerFactory = wfextv.NewFilteredSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod, wfc.isolatedNamespace(), func(opts *metav1.ListOptions) {})
-	} else {
-		informerFactory = wfextv.NewSharedInformerFactory(wfc.wfclientset, workflowTemplateResyncPeriod)
-	}
-	return informerFactory.Argoproj().V1alpha1().WorkflowTemplates()
+	return wfextv.NewSharedInformerFactoryWithOptions(wfc.wfclientset, workflowTemplateResyncPeriod, wfextv.WithNamespace(wfc.isolatedNamespace())).Argoproj().V1alpha1().WorkflowTemplates()
 }
 
 func (wfc *WorkflowController) isolatedNamespace() string {
