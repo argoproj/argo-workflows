@@ -83,7 +83,7 @@ dist/argo-windows-amd64: vendor $(CLI_PKGS)
 .PHONY: cli-image
 cli-image: dist/argo-linux-amd64
 	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
 	rm -f argo
 
 .PHONY: clis
@@ -97,7 +97,7 @@ dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
 .PHONY: controller-image
 controller-image: dist/workflow-controller-linux-amd64
 	cp dist/workflow-controller-linux-amd64 workflow-controller
-	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
+	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
 	rm -f workflow-controller
 
 # argoexec
@@ -108,7 +108,7 @@ dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 .PHONY: executor-image
 executor-image: dist/argoexec-linux-amd64
 	cp dist/argoexec-linux-amd64 argoexec
-	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 	rm -f argoexec
 
 # argo-server
@@ -153,7 +153,7 @@ dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
 	cp dist/argo-server-linux-amd64 argo-server
-	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
+	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
 	rm -f argo-server
 
 .PHONY: argo-server
@@ -278,7 +278,7 @@ smoke:
 
 .PHONY: test-api
 test-api:
-	go test -timeout 5m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli:

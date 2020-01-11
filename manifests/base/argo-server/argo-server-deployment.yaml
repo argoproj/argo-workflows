@@ -24,6 +24,7 @@ spec:
               scheme: HTTP
               path: /
           env:
+            # TODO - maybe unused
             - name: ARGO_NAMESPACE
               valueFrom:
                 fieldRef:

@@ -8,5 +8,6 @@ spec:
       containers:
         - name: argo-server
           env:
+            # TODO - maybe unused
             - name: FORCE_NAMESPACE_ISOLATION
               value: "true"
