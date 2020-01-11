@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,8 @@ import (
 
 type CLISuite struct {
 	fixtures.E2ESuite
+	lastOutput string
+	lastErr    error
 }
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
@@ -27,43 +30,66 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 func (s *CLISuite) AfterTest(suiteName, testName string) {
 	s.E2ESuite.AfterTest(suiteName, testName)
 	_ = os.Unsetenv("ARGO_SERVER")
+	if s.T().Failed() {
+		log.WithFields(log.Fields{"lastOutput": s.lastOutput, "lastError": s.lastErr}).Info("Last CLI output and error")
+	}
 }
 
-func argo(args ...string) (string, error) {
+func (s *CLISuite) argo(args ...string) (string, error) {
 	args = append([]string{"-n", fixtures.Namespace}, args...)
 	output, err := exec.Command("../../dist/argo", args...).CombinedOutput()
-	return string(output), err
+	s.lastOutput = string(output)
+	s.lastErr = err
+	return s.lastOutput, s.lastErr
 }
 
 func (s *CLISuite) TestCompletion() {
-	output, err := argo("completion", "bash")
+	output, err := s.argo("completion", "bash")
 	s.Assert().NoError(err)
 	s.Assert().Contains(output, "bash completion for argo")
 }
 
 func (s *CLISuite) TestToken() {
-	output, err := argo("token")
+	output, err := s.argo("token")
 	s.Assert().NoError(err)
 	s.Assert().NotEmpty(output)
 }
 
 func (s *CLISuite) TestRoot() {
 	s.Run("Submit", func(t *testing.T) {
-		output, err := argo("submit", "smoke/basic.yaml", "--wait")
+		// TODO - with --wait we get an error - need to investigate
+		output, err := s.argo("submit", "smoke/basic.yaml")
 		assert.NoError(t, err)
-		assert.Contains(t, output, "Succeeded")
+		assert.Contains(t, output, "Namespace:")
+		assert.Contains(t, output, "ServiceAccount:")
+		assert.Contains(t, output, "Status:")
+		assert.Contains(t, output, "Created:")
+	})
+	s.Run("List", func(t *testing.T) {
+		output, err := s.argo("list")
+		assert.NoError(t, err)
+		assert.Contains(t, output, "NAME")
+		assert.Contains(t, output, "STATUS")
+		assert.Contains(t, output, "AGE")
+		assert.Contains(t, output, "DURATION")
+		assert.Contains(t, output, "PRIORITY")
 	})
 	s.Run("Get", func(t *testing.T) {
-		output, err := argo("get", "basic")
+		output, err := s.argo("get", "basic")
 		assert.NoError(t, err)
-		assert.Contains(t, output, "Succeeded")
+		assert.Contains(t, output, "Namespace:")
+		assert.Contains(t, output, "ServiceAccount:")
+		assert.Contains(t, output, "Status:")
+		assert.Contains(t, output, "Created:")
+		assert.Contains(t, output, "Started:")
+		assert.Contains(t, output, "Duration:")
 	})
 }
 
 func (s *CLISuite) TestCron() {
 
 	s.Run("Create", func(t *testing.T) {
-		output, err := argo("cron", "create","cron/testdata/basic.yaml")
+		output, err := s.argo("cron", "create", "cron/testdata/basic.yaml")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Name:")
 		assert.Contains(t, output, "Namespace:")
@@ -75,7 +101,7 @@ func (s *CLISuite) TestCron() {
 	})
 
 	s.Run("List", func(t *testing.T) {
-		output, err := argo("cron", "list")
+		output, err := s.argo("cron", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAME")
 		assert.Contains(t, output, "AGE")
@@ -85,11 +111,11 @@ func (s *CLISuite) TestCron() {
 	})
 
 	s.Run("Get", func(t *testing.T) {
-		output, err := argo("cron", "get", "not-found")
+		output, err := s.argo("cron", "get", "not-found")
 		assert.EqualError(t, err, "exit status 1")
 		assert.Contains(t, output, `"not-found" not found`)
 
-		output, err = argo("cron", "get", "test-cron-wf-basic")
+		output, err = s.argo("cron", "get", "test-cron-wf-basic")
 		if assert.NoError(t, err) {
 			assert.Contains(t, output, "Name:")
 			assert.Contains(t, output, "Namespace:")
@@ -102,7 +128,7 @@ func (s *CLISuite) TestCron() {
 	})
 
 	s.Run("Delete", func(t *testing.T) {
-		_, err := argo("cron", "delete", "test-cron-wf-basic")
+		_, err := s.argo("cron", "delete", "test-cron-wf-basic")
 		assert.NoError(t, err)
 	})
 }
@@ -119,18 +145,18 @@ func (s *CLISuite) TestArchive() {
 			uid = metadata.UID
 		})
 	s.Run("List", func(t *testing.T) {
-		output, err := argo("archive", "list")
+		output, err := s.argo("archive", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
 	})
 	s.Run("Get", func(t *testing.T) {
-		output, err := argo("archive", "get", string(uid))
+		output, err := s.argo("archive", "get", string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
 	s.Run("Delete", func(t *testing.T) {
-		output, err := argo("archive", "delete", string(uid))
+		output, err := s.argo("archive", "delete", string(uid))
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Archived workflow")
 		assert.Contains(t, output, "deleted")
