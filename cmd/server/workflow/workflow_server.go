@@ -86,13 +86,11 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 		wf.Status.Nodes = offloaded.Status.Nodes
 		wf.Status.CompressedNodes = offloaded.Status.CompressedNodes
 	}
-	packer.DecompressWorkflow(wf)
-	return wf, err
-}
-
-type primaryKey struct {
-	name      string
-	namespace string
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
