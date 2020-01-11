@@ -77,8 +77,8 @@ func NewRootCommand() *cobra.Command {
 			if len(wfController.Config.Namespace) > 0 {
 				fmt.Printf("\n------------------------    WARNING    ------------------------\n")
 				fmt.Printf("Namespace installation mode with configmap setting is deprecated, \n")
-				fmt.Printf("it will be removed in next release. Instead please add \n")
-				fmt.Printf("\"--namespace-mode\" to workflow-controller start args instead.\n")
+				fmt.Printf("it will be removed in next major release. Instead please add \n")
+				fmt.Printf("\"--namespace-mode\" to workflow-controller start args.\n")
 				fmt.Printf("-----------------------------------------------------------------\n\n")
 			} else {
 				if namespaceMode {
