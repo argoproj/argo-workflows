@@ -30,6 +30,7 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 }
 
 func argo(args ...string) (string, error) {
+	args = append([]string{"-n", fixtures.Namespace}, args...)
 	output, err := exec.Command("../../dist/argo", args...).CombinedOutput()
 	return string(output), err
 }
@@ -118,7 +119,7 @@ func (s *CLISuite) TestArchive() {
 			uid = metadata.UID
 		})
 	s.Run("List", func(t *testing.T) {
-		output, err := argo("archive", "list", "--namespace", fixtures.Namespace)
+		output, err := argo("archive", "list")
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")

@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/argoproj/argo/cmd/argo/commands/cron"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -21,6 +19,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/pkg/client/clientset/versioned"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 	"github.com/argoproj/argo/util/kubeconfig"
 	"github.com/argoproj/argo/workflow/packer"
@@ -63,8 +62,11 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 	if err != nil {
 		panic(err)
 	}
-	s.wfClient = commands.InitWorkflowClient()
-	s.cronClient = cron.InitCronWorkflowClient()
+
+	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
+	s.cronClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().CronWorkflows(Namespace)
+	// TODO templates - but we also need templates tests
+
 	// delete all workflows
 	list, err := s.wfClient.List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {

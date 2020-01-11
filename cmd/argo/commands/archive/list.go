@@ -56,6 +56,6 @@ func NewListCommand() *cobra.Command {
 		},
 	}
 	command.Flags().StringVarP(&output, "output", "o", "wide", "Output format. One of: json|yaml|wide")
-	command.Flags().StringVar(&namespace, "namespace", "", "The namespace")
+	command.Flags().StringVarP(&namespace, "namespace", "n", "", "The namespace")
 	return command
 }

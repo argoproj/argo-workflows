@@ -102,6 +102,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.WithField("nodeStatusOffload", configMap.Persistence.NodeStatusOffload).Info("Offload node status")
 		if configMap.Persistence.NodeStatusOffload {
 			offloadRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
 		}

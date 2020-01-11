@@ -232,8 +232,10 @@ start: controller-image argo-server-image install
 	make executor-image
 	# Make the CLI
 	make cli
+	# Sleep so that we don't wait on the wrong thing
+	sleep 10s
 	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 30s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
