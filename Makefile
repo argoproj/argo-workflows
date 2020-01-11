@@ -269,7 +269,7 @@ down:
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
 	# Wait for pods to go away, so we don't wait for them to be ready later.
 	[ "`kubectl -n argo get pod -l app=argo-server -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=argo-server  --timeout 30s
-	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 30s
+	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 2m
 
 .PHONY: up
 up:
