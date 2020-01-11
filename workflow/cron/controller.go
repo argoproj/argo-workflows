@@ -26,15 +26,16 @@ import (
 
 // Controller is a controller for cron workflows
 type Controller struct {
-	namespace      string
-	cron           *cron.Cron
-	nameEntryIDMap map[string]cron.EntryID
-	wfClientset    versioned.Interface
-	wfInformer     cache.SharedIndexInformer
-	wfQueue        workqueue.RateLimitingInterface
-	cronWfInformer extv1alpha1.CronWorkflowInformer
-	cronWfQueue    workqueue.RateLimitingInterface
-	restConfig     *rest.Config
+	namespace               string
+	forceNamespaceIsolation bool
+	cron                    *cron.Cron
+	nameEntryIDMap          map[string]cron.EntryID
+	wfClientset             versioned.Interface
+	wfInformer              cache.SharedIndexInformer
+	wfQueue                 workqueue.RateLimitingInterface
+	cronWfInformer          extv1alpha1.CronWorkflowInformer
+	cronWfQueue             workqueue.RateLimitingInterface
+	restConfig              *rest.Config
 }
 
 const (
@@ -47,15 +48,17 @@ func NewCronController(
 	wfclientset versioned.Interface,
 	restConfig *rest.Config,
 	namespace string,
+	forceNamespaceIsolation bool,
 ) *Controller {
 	return &Controller{
-		wfClientset:    wfclientset,
-		namespace:      namespace,
-		cron:           cron.New(),
-		restConfig:     restConfig,
-		nameEntryIDMap: make(map[string]cron.EntryID),
-		wfQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		cronWfQueue:    workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		wfClientset:             wfclientset,
+		namespace:               namespace,
+		forceNamespaceIsolation: forceNamespaceIsolation,
+		cron:                    cron.New(),
+		restConfig:              restConfig,
+		nameEntryIDMap:          make(map[string]cron.EntryID),
+		wfQueue:                 workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		cronWfQueue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 	}
 }
 
@@ -67,7 +70,7 @@ func (cc *Controller) Run(ctx context.Context) {
 	cc.cronWfInformer = cc.newCronWorkflowInformer()
 	cc.addCronWorkflowInformerHandler()
 
-	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, "", cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
+	cc.wfInformer = util.NewWorkflowInformer(cc.restConfig, cc.isolatedNamespace(), cronWorkflowResyncPeriod, wfInformerListOptionsFunc)
 	cc.addWorkflowInformerHandler()
 
 	cc.cron.Start()
@@ -273,4 +276,11 @@ func wfInformerListOptionsFunc(options *v1.ListOptions) {
 	}
 	labelSelector := labels.NewSelector().Add(*isCronWorkflowChildReq)
 	options.LabelSelector = labelSelector.String()
+}
+
+func (cc *Controller) isolatedNamespace() string {
+	if cc.forceNamespaceIsolation {
+		return cc.namespace
+	}
+	return ""
 }
