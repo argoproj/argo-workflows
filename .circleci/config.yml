@@ -128,10 +128,11 @@ jobs:
           background: true
       - run:
           name: Follow logs, to help diagnose failures
-          command: |
-            sleep 10
-            make logs
+          command: make logs
           background: true
+      - run:
+          name: Run smoke tests
+          command: make smoke
       - run:
           name: Run tests
           command: |
