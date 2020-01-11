@@ -624,8 +624,8 @@ func (we *WorkflowExecutor) InitDriver(art wfv1.Artifact) (artifact.ArtifactDriv
 		var accessKey string
 		var secretKey string
 
-		if art.OSS.AccessKeyID.Name != "" {
-			accessKeyBytes, err := we.GetSecretFromVolMount(art.OSS.AccessKeyID.Name, art.OSS.AccessKeyID.Key)
+		if art.OSS.AccessKeySecret.Name != "" {
+			accessKeyBytes, err := we.GetSecretFromVolMount(art.OSS.AccessKeySecret.Name, art.OSS.AccessKeySecret.Key)
 			if err != nil {
 				return nil, err
 			}

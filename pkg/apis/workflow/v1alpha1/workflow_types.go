@@ -1097,7 +1097,7 @@ type OSSBucket struct {
 	Bucket string `json:"bucket"`
 
 	// AccessKeySecret is the secret selector to the bucket's access key
-	AccessKeyID apiv1.SecretKeySelector `json:"accessKeyID"`
+	AccessKeySecret apiv1.SecretKeySelector `json:"accessKeySecret"`
 
 	// SecretKeySecret is the secret selector to the bucket's secret key
 	SecretKeySecret apiv1.SecretKeySelector `json:"secretKeySecret"`
