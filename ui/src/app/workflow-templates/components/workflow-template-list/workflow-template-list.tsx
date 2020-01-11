@@ -23,7 +23,7 @@ interface State {
 
 export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, State> {
     private get namespace() {
-        return this.queryParam('namespace');
+        return this.queryParam('namespace') || '';
     }
 
     private set namespace(namespace) {
@@ -45,7 +45,7 @@ export class WorkflowTemplateList extends BasePage<RouteComponentProps<any>, Sta
 
     public componentDidMount(): void {
         services.workflowTemplate
-            .list(this.namespace ||"")
+            .list(this.namespace)
             .then(templates => this.setState({templates}))
             .catch(error => this.setState({error}));
     }
