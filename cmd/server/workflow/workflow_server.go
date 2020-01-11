@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 
-
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,10 +12,10 @@ import (
 	"github.com/argoproj/argo/persist/sqldb"
 	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/workflow/common"
+	"github.com/argoproj/argo/workflow/packer"
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
-	"github.com/argoproj/argo/workflow/packer"
 )
 
 type workflowServer struct {

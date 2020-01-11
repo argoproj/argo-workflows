@@ -158,7 +158,7 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 				token := in.AuthProvider.Config["access-token"]
 				return formatToken(1, strings.TrimPrefix(token, "Bearer ")), nil
 			}
-			return "",nil
+			return "", nil
 		}
 	}
 	return "", fmt.Errorf("invalid token version")
