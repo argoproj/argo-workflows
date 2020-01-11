@@ -39,10 +39,12 @@ endif
 
 SNAPSHOT=false
 ifeq ($(VERSION),latest)
-	SNAPSHOT=true
+ 	# Snapshot
+	SNAPSHOT:=true
 endif
 ifeq ($(VERSION),$(GIT_BRANCH))
-	SNAPSHOT=true
+	# Snapshot
+	SNAPSHOT:=true
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
@@ -54,6 +56,7 @@ CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join 
 build: clis executor-image controller-image argo-server dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
+	# Get Go dependencies
 	rm -Rf .vendor-new
 	dep ensure -v
 
@@ -107,6 +110,7 @@ dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 
 .PHONY: executor-image
 executor-image: dist/argoexec-linux-amd64
+	# Create executor image
 	cp dist/argoexec-linux-amd64 argoexec
 	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
 	rm -f argoexec
@@ -114,6 +118,7 @@ executor-image: dist/argoexec-linux-amd64
 # argo-server
 
 ui/node_modules: ui/package.json ui/yarn.lock
+	# Get UI dependencies
 ifeq ($(CI),false)
 	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
 else
@@ -122,6 +127,7 @@ endif
 	touch ui/node_modules
 
 ui/dist/app: ui/node_modules ui/src
+	# Build UI
 ifeq ($(CI),false)
 	yarn --cwd ui build
 else
@@ -131,9 +137,11 @@ endif
 	touch ui/dist/app
 
 $(GOPATH)/bin/staticfiles:
+	# Install the "staticfiles" tool
 	go get bou.ke/staticfiles
 
 cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
+	# Pack UI into a Go file.
 	staticfiles -o cmd/server/static/files.go ui/dist/app
 
 dist/argo-server-linux-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_PKGS)
@@ -153,8 +161,9 @@ dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_
 
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
+	# Create argo-server image
 	cp dist/argo-server-linux-amd64 argo-server
-	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
+	docker build --progress=plain -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
 	rm -f argo-server
 
 .PHONY: argo-server
@@ -164,6 +173,7 @@ argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/ar
 
 .PHONY: codegen
 codegen:
+	# Generate code
 	./hack/generate-proto.sh
 	./hack/update-codegen.sh
 	./hack/update-openapigen.sh
@@ -171,6 +181,7 @@ codegen:
 
 .PHONY: verify-codegen
 verify-codegen:
+	# Verify generated code
 	./hack/verify-codegen.sh
 	./hack/update-openapigen.sh --verify-only
 	mkdir -p ./dist
@@ -179,19 +190,23 @@ verify-codegen:
 
 .PHONY: manifests
 manifests:
+	# Create manifests
 	env VERSION=$(VERSION) ./hack/update-manifests.sh
 
 # lint/test/etc
 
 .PHONY: lint
 lint: cmd/server/static/files.go
+	# Lint Go files
 	golangci-lint run --fix --verbose
 ifeq ($(CI),false)
+	# Lint UI files
 	yarn --cwd ui lint
 endif
 
 .PHONY: test
 test: cmd/server/static/files.go vendor
+	# Run unit tests
 ifeq ($(CI),false)
 	go test `go list ./... | grep -v 'test/e2e'`
 else
@@ -199,24 +214,30 @@ else
 endif
 
 dist/install.yaml: manifests/
+	# Create cluster install manifests
 	cat manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
 
 dist/namespace-install.yaml: manifests/
+	# Create namespace instnall manifests
 	cat manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
 
 dist/quick-start-mysql.yaml: manifests/
+	# Create MySQL quick-start manifests
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
 
 .PHONY: install-mysql
 install-mysql: dist/quick-start-mysql.yaml
+	# Install MySQL quick-start
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f dist/quick-start-mysql.yaml
 
 dist/quick-start-postgres.yaml: manifests/
+	# Create Postgres quick-start manifests
 	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
 
 .PHONY: install-postgres
 install-postgres: dist/quick-start-postgres.yaml
+	# Install Postgres quick-start
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f dist/quick-start-postgres.yaml
 
@@ -225,40 +246,52 @@ install: install-postgres
 
 .PHONY: start
 start: controller-image argo-server-image install
-	# Change to use a "dev" tag and enable debug logging.
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
-	# Scale up.
+	# Start development environment
+ifeq ($(CI),false)
+	make down
+endif
+	# Patch deployments
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
+ifeq ($(CI),false)
+	make up
+endif
 	make executor-image
 	# Make the CLI
 	make cli
-	# Sleep so that we don't wait on the wrong thing
-	sleep 10s
-	# Wait for apps to be ready.
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 30s
 	# Switch to "argo" ns.
 	kubectl config set-context --current --namespace=argo
 
 .PHONY: down
 down:
+	# Scale down
 	kubectl -n argo scale deployment/argo-server --replicas 0
 	kubectl -n argo scale deployment/workflow-controller --replicas 0
+	# Wait for pods to go away, so we don't wait for them to be ready later.
+	[ "`kubectl -n argo get pod -l app=argo-server -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=argo-server  --timeout 30s
+	[ "`kubectl -n argo get pod -l app=workflow-controller -o name`" = "" ] || kubectl -n argo wait --for=delete pod -l app=workflow-controller  --timeout 30s
 
 .PHONY: up
 up:
+	# Scale up
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
+	# Wait for pods to be ready
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
 
 .PHONY: pf
 pf:
+	# Start port-forwards
 	./hack/port-forward.sh
 
 .PHONY: pf-bg
 pf-bg:
+	# Start port-forwards in the background
 	./hack/port-forward.sh &
 
 .PHONY: logs
 logs:
+	# Tail logs
 	kubectl -n argo logs -f -l app --max-log-requests 10
 
 .PHONY: postgres-cli
@@ -271,34 +304,41 @@ mysql-cli:
 
 .PHONY: test-e2e
 test-e2e:
+	# Run E2E tests
 	go test -timeout 20m -v -count 1 -p 1 ./test/e2e/...
 
 .PHONY: smoke
 smoke:
+	# Run smoke tests
 	go test -timeout 30s -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
+	# Run API tests
 	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli:
+	# Run CLI tests
 	go test -timeout 30s -v -count 1 -p 1 -run CliSuite ./test/e2e
 
 # clean
 
 .PHONY: clean
 clean:
+	# Delete build files
 	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
 # pre-push
 
 .git/hooks/pre-push: Makefile
+	# Create Git pre-push hook
 	echo 'make pre-push' > .git/hooks/pre-push
 	chmod +x .git/hooks/pre-push
 
 .PHONY: must-be-clean
 must-be-clean:
+	# Check everthing has been committed to Git
 	@if [ "$(GIT_TREE_STATE)" != "clean" ]; then echo 'git tree state is $(GIT_TREE_STATE)' ; exit 1; fi
 
 .PHONY: pre-commit
@@ -311,34 +351,38 @@ pre-push: must-be-clean pre-commit must-be-clean
 
 .PHONY: prepare-release
 prepare-release: pre-release
+	# Prepare release
 ifeq ($(VERSION),)
-	echo "unable to prepare release - VERSION undefined"
+	echo "unable to prepare release - VERSION undefined" >&2
 	exit 1
 endif
 ifeq ($(GIT_BRANCH),master)
-	echo "no release preparation needed for master branch"
+	# No release preparation needed for master branch
 else
-	echo "preparing release $(VERSION)"
+	# Update VERSION file
 	echo $(VERSION) | cut -c 1- > VERSION
-	# TODO - this will result in changes on master, we don't want that
 	make codegen manifests VERSION=$(VERSION)
-	# only commit if changes
+	# Commit if any changes
 	git diff --quiet || git commit -am "Update manifests to $(VERSION)"
 endif
 
 .PHONY: pre-release
 pre-release: pre-push
 ifeq ($(SNAPSHOT),false)
+	# Check we have tagged the latest commit
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
+	# Check the tag is correct
 	@if [ "$(GIT_TAG)" != "v$(VERSION)" ]; then echo 'git tag ($(GIT_TAG)) does not match VERSION (v$(VERSION))'; exit 1; fi
 endif
 
 .PHONY: publish
 publish:
+	# Publish release
 ifeq ($(GITHUB_TOKEN),)
-	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role"
+	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role" >&2
 	exit 1
 endif
+	# Upload assets to Github
 	./hack/upload-asset.sh $(VERSION) cmd/server/workflow/workflow.swagger.json
 	./hack/upload-asset.sh $(VERSION) cmd/server/cronworkflow/cron-workflow.swagger.json
 	./hack/upload-asset.sh $(VERSION) cmd/server/workflowarchive/workflow-archive.swagger.json
@@ -357,11 +401,13 @@ endif
 	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-s390x
 	./hack/upload-asset.sh $(VERSION) dist/argo-server-windows-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
+	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 ifeq ($(SNAPSHOT),false)
+	# Push changes to Git
 	git push
 	git push $(VERSION)
 endif
