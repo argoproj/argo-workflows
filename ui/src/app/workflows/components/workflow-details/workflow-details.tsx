@@ -10,7 +10,15 @@ import {NodePhase} from '../../../../models';
 import {uiUrl} from '../../../shared/base';
 import {services} from '../../../shared/services';
 
-import {WorkflowArtifacts, WorkflowDag, WorkflowLogsViewer, WorkflowNodeInfo, WorkflowSummaryPanel, WorkflowTimeline, WorkflowYamlViewer} from '..';
+import {
+    WorkflowArtifacts,
+    WorkflowDag,
+    WorkflowLogsViewer,
+    WorkflowNodeInfo,
+    WorkflowSummaryPanel,
+    WorkflowTimeline,
+    WorkflowYamlViewer
+} from '..';
 import {Consumer, ContextApis} from '../../../shared/context';
 import {WorkflowParametersPanel} from '../workflow-parameters-panel';
 
@@ -101,7 +109,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     }
 
     public render() {
-        const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes[this.selectedNodeId];
+        const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes && this.state.workflow.status.nodes[this.selectedNodeId];
         const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
         return (
             <Consumer>
