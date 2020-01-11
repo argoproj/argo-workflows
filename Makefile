@@ -274,7 +274,7 @@ test-e2e:
 
 .PHONY: smoke
 smoke:
-	go test -timeout 5m -v -count 1 -p 1 -run SmokeSuite ./test/e2e
+	go test -timeout 30s -v -count 1 -p 1 -run SmokeSuite ./test/e2e
 
 .PHONY: test-api
 test-api:
@@ -282,7 +282,7 @@ test-api:
 
 .PHONY: test-cli
 test-cli:
-	go test -timeout 5m -v -count 1 -p 1 -run CliSuite ./test/e2e
+	go test -timeout 30s -v -count 1 -p 1 -run CliSuite ./test/e2e
 
 # clean
 
