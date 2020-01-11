@@ -114,7 +114,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	// Start listener
 	var conn net.Listener
 	var listerErr error
-	address := fmt.Sprintf("0.0.0.0:%d", port)
+	address := fmt.Sprintf(":%d", port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {

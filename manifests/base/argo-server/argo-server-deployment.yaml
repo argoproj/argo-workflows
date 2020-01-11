@@ -17,7 +17,7 @@ spec:
       # - read/write/delete workflows
       # - read/write/delete cron workflows
       # - read/write/delete workflow templates
-      serviceAccountName: argo
+      serviceAccountName: argo-server
       containers:
         - name: argo-server
           image: argoproj/argo-server:latest

@@ -3,6 +3,7 @@ kind: Kustomization
 
 bases:
 - ../base
+- ./argo-server-rbac
 - ./workflow-controller-rbac
 
 patchesStrategicMerge:

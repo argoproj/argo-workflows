@@ -57,6 +57,11 @@ kind: ServiceAccount
 metadata:
   name: argo
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-server
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -287,7 +292,7 @@ spec:
             path: /
             port: 2746
             scheme: HTTP
-      serviceAccountName: argo
+      serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
