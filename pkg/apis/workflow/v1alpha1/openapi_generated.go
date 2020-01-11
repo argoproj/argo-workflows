@@ -40,6 +40,8 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Metadata":              schema_pkg_apis_workflow_v1alpha1_Metadata(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NodeStatus":            schema_pkg_apis_workflow_v1alpha1_NodeStatus(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.NoneStrategy":          schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact":           schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref),
+		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSBucket":             schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Outputs":               schema_pkg_apis_workflow_v1alpha1_Outputs(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ParallelSteps":         schema_pkg_apis_workflow_v1alpha1_ParallelSteps(ref),
 		"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.Parameter":             schema_pkg_apis_workflow_v1alpha1_Parameter(ref),
@@ -225,6 +227,12 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
 						},
 					},
+					"oss": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OSS contains OSS artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact"),
+						},
+					},
 					"globalName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "GlobalName exports an output artifact to the global scope, making it available as '{{workflow.outputs.artifacts.XXXX}} and in workflow.status.outputs.artifacts",
@@ -250,7 +258,7 @@ func schema_pkg_apis_workflow_v1alpha1_Artifact(ref common.ReferenceCallback) co
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArchiveStrategy", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -304,11 +312,17 @@ func schema_pkg_apis_workflow_v1alpha1_ArtifactLocation(ref common.ReferenceCall
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact"),
 						},
 					},
+					"oss": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OSS contains OSS artifact location details",
+							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
+			"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ArtifactoryArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.GitArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HDFSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.HTTPArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.OSSArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.RawArtifact", "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.S3Artifact"},
 	}
 }
 
@@ -1465,6 +1479,97 @@ func schema_pkg_apis_workflow_v1alpha1_NoneStrategy(ref common.ReferenceCallback
 				Type:        []string{"object"},
 			},
 		},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_OSSArtifact(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OSSArtifact is the location of an OSS artifact",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Endpoint is the hostname of the bucket endpoint",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"bucket": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bucket is the name of the bucket",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"accessKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"secretKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Key is the key in the bucket where the artifact resides",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret", "key"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
+	}
+}
+
+func schema_pkg_apis_workflow_v1alpha1_OSSBucket(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OSSBucket contains the access information required for interfacing with an OSS bucket",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"endpoint": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Endpoint is the hostname of the bucket endpoint",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"bucket": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Bucket is the name of the bucket",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"accessKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AccessKeySecret is the secret selector to the bucket's access key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+					"secretKeySecret": {
+						SchemaProps: spec.SchemaProps{
+							Description: "SecretKeySecret is the secret selector to the bucket's secret key",
+							Ref:         ref("k8s.io/api/core/v1.SecretKeySelector"),
+						},
+					},
+				},
+				Required: []string{"endpoint", "bucket", "accessKeySecret", "secretKeySecret"},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.SecretKeySelector"},
 	}
 }
 
