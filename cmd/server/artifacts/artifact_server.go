@@ -22,13 +22,13 @@ import (
 )
 
 type ArtifactServer struct {
-	authN           auth.Gatekeeper
-	nodeOffloadRepo sqldb.OffloadNodeStatusRepo
-	wfArchive       sqldb.WorkflowArchive
+	authN                 auth.Gatekeeper
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	wfArchive             sqldb.WorkflowArchive
 }
 
-func NewArtifactServer(authN auth.Gatekeeper, nodeOffloadRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
-	return &ArtifactServer{authN, nodeOffloadRepo, wfArchive}
+func NewArtifactServer(authN auth.Gatekeeper, offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo, wfArchive sqldb.WorkflowArchive) *ArtifactServer {
+	return &ArtifactServer{authN, offloadNodeStatusRepo, wfArchive}
 }
 
 func (a *ArtifactServer) GetArtifact(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +158,7 @@ func (a *ArtifactServer) getWorkflow(ctx context.Context, namespace string, work
 		return nil, err
 	}
 	if wf.Status.OffloadNodeStatus {
-		offloadedWf, err := a.nodeOffloadRepo.Get(workflowName, namespace)
+		offloadedWf, err := a.offloadNodeStatusRepo.Get(workflowName, namespace)
 		if err != nil {
 			return nil, err
 		}
