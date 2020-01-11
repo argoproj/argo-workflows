@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -78,6 +79,14 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		err = s.wfClient.Delete(wf.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			panic(err)
+		}
+		for {
+			_, err := s.wfClient.Get(wf.Name, metav1.GetOptions{})
+			if errors.IsNotFound(err) {
+				break
+			}
+			logCtx.Info("Waiting for workflow to be deleted")
+			time.Sleep(3 * time.Second)
 		}
 		// wait for workflow pods to be deleted
 		for {
