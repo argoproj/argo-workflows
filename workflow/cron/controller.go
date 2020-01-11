@@ -279,8 +279,8 @@ func wfInformerListOptionsFunc(options *v1.ListOptions) {
 }
 
 func (cc *Controller) isolatedNamespace() string {
+	log.WithField("forceNamespaceIsolation", cc.forceNamespaceIsolation).Info("ALEX 4")
 	if cc.forceNamespaceIsolation {
-		log.Info("ALEX 4")
 		return cc.namespace
 	}
 	return ""

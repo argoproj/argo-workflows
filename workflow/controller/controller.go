@@ -522,13 +522,11 @@ func (wfc *WorkflowController) newWorkflowTemplateInformer() wfextvv1alpha1.Work
 }
 
 func (wfc *WorkflowController) isolatedNamespace() string {
-	log.Info("ALEX 1")
+	log.WithField("forceNamespaceIsolation", wfc.forceNamespaceIsolation).Info("ALEX 4")
 	if wfc.Config.Namespace != "" {
-		log.Info("ALEX 2")
 		return wfc.Config.Namespace
 	}
 	if wfc.forceNamespaceIsolation {
-		log.Info("ALEX 3")
 		return wfc.namespace
 	}
 	return ""
