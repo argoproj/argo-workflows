@@ -291,6 +291,9 @@ spec:
         - argoproj/argoexec:latest
         command:
         - workflow-controller
+        env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo

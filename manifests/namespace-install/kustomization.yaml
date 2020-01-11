@@ -7,5 +7,6 @@ bases:
 - ./workflow-controller-rbac
 
 patchesStrategicMerge:
-- ./overlays/workflow-controller-configmap.yaml
 - ./overlays/argo-server-deployment.yaml
+- ./overlays/workflow-controller-configmap.yaml
+- ./overlays/workflow-controller-deployment.yaml
