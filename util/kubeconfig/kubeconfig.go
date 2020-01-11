@@ -134,6 +134,32 @@ func GetBearerToken(in *restclient.Config) (string, error) {
 			token := req.Header.Get("Authorization")
 			return formatToken(1, strings.TrimPrefix(token, "Bearer ")), nil
 		}
+		if in.AuthProvider != nil {
+			if in.AuthProvider.Name == "gcp" {
+				tc, err := in.TransportConfig()
+				if err != nil {
+					return "", nil
+				}
+
+				auth, err := restclient.GetAuthProvider(in.Host, in.AuthProvider, in.AuthConfigPersister)
+				if err != nil {
+					return "", nil
+				}
+
+				rt, err := transport.New(tc)
+				if err != nil {
+					return "", nil
+				}
+				rt = auth.WrapTransport(rt)
+				req := http.Request{Header: map[string][]string{}}
+
+				_, _ = rt.RoundTrip(&req)
+
+				token := in.AuthProvider.Config["access-token"]
+				return formatToken(1, strings.TrimPrefix(token, "Bearer ")), nil
+			}
+			return "",nil
+		}
 	}
 	return "", fmt.Errorf("invalid token version")
 }

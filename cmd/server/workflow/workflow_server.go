@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 
+
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,7 @@ import (
 	"github.com/argoproj/argo/workflow/templateresolution"
 	"github.com/argoproj/argo/workflow/util"
 	"github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/workflow/packer"
 )
 
 type workflowServer struct {
@@ -85,7 +87,7 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 		wf.Status.Nodes = offloaded.Status.Nodes
 		wf.Status.CompressedNodes = offloaded.Status.CompressedNodes
 	}
-
+	packer.DecompressWorkflow(wf)
 	return wf, err
 }
 
@@ -100,28 +102,6 @@ func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListReq
 	wfList, err := s.wfKubeService.List(wfClient, req.Namespace, req)
 	if err != nil {
 		return nil, err
-	}
-
-	if s.dbRepository != nil {
-		offloadedWorkflows, err := s.dbRepository.List(req.Namespace)
-		if err != nil {
-			return nil, err
-		}
-		status := map[primaryKey]v1alpha1.WorkflowStatus{}
-		for _, wf := range offloadedWorkflows {
-			status[primaryKey{wf.Name, wf.Namespace}] = wf.Status
-		}
-		for _, wf := range wfList.Items {
-			if wf.Status.OffloadNodeStatus {
-				status, ok := status[primaryKey{wf.Name, wf.Namespace}]
-				if ok {
-					wf.Status.Nodes = status.Nodes
-					wf.Status.CompressedNodes = status.CompressedNodes
-				} else {
-					return nil, fmt.Errorf("unable to find offloaded workflow status for %s/%s", req.Namespace, wf.UID)
-				}
-			}
-		}
 	}
 
 	return wfList, nil
