@@ -80,6 +80,7 @@ func (s *E2ESuite) BeforeTest(_, _ string) {
 		if err != nil {
 			panic(err)
 		}
+		wcConfig.Persistence.PostgreSQL.Host = "localhost"
 		// we assume that this is enabled for tests
 		session, tableName, err := sqldb.CreateDBSession(s.KubeClient, Namespace, wcConfig.Persistence)
 		if err != nil {
