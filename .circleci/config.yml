@@ -33,7 +33,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
@@ -43,6 +43,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
+            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
             - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:

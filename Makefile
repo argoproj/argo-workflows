@@ -126,6 +126,7 @@ ifeq ($(CI),false)
 	yarn --cwd ui build
 else
 	mkdir -p ui/dist/app
+	echo "Built without static files" > ui/dist/app/index.html
 endif
 	touch ui/dist/app
 
@@ -223,7 +224,7 @@ install-postgres: dist/quick-start-postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start: install down executor-image controller-image argo-server-image
+start: install down controller-image argo-server-image
 	# Change to use a "dev" tag and enable debug logging.
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}]'
 	# TODO Turn on the workflow compression, hopefully to shake out some bugs.
@@ -231,6 +232,7 @@ start: install down executor-image controller-image argo-server-image
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}]'
 	# Scale up.
 	make up
+	make executor-image
 	# Make the CLI
 	make cli
 	# Wait for apps to be ready.
