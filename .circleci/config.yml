@@ -109,7 +109,9 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run: mkdir dist && KUBECONFIG=~/.kube/config make start
+      - run:
+          name: Start Argo
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start
       - run:
           name: Establish port forward
           command: make pf
