@@ -192,6 +192,11 @@ spec:
         name: argo-server
         ports:
         - containerPort: 2746
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 2746
+            scheme: HTTP
       serviceAccountName: argo
 ---
 apiVersion: apps/v1

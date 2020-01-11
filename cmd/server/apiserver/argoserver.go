@@ -115,7 +115,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	var conn net.Listener
 	var listerErr error
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		conn, listerErr = net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, listerErr = net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if listerErr != nil {
 			log.Warnf("failed to listen: %v", listerErr)
 			return false, nil
