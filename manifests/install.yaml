@@ -356,6 +356,8 @@ spec:
             path: /
             port: 2746
             scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 30
       serviceAccountName: argo-server
 ---
 apiVersion: apps/v1

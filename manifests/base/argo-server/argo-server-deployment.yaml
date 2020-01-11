@@ -23,6 +23,8 @@ spec:
               port: 2746
               scheme: HTTP
               path: /
+            initialDelaySeconds: 5
+            periodSeconds: 30
           env:
             # TODO - maybe unused
             - name: ARGO_NAMESPACE
