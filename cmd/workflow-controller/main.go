@@ -33,7 +33,6 @@ func NewRootCommand() *cobra.Command {
 	var (
 		clientConfig            clientcmd.ClientConfig
 		configMap               string // --configmap
-		forceNamespaceIsolation bool
 		executorImage           string // --executor-image
 		executorImagePullPolicy string // --executor-image-pull-policy
 		logLevel                string // --loglevel
@@ -67,7 +66,7 @@ func NewRootCommand() *cobra.Command {
 			wfclientset := wfclientset.NewForConfigOrDie(config)
 
 			// start a controller on instances of our custom resource
-			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, forceNamespaceIsolation, executorImage, executorImagePullPolicy, configMap)
+			wfController := controller.NewWorkflowController(config, kubeclientset, wfclientset, namespace, executorImage, executorImagePullPolicy, configMap)
 			err = wfController.ResyncConfig()
 			if err != nil {
 				return err
@@ -92,7 +91,6 @@ func NewRootCommand() *cobra.Command {
 	clientConfig = kubecli.AddKubectlFlagsToCmd(&command)
 	command.AddCommand(cmdutil.NewVersionCmd(CLIName))
 	command.Flags().StringVar(&configMap, "configmap", "workflow-controller-configmap", "Name of K8s configmap to retrieve workflow controller configuration")
-	command.Flags().BoolVar(&forceNamespaceIsolation, "force-namespace-isolation", os.Getenv("FORCE_NAMESPACE_ISOLATION") == "true", "Only watch own namespace (overrides value in configmap)")
 	command.Flags().StringVar(&executorImage, "executor-image", "", "Executor image to use (overrides value in configmap)")
 	command.Flags().StringVar(&executorImagePullPolicy, "executor-image-pull-policy", "", "Executor imagePullPolicy to use (overrides value in configmap)")
 	command.Flags().StringVar(&logLevel, "loglevel", "info", "Set the logging level. One of: debug|info|warn|error")
