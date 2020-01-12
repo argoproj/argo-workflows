@@ -528,7 +528,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	assert.Nil(t, err)
 
 	rsmWfReq = WorkflowTerminateRequest{
-		WorkflowName: "hello-world-9tql2-not",
+		Name: "hello-world-9tql2-not",
 		Namespace:    "workflows",
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
