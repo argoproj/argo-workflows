@@ -19,13 +19,13 @@ import (
 )
 
 type workflowServer struct {
-	dbRepository  sqldb.OffloadNodeStatusRepo
-	wfKubeService *kubeService
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	wfKubeService         *kubeService
 }
 
-func NewWorkflowServer(dbRepository sqldb.OffloadNodeStatusRepo) WorkflowServiceServer {
+func NewWorkflowServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) WorkflowServiceServer {
 	return &workflowServer{
-		dbRepository: dbRepository,
+		offloadNodeStatusRepo: offloadNodeStatusRepo,
 	}
 }
 
@@ -79,20 +79,19 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		offloaded, err := s.dbRepository.Get(req.Name, req.Namespace)
+
+		offloaded, err := s.offloadNodeStatusRepo.Get(req.Name, req.Namespace)
 		if err != nil {
 			return nil, err
 		}
 		wf.Status.Nodes = offloaded.Status.Nodes
 		wf.Status.CompressedNodes = offloaded.Status.CompressedNodes
 	}
-	packer.DecompressWorkflow(wf)
-	return wf, err
-}
-
-type primaryKey struct {
-	name      string
-	namespace string
+	err = packer.DecompressWorkflow(wf)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
@@ -120,11 +119,26 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 	done := make(chan bool)
 	go func() {
 		for next := range wfs.ResultChan() {
-			wf := *next.Object.(*v1alpha1.Workflow)
-			log.WithFields(log.Fields{"type": next.Type, "Name": wf.Name}).Debug("Event")
-			err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: &wf})
+
+			wf := next.Object.(*v1alpha1.Workflow)
+			err := packer.DecompressWorkflow(wf)
+			logCtx := log.WithFields(log.Fields{"type": next.Type, "namespace": wf.Namespace, "workflowName": wf.Name})
 			if err != nil {
-				log.Warnf("Unable to send stream message: %v", err)
+				logCtx.Warnf("Unable to send stream message: %v", err)
+				break
+			}
+			if wf.Status.OffloadNodeStatus {
+				offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+				if err != nil {
+					logCtx.Warnf("Unable to send stream message: %v", err)
+					break
+				}
+				wf.Status.Nodes = offloaded.Status.Nodes
+			}
+			logCtx.Debug("Sending event")
+			err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: wf})
+			if err != nil {
+				logCtx.Warnf("Unable to send stream message: %v", err)
 				break
 			}
 		}
@@ -150,7 +164,7 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		err = s.dbRepository.Delete(req.Name, req.Namespace)
+		err = s.offloadNodeStatusRepo.Delete(req.Name, req.Namespace)
 		if err != nil {
 			return nil, err
 		}

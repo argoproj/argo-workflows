@@ -33,7 +33,7 @@ commands:
     steps:
       - save_cache:
           name: Save Golang cache
-          key: go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+          key: go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
           paths:
             - /home/circleci/.cache/go-build
             - /home/circleci/sdk/go1.12.6
@@ -43,6 +43,8 @@ commands:
       - restore_cache:
           name: Restore Golang cache
           keys:
+            - go-v5-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
+            - go-v5-master-{{ .Environment.CIRCLE_JOB }}
             - go-v4-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}
             - go-v4-master-{{ .Environment.CIRCLE_JOB }}
   go_junit_report:
@@ -109,17 +111,6 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run: mkdir dist && KUBECONFIG=~/.kube/config make start
-      - run:
-          name: Establish port forward
-          command: make pf
-          background: true
-      - run:
-          name: Follow logs, to help diagnose failures
-          command: |
-            sleep 10
-            make logs
-          background: true
       - run:
           name: Watch Docker events, to help diagnose failures
           command: docker events
@@ -128,6 +119,20 @@ jobs:
           name: Watch Kubernetes events, to help diagnose failures
           command: kubectl -n argo get events --watch
           background: true
+      - run:
+          name: Start Argo
+          command: mkdir dist && KUBECONFIG=~/.kube/config make start
+      - run:
+          name: Establish port forward
+          command: make pf
+          background: true
+      - run:
+          name: Follow logs, to help diagnose failures
+          command: make logs
+          background: true
+      - run:
+          name: Run smoke tests
+          command: make smoke
       - run:
           name: Run tests
           command: |

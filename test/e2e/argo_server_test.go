@@ -568,6 +568,15 @@ func (s *ArgoServerSuite) TestWorkflowStream() {
 			s := bufio.NewScanner(resp.Body)
 			for s.Scan() {
 				line := s.Text()
+				// make sure we have this enabled
+				if line == "" {
+					continue
+				}
+				if strings.Contains(line, `status:`) {
+					assert.Contains(t, line, `"offloadNodeStatus":true`)
+					// so that we get this
+					assert.Contains(t, line, `"nodes":`)
+				}
 				if strings.Contains(line, "Succeeded") {
 					break
 				}
@@ -726,6 +735,8 @@ func (s *ArgoServerSuite) TestWorkflowTemplates() {
 			Expect().
 			Status(200)
 	})
+
+	// TODO - update
 
 	s.Run("Delete", func(t *testing.T) {
 		s.e(t).DELETE("/api/v1/workflow-templates/argo/test").

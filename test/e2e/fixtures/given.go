@@ -7,16 +7,18 @@ import (
 
 	"sigs.k8s.io/yaml"
 
+	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
 )
 
 type Given struct {
-	t          *testing.T
-	client     v1alpha1.WorkflowInterface
-	cronClient v1alpha1.CronWorkflowInterface
-	wf         *wfv1.Workflow
-	cronWf     *wfv1.CronWorkflow
+	t                     *testing.T
+	client                v1alpha1.WorkflowInterface
+	cronClient            v1alpha1.CronWorkflowInterface
+	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
+	wf                    *wfv1.Workflow
+	cronWf                *wfv1.CronWorkflow
 }
 
 // creates a workflow based on the parameter, this may be:
@@ -97,10 +99,11 @@ func (g *Given) CronWorkflow(text string) *Given {
 
 func (g *Given) When() *When {
 	return &When{
-		t:          g.t,
-		wf:         g.wf,
-		cronWf:     g.cronWf,
-		client:     g.client,
-		cronClient: g.cronClient,
+		t:                     g.t,
+		wf:                    g.wf,
+		cronWf:                g.cronWf,
+		client:                g.client,
+		cronClient:            g.cronClient,
+		offloadNodeStatusRepo: g.offloadNodeStatusRepo,
 	}
 }

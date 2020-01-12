@@ -57,6 +57,11 @@ kind: ServiceAccount
 metadata:
   name: argo
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argo-server
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -138,6 +143,54 @@ rules:
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argo-server-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+- apiGroups:
+  - argoproj.io
+  resources:
+  - workflows
+  - workflowtemplates
+  - cronworkflows
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-binding
@@ -148,6 +201,18 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: argo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argo-server-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argo-server-role
+subjects:
+- kind: ServiceAccount
+  name: argo-server
 ---
 apiVersion: v1
 data:
@@ -160,13 +225,10 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    app: argo-server
   name: argo-server
 spec:
   ports:
   - port: 2746
-    protocol: TCP
     targetPort: 2746
   selector:
     app: argo-server
@@ -188,6 +250,14 @@ spec:
       - args:
         - --auth-type
         - client
+        env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
+        - name: ARGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
         image: argoproj/argo-server:latest
         name: argo-server
         ports:
@@ -197,7 +267,9 @@ spec:
             path: /
             port: 2746
             scheme: HTTP
-      serviceAccountName: argo
+          initialDelaySeconds: 5
+          periodSeconds: 30
+      serviceAccountName: argo-server
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -220,6 +292,9 @@ spec:
         - argoproj/argoexec:latest
         command:
         - workflow-controller
+        env:
+        - name: FORCE_NAMESPACE_ISOLATION
+          value: "true"
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo

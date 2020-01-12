@@ -35,7 +35,7 @@ func (wdc *nodeOffloadRepo) IsEnabled() bool {
 
 // Save will upsert the workflow
 func (wdc *nodeOffloadRepo) Save(wf *wfv1.Workflow) error {
-
+	log.WithFields(log.Fields{"name": wf.Name, "namespace": wf.Namespace}).Debug("Saving offloaded workflow")
 	wfdb, err := toRecord(wf)
 	if err != nil {
 		return err
@@ -115,6 +115,7 @@ func (wdc *nodeOffloadRepo) update(wfDB *WorkflowRecord) error {
 }
 
 func (wdc *nodeOffloadRepo) Get(name, namespace string) (*wfv1.Workflow, error) {
+	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Getting offloaded workflow")
 	wf := &WorkflowOnlyRecord{}
 	err := wdc.session.
 		Select("workflow").
@@ -145,5 +146,6 @@ func (wdc *nodeOffloadRepo) List(namespace string) (wfv1.Workflows, error) {
 }
 
 func (wdc *nodeOffloadRepo) Delete(name, namespace string) error {
+	log.WithFields(log.Fields{"name": name, "namespace": namespace}).Debug("Deleting offloaded workflow")
 	return wdc.session.Collection(wdc.tableName).Find(db.Cond{"name": name}).And(db.Cond{"namespace": namespace}).Delete()
 }

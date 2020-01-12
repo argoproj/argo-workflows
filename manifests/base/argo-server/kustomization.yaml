@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
 - argo-server-deployment.yaml
+- argo-server-sa.yaml
 - argo-server-service.yaml

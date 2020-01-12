@@ -101,7 +101,7 @@ export class WorkflowDetails extends React.Component<RouteComponentProps<any>, {
     }
 
     public render() {
-        const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes[this.selectedNodeId];
+        const selectedNode = this.state.workflow && this.state.workflow.status && this.state.workflow.status.nodes && this.state.workflow.status.nodes[this.selectedNodeId];
         const workflowPhase: NodePhase = this.state.workflow && this.state.workflow.status ? this.state.workflow.status.phase : undefined;
         return (
             <Consumer>

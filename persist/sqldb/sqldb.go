@@ -1,6 +1,8 @@
 package sqldb
 
 import (
+	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 	"upper.io/db.v3/lib/sqlbuilder"
 	"upper.io/db.v3/mysql"
@@ -31,7 +33,7 @@ func CreateDBSession(kubectlConfig kubernetes.Interface, namespace string, persi
 		return CreateMySQLDBSession(kubectlConfig, namespace, persistConfig.MySQL, persistConfig.ConnectionPool)
 	}
 
-	return nil, "", nil
+	return nil, "", fmt.Errorf("no databases are configured")
 }
 
 // CreatePostGresDBSession creates postgresDB session

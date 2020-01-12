@@ -102,6 +102,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.WithField("nodeStatusOffload", configMap.Persistence.NodeStatusOffload).Info("Offload node status")
 		if configMap.Persistence.NodeStatusOffload {
 			offloadRepo = sqldb.NewOffloadNodeStatusRepo(tableName, session)
 		}
@@ -114,8 +115,9 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	// Start listener
 	var conn net.Listener
 	var listerErr error
+	address := fmt.Sprintf(":%d", port)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-		conn, listerErr = net.Listen("tcp", fmt.Sprintf(":%d", port))
+		conn, listerErr = net.Listen("tcp", address)
 		if listerErr != nil {
 			log.Warnf("failed to listen: %v", listerErr)
 			return false, nil
@@ -135,7 +137,7 @@ func (as *argoServer) Run(ctx context.Context, port int) {
 	go func() { as.checkServeErr("grpcServer", grpcServer.Serve(grpcL)) }()
 	go func() { as.checkServeErr("httpServer", httpServer.Serve(httpL)) }()
 	go func() { as.checkServeErr("tcpm", tcpm.Serve()) }()
-	log.Infof("Argo Server started successfully on port %v", port)
+	log.Infof("Argo Server started successfully on address %s", address)
 	as.stopCh = make(chan struct{})
 	<-as.stopCh
 }

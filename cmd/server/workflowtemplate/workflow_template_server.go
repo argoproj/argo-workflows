@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/argoproj/argo/cmd/server/auth"
@@ -24,26 +20,27 @@ func NewWorkflowTemplateServer() WorkflowTemplateServiceServer {
 	return &WorkflowTemplateServer{}
 }
 
-func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, req *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
-	if wftmplReq.Template == nil {
+	if req.Template == nil {
 		return nil, fmt.Errorf("workflow template was not found in the request body")
 	}
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace))
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
+	err := validate.ValidateWorkflowTemplate(wftmplGetter, req.Template)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow template: %v", err)
+		return nil, err
 	}
 
-	return wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Create(wftmplReq.Template)
+	return wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Create(req.Template)
 
 }
 
-func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, req *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Get(wftmplReq.Name, v1.GetOptions{})
+	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Get(req.Name, v1.GetOptions{})
+
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +48,10 @@ func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, wftm
 	return wfTmpl, err
 }
 
-func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wftmplReq *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
+func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, req *WorkflowTemplateListRequest) (*v1alpha1.WorkflowTemplateList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).List(v1.ListOptions{})
+	wfList, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -64,10 +61,10 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wf
 	return wfList, nil
 }
 
-func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
+func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, req *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Delete(wftmplReq.Name, &v1.DeleteOptions{})
+	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Delete(req.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -75,57 +72,31 @@ func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, w
 	return &WorkflowDeleteResponse{}, nil
 }
 
-func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
+func (wts *WorkflowTemplateServer) LintWorkflowTemplate(ctx context.Context, req *WorkflowTemplateCreateRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace))
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, wftmplReq.Template)
+	err := validate.ValidateWorkflowTemplate(wftmplGetter, req.Template)
 	if err != nil {
 		return nil, err
 	}
 
-	return wftmplReq.Template, nil
+	return req.Template, nil
 }
 
-func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
-	if wftmplReq.Template == nil {
+func (wts *WorkflowTemplateServer) UpdateWorkflowTemplate(ctx context.Context, req *WorkflowTemplateUpdateRequest) (*v1alpha1.WorkflowTemplate, error) {
+	if req.Template == nil {
 		return nil, fmt.Errorf("WorkflowTemplate is not found in Request body")
 	}
-	return wts.updateWorkflowTemplate(ctx, wftmplReq.Template)
-}
-
-func (wts *WorkflowTemplateServer) updateWorkflowTemplate(ctx context.Context, newWfTmpl *v1alpha1.WorkflowTemplate) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
-	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(newWfTmpl.Namespace))
+	wftmplGetter := templateresolution.WrapWorkflowTemplateInterface(wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace))
 
-	err := validate.ValidateWorkflowTemplate(wftmplGetter, newWfTmpl)
+	err := validate.ValidateWorkflowTemplate(wftmplGetter, req.Template)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create workflow template: %v", err)
+		return nil, err
 	}
 
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(newWfTmpl.Namespace).Get(newWfTmpl.Name, v1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflow template with name '%s': %v", newWfTmpl.Name, err)
-	}
-
-	for i := 0; i < 10; i++ {
-		wfTmpl.Spec = newWfTmpl.Spec
-		wfTmpl.Labels = newWfTmpl.Labels
-		wfTmpl.Annotations = newWfTmpl.Annotations
-
-		res, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(newWfTmpl.Namespace).Update(wfTmpl)
-		if err == nil {
-			return res, nil
-		}
-		if !errors.IsConflict(err) {
-			return nil, err
-		}
-
-		wfTmpl, err = wfClient.ArgoprojV1alpha1().WorkflowTemplates(newWfTmpl.Namespace).Get(newWfTmpl.Name, v1.GetOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get workflow template with name '%s': %v", newWfTmpl.Name, err)
-		}
-	}
-	return nil, status.Errorf(codes.Internal, "Failed to update application. Too many conflicts")
+	res, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(req.Namespace).Update(req.Template)
+	return res, err
 }

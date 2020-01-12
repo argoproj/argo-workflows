@@ -25,6 +25,7 @@ func (s *SmokeSuite) TestBasic() {
 		Then().
 		Expect(func(t *testing.T, _ *metav1.ObjectMeta, wf *wfv1.WorkflowStatus) {
 			assert.Equal(t, wfv1.NodeSucceeded, wf.Phase)
+			assert.NotEmpty(t, wf.Nodes)
 		})
 }
 

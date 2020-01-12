@@ -14,7 +14,7 @@ func Test_parseToken(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		version, tokenBody, err := parseToken("v1:tokenBody")
 		if assert.NoError(t, err){
-			assert.Equal(t, 1, version)
+			assert.Equal(t, tokenVersion1, version)
 			assert.Equal(t, "tokenBody", tokenBody)
 		}
 	})

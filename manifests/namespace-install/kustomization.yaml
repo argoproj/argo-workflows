@@ -3,7 +3,10 @@ kind: Kustomization
 
 bases:
 - ../base
+- ./argo-server-rbac
 - ./workflow-controller-rbac
 
 patchesStrategicMerge:
+- ./overlays/argo-server-deployment.yaml
 - ./overlays/workflow-controller-configmap.yaml
+- ./overlays/workflow-controller-deployment.yaml
