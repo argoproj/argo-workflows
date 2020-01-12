@@ -52,15 +52,15 @@ func (s *kubeService) List(wfClient versioned.Interface, namespace string, wfReq
 }
 
 func (s *kubeService) Delete(wfClient versioned.Interface, namespace string, wfReq *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
-	err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Delete(wfReq.WorkflowName, &metav1.DeleteOptions{})
+	err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Delete(wfReq.Name, &metav1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}
 	return &WorkflowDeleteResponse{}, nil
 }
 
-func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
+func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.Interface, namespace string, wfReq *WorkflowRetryRequest) (*v1alpha1.Workflow, error) {
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +72,8 @@ func (s *kubeService) Retry(wfClient versioned.Interface, kubeClient kubernetes.
 	return wf, err
 }
 
-func (s *kubeService) Resubmit(wfClient versioned.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
+func (s *kubeService) Resubmit(wfClient versioned.Interface, namespace string, wfReq *WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -91,28 +91,14 @@ func (s *kubeService) Resubmit(wfClient versioned.Interface, namespace string, w
 	return created, err
 }
 
-func (s *kubeService) Resume(wfClient versioned.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	err := util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.WorkflowName)
+func (s *kubeService) Resume(wfClient versioned.Interface, namespace string, wfReq *WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
+	err := util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.Name)
 	if err != nil {
-		log.Warnf("Failed to resume %s: %+v", wfReq.WorkflowName, err)
+		log.Warnf("Failed to resume %s: %+v", wfReq.Name, err)
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return wf, nil
-}
-
-func (s *kubeService) Suspend(wfClient versioned.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	err := util.SuspendWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.WorkflowName)
-	if err != nil {
-		return nil, err
-	}
-
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +106,27 @@ func (s *kubeService) Suspend(wfClient versioned.Interface, namespace string, wf
 	return wf, nil
 }
 
-func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, wfReq *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
-	err := util.TerminateWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.WorkflowName)
+func (s *kubeService) Suspend(wfClient versioned.Interface, namespace string, wfReq *WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
+	err := util.SuspendWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.WorkflowName, metav1.GetOptions{})
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return wf, nil
+}
+
+func (s *kubeService) Terminate(wfClient versioned.Interface, namespace string, wfReq *WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
+	err := util.TerminateWorkflow(wfClient.ArgoprojV1alpha1().Workflows(namespace), wfReq.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(namespace).Get(wfReq.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

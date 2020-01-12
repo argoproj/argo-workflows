@@ -158,7 +158,7 @@
         ]
       }
     },
-    "/api/v1/workflow-templates/{namespace}/{templateName}": {
+    "/api/v1/workflow-templates/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflowTemplate",
         "responses": {
@@ -177,7 +177,7 @@
             "type": "string"
           },
           {
-            "name": "templateName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -212,7 +212,7 @@
             "type": "string"
           },
           {
-            "name": "templateName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -288,7 +288,7 @@
             "type": "string"
           },
           {
-            "name": "templateName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -3611,7 +3611,7 @@
     "workflowtemplateWorkflowTemplateUpdateRequest": {
       "type": "object",
       "properties": {
-        "templateName": {
+        "name": {
           "type": "string"
         },
         "namespace": {

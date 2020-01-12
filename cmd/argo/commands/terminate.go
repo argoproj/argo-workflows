@@ -26,8 +26,8 @@ func NewTerminateCommand() *cobra.Command {
 				conn := client.GetClientConn()
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				for _, wfName := range args {
-					wfUptReq := workflow.WorkflowUpdateRequest{
-						WorkflowName: wfName,
+					wfUptReq := workflow.WorkflowTerminateRequest{
+						Name: wfName,
 						Namespace:    namespace,
 					}
 					wf, err := apiGRPCClient.TerminateWorkflow(ctx, &wfUptReq)

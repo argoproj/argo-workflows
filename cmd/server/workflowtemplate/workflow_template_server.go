@@ -43,7 +43,7 @@ func (wts *WorkflowTemplateServer) CreateWorkflowTemplate(ctx context.Context, w
 func (wts *WorkflowTemplateServer) GetWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateGetRequest) (*v1alpha1.WorkflowTemplate, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Get(wftmplReq.TemplateName, v1.GetOptions{})
+	wfTmpl, err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Get(wftmplReq.Name, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (wts *WorkflowTemplateServer) ListWorkflowTemplates(ctx context.Context, wf
 func (wts *WorkflowTemplateServer) DeleteWorkflowTemplate(ctx context.Context, wftmplReq *WorkflowTemplateDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Delete(wftmplReq.TemplateName, &v1.DeleteOptions{})
+	err := wfClient.ArgoprojV1alpha1().WorkflowTemplates(wftmplReq.Namespace).Delete(wftmplReq.Name, &v1.DeleteOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ message WorkflowCreateRequest {
 }
 
 message WorkflowGetRequest {
-    string workflowName = 1;
+    string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
 }
@@ -33,21 +33,40 @@ message WorkflowListRequest {
     k8s.io.apimachinery.pkg.apis.meta.v1.ListOptions listOptions = 2;
 }
 
-message WorkflowUpdateRequest {
-    string workflowName = 1;
+message WorkflowResubmitRequest {
+    string name = 1;
     string namespace = 2;
     bool memoized = 3;
 }
 
+message WorkflowRetryRequest {
+    string name = 1;
+    string namespace = 2;
+}
+message WorkflowResumeRequest {
+    string name = 1;
+    string namespace = 2;
+}
+
+message WorkflowTerminateRequest {
+    string name = 1;
+    string namespace = 2;
+}
+
+message WorkflowSuspendRequest {
+    string name = 1;
+    string namespace = 2;
+}
+
 message WorkflowLogRequest {
-    string workflowName = 1;
+    string name = 1;
     string namespace = 2;
     string podName = 3;
     k8s.io.api.core.v1.PodLogOptions logOptions = 4;
 }
 
 message WorkflowDeleteRequest {
-    string workflowName = 1;
+    string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
@@ -80,7 +99,7 @@ service WorkflowService {
     }
 
     rpc GetWorkflow (WorkflowGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
-        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}";
     }
 
     rpc ListWorkflows (WorkflowListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowList) {
@@ -92,40 +111,40 @@ service WorkflowService {
     }
 
     rpc DeleteWorkflow (WorkflowDeleteRequest) returns (WorkflowDeleteResponse) {
-        option (google.api.http).delete = "/api/v1/workflows/{namespace}/{workflowName}";
+        option (google.api.http).delete = "/api/v1/workflows/{namespace}/{name}";
     }
 
-    rpc RetryWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc RetryWorkflow (WorkflowRetryRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{workflowName}/retry"
+			put: "/api/v1/workflows/{namespace}/{name}/retry"
 			body: "*"
 		};
     }
 
-    rpc ResubmitWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc ResubmitWorkflow (WorkflowResubmitRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{workflowName}/resubmit"
+			put: "/api/v1/workflows/{namespace}/{name}/resubmit"
 			body: "*"
 		};
     }
 
-    rpc ResumeWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc ResumeWorkflow (WorkflowResumeRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{workflowName}/resume"
+			put: "/api/v1/workflows/{namespace}/{name}/resume"
 			body: "*"
 		};
     }
 
-    rpc SuspendWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc SuspendWorkflow (WorkflowSuspendRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{workflowName}/suspend"
+			put: "/api/v1/workflows/{namespace}/{name}/suspend"
 			body: "*"
 		};
     }
 
-    rpc TerminateWorkflow (WorkflowUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
+    rpc TerminateWorkflow (WorkflowTerminateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.Workflow) {
         option (google.api.http) = {
-			put: "/api/v1/workflows/{namespace}/{workflowName}/terminate"
+			put: "/api/v1/workflows/{namespace}/{name}/terminate"
 			body: "*"
 		};
     }
@@ -138,6 +157,6 @@ service WorkflowService {
     }
 
     rpc PodLogs (WorkflowLogRequest) returns (stream LogEntry) {
-        option (google.api.http).get = "/api/v1/workflows/{namespace}/{workflowName}/{podName}/log";
+        option (google.api.http).get = "/api/v1/workflows/{namespace}/{name}/{podName}/log";
     }
 }

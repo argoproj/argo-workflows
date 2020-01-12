@@ -130,7 +130,7 @@ func getWFList(client workflow.WorkflowServiceClient, ctx context.Context, ns st
 
 func apiServerDeleteWorkflow(client workflow.WorkflowServiceClient, ctx context.Context, wfName, ns string) {
 	wfReq := workflow.WorkflowDeleteRequest{
-		WorkflowName: wfName,
+		Name: wfName,
 		Namespace:    ns,
 	}
 

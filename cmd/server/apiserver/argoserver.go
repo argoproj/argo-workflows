@@ -50,7 +50,7 @@ type ArgoServerOpts struct {
 	KubeClientset *kubernetes.Clientset
 	WfClientSet   *versioned.Clientset
 	RestConfig    *rest.Config
-	AuthType      string
+	AuthMode      string
 	ConfigName    string
 }
 
@@ -58,7 +58,7 @@ func NewArgoServer(opts ArgoServerOpts) *argoServer {
 	return &argoServer{
 		namespace:     opts.Namespace,
 		kubeClientset: opts.KubeClientset,
-		authenticator: auth.NewGatekeeper(opts.AuthType, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
+		authenticator: auth.NewGatekeeper(opts.AuthMode, opts.WfClientSet, opts.KubeClientset, opts.RestConfig),
 		configName:    opts.ConfigName,
 	}
 }
@@ -77,13 +77,13 @@ func (ao ArgoServerOpts) ValidateOpts() error {
 		auth.Hybrid,
 		auth.Client,
 	} {
-		if ao.AuthType == item {
+		if ao.AuthMode == item {
 			validate = true
 			break
 		}
 	}
 	if !validate {
-		return errors.Errorf("", "Invalid Auth Type. %s", ao.AuthType)
+		return errors.Errorf("", "Invalid Authentication Mode. %s", ao.AuthMode)
 	}
 	return nil
 }

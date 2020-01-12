@@ -42,7 +42,7 @@ func NewResubmitCommand() *cobra.Command {
 				errors.CheckError(err)
 				wfReq := workflow.WorkflowGetRequest{
 					Namespace:    namespace,
-					WorkflowName: args[0],
+					Name: args[0],
 				}
 				wf, err := apiGRPCClient.GetWorkflow(ctx, &wfReq)
 				errors.CheckError(err)

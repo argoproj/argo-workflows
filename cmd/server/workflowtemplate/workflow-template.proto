@@ -21,7 +21,7 @@ message WorkflowTemplateCreateRequest {
 }
 
 message WorkflowTemplateGetRequest {
-    string templateName = 1;
+    string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.GetOptions getOptions = 3;
 }
@@ -32,13 +32,13 @@ message WorkflowTemplateListRequest {
 }
 
 message WorkflowTemplateUpdateRequest {
-    string templateName = 1;
+    string name = 1;
     string namespace = 2;
     github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate template = 3;
 }
 
 message WorkflowTemplateDeleteRequest {
-    string templateName = 1;
+    string name = 1;
     string namespace = 2;
     k8s.io.apimachinery.pkg.apis.meta.v1.DeleteOptions deleteOptions = 3;
 }
@@ -55,7 +55,7 @@ service WorkflowTemplateService {
     }
 
     rpc GetWorkflowTemplate (WorkflowTemplateGetRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
-        option (google.api.http).get = "/api/v1/workflow-templates/{namespace}/{templateName}";
+        option (google.api.http).get = "/api/v1/workflow-templates/{namespace}/{name}";
     }
 
     rpc ListWorkflowTemplates (WorkflowTemplateListRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplateList) {
@@ -64,13 +64,13 @@ service WorkflowTemplateService {
 
     rpc UpdateWorkflowTemplate (WorkflowTemplateUpdateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {
         option (google.api.http) = {
-            put: "/api/v1/workflow-templates/{namespace}/{templateName}"
+            put: "/api/v1/workflow-templates/{namespace}/{name}"
             body: "*"
         };
     }
 
     rpc DeleteWorkflowTemplate (WorkflowTemplateDeleteRequest) returns (WorkflowDeleteResponse) {
-        option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{templateName}";
+        option (google.api.http).delete = "/api/v1/workflow-templates/{namespace}/{name}";
     }
 
     rpc LintWorkflowTemplate (WorkflowTemplateCreateRequest) returns (github.com.argoproj.argo.pkg.apis.workflow.v1alpha1.WorkflowTemplate) {

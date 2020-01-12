@@ -46,7 +46,7 @@ func NewGetCommand() *cobra.Command {
 				client, ctx := GetWFApiServerGRPCClient(conn)
 				for _, arg := range args {
 					wfReq := workflow.WorkflowGetRequest{
-						WorkflowName: arg,
+						Name: arg,
 						Namespace:    ns,
 					}
 					wf, err := client.GetWorkflow(ctx, &wfReq)

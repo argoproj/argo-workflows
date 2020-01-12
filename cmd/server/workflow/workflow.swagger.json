@@ -242,7 +242,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}": {
+    "/api/v1/workflows/{namespace}/{name}": {
       "get": {
         "operationId": "GetWorkflow",
         "responses": {
@@ -261,7 +261,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -296,7 +296,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -355,7 +355,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/resubmit": {
+    "/api/v1/workflows/{namespace}/{name}/resubmit": {
       "put": {
         "operationId": "ResubmitWorkflow",
         "responses": {
@@ -374,7 +374,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -384,7 +384,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+              "$ref": "#/definitions/workflowWorkflowResubmitRequest"
             }
           }
         ],
@@ -393,7 +393,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/resume": {
+    "/api/v1/workflows/{namespace}/{name}/resume": {
       "put": {
         "operationId": "ResumeWorkflow",
         "responses": {
@@ -412,7 +412,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -422,7 +422,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+              "$ref": "#/definitions/workflowWorkflowResumeRequest"
             }
           }
         ],
@@ -431,7 +431,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/retry": {
+    "/api/v1/workflows/{namespace}/{name}/retry": {
       "put": {
         "operationId": "RetryWorkflow",
         "responses": {
@@ -450,7 +450,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -460,7 +460,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+              "$ref": "#/definitions/workflowWorkflowRetryRequest"
             }
           }
         ],
@@ -469,7 +469,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/suspend": {
+    "/api/v1/workflows/{namespace}/{name}/suspend": {
       "put": {
         "operationId": "SuspendWorkflow",
         "responses": {
@@ -488,7 +488,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -498,7 +498,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+              "$ref": "#/definitions/workflowWorkflowSuspendRequest"
             }
           }
         ],
@@ -507,7 +507,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/terminate": {
+    "/api/v1/workflows/{namespace}/{name}/terminate": {
       "put": {
         "operationId": "TerminateWorkflow",
         "responses": {
@@ -526,7 +526,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -536,7 +536,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/workflowWorkflowUpdateRequest"
+              "$ref": "#/definitions/workflowWorkflowTerminateRequest"
             }
           }
         ],
@@ -545,7 +545,7 @@
         ]
       }
     },
-    "/api/v1/workflows/{namespace}/{workflowName}/{podName}/log": {
+    "/api/v1/workflows/{namespace}/{name}/{podName}/log": {
       "get": {
         "operationId": "PodLogs",
         "responses": {
@@ -564,7 +564,7 @@
             "type": "string"
           },
           {
-            "name": "workflowName",
+            "name": "name",
             "in": "path",
             "required": true,
             "type": "string"
@@ -4457,10 +4457,10 @@
     "workflowWorkflowDeleteResponse": {
       "type": "object"
     },
-    "workflowWorkflowUpdateRequest": {
+    "workflowWorkflowResubmitRequest": {
       "type": "object",
       "properties": {
-        "workflowName": {
+        "name": {
           "type": "string"
         },
         "namespace": {
@@ -4469,6 +4469,50 @@
         "memoized": {
           "type": "boolean",
           "format": "boolean"
+        }
+      }
+    },
+    "workflowWorkflowResumeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "workflowWorkflowRetryRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "workflowWorkflowSuspendRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "workflowWorkflowTerminateRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
         }
       }
     },

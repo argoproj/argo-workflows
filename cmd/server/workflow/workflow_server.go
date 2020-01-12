@@ -73,13 +73,13 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.WorkflowName, req.GetOptions)
+	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.Name, req.GetOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		offloaded, err := s.dbRepository.Get(req.WorkflowName, req.Namespace)
+		offloaded, err := s.dbRepository.Get(req.Name, req.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 	go func() {
 		for next := range wfs.ResultChan() {
 			wf := *next.Object.(*v1alpha1.Workflow)
-			log.WithFields(log.Fields{"type": next.Type, "workflowName": wf.Name}).Debug("Event")
+			log.WithFields(log.Fields{"type": next.Type, "Name": wf.Name}).Debug("Event")
 			err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: &wf})
 			if err != nil {
 				log.Warnf("Unable to send stream message: %v", err)
@@ -144,13 +144,13 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.WorkflowName, nil)
+	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.Name, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if wf.Status.OffloadNodeStatus {
-		err = s.dbRepository.Delete(req.WorkflowName, req.Namespace)
+		err = s.dbRepository.Delete(req.Name, req.Namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -159,28 +159,28 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 	return s.wfKubeService.Delete(wfClient, req.Namespace, req)
 }
 
-func (s *workflowServer) RetryWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) RetryWorkflow(ctx context.Context, req *WorkflowRetryRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
 	return s.wfKubeService.Retry(wfClient, kubeClient, req.Namespace, req)
 }
 
-func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	return s.wfKubeService.Resubmit(wfClient, req.Namespace, req)
 }
 
-func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	return s.wfKubeService.Resume(wfClient, req.Namespace, req)
 }
 
-func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	return s.wfKubeService.Suspend(wfClient, req.Namespace, req)
 }
 
-func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowUpdateRequest) (*v1alpha1.Workflow, error) {
+func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	return s.wfKubeService.Terminate(wfClient, req.Namespace, req)
 }
