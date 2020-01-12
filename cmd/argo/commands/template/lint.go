@@ -12,7 +12,7 @@ import (
 
 	"github.com/argoproj/argo/cmd/argo/commands/client"
 	"github.com/argoproj/argo/cmd/server/workflowtemplate"
-	"github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	cmdutil "github.com/argoproj/argo/util/cmd"
 	"github.com/argoproj/argo/workflow/validate"
 )
@@ -129,7 +129,7 @@ func ServerSideLint(args []string, conn *grpc.ClientConn, strict bool) error {
 	return nil
 }
 
-func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl v1alpha1.WorkflowTemplate, ns string) error {
+func ServerLintValidation(ctx context.Context, client workflowtemplate.WorkflowTemplateServiceClient, wfTmpl wfv1.WorkflowTemplate, ns string) error {
 	wfTmplReq := workflowtemplate.WorkflowTemplateCreateRequest{
 		Namespace: ns,
 		Template:  &wfTmpl,
