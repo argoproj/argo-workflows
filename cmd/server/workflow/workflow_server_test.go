@@ -382,7 +382,7 @@ func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Obje
 func getWorkflow(ctx context.Context, server WorkflowServiceServer, namespace string, wfName string) (*v1alpha1.Workflow, error) {
 
 	req := WorkflowGetRequest{
-		WorkflowName: wfName,
+		Name: wfName,
 		Namespace:    namespace,
 	}
 
@@ -455,7 +455,7 @@ func TestDeleteWorkflow(t *testing.T) {
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-b6h5m")
 	assert.Nil(t, err)
 	delReq := WorkflowDeleteRequest{
-		WorkflowName: wf.Name,
+		Name: wf.Name,
 		Namespace:    wf.Namespace,
 	}
 
@@ -475,15 +475,18 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	assert.Nil(t, err)
-	rsmWfReq := WorkflowUpdateRequest{
-		WorkflowName: wf.Name,
+	susWfReq := WorkflowSuspendRequest{
+		Name: wf.Name,
 		Namespace:    wf.Namespace,
 	}
-	wf, err = server.SuspendWorkflow(ctx, &rsmWfReq)
+	wf, err = server.SuspendWorkflow(ctx, &susWfReq)
 	assert.NotNil(t, wf)
 	assert.Equal(t, true, *wf.Spec.Suspend)
 	assert.Nil(t, err)
-
+	rsmWfReq := WorkflowResumeRequest{
+		Name: wf.Name,
+		Namespace:    wf.Namespace,
+	}
 	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 
 	assert.NotNil(t, wf)
@@ -494,13 +497,17 @@ func TestSuspendResumeWorkflow(t *testing.T) {
 func TestSuspendResumeWorkflowWithNotFound(t *testing.T) {
 	server, ctx := getWorkflowServer()
 
-	rsmWfReq := WorkflowUpdateRequest{
-		WorkflowName: "hello-world-9tql2-not",
+	susWfReq := WorkflowSuspendRequest{
+		Name: "hello-world-9tql2-not",
 		Namespace:    "workflows",
 	}
-	wf, err := server.SuspendWorkflow(ctx, &rsmWfReq)
+	wf, err := server.SuspendWorkflow(ctx, &susWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
+	rsmWfReq := WorkflowResumeRequest{
+		Name: "hello-world-9tql2-not",
+		Namespace:    "workflows",
+	}
 	wf, err = server.ResumeWorkflow(ctx, &rsmWfReq)
 	assert.Nil(t, wf)
 	assert.NotNil(t, err)
@@ -511,8 +518,8 @@ func TestTerminateWorkflow(t *testing.T) {
 
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2-run")
 	assert.Nil(t, err)
-	rsmWfReq := WorkflowUpdateRequest{
-		WorkflowName: wf.Name,
+	rsmWfReq := WorkflowTerminateRequest{
+		Name: wf.Name,
 		Namespace:    wf.Namespace,
 	}
 	wf, err = server.TerminateWorkflow(ctx, &rsmWfReq)
@@ -520,7 +527,7 @@ func TestTerminateWorkflow(t *testing.T) {
 	assert.Equal(t, int64(0), *wf.Spec.ActiveDeadlineSeconds)
 	assert.Nil(t, err)
 
-	rsmWfReq = WorkflowUpdateRequest{
+	rsmWfReq = WorkflowTerminateRequest{
 		WorkflowName: "hello-world-9tql2-not",
 		Namespace:    "workflows",
 	}
@@ -534,8 +541,8 @@ func TestResubmitWorkflow(t *testing.T) {
 	server, ctx := getWorkflowServer()
 	wf, err := getWorkflow(ctx, server, "workflows", "hello-world-9tql2")
 	assert.Nil(t, err)
-	wf, err = server.ResubmitWorkflow(ctx, &WorkflowUpdateRequest{
-		WorkflowName: wf.Name,
+	wf, err = server.ResubmitWorkflow(ctx, &WorkflowResubmitRequest{
+		Name: wf.Name,
 		Namespace:    wf.Namespace,
 	})
 	if assert.NoError(t, err) {
