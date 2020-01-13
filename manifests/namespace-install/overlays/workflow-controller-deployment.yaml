@@ -7,9 +7,6 @@ spec:
     spec:
       containers:
       - name: workflow-controller
-        args:
-        - --configmap
-        - workflow-controller-configmap
-        - --executor-image
-        - argoproj/argoexec:latest
-        - --namespaced
+        env:
+        - name: NAMESPACED
+          value: true
