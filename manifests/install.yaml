@@ -339,7 +339,7 @@ spec:
     spec:
       containers:
       - args:
-        - --auth-type
+        - --auth-mode
         - client
         env:
         - name: ARGO_NAMESPACE

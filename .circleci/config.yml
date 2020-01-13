@@ -111,13 +111,6 @@ jobs:
           command: |
             mkdir -p ~/.kube
             cat /etc/rancher/k3s/k3s.yaml | sed "s/127.0.0.1/$(hostname)/g" > ~/.kube/config
-      - run: KUBECONFIG=~/.kube/config make cli start-e2e
-      - run:
-          name: Follow controller logs, to help diagnose failures
-          command: |
-            sleep 10
-            make logs-e2e
-          background: true
       - run:
           name: Watch Docker events, to help diagnose failures
           command: docker events

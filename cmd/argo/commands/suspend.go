@@ -27,8 +27,8 @@ func NewSuspendCommand() *cobra.Command {
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				for _, wfName := range args {
 					wfUptReq := workflow.WorkflowSuspendRequest{
-						Name: wfName,
-						Namespace:    namespace,
+						Name:      wfName,
+						Namespace: namespace,
 					}
 					wf, err := apiGRPCClient.SuspendWorkflow(ctx, &wfUptReq)
 					if err != nil {

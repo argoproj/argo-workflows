@@ -59,8 +59,8 @@ func apiServerWFRetry(wfName string, opts cliSubmitOpts) {
 	wfApiClient, ctx := GetWFApiServerGRPCClient(conn)
 
 	wfReq := workflow.WorkflowRetryRequest{
-		Name: wfName,
-		Namespace:    ns,
+		Name:      wfName,
+		Namespace: ns,
 	}
 	wf, err := wfApiClient.RetryWorkflow(ctx, &wfReq)
 	if err != nil {

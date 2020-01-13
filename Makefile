@@ -252,7 +252,7 @@ ifeq ($(CI),false)
 endif
 	# Patch deployments
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-type", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-mode", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
 ifeq ($(CI),false)
 	make up
 endif
@@ -326,6 +326,13 @@ test-cli:
 
 .PHONY: clean
 clean:
+	# Remove nampsace
+	kubectl delete ns argo || true
+	# Remove images
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argo-server:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
 	# Delete build files
 	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
