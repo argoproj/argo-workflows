@@ -2800,6 +2800,10 @@
         "continueOn": {
           "$ref": "#/definitions/v1alpha1ContinueOn",
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified"
+        },
+        "onExit": {
+          "type": "string",
+          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
         }
       },
       "title": "DAGTask represents a node in the graph during DAG execution"
@@ -3543,6 +3547,10 @@
         "continueOn": {
           "$ref": "#/definitions/v1alpha1ContinueOn",
           "title": "ContinueOn makes argo to proceed with the following step even if this step fails.\nErrors and Failed states can be specified"
+        },
+        "onExit": {
+          "type": "string",
+          "description": "OnExit is a template reference which is invoked at the end of the\ntemplate, irrespective of the success, failure, or error of the\nprimary template."
         }
       },
       "title": "WorkflowStep is a reference to a template to execute in a series of step"

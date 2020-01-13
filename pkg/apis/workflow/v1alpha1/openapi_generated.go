@@ -727,6 +727,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
 						},
 					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "template"},
 			},
@@ -3402,6 +3409,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
+						},
+					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

@@ -352,6 +352,10 @@
           "description": "Name is the name of the target",
           "type": "string"
         },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+          "type": "string"
+        },
         "template": {
           "description": "Name of template to execute",
           "type": "string"
@@ -1852,6 +1856,10 @@
         },
         "name": {
           "description": "Name of the step",
+          "type": "string"
+        },
+        "onExit": {
+          "description": "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
           "type": "string"
         },
         "template": {
