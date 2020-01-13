@@ -9,4 +9,4 @@ spec:
       - name: workflow-controller
         env:
         - name: NAMESPACED
-          value: true
+          value: "true"

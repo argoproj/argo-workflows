@@ -81,7 +81,7 @@ func NewRootCommand() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "Namespaced installation with configmap setting is deprecated, \n")
 				fmt.Fprintf(os.Stderr, "it will be removed in next major release. Instead please add \n")
 				fmt.Fprintf(os.Stderr, "\"--namespaced\" to workflow-controller start args or add \n")
-				fmt.Fprintf(os.Stderr, "\"NAMESPACED=true\" to ENV.\n")
+				fmt.Fprintf(os.Stderr, "NAMESPACED=\"true\" to ENV.\n")
 				fmt.Fprintf(os.Stderr, "-----------------------------------------------------------------\n\n")
 			} else {
 				if namespaced {

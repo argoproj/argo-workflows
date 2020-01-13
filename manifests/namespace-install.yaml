@@ -266,7 +266,7 @@ spec:
         - workflow-controller
         env:
         - name: NAMESPACED
-          value: true
+          value: "true"
         image: argoproj/workflow-controller:latest
         name: workflow-controller
       serviceAccountName: argo
