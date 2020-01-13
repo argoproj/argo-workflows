@@ -562,7 +562,7 @@ type ArtifactLocation struct {
 	Raw *RawArtifact `json:"raw,omitempty" protobuf:"bytes,7,opt,name=raw"`
 
 	// OSS contains OSS artifact location details
-	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,8,opt,name=oss"`
+	OSS *OSSArtifact `json:"oss,omitempty" protobuf:"bytes,2,opt,name=oss"`
 }
 
 type ArtifactRepositoryRef struct {
