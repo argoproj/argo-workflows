@@ -39,8 +39,8 @@ func NewGetCommand() *cobra.Command {
 				wftmplApiClient, ctx := GetWFtmplApiServerGRPCClient(conn)
 				for _, arg := range args {
 					wfTempReq := workflowtemplate.WorkflowTemplateGetRequest{
-						Name: arg,
-						Namespace:    ns,
+						Name:      arg,
+						Namespace: ns,
 					}
 					wftmpl, err = wftmplApiClient.GetWorkflowTemplate(ctx, &wfTempReq)
 					if err != nil {
