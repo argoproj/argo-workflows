@@ -110,6 +110,27 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		})
 }
 
+func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
+	s.Given().
+		Workflow("@functional/success-event.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(120 * time.Second).
+		Then().
+		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+			found := false
+			for _, e := range events.Items {
+				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
+				isSuccessEvent := e.Reason == argo.EventReasonWorkflowSucceded
+				if isAboutSleepTest && isSuccessEvent {
+					found = true
+					assert.Equal(t, "Workflow completed", e.Message)
+				}
+			}
+			assert.True(t, found, "event not found")
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
