@@ -727,6 +727,13 @@ func schema_pkg_apis_workflow_v1alpha1_DAGTask(ref common.ReferenceCallback) com
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
 						},
 					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "template"},
 			},
@@ -2502,7 +2509,8 @@ func schema_pkg_apis_workflow_v1alpha1_Template(ref common.ReferenceCallback) co
 					},
 					"securityContext": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.PodSecurityContext"),
+							Description: "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
+							Ref:         ref("k8s.io/api/core/v1.PodSecurityContext"),
 						},
 					},
 					"podSpecPatch": {
@@ -3394,6 +3402,13 @@ func schema_pkg_apis_workflow_v1alpha1_WorkflowStep(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "ContinueOn makes argo to proceed with the following step even if this step fails. Errors and Failed states can be specified",
 							Ref:         ref("github.com/argoproj/argo/pkg/apis/workflow/v1alpha1.ContinueOn"),
+						},
+					},
+					"onExit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OnExit is a template reference which is invoked at the end of the template, irrespective of the success, failure, or error of the primary template.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},
