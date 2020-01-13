@@ -20,7 +20,7 @@ import (
 
 type workflowServer struct {
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
-	wfKubeService         *kubeService
+	//wfKubeService         *kubeService
 }
 
 func NewWorkflowServer(offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo) WorkflowServiceServer {
@@ -60,7 +60,7 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 		return util.CreateServerDryRun(req.Workflow, wfClient)
 	}
 
-	wf, err := s.wfKubeService.Create(wfClient, req.Namespace, req.Workflow)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Create(req.Workflow)
 
 	if err != nil {
 		log.Errorf("Create request is failed. Error: %s", err)
@@ -73,7 +73,11 @@ func (s *workflowServer) CreateWorkflow(ctx context.Context, req *WorkflowCreate
 func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.Name, req.GetOptions)
+	wfGetOption := metav1.GetOptions{}
+	if req.GetOptions != nil {
+		wfGetOption = *req.GetOptions
+	}
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, wfGetOption)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +101,12 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 func (s *workflowServer) ListWorkflows(ctx context.Context, req *WorkflowListRequest) (*v1alpha1.WorkflowList, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wfList, err := s.wfKubeService.List(wfClient, req.Namespace, req)
+	var listOption = metav1.ListOptions{}
+	if req.ListOptions != nil {
+		listOption = *req.ListOptions
+	}
+
+	wfList, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).List(listOption)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +167,7 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDeleteRequest) (*WorkflowDeleteResponse, error) {
 	wfClient := auth.GetWfClient(ctx)
 
-	wf, err := s.wfKubeService.Get(wfClient, req.Namespace, req.Name, nil)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -169,34 +178,91 @@ func (s *workflowServer) DeleteWorkflow(ctx context.Context, req *WorkflowDelete
 			return nil, err
 		}
 	}
-
-	return s.wfKubeService.Delete(wfClient, req.Namespace, req)
+	err = wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Delete(req.Name, &metav1.DeleteOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return &WorkflowDeleteResponse{}, nil
 }
 
 func (s *workflowServer) RetryWorkflow(ctx context.Context, req *WorkflowRetryRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
 	kubeClient := auth.GetKubeClient(ctx)
-	return s.wfKubeService.Retry(wfClient, kubeClient, req.Namespace, req)
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err = util.RetryWorkflow(kubeClient, wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wf)
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) ResubmitWorkflow(ctx context.Context, req *WorkflowResubmitRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	return s.wfKubeService.Resubmit(wfClient, req.Namespace, req)
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	newWF, err := util.FormulateResubmitWorkflow(wf, req.Memoized)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := util.SubmitWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), wfClient, req.Namespace, newWF, &util.SubmitOpts{})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
 }
 
 func (s *workflowServer) ResumeWorkflow(ctx context.Context, req *WorkflowResumeRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	return s.wfKubeService.Resume(wfClient, req.Namespace, req)
+	err := util.ResumeWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	if err != nil {
+		log.Warnf("Failed to resume %s: %+v", req.Name, err)
+		return nil, err
+	}
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return wf, nil
 }
 
 func (s *workflowServer) SuspendWorkflow(ctx context.Context, req *WorkflowSuspendRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	return s.wfKubeService.Suspend(wfClient, req.Namespace, req)
+	err := util.SuspendWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return wf, nil
 }
 
 func (s *workflowServer) TerminateWorkflow(ctx context.Context, req *WorkflowTerminateRequest) (*v1alpha1.Workflow, error) {
 	wfClient := auth.GetWfClient(ctx)
-	return s.wfKubeService.Terminate(wfClient, req.Namespace, req)
+	err := util.TerminateWorkflow(wfClient.ArgoprojV1alpha1().Workflows(req.Namespace), req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	wf, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Get(req.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return wf, nil
 }
 
 func (s *workflowServer) LintWorkflow(ctx context.Context, req *WorkflowCreateRequest) (*v1alpha1.Workflow, error) {
