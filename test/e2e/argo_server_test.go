@@ -40,13 +40,17 @@ func (s *ArgoServerSuite) BeforeTest(suiteName, testName string) {
 	}
 }
 
+func (s *ArgoServerSuite) AfterTest(suiteName, testName string) {
+	s.E2ESuite.AfterTest(suiteName, testName)
+}
+
 func (s *ArgoServerSuite) e(t *testing.T) *httpexpect.Expect {
 	return httpexpect.
 		WithConfig(httpexpect.Config{
 			BaseURL:  baseUrl,
 			Reporter: httpexpect.NewRequireReporter(t),
 			Printers: []httpexpect.Printer{
-				httpexpect.NewDebugPrinter(t, true),
+				httpexpect.NewDebugPrinter(s.Diagnostics, true),
 			},
 		}).
 		Builder(func(req *httpexpect.Request) {

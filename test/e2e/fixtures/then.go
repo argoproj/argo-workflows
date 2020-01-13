@@ -13,6 +13,7 @@ import (
 
 type Then struct {
 	t                     *testing.T
+	diagnostics           *Diagnostics
 	workflowName          string
 	cronWorkflowName      string
 	client                v1alpha1.WorkflowInterface
@@ -66,7 +67,7 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*te
 }
 
 func (t *Then) RunCli(args []string, block func(*testing.T, string, error)) *Then {
-	output, err := runCli(args)
+	output, err := runCli(t.diagnostics, args)
 	block(t.t, output, err)
 	return t
 }

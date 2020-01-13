@@ -42,6 +42,7 @@ func init() {
 
 type E2ESuite struct {
 	suite.Suite
+	Diagnostics           *Diagnostics
 	RestConfig            *rest.Config
 	wfClient              v1alpha1.WorkflowInterface
 	cronClient            v1alpha1.CronWorkflowInterface
@@ -57,6 +58,7 @@ func (s *E2ESuite) SetupSuite() {
 }
 
 func (s *E2ESuite) BeforeTest(_, _ string) {
+	s.Diagnostics = &Diagnostics{}
 	var err error
 	s.RestConfig, err = kubeconfig.DefaultRestConfig()
 	if err != nil {
@@ -173,6 +175,7 @@ func (s *E2ESuite) AfterTest(_, _ string) {
 }
 
 func (s *E2ESuite) printDiagnostics() {
+	s.Diagnostics.Print()
 	wfs, err := s.wfClient.List(metav1.ListOptions{FieldSelector: "metadata.namespace=" + Namespace})
 	if err != nil {
 		s.T().Fatal(err)
@@ -253,6 +256,7 @@ func (s *E2ESuite) printPodLogs(logCtx *log.Entry, namespace, pod, container str
 func (s *E2ESuite) Given() *Given {
 	return &Given{
 		t:                     s.T(),
+		diagnostics:           s.Diagnostics,
 		client:                s.wfClient,
 		cronClient:            s.cronClient,
 		offloadNodeStatusRepo: s.offloadNodeStatusRepo,

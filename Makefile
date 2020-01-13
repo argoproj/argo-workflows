@@ -213,15 +213,15 @@ else
 	go test -covermode=count -coverprofile=coverage.out `go list ./... | grep -v 'test/e2e'`
 endif
 
-dist/install.yaml: manifests/
+dist/install.yaml: manifests/cluster-install
 	# Create cluster install manifests
 	cat manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
 
-dist/namespace-install.yaml: manifests/
+dist/namespace-install.yaml: manifests/namespace-install
 	# Create namespace instnall manifests
 	cat manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
 
-dist/quick-start-mysql.yaml: manifests/
+dist/quick-start-mysql.yaml: manifests/namespace-install.yaml
 	# Create MySQL quick-start manifests
 	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
 
@@ -231,7 +231,7 @@ install-mysql: dist/quick-start-mysql.yaml
 	kubectl get ns argo || kubectl create ns argo
 	kubectl -n argo apply -f dist/quick-start-mysql.yaml
 
-dist/quick-start-postgres.yaml: manifests/
+dist/quick-start-postgres.yaml: manifests/namespace-install.yaml
 	# Create Postgres quick-start manifests
 	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
 
@@ -251,7 +251,7 @@ ifeq ($(CI),false)
 	make down
 endif
 	# Patch deployments
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "MAX_WORKFLOW_SIZE", "value": "1000"}]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-mode", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
 ifeq ($(CI),false)
 	make up

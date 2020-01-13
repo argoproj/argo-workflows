@@ -18,6 +18,7 @@ import (
 
 type When struct {
 	t                     *testing.T
+	diagnostics           *Diagnostics
 	wf                    *wfv1.Workflow
 	cronWf                *wfv1.CronWorkflow
 	client                v1alpha1.WorkflowInterface
@@ -108,6 +109,7 @@ func (w *When) DeleteWorkflow() *When {
 func (w *When) Then() *Then {
 	return &Then{
 		t:                     w.t,
+		diagnostics:           w.diagnostics,
 		workflowName:          w.workflowName,
 		cronWorkflowName:      w.cronWorkflowName,
 		client:                w.client,

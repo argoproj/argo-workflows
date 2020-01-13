@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,8 +16,6 @@ import (
 
 type CLISuite struct {
 	fixtures.E2ESuite
-	lastOutput string
-	lastErr    error
 }
 
 func (s *CLISuite) BeforeTest(suiteName, testName string) {
@@ -29,23 +26,20 @@ func (s *CLISuite) BeforeTest(suiteName, testName string) {
 func (s *CLISuite) AfterTest(suiteName, testName string) {
 	s.E2ESuite.AfterTest(suiteName, testName)
 	_ = os.Unsetenv("ARGO_SERVER")
-	if s.T().Failed() {
-		log.WithFields(log.Fields{"lastOutput": s.lastOutput, "lastError": s.lastErr}).Info("Last CLI output and error")
-	}
 }
 
 
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.Contains(t, s, "bash completion for argo")
+		assert.Contains(t, output, "bash completion for argo")
 	})
 }
 
 func (s *CLISuite) TestToken() {
 	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
-		assert.NotEmpty(t, s)
+		assert.NotEmpty(t, output)
 	})
 }
 

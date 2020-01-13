@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -15,6 +14,7 @@ import (
 
 type Given struct {
 	t                     *testing.T
+	diagnostics           *Diagnostics
 	client                v1alpha1.WorkflowInterface
 	cronClient            v1alpha1.CronWorkflowInterface
 	offloadNodeStatusRepo sqldb.OffloadNodeStatusRepo
@@ -99,8 +99,7 @@ func (g *Given) CronWorkflow(text string) *Given {
 }
 
 func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Given {
-	output, err := runCli(args)
-	log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Info("Run CLI")
+	output, err := runCli(g.diagnostics, args)
 	block(g.t, output, err)
 	return g
 }
@@ -108,6 +107,7 @@ func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Gi
 func (g *Given) When() *When {
 	return &When{
 		t:                     g.t,
+		diagnostics:           g.diagnostics,
 		wf:                    g.wf,
 		cronWf:                g.cronWf,
 		client:                g.client,
