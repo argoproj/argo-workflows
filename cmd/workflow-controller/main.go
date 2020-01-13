@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/argoproj/argo/workflow/cron"
@@ -119,11 +118,7 @@ func NewRootCommand() *cobra.Command {
 	command.Flags().IntVar(&glogLevel, "gloglevel", 0, "Set the glog logging level")
 	command.Flags().IntVar(&workflowWorkers, "workflow-workers", 8, "Number of workflow workers")
 	command.Flags().IntVar(&podWorkers, "pod-workers", 8, "Number of pod workers")
-	namespacedMode, err := strconv.ParseBool(os.Getenv("NAMESPACED"))
-	if err != nil {
-		namespacedMode = false
-	}
-	command.Flags().BoolVar(&namespaced, "namespaced", namespacedMode, "run workflow-controller as namespaced mode")
+	command.Flags().BoolVar(&namespaced, "namespaced", os.Getenv("NAMESPACED") == "true", "run workflow-controller as namespaced mode")
 	command.Flags().StringVar(&watchedNamespace, "watched-namespace", os.Getenv("WATCHED_NAMESPACE"), "namespace that workflow-controller watches, default to the installation namespace")
 	return &command
 }
