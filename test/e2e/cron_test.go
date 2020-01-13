@@ -1,4 +1,4 @@
-package cron
+package e2e
 
 import (
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
@@ -38,7 +38,8 @@ func (s *CronSuite) TestSuspend() {
 		When().
 		CreateCronWorkflow().
 		Then().
-		RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string) {
+		RunCli([]string{"cron", "suspend", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
 			assert.Equal(t, "CronWorkflow 'test-cron-wf-basic' suspended", output)
 		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 		assert.True(t, cronWf.Spec.Suspend)
@@ -51,7 +52,8 @@ func (s *CronSuite) TestResume() {
 		When().
 		CreateCronWorkflow().
 		Then().
-		RunCli([]string{"cron", "resume", "test-cron-wf-basic"}, func(t *testing.T, output string) {
+		RunCli([]string{"cron", "resume", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
+			assert.NoError(t, err)
 			assert.Equal(t, "CronWorkflow 'test-cron-wf-basic' resumed", output)
 		}).ExpectCron(func(t *testing.T, cronWf *wfv1.CronWorkflow) {
 		assert.False(t, cronWf.Spec.Suspend)

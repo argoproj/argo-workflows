@@ -1,14 +1,11 @@
 package fixtures
 
 import (
-	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/argoproj/argo/persist/sqldb"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
-	argoexec "github.com/argoproj/pkg/exec"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -67,16 +64,8 @@ func (t *Then) ExpectWorkflowList(listOptions metav1.ListOptions, block func(*te
 	return t
 }
 
-func (t *Then) RunCli(args []string, block func(*testing.T, string)) *Then {
-	cmd := exec.Command("../../../dist/argo", args...)
-	cmd.Env = os.Environ()
-	cmd.Dir = ""
-
-	output, err := argoexec.RunCommandExt(cmd, argoexec.CmdOpts{})
-	if err != nil {
-		t.t.Fatal(err)
-	}
-
-	block(t.t, output)
+func (t *Then) RunCli(args []string, block func(*testing.T, string, error)) *Then {
+	output, err := runCli(args)
+	block(t.t, output, err)
 	return t
 }

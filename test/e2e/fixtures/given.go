@@ -97,6 +97,14 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
+
+func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Given {
+	output, err := runCli(args)
+	block(g.t, output, err)
+	return g
+}
+
+
 func (g *Given) When() *When {
 	return &When{
 		t:                     g.t,

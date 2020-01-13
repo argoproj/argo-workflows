@@ -44,29 +44,28 @@ func (s *CLISuite) argo(args ...string) (string, error) {
 }
 
 func (s *CLISuite) TestCompletion() {
-	output, err := s.argo("completion", "bash")
-	s.Assert().NoError(err)
-	s.Assert().Contains(output, "bash completion for argo")
+	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.Contains(t, s, "bash completion for argo")
+	})
 }
 
 func (s *CLISuite) TestToken() {
-	output, err := s.argo("token")
-	s.Assert().NoError(err)
-	s.Assert().NotEmpty(output)
+	s.Given().RunCli([]string{"token"}, func(t *testing.T, output string, err error) {
+		assert.NoError(t, err)
+		assert.NotEmpty(t, s)
+	})
 }
 
 func (s *CLISuite) TestRoot() {
-	s.Run("Submit", func(t *testing.T) {
-		// TODO - with --wait we get an error - need to investigate
-		output, err := s.argo("submit", "smoke/basic.yaml")
+	s.Given().RunCli([]string{"submit", "smoke/basic.yaml"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Namespace:")
 		assert.Contains(t, output, "ServiceAccount:")
 		assert.Contains(t, output, "Status:")
 		assert.Contains(t, output, "Created:")
 	})
-	s.Run("List", func(t *testing.T) {
-		output, err := s.argo("list")
+	s.Given().RunCli([]string{"list"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAME")
 		assert.Contains(t, output, "STATUS")
@@ -74,8 +73,7 @@ func (s *CLISuite) TestRoot() {
 		assert.Contains(t, output, "DURATION")
 		assert.Contains(t, output, "PRIORITY")
 	})
-	s.Run("Get", func(t *testing.T) {
-		output, err := s.argo("get", "basic")
+	s.Given().RunCli([]string{"get", "basic"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Namespace:")
 		assert.Contains(t, output, "ServiceAccount:")
@@ -88,8 +86,7 @@ func (s *CLISuite) TestRoot() {
 
 func (s *CLISuite) TestCron() {
 
-	s.Run("Create", func(t *testing.T) {
-		output, err := s.argo("cron", "create", "cron/testdata/basic.yaml")
+	s.Given().RunCli([]string{"cron", "create", "testdata/basic.yaml"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Name:")
 		assert.Contains(t, output, "Namespace:")
@@ -100,8 +97,7 @@ func (s *CLISuite) TestCron() {
 		assert.Contains(t, output, "ConcurrencyPolicy:")
 	})
 
-	s.Run("List", func(t *testing.T) {
-		output, err := s.argo("cron", "list")
+	s.Given().RunCli([]string{"cron", "list"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAME")
 		assert.Contains(t, output, "AGE")
@@ -110,12 +106,10 @@ func (s *CLISuite) TestCron() {
 		assert.Contains(t, output, "SUSPENDED")
 	})
 
-	s.Run("Get", func(t *testing.T) {
-		output, err := s.argo("cron", "get", "not-found")
-		assert.EqualError(t, err, "exit status 1")
+	s.Given().RunCli([]string{"cron", "get", "not-found"}, func(t *testing.T, output string, err error) {
+		assert.Error(t, err, "exit status 1")
 		assert.Contains(t, output, `"not-found" not found`)
-
-		output, err = s.argo("cron", "get", "test-cron-wf-basic")
+	}).RunCli([]string{"cron", "get", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 		if assert.NoError(t, err) {
 			assert.Contains(t, output, "Name:")
 			assert.Contains(t, output, "Namespace:")
@@ -127,8 +121,7 @@ func (s *CLISuite) TestCron() {
 		}
 	})
 
-	s.Run("Delete", func(t *testing.T) {
-		_, err := s.argo("cron", "delete", "test-cron-wf-basic")
+	s.Given().RunCli([]string{"cron", "delete", "test-cron-wf-basic"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 	})
 }
@@ -139,24 +132,20 @@ func (s *CLISuite) TestArchive() {
 		Workflow("@smoke/basic.yaml").
 		When().
 		SubmitWorkflow().
-		WaitForWorkflow(15 * time.Second).
+		WaitForWorkflow(30 * time.Second).
 		Then().
 		Expect(func(t *testing.T, metadata *metav1.ObjectMeta, status *wfv1.WorkflowStatus) {
 			uid = metadata.UID
-		})
-	s.Run("List", func(t *testing.T) {
-		output, err := s.argo("archive", "list")
+		}).RunCli([]string{"archive", "list"}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "NAMESPACE NAME")
 		assert.Contains(t, output, "argo basic")
 	})
-	s.Run("Get", func(t *testing.T) {
-		output, err := s.argo("archive", "get", string(uid))
+	s.Given().RunCli([]string{"archive", "get", string(uid)}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Succeeded")
 	})
-	s.Run("Delete", func(t *testing.T) {
-		output, err := s.argo("archive", "delete", string(uid))
+	s.Given().RunCli([]string{"archive", "delete", string(uid)}, func(t *testing.T, output string, err error) {
 		assert.NoError(t, err)
 		assert.Contains(t, output, "Archived workflow")
 		assert.Contains(t, output, "deleted")
