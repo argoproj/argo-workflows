@@ -125,8 +125,8 @@ func (p *logPrinter) PrintWorkflowLogs(workflow string) error {
 	var err error
 	if p.apiServer {
 		wfReq := apiv1.WorkflowGetRequest{
-			Name: workflow,
-			Namespace:    p.ns,
+			Name:      workflow,
+			Namespace: p.ns,
 		}
 		wf, err = p.apiClient.GetWorkflow(p.ctx, &wfReq)
 	} else {
@@ -388,9 +388,9 @@ func (p *logPrinter) getPodLogs(
 	var err error
 	if p.apiServer {
 		wfLogReq := apiv1.WorkflowLogRequest{
-			Name: "*",
-			Namespace:    p.ns,
-			PodName:      podName,
+			Name:      "*",
+			Namespace: p.ns,
+			PodName:   podName,
 			LogOptions: &v1.PodLogOptions{
 				Container:    p.container,
 				Follow:       p.follow,

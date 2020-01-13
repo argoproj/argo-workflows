@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -35,13 +34,6 @@ func (s *CLISuite) AfterTest(suiteName, testName string) {
 	}
 }
 
-func (s *CLISuite) argo(args ...string) (string, error) {
-	args = append([]string{"-n", fixtures.Namespace}, args...)
-	output, err := exec.Command("../../dist/argo", args...).CombinedOutput()
-	s.lastOutput = string(output)
-	s.lastErr = err
-	return s.lastOutput, s.lastErr
-}
 
 func (s *CLISuite) TestCompletion() {
 	s.Given().RunCli([]string{"completion", "bash"}, func(t *testing.T, output string, err error) {

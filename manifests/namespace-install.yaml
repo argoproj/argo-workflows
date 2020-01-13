@@ -248,7 +248,7 @@ spec:
     spec:
       containers:
       - args:
-        - --auth-type
+        - --auth-mode
         - client
         env:
         - name: FORCE_NAMESPACE_ISOLATION

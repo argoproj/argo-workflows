@@ -41,8 +41,8 @@ func NewResubmitCommand() *cobra.Command {
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				errors.CheckError(err)
 				wfReq := workflow.WorkflowGetRequest{
-					Namespace:    namespace,
-					Name: args[0],
+					Namespace: namespace,
+					Name:      args[0],
 				}
 				wf, err := apiGRPCClient.GetWorkflow(ctx, &wfReq)
 				errors.CheckError(err)

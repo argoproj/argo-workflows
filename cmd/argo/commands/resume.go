@@ -27,8 +27,8 @@ func NewResumeCommand() *cobra.Command {
 				apiGRPCClient, ctx := GetWFApiServerGRPCClient(conn)
 				for _, wfName := range args {
 					wfUptReq := workflow.WorkflowResumeRequest{
-						Name: wfName,
-						Namespace:    namespace,
+						Name:      wfName,
+						Namespace: namespace,
 					}
 					wf, err := apiGRPCClient.ResumeWorkflow(ctx, &wfUptReq)
 					if err != nil {

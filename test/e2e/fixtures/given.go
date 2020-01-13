@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/argoproj/argo/persist/sqldb"
@@ -97,13 +98,12 @@ func (g *Given) CronWorkflow(text string) *Given {
 	return g
 }
 
-
 func (g *Given) RunCli(args []string, block func(*testing.T, string, error)) *Given {
 	output, err := runCli(args)
+	log.WithFields(log.Fields{"args": args, "output": output, "err": err}).Info("Run CLI")
 	block(g.t, output, err)
 	return g
 }
-
 
 func (g *Given) When() *When {
 	return &When{
