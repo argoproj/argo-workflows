@@ -99,9 +99,9 @@ func (s *FunctionalSuite) TestEventOnNodeFail() {
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
 			for _, e := range events.Items {
-				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
+				isAboutFailedStep := strings.HasPrefix(e.InvolvedObject.Name, "failed-step-event-")
 				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
-				if isAboutSleepTest && isFailureEvent {
+				if isAboutFailedStep && isFailureEvent {
 					found = true
 					assert.Equal(t, "failed with exit code 1", e.Message)
 				}
@@ -120,9 +120,9 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
 			found := false
 			for _, e := range events.Items {
-				isAboutSleepTest := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
+				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "success-event-")
 				isSuccessEvent := e.Reason == argo.EventReasonWorkflowSucceded
-				if isAboutSleepTest && isSuccessEvent {
+				if isAboutSuccess && isSuccessEvent {
 					found = true
 					assert.Equal(t, "Workflow completed", e.Message)
 				}
