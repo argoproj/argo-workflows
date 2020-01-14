@@ -262,7 +262,7 @@ spec:
         - workflow-controller-configmap
         - --executor-image
         - argoproj/argoexec:latest
-        - - --namespaced
+        - --namespaced
         command:
         - workflow-controller
         image: argoproj/workflow-controller:latest
