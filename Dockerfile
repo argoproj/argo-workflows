@@ -69,7 +69,7 @@ RUN mkdir -p ui/dist
 COPY --from=argo-ui dist/app ui/dist/app
 # stop make from trying to re-build this without yarn installed
 RUN touch ui/dist/app
-RUN make dist/argo-server-linux-amd64 dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64 dist/argo-server-linux-amd64
+RUN make dist/argo-linux-amd64 dist/workflow-controller-linux-amd64 dist/argoexec-linux-amd64
 
 ####################################################################################################
 # argoexec
@@ -91,10 +91,3 @@ ENTRYPOINT [ "workflow-controller" ]
 FROM scratch as argocli
 COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-linux-amd64 /bin/argo
 ENTRYPOINT [ "argo" ]
-
-####################################################################################################
-# argo-server
-####################################################################################################
-FROM scratch as argo-server
-COPY --from=argo-build /go/src/github.com/argoproj/argo/dist/argo-server-linux-amd64 /usr/local/bin/argo-server
-ENTRYPOINT [ "argo-server" ]

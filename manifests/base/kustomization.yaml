@@ -6,8 +6,8 @@ resources:
 - workflow-controller
 - argo-server
 images:
-- name: argoproj/argo-server
-  newName: argoproj/argo-server
+- name: argoproj/argocli
+  newName: argoproj/argocli
   newTag: latest
 - name: argoproj/workflow-controller
   newName: argoproj/workflow-controller

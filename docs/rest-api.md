@@ -6,7 +6,7 @@
 
 Since version v2.5 Argo Workflows ships with a server that provide more features and security that before.
 
-The server can be configured with or without client auth (`--auth-mode client`). When it is disabled, then clients must pass their Kubeconfig base 64 encoded in the HTTP `Authorization` header:
+The server can be configured with or without client auth (`server --auth-mode client`). When it is disabled, then clients must pass their Kubeconfig base 64 encoded in the HTTP `Authorization` header:
 
 ```
 token=$(argo token)

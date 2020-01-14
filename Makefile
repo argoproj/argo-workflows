@@ -20,7 +20,7 @@ IMAGE_TAG             := $(VERSION)
 DEV_IMAGE             := false
 else
 VERSION               := $(shell cat VERSION)
-IMAGE_TAG             := $(GIT_BRANCH)
+IMAGE_TAG             := $(subst /,-,$(GIT_BRANCH))
 DEV_IMAGE             := true
 endif
 endif
@@ -45,12 +45,11 @@ override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
-ARGO_SERVER_PKGS := $(shell echo cmd/server              && go list -f '{{ join .Deps "\n" }}' ./cmd/server/              | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CLI_PKGS         := $(shell echo cmd/argo                && go list -f '{{ join .Deps "\n" }}' ./cmd/argo/                | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 CONTROLLER_PKGS  := $(shell echo cmd/workflow-controller && go list -f '{{ join .Deps "\n" }}' ./cmd/workflow-controller/ | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
 
 .PHONY: build
-build: clis executor-image controller-image argo-server dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
+build: clis executor-image controller-image dist/install.yaml dist/namespace-install.yaml dist/quick-start-postgres.yaml dist/quick-start-mysql.yaml
 
 vendor: Gopkg.toml
 	# Get Go dependencies
@@ -62,22 +61,49 @@ vendor: Gopkg.toml
 .PHONY: cli
 cli: dist/argo
 
-dist/argo: vendor $(CLI_PKGS)
+ui/node_modules: ui/package.json ui/yarn.lock
+	# Get UI dependencies
+ifeq ($(CI),false)
+	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
+else
+	mkdir -p ui/node_modules
+endif
+	touch ui/node_modules
+
+ui/dist/app: ui/node_modules ui/src
+	# Build UI
+ifeq ($(CI),false)
+	yarn --cwd ui build
+else
+	mkdir -p ui/dist/app
+	echo "Built without static files" > ui/dist/app/index.html
+endif
+	touch ui/dist/app
+
+$(GOPATH)/bin/staticfiles:
+	# Install the "staticfiles" tool
+	go get bou.ke/staticfiles
+
+cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
+	# Pack UI into a Go file.
+	staticfiles -o cmd/server/static/files.go ui/dist/app
+
+dist/argo: vendor cmd/server/static/files.go $(CLI_PKGS)
 	go build -v -i -ldflags '${LDFLAGS}' -o dist/argo ./cmd/argo
 
-dist/argo-linux-amd64: vendor $(CLI_PKGS)
+dist/argo-linux-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-amd64 ./cmd/argo
 
-dist/argo-linux-ppc64le: vendor $(CLI_PKGS)
+dist/argo-linux-ppc64le: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-ppc64le ./cmd/argo
 
-dist/argo-linux-s390x: vendor $(CLI_PKGS)
+dist/argo-linux-s390x: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-linux-s390x ./cmd/argo
 
-dist/argo-darwin-amd64: vendor $(CLI_PKGS)
+dist/argo-darwin-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-darwin-amd64 ./cmd/argo
 
-dist/argo-windows-amd64: vendor $(CLI_PKGS)
+dist/argo-windows-amd64: vendor cmd/server/static/files.go $(CLI_PKGS)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-windows-amd64 ./cmd/argo
 
 .PHONY: cli-image
@@ -85,7 +111,7 @@ cli-image: dist/argo-linux-amd64
 	# Create CLI image
 ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
-	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev.
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev .
 	rm -f argo
 else
 	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
@@ -125,64 +151,6 @@ ifeq ($(DEV_IMAGE),true)
 else
 	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
 endif
-
-# argo-server
-
-ui/node_modules: ui/package.json ui/yarn.lock
-	# Get UI dependencies
-ifeq ($(CI),false)
-	yarn --cwd ui install --frozen-lockfile --ignore-optional --non-interactive
-else
-	mkdir -p ui/node_modules
-endif
-	touch ui/node_modules
-
-ui/dist/app: ui/node_modules ui/src
-	# Build UI
-ifeq ($(CI),false)
-	yarn --cwd ui build
-else
-	mkdir -p ui/dist/app
-	echo "Built without static files" > ui/dist/app/index.html
-endif
-	touch ui/dist/app
-
-$(GOPATH)/bin/staticfiles:
-	# Install the "staticfiles" tool
-	go get bou.ke/staticfiles
-
-cmd/server/static/files.go: ui/dist/app $(GOPATH)/bin/staticfiles
-	# Pack UI into a Go file.
-	staticfiles -o cmd/server/static/files.go ui/dist/app
-
-dist/argo-server-linux-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-amd64 ./cmd/server
-
-dist/argo-server-linux-ppc64le: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-ppc64le ./cmd/server
-
-dist/argo-server-linux-s390x: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=linux GOARCH=ppc64le go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-linux-s390x ./cmd/server
-
-dist/argo-server-darwin-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOOS=darwin go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-darwin-amd64 ./cmd/server
-
-dist/argo-server-windows-amd64: cmd/server/static/files.go vendor $(ARGO_SERVER_PKGS)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -v -i -ldflags '${LDFLAGS}' -o dist/argo-server-windows-amd64 ./cmd/server
-
-.PHONY: argo-server-image
-argo-server-image: dist/argo-server-linux-amd64
-	# Create argo-server image
-ifeq ($(DEV_IMAGE),true)
-	cp dist/argo-server-linux-amd64 argo-server
-	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile --target argo-server -f Dockerfile.dev .
-	rm -f argo-server
-else
-	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile --target argo-server .
-endif
-
-.PHONY: argo-server
-argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64 argo-server-image
 
 # generation
 
@@ -260,14 +228,14 @@ install-postgres: dist/quick-start-postgres.yaml
 install: install-postgres
 
 .PHONY: start
-start: controller-image argo-server-image install
+start: controller-image cli-image install
 	# Start development environment
 ifeq ($(CI),false)
 	make down
 endif
 	# Patch deployments
 	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never", "--namespaced"]}]}]'
-	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-mode", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
+	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["server", "--loglevel", "debug", "--auth-mode", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
 ifeq ($(CI),false)
 	make up
 endif
@@ -330,7 +298,7 @@ smoke:
 .PHONY: test-api
 test-api:
 	# Run API tests
-	go test -timeout 1m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
+	go test -timeout 2m -v -count 1 -p 1 -run ArgoServerSuite ./test/e2e
 
 .PHONY: test-cli
 test-cli:
@@ -346,7 +314,6 @@ clean:
 	# Remove images
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
 	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
 	git clean -fxd -e .idea -e vendor -e ui/node_modules
@@ -423,16 +390,10 @@ endif
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-ppc64le
 	./hack/upload-asset.sh $(VERSION) dist/argo-linux-s390x
-	./hack/upload-asset.sh $(VERSION) dist/argo-server-darwin-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-amd64
-	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-ppc64le
-	./hack/upload-asset.sh $(VERSION) dist/argo-server-linux-s390x
-	./hack/upload-asset.sh $(VERSION) dist/argo-server-windows-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	# Push images to Docker Hub
 	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
-	docker push $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
 	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 ifeq ($(SNAPSHOT),false)
 	# Push changes to Git

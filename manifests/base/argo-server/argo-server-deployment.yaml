@@ -14,8 +14,8 @@ spec:
       serviceAccountName: argo-server
       containers:
         - name: argo-server
-          image: argoproj/argo-server:latest
-          args: [--auth-mode, client]
+          image: argoproj/argocli:latest
+          args: [server, --auth-mode, client]
           ports:
             - containerPort: 2746
           readinessProbe:
@@ -25,10 +25,3 @@ spec:
               path: /
             initialDelaySeconds: 5
             periodSeconds: 30
-          env:
-            # TODO - maybe unused
-            - name: ARGO_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  apiVersion: v1
-                  fieldPath: metadata.namespace
