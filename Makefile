@@ -6,16 +6,23 @@ GIT_BRANCH             = $(shell git rev-parse --abbrev-ref=loose HEAD | sed 's/
 GIT_TAG                = $(shell if [ -z "`git status --porcelain`" ]; then git describe --exact-match --tags HEAD 2>/dev/null; fi)
 GIT_TREE_STATE         = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 
-# docker image publishing options
-IMAGE_NAMESPACE       = argoproj
-
 export DOCKER_BUILDKIT = 1
 
-# version must be  branch name or  vX.Y.Z
-ifeq ($(GIT_BRANCH), master)
-VERSION ?= latest
+# docker image publishing options
+IMAGE_NAMESPACE       ?= argoproj
+ifeq ($(GIT_BRANCH),MASTER)
+VERSION               := latest
+IMAGE_TAG             := latest
+DEV_IMAGE             := true
 else
-VERSION ?= $(GIT_BRANCH)
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
+IMAGE_TAG             := $(VERSION)
+DEV_IMAGE             := false
+else
+VERSION               := $(shell cat VERSION)
+IMAGE_TAG             := $(GIT_BRANCH)
+DEV_IMAGE             := true
+endif
 endif
 
 # perform static compilation
@@ -35,16 +42,6 @@ endif
 ifneq (${GIT_TAG},)
 VERSION = ${GIT_TAG}
 override LDFLAGS += -X ${PACKAGE}.gitTag=${GIT_TAG}
-endif
-
-SNAPSHOT=false
-ifeq ($(VERSION),latest)
- 	# Snapshot
-	SNAPSHOT:=true
-endif
-ifeq ($(VERSION),$(GIT_BRANCH))
-	# Snapshot
-	SNAPSHOT:=true
 endif
 
 ARGOEXEC_PKGS    := $(shell echo cmd/argoexec            && go list -f '{{ join .Deps "\n" }}' ./cmd/argoexec/            | grep 'argoproj/argo' | grep -v vendor | cut -c 26-)
@@ -85,9 +82,14 @@ dist/argo-windows-amd64: vendor $(CLI_PKGS)
 
 .PHONY: cli-image
 cli-image: dist/argo-linux-amd64
+	# Create CLI image
+ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-linux-amd64 argo
-	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argocli:$(VERSION) --target argocli .
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli -f Dockerfile.dev.
 	rm -f argo
+else
+	docker build -t $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG) --target argocli .
+endif
 
 .PHONY: clis
 clis: dist/argo-linux-amd64 dist/argo-linux-ppc64le dist/argo-linux-s390x dist/argo-darwin-amd64 dist/argo-windows-amd64 cli-image
@@ -99,9 +101,14 @@ dist/workflow-controller-linux-amd64: vendor $(CONTROLLER_PKGS)
 
 .PHONY: controller-image
 controller-image: dist/workflow-controller-linux-amd64
+	# Create controller image
+ifeq ($(DEV_IMAGE),true)
 	cp dist/workflow-controller-linux-amd64 workflow-controller
-	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION) --target workflow-controller .
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller -f Dockerfile.dev .
 	rm -f workflow-controller
+else
+	docker build -t $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG) --target workflow-controller .
+endif
 
 # argoexec
 
@@ -111,9 +118,13 @@ dist/argoexec-linux-amd64: vendor $(ARGOEXEC_PKGS)
 .PHONY: executor-image
 executor-image: dist/argoexec-linux-amd64
 	# Create executor image
+ifeq ($(DEV_IMAGE),true)
 	cp dist/argoexec-linux-amd64 argoexec
-	 docker build --progress=plain -t $(IMAGE_NAMESPACE)/argoexec:$(VERSION) --target argoexec .
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec -f Dockerfile.dev .
 	rm -f argoexec
+else
+	docker build -t $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG) --target argoexec .
+endif
 
 # argo-server
 
@@ -162,9 +173,13 @@ dist/argo-server-windows-amd64: vendor cmd/server/static/files.go $(ARGO_SERVER_
 .PHONY: argo-server-image
 argo-server-image: dist/argo-server-linux-amd64
 	# Create argo-server image
+ifeq ($(DEV_IMAGE),true)
 	cp dist/argo-server-linux-amd64 argo-server
-	docker build --progress=plain -t $(IMAGE_NAMESPACE)/argo-server:$(VERSION) -f Dockerfile --target argo-server .
+	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile --target argo-server -f Dockerfile.dev .
 	rm -f argo-server
+else
+	docker build -t $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG) -f Dockerfile --target argo-server .
+endif
 
 .PHONY: argo-server
 argo-server: dist/argo-server-linux-amd64 dist/argo-server-linux-ppc64le dist/argo-server-linux-s390x dist/argo-server-darwin-amd64 dist/argo-server-windows-amd64 argo-server-image
@@ -215,15 +230,15 @@ endif
 
 dist/install.yaml: manifests/cluster-install
 	# Create cluster install manifests
-	cat manifests/install.yaml | sed 's/:latest/:$(VERSION)/' > dist/install.yaml
+	cat manifests/install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/install.yaml
 
 dist/namespace-install.yaml: manifests/namespace-install
 	# Create namespace instnall manifests
-	cat manifests/namespace-install.yaml | sed 's/:latest/:$(VERSION)/' > dist/namespace-install.yaml
+	cat manifests/namespace-install.yaml | sed 's/:latest/:$(IMAGE_TAG)/' > dist/namespace-install.yaml
 
 dist/quick-start-mysql.yaml: manifests/namespace-install.yaml
 	# Create MySQL quick-start manifests
-	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(VERSION)/' > dist/quick-start-mysql.yaml
+	kustomize build manifests/quick-start/mysql | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-mysql.yaml
 
 .PHONY: install-mysql
 install-mysql: dist/quick-start-mysql.yaml
@@ -233,7 +248,7 @@ install-mysql: dist/quick-start-mysql.yaml
 
 dist/quick-start-postgres.yaml: manifests/namespace-install.yaml
 	# Create Postgres quick-start manifests
-	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(VERSION)/' > dist/quick-start-postgres.yaml
+	kustomize build manifests/quick-start/postgres | sed 's/:latest/:$(IMAGE_TAG)/' > dist/quick-start-postgres.yaml
 
 .PHONY: install-postgres
 install-postgres: dist/quick-start-postgres.yaml
@@ -251,7 +266,7 @@ ifeq ($(CI),false)
 	make down
 endif
 	# Patch deployments
-	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "argoproj/argoexec:$(VERSION)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}]}]'
+	kubectl -n argo patch deployment/workflow-controller --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--executor-image", "$(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)", "--executor-image-pull-policy", "Never"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}]}]'
 	kubectl -n argo patch deployment/argo-server --type json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Never"}, {"op": "replace", "path": "/spec/template/spec/containers/0/args", "value": ["--loglevel", "debug", "--auth-mode", "client"]}, {"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "FORCE_NAMESPACE_ISOLATION", "value": "true"}, {"name": "ARGO_V2_TOKEN", "value": "password"}]}]'
 ifeq ($(CI),false)
 	make up
@@ -277,7 +292,7 @@ up:
 	kubectl -n argo scale deployment/workflow-controller --replicas 1
 	kubectl -n argo scale deployment/argo-server --replicas 1
 	# Wait for pods to be ready
-	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 1m
+	kubectl -n argo wait --for=condition=Ready pod --all -l app --timeout 2m
 
 .PHONY: pf
 pf:
@@ -326,13 +341,13 @@ test-cli:
 
 .PHONY: clean
 clean:
-	# Remove nampsace
+	# Remove namepsace
 	kubectl delete ns argo || true
 	# Remove images
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/argo-server:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
-	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
+	[ "`docker images -q $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)`" = "" ] || docker rmi $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 	# Delete build files
 	git clean -fxd -e .idea -e vendor -e ui/node_modules
 
@@ -363,7 +378,7 @@ ifeq ($(VERSION),)
 	echo "unable to prepare release - VERSION undefined" >&2
 	exit 1
 endif
-ifeq ($(GIT_BRANCH),master)
+ifeq ($(VERSION),latest)
 	# No release preparation needed for master branch
 else
 	# Update VERSION file
@@ -375,7 +390,7 @@ endif
 
 .PHONY: pre-release
 pre-release: pre-push
-ifeq ($(SNAPSHOT),false)
+ifeq ($(findstring release,$(GIT_BRANCH)),release)
 	# Check we have tagged the latest commit
 	@if [ -z "$(GIT_TAG)" ]; then echo 'commit must be tagged to perform release' ; exit 1; fi
 	# Check the tag is correct
@@ -384,6 +399,12 @@ endif
 
 .PHONY: publish
 publish:
+ifeq ($(VERSION),latest)
+ifneq ($(GIT_BRANCH),master)
+	echo "you cannot publish latest version unless you are on master" >&2
+	exit 1
+endif
+endif
 	# Publish release
 ifeq ($(GITHUB_TOKEN),)
 	echo "GITHUB_TOKEN not found, please visit https://github.com/settings/tokens to create one, it needs the "public_repo" role" >&2
@@ -409,10 +430,10 @@ endif
 	./hack/upload-asset.sh $(VERSION) dist/argo-server-windows-amd64
 	./hack/upload-asset.sh $(VERSION) dist/argo-windows-amd64
 	# Push images to Docker Hub
-	docker push $(IMAGE_NAMESPACE)/argocli:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/argoexec:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/argo-server:$(VERSION)
-	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(VERSION)
+	docker push $(IMAGE_NAMESPACE)/argocli:$(IMAGE_TAG)
+	docker push $(IMAGE_NAMESPACE)/argoexec:$(IMAGE_TAG)
+	docker push $(IMAGE_NAMESPACE)/argo-server:$(IMAGE_TAG)
+	docker push $(IMAGE_NAMESPACE)/workflow-controller:$(IMAGE_TAG)
 ifeq ($(SNAPSHOT),false)
 	# Push changes to Git
 	git push
