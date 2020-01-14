@@ -80,11 +80,11 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	logCtx := log.WithFields(log.Fields{"test": w.t.Name(), "workflow": w.workflowName})
 	logCtx.Info("Waiting on workflow")
 	opts := metav1.ListOptions{FieldSelector: fields.ParseSelectorOrDie(fmt.Sprintf("metadata.name=%s", w.workflowName)).String()}
-	watchIf, err := w.client.Watch(opts)
+	watch, err := w.client.Watch(opts)
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	defer watchIf.Stop()
+	defer watch.Stop()
 	timeoutCh := make(chan bool, 1)
 	go func() {
 		time.Sleep(timeout)
@@ -92,7 +92,7 @@ func (w *When) WaitForWorkflow(timeout time.Duration) *When {
 	}()
 	for {
 		select {
-		case event := <-watchIf.ResultChan():
+		case event := <-watch.ResultChan():
 			wf, ok := event.Object.(*wfv1.Workflow)
 			if ok {
 				if !wf.Status.FinishedAt.IsZero() {

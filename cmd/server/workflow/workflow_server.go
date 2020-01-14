@@ -83,7 +83,6 @@ func (s *workflowServer) GetWorkflow(ctx context.Context, req *WorkflowGetReques
 	}
 
 	if wf.Status.OffloadNodeStatus {
-
 		offloaded, err := s.offloadNodeStatusRepo.Get(req.Name, req.Namespace)
 		if err != nil {
 			return nil, err
@@ -120,45 +119,37 @@ func (s *workflowServer) WatchWorkflows(req *WatchWorkflowsRequest, ws WorkflowS
 	if req.ListOptions != nil {
 		opts = *req.ListOptions
 	}
-	wfs, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(opts)
+	watch, err := wfClient.ArgoprojV1alpha1().Workflows(req.Namespace).Watch(opts)
 	if err != nil {
 		return err
 	}
+	defer watch.Stop()
+	ctx := ws.Context()
 
-	done := make(chan bool)
-	go func() {
-		for next := range wfs.ResultChan() {
-
-			wf := next.Object.(*v1alpha1.Workflow)
-			err := packer.DecompressWorkflow(wf)
-			logCtx := log.WithFields(log.Fields{"type": next.Type, "namespace": wf.Namespace, "workflowName": wf.Name})
-			if err != nil {
-				logCtx.Warnf("Unable to send stream message: %v", err)
-				break
-			}
-			if wf.Status.OffloadNodeStatus {
-				offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
-				if err != nil {
-					logCtx.Warnf("Unable to send stream message: %v", err)
-					break
-				}
-				wf.Status.Nodes = offloaded.Status.Nodes
-			}
-			logCtx.Debug("Sending event")
-			err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: wf})
-			if err != nil {
-				logCtx.Warnf("Unable to send stream message: %v", err)
-				break
-			}
+	for next := range watch.ResultChan() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
-		done <- true
-	}()
-
-	select {
-	case <-ws.Context().Done():
-		wfs.Stop()
-	case <-done:
-		wfs.Stop()
+		wf := next.Object.(*v1alpha1.Workflow)
+		err := packer.DecompressWorkflow(wf)
+		logCtx := log.WithFields(log.Fields{"type": next.Type, "namespace": wf.Namespace, "workflowName": wf.Name})
+		if err != nil {
+			return err
+		}
+		if wf.Status.OffloadNodeStatus {
+			offloaded, err := s.offloadNodeStatusRepo.Get(wf.Name, wf.Namespace)
+			if err != nil {
+				return err
+			}
+			wf.Status.Nodes = offloaded.Status.Nodes
+		}
+		logCtx.Debug("Sending event")
+		err = ws.Send(&WorkflowWatchEvent{Type: string(next.Type), Object: wf})
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
