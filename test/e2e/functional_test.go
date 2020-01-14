@@ -131,6 +131,27 @@ func (s *FunctionalSuite) TestEventOnWorkflowSuccess() {
 		})
 }
 
+func (s *FunctionalSuite) TestEventOnPVCFail() {
+	s.Given().
+		Workflow("@expectedfailures/volumes-pvc-fail-event.yaml").
+		When().
+		SubmitWorkflow().
+		WaitForWorkflow(120 * time.Second).
+		Then().
+		ExpectAuditEvents(func(t *testing.T, events *apiv1.EventList) {
+			found := false
+			for _, e := range events.Items {
+				isAboutSuccess := strings.HasPrefix(e.InvolvedObject.Name, "volumes-pvc-fail-event-")
+				isFailureEvent := e.Reason == argo.EventReasonWorkflowFailed
+				if isAboutSuccess && isFailureEvent {
+					found = true
+					assert.True(t, strings.Contains(e.Message, "pvc create error"), "event should contain \"pvc create error\"")
+				}
+			}
+			assert.True(t, found, "event not found")
+		})
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
